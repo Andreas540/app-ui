@@ -1,32 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { addOrder, nextOrderNo } from '../lib/storage'
-
-const CUSTOMERS = [
-  { id: 'roger', name: 'Roger DC' },
-  { id: 'acme', name: 'Acme Corp' },
-]
-
-const PRODUCTS = [
-  { id: 'ace', name: 'ACE Ultra', price: 5.25 },
-  { id: 'favorites', name: 'Favorites', price: 5.25 },
-  { id: 'boutiq', name: 'Boutiq', price: 5.25 },
-  { id: 'popz', name: 'Popz', price: 5.25 },
-  { id: 'hitz', name: 'Hitz', price: 4.60 },
-]
+import { fetchBootstrap, type Person, type Product } from '../lib/api'
 
 export default function NewOrder() {
-  const [customerId, setCustomerId] = useState(CUSTOMERS[0].id)
-  const [productId, setProductId] = useState(PRODUCTS[0].id)
+  const [people, setPeople] = useState<Person[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
 
-  // Keep quantity as a string so first keypress replaces any 0 and we can strip leading zeros.
-  const [qtyStr, setQtyStr] = useState('')         // shows empty, not "0"
+  // controls
+  const [entityId, setEntityId] = useState<string>('')   // customer/partner id
+  const [productId, setProductId] = useState<string>('')
+  const [qtyStr, setQtyStr] = useState('')               // quantity as string
   const qty = qtyStr === '' ? 0 : Math.max(0, parseInt(qtyStr, 10) || 0)
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0,10))
 
-  const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0,10)) // YYYY-MM-DD
+  useEffect(() => {
+    (async () => {
+      try {
+        const { customers, products } = await fetchBootstrap()
+        setPeople(customers)
+        setProducts(products)
+        setEntityId(customers[0]?.id ?? '')
+        setProductId(products[0]?.id ?? '')
+      } catch (e: any) {
+        setErr(e.message || 'Load failed')
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
-  const customer = CUSTOMERS.find(c => c.id === customerId)!
-  const product  = PRODUCTS.find(p => p.id === productId)!
-  const price = product.price
+  const person  = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
+  const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
+  const price   = product?.unit_price ?? 0
   const lineTotal = +(qty * price).toFixed(2)
 
   function genId() {
@@ -34,13 +41,14 @@ export default function NewOrder() {
   }
 
   function save() {
+    if (!person || !product) { alert('Data not loaded'); return }
     if (qty <= 0) { alert('Enter a quantity > 0'); return }
 
     addOrder({
       id: genId(),
       orderNo: nextOrderNo(),
-      customerId: customer.id,
-      customerName: customer.name,
+      customerId: person.id,
+      customerName: person.name,
       productId: product.id,
       productName: product.name,
       unitPrice: price,
@@ -49,67 +57,64 @@ export default function NewOrder() {
       delivered: true,
     })
 
-    alert('Saved!')
+    alert('Saved (local only for now)!')
     setQtyStr('')
-    setProductId(PRODUCTS[0].id)
-    setCustomerId(CUSTOMERS[0].id)
+    setEntityId(people[0]?.id ?? '')
+    setProductId(products[0]?.id ?? '')
     setOrderDate(new Date().toISOString().slice(0,10))
   }
+
+  if (loading) return <div className="card"><p>Loading…</p></div>
+  if (err)      return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
 
   return (
     <div className="card" style={{maxWidth:720}}>
       <h3>New Order</h3>
 
-      {/* Row 1: Customer + Date */}
       <div className="row" style={{marginTop:12}}>
         <div>
-          <label>Customer</label>
-          <select value={customerId} onChange={e => setCustomerId(e.target.value)}>
-            {CUSTOMERS.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <label>Customer / Partner</label>
+          <select value={entityId} onChange={e => setEntityId(e.target.value)}>
+            <optgroup label="Customers">
+              {people.filter(p => p.type==='Customer').map(p =>
+                <option key={p.id} value={p.id}>{p.name}</option>
+              )}
+            </optgroup>
+            <optgroup label="Partners">
+              {people.filter(p => p.type==='Partner').map(p =>
+                <option key={p.id} value={p.id}>{p.name}</option>
+              )}
+            </optgroup>
           </select>
         </div>
         <div>
           <label>Order date</label>
-          <input
-            type="date"
-            value={orderDate}
-            onChange={e => setOrderDate(e.target.value)}
-          />
+          <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
         </div>
       </div>
 
-      {/* Row 2: Product + Quantity */}
       <div className="row" style={{marginTop:12}}>
         <div>
           <label>Product</label>
           <select value={productId} onChange={e => setProductId(e.target.value)}>
-            {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div>
           <label>Quantity</label>
-<input
-  type="text"                 // full control over what shows
-  inputMode="numeric"
-  pattern="[0-9]*"
-  placeholder="0"
-  value={qtyStr}              // <-- qtyStr is a string state
-  onFocus={(e) => {
-    e.currentTarget.select(); // first key replaces everything
-    if (qtyStr === '0') setQtyStr('');
-  }}
-  onChange={(e) => {
-    // digits only
-    let v = e.target.value.replace(/\D/g, '');
-    // strip leading zeros (keep empty if user cleared)
-    v = v.replace(/^0+(?=\d)/, '');
-    setQtyStr(v);
-  }}
-/>
+          <input
+            type="text" inputMode="numeric" pattern="[0-9]*" placeholder="0"
+            value={qtyStr}
+            onFocus={(e) => { e.currentTarget.select(); if (qtyStr === '0') setQtyStr('') }}
+            onChange={(e) => {
+              let v = e.target.value.replace(/\D/g, '')
+              v = v.replace(/^0+(?=\d)/, '')
+              setQtyStr(v)
+            }}
+          />
         </div>
       </div>
 
-      {/* Row 3: Price + Line total */}
       <div className="row" style={{marginTop:12}}>
         <div>
           <label>Unit price (USD)</label>
@@ -123,13 +128,12 @@ export default function NewOrder() {
 
       <div style={{marginTop:16, display:'flex', gap:8}}>
         <button className="primary" onClick={save}>Save line</button>
-        <button onClick={() => { setQtyStr(''); setProductId(PRODUCTS[0].id); }}>Clear</button>
+        <button onClick={() => { setQtyStr(''); setProductId(products[0]?.id ?? ''); }}>Clear</button>
       </div>
 
       <p className="helper" style={{marginTop:12}}>
-        No backend yet—saves to this device (localStorage).
+        Lists loaded from Postgres (BLV). Orders still save locally; we’ll add a real POST next.
       </p>
     </div>
   )
 }
-
