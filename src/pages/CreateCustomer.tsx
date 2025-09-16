@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createCustomer, type CustomerType } from '../lib/api'
-
-type ShipChoice = '0' | '0.35' | 'custom'
 
 export default function CreateCustomer() {
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [ctype, setCtype] = useState<CustomerType>('BLV')  // BLV | Partner
-  const [shipChoice, setShipChoice] = useState<ShipChoice>('0')
-  const [shipCustom, setShipCustom] = useState('')          // string, if custom
+
+  // Shipping UI state
+  type ShipMode = 'preset' | 'custom'
+  const [shipMode, setShipMode] = useState<ShipMode>('preset')
+  const [shipPreset, setShipPreset] = useState<'0' | '0.35'>('0')
+  const [shipCustom, setShipCustom] = useState('') // only used in custom mode
+  const customInputRef = useRef<HTMLInputElement>(null)
+
+  // Contact/address
   const [phone, setPhone] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -18,9 +23,10 @@ export default function CreateCustomer() {
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
 
+  const CONTROL_H = 44
+
   function resolvedShipping(): number {
-    if (shipChoice === '0') return 0
-    if (shipChoice === '0.35') return 0.35
+    if (shipMode === 'preset') return parseFloat(shipPreset)
     const n = Number(shipCustom.replace(',', '.'))
     return Number.isFinite(n) && n >= 0 ? n : NaN
   }
@@ -49,8 +55,6 @@ export default function CreateCustomer() {
     }
   }
 
-  const CONTROL_H = 44
-
   return (
     <div className="card" style={{maxWidth: 900}}>
       <h3>Create New Customer</h3>
@@ -72,27 +76,49 @@ export default function CreateCustomer() {
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Shipping Cost</label>
-          <div style={{ display:'flex', gap:8 }}>
+
+          {/* When on presets: a select with 0, 0.35, Custom… */}
+          {shipMode === 'preset' ? (
             <select
-              value={shipChoice}
-              onChange={e=>setShipChoice(e.target.value as ShipChoice)}
+              value={shipPreset}
+              onChange={e => {
+                const v = e.target.value
+                if (v === 'custom') {
+                  setShipMode('custom')
+                  setTimeout(() => customInputRef.current?.focus(), 0)
+                } else {
+                  setShipPreset(v as '0' | '0.35')
+                }
+              }}
               style={{ height: CONTROL_H }}
             >
               <option value="0">0</option>
               <option value="0.35">0.35</option>
               <option value="custom">Custom…</option>
             </select>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="Custom"
-              value={shipCustom}
-              onChange={e=>setShipCustom(e.target.value)}
-              disabled={shipChoice !== 'custom'}
-              style={{ height: CONTROL_H, flex:1 }}
-            />
-          </div>
+          ) : (
+            // When custom: show ONE decimal input in the same spot
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                ref={customInputRef}
+                type="text"
+                inputMode="decimal"
+                placeholder="Enter amount (e.g. 0.42)"
+                value={shipCustom}
+                onChange={e=>setShipCustom(e.target.value)}
+                style={{ height: CONTROL_H, flex:1 }}
+              />
+              <button
+                type="button"
+                onClick={() => { setShipMode('preset'); setShipCustom('') }}
+                style={{ height: CONTROL_H }}
+              >
+                Presets
+              </button>
+            </div>
+          )}
         </div>
+
         <div>
           <label>Phone</label>
           <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} />
