@@ -37,10 +37,7 @@ export default function Customers() {
   }, [all, q])
 
   const CONTROL_H = 44 // px – keep input and buttons exactly same height
-
-  function fmt(n: number) {
-    return `$${(Number(n) || 0).toFixed(2)}`
-  }
+  function fmt(n: number) { return `$${(Number(n) || 0).toFixed(2)}` }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -49,7 +46,7 @@ export default function Customers() {
     <div className="card" style={{maxWidth: 900}}>
       <h3>Customers</h3>
 
-      {/* Top row: 50/50 search (no label) + button(s) */}
+      {/* Top row: 50/50 search (no label) + create button */}
       <div className="row" style={{ marginTop: 12, gridTemplateColumns: '1fr 1fr', alignItems:'end' }}>
         {/* Search box (no header/label) */}
         <div style={{ position:'relative' }}>
@@ -69,18 +66,21 @@ export default function Customers() {
             autoCorrect="off"
           />
 
-          {/* Suggestions dropdown */}
+          {/* Suggestions dropdown (light blue bg, white text, on top of everything) */}
           {(q && showSug && suggestions.length > 0) && (
             <ul
               role="listbox"
               style={{
-                position:'absolute', left:0, right:0, top:'100%',
-                background:'rgba(0,0,0,0.06)',  // light grey with transparency
-                color:'#000',
-                border:'1px solid #ccc', borderTop:'none',
-                listStyle:'none', margin:0, padding:0, zIndex:5,
-                maxHeight:220, overflowY:'auto',
-                backdropFilter:'saturate(120%) blur(2px)'
+                position:'absolute',
+                left:0, right:0, top:'calc(100% + 6px)',
+                background:'rgba(59,130,246,0.95)',   // blue-600 with slight transparency
+                color:'#fff',
+                border:'none',
+                borderRadius:8,
+                listStyle:'none', margin:0, padding:'6px 0',
+                zIndex: 10000,
+                boxShadow:'0 8px 24px rgba(0,0,0,0.18)',
+                maxHeight:260, overflowY:'auto'
               }}
             >
               {suggestions.map(s => (
@@ -95,10 +95,10 @@ export default function Customers() {
                     style={{
                       display:'block', width:'100%', textAlign:'left',
                       padding:'10px 12px', border:'none',
-                      background:'transparent', color:'#000',
-                      cursor:'pointer'
+                      background:'transparent', color:'#fff',
+                      cursor:'pointer', fontSize:15
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.08)')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.18)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     {s.name}
@@ -106,24 +106,6 @@ export default function Customers() {
                 </li>
               ))}
             </ul>
-          )}
-
-          {/* Clear search button appears only when searching */}
-          {q.trim() !== '' && (
-            <div style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                onClick={() => { setQ(''); setShowSug(false) }}
-                style={{
-                  height: Math.max(36, CONTROL_H - 8),
-                  display:'inline-flex', alignItems:'center', justifyContent:'center',
-                  padding:'0 12px', border:'1px solid #ccc', borderRadius:8,
-                  background:'#fff', cursor:'pointer'
-                }}
-              >
-                Clear search
-              </button>
-            </div>
           )}
         </div>
 
@@ -173,6 +155,20 @@ export default function Customers() {
           </div>
         )}
       </div>
+
+      {/* Clear search BELOW the results, primary blue style */}
+      {q.trim() !== '' && (
+        <div style={{ marginTop: 16, display:'flex', justifyContent:'center' }}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => { setQ(''); setShowSug(false) }}
+            style={{ height: CONTROL_H, padding:'0 14px' }}
+          >
+            Clear search
+          </button>
+        </div>
+      )}
     </div>
   )
 }
