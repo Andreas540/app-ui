@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { addOrder, nextOrderNo } from '../lib/storage'
-import { fetchBootstrap, type Person, type Product } from '../lib/api'
+import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 
 export default function NewOrder() {
   const [people, setPeople] = useState<Person[]>([])
@@ -49,29 +48,29 @@ export default function NewOrder() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2)
   }
 
-  function save() {
-    if (!person || !product) { alert('Data not loaded'); return }
-    if (qty <= 0) { alert('Enter a quantity > 0'); return }
+  async function save() {
+  if (!person || !product) { alert('Data not loaded'); return }
+  if (qty <= 0) { alert('Enter a quantity > 0'); return }
 
-    addOrder({
-      id: genId(),
-      orderNo: nextOrderNo(),
-      customerId: person.id,
-      customerName: person.name,
-      productId: product.id,
-      productName: product.name,
-      unitPrice: price,
+  try {
+    const { order_no } = await createOrder({
+      customer_id: person.id,
+      product_id: product.id,
       qty,
+      unit_price: price,
       date: orderDate,
       delivered: true,
+      discount: 0,
     })
-
-    alert('Saved (local only for now)!')
+    alert(`Saved! Order #${order_no}`)
     setQtyStr('')
     setEntityId(people[0]?.id ?? '')
     setProductId(products[0]?.id ?? '')
     setOrderDate(new Date().toISOString().slice(0,10))
+  } catch (e: any) {
+    alert(e?.message || 'Save failed')
   }
+}
 
   // --- Render states ---------------------------------------------------------
   if (loading) return <div className="card"><p>Loading…</p></div>
