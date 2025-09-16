@@ -144,7 +144,7 @@ export default function Customers() {
               >
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
-                  <div className="helper">{c.type}</div>
+                  <div className="helper">{(c as any).customer_type ?? c.type}</div>
                 </div>
                 <div style={{ textAlign:'right', alignSelf:'center' }}>
                   <div style={{ fontWeight: 600 }}>{fmt(c.owed_to_me)}</div>

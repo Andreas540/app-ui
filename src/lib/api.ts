@@ -97,5 +97,32 @@ export async function listCustomersWithOwed(q?: string) {
   }
   return (await res.json()) as { customers: CustomerWithOwed[] };
 }
+// ---- Create Customer ----
+export type CustomerType = 'BLV' | 'Partner'
+
+export type NewCustomerInput = {
+  name: string
+  customer_type: CustomerType   // 'BLV' | 'Partner'
+  shipping_cost?: number        // >= 0
+  phone?: string
+  address1?: string
+  address2?: string
+  city?: string
+  state?: string
+  postal_code?: string
+}
+
+export async function createCustomer(input: NewCustomerInput) {
+  const res = await fetch(`${base}/api/customers`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to create customer (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  return (await res.json()) as { ok: true; id: string }
+}
 
 
