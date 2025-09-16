@@ -77,5 +77,25 @@ export async function listPayments(limit = 20) {
     customer_name: string; customer_id: string; notes?: string | null;
   }>};
 }
+// ---- Customers with "owed to me" ----
+export type CustomerWithOwed = {
+  id: string
+  name: string
+  type: 'Customer' | 'Partner'
+  total_orders: number
+  total_payments: number
+  owed_to_me: number
+}
+
+// Optional server-side search via ?q=
+export async function listCustomersWithOwed(q?: string) {
+  const url = `${base}/api/customers` + (q ? `?q=${encodeURIComponent(q)}` : '');
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to load customers (status ${res.status}) ${text?.slice(0,140)}`);
+  }
+  return (await res.json()) as { customers: CustomerWithOwed[] };
+}
 
 
