@@ -18,13 +18,22 @@ export default function NewOrder() {
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true)
+        setErr(null)
         const { customers, products } = await fetchBootstrap()
+        console.log('bootstrap payload:', { customers, products }) // <-- visible in DevTools
+
+        if (!Array.isArray(customers) || !Array.isArray(products)) {
+          throw new Error('Bootstrap payload shape invalid')
+        }
+
         setPeople(customers)
         setProducts(products)
         setEntityId(customers[0]?.id ?? '')
         setProductId(products[0]?.id ?? '')
       } catch (e: any) {
-        setErr(e.message || 'Load failed')
+        console.error('bootstrap load error:', e)
+        setErr(e?.message || String(e))
       } finally {
         setLoading(false)
       }
@@ -64,9 +73,30 @@ export default function NewOrder() {
     setOrderDate(new Date().toISOString().slice(0,10))
   }
 
+  // --- Render states ---------------------------------------------------------
   if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err)      return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
 
+  if (err) {
+    return (
+      <div className="card" style={{maxWidth:720}}>
+        <h3>New Order</h3>
+        <p style={{color:'salmon'}}>Error: {err}</p>
+        <p className="helper">Open DevTools → Console to see details (we log the full payload/error).</p>
+      </div>
+    )
+  }
+
+  if (!people.length || !products.length) {
+    return (
+      <div className="card" style={{maxWidth:720}}>
+        <h3>New Order</h3>
+        <p>No customers/products found for this tenant.</p>
+        <p className="helper">Ensure BLV has rows in <code>customers</code> and <code>products</code>.</p>
+      </div>
+    )
+  }
+
+  // --- Main form -------------------------------------------------------------
   return (
     <div className="card" style={{maxWidth:720}}>
       <h3>New Order</h3>
@@ -132,7 +162,7 @@ export default function NewOrder() {
       </div>
 
       <p className="helper" style={{marginTop:12}}>
-        Lists loaded from Postgres (BLV). Orders still save locally; we’ll add a real POST next.
+        Lists loaded from Postgres (BLV). Orders still save locally; POST to DB is next.
       </p>
     </div>
   )
