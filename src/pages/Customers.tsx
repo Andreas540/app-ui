@@ -8,13 +8,14 @@ export default function Customers() {
   const [err, setErr] = useState<string | null>(null)
 
   const [q, setQ] = useState('')
+  const [showSug, setShowSug] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers } = await listCustomersWithOwed() // load all; we filter client-side
+        const { customers } = await listCustomersWithOwed()
         setAll(customers)
       } catch (e:any) {
         setErr(e?.message || String(e))
@@ -35,6 +36,8 @@ export default function Customers() {
     return all.filter(c => c.name.toLowerCase().includes(s)).slice(0, 5)
   }, [all, q])
 
+  const CONTROL_H = 44 // px – keep input and buttons exactly same height
+
   function fmt(n: number) {
     return `$${(Number(n) || 0).toFixed(2)}`
   }
@@ -46,33 +49,57 @@ export default function Customers() {
     <div className="card" style={{maxWidth: 900}}>
       <h3>Customers</h3>
 
-      {/* Top row: 50/50 search + create */}
-      <div className="row" style={{ marginTop: 12, gridTemplateColumns: '1fr 1fr' }}>
+      {/* Top row: 50/50 search (no label) + button(s) */}
+      <div className="row" style={{ marginTop: 12, gridTemplateColumns: '1fr 1fr', alignItems:'end' }}>
+        {/* Search box (no header/label) */}
         <div style={{ position:'relative' }}>
-          <label>Search Customer</label>
           <input
+            style={{ height: CONTROL_H }}
             type="text"
-            placeholder="Type a name…"
+            placeholder="Search…"
             value={q}
-            onChange={e => setQ(e.target.value)}
+            onChange={e => { setQ(e.target.value); setShowSug(true) }}
+            onFocus={() => { if (q) setShowSug(true) }}
+            onBlur={() => { setTimeout(() => setShowSug(false), 120) }} // allow click to register
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); setShowSug(false) }
+              if (e.key === 'Escape') { setShowSug(false) }
+            }}
             autoCapitalize="none"
             autoCorrect="off"
           />
-          {/* suggestions */}
-          {q && suggestions.length > 0 && (
-            <ul style={{
-              position:'absolute', left:0, right:0, top:'100%',
-              background:'white', border:'1px solid #ddd', borderTop:'none',
-              listStyle:'none', margin:0, padding:0, zIndex:5, maxHeight:200, overflowY:'auto'
-            }}>
+
+          {/* Suggestions dropdown */}
+          {(q && showSug && suggestions.length > 0) && (
+            <ul
+              role="listbox"
+              style={{
+                position:'absolute', left:0, right:0, top:'100%',
+                background:'rgba(0,0,0,0.06)',  // light grey with transparency
+                color:'#000',
+                border:'1px solid #ccc', borderTop:'none',
+                listStyle:'none', margin:0, padding:0, zIndex:5,
+                maxHeight:220, overflowY:'auto',
+                backdropFilter:'saturate(120%) blur(2px)'
+              }}
+            >
               {suggestions.map(s => (
                 <li key={s.id}>
                   <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setQ(s.name)
+                      setShowSug(false)
+                    }}
                     style={{
                       display:'block', width:'100%', textAlign:'left',
-                      padding:'8px 10px', border:'none', background:'white'
+                      padding:'10px 12px', border:'none',
+                      background:'transparent', color:'#000',
+                      cursor:'pointer'
                     }}
-                    onClick={() => setQ(s.name)}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.08)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     {s.name}
                   </button>
@@ -80,11 +107,37 @@ export default function Customers() {
               ))}
             </ul>
           )}
+
+          {/* Clear search button appears only when searching */}
+          {q.trim() !== '' && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => { setQ(''); setShowSug(false) }}
+                style={{
+                  height: Math.max(36, CONTROL_H - 8),
+                  display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  padding:'0 12px', border:'1px solid #ccc', borderRadius:8,
+                  background:'#fff', cursor:'pointer'
+                }}
+              >
+                Clear search
+              </button>
+            </div>
+          )}
         </div>
 
-        <div>
-          <label>&nbsp;</label>
-          <button className="primary" onClick={() => navigate('/customers/new')}>
+        {/* Right column: Create button (same height as input) */}
+        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+          <button
+            className="primary"
+            onClick={() => navigate('/customers/new')}
+            style={{
+              height: CONTROL_H,
+              display:'inline-flex', alignItems:'center', justifyContent:'center',
+              padding:'0 14px'
+            }}
+          >
             Create New Customer
           </button>
         </div>
