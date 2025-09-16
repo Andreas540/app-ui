@@ -44,10 +44,7 @@ export default function NewOrder() {
   const price   = product?.unit_price ?? 0
   const lineTotal = +(qty * price).toFixed(2)
 
-  function genId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2)
-  }
-
+  
   async function save() {
   if (!person || !product) { alert('Data not loaded'); return }
   if (qty <= 0) { alert('Enter a quantity > 0'); return }
