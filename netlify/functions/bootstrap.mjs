@@ -1,10 +1,10 @@
-// netlify/functions/bootstrap.js
+// netlify/functions/bootstrap.mjs
 export async function handler(event) {
-  // CORS + preflight
+  // CORS preflight
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
 
   try {
-    // Lazy import so it works whether the bundler treats this as CJS or ESM
+    // ESM-safe import; works regardless of bundler quirks
     const { neon } = await import('@neondatabase/serverless')
 
     const { DATABASE_URL, TENANT_ID } = process.env
@@ -25,7 +25,6 @@ export async function handler(event) {
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY name
     `
-
     return cors(200, { customers, products })
   } catch (e) {
     console.error(e)
