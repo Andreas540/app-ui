@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
 import Customers from './pages/Customers'
 import Settings from './pages/Settings'
+import Payments from './pages/Payments.tsx'   // ⬅️ added
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -30,6 +31,7 @@ export default function App() {
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
           <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
+          <NavLink to="/payments" onClick={() => setNavOpen(false)}>Payments</NavLink> {/* ⬅️ added */}
           <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
           <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
         </nav>
@@ -38,6 +40,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/orders/new" element={<NewOrder />} />
+            <Route path="/payments" element={<Payments />} /> {/* ⬅️ added */}
             <Route path="/customers" element={<Customers />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

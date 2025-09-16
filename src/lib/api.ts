@@ -37,5 +37,45 @@ export async function createOrder(input: NewOrderInput) {
   }
   return (await res.json()) as { ok: true; order_id: string; order_no: number }
 }
+// ---- Payments API ----
+export type PaymentType =
+  | 'Cash payment' | 'Cash App payment' | 'Credit payment' | 'Shipping fee'
+  | 'Discount' | 'Credit' | 'Old tab' | 'Wire Payment' | 'Zelle payment'
+
+export const PAYMENT_TYPES: PaymentType[] = [
+  'Cash payment','Cash App payment','Credit payment','Shipping fee',
+  'Discount','Credit','Old tab','Wire Payment','Zelle payment'
+];
+
+export type NewPaymentInput = {
+  customer_id: string
+  payment_type: PaymentType
+  amount: number           // positive or negative allowed; non-zero
+  payment_date: string     // 'YYYY-MM-DD'
+  notes?: string | null
+  order_id?: string | null
+}
+
+export async function createPayment(input: NewPaymentInput) {
+  const res = await fetch(`${base}/api/payments`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to save payment (status ${res.status}) ${text?.slice(0,140)}`);
+  }
+  return (await res.json()) as { ok: true; id: string };
+}
+
+export async function listPayments(limit = 20) {
+  const res = await fetch(`${base}/api/payments?limit=${encodeURIComponent(String(limit))}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load payments (status ${res.status})`);
+  return (await res.json()) as { payments: Array<{
+    id: string; payment_date: string; payment_type: PaymentType; amount: number;
+    customer_name: string; customer_id: string; notes?: string | null;
+  }>};
+}
 
 
