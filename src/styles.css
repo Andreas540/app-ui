@@ -183,3 +183,22 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
 input[type="number"]{ -moz-appearance:textfield }
+/* Make whole customer row look like plain text, but keep focus ring */
+.row-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  color: inherit;
+  text-decoration: none;
+}
+.row-link:visited { color: inherit; }
+.row-link:hover { text-decoration: none; }
+.row-link:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Optional: remove gray tap highlight on iOS */
+.row-link { -webkit-tap-highlight-color: transparent; }
