@@ -20,10 +20,10 @@ export async function handler(event) {
       ORDER BY type, name
     `
     const products = await sql`
-      SELECT id, name, unit_price
-      FROM products
-      WHERE tenant_id = ${TENANT_ID}
-      ORDER BY name
+  SELECT id, name
+  FROM products
+  WHERE tenant_id = ${TENANT_ID}
+  ORDER BY name
     `
     return cors(200, { customers, products })
   } catch (e) {
