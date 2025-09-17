@@ -1,34 +1,36 @@
 // netlify/functions/bootstrap.mjs
 export async function handler(event) {
-  // CORS preflight
-  if (event.httpMethod === 'OPTIONS') return cors(204, {})
+  // CORS + preflight
+  if (event.httpMethod === 'OPTIONS') return cors(204, {});
+  if (event.httpMethod !== 'GET')    return cors(405, { error: 'Method not allowed' });
 
   try {
-    // ESM-safe import; works regardless of bundler quirks
-    const { neon } = await import('@neondatabase/serverless')
+    const { neon } = await import('@neondatabase/serverless');
+    const { DATABASE_URL, TENANT_ID } = process.env;
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
-
-    const sql = neon(DATABASE_URL)
+    const sql = neon(DATABASE_URL);
 
     const customers = await sql`
       SELECT id, name, type
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY type, name
-    `
+    `;
+
+    // products now have NO unit_price
     const products = await sql`
-  SELECT id, name
-  FROM products
-  WHERE tenant_id = ${TENANT_ID}
-  ORDER BY name
-    `
-    return cors(200, { customers, products })
+      SELECT id, name
+      FROM products
+      WHERE tenant_id = ${TENANT_ID}
+      ORDER BY name
+    `;
+
+    return cors(200, { customers, products });
   } catch (e) {
-    console.error(e)
-    return cors(500, { error: String(e?.message || e) })
+    console.error(e);
+    return cors(500, { error: String(e?.message || e) });
   }
 }
 
@@ -42,5 +44,5 @@ function cors(status, body) {
       'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
-  }
+  };
 }
