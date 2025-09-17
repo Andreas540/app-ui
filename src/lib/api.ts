@@ -130,3 +130,47 @@ export async function createCustomer(input: NewCustomerInput) {
   }
   return (await res.json()) as { ok: true; id: string }
 }
+// ---- Customer detail ----
+export type OrderSummary = {
+  id: string
+  order_no: number
+  order_date: string
+  delivered: boolean
+  total: number
+  lines: number
+}
+
+export type PaymentSummary = {
+  id: string
+  payment_date: string
+  payment_type: PaymentType
+  amount: number
+}
+
+export type CustomerDetail = {
+  customer: {
+    id: string
+    name: string
+    type: 'Customer' | 'Partner'
+    customer_type?: 'BLV' | 'Partner'
+    shipping_cost?: number
+    phone?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    postal_code?: string
+  }
+  totals: { total_orders: number; total_payments: number; owed_to_me: number }
+  orders: OrderSummary[]
+  payments: PaymentSummary[]
+}
+
+export async function fetchCustomerDetail(id: string) {
+  const res = await fetch(`${base}/api/customer?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to load customer (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  return (await res.json()) as CustomerDetail
+}
