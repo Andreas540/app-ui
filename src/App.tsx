@@ -4,8 +4,9 @@ import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
 import Customers from './pages/Customers'
 import Settings from './pages/Settings'
-import Payments from './pages/Payments.tsx'
-import CreateCustomer from './pages/CreateCustomer.tsx' // button target (not in nav)
+import Payments from './pages/Payments'
+import CreateCustomer from './pages/CreateCustomer'
+import CustomerDetail from './pages/CustomerDetail'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -25,7 +26,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Mobile backdrop when nav is open */}
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
 
       <div className="layout">
@@ -37,17 +37,20 @@ export default function App() {
           <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
         </nav>
 
-      <main className="content">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/orders/new" element={<NewOrder />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/customers/new" element={<CreateCustomer />} /> {/* not in nav */}
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </main>
+        <main className="content">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/orders/new" element={<NewOrder />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/customers" element={<Customers />} />
+            {/* not in nav */}
+            <Route path="/customers/new" element={<CreateCustomer />} />
+            <Route path="/customers/:id" element={<CustomerDetail />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </main>
       </div>
     </div>
   )
 }
+

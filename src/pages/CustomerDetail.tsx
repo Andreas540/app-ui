@@ -11,7 +11,7 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     (async () => {
       try {
-        if (!id) { setErr('Missing id'); return }
+        if (!id) { setErr('Missing id'); setLoading(false); return }
         setLoading(true); setErr(null)
         const d = await fetchCustomerDetail(id)
         setData(d)
@@ -102,3 +102,4 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+

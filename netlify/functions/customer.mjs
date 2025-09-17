@@ -7,13 +7,14 @@ export async function handler(event) {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL, TENANT_ID } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' })
+    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+
     const id = (event.queryStringParameters?.id || '').trim()
     if (!id) return cors(400, { error: 'id required' })
 
     const sql = neon(DATABASE_URL)
 
-    // 1) Customer row
+    // 1) Customer
     const cust = await sql`
       SELECT id, name, type, customer_type, shipping_cost, phone,
              address1, address2, city, state, postal_code
@@ -65,12 +66,7 @@ export async function handler(event) {
       LIMIT 20
     `
 
-    return cors(200, {
-      customer,
-      totals: totals[0],
-      orders,
-      payments
-    })
+    return cors(200, { customer, totals: totals[0], orders, payments })
   } catch (e) {
     console.error(e)
     return cors(500, { error: String(e?.message || e) })
@@ -89,3 +85,4 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+

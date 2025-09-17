@@ -130,6 +130,7 @@ export async function createCustomer(input: NewCustomerInput) {
   }
   return (await res.json()) as { ok: true; id: string }
 }
+
 // ---- Customer detail ----
 export type OrderSummary = {
   id: string
@@ -174,3 +175,4 @@ export async function fetchCustomerDetail(id: string) {
   }
   return (await res.json()) as CustomerDetail
 }
+
