@@ -22,7 +22,44 @@ export default function App() {
           >
             <span></span><span></span><span></span>
           </button>
-          <div className="brand-title">App UI (Prototype)</div>
+          <div className="brand-title">BLV App</div>
+        </div>
+
+        {/* Quick shortcuts (right side) */}
+        <div className="quick-buttons" aria-label="Quick navigation">
+          <NavLink
+            to="/"
+            end
+            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
+            title="Dashboard"
+            onClick={() => setNavOpen(false)}
+          >
+            D
+          </NavLink>
+          <NavLink
+            to="/orders/new"
+            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
+            title="New Order"
+            onClick={() => setNavOpen(false)}
+          >
+            O
+          </NavLink>
+          <NavLink
+            to="/payments"
+            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
+            title="Payments"
+            onClick={() => setNavOpen(false)}
+          >
+            P
+          </NavLink>
+          <NavLink
+            to="/customers"
+            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
+            title="Customers"
+            onClick={() => setNavOpen(false)}
+          >
+            C
+          </NavLink>
         </div>
       </header>
 
@@ -43,7 +80,7 @@ export default function App() {
             <Route path="/orders/new" element={<NewOrder />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/customers" element={<Customers />} />
-            {/* not in nav */}
+            {/* not in side-nav */}
             <Route path="/customers/new" element={<CreateCustomer />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/settings" element={<Settings />} />
@@ -53,4 +90,5 @@ export default function App() {
     </div>
   )
 }
+
 
