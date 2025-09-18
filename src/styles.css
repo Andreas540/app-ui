@@ -286,3 +286,94 @@ input[type="number"]{ -moz-appearance:textfield }
   outline-offset: 2px;
   border-radius: 10px;
 }
+/* === Brand palette (same blue everywhere) === */
+:root {
+  /* If your "Create New Customer" button used another blue, change this one value */
+  --brand-blue: #3b82f6;          /* primary blue */
+  --brand-blue-hover: #2563eb;    /* hover */
+  --brand-blue-active: #1d4ed8;   /* active/focus */
+  --brand-contrast: #ffffff;      /* text on blue */
+}
+
+/* Unify all primary buttons (existing .primary will be overridden here) */
+button.primary,
+.icon-btn,
+.hamburger {
+  background: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  color: var(--brand-contrast);
+}
+button.primary:hover,
+.icon-btn:hover,
+.hamburger:hover {
+  background: var(--brand-blue-hover);
+  border-color: var(--brand-blue-hover);
+}
+button.primary:active,
+.icon-btn.active,
+.hamburger:active {
+  background: var(--brand-blue-active);
+  border-color: var(--brand-blue-active);
+}
+button.primary:focus-visible,
+.icon-btn:focus-visible,
+.hamburger:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.6);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* --- Header: dark blue bar, white title, buttons use same blue --- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--brand-blue-active);  /* dark blue banner */
+  border-bottom: none;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-title { font-weight: 700; color: var(--brand-contrast); }
+
+/* Hamburger with three stacked white bars */
+.hamburger {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;   /* stack bars vertically */
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.hamburger span {
+  width: 18px;
+  height: 3px;
+  background: var(--brand-contrast);  /* white bars */
+  border-radius: 2px;
+}
+
+/* Right-side quick nav buttons (same blue) */
+.quick-buttons {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
