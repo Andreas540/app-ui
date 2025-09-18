@@ -1,153 +1,111 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 
 export default function Customers() {
-  const [all, setAll] = useState<CustomerWithOwed[]>([])
+  const [query, setQuery] = useState('')
+  const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
-
-  const [q, setQ] = useState('')
-  const [showSug, setShowSug] = useState(false)
-
-  const navigate = useNavigate()
-  const CONTROL_H = 44 // keep input and buttons same height
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers } = await listCustomersWithOwed()
-        setAll(customers)
+        const res = await listCustomersWithOwed(query.trim() || undefined)
+        setCustomers(res.customers)
       } catch (e:any) {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [query])
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return !s ? all : all.filter(c => c.name.toLowerCase().includes(s))
-  }, [all, q])
-
+  // suggestions based on current results
   const suggestions = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    if (!s) return []
-    return all.filter(c => c.name.toLowerCase().includes(s)).slice(0, 5)
-  }, [all, q])
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+    const uniq = new Set<string>()
+    return customers
+      .filter(c => c.name.toLowerCase().includes(q))
+      .filter(c => (uniq.has(c.name.toLowerCase()) ? false : (uniq.add(c.name.toLowerCase()), true)))
+      .slice(0, 5)
+  }, [query, customers])
 
-  function fmt(n: number) {
-    return `$${(Number(n) || 0).toFixed(2)}`
+  // INTEGER dollars with commas
+  function fmtIntMoney(n: number) {
+    return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
-
   return (
-    <div className="card" style={{maxWidth: 900}}>
-      <h3>Customers</h3>
-
-      {/* Top row: search (no label) + create button */}
-      <div className="row" style={{ marginTop: 12, gridTemplateColumns: '1fr 1fr', alignItems:'end' }}>
-        {/* Search */}
-        <div style={{ position:'relative' }}>
+    <div className="card" style={{ maxWidth: 960 }}>
+      {/* Top controls: search + create */}
+      <div className="row" style={{ alignItems: 'end' }}>
+        <div style={{ position: 'relative' }}>
+          <label>Search</label>
           <input
-            style={{ height: CONTROL_H }}
-            type="text"
-            placeholder="Search…"
-            value={q}
-            onChange={e => { setQ(e.target.value); setShowSug(true) }}
-            onFocus={() => { if (q) setShowSug(true) }}
-            onBlur={() => { setTimeout(() => setShowSug(false), 120) }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); setShowSug(false) }
-              if (e.key === 'Escape') { setShowSug(false) }
-            }}
-            autoCapitalize="none"
-            autoCorrect="off"
+            placeholder="Search customer"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
-
-          {/* Suggestions: light blue bg, white text, above all */}
-          {(q && showSug && suggestions.length > 0) && (
-            <ul
-              role="listbox"
+          {query && suggestions.length > 0 && (
+            <div
+              className="suggestions"
               style={{
-                position:'absolute',
-                left:0, right:0, top:'calc(100% + 6px)',
-                background:'rgba(59,130,246,0.95)',  // blue
-                color:'#fff',
-                border:'none',
-                borderRadius:8,
-                listStyle:'none', margin:0, padding:'6px 0',
-                zIndex:10000,
-                boxShadow:'0 8px 24px rgba(0,0,0,0.18)',
-                maxHeight:260, overflowY:'auto'
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: 4,
+                borderRadius: 8,
+                background: 'rgba(47,109,246,.15)',
+                color: '#fff',
+                padding: 6,
+                zIndex: 50
               }}
             >
-              {suggestions.map(s => (
-                <li key={s.id}>
+              {suggestions.map((s) => (
+                <div key={s.id}>
                   <button
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      setQ(s.name)
-                      setShowSug(false)
-                    }}
-                    style={{
-                      display:'block', width:'100%', textAlign:'left',
-                      padding:'10px 12px', border:'none',
-                      background:'transparent', color:'#fff',
-                      cursor:'pointer', fontSize:15
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.18)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    className="primary"
+                    style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px' }}
+                    onClick={() => setQuery(s.name)}
                   >
                     {s.name}
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
-        {/* Create New Customer */}
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-          <button
-            className="primary"
-            onClick={() => navigate('/customers/new')}
-            style={{
-              height: CONTROL_H,
-              display:'inline-flex', alignItems:'center', justifyContent:'center',
-              padding:'0 14px'
-            }}
-          >
-            Create New Customer
-          </button>
+        <div>
+          <label>&nbsp;</label>
+          <Link to="/customers/new">
+            <button className="primary" style={{ width: '100%' }}>Create New Customer</button>
+          </Link>
         </div>
       </div>
 
-      {/* Results list */}
-      <div style={{ marginTop: 16 }}>
-        {filtered.length === 0 ? (
-          <p>No matches.</p>
+      {err && <p style={{ color: 'salmon' }}>Error: {err}</p>}
+
+      {/* List */}
+      <div style={{ marginTop: 12 }}>
+        {loading ? (
+          <p>Loading…</p>
+        ) : customers.length === 0 ? (
+          <p className="helper">No customers.</p>
         ) : (
-          <div style={{display:'grid'}}>
-            {filtered.map(c => (
-              <Link
-                key={c.id}
-                to={`/customers/${c.id}`}
-                className="row-link"
-                aria-label={`Open ${c.name}`}
-              >
+          <div>
+            {customers.map((c) => (
+              <Link key={c.id} to={`/customers/${c.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
                   <div className="helper">{(c as any).customer_type ?? c.type}</div>
                 </div>
-                <div style={{ textAlign:'right', alignSelf:'center' }}>
-                  <div style={{ fontWeight: 600 }}>{fmt(c.owed_to_me)}</div>
-                  <div className="helper">Owed to me</div>
+                <div style={{ textAlign: 'right', alignSelf: 'center' }}>
+                  {fmtIntMoney(c.owed_to_me)}
                 </div>
               </Link>
             ))}
@@ -155,21 +113,15 @@ export default function Customers() {
         )}
       </div>
 
-      {/* Clear search BELOW the results, primary button */}
-      {q.trim() !== '' && (
-        <div style={{ marginTop: 16, display:'flex', justifyContent:'center' }}>
-          <button
-            type="button"
-            className="primary"
-            onClick={() => { setQ(''); setShowSug(false) }}
-            style={{ height: CONTROL_H, padding:'0 14px' }}
-          >
-            Clear search
-          </button>
+      {/* Clear search (only when narrowed to one match) */}
+      {query && customers.length === 1 && (
+        <div style={{ marginTop: 8 }}>
+          <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
         </div>
       )}
     </div>
   )
 }
+
 
 
