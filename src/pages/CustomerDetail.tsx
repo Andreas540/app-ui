@@ -23,7 +23,9 @@ export default function CustomerDetailPage() {
     })()
   }, [id])
 
-  function fmt(n:number) { return `$${(Number(n)||0).toFixed(2)}` }
+  // Helpers
+  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }           // for shipping cost
+  function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -49,7 +51,7 @@ export default function CustomerDetailPage() {
             className="icon-btn"
             title="Edit customer"
             aria-label="Edit customer"
-            style={{ width:32, height:32 }}
+            style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
           >
             ✎
           </Link>
@@ -84,13 +86,13 @@ export default function CustomerDetailPage() {
         {/* RIGHT column: Shipping + Totals */}
         <div>
           <div className="helper">Shipping cost</div>
-          <div>{fmt(customer.shipping_cost ?? 0)}</div>
+          <div>{fmtMoney(customer.shipping_cost ?? 0)}</div>
 
           <div style={{ marginTop: 12 }}>
             <div className="helper">Totals</div>
-            <div>Orders: {fmt(totals.total_orders)}</div>
-            <div>Payments: {fmt(totals.total_payments)}</div>
-            <div><strong>Owed to me: {fmt(totals.owed_to_me)}</strong></div>
+            <div>Orders: {fmtIntMoney(totals.total_orders)}</div>
+            <div>Payments: {fmtIntMoney(totals.total_payments)}</div>
+            <div><strong>Owed to me: {fmtIntMoney(totals.owed_to_me)}</strong></div>
           </div>
         </div>
       </div>
@@ -103,7 +105,7 @@ export default function CustomerDetailPage() {
               <div key={o.id} style={{display:'grid', gridTemplateColumns:'auto 1fr auto', gap:8, borderBottom:'1px solid #eee', padding:'8px 0'}}>
                 <div className="helper">#{o.order_no}</div>
                 <div>{o.order_date} {o.delivered ? '✓' : ''}</div>
-                <div style={{textAlign:'right'}}>{fmt(o.total)}</div>
+                <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
               </div>
             ))}
           </div>
@@ -118,7 +120,7 @@ export default function CustomerDetailPage() {
               <div key={p.id} style={{display:'grid', gridTemplateColumns:'auto 1fr auto', gap:8, borderBottom:'1px solid #eee', padding:'8px 0'}}>
                 <div className="helper">{p.payment_date}</div>
                 <div>{p.payment_type}</div>
-                <div style={{textAlign:'right'}}>{fmt(p.amount)}</div>
+                <div style={{textAlign:'right'}}>{fmtIntMoney(p.amount)}</div>
               </div>
             ))}
           </div>
@@ -127,6 +129,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
