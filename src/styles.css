@@ -377,3 +377,9 @@ button.primary:focus-visible,
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* Make top bar match the page background */
+.topbar {
+  background: var(--bg) !important;  /* #0B1020 */
+  border-bottom: none;
+}
+.brand-title { color: var(--text); }  /* keep title white */
