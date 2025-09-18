@@ -7,6 +7,7 @@ import Settings from './pages/Settings'
 import Payments from './pages/Payments'
 import CreateCustomer from './pages/CreateCustomer'
 import CustomerDetail from './pages/CustomerDetail'
+import EditCustomer from './pages/EditCustomer'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -25,41 +26,11 @@ export default function App() {
           <div className="brand-title">BLV App</div>
         </div>
 
-        {/* Quick shortcuts (right side) */}
         <div className="quick-buttons" aria-label="Quick navigation">
-          <NavLink
-            to="/"
-            end
-            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
-            title="Dashboard"
-            onClick={() => setNavOpen(false)}
-          >
-            D
-          </NavLink>
-          <NavLink
-            to="/orders/new"
-            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
-            title="New Order"
-            onClick={() => setNavOpen(false)}
-          >
-            O
-          </NavLink>
-          <NavLink
-            to="/payments"
-            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
-            title="Payments"
-            onClick={() => setNavOpen(false)}
-          >
-            P
-          </NavLink>
-          <NavLink
-            to="/customers"
-            className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`}
-            title="Customers"
-            onClick={() => setNavOpen(false)}
-          >
-            C
-          </NavLink>
+          <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>
+          <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>
+          <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>
+          <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>
         </div>
       </header>
 
@@ -83,6 +54,7 @@ export default function App() {
             {/* not in side-nav */}
             <Route path="/customers/new" element={<CreateCustomer />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
+            <Route path="/customers/:id/edit" element={<EditCustomer />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
@@ -90,5 +62,6 @@ export default function App() {
     </div>
   )
 }
+
 
 

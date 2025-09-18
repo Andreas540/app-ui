@@ -39,12 +39,25 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="card" style={{maxWidth: 960}}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <h3>{customer.name}</h3>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
+          <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {customer.name}
+          </h3>
+          <Link
+            to={`/customers/${customer.id}/edit`}
+            className="icon-btn"
+            title="Edit customer"
+            aria-label="Edit customer"
+            style={{ width:32, height:32 }}
+          >
+            ✎
+          </Link>
+        </div>
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns on ALL screens */}
+      {/* Two columns on ALL screens for the top info block */}
       <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
         {/* LEFT column: Type + Phone + Address */}
         <div>
@@ -114,5 +127,6 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
