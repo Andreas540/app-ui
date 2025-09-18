@@ -24,12 +24,18 @@ export default function CustomerDetailPage() {
   }, [id])
 
   function fmt(n:number) { return `$${(Number(n)||0).toFixed(2)}` }
+  function phoneHref(p?: string) {
+    const s = (p || '').replace(/[^\d+]/g, '')
+    return s ? `tel:${s}` : undefined
+  }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
   if (!data) return null
 
   const { customer, totals, orders, payments } = data
+  const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
+  const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -38,35 +44,41 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      <div className="row" style={{ marginTop: 8 }}>
+      {/* Two columns on ALL screens */}
+      <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
+        {/* LEFT column: Type + Phone + Address */}
         <div>
           <div className="helper">Type</div>
           <div>{customer.customer_type ?? customer.type}</div>
+
+          <div style={{ marginTop: 12 }}>
+            <div className="helper">Phone</div>
+            <div>
+              {customer.phone
+                ? <a href={phoneHref(customer.phone)}>{customer.phone}</a>
+                : '—'}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div className="helper">Address</div>
+            <div>
+              {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
+            </div>
+          </div>
         </div>
+
+        {/* RIGHT column: Shipping + Totals */}
         <div>
           <div className="helper">Shipping cost</div>
           <div>{fmt(customer.shipping_cost ?? 0)}</div>
-        </div>
-        <div>
-          <div className="helper">Phone</div>
-          <div>{customer.phone || '—'}</div>
-        </div>
-      </div>
 
-      <div className="row" style={{ marginTop: 8 }}>
-        <div>
-          <div className="helper">Address</div>
-          <div>
-            {[customer.address1, customer.address2].filter(Boolean).join(', ') || '—'}
-            <br/>
-            {[customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ') || ''}
+          <div style={{ marginTop: 12 }}>
+            <div className="helper">Totals</div>
+            <div>Orders: {fmt(totals.total_orders)}</div>
+            <div>Payments: {fmt(totals.total_payments)}</div>
+            <div><strong>Owed to me: {fmt(totals.owed_to_me)}</strong></div>
           </div>
-        </div>
-        <div>
-          <div className="helper">Totals</div>
-          <div>Orders: {fmt(totals.total_orders)}</div>
-          <div>Payments: {fmt(totals.total_payments)}</div>
-          <div><strong>Owed to me: {fmt(totals.owed_to_me)}</strong></div>
         </div>
       </div>
 
@@ -102,4 +114,5 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 

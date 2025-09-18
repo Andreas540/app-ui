@@ -383,3 +383,7 @@ button.primary:focus-visible,
   border-bottom: none;
 }
 .brand-title { color: var(--text); }  /* keep title white */
+/* Keep two columns even on phones when explicitly requested */
+@media (max-width: 768px) {
+  .row.row-2col-mobile { grid-template-columns: 1fr 1fr; }
+}
