@@ -216,55 +216,73 @@ input[type="number"]{ -moz-appearance:textfield }
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
+.brand-title { font-weight: 700; }
 
+/* Primary blue used across the app */
+:root {
+  --btn-blue: #3b82f6;   /* blue-500 */
+  --btn-blue-hover: #2563eb; /* blue-600 */
+  --btn-blue-active: #1d4ed8; /* blue-700 */
+}
+
+/* Hamburger button */
 .hamburger {
   width: 40px;
   height: 40px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--btn-blue);
+  background: var(--btn-blue);
+  color: #fff;
   border-radius: 10px;
-  display: inline-flex;
+  display: flex;                     /* stack bars vertically */
+  flex-direction: column;            /* ⬅️ important */
   align-items: center;
   justify-content: center;
+  gap: 4px;                          /* space between bars */
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
+.hamburger:hover { background: var(--btn-blue-hover); border-color: var(--btn-blue-hover); }
+.hamburger:active { background: var(--btn-blue-active); border-color: var(--btn-blue-active); }
+.hamburger:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.6);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* The three bars */
 .hamburger span {
-  display: block;
   width: 18px;
-  height: 2px;
-  background: #111827;
+  height: 3px;
+  background: #fff;      /* white bars */
   border-radius: 2px;
 }
-.hamburger span + span { margin-top: 4px; }
 
-.brand-title { font-weight: 700; }
-
+/* Right-side quick nav buttons */
 .quick-buttons {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .icon-btn {
   width: 40px;
   height: 40px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--btn-blue);
+  background: var(--btn-blue);
+  color: #fff;
   border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #111827;
   text-decoration: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.icon-btn:hover { background: #f3f4f6; }
-.icon-btn.active {
-  background: #e7f0ff;
-  border-color: #3b82f6;
-  color: #1f2937;
+.icon-btn:hover { background: var(--btn-blue-hover); border-color: var(--btn-blue-hover); }
+.icon-btn.active { background: var(--btn-blue-active); border-color: var(--btn-blue-active); }
+.icon-btn:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.6);
+  outline-offset: 2px;
+  border-radius: 10px;
 }
