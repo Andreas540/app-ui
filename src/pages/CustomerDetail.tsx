@@ -1,9 +1,10 @@
+// src/pages/CustomerDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
 export default function CustomerDetailPage() {
-  // Hooks (fixed order)
+  // Hooks
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,8 +41,8 @@ export default function CustomerDetailPage() {
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
     const dt = typeof d === 'string' ? new Date(d) : d
-    if (Number.isNaN(dt.getTime())) return String(d) // already formatted
-    return dt.toLocaleDateString('en-US') // e.g., 9/18/2025
+    if (Number.isNaN(dt.getTime())) return String(d)
+    return dt.toLocaleDateString('en-US')
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -54,6 +55,9 @@ export default function CustomerDetailPage() {
 
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 4)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 4)
+
+  // Fixed width for the date column so the middle column (product/qty or payment type) stays aligned
+  const DATE_COL = 100 // px
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -75,14 +79,11 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns (Type/Phone/Address on left; Shipping + Owed to me on right) */}
+      {/* Two columns: LEFT = Phone/Address, RIGHT = Type + Shipping + Owed */}
       <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
-        {/* LEFT */}
+        {/* LEFT (moved up) */}
         <div>
-          <div className="helper">Type</div>
-          <div>{(customer as any).customer_type ?? customer.type}</div>
-
-          <div style={{ marginTop: 12 }}>
+          <div>
             <div className="helper">Phone</div>
             <div>
               {customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}
@@ -97,10 +98,15 @@ export default function CustomerDetailPage() {
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT (Type moved to top) */}
         <div>
-          <div className="helper">Shipping cost</div>
-          <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
+          <div className="helper">Type</div>
+          <div>{(customer as any).customer_type ?? customer.type}</div>
+
+          <div style={{ marginTop: 12 }}>
+            <div className="helper">Shipping cost</div>
+            <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
+          </div>
 
           <div style={{ marginTop: 12 }}>
             <div className="helper">Owed to me</div>
@@ -131,18 +137,16 @@ export default function CustomerDetailPage() {
                 key={o.id}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:'auto 1fr auto',
+                  gridTemplateColumns:`${DATE_COL}px 1fr auto`,
                   gap:8,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
               >
                 <div className="helper">{fmtUS((o as any).order_date)}</div>
-                <div>
-                  { (o as any).product_name && (o as any).qty != null
-                    ? `${(o as any).product_name}  /  ${(o as any).qty}`  // Product / Qty
-                    : `${o.lines} line(s)` }
-                </div>
+                <div>{ (o as any).product_name && (o as any).qty != null
+                        ? `${(o as any).product_name}  /  ${(o as any).qty}`
+                        : `${o.lines} line(s)` }</div>
                 <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
               </div>
             ))}
@@ -172,7 +176,7 @@ export default function CustomerDetailPage() {
                 key={p.id}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:'auto 1fr auto',
+                  gridTemplateColumns:`${DATE_COL}px 1fr auto`,
                   gap:8,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
@@ -189,6 +193,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
