@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -8,11 +8,24 @@ export default function NewOrder() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  const [entityId, setEntityId] = useState('')
+  // Customer search + selection
+  const [query, setQuery] = useState('')      // typed search
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [entityId, setEntityId] = useState('') // actual chosen customer/partner id
+
+  // Form fields
   const [productId, setProductId] = useState('')
+  const [orderDate, setOrderDate] = useState<string>(todayYMD())
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
-  const [orderDate, setOrderDate] = useState<string>(todayYMD())
+  const [delivered, setDelivered] = useState(true)
+
+  // Partner splits (UI only for now)
+  const [partner1Id, setPartner1Id] = useState('')
+  const [partner2Id, setPartner2Id] = useState('')
+  const [partner1AmtStr, setPartner1AmtStr] = useState('')
+  const [partner2AmtStr, setPartner2AmtStr] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -21,8 +34,7 @@ export default function NewOrder() {
         const { customers, products } = await fetchBootstrap()
         setPeople(customers)
         setProducts(products)
-        setEntityId(customers[0]?.id ?? '')
-        setProductId(products[0]?.id ?? '')
+        if (products[0]) setProductId(products[0].id)
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -34,35 +46,90 @@ export default function NewOrder() {
   const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
+  // Search suggestions (like Customers.tsx)
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+    const uniq = new Set<string>()
+    return people
+      .filter(c => c.name.toLowerCase().includes(q))
+      .filter(c => (uniq.has(c.name.toLowerCase()) ? false : (uniq.add(c.name.toLowerCase()), true)))
+      .slice(0, 5)
+  }, [query, people])
+
+  function pickSuggestion(id: string, name: string) {
+    setEntityId(id)
+    setQuery(name)
+    setFocused(false)
+    inputRef.current?.blur()
+  }
+
+  // Helpers
   function parseQty(s: string) {
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
 
-  async function save() {
-    if (!person || !product) { alert('Data not loaded'); return }
-    const qtyInt = parseInt(qtyStr || '0', 10)
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) { alert('Enter a quantity > 0'); return }
+  function parsePriceToNumber(s: string) {
+    // allow comma or dot, ignore other chars
+    const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
+    const num = Number(cleaned)
+    return Number.isFinite(num) ? num : NaN
+  }
 
-    const priceNum = Number((priceStr || '').replace(',', '.'))
-    if (!Number.isFinite(priceNum) || priceNum <= 0) { alert('Enter a valid unit price > 0'); return }
+  const qtyInt   = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
+  const priceNum = useMemo(() => parsePriceToNumber(priceStr), [priceStr])
+  const orderValue = useMemo(() => {
+    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
+    if (!Number.isFinite(priceNum) || priceNum <= 0) return 0
+    return qtyInt * priceNum
+  }, [qtyInt, priceNum])
+
+  const personType = (person as any)?.customer_type ?? person?.type
+  const isPartnerCustomer = personType === 'Partner'
+
+  const partnersList = useMemo(
+    () => people.filter(p => ((p as any).customer_type ?? p.type) === 'Partner'),
+    [people]
+  )
+  const partner2Options = useMemo(
+    () => partnersList.filter(p => p.id !== partner1Id),
+    [partnersList, partner1Id]
+  )
+
+  async function save() {
+    if (!person) { alert('Select a customer first'); return }
+    if (!product) { alert('Pick a product'); return }
+
+    const qty = parseInt(qtyStr || '0', 10)
+    if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+
+    const unitPrice = parsePriceToNumber(priceStr)
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
 
     try {
+      // NOTE: we only send the fields the API currently supports.
       const { order_no } = await createOrder({
         customer_id: person.id,
         product_id: product.id,
-        qty: qtyInt,
-        unit_price: priceNum,    // per-order-line price
+        qty,
+        unit_price: unitPrice,    // per-order-line price (saved to order_items.unit_price)
         date: orderDate,
-        delivered: true,
+        delivered,                // wired to DB already
         discount: 0,
+        // partner1/2 UI captured but NOT sent yet; we’ll extend the API later
       })
+
       alert(`Saved! Order #${order_no}`)
+
+      // reset minimal fields for a quick next entry
       setQtyStr('')
       setPriceStr('')
-      setEntityId(people[0]?.id ?? '')
-      setProductId(products[0]?.id ?? '')
       setOrderDate(todayYMD())
+      setDelivered(true)
+      // keep same selected customer & product to speed entry
+      setPartner1Id(''); setPartner2Id('')
+      setPartner1AmtStr(''); setPartner2AmtStr('')
     } catch (e: any) {
       alert(e?.message || 'Save failed')
     }
@@ -78,20 +145,69 @@ export default function NewOrder() {
     <div className="card" style={{maxWidth: 720}}>
       <h3>New Order</h3>
 
+      {/* Search customer (full width) */}
+      <div style={{ marginTop: 12, position: 'relative' }}>
+        <label>Search customer</label>
+        <input
+          ref={inputRef}
+          placeholder="Start typing a name…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // if the typed query no longer matches the chosen person, clear selection
+            if (person && !person.name.toLowerCase().includes(e.target.value.trim().toLowerCase())) {
+              setEntityId('')
+            }
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
+          style={{ height: CONTROL_H }}
+        />
+        {(focused && query && suggestions.length > 0) && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              marginTop: 4,
+              borderRadius: 10,
+              background: 'rgba(47,109,246,0.90)',
+              color: '#fff',
+              padding: 6,
+              zIndex: 50,
+              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
+            }}
+          >
+            {suggestions.map(s => (
+              <button
+                key={s.id}
+                className="primary"
+                onClick={() => pickSuggestion(s.id, s.name)}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  color: '#fff',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                }}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Product | Order date */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Customer / Partner</label>
-          <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
-            <optgroup label="Customers">
-              {people.filter(p=>p.type==='Customer').map(p=>
-                <option key={p.id} value={p.id}>{p.name}</option>
-              )}
-            </optgroup>
-            <optgroup label="Partners">
-              {people.filter(p=>p.type==='Partner').map(p=>
-                <option key={p.id} value={p.id}>{p.name}</option>
-              )}
-            </optgroup>
+          <label>Product</label>
+          <select value={productId} onChange={e=>setProductId(e.target.value)} style={{ height: CONTROL_H }}>
+            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
@@ -101,14 +217,8 @@ export default function NewOrder() {
         </div>
       </div>
 
+      {/* Quantity | Unit Price */}
       <div className="row" style={{ marginTop: 12 }}>
-        <div>
-          <label>Product</label>
-          <select value={productId} onChange={e=>setProductId(e.target.value)} style={{ height: CONTROL_H }}>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-
         <div>
           <label>Quantity</label>
           <input
@@ -120,9 +230,7 @@ export default function NewOrder() {
             style={{ height: CONTROL_H }}
           />
         </div>
-      </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Unit Price (USD)</label>
           <input
@@ -136,10 +244,108 @@ export default function NewOrder() {
         </div>
       </div>
 
+      {/* Order value | Delivered */}
+      <div className="row" style={{ marginTop: 12 }}>
+        <div>
+          <label>Order value (USD)</label>
+          <input
+            type="text"
+            value={orderValue > 0 ? orderValue.toFixed(2) : ''}
+            placeholder="auto"
+            readOnly
+            style={{ height: CONTROL_H, opacity: 0.9 }}
+          />
+        </div>
+
+        <div style={{ display:'flex', alignItems:'end' }}>
+          <label style={{ width:'100%' }}>
+            Delivered
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
+              <input
+                type="checkbox"
+                checked={delivered}
+                onChange={e => setDelivered(e.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span className="helper">{delivered ? 'Yes' : 'No'}</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Conditional partner splits (when chosen customer has customer_type/Type = Partner) */}
+      {isPartnerCustomer && (
+        <>
+          <div className="row" style={{ marginTop: 12 }}>
+            <div>
+              <label>Partner 1</label>
+              <select
+                value={partner1Id}
+                onChange={e=>setPartner1Id(e.target.value)}
+                style={{ height: CONTROL_H }}
+              >
+                <option value="">—</option>
+                {partnersList.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label>To Partner 1 (USD)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={partner1AmtStr}
+                onChange={e=>setPartner1AmtStr(e.target.value.replace(/[^\d]/g, ''))}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+          </div>
+
+          <div className="row" style={{ marginTop: 12 }}>
+            <div>
+              <label>Partner 2</label>
+              <select
+                value={partner2Id}
+                onChange={e=>setPartner2Id(e.target.value)}
+                style={{ height: CONTROL_H }}
+              >
+                <option value="">—</option>
+                {partner2Options.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label>To Partner 2 (USD)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={partner2AmtStr}
+                onChange={e=>setPartner2AmtStr(e.target.value.replace(/[^\d]/g, ''))}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save line</button>
-        <button onClick={() => { setQtyStr(''); setPriceStr('') }} style={{ height: CONTROL_H }}>Clear</button>
+        <button
+          onClick={() => {
+            setQtyStr(''); setPriceStr('');
+            setPartner1Id(''); setPartner2Id('');
+            setPartner1AmtStr(''); setPartner2AmtStr('');
+          }}
+          style={{ height: CONTROL_H }}
+        >
+          Clear
+        </button>
       </div>
     </div>
   )
 }
+
