@@ -49,14 +49,16 @@ export default function CustomerDetailPage() {
   const { customer, totals, orders, payments } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
-  const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 4)
-  const shownPayments = showAllPayments ? payments : payments.slice(0, 4)
 
-  // Fixed width for the date column so middle column stays aligned
-  const DATE_COL = 100 // px
+  // Show 5 by default
+  const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
+  const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
+
+  // Slightly smaller date column & slightly tighter gap to nudge the middle text left
+  const DATE_COL = 88 // px (was 100)
 
   return (
-    <div className="card" style={{maxWidth: 960}}>
+    <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
           <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -76,7 +78,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         {/* LEFT */}
         <div>
           {!showInfo ? (
@@ -97,7 +99,7 @@ export default function CustomerDetailPage() {
                 Hide info
               </button>
 
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 10 }}>
                 <div className="helper">Type</div>
                 <div>{(customer as any).customer_type ?? customer.type}</div>
               </div>
@@ -130,10 +132,10 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Recent orders */}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Recent orders</h4>
-          {orders.length > 4 && (
+          {orders.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllOrders(v => !v)}
@@ -145,22 +147,24 @@ export default function CustomerDetailPage() {
         </div>
 
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-          <div style={{display:'grid', gap:8}}>
+          <div style={{display:'grid', gap:10}}>
             {shownOrders.map(o => (
               <div
                 key={o.id}
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:8,
+                  gap:6,                               // was 8 → pulls middle a bit left
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
               >
                 <div className="helper">{fmtUS((o as any).order_date)}</div>
-                <div>{ (o as any).product_name && (o as any).qty != null
-                        ? `${(o as any).product_name}  /  ${(o as any).qty}`
-                        : `${o.lines} line(s)` }</div>
+                <div>
+                  {(o as any).product_name && (o as any).qty != null
+                    ? `${(o as any).product_name}  /  ${(o as any).qty}`
+                    : `${o.lines} line(s)`}
+                </div>
                 <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
               </div>
             ))}
@@ -169,10 +173,10 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Recent payments */}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Recent payments</h4>
-          {payments.length > 4 && (
+          {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
@@ -184,14 +188,14 @@ export default function CustomerDetailPage() {
         </div>
 
         {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
-          <div style={{display:'grid', gap:8}}>
+          <div style={{display:'grid', gap:10}}>
             {shownPayments.map(p => (
               <div
                 key={p.id}
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:8,
+                  gap:6,                               // was 8 → pulls middle a bit left
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -207,6 +211,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
