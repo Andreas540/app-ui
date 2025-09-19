@@ -8,6 +8,7 @@ export default function CustomerDetailPage() {
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [showAllOrders, setShowAllOrders] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -40,6 +41,9 @@ export default function CustomerDetailPage() {
   const { customer, totals, orders, payments } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
+
+  // Only show 4 orders unless expanded
+  const visibleOrders = showAllOrders ? orders : orders.slice(0, 4)
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -104,14 +108,27 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
+      {/* Recent orders header + toggle link */}
       <div style={{ marginTop: 16 }}>
-        <h4>Recent orders</h4>
-        {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-          <div style={{display:'grid', gap:8}}>
-            {orders.map(o => {
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between' }}>
+          <h4 style={{ margin: 0 }}>Recent orders</h4>
+          {orders.length > 4 && (
+            <button
+              className="helper"
+              onClick={() => setShowAllOrders(v => !v)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+            >
+              {showAllOrders ? 'Show less' : 'Show all orders'}
+            </button>
+          )}
+        </div>
+
+        {orders.length === 0 ? <p className="helper" style={{ marginTop: 8 }}>No orders yet.</p> : (
+          <div style={{display:'grid', gap:8, marginTop: 8}}>
+            {visibleOrders.map(o => {
               const prod = (o as any).first_product as string | null
               const qty  = (o as any).first_qty as number | null
-              const pq   = prod ? `${prod}/${qty ?? ''}` : '—'
+              const pq   = prod ? `${prod} / ${qty ?? ''}` : '—'  // ⬅️ spaces around slash
               return (
                 <div
                   key={o.id}
@@ -150,6 +167,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
