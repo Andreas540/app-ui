@@ -28,3 +28,11 @@ export function ymdInTZ(d: Date = new Date(), tz: string = DEFAULT_TZ): string {
     day: '2-digit',
   }).format(d);
 }
+// Convert "YYYY-MM-DD" to "M/D/YYYY" (no TZ issues)
+export function formatUS(ymd: string): string {
+  if (!ymd) return '—'
+  const base = ymd.includes('T') ? ymd.slice(0, 10) : ymd
+  const [y, m, d] = base.split('-').map(Number)
+  if (!y || !m || !d) return ymd
+  return `${m}/${d}/${y}`
+}

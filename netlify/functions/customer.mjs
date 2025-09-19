@@ -50,10 +50,26 @@ async function getCustomer(event) {
       SELECT
         o.id,
         o.order_no,
-        o.order_date::text AS order_date,     -- ⇐ cast DATE to "YYYY-MM-DD"
+        o.order_date::text AS order_date,  -- "YYYY-MM-DD"
         o.delivered,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-        COUNT(oi.id) AS lines
+        COUNT(oi.id) AS lines,
+        /* first product/qty on the order (by earliest created line) */
+        (
+          SELECT p.name
+          FROM order_items oi2
+          JOIN products p ON p.id = oi2.product_id
+          WHERE oi2.order_id = o.id
+          ORDER BY oi2.created_at ASC, oi2.id ASC
+          LIMIT 1
+        ) AS first_product,
+        (
+          SELECT oi2.qty
+          FROM order_items oi2
+          WHERE oi2.order_id = o.id
+          ORDER BY oi2.created_at ASC, oi2.id ASC
+          LIMIT 1
+        ) AS first_qty
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
@@ -65,7 +81,7 @@ async function getCustomer(event) {
     const payments = await sql`
       SELECT
         id,
-        payment_date::text AS payment_date,   -- ⇐ cast DATE to "YYYY-MM-DD"
+        payment_date::text AS payment_date,  -- "YYYY-MM-DD"
         payment_type,
         amount
       FROM payments
@@ -143,6 +159,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 

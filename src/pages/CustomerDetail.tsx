@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
+import { formatUS } from '../lib/time'
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -30,6 +31,7 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
+  const usDate = (d:string) => formatUS(d)
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -90,15 +92,11 @@ export default function CustomerDetailPage() {
 
           <div style={{ marginTop: 12 }}>
             <div className="helper">Totals</div>
-
-            {/* Labels left, amounts right */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'6px 12px', alignItems:'center' }}>
               <div>Orders</div>
               <div style={{ textAlign:'right' }}>{fmtIntMoney(totals.total_orders)}</div>
-
               <div>Payments</div>
               <div style={{ textAlign:'right' }}>{fmtIntMoney(totals.total_payments)}</div>
-
               <div><strong>Balance</strong></div>
               <div style={{ textAlign:'right' }}><strong>{fmtIntMoney(totals.owed_to_me)}</strong></div>
             </div>
@@ -110,13 +108,27 @@ export default function CustomerDetailPage() {
         <h4>Recent orders</h4>
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
           <div style={{display:'grid', gap:8}}>
-            {orders.map(o => (
-              <div key={o.id} style={{display:'grid', gridTemplateColumns:'auto 1fr auto', gap:8, borderBottom:'1px solid #eee', padding:'8px 0'}}>
-                <div className="helper">#{o.order_no}</div>
-                <div>{o.order_date} {o.delivered ? '✓' : ''}</div>
-                <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
-              </div>
-            ))}
+            {orders.map(o => {
+              const prod = (o as any).first_product as string | null
+              const qty  = (o as any).first_qty as number | null
+              const pq   = prod ? `${prod}/${qty ?? ''}` : '—'
+              return (
+                <div
+                  key={o.id}
+                  style={{
+                    display:'grid',
+                    gridTemplateColumns:'90px 1fr auto',  // fixed date column for vertical alignment
+                    gap:8,
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
+                >
+                  <div className="helper">{usDate((o as any).order_date)}</div>
+                  <div>{pq} {o.delivered ? '✓' : ''}</div>
+                  <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -138,6 +150,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
