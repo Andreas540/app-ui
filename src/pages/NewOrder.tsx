@@ -12,14 +12,14 @@ export default function NewOrder() {
   const [query, setQuery] = useState('')      // typed search
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const [entityId, setEntityId] = useState('') // actual chosen customer/partner id
+  const [entityId, setEntityId] = useState('') // chosen customer/partner id
 
   // Form fields
   const [productId, setProductId] = useState('')
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
-  const [delivered, setDelivered] = useState(true)
+  const [delivered, setDelivered] = useState(false) // ⬅️ default UNCHECKED
 
   // Partner splits (UI only for now)
   const [partner1Id, setPartner1Id] = useState('')
@@ -71,7 +71,6 @@ export default function NewOrder() {
   }
 
   function parsePriceToNumber(s: string) {
-    // allow comma or dot, ignore other chars
     const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
     const num = Number(cleaned)
     return Number.isFinite(num) ? num : NaN
@@ -108,26 +107,23 @@ export default function NewOrder() {
     if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
 
     try {
-      // NOTE: we only send the fields the API currently supports.
       const { order_no } = await createOrder({
         customer_id: person.id,
         product_id: product.id,
         qty,
-        unit_price: unitPrice,    // per-order-line price (saved to order_items.unit_price)
+        unit_price: unitPrice,    // saved to order_items.unit_price
         date: orderDate,
-        delivered,                // wired to DB already
+        delivered,
         discount: 0,
-        // partner1/2 UI captured but NOT sent yet; we’ll extend the API later
       })
 
       alert(`Saved! Order #${order_no}`)
 
-      // reset minimal fields for a quick next entry
+      // reset minimal fields for a quick next entry (keep same customer/product)
       setQtyStr('')
       setPriceStr('')
       setOrderDate(todayYMD())
-      setDelivered(true)
-      // keep same selected customer & product to speed entry
+      setDelivered(false) // ⬅️ keep default unchecked after save
       setPartner1Id(''); setPartner2Id('')
       setPartner1AmtStr(''); setPartner2AmtStr('')
     } catch (e: any) {
@@ -154,13 +150,12 @@ export default function NewOrder() {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
-            // if the typed query no longer matches the chosen person, clear selection
             if (person && !person.name.toLowerCase().includes(e.target.value.trim().toLowerCase())) {
               setEntityId('')
             }
           }}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
+          onBlur={() => setTimeout(() => setFocused(false), 120)}
           style={{ height: CONTROL_H }}
         />
         {(focused && query && suggestions.length > 0) && (
@@ -202,7 +197,7 @@ export default function NewOrder() {
         )}
       </div>
 
-      {/* Product | Order date */}
+      {/* Product | Order date (50/50) */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Product</label>
@@ -217,7 +212,7 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Quantity | Unit Price */}
+      {/* Quantity | Order price (50/50) */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Quantity</label>
@@ -232,7 +227,7 @@ export default function NewOrder() {
         </div>
 
         <div>
-          <label>Unit Price (USD)</label>
+          <label>Order price (USD)</label>
           <input
             type="text"
             inputMode="decimal"
@@ -244,7 +239,7 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Order value | Delivered */}
+      {/* Order value | Delivered (50/50) */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Order value (USD)</label>
@@ -273,9 +268,10 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Conditional partner splits (when chosen customer has customer_type/Type = Partner) */}
+      {/* Conditional partner splits (customer has customer_type/Type = Partner) */}
       {isPartnerCustomer && (
         <>
+          {/* Partner 1 | To Partner 1 (50/50) */}
           <div className="row" style={{ marginTop: 12 }}>
             <div>
               <label>Partner 1</label>
@@ -303,6 +299,7 @@ export default function NewOrder() {
             </div>
           </div>
 
+          {/* Partner 2 | To Partner 2 (50/50) */}
           <div className="row" style={{ marginTop: 12 }}>
             <div>
               <label>Partner 2</label>
@@ -348,4 +345,5 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
