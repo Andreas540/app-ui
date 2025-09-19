@@ -3,13 +3,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
-export default function CustomerDetailPage() {
+export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  // Keep existing “recent” behavior with a simple toggle
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
 
@@ -28,19 +27,19 @@ export default function CustomerDetailPage() {
     })()
   }, [id])
 
-  // --- Local helpers (no new imports) ---
-  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }                 // for shipping cost
+  // local helpers only
+  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }                 // shipping cost
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
-  function phoneHref(p?: string) {
-    const s = (p || '').replace(/[^\d+]/g, '')
-    return s ? `tel:${s}` : undefined
-  }
   function fmtUSDate(d: string | Date): string {
     const date = typeof d === 'string' ? new Date(d) : d
     const m = date.getMonth() + 1
     const day = date.getDate()
     const y = date.getFullYear()
     return `${m}/${day}/${y}`
+  }
+  function phoneHref(p?: string) {
+    const s = (p || '').replace(/[^\d+]/g, '')
+    return s ? `tel:${s}` : undefined
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -143,7 +142,7 @@ export default function CustomerDetailPage() {
               }}
             >
               <div className="helper">{fmtUSDate(o.order_date)} {o.delivered ? '✓' : ''}</div>
-              <div>{/* keep middle flexible; no product/qty dependency here */}</div>
+              <div></div>
               <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
             </div>
           ))}
@@ -186,6 +185,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
