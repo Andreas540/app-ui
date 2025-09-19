@@ -1,6 +1,6 @@
-// src/pages/NewOrder.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
+import { todayYMD } from '../lib/time'
 
 export default function NewOrder() {
   const [people, setPeople] = useState<Person[]>([])
@@ -12,7 +12,7 @@ export default function NewOrder() {
   const [productId, setProductId] = useState('')
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
-  const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10))
+  const [orderDate, setOrderDate] = useState<string>(todayYMD())
 
   useEffect(() => {
     (async () => {
@@ -62,7 +62,7 @@ export default function NewOrder() {
       setPriceStr('')
       setEntityId(people[0]?.id ?? '')
       setProductId(products[0]?.id ?? '')
-      setOrderDate(new Date().toISOString().slice(0,10))
+      setOrderDate(todayYMD())
     } catch (e: any) {
       alert(e?.message || 'Save failed')
     }
