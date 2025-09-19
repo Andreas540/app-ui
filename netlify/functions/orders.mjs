@@ -41,17 +41,42 @@ async function createOrder(event) {
     `;
     const orderId = hdr[0].id;
 
-    // Read the product's current cost (snapshot source)
-    const prod = await sql`
+    // Snapshot cost from history:
+    // 1) prefer the last history row effective on or before the order date
+    // 2) else fall back to the earliest history row
+    // 3) else fall back to products.cost (if any)
+    let snapshotCost = null;
+
+    const h1 = await sql`
       SELECT cost
-      FROM products
-      WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+      FROM product_cost_history
+      WHERE product_id = ${product_id}
+        AND effective_from::date <= ${date}
+      ORDER BY effective_from DESC
       LIMIT 1
     `;
-    if (prod.length === 0) {
-      return cors(400, { error: 'Product not found for this tenant' });
+    if (h1.length > 0) {
+      snapshotCost = Number(h1[0].cost);
+    } else {
+      const h2 = await sql`
+        SELECT cost
+        FROM product_cost_history
+        WHERE product_id = ${product_id}
+        ORDER BY effective_from ASC
+        LIMIT 1
+      `;
+      if (h2.length > 0) {
+        snapshotCost = Number(h2[0].cost);
+      } else {
+        const p = await sql`
+          SELECT cost
+          FROM products
+          WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+          LIMIT 1
+        `;
+        if (p.length > 0 && p[0].cost !== null) snapshotCost = Number(p[0].cost);
+      }
     }
-    const snapshotCost = prod[0].cost === null ? null : Number(prod[0].cost);
 
     // Insert order line with snapshotted cost
     const line = await sql`
@@ -65,7 +90,7 @@ async function createOrder(event) {
       order_no: orderNo,
       order_id: orderId,
       line_id: line[0].id,
-      snapshot_cost: snapshotCost  // debug: verify what got stored
+      snapshot_cost: snapshotCost
     });
   } catch (e) {
     console.error(e);
@@ -85,5 +110,6 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
 
 
