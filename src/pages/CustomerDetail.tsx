@@ -90,9 +90,18 @@ export default function CustomerDetailPage() {
 
           <div style={{ marginTop: 12 }}>
             <div className="helper">Totals</div>
-            <div>Orders: {fmtIntMoney(totals.total_orders)}</div>
-            <div>Payments: {fmtIntMoney(totals.total_payments)}</div>
-            <div><strong>Balance: {fmtIntMoney(totals.owed_to_me)}</strong></div>
+
+            {/* Labels left, amounts right */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'6px 12px', alignItems:'center' }}>
+              <div>Orders</div>
+              <div style={{ textAlign:'right' }}>{fmtIntMoney(totals.total_orders)}</div>
+
+              <div>Payments</div>
+              <div style={{ textAlign:'right' }}>{fmtIntMoney(totals.total_payments)}</div>
+
+              <div><strong>Balance</strong></div>
+              <div style={{ textAlign:'right' }}><strong>{fmtIntMoney(totals.owed_to_me)}</strong></div>
+            </div>
           </div>
         </div>
       </div>
@@ -129,6 +138,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
