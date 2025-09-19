@@ -121,7 +121,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* filters */}
+      {/* filters grid + a spacer as the 4th grid item */}
       <div
         style={{
           display: 'grid',
@@ -154,10 +154,10 @@ export default function Customers() {
         >
           Partner
         </button>
-      </div>
 
-      {/* unmissable spacer under the filters */}
-      <div className="vsp-12" />
+        {/* ← this is the guaranteed blank row */}
+        <div style={{ gridColumn: '1 / -1', height: 25 }} />
+      </div>
 
       {/* total line */}
       <div
@@ -175,11 +175,10 @@ export default function Customers() {
       </div>
 
       {/* small spacer before list */}
-      <div className="vsp-12" />
+      <div style={{ height: 10 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
-      {/* list */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
           <p>Loading…</p>
@@ -210,6 +209,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
