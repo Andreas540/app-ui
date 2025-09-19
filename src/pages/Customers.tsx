@@ -125,7 +125,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Filter row: All / BLV / Partner (3 equal columns) */}
+      {/* Filter row: All / BLV / Partner (3 equal columns), 2/3 height of Create button */}
       <div
         style={{
           display: 'grid',
@@ -138,7 +138,7 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('All')}
           aria-pressed={filterType === 'All'}
-          style={{ width: '100%', height: 'var(--control-h)' }}
+          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
         >
           All
         </button>
@@ -146,7 +146,7 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('BLV')}
           aria-pressed={filterType === 'BLV'}
-          style={{ width: '100%', height: 'var(--control-h)' }}
+          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
         >
           BLV
         </button>
@@ -154,13 +154,13 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('Partner')}
           aria-pressed={filterType === 'Partner'}
-          style={{ width: '100%', height: 'var(--control-h)' }}
+          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
         >
           Partner
         </button>
       </div>
 
-      {/* Blank row */}
+      {/* Blank row under filter buttons */}
       <div style={{ height: 8 }} />
 
       {/* Total for filtered customers */}
@@ -172,13 +172,13 @@ export default function Customers() {
           alignItems: 'center',
         }}
       >
-        <div className="helper">Total owed to me</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total owed to me</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(totalVisibleOwed)}
         </div>
       </div>
 
-      {/* Blank row */}
+      {/* Blank row before list */}
       <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
@@ -215,6 +215,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
