@@ -132,6 +132,7 @@ export default function Customers() {
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 8,
           marginTop: 8,
+          marginBottom: 12, // <— GUARANTEED space below filters
         }}
       >
         <button
@@ -160,25 +161,22 @@ export default function Customers() {
         </button>
       </div>
 
-      {/* === Guaranteed blank row BEFORE the total section === */}
-      <section style={{ paddingTop: 12 }}>
-        {/* Total for filtered customers */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto',
-            gap: 8,
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total owed to me</div>
-          <div style={{ textAlign: 'right', fontWeight: 600 }}>
-            {fmtIntMoney(totalVisibleOwed)}
-          </div>
+      {/* Total for filtered customers */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total owed to me</div>
+        <div style={{ textAlign: 'right', fontWeight: 600 }}>
+          {fmtIntMoney(totalVisibleOwed)}
         </div>
-      </section>
+      </div>
 
-      {/* === Blank row BEFORE the list === */}
+      {/* Spacer before list */}
       <div style={{ height: 12 }} aria-hidden="true" />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
@@ -215,6 +213,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
