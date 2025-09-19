@@ -29,7 +29,7 @@ export default function Customers() {
     })()
   }, [query])
 
-  // Suggestions come from current results; show while typing/focused
+  // Suggestions from current results; show while typing/focused
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -54,6 +54,12 @@ export default function Customers() {
       return t === filterType
     })
   }, [customers, filterType])
+
+  // Sum owed_to_me over the visible (filtered) set
+  const totalVisibleOwed = useMemo(
+    () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
+    [visible]
+  )
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
@@ -109,7 +115,10 @@ export default function Customers() {
 
         <div>
           <Link to="/customers/new">
-            <button className="primary" style={{ width: '100%' }}>
+            <button
+              className="primary"
+              style={{ width: '100%', height: 'var(--control-h)' }}  // same height as input
+            >
               Create New Customer
             </button>
           </Link>
@@ -129,7 +138,7 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('All')}
           aria-pressed={filterType === 'All'}
-          style={{ width: '100%' }}
+          style={{ width: '100%', height: 'var(--control-h)' }}
         >
           All
         </button>
@@ -137,7 +146,7 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('BLV')}
           aria-pressed={filterType === 'BLV'}
-          style={{ width: '100%' }}
+          style={{ width: '100%', height: 'var(--control-h)' }}
         >
           BLV
         </button>
@@ -145,11 +154,32 @@ export default function Customers() {
           className="primary"
           onClick={() => setFilterType('Partner')}
           aria-pressed={filterType === 'Partner'}
-          style={{ width: '100%' }}
+          style={{ width: '100%', height: 'var(--control-h)' }}
         >
           Partner
         </button>
       </div>
+
+      {/* Blank row */}
+      <div style={{ height: 8 }} />
+
+      {/* Total for filtered customers */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div className="helper">Total owed to me</div>
+        <div style={{ textAlign: 'right', fontWeight: 600 }}>
+          {fmtIntMoney(totalVisibleOwed)}
+        </div>
+      </div>
+
+      {/* Blank row */}
+      <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
@@ -185,6 +215,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
