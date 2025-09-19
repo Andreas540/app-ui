@@ -1,14 +1,14 @@
 // src/pages/CustomerDetail.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
-export default function CustomerDetail() {
+export default function CustomerDetailPage() {
+  // --- All hooks at top, in fixed order ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
-
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
 
@@ -19,7 +19,7 @@ export default function CustomerDetail() {
         setLoading(true); setErr(null)
         const d = await fetchCustomerDetail(id)
         setData(d)
-      } catch (e:any) {
+      } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
@@ -27,21 +27,21 @@ export default function CustomerDetail() {
     })()
   }, [id])
 
-  // local helpers only
-  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }                 // shipping cost
+  // --- helpers (no hooks) ---
+  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }           // shipping
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
-  function fmtUSDate(d: string | Date): string {
-    const date = typeof d === 'string' ? new Date(d) : d
-    const m = date.getMonth() + 1
-    const day = date.getDate()
-    const y = date.getFullYear()
-    return `${m}/${day}/${y}`
-  }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
+  function fmtUS(d: string | Date | undefined) {
+    if (!d) return ''
+    const dt = typeof d === 'string' ? new Date(d) : d
+    if (Number.isNaN(dt.getTime())) return String(d) // already formatted on server
+    return dt.toLocaleDateString('en-US') // e.g., 9/18/2025
+  }
 
+  // --- early returns are OK (after hooks) ---
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
   if (!data) return null
@@ -50,14 +50,8 @@ export default function CustomerDetail() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
-  const recentOrders = useMemo(
-    () => (showAllOrders ? orders : orders.slice(0, 4)),
-    [orders, showAllOrders]
-  )
-  const recentPayments = useMemo(
-    () => (showAllPayments ? payments : payments.slice(0, 4)),
-    [payments, showAllPayments]
-  )
+  const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 4)
+  const shownPayments = showAllPayments ? payments : payments.slice(0, 4)
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -79,7 +73,7 @@ export default function CustomerDetail() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns on ALL screens for the top info block */}
+      {/* Two columns for the top info block on all screens */}
       <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
         {/* LEFT column: Type + Phone + Address */}
         <div>
@@ -103,88 +97,95 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        {/* RIGHT column: Shipping + Owed to me (only the balance amount) */}
+        {/* RIGHT column: Owed to me (balance only) */}
         <div>
-          <div className="helper">Shipping cost</div>
-          <div>{fmtMoney(customer.shipping_cost ?? 0)}</div>
-
-          <div style={{ marginTop: 12 }}>
-            <div className="helper">Owed to me</div>
-            <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.owed_to_me)}</div>
-          </div>
+          <div className="helper">Owed to me</div>
+          <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.owed_to_me)}</div>
         </div>
       </div>
 
       {/* Recent orders */}
-      <div style={{ marginTop: 16, display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:8 }}>
-        <h4 style={{ margin:0 }}>Recent orders</h4>
-        {orders.length > 4 && (
-          <button
-            onClick={() => setShowAllOrders(v => !v)}
-            className="linklike"
-            style={{ background:'none', border:'none', padding:0, color:'inherit', cursor:'pointer' }}
-          >
-            {showAllOrders ? 'Show less' : 'Show all orders'}
-          </button>
-        )}
-      </div>
-      {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-        <div style={{display:'grid', gap:8}}>
-          {recentOrders.map(o => (
-            <div
-              key={o.id}
-              style={{
-                display:'grid',
-                gridTemplateColumns:'110px 1fr auto',
-                gap:8,
-                borderBottom:'1px solid #eee',
-                padding:'8px 0'
-              }}
+      <div style={{ marginTop: 16 }}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <h4 style={{margin:0}}>Recent orders</h4>
+          {orders.length > 4 && (
+            <button
+              className="primary"
+              style={{ height: 28, padding: '0 10px' }}
+              onClick={() => setShowAllOrders(v => !v)}
             >
-              <div className="helper">{fmtUSDate(o.order_date)} {o.delivered ? '✓' : ''}</div>
-              <div></div>
-              <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
-            </div>
-          ))}
+              {showAllOrders ? 'Show less' : 'Show all orders'}
+            </button>
+          )}
         </div>
-      )}
 
-      {/* Recent payments */}
-      <div style={{ marginTop: 16, display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:8 }}>
-        <h4 style={{ margin:0 }}>Recent payments</h4>
-        {payments.length > 4 && (
-          <button
-            onClick={() => setShowAllPayments(v => !v)}
-            className="linklike"
-            style={{ background:'none', border:'none', padding:0, color:'inherit', cursor:'pointer' }}
-          >
-            {showAllPayments ? 'Show less' : 'Show all payments'}
-          </button>
+        {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
+          <div style={{display:'grid', gap:8}}>
+            {shownOrders.map(o => (
+              <div
+                key={o.id}
+                style={{
+                  display:'grid',
+                  gridTemplateColumns:'auto 1fr auto',
+                  gap:8,
+                  borderBottom:'1px solid #eee',
+                  padding:'8px 0'
+                }}
+              >
+                <div className="helper">{fmtUS(o.order_date)}</div>
+                <div>
+                  {/* Product /  Qty (assuming server returns o.product_name, o.qty) */}
+                  {(o as any).product_name
+                    ? `${(o as any).product_name}  /  ${(o as any).qty}`
+                    : `${o.lines} line(s)`}
+                </div>
+                <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-      {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
-        <div style={{display:'grid', gap:8}}>
-          {recentPayments.map(p => (
-            <div
-              key={p.id}
-              style={{
-                display:'grid',
-                gridTemplateColumns:'110px 1fr auto',
-                gap:8,
-                borderBottom:'1px solid #eee',
-                padding:'8px 0'
-              }}
+
+      {/* Recent payments (same behavior as orders) */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <h4 style={{margin:0}}>Recent payments</h4>
+          {payments.length > 4 && (
+            <button
+              className="primary"
+              style={{ height: 28, padding: '0 10px' }}
+              onClick={() => setShowAllPayments(v => !v)}
             >
-              <div className="helper">{fmtUSDate(p.payment_date)}</div>
-              <div>{p.payment_type}</div>
-              <div style={{textAlign:'right'}}>{fmtIntMoney(p.amount)}</div>
-            </div>
-          ))}
+              {showAllPayments ? 'Show less' : 'Show all payments'}
+            </button>
+          )}
         </div>
-      )}
+
+        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
+          <div style={{display:'grid', gap:8}}>
+            {shownPayments.map(p => (
+              <div
+                key={p.id}
+                style={{
+                  display:'grid',
+                  gridTemplateColumns:'auto 1fr auto',
+                  gap:8,
+                  borderBottom:'1px solid #eee',
+                  padding:'8px 0'
+                }}
+              >
+                <div className="helper">{fmtUS(p.payment_date)}</div>
+                <div>{p.payment_type}</div>
+                <div style={{textAlign:'right'}}>{fmtIntMoney(p.amount)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
+
 
 
 
