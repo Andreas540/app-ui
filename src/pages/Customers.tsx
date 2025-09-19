@@ -29,7 +29,6 @@ export default function Customers() {
     })()
   }, [query])
 
-  // Suggestions from current results; show while typing/focused
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -72,7 +71,7 @@ export default function Customers() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
           />
           {(focused && query && suggestions.length > 0) && (
             <div
@@ -132,7 +131,6 @@ export default function Customers() {
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 8,
           marginTop: 8,
-          marginBottom: 12, // <— GUARANTEED space below filters
         }}
       >
         <button
@@ -161,9 +159,10 @@ export default function Customers() {
         </button>
       </div>
 
-      {/* Total for filtered customers */}
+      {/* Give the total block its own top margin so the gap is guaranteed */}
       <div
         style={{
+          marginTop: 12,                          // ← guaranteed blank space BEFORE total
           display: 'grid',
           gridTemplateColumns: '1fr auto',
           gap: 8,
@@ -204,7 +203,6 @@ export default function Customers() {
         )}
       </div>
 
-      {/* Clear search below the (single) result */}
       {query && visible.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
@@ -213,6 +211,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
