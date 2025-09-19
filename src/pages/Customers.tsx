@@ -57,10 +57,9 @@ export default function Customers() {
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* Top controls: search (left) + Create New Customer (right). 50/50 via .row grid */}
-      <div className="row" style={{ alignItems: 'end' }}>
+      {/* Force 2 columns even on mobile */}
+      <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>
-          {/* Search input (no header) */}
           <input
             ref={inputRef}
             placeholder="Search customer"
@@ -78,7 +77,7 @@ export default function Customers() {
                 right: 0,
                 marginTop: 4,
                 borderRadius: 10,
-                background: 'rgba(47,109,246,0.90)', // light blue overlay
+                background: 'rgba(47,109,246,0.90)',
                 color: '#fff',
                 padding: 6,
                 zIndex: 50,
@@ -109,7 +108,6 @@ export default function Customers() {
         </div>
 
         <div>
-          {/* same visual height as input via global CSS */}
           <Link to="/customers/new">
             <button className="primary" style={{ width: '100%' }}>
               Create New Customer
@@ -187,6 +185,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
