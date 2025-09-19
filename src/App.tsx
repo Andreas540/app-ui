@@ -9,6 +9,10 @@ import CreateCustomer from './pages/CreateCustomer'
 import CustomerDetail from './pages/CustomerDetail'
 import EditCustomer from './pages/EditCustomer'
 
+// ⬇️ NEW
+import NewProduct from './pages/NewProduct'
+import EditProduct from './pages/EditProduct'
+
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
 
@@ -41,6 +45,8 @@ export default function App() {
           <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
           <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
           <NavLink to="/payments" onClick={() => setNavOpen(false)}>Payments</NavLink>
+          {/* ⬇️ NEW — visible in menu, no quick button */}
+          <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
           <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
           <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
         </nav>
@@ -50,6 +56,9 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/orders/new" element={<NewOrder />} />
             <Route path="/payments" element={<Payments />} />
+            {/* ⬇️ NEW routes */}
+            <Route path="/products/new" element={<NewProduct />} />
+            <Route path="/products/edit" element={<EditProduct />} />
             <Route path="/customers" element={<Customers />} />
             {/* not in side-nav */}
             <Route path="/customers/new" element={<CreateCustomer />} />
@@ -62,6 +71,7 @@ export default function App() {
     </div>
   )
 }
+
 
 
 
