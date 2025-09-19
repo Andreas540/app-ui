@@ -46,48 +46,35 @@ async function getCustomer(event) {
       FROM o, p
     `
 
+    // Include first line's product + qty for each order
     const orders = await sql`
       SELECT
-        o.id,
-        o.order_no,
-        o.order_date::text AS order_date,  -- "YYYY-MM-DD"
-        o.delivered,
+        o.id, o.order_no, o.order_date, o.delivered,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-        COUNT(oi.id) AS lines,
-        /* first product/qty on the order (by earliest created line) */
-        (
-          SELECT p.name
-          FROM order_items oi2
-          JOIN products p ON p.id = oi2.product_id
-          WHERE oi2.order_id = o.id
-          ORDER BY oi2.created_at ASC, oi2.id ASC
-          LIMIT 1
-        ) AS first_product,
-        (
-          SELECT oi2.qty
-          FROM order_items oi2
-          WHERE oi2.order_id = o.id
-          ORDER BY oi2.created_at ASC, oi2.id ASC
-          LIMIT 1
-        ) AS first_qty
+        fi.product_name,
+        fi.qty
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN LATERAL (
+        SELECT p.name AS product_name, oi2.qty
+        FROM order_items oi2
+        JOIN products p ON p.id = oi2.product_id
+        WHERE oi2.order_id = o.id
+        ORDER BY oi2.created_at ASC, oi2.id ASC
+        LIMIT 1
+      ) fi ON TRUE
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
-      GROUP BY o.id
+      GROUP BY o.id, fi.product_name, fi.qty
       ORDER BY o.order_date DESC
-      LIMIT 20
+      LIMIT 100
     `
 
     const payments = await sql`
-      SELECT
-        id,
-        payment_date::text AS payment_date,  -- "YYYY-MM-DD"
-        payment_type,
-        amount
+      SELECT id, payment_date, payment_type, amount
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ORDER BY payment_date DESC
-      LIMIT 20
+      LIMIT 100
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
@@ -116,8 +103,7 @@ async function updateCustomer(event) {
       return cors(400, { error: 'invalid customer_type' })
     }
     const sc = (shipping_cost === null || shipping_cost === undefined)
-      ? null
-      : Number(shipping_cost)
+      ? null : Number(shipping_cost)
     if (shipping_cost !== undefined && shipping_cost !== null && !Number.isFinite(sc)) {
       return cors(400, { error: 'shipping_cost must be a number or null' })
     }
@@ -159,6 +145,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 

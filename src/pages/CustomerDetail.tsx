@@ -1,10 +1,9 @@
-// src/pages/CustomerDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
 export default function CustomerDetailPage() {
-  // --- All hooks at top, fixed order ---
+  // Hooks (fixed order)
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -27,8 +26,13 @@ export default function CustomerDetailPage() {
     })()
   }, [id])
 
-  // --- helpers (no hooks) ---
-  function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
+  // Helpers
+  function fmtMoney(n:number) {
+    return `$${(Number(n) || 0).toFixed(2)}`
+  }
+  function fmtIntMoney(n:number) {
+    return `$${Math.round(Number(n)||0).toLocaleString('en-US')}`
+  }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -36,7 +40,7 @@ export default function CustomerDetailPage() {
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
     const dt = typeof d === 'string' ? new Date(d) : d
-    if (Number.isNaN(dt.getTime())) return String(d)
+    if (Number.isNaN(dt.getTime())) return String(d) // already formatted
     return dt.toLocaleDateString('en-US') // e.g., 9/18/2025
   }
 
@@ -71,9 +75,9 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns on ALL screens for the top info block */}
+      {/* Two columns (Type/Phone/Address on left; Shipping + Owed to me on right) */}
       <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
-        {/* LEFT column: Type + Phone + Address */}
+        {/* LEFT */}
         <div>
           <div className="helper">Type</div>
           <div>{(customer as any).customer_type ?? customer.type}</div>
@@ -81,9 +85,7 @@ export default function CustomerDetailPage() {
           <div style={{ marginTop: 12 }}>
             <div className="helper">Phone</div>
             <div>
-              {customer.phone
-                ? <a href={phoneHref(customer.phone)}>{customer.phone}</a>
-                : '—'}
+              {customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}
             </div>
           </div>
 
@@ -95,10 +97,15 @@ export default function CustomerDetailPage() {
           </div>
         </div>
 
-        {/* RIGHT column: Owed to me (balance only) */}
+        {/* RIGHT */}
         <div>
-          <div className="helper">Owed to me</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
+          <div className="helper">Shipping cost</div>
+          <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
+
+          <div style={{ marginTop: 12 }}>
+            <div className="helper">Owed to me</div>
+            <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
+          </div>
         </div>
       </div>
 
@@ -108,9 +115,9 @@ export default function CustomerDetailPage() {
           <h4 style={{margin:0}}>Recent orders</h4>
           {orders.length > 4 && (
             <button
-              className="primary"
-              style={{ height: 28, padding: '0 10px' }}
+              className="helper"
               onClick={() => setShowAllOrders(v => !v)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
               {showAllOrders ? 'Show less' : 'Show all orders'}
             </button>
@@ -132,9 +139,9 @@ export default function CustomerDetailPage() {
               >
                 <div className="helper">{fmtUS((o as any).order_date)}</div>
                 <div>
-                  {(o as any).product_name
-                    ? `${(o as any).product_name}  /  ${(o as any).qty}`
-                    : `${o.lines} line(s)`}
+                  { (o as any).product_name && (o as any).qty != null
+                    ? `${(o as any).product_name}  /  ${(o as any).qty}`  // Product / Qty
+                    : `${o.lines} line(s)` }
                 </div>
                 <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
               </div>
@@ -149,9 +156,9 @@ export default function CustomerDetailPage() {
           <h4 style={{margin:0}}>Recent payments</h4>
           {payments.length > 4 && (
             <button
-              className="primary"
-              style={{ height: 28, padding: '0 10px' }}
+              className="helper"
               onClick={() => setShowAllPayments(v => !v)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
               {showAllPayments ? 'Show less' : 'Show all payments'}
             </button>
@@ -182,6 +189,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
