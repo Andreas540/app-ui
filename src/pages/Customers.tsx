@@ -45,7 +45,6 @@ export default function Customers() {
     inputRef.current?.blur()
   }
 
-  // Apply customer_type filter locally
   const visible = useMemo(() => {
     if (filterType === 'All') return customers
     return customers.filter(c => {
@@ -54,7 +53,6 @@ export default function Customers() {
     })
   }, [customers, filterType])
 
-  // Sum owed_to_me over the visible (filtered) set
   const totalVisibleOwed = useMemo(
     () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
     [visible]
@@ -62,7 +60,7 @@ export default function Customers() {
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* Force 2 columns even on mobile */}
+      {/* search + create, forced 2-col on mobile */}
       <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>
           <input
@@ -78,8 +76,7 @@ export default function Customers() {
               style={{
                 position: 'absolute',
                 top: '100%',
-                left: 0,
-                right: 0,
+                left: 0, right: 0,
                 marginTop: 4,
                 borderRadius: 10,
                 background: 'rgba(47,109,246,0.90)',
@@ -116,7 +113,7 @@ export default function Customers() {
           <Link to="/customers/new">
             <button
               className="primary"
-              style={{ width: '100%', height: 'var(--control-h)' }}  // same height as input
+              style={{ width: '100%', height: 'var(--control-h)' }}
             >
               Create New Customer
             </button>
@@ -124,7 +121,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Filter row: All / BLV / Partner (3 equal columns), 2/3 height of Create button */}
+      {/* filters */}
       <div
         style={{
           display: 'grid',
@@ -159,10 +156,12 @@ export default function Customers() {
         </button>
       </div>
 
-      {/* Give the total block its own top margin so the gap is guaranteed */}
+      {/* unmissable spacer under the filters */}
+      <div className="vsp-12" />
+
+      {/* total line */}
       <div
         style={{
-          marginTop: 12,                          // ← guaranteed blank space BEFORE total
           display: 'grid',
           gridTemplateColumns: '1fr auto',
           gap: 8,
@@ -175,12 +174,12 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Spacer before list */}
-      <div style={{ height: 12 }} aria-hidden="true" />
+      {/* small spacer before list */}
+      <div className="vsp-12" />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
-      {/* List */}
+      {/* list */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
           <p>Loading…</p>
@@ -211,6 +210,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 

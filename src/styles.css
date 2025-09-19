@@ -382,6 +382,8 @@ button.primary:focus-visible,
   background: var(--bg) !important;  /* #0B1020 */
   border-bottom: none;
 }
+/* --- spacing utilities --- */
+.vsp-12 { display:block; height:12px !important; }
 .brand-title { color: var(--text); }  /* keep title white */
 /* Keep two columns even on phones when explicitly requested */
 @media (max-width: 768px) {
