@@ -1,70 +1,75 @@
 // netlify/functions/orders.mjs
 export async function handler(event) {
-  // CORS + preflight
-  if (event.httpMethod === 'OPTIONS') return cors(204, {})
-  if (event.httpMethod !== 'POST')    return cors(405, { error: 'Method not allowed' })
+  if (event.httpMethod === 'OPTIONS') return cors(204, {});
+  if (event.httpMethod === 'POST')    return createOrder(event);
+  return cors(405, { error: 'Method not allowed' });
+}
 
+async function createOrder(event) {
   try {
-    const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+    const { neon } = await import('@neondatabase/serverless');
+    const { DATABASE_URL, TENANT_ID } = process.env;
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
-    // Parse JSON body safely
-    let body
-    try {
-      body = JSON.parse(event.body || '{}')
-    } catch {
-      return cors(400, { error: 'Invalid JSON body' })
+    const body = JSON.parse(event.body || '{}');
+    const { customer_id, product_id, qty, unit_price, date, delivered, discount } = body || {};
+
+    const qtyInt = parseInt(qty, 10);
+    const unitPriceNum = Number(unit_price);
+
+    if (!customer_id || !product_id || !qtyInt || !unitPriceNum || !date) {
+      return cors(400, { error: 'Missing fields: customer_id, product_id, qty, unit_price, date' });
     }
+    if (!(qtyInt > 0)) return cors(400, { error: 'qty must be > 0' });
 
-    const { customer_id, product_id, qty, unit_price, date, delivered = true, discount = 0 } = body
+    const sql = neon(DATABASE_URL);
 
-    // ---- Explicit validation (no falsy checks) ----
-    if (typeof customer_id !== 'string' || customer_id.length === 0)
-      return cors(400, { error: 'customer_id required' })
-    if (typeof product_id !== 'string' || product_id.length === 0)
-      return cors(400, { error: 'product_id required' })
+    // Next order number per-tenant
+    const nextNo = await sql`
+      SELECT COALESCE(MAX(order_no),0) + 1 AS n
+      FROM orders
+      WHERE tenant_id = ${TENANT_ID}
+    `;
+    const orderNo = Number(nextNo[0].n) || 1;
 
-    const qtyInt = Number.parseInt(String(qty), 10)
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0)
-      return cors(400, { error: 'qty must be an integer > 0' })
-
-    const priceNum = Number(unit_price)
-    if (!Number.isFinite(priceNum) || priceNum <= 0)
-      return cors(400, { error: 'unit_price must be a number > 0' })
-
-    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))
-      return cors(400, { error: 'date must be YYYY-MM-DD' })
-
-    const sql = neon(DATABASE_URL)
-
-    // 1) Atomically allocate next order number for this tenant
-    const [{ order_no }] = await sql`
-      INSERT INTO order_counters (tenant_id, next_no)
-      VALUES (${TENANT_ID}, 1)
-      ON CONFLICT (tenant_id)
-      DO UPDATE SET next_no = order_counters.next_no + 1
-      RETURNING next_no AS order_no
-    `
-
-    // 2) Insert order header
-    const [orderRow] = await sql`
+    // Create order header
+    const hdr = await sql`
       INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount)
-      VALUES (${TENANT_ID}, ${customer_id}, ${order_no}, ${date}, ${delivered}, ${discount})
-      RETURNING id, order_no
-    `
+      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0})
+      RETURNING id
+    `;
+    const orderId = hdr[0].id;
 
-    // 3) Insert order line
-    await sql`
-      INSERT INTO order_items (order_id, product_id, qty, unit_price)
-      VALUES (${orderRow.id}, ${product_id}, ${qtyInt}, ${priceNum})
-    `
+    // Read the product's current cost (snapshot source)
+    const prod = await sql`
+      SELECT cost
+      FROM products
+      WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+      LIMIT 1
+    `;
+    if (prod.length === 0) {
+      return cors(400, { error: 'Product not found for this tenant' });
+    }
+    const snapshotCost = prod[0].cost === null ? null : Number(prod[0].cost);
 
-    return cors(200, { ok: true, order_id: orderRow.id, order_no: orderRow.order_no })
+    // Insert order line with snapshotted cost
+    const line = await sql`
+      INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
+      VALUES (${orderId}, ${product_id}, ${qtyInt}, ${unitPriceNum}, ${snapshotCost})
+      RETURNING id
+    `;
+
+    return cors(201, {
+      ok: true,
+      order_no: orderNo,
+      order_id: orderId,
+      line_id: line[0].id,
+      snapshot_cost: snapshotCost  // debug: verify what got stored
+    });
   } catch (e) {
-    console.error(e)
-    return cors(500, { error: String(e?.message || e) })
+    console.error(e);
+    return cors(500, { error: String(e?.message || e) });
   }
 }
 
@@ -74,9 +79,11 @@ function cors(status, body) {
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-methods': 'POST,OPTIONS',
       'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
-  }
+  };
 }
+
+
