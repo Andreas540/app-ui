@@ -11,6 +11,7 @@ export default function CustomerDetailPage() {
   const [err, setErr] = useState<string | null>(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -28,12 +29,8 @@ export default function CustomerDetailPage() {
   }, [id])
 
   // Helpers
-  function fmtMoney(n:number) {
-    return `$${(Number(n) || 0).toFixed(2)}`
-  }
-  function fmtIntMoney(n:number) {
-    return `$${Math.round(Number(n)||0).toLocaleString('en-US')}`
-  }
+  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }
+  function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -52,11 +49,10 @@ export default function CustomerDetailPage() {
   const { customer, totals, orders, payments } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
-
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 4)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 4)
 
-  // Fixed width for the date column so the middle column (product/qty or payment type) stays aligned
+  // Fixed width for the date column so middle column stays aligned
   const DATE_COL = 100 // px
 
   return (
@@ -79,39 +75,57 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT = Phone/Address, RIGHT = Type + Shipping + Owed */}
+      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
       <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
-        {/* LEFT (moved up) */}
+        {/* LEFT */}
         <div>
-          <div>
-            <div className="helper">Phone</div>
+          {!showInfo ? (
+            <button
+              className="helper"
+              onClick={() => setShowInfo(true)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+            >
+              Show info
+            </button>
+          ) : (
             <div>
-              {customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}
-            </div>
-          </div>
+              <button
+                className="helper"
+                onClick={() => setShowInfo(false)}
+                style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+              >
+                Hide info
+              </button>
 
-          <div style={{ marginTop: 12 }}>
-            <div className="helper">Address</div>
-            <div>
-              {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
+              <div style={{ marginTop: 8 }}>
+                <div className="helper">Type</div>
+                <div>{(customer as any).customer_type ?? customer.type}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">Shipping cost</div>
+                <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">Phone</div>
+                <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">Address</div>
+                <div>
+                  {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* RIGHT (Type moved to top) */}
-        <div>
-          <div className="helper">Type</div>
-          <div>{(customer as any).customer_type ?? customer.type}</div>
-
-          <div style={{ marginTop: 12 }}>
-            <div className="helper">Shipping cost</div>
-            <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <div className="helper">Owed to me</div>
-            <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
-          </div>
+        {/* RIGHT */}
+        <div style={{ textAlign:'right' }}>
+          <div className="helper">Owed to me</div>
+          <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
         </div>
       </div>
 
@@ -193,6 +207,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
