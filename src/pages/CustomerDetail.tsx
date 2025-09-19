@@ -9,6 +9,7 @@ export default function CustomerDetailPage() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
+  const [showAllPayments, setShowAllPayments] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -42,8 +43,9 @@ export default function CustomerDetailPage() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
-  // Only show 4 orders unless expanded
+  // Only show 4 unless expanded
   const visibleOrders = showAllOrders ? orders : orders.slice(0, 4)
+  const visiblePayments = showAllPayments ? payments : payments.slice(0, 4)
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -108,7 +110,7 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
-      {/* Recent orders header + toggle link */}
+      {/* Recent orders header + toggle */}
       <div style={{ marginTop: 16 }}>
         <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between' }}>
           <h4 style={{ margin: 0 }}>Recent orders</h4>
@@ -128,13 +130,13 @@ export default function CustomerDetailPage() {
             {visibleOrders.map(o => {
               const prod = (o as any).first_product as string | null
               const qty  = (o as any).first_qty as number | null
-              const pq   = prod ? `${prod} / ${qty ?? ''}` : '—'  // ⬅️ spaces around slash
+              const pq   = prod ? `${prod} / ${qty ?? ''}` : '—'
               return (
                 <div
                   key={o.id}
                   style={{
                     display:'grid',
-                    gridTemplateColumns:'90px 1fr auto',  // fixed date column for vertical alignment
+                    gridTemplateColumns:'90px 1fr auto',  // date | product/qty | amount
                     gap:8,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -150,15 +152,37 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
+      {/* Recent payments header + toggle */}
       <div style={{ marginTop: 16 }}>
-        <h4>Recent payments</h4>
-        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
-          <div style={{display:'grid', gap:8}}>
-            {payments.map(p => (
-              <div key={p.id} style={{display:'grid', gridTemplateColumns:'auto 1fr auto', gap:8, borderBottom:'1px solid #eee', padding:'8px 0'}}>
-                <div className="helper">{p.payment_date}</div>
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between' }}>
+          <h4 style={{ margin: 0 }}>Recent payments</h4>
+          {payments.length > 4 && (
+            <button
+              className="helper"
+              onClick={() => setShowAllPayments(v => !v)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+            >
+              {showAllPayments ? 'Show less' : 'Show all payments'}
+            </button>
+          )}
+        </div>
+
+        {payments.length === 0 ? <p className="helper" style={{ marginTop: 8 }}>No payments yet.</p> : (
+          <div style={{display:'grid', gap:8, marginTop: 8}}>
+            {visiblePayments.map(p => (
+              <div
+                key={p.id}
+                style={{
+                  display:'grid',
+                  gridTemplateColumns:'90px 1fr auto',  // date | type | amount (aligned to orders)
+                  gap:8,
+                  borderBottom:'1px solid #eee',
+                  padding:'8px 0'
+                }}
+              >
+                <div className="helper">{usDate(p.payment_date as unknown as string)}</div>
                 <div>{p.payment_type}</div>
-                <div style={{textAlign:'right'}}>{fmtIntMoney(p.amount)}</div>
+                <div style={{textAlign:'right'}}>{fmtIntMoney(p.amount as unknown as number)}</div>
               </div>
             ))}
           </div>
@@ -167,6 +191,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
