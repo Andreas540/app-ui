@@ -92,7 +92,7 @@ export default function CustomerDetailPage() {
             <div className="helper">Totals</div>
             <div>Orders: {fmtIntMoney(totals.total_orders)}</div>
             <div>Payments: {fmtIntMoney(totals.total_payments)}</div>
-            <div><strong>Owed to me: {fmtIntMoney(totals.owed_to_me)}</strong></div>
+            <div><strong>Balance: {fmtIntMoney(totals.owed_to_me)}</strong></div>
           </div>
         </div>
       </div>
