@@ -179,5 +179,46 @@ export async function updateCustomer(input: UpdateCustomerInput) {
   }
   return (await res.json()) as { ok: true }
 }
+// --- Products ---
+export async function createProduct(input: { name: string; cost: number }) {
+  const res = await fetch('/api/product', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    let msg = `Failed to create product (status ${res.status})`;
+    try { const j = await res.json(); if (j?.error) msg += `: ${j.error}` } catch {}
+    throw new Error(msg);
+  }
+  return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>;
+}
+// --- Product types + API ---
+export type ProductWithCost = { id: string; name: string; cost: number | null };
+
+export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
+  const r = await fetch('/api/product', { method: 'GET' });
+  if (!r.ok) throw new Error(`Failed to load products (${r.status})`);
+  return r.json();
+}
+
+export async function updateProduct(input: {
+  id: string;
+  name?: string;
+  cost?: number;
+  apply_to_history?: boolean;
+}): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
+  const r = await fetch('/api/product', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!r.ok) {
+    let msg = `Failed to update product (status ${r.status})`;
+    try { const j = await r.json(); if (j?.error) msg += `: ${j.error}` } catch {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
 
 

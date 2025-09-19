@@ -20,7 +20,7 @@ export default function Dashboard() {
       <div className="card">
         <h3>Recent orders</h3>
         {recent.length === 0 ? (
-          <div className="helper">No orders yet. Add one from “New Order”.</div>
+          <div className="helper">No orders yet. Add one from "New Order".</div>
         ) : (
           <ul style={{margin:0, paddingLeft:16}}>
             {recent.map(o => (

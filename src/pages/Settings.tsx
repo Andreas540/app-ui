@@ -13,7 +13,7 @@ export default function Settings() {
         </div>
       </div>
       <p className="helper" style={{marginTop:12}}>
-        Later we’ll make this tenant-aware and drive branding from config.
+        Later we'll make this tenant-aware and drive branding from config.
       </p>
     </div>
   )
