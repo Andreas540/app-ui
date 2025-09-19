@@ -9,17 +9,17 @@ export default function NewOrder() {
   const [err, setErr] = useState<string | null>(null)
 
   // Customer search + selection
-  const [query, setQuery] = useState('')      // typed search
+  const [query, setQuery] = useState('')
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const [entityId, setEntityId] = useState('') // chosen customer/partner id
+  const [entityId, setEntityId] = useState('')
 
   // Form fields
   const [productId, setProductId] = useState('')
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
-  const [delivered, setDelivered] = useState(false) // ⬅️ default UNCHECKED
+  const [delivered, setDelivered] = useState(false) // default unchecked ✅
 
   // Partner splits (UI only for now)
   const [partner1Id, setPartner1Id] = useState('')
@@ -46,7 +46,7 @@ export default function NewOrder() {
   const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
-  // Search suggestions (like Customers.tsx)
+  // Suggestions like Customers.tsx
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -69,7 +69,6 @@ export default function NewOrder() {
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
-
   function parsePriceToNumber(s: string) {
     const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
     const num = Number(cleaned)
@@ -86,7 +85,6 @@ export default function NewOrder() {
 
   const personType = (person as any)?.customer_type ?? person?.type
   const isPartnerCustomer = personType === 'Partner'
-
   const partnersList = useMemo(
     () => people.filter(p => ((p as any).customer_type ?? p.type) === 'Partner'),
     [people]
@@ -111,19 +109,18 @@ export default function NewOrder() {
         customer_id: person.id,
         product_id: product.id,
         qty,
-        unit_price: unitPrice,    // saved to order_items.unit_price
+        unit_price: unitPrice,
         date: orderDate,
         delivered,
         discount: 0,
       })
-
       alert(`Saved! Order #${order_no}`)
 
-      // reset minimal fields for a quick next entry (keep same customer/product)
+      // quick reset (keep same customer/product)
       setQtyStr('')
       setPriceStr('')
       setOrderDate(todayYMD())
-      setDelivered(false) // ⬅️ keep default unchecked after save
+      setDelivered(false)
       setPartner1Id(''); setPartner2Id('')
       setPartner1AmtStr(''); setPartner2AmtStr('')
     } catch (e: any) {
@@ -197,23 +194,22 @@ export default function NewOrder() {
         )}
       </div>
 
-      {/* Product | Order date (50/50) */}
-      <div className="row" style={{ marginTop: 12 }}>
+      {/* Product | Order date (force 2 cols on mobile) */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Product</label>
           <select value={productId} onChange={e=>setProductId(e.target.value)} style={{ height: CONTROL_H }}>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-
         <div>
           <label>Order date</label>
           <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 
-      {/* Quantity | Order price (50/50) */}
-      <div className="row" style={{ marginTop: 12 }}>
+      {/* Quantity | Order price (force 2 cols on mobile) */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Quantity</label>
           <input
@@ -225,7 +221,6 @@ export default function NewOrder() {
             style={{ height: CONTROL_H }}
           />
         </div>
-
         <div>
           <label>Order price (USD)</label>
           <input
@@ -239,8 +234,8 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Order value | Delivered (50/50) */}
-      <div className="row" style={{ marginTop: 12 }}>
+      {/* Order value | Delivered (force 2 cols on mobile) */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Order value (USD)</label>
           <input
@@ -251,7 +246,6 @@ export default function NewOrder() {
             style={{ height: CONTROL_H, opacity: 0.9 }}
           />
         </div>
-
         <div style={{ display:'flex', alignItems:'end' }}>
           <label style={{ width:'100%' }}>
             Delivered
@@ -268,11 +262,10 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Conditional partner splits (customer has customer_type/Type = Partner) */}
+      {/* Conditional partner splits (2 cols on mobile too) */}
       {isPartnerCustomer && (
         <>
-          {/* Partner 1 | To Partner 1 (50/50) */}
-          <div className="row" style={{ marginTop: 12 }}>
+          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
             <div>
               <label>Partner 1</label>
               <select
@@ -299,8 +292,7 @@ export default function NewOrder() {
             </div>
           </div>
 
-          {/* Partner 2 | To Partner 2 (50/50) */}
-          <div className="row" style={{ marginTop: 12 }}>
+          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
             <div>
               <label>Partner 2</label>
               <select
@@ -345,5 +337,6 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
