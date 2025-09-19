@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchBootstrap, PAYMENT_TYPES, type PaymentType, createPayment, type Person } from '../lib/api'
+import { todayYMD } from '../lib/time'
 
 export default function Payments() {
   const [people, setPeople] = useState<Person[]>([])
@@ -10,7 +11,7 @@ export default function Payments() {
   const [entityId, setEntityId] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('') // allow negative
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10))
+  const [date, setDate] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
@@ -121,3 +122,4 @@ export default function Payments() {
     </div>
   )
 }
+
