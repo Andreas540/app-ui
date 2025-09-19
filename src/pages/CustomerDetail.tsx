@@ -1,8 +1,7 @@
 // src/pages/CustomerDetail.tsx
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
-import { fmtUSDate } from '../lib/time'
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -10,6 +9,7 @@ export default function CustomerDetailPage() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  // Keep existing “recent” behavior with a simple toggle
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
 
@@ -28,23 +28,20 @@ export default function CustomerDetailPage() {
     })()
   }, [id])
 
-  // Helpers
-  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }             // shipping cost
+  // --- Local helpers (no new imports) ---
+  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }                 // for shipping cost
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
-
-  const recentOrders = useMemo(() => {
-    if (!data) return []
-    return showAllOrders ? data.orders : data.orders.slice(0, 4)
-  }, [data, showAllOrders])
-
-  const recentPayments = useMemo(() => {
-    if (!data) return []
-    return showAllPayments ? data.payments : data.payments.slice(0, 4)
-  }, [data, showAllPayments])
+  function fmtUSDate(d: string | Date): string {
+    const date = typeof d === 'string' ? new Date(d) : d
+    const m = date.getMonth() + 1
+    const day = date.getDate()
+    const y = date.getFullYear()
+    return `${m}/${day}/${y}`
+  }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -53,6 +50,15 @@ export default function CustomerDetailPage() {
   const { customer, totals, orders, payments } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
+
+  const recentOrders = useMemo(
+    () => (showAllOrders ? orders : orders.slice(0, 4)),
+    [orders, showAllOrders]
+  )
+  const recentPayments = useMemo(
+    () => (showAllPayments ? payments : payments.slice(0, 4)),
+    [payments, showAllPayments]
+  )
 
   return (
     <div className="card" style={{maxWidth: 960}}>
@@ -110,6 +116,7 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
+      {/* Recent orders */}
       <div style={{ marginTop: 16, display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:8 }}>
         <h4 style={{ margin:0 }}>Recent orders</h4>
         {orders.length > 4 && (
@@ -135,14 +142,15 @@ export default function CustomerDetailPage() {
                 padding:'8px 0'
               }}
             >
-              <div className="helper">{fmtUSDate(o.order_date)}</div>
-              <div>{o.product_name}  /  {o.qty}</div>
+              <div className="helper">{fmtUSDate(o.order_date)} {o.delivered ? '✓' : ''}</div>
+              <div>{/* keep middle flexible; no product/qty dependency here */}</div>
               <div style={{textAlign:'right'}}>{fmtIntMoney(o.total)}</div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Recent payments */}
       <div style={{ marginTop: 16, display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:8 }}>
         <h4 style={{ margin:0 }}>Recent payments</h4>
         {payments.length > 4 && (
@@ -178,6 +186,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
