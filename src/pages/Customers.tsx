@@ -12,6 +12,7 @@ export default function Customers() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
+  const [filterType, setFilterType] = useState<'All' | 'BLV' | 'Partner'>('All')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -45,12 +46,21 @@ export default function Customers() {
     inputRef.current?.blur()
   }
 
+  // Apply customer_type filter locally
+  const visible = useMemo(() => {
+    if (filterType === 'All') return customers
+    return customers.filter(c => {
+      const t = (c as any).customer_type ?? c.type
+      return t === filterType
+    })
+  }, [customers, filterType])
+
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* Top controls: search (left) + Create New Customer (right). Same height; 50/50 via .row grid */}
+      {/* Top controls: search (left) + Create New Customer (right). 50/50 via .row grid */}
       <div className="row" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>
-          {/* No "Search Customer" header as requested */}
+          {/* Search input (no header) */}
           <input
             ref={inputRef}
             placeholder="Search customer"
@@ -88,6 +98,7 @@ export default function Customers() {
                     padding: '8px 10px',
                     color: '#fff',
                     borderRadius: 8,
+                    cursor: 'pointer',
                   }}
                 >
                   {s.name}
@@ -107,17 +118,52 @@ export default function Customers() {
         </div>
       </div>
 
+      {/* Filter row: All / BLV / Partner (3 equal columns) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+          marginTop: 8,
+        }}
+      >
+        <button
+          className="primary"
+          onClick={() => setFilterType('All')}
+          aria-pressed={filterType === 'All'}
+          style={{ width: '100%' }}
+        >
+          All
+        </button>
+        <button
+          className="primary"
+          onClick={() => setFilterType('BLV')}
+          aria-pressed={filterType === 'BLV'}
+          style={{ width: '100%' }}
+        >
+          BLV
+        </button>
+        <button
+          className="primary"
+          onClick={() => setFilterType('Partner')}
+          aria-pressed={filterType === 'Partner'}
+          style={{ width: '100%' }}
+        >
+          Partner
+        </button>
+      </div>
+
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
           <p>Loading…</p>
-        ) : customers.length === 0 ? (
+        ) : visible.length === 0 ? (
           <p className="helper">No customers.</p>
         ) : (
           <div>
-            {customers.map((c) => (
+            {visible.map((c) => (
               <Link key={c.id} to={`/customers/${c.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
@@ -133,7 +179,7 @@ export default function Customers() {
       </div>
 
       {/* Clear search below the (single) result */}
-      {query && customers.length === 1 && (
+      {query && visible.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
         </div>
@@ -141,6 +187,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
