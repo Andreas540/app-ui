@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
+
+function fmtIntMoney(n: number) {
+  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
+}
 
 export default function Customers() {
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -14,7 +20,7 @@ export default function Customers() {
         setLoading(true); setErr(null)
         const res = await listCustomersWithOwed(query.trim() || undefined)
         setCustomers(res.customers)
-      } catch (e:any) {
+      } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
@@ -22,7 +28,7 @@ export default function Customers() {
     })()
   }, [query])
 
-  // suggestions based on current results
+  // Suggestions come from current results; show while typing/focused
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -33,62 +39,75 @@ export default function Customers() {
       .slice(0, 5)
   }, [query, customers])
 
-  // INTEGER dollars with commas
-  function fmtIntMoney(n: number) {
-    return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
+  function pickSuggestion(name: string) {
+    setQuery(name)
+    setFocused(false)
+    inputRef.current?.blur()
   }
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* Top controls: search + create */}
+      {/* Top controls: search (left) + Create New Customer (right). Same height; 50/50 via .row grid */}
       <div className="row" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>
-          <label>Search</label>
+          {/* No "Search Customer" header as requested */}
           <input
+            ref={inputRef}
             placeholder="Search customer"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
           />
-          {query && suggestions.length > 0 && (
+          {(focused && query && suggestions.length > 0) && (
             <div
-              className="suggestions"
               style={{
                 position: 'absolute',
                 top: '100%',
                 left: 0,
                 right: 0,
                 marginTop: 4,
-                borderRadius: 8,
-                background: 'rgba(47,109,246,.15)',
+                borderRadius: 10,
+                background: 'rgba(47,109,246,0.90)', // light blue overlay
                 color: '#fff',
                 padding: 6,
-                zIndex: 50
+                zIndex: 50,
+                boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
               }}
             >
-              {suggestions.map((s) => (
-                <div key={s.id}>
-                  <button
-                    className="primary"
-                    style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px' }}
-                    onClick={() => setQuery(s.name)}
-                  >
-                    {s.name}
-                  </button>
-                </div>
+              {suggestions.map(s => (
+                <button
+                  key={s.id}
+                  className="primary"
+                  onClick={() => pickSuggestion(s.name)}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    color: '#fff',
+                    borderRadius: 8,
+                  }}
+                >
+                  {s.name}
+                </button>
               ))}
             </div>
           )}
         </div>
 
         <div>
-          <label>&nbsp;</label>
+          {/* same visual height as input via global CSS */}
           <Link to="/customers/new">
-            <button className="primary" style={{ width: '100%' }}>Create New Customer</button>
+            <button className="primary" style={{ width: '100%' }}>
+              Create New Customer
+            </button>
           </Link>
         </div>
       </div>
 
-      {err && <p style={{ color: 'salmon' }}>Error: {err}</p>}
+      {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>
@@ -113,7 +132,7 @@ export default function Customers() {
         )}
       </div>
 
-      {/* Clear search (only when narrowed to one match) */}
+      {/* Clear search below the (single) result */}
       {query && customers.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
@@ -122,6 +141,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
