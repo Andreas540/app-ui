@@ -160,8 +160,8 @@ export default function Customers() {
         </button>
       </div>
 
-      {/* Blank row under filter buttons */}
-      <div style={{ height: 8 }} />
+      {/* --- Spacer under filter buttons (make it obvious) --- */}
+      <div style={{ height: 12 }} aria-hidden="true" />
 
       {/* Total for filtered customers */}
       <div
@@ -178,8 +178,8 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Blank row before list */}
-      <div style={{ height: 8 }} />
+      {/* Spacer before list */}
+      <div style={{ height: 8 }} aria-hidden="true" />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
@@ -215,6 +215,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
