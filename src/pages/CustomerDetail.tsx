@@ -35,14 +35,15 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
-  // ✅ Date-only safe formatter: 'YYYY-MM-DD' → 'M/D/YYYY' without TZ drift
+  // ✅ Robust date-only formatter: handles "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ"
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
     if (typeof d === 'string') {
-      const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+      // Take first 10 chars if it starts with YYYY-MM-DD (with or without time part)
+      const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/)
       if (m) {
         const y = Number(m[1]), mo = Number(m[2]), day = Number(m[3])
-        return `${mo}/${day}/${y}` // US: M/D/YYYY
+        return `${mo}/${day}/${y}` // US M/D/YYYY
       }
     }
     const dt = typeof d === 'string' ? new Date(d) : d
@@ -62,7 +63,7 @@ export default function CustomerDetailPage() {
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Slightly smaller date column & slightly tighter gap to nudge the middle text left
+  // Slightly smaller date column to keep middle column aligned
   const DATE_COL = 88 // px
 
   return (
@@ -85,7 +86,7 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
+      {/* Two columns: LEFT collapsible info; RIGHT totals */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         {/* LEFT */}
         <div>
@@ -219,6 +220,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
