@@ -35,8 +35,16 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
+  // ✅ Date-only safe formatter: 'YYYY-MM-DD' → 'M/D/YYYY' without TZ drift
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
+    if (typeof d === 'string') {
+      const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+      if (m) {
+        const y = Number(m[1]), mo = Number(m[2]), day = Number(m[3])
+        return `${mo}/${day}/${y}` // US: M/D/YYYY
+      }
+    }
     const dt = typeof d === 'string' ? new Date(d) : d
     if (Number.isNaN(dt.getTime())) return String(d)
     return dt.toLocaleDateString('en-US')
@@ -55,7 +63,7 @@ export default function CustomerDetailPage() {
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
   // Slightly smaller date column & slightly tighter gap to nudge the middle text left
-  const DATE_COL = 88 // px (was 100)
+  const DATE_COL = 88 // px
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -154,7 +162,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:6,                               // was 8 → pulls middle a bit left
+                  gap:6,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -195,7 +203,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:6,                               // was 8 → pulls middle a bit left
+                  gap:6,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -211,6 +219,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
