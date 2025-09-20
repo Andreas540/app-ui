@@ -46,35 +46,32 @@ async function getCustomer(event) {
       FROM o, p
     `
 
-    // Include first line's product + qty for each order
     const orders = await sql`
       SELECT
-        o.id, o.order_no, o.order_date, o.delivered,
+        o.id,
+        o.order_no,
+        to_char(o.order_date, 'YYYY-MM-DD') AS order_date,  -- ← date-only, no TZ
+        o.delivered,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-        fi.product_name,
-        fi.qty
+        COUNT(oi.id) AS lines
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN LATERAL (
-        SELECT p.name AS product_name, oi2.qty
-        FROM order_items oi2
-        JOIN products p ON p.id = oi2.product_id
-        WHERE oi2.order_id = o.id
-        ORDER BY oi2.created_at ASC, oi2.id ASC
-        LIMIT 1
-      ) fi ON TRUE
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
-      GROUP BY o.id, fi.product_name, fi.qty
+      GROUP BY o.id
       ORDER BY o.order_date DESC
-      LIMIT 100
+      LIMIT 50
     `
 
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount
+      SELECT
+        id,
+        to_char(payment_date, 'YYYY-MM-DD') AS payment_date, -- ← date-only, no TZ
+        payment_type,
+        amount
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ORDER BY payment_date DESC
-      LIMIT 100
+      LIMIT 50
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
@@ -103,13 +100,13 @@ async function updateCustomer(event) {
       return cors(400, { error: 'invalid customer_type' })
     }
     const sc = (shipping_cost === null || shipping_cost === undefined)
-      ? null : Number(shipping_cost)
+      ? null
+      : Number(shipping_cost)
     if (shipping_cost !== undefined && shipping_cost !== null && !Number.isFinite(sc)) {
       return cors(400, { error: 'shipping_cost must be a number or null' })
     }
 
     const sql = neon(DATABASE_URL)
-
     const res = await sql`
       UPDATE customers SET
         name = ${name},
@@ -145,6 +142,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 
