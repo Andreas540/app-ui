@@ -18,9 +18,8 @@ async function getCustomer(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Customer basics
     const cust = await sql`
-      SELECT id, name, type, customer_type, shipping_cost, phone,
+      SELECT id, name, customer_type, shipping_cost, phone,
              address1, address2, city, state, postal_code
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
@@ -29,7 +28,6 @@ async function getCustomer(event) {
     if (cust.length === 0) return cors(404, { error: 'Not found' })
     const customer = cust[0]
 
-    // Totals
     const totals = await sql`
       WITH o AS (
         SELECT SUM(oi.qty * oi.unit_price)::numeric(12,2) AS total_orders
@@ -48,45 +46,24 @@ async function getCustomer(event) {
       FROM o, p
     `
 
-    // Orders: date-only + first line's product/qty for display
     const orders = await sql`
-      SELECT
-        o.id,
-        o.order_no,
-        to_char(o.order_date, 'YYYY-MM-DD') AS order_date,
-        o.delivered,
-        COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS total,
-        COUNT(oi.id) AS lines,
-        fl.product_name,
-        fl.qty
+      SELECT o.id, o.order_no, o.order_date, o.delivered,
+             COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
+             COUNT(oi.id) AS lines
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      -- first line for display (product_name / qty)
-      LEFT JOIN LATERAL (
-        SELECT p.name AS product_name, oi2.qty
-        FROM order_items oi2
-        JOIN products p ON p.id = oi2.product_id
-        WHERE oi2.order_id = o.id
-        ORDER BY oi2.created_at ASC, oi2.id ASC
-        LIMIT 1
-      ) fl ON true
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
-      GROUP BY o.id, o.order_no, o.order_date, o.delivered, fl.product_name, fl.qty
+      GROUP BY o.id
       ORDER BY o.order_date DESC
-      LIMIT 50
+      LIMIT 20
     `
 
-    // Payments: date-only
     const payments = await sql`
-      SELECT
-        id,
-        to_char(payment_date, 'YYYY-MM-DD') AS payment_date,
-        payment_type,
-        amount
+      SELECT id, payment_date, payment_type, amount
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ORDER BY payment_date DESC
-      LIMIT 50
+      LIMIT 20
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
@@ -158,6 +135,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 
