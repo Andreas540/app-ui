@@ -18,8 +18,11 @@ async function getCustomer(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // basic customer
     const cust = await sql`
-      SELECT id, name, customer_type, shipping_cost, phone,
+      SELECT id, name,
+             customer_type,       -- BLV | Partner
+             shipping_cost, phone,
              address1, address2, city, state, postal_code
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
@@ -28,6 +31,7 @@ async function getCustomer(event) {
     if (cust.length === 0) return cors(404, { error: 'Not found' })
     const customer = cust[0]
 
+    // totals
     const totals = await sql`
       WITH o AS (
         SELECT SUM(oi.qty * oi.unit_price)::numeric(12,2) AS total_orders
@@ -46,24 +50,33 @@ async function getCustomer(event) {
       FROM o, p
     `
 
+    // orders: include product_name + qty when it's a single-line order
     const orders = await sql`
-      SELECT o.id, o.order_no, o.order_date, o.delivered,
-             COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-             COUNT(oi.id) AS lines
+      SELECT
+        o.id,
+        o.order_no,
+        (o.order_date::date) AS order_date,     -- strip time to avoid TZ shifts
+        o.delivered,
+        COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
+        COUNT(oi.id) AS lines,
+        CASE WHEN COUNT(oi.id) = 1 THEN MAX(p.name) END AS product_name,
+        CASE WHEN COUNT(oi.id) = 1 THEN MAX(oi.qty)  END AS qty
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products p     ON p.id = oi.product_id
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
       GROUP BY o.id
-      ORDER BY o.order_date DESC
-      LIMIT 20
+      ORDER BY o.order_date DESC, o.order_no DESC
+      LIMIT 200
     `
 
+    // payments
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount
+      SELECT id, (payment_date::date) AS payment_date, payment_type, amount
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
-      ORDER BY payment_date DESC
-      LIMIT 20
+      ORDER BY payment_date DESC, id DESC
+      LIMIT 200
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
@@ -86,11 +99,12 @@ async function updateCustomer(event) {
       phone, address1, address2, city, state, postal_code
     } = body || {}
 
-    if (!id)   return cors(400, { error: 'id is required' })
+    if (!id) return cors(400, { error: 'id is required' })
     if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
     if (customer_type && !['BLV','Partner'].includes(customer_type)) {
       return cors(400, { error: 'invalid customer_type' })
     }
+
     const sc = (shipping_cost === null || shipping_cost === undefined)
       ? null
       : Number(shipping_cost)
@@ -99,7 +113,6 @@ async function updateCustomer(event) {
     }
 
     const sql = neon(DATABASE_URL)
-
     const res = await sql`
       UPDATE customers SET
         name = ${name},
@@ -115,7 +128,6 @@ async function updateCustomer(event) {
       RETURNING id
     `
     if (res.length === 0) return cors(404, { error: 'Not found' })
-
     return cors(200, { ok: true })
   } catch (e) {
     console.error(e)
@@ -135,6 +147,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 
