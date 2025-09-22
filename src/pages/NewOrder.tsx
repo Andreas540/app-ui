@@ -1,11 +1,14 @@
+// src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { fetchBootstrap, createOrder, type Person, type Product, type Partner } from '../lib/api'
+import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
+
+type PartnerRef = { id: string; name: string }
 
 export default function NewOrder() {
   const [people, setPeople] = useState<Person[]>([])
+  const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
   const [products, setProducts] = useState<Product[]>([])
-  const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
@@ -22,7 +25,7 @@ export default function NewOrder() {
   const [priceStr, setPriceStr] = useState('')    // decimal string
   const [delivered, setDelivered] = useState(false) // default unchecked
 
-  // Partner splits (UI only for now)
+  // Partner splits
   const [partner1Id, setPartner1Id] = useState('')
   const [partner2Id, setPartner2Id] = useState('')
   const [partner1AmtStr, setPartner1AmtStr] = useState('')
@@ -32,10 +35,10 @@ export default function NewOrder() {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers, products, partners } = await fetchBootstrap()
+        const { customers, products, partners: bootPartners } = await fetchBootstrap()
         setPeople(customers)
         setProducts(products)
-        setPartners(partners)
+        setPartners(bootPartners ?? [])
         if (products[0]) setProductId(products[0].id)
       } catch (e: any) {
         setErr(e?.message || String(e))
@@ -48,7 +51,7 @@ export default function NewOrder() {
   const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
-  // Suggestions like Customers.tsx
+  // Suggestions (like Customers.tsx)
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -85,17 +88,17 @@ export default function NewOrder() {
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
-  // IMPORTANT: Only customer_type controls the UI now
-  const isPartnerCustomer = (person as any)?.customer_type === 'Partner'
+  // IMPORTANT: only customer_type controls this (NOT the legacy "type")
+  const personCustomerType = (person as any)?.customer_type
+  const isPartnerCustomer = personCustomerType === 'Partner'
 
-  // Partner 2 dropdown excludes chosen Partner 1
   const partner2Options = useMemo(
     () => partners.filter(p => p.id !== partner1Id),
     [partners, partner1Id]
   )
 
   async function save() {
-    if (!person) { alert('Select a customer first'); return }
+    if (!person)  { alert('Select a customer first'); return }
     if (!product) { alert('Pick a product'); return }
 
     const qty = parseInt(qtyStr || '0', 10)
@@ -103,6 +106,15 @@ export default function NewOrder() {
 
     const unitPrice = parsePriceToNumber(priceStr)
     if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
+
+    // Build partner_splits only for Partner customers
+    const splits: Array<{ partner_id: string; amount: number }> = []
+    if (isPartnerCustomer) {
+      const a1 = Number(partner1AmtStr)
+      if (partner1Id && Number.isFinite(a1) && a1 !== 0) splits.push({ partner_id: partner1Id, amount: a1 })
+      const a2 = Number(partner2AmtStr)
+      if (partner2Id && Number.isFinite(a2) && a2 !== 0) splits.push({ partner_id: partner2Id, amount: a2 })
+    }
 
     try {
       const { order_no } = await createOrder({
@@ -113,6 +125,7 @@ export default function NewOrder() {
         date: orderDate,
         delivered,
         discount: 0,
+        partner_splits: splits.length ? splits : undefined,
       })
       alert(`Saved! Order #${order_no}`)
 
@@ -146,8 +159,9 @@ export default function NewOrder() {
           placeholder="Start typing a name…"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value)
-            if (person && !person.name.toLowerCase().includes(e.target.value.trim().toLowerCase())) {
+            const val = e.target.value
+            setQuery(val)
+            if (person && !person.name.toLowerCase().includes(val.trim().toLowerCase())) {
               setEntityId('')
             }
           }}
@@ -194,7 +208,7 @@ export default function NewOrder() {
         )}
       </div>
 
-      {/* Product | Order date (force 2 cols on mobile) */}
+      {/* Product | Order date */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Product</label>
@@ -208,7 +222,7 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Quantity | Order price (force 2 cols on mobile) */}
+      {/* Quantity | Order price */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Quantity</label>
@@ -234,7 +248,7 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Order value | Delivered (force 2 cols on mobile) */}
+      {/* Order value | Delivered */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Order value (USD)</label>
@@ -262,7 +276,7 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* Conditional partner splits (2 cols on mobile too) */}
+      {/* Partner splits (only when selected customer's customer_type === 'Partner') */}
       {isPartnerCustomer && (
         <>
           <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
@@ -337,6 +351,7 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
 

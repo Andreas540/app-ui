@@ -1,4 +1,4 @@
-// netlify/functions/orders.mjs
+// netlify/functions/order.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'POST')    return createOrder(event);
@@ -13,7 +13,10 @@ async function createOrder(event) {
     if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
-    const { customer_id, product_id, qty, unit_price, date, delivered, discount } = body || {};
+    const {
+      customer_id, product_id, qty, unit_price, date, delivered, discount,
+      partner_splits
+    } = body || {};
 
     const qtyInt = parseInt(qty, 10);
     const unitPriceNum = Number(unit_price);
@@ -33,7 +36,7 @@ async function createOrder(event) {
     `;
     const orderNo = Number(nextNo[0].n) || 1;
 
-    // Create order header
+    // Header
     const hdr = await sql`
       INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount)
       VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0})
@@ -41,57 +44,41 @@ async function createOrder(event) {
     `;
     const orderId = hdr[0].id;
 
-    // Snapshot cost from history:
-    // 1) prefer the last history row effective on or before the order date
-    // 2) else fall back to the earliest history row
-    // 3) else fall back to products.cost (if any)
-    let snapshotCost = null;
-
-    const h1 = await sql`
-      SELECT cost
-      FROM product_cost_history
-      WHERE product_id = ${product_id}
-        AND effective_from::date <= ${date}
-      ORDER BY effective_from DESC
-      LIMIT 1
+    // Line (snapshot product cost)
+    await sql`
+      INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
+      VALUES (
+        ${orderId},
+        ${product_id},
+        ${qtyInt},
+        ${unitPriceNum},
+        (SELECT cost FROM products WHERE id = ${product_id} AND tenant_id = ${TENANT_ID})
+      )
     `;
-    if (h1.length > 0) {
-      snapshotCost = Number(h1[0].cost);
-    } else {
-      const h2 = await sql`
-        SELECT cost
-        FROM product_cost_history
-        WHERE product_id = ${product_id}
-        ORDER BY effective_from ASC
-        LIMIT 1
-      `;
-      if (h2.length > 0) {
-        snapshotCost = Number(h2[0].cost);
-      } else {
-        const p = await sql`
-          SELECT cost
-          FROM products
-          WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+
+    // ⬇️ NEW: Partner splits
+    if (Array.isArray(partner_splits) && partner_splits.length) {
+      for (const s of partner_splits) {
+        const pid = s?.partner_id?.trim?.()
+        const amt = Number(s?.amount)
+        if (!pid || !Number.isFinite(amt) || amt === 0) continue
+
+        // Ensure partner belongs to tenant
+        const exists = await sql`
+          SELECT 1 FROM partners
+          WHERE id = ${pid} AND tenant_id = ${TENANT_ID}
           LIMIT 1
-        `;
-        if (p.length > 0 && p[0].cost !== null) snapshotCost = Number(p[0].cost);
+        `
+        if (exists.length === 0) continue
+
+        await sql`
+          INSERT INTO order_partners (order_id, partner_id, amount)
+          VALUES (${orderId}, ${pid}, ${amt})
+        `
       }
     }
 
-    // Insert order line with snapshotted cost
-    const line = await sql`
-      INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
-      VALUES (${orderId}, ${product_id}, ${qtyInt}, ${unitPriceNum}, ${snapshotCost})
-      RETURNING id
-    `;
-
-    return cors(201, {
-      ok: true,
-      order_no: orderNo,
-      order_id: orderId,
-      line_id: line[0].id,
-      snapshot_cost: snapshotCost
-    });
+    return cors(201, { ok: true, order_no: orderNo, order_id: orderId });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });
@@ -110,6 +97,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
 
 
 
