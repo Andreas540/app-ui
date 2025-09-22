@@ -1,11 +1,11 @@
-// src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
+import { fetchBootstrap, createOrder, type Person, type Product, type Partner } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 export default function NewOrder() {
   const [people, setPeople] = useState<Person[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
@@ -32,9 +32,10 @@ export default function NewOrder() {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers, products } = await fetchBootstrap()
+        const { customers, products, partners } = await fetchBootstrap()
         setPeople(customers)
         setProducts(products)
+        setPartners(partners)
         if (products[0]) setProductId(products[0].id)
       } catch (e: any) {
         setErr(e?.message || String(e))
@@ -51,10 +52,10 @@ export default function NewOrder() {
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    const seen = new Set<string>()
+    const uniq = new Set<string>()
     return people
       .filter(c => c.name.toLowerCase().includes(q))
-      .filter(c => (seen.has(c.name.toLowerCase()) ? false : (seen.add(c.name.toLowerCase()), true)))
+      .filter(c => (uniq.has(c.name.toLowerCase()) ? false : (uniq.add(c.name.toLowerCase()), true)))
       .slice(0, 5)
   }, [query, people])
 
@@ -84,17 +85,13 @@ export default function NewOrder() {
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
-  // ✅ Strict logic: only customer.customer_type controls the extra fields
+  // IMPORTANT: Only customer_type controls the UI now
   const isPartnerCustomer = (person as any)?.customer_type === 'Partner'
 
-  // ✅ Partner dropdowns list true business partners by type only
-  const partnersList = useMemo(
-    () => people.filter(p => p.type === 'Partner'),
-    [people]
-  )
+  // Partner 2 dropdown excludes chosen Partner 1
   const partner2Options = useMemo(
-    () => partnersList.filter(p => p.id !== partner1Id),
-    [partnersList, partner1Id]
+    () => partners.filter(p => p.id !== partner1Id),
+    [partners, partner1Id]
   )
 
   async function save() {
@@ -277,7 +274,7 @@ export default function NewOrder() {
                 style={{ height: CONTROL_H }}
               >
                 <option value="">—</option>
-                {partnersList.map(p => (
+                {partners.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
@@ -340,6 +337,7 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
 

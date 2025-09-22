@@ -12,12 +12,12 @@ export async function handler(event) {
 
     const sql = neon(DATABASE_URL);
 
-    // Customers (now also returning customer_type)
+    // Customers: we need customer_type here (NOT the old 'type')
     const customers = await sql`
-      SELECT id, name, type, customer_type
+      SELECT id, name, customer_type
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
-      ORDER BY type, name
+      ORDER BY name
     `;
 
     // Products (no unit_price here)
@@ -28,7 +28,7 @@ export async function handler(event) {
       ORDER BY name
     `;
 
-    // NEW: Partners table (business partners, not customers)
+    // Partners come from the dedicated partners table
     const partners = await sql`
       SELECT id, name
       FROM partners
@@ -55,4 +55,5 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
 

@@ -1,17 +1,15 @@
 // src/lib/api.ts
 
-// ---- Shared small types ----
-export type CustomerType = 'BLV' | 'Partner'
-
 // ---- Core types ----
 export type Person  = {
-  id: string
-  name: string
-  type: 'Customer' | 'Partner'     // legacy field still present in customers
-  customer_type?: CustomerType     // new, comes from DB (preferred)
+  id: string;
+  name: string;
+  // keep 'type' optional for backward compat, but we will rely on customer_type
+  type?: 'Customer' | 'Partner';
+  customer_type?: 'BLV' | 'Partner';
 }
-export type Partner = { id: string; name: string } // separate partners table
 export type Product = { id: string; name: string } // no unit_price anymore
+export type Partner = { id: string; name: string }
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -23,11 +21,7 @@ export async function fetchBootstrap() {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load bootstrap data (status ${res.status}) ${text?.slice(0,140)}`)
   }
-  return (await res.json()) as {
-    customers: Person[]
-    products: Product[]
-    partners: Partner[]
-  }
+  return (await res.json()) as { customers: Person[]; products: Product[]; partners: Partner[] }
 }
 
 // ---- Orders API ----
@@ -96,7 +90,7 @@ export async function listPayments(limit = 20) {
 export type CustomerWithOwed = {
   id: string
   name: string
-  type: 'Customer' | 'Partner'
+  type?: 'Customer' | 'Partner'
   customer_type?: 'BLV' | 'Partner'
   total_orders: number
   total_payments: number
@@ -113,6 +107,7 @@ export async function listCustomersWithOwed(q?: string) {
 }
 
 // ---- Create/Fetch/Update Customer ----
+export type CustomerType = 'BLV' | 'Partner'
 export type NewCustomerInput = {
   name: string
   customer_type: CustomerType
@@ -144,7 +139,6 @@ export type OrderSummary = {
   delivered: boolean
   total: number
   lines: number
-  // server may also include: product_name, qty (when single-line)
 }
 export type PaymentSummary = {
   id: string
@@ -156,7 +150,7 @@ export type CustomerDetail = {
   customer: {
     id: string
     name: string
-    type: 'Customer' | 'Partner'
+    type?: 'Customer' | 'Partner'
     customer_type?: 'BLV' | 'Partner'
     shipping_cost?: number | null
     phone?: string | null
@@ -195,7 +189,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 
 // --- Products ---
 export async function createProduct(input: { name: string; cost: number }) {
-  const res = await fetch('/api/product', {
+  const res = await fetch(`${base}/api/product`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
@@ -207,22 +201,19 @@ export async function createProduct(input: { name: string; cost: number }) {
   }
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>;
 }
-// --- Product types + API ---
 export type ProductWithCost = { id: string; name: string; cost: number | null };
-
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
-  const r = await fetch('/api/product', { method: 'GET' });
+  const r = await fetch(`${base}/api/product`, { method: 'GET' });
   if (!r.ok) throw new Error(`Failed to load products (${r.status})`);
   return r.json();
 }
-
 export async function updateProduct(input: {
   id: string;
   name?: string;
   cost?: number;
   apply_to_history?: boolean;
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
-  const r = await fetch('/api/product', {
+  const r = await fetch(`${base}/api/product`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
@@ -234,6 +225,7 @@ export async function updateProduct(input: {
   }
   return r.json();
 }
+
 
 
 
