@@ -1,20 +1,33 @@
 // src/lib/api.ts
 
+// ---- Shared small types ----
+export type CustomerType = 'BLV' | 'Partner'
+
 // ---- Core types ----
-export type Person  = { id: string; name: string; type: 'Customer' | 'Partner' }
+export type Person  = {
+  id: string
+  name: string
+  type: 'Customer' | 'Partner'     // legacy field still present in customers
+  customer_type?: CustomerType     // new, comes from DB (preferred)
+}
+export type Partner = { id: string; name: string } // separate partners table
 export type Product = { id: string; name: string } // no unit_price anymore
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-// ---- Bootstrap (customers + products without price) ----
+// ---- Bootstrap (customers + products + partners) ----
 export async function fetchBootstrap() {
   const res = await fetch(`${base}/api/bootstrap`, { method: 'GET', cache: 'no-store' })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load bootstrap data (status ${res.status}) ${text?.slice(0,140)}`)
   }
-  return (await res.json()) as { customers: Person[]; products: Product[] }
+  return (await res.json()) as {
+    customers: Person[]
+    products: Product[]
+    partners: Partner[]
+  }
 }
 
 // ---- Orders API ----
@@ -100,7 +113,6 @@ export async function listCustomersWithOwed(q?: string) {
 }
 
 // ---- Create/Fetch/Update Customer ----
-export type CustomerType = 'BLV' | 'Partner'
 export type NewCustomerInput = {
   name: string
   customer_type: CustomerType
@@ -132,6 +144,7 @@ export type OrderSummary = {
   delivered: boolean
   total: number
   lines: number
+  // server may also include: product_name, qty (when single-line)
 }
 export type PaymentSummary = {
   id: string
@@ -179,6 +192,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
   }
   return (await res.json()) as { ok: true }
 }
+
 // --- Products ---
 export async function createProduct(input: { name: string; cost: number }) {
   const res = await fetch('/api/product', {
@@ -220,5 +234,6 @@ export async function updateProduct(input: {
   }
   return r.json();
 }
+
 
 

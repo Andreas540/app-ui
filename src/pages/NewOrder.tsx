@@ -1,3 +1,4 @@
+// src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
@@ -19,7 +20,7 @@ export default function NewOrder() {
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
-  const [delivered, setDelivered] = useState(false) // default unchecked ✅
+  const [delivered, setDelivered] = useState(false) // default unchecked
 
   // Partner splits (UI only for now)
   const [partner1Id, setPartner1Id] = useState('')
@@ -50,10 +51,10 @@ export default function NewOrder() {
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    const uniq = new Set<string>()
+    const seen = new Set<string>()
     return people
       .filter(c => c.name.toLowerCase().includes(q))
-      .filter(c => (uniq.has(c.name.toLowerCase()) ? false : (uniq.add(c.name.toLowerCase()), true)))
+      .filter(c => (seen.has(c.name.toLowerCase()) ? false : (seen.add(c.name.toLowerCase()), true)))
       .slice(0, 5)
   }, [query, people])
 
@@ -83,10 +84,12 @@ export default function NewOrder() {
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
-  const personType = (person as any)?.customer_type ?? person?.type
-  const isPartnerCustomer = personType === 'Partner'
+  // ✅ Strict logic: only customer.customer_type controls the extra fields
+  const isPartnerCustomer = (person as any)?.customer_type === 'Partner'
+
+  // ✅ Partner dropdowns list true business partners by type only
   const partnersList = useMemo(
-    () => people.filter(p => ((p as any).customer_type ?? p.type) === 'Partner'),
+    () => people.filter(p => p.type === 'Partner'),
     [people]
   )
   const partner2Options = useMemo(
@@ -337,6 +340,7 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
 

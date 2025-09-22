@@ -12,14 +12,15 @@ export async function handler(event) {
 
     const sql = neon(DATABASE_URL);
 
+    // Customers (now also returning customer_type)
     const customers = await sql`
-      SELECT id, name, type
+      SELECT id, name, type, customer_type
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY type, name
     `;
 
-    // products now have NO unit_price
+    // Products (no unit_price here)
     const products = await sql`
       SELECT id, name
       FROM products
@@ -27,7 +28,15 @@ export async function handler(event) {
       ORDER BY name
     `;
 
-    return cors(200, { customers, products });
+    // NEW: Partners table (business partners, not customers)
+    const partners = await sql`
+      SELECT id, name
+      FROM partners
+      WHERE tenant_id = ${TENANT_ID}
+      ORDER BY name
+    `;
+
+    return cors(200, { customers, products, partners });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });
@@ -46,3 +55,4 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
