@@ -4,7 +4,6 @@ import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
 export default function CustomerDetailPage() {
-  // Hooks
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -35,18 +34,9 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
-  // ✅ Robust date-only formatter: handles "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ"
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
-    if (typeof d === 'string') {
-      // Take first 10 chars if it starts with YYYY-MM-DD (with or without time part)
-      const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/)
-      if (m) {
-        const y = Number(m[1]), mo = Number(m[2]), day = Number(m[3])
-        return `${mo}/${day}/${y}` // US M/D/YYYY
-      }
-    }
-    const dt = typeof d === 'string' ? new Date(d) : d
+    const dt = typeof d === 'string' ? new Date(d + (d.length <= 10 ? 'T00:00:00' : '')) : d
     if (Number.isNaN(dt.getTime())) return String(d)
     return dt.toLocaleDateString('en-US')
   }
@@ -59,12 +49,10 @@ export default function CustomerDetailPage() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
-  // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Slightly smaller date column to keep middle column aligned
-  const DATE_COL = 88 // px
+  const DATE_COL = 88
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -86,9 +74,8 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT collapsible info; RIGHT totals */}
+      {/* Two columns: LEFT collapsible info; RIGHT owed (right-aligned) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        {/* LEFT */}
         <div>
           {!showInfo ? (
             <button
@@ -110,7 +97,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">Type</div>
-                <div>{(customer as any).customer_type ?? customer.type}</div>
+                <div>{(customer as any).customer_type ?? '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -133,7 +120,6 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
@@ -220,6 +206,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 

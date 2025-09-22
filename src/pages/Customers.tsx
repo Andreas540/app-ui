@@ -29,6 +29,7 @@ export default function Customers() {
     })()
   }, [query])
 
+  // Suggestions from current results; show while typing/focused
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -45,14 +46,13 @@ export default function Customers() {
     inputRef.current?.blur()
   }
 
+  // Apply customer_type filter locally
   const visible = useMemo(() => {
     if (filterType === 'All') return customers
-    return customers.filter(c => {
-      const t = (c as any).customer_type ?? c.type
-      return t === filterType
-    })
+    return customers.filter(c => (c as any).customer_type === filterType)
   }, [customers, filterType])
 
+  // Sum owed_to_me over the visible (filtered) set
   const totalVisibleOwed = useMemo(
     () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
     [visible]
@@ -60,7 +60,7 @@ export default function Customers() {
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* search + create, forced 2-col on mobile */}
+      {/* Force 2 columns even on mobile */}
       <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>
           <input
@@ -69,14 +69,15 @@ export default function Customers() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 120)}
+            onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
           />
           {(focused && query && suggestions.length > 0) && (
             <div
               style={{
                 position: 'absolute',
                 top: '100%',
-                left: 0, right: 0,
+                left: 0,
+                right: 0,
                 marginTop: 4,
                 borderRadius: 10,
                 background: 'rgba(47,109,246,0.90)',
@@ -113,7 +114,7 @@ export default function Customers() {
           <Link to="/customers/new">
             <button
               className="primary"
-              style={{ width: '100%', height: 'var(--control-h)' }}
+              style={{ width: '100%', height: 'var(--control-h)' }}  // same height as input
             >
               Create New Customer
             </button>
@@ -121,7 +122,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* filters grid + a spacer as the 4th grid item */}
+      {/* Filter row: All / BLV / Partner */}
       <div
         style={{
           display: 'grid',
@@ -130,36 +131,15 @@ export default function Customers() {
           marginTop: 8,
         }}
       >
-        <button
-          className="primary"
-          onClick={() => setFilterType('All')}
-          aria-pressed={filterType === 'All'}
-          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          All
-        </button>
-        <button
-          className="primary"
-          onClick={() => setFilterType('BLV')}
-          aria-pressed={filterType === 'BLV'}
-          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          BLV
-        </button>
-        <button
-          className="primary"
-          onClick={() => setFilterType('Partner')}
-          aria-pressed={filterType === 'Partner'}
-          style={{ width: '100%', height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          Partner
-        </button>
-
-        {/* ← this is the guaranteed blank row */}
-        <div style={{ gridColumn: '1 / -1', height: 25 }} />
+        <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: 'calc(var(--control-h) * 0.67)' }}>All</button>
+        <button className="primary" onClick={() => setFilterType('BLV')}     aria-pressed={filterType === 'BLV'}     style={{ height: 'calc(var(--control-h) * 0.67)' }}>BLV</button>
+        <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: 'calc(var(--control-h) * 0.67)' }}>Partner</button>
       </div>
 
-      {/* total line */}
+      {/* Blank row */}
+      <div style={{ height: 8 }} />
+
+      {/* Total for filtered customers */}
       <div
         style={{
           display: 'grid',
@@ -174,11 +154,12 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* small spacer before list */}
-      <div style={{ height: 10 }} />
+      {/* Blank row */}
+      <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
+      {/* List */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
           <p>Loading…</p>
@@ -190,7 +171,7 @@ export default function Customers() {
               <Link key={c.id} to={`/customers/${c.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
-                  <div className="helper">{(c as any).customer_type ?? c.type}</div>
+                  <div className="helper">{(c as any).customer_type ?? '—'}</div>
                 </div>
                 <div style={{ textAlign: 'right', alignSelf: 'center' }}>
                   {fmtIntMoney(c.owed_to_me)}
@@ -201,6 +182,7 @@ export default function Customers() {
         )}
       </div>
 
+      {/* Clear search below the (single) result */}
       {query && visible.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
@@ -209,6 +191,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
