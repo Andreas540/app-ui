@@ -148,7 +148,7 @@ export default function Customers() {
       </div>
 
       {/* Blank row */}
-      <div style={{ height: 8 }} />
+      <div style={{ height: 20 }} />
 
       {/* Total for filtered customers */}
       <div
