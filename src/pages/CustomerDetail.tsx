@@ -229,7 +229,7 @@ export default function CustomerDetailPage() {
                   <div className="helper">{withPartner}</div>
 
                   {/* RIGHT TOTAL — with $ sign */}
-                  <div className="helper" style={{textAlign:'right'}}>{`${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}</div>
+                  <div className="helper" style={{textAlign:'right'}}>{`$${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}</div>
                 </div>
               )
             })}
@@ -276,7 +276,7 @@ export default function CustomerDetailPage() {
 
                 {/* AMOUNT with $ sign */}
                 <div className="helper" style={{textAlign:'right'}}>
-                  {`${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
+                  {`$${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
                 </div>
               </div>
             ))}
