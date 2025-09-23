@@ -35,11 +35,12 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
+  // US date with 2-digit year: 9/22/25
   function fmtUS(d: string | Date | undefined) {
     if (!d) return ''
     const dt = typeof d === 'string' ? new Date(d) : d
     if (Number.isNaN(dt.getTime())) return String(d)
-    return dt.toLocaleDateString('en-US')
+    return dt.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -54,11 +55,12 @@ export default function CustomerDetailPage() {
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Only show partner amount for Partner customers  ⬅️ DECLARED HERE
+  // Only show partner amount for Partner customers
   const isPartnerCustomer = (customer as any).customer_type === 'Partner'
 
-  // Slightly smaller date column to keep middle text aligned with date
-  const DATE_COL = 88 // px
+  // Tighter date column + smaller gap to pull the middle text closer
+  const DATE_COL = 72 // was 88
+  const ROW_GAP  = 4  // was 6
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -157,7 +159,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:6,
+                  gap:ROW_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -200,7 +202,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:6,
+                  gap:ROW_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -216,6 +218,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
