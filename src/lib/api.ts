@@ -1,25 +1,20 @@
 // src/lib/api.ts
 
 // ---- Core types ----
-export type Person  = {
-  id: string;
-  name: string;
-  customer_type?: 'BLV' | 'Partner';
-}
-export type Partner = { id: string; name: string }
+export type Person  = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
 export type Product = { id: string; name: string } // no unit_price anymore
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-// ---- Bootstrap (customers + products + partners) ----
+// ---- Bootstrap (customers + products without price) ----
 export async function fetchBootstrap() {
   const res = await fetch(`${base}/api/bootstrap`, { method: 'GET', cache: 'no-store' })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load bootstrap data (status ${res.status}) ${text?.slice(0,140)}`)
   }
-  return (await res.json()) as { customers: Person[]; products: Product[]; partners: Partner[] }
+  return (await res.json()) as { customers: Person[]; products: Product[]; partners?: Array<{id:string;name:string}> }
 }
 
 // ---- Orders API ----
@@ -76,7 +71,6 @@ export async function createPayment(input: NewPaymentInput) {
   }
   return (await res.json()) as { ok: true; id: string }
 }
-
 export async function listPayments(limit = 20) {
   const res = await fetch(`${base}/api/payments?limit=${encodeURIComponent(String(limit))}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(`Failed to load payments (status ${res.status})`)
@@ -93,6 +87,7 @@ export type CustomerWithOwed = {
   customer_type?: 'BLV' | 'Partner'
   total_orders: number
   total_payments: number
+  owed_to_partners?: number   // NEW: from backend
   owed_to_me: number
 }
 export async function listCustomersWithOwed(q?: string) {
@@ -138,8 +133,6 @@ export type OrderSummary = {
   delivered: boolean
   total: number
   lines: number
-  product_name?: string
-  qty?: number
 }
 export type PaymentSummary = {
   id: string
@@ -187,11 +180,9 @@ export async function updateCustomer(input: UpdateCustomerInput) {
   return (await res.json()) as { ok: true }
 }
 
-// --- Products (use base for consistency) ---
-export type ProductWithCost = { id: string; name: string; cost: number | null };
-
+// --- Products (unchanged below) ---
 export async function createProduct(input: { name: string; cost: number }) {
-  const res = await fetch(`${base}/api/product`, {
+  const res = await fetch('/api/product', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
@@ -204,8 +195,10 @@ export async function createProduct(input: { name: string; cost: number }) {
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>;
 }
 
+export type ProductWithCost = { id: string; name: string; cost: number | null };
+
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
-  const r = await fetch(`${base}/api/product`, { method: 'GET' });
+  const r = await fetch('/api/product', { method: 'GET' });
   if (!r.ok) throw new Error(`Failed to load products (${r.status})`);
   return r.json();
 }
@@ -216,7 +209,7 @@ export async function updateProduct(input: {
   cost?: number;
   apply_to_history?: boolean;
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
-  const r = await fetch(`${base}/api/product`, {
+  const r = await fetch('/api/product', {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
@@ -228,6 +221,7 @@ export async function updateProduct(input: {
   }
   return r.json();
 }
+
 
 
 

@@ -57,6 +57,17 @@ export default function Customers() {
     () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
     [visible]
   )
+  // Sum partners' amounts over the visible (filtered) set
+  const totalPartners = useMemo(
+    () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_partners || 0), 0),
+    [visible]
+  )
+
+  // "My $" = Total owed to me - Owed to Partners
+  const myDollars = useMemo(
+    () => Math.max(0, Number(totalVisibleOwed) - Number(totalPartners)),
+    [totalVisibleOwed, totalPartners]
+  )
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
@@ -156,6 +167,39 @@ export default function Customers() {
 
       {/* Blank row */}
       <div style={{ height: 8 }} />
+{/* Owed to partners */}
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: 8,
+    alignItems: 'center',
+  }}
+>
+  <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
+  <div style={{ textAlign: 'right', fontWeight: 600 }}>
+    {fmtIntMoney(totalPartners)}
+  </div>
+</div>
+
+{/* My $ */}
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: 8,
+    alignItems: 'center',
+    marginTop: 4,
+  }}
+>
+  <div style={{ fontWeight: 600, color: 'var(--text)' }}>My $</div>
+  <div style={{ textAlign: 'right', fontWeight: 600 }}>
+    {fmtIntMoney(myDollars)}
+  </div>
+</div>
+
+{/* Blank row */}
+<div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
