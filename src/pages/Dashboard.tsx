@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
-import { getOrders, clearOrders } from '../lib/storage'
+import { clearOrders } from '../lib/storage'
 
 function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
