@@ -85,7 +85,7 @@ export default function CustomerDetailPage() {
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
   // Compact layout constants
-  const DATE_COL = 78 // px (smaller; pulls middle text left)
+  const DATE_COL = 55 // px (smaller; pulls middle text left)
   const LINE_GAP = 4  // tighter than default
 
   return (
@@ -195,7 +195,7 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 10px 1fr auto`,
+                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -259,7 +259,7 @@ export default function CustomerDetailPage() {
                 key={p.id}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 10px 1fr auto`,
+                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
