@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 
 export default function CustomerDetailPage() {
+  // Hooks
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -35,20 +36,11 @@ export default function CustomerDetailPage() {
     return s ? `tel:${s}` : undefined
   }
   function fmtUS(d: string | Date | undefined) {
-  if (!d) return ''
-  if (typeof d === 'string') {
-    // If it's "YYYY-MM-DD" or "YYYY-MM-DDT...Z", treat as date-only
-    const m = /^(\d{4})-(\d{2})-(\d{2})(?:T.*Z)?$/.exec(d)
-    if (m) {
-      const [, y, mm, dd] = m
-      return `${Number(mm)}/${Number(dd)}/${y}` // 9/22/2025
-    }
-    // otherwise, fall through to Date parsing
+    if (!d) return ''
+    const dt = typeof d === 'string' ? new Date(d) : d
+    if (Number.isNaN(dt.getTime())) return String(d)
+    return dt.toLocaleDateString('en-US')
   }
-  const dt = new Date(d as any)
-  if (Number.isNaN(dt.getTime())) return String(d)
-  return dt.toLocaleDateString('en-US')
-}
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -58,10 +50,15 @@ export default function CustomerDetailPage() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
+  // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  const DATE_COL = 88
+  // Only show partner amount for Partner customers  ⬅️ DECLARED HERE
+  const isPartnerCustomer = (customer as any).customer_type === 'Partner'
+
+  // Slightly smaller date column to keep middle text aligned with date
+  const DATE_COL = 88 // px
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -83,8 +80,9 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT collapsible info; RIGHT owed (right-aligned) */}
+      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        {/* LEFT */}
         <div>
           {!showInfo ? (
             <button
@@ -129,6 +127,7 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
+        {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
@@ -164,12 +163,13 @@ export default function CustomerDetailPage() {
                 }}
               >
                 <div className="helper">{fmtUS((o as any).order_date)}</div>
-                <div>
-  {(o as any).product_name && (o as any).qty != null
-    ? `${(o as any).product_name}  /  ${(o as any).qty}  /  ${fmtMoney((o as any).unit_price)}  /  ${fmtIntMoney((o as any).partner_amount ?? 0)}`
-    : `${o.lines} line(s)`}
-</div>
-
+                <div className="helper">
+                  {(o as any).product_name && (o as any).qty != null
+                    ? `${(o as any).product_name}  /  ${(o as any).qty}  /  ${fmtMoney((o as any).unit_price)}${
+                        isPartnerCustomer ? `  /  ${fmtIntMoney((o as any).partner_amount ?? 0)}` : ''
+                      }`
+                    : `${o.lines} line(s)`}
+                </div>
                 <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
               </div>
             ))}
@@ -206,7 +206,7 @@ export default function CustomerDetailPage() {
                 }}
               >
                 <div className="helper">{fmtUS((p as any).payment_date)}</div>
-                <div>{(p as any).payment_type}</div>
+                <div className="helper">{(p as any).payment_type}</div>
                 <div style={{textAlign:'right'}}>{fmtIntMoney((p as any).amount)}</div>
               </div>
             ))}
@@ -216,6 +216,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
