@@ -58,9 +58,9 @@ export default function CustomerDetailPage() {
   // Only show partner amount for Partner customers
   const isPartnerCustomer = (customer as any).customer_type === 'Partner'
 
-  // Tighter date column + smaller gap to pull the middle text closer
-  const DATE_COL = 72 // was 88
-  const ROW_GAP  = 4  // was 6
+  // Compact layout
+  const DATE_COL = 72
+  const ROW_GAP  = 4
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -172,7 +172,9 @@ export default function CustomerDetailPage() {
                       }`
                     : `${o.lines} line(s)`}
                 </div>
-                <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
+                <div className="helper" style={{textAlign:'right'}}>
+                  {fmtIntMoney((o as any).total)}
+                </div>
               </div>
             ))}
           </div>
@@ -209,7 +211,9 @@ export default function CustomerDetailPage() {
               >
                 <div className="helper">{fmtUS((p as any).payment_date)}</div>
                 <div className="helper">{(p as any).payment_type}</div>
-                <div style={{textAlign:'right'}}>{fmtIntMoney((p as any).amount)}</div>
+                <div className="helper" style={{textAlign:'right'}}>
+                  {fmtIntMoney((p as any).amount)}
+                </div>
               </div>
             ))}
           </div>
@@ -218,6 +222,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
