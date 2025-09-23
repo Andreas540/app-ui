@@ -195,7 +195,7 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                    gridTemplateColumns:`${DATE_COL}px 10px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -259,7 +259,7 @@ export default function CustomerDetailPage() {
                 key={p.id}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                  gridTemplateColumns:`${DATE_COL}px 10px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
