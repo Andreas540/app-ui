@@ -37,13 +37,13 @@ export default function CustomerDetailPage() {
   function fmtUS(d: string | Date | undefined) {
   if (!d) return ''
   if (typeof d === 'string') {
-    // If it's a date-only string (YYYY-MM-DD), format it manually to avoid TZ shifts
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d)
+    // If it's "YYYY-MM-DD" or "YYYY-MM-DDT...Z", treat as date-only
+    const m = /^(\d{4})-(\d{2})-(\d{2})(?:T.*Z)?$/.exec(d)
     if (m) {
       const [, y, mm, dd] = m
-      return `${Number(mm)}/${Number(dd)}/${y}` // e.g., 9/22/2025
+      return `${Number(mm)}/${Number(dd)}/${y}` // 9/22/2025
     }
-    // otherwise fall through and let Date parse it
+    // otherwise, fall through to Date parsing
   }
   const dt = new Date(d as any)
   if (Number.isNaN(dt.getTime())) return String(d)
