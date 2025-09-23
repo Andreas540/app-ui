@@ -35,11 +35,20 @@ export default function CustomerDetailPage() {
     return s ? `tel:${s}` : undefined
   }
   function fmtUS(d: string | Date | undefined) {
-    if (!d) return ''
-    const dt = typeof d === 'string' ? new Date(d + (d.length <= 10 ? 'T00:00:00' : '')) : d
-    if (Number.isNaN(dt.getTime())) return String(d)
-    return dt.toLocaleDateString('en-US')
+  if (!d) return ''
+  if (typeof d === 'string') {
+    // If it's a date-only string (YYYY-MM-DD), format it manually to avoid TZ shifts
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d)
+    if (m) {
+      const [, y, mm, dd] = m
+      return `${Number(mm)}/${Number(dd)}/${y}` // e.g., 9/22/2025
+    }
+    // otherwise fall through and let Date parse it
   }
+  const dt = new Date(d as any)
+  if (Number.isNaN(dt.getTime())) return String(d)
+  return dt.toLocaleDateString('en-US')
+}
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
