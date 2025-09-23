@@ -69,8 +69,6 @@ export default function Dashboard() {
     [totalOwedToMe, totalOwedToPartners]
   )
 
-  // Keep local orders for maintenance section only
-  const orders = getOrders()
 
   // Show 5 or 10 orders based on expand state
   const shownOrders = showAllOrders ? recentOrders.slice(0, 10) : recentOrders.slice(0, 5)
