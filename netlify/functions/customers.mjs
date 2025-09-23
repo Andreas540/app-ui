@@ -17,31 +17,39 @@ async function listCustomers(event) {
     const q = (event.queryStringParameters?.q || '').trim();
     const like = q ? `%${q.toLowerCase()}%` : null;
 
-    const rows = await sql`
-      SELECT
-        c.id,
-        c.name,
-        c.customer_type,
-        COALESCE(t.total_orders, 0)::numeric(12,2)   AS total_orders,
-        COALESCE(t.total_payments, 0)::numeric(12,2) AS total_payments,
-        (COALESCE(t.total_orders, 0) - COALESCE(t.total_payments, 0))::numeric(12,2) AS owed_to_me
-      FROM customers c
-      LEFT JOIN LATERAL (
-        SELECT
-          (SELECT COALESCE(SUM(oi.qty * oi.unit_price), 0)
-             FROM orders o
-             JOIN order_items oi ON oi.order_id = o.id
-            WHERE o.tenant_id = ${TENANT_ID}
-              AND o.customer_id = c.id) AS total_orders,
-          (SELECT COALESCE(SUM(p.amount), 0)
-             FROM payments p
-            WHERE p.tenant_id = ${TENANT_ID}
-              AND p.customer_id = c.id) AS total_payments
-      ) t ON TRUE
-      WHERE c.tenant_id = ${TENANT_ID}
-        ${like ? sql`AND LOWER(c.name) LIKE ${like}` : sql``}
-      ORDER BY c.name
-    `;
+    // Replace your existing SQL query in customers.mjs with this:
+
+const rows = await sql`
+  SELECT
+    c.id,
+    c.name,
+    c.customer_type,
+    COALESCE(t.total_orders, 0)::numeric(12,2)   AS total_orders,
+    COALESCE(t.total_payments, 0)::numeric(12,2) AS total_payments,
+    COALESCE(t.owed_to_partners, 0)::numeric(12,2) AS owed_to_partners,
+    (COALESCE(t.total_orders, 0) - COALESCE(t.total_payments, 0))::numeric(12,2) AS owed_to_me
+  FROM customers c
+  LEFT JOIN LATERAL (
+    SELECT
+      (SELECT COALESCE(SUM(oi.qty * oi.unit_price), 0)
+         FROM orders o
+         JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.tenant_id = ${TENANT_ID}
+          AND o.customer_id = c.id) AS total_orders,
+      (SELECT COALESCE(SUM(p.amount), 0)
+         FROM payments p
+        WHERE p.tenant_id = ${TENANT_ID}
+          AND p.customer_id = c.id) AS total_payments,
+      (SELECT COALESCE(SUM(op.amount), 0)
+   FROM orders o
+   JOIN order_partners op ON op.order_id = o.id
+  WHERE o.tenant_id = ${TENANT_ID}
+    AND o.customer_id = c.id) AS owed_to_partners
+  ) t ON TRUE
+  WHERE c.tenant_id = ${TENANT_ID}
+    ${like ? sql`AND LOWER(c.name) LIKE ${like}` : sql``}
+  ORDER BY c.name
+`;
 
     return cors(200, { customers: rows });
   } catch (e) {
