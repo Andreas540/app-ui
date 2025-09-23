@@ -59,9 +59,9 @@ export default function Customers() {
   )
   // Sum partners' amounts over the visible (filtered) set
   const totalPartners = useMemo(
-    () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_partners || 0), 0),
-    [visible]
-  )
+  () => visible.reduce((sum, c) => sum + Number(c.owed_to_partners || 0), 0),
+  [visible]
+)
 
   // "My $" = Total owed to me - Owed to Partners
   const myDollars = useMemo(
