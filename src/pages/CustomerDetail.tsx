@@ -58,9 +58,9 @@ export default function CustomerDetailPage() {
   // Only show partner amount for Partner customers
   const isPartnerCustomer = (customer as any).customer_type === 'Partner'
 
-  // Compact layout
-  const DATE_COL = 72
-  const ROW_GAP  = 4
+  // —— Layout knobs (the “blank space” you asked about) ——
+  const DATE_COL = 52 // px  ← tweak here (smaller = middle moves further left)
+  const ROW_GAP  = 2  // px  ← tweak here (smaller = less gap between columns)
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -159,7 +159,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:ROW_GAP,
+                  gap:ROW_GAP, // ← and here (the column gap)
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -204,7 +204,7 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:ROW_GAP,
+                  gap:ROW_GAP, // ← and here (the column gap)
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
@@ -222,6 +222,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
