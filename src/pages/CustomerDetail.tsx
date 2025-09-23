@@ -37,6 +37,40 @@ export default function CustomerDetailPage() {
     return s ? `tel:${s}` : undefined
   }
 
+  const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/orders-delivery`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          order_id: orderId, 
+          delivered: newDeliveredStatus 
+        }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
+      }
+      
+      // Update the local state to reflect the change immediately
+      setData(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          orders: prev.orders.map(order => 
+            order.id === orderId 
+              ? { ...order, delivered: newDeliveredStatus }
+              : order
+          )
+        }
+      })
+    } catch (e: any) {
+      console.error('Failed to toggle delivery status:', e)
+      alert(`Failed to update delivery status: ${e.message}`)
+    }
+  }
+
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
   if (!data) return null
@@ -153,7 +187,7 @@ export default function CustomerDetailPage() {
                   : `${o.lines} line(s)`
 
               const withPartner = isPartnerCustomer && (o as any).partner_amount != null
-                ? `${middle} / $${Number((o as any).partner_amount).toFixed(2)}`
+                ? `${middle} / $${Math.round(Number((o as any).partner_amount))}`
                 : middle
 
               return (
@@ -161,7 +195,7 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 1fr auto`,
+                    gridTemplateColumns:`${DATE_COL}px auto 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -169,6 +203,27 @@ export default function CustomerDetailPage() {
                 >
                   {/* DATE (MM/DD/YY) */}
                   <div className="helper">{formatUSAny((o as any).order_date)}</div>
+
+                  {/* DELIVERY CHECKMARK */}
+                  <div style={{ width: 16, textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleDeliveryToggle(o.id, !(o as any).delivered)}
+                      style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 14
+                      }}
+                      title={`Mark as ${(o as any).delivered ? 'undelivered' : 'delivered'}`}
+                    >
+                      {(o as any).delivered ? (
+                        <span style={{ color: '#10b981' }}>✓</span>
+                      ) : (
+                        <span style={{ color: '#d1d5db' }}>○</span>
+                      )}
+                    </button>
+                  </div>
 
                   {/* MIDDLE TEXT — compact like the date */}
                   <div className="helper">{withPartner}</div>
@@ -228,6 +283,3 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
-
-
-
