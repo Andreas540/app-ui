@@ -8,10 +8,11 @@ import Payments from './pages/Payments'
 import CreateCustomer from './pages/CreateCustomer'
 import CustomerDetail from './pages/CustomerDetail'
 import EditCustomer from './pages/EditCustomer'
-
-// ⬇️ NEW
 import NewProduct from './pages/NewProduct'
 import EditProduct from './pages/EditProduct'
+import Partners from './pages/Partners'
+import CreatePartner from './pages/CreatePartner'
+import PartnerDetail from './pages/PartnerDetail'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -43,11 +44,12 @@ export default function App() {
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
-          <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
-          <NavLink to="/payments" onClick={() => setNavOpen(false)}>Payments</NavLink>
-          {/* ⬇️ NEW — visible in menu, no quick button */}
-          <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
           <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
+          <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
+          <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
+          <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
+          <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
+          
           <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
         </nav>
 
@@ -65,6 +67,9 @@ export default function App() {
             <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/customers/:id/edit" element={<EditCustomer />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/partners" element={<Partners />} />
+<Route path="/partners/new" element={<CreatePartner />} />
+<Route path="/partners/:id" element={<PartnerDetail />} />
           </Routes>
         </main>
       </div>

@@ -100,6 +100,22 @@ export async function listCustomersWithOwed(q?: string) {
   return (await res.json()) as { customers: CustomerWithOwed[] }
 }
 
+// ---- Partners (with totals) ----
+export type PartnerWithOwed = {
+  id: string
+  name: string
+  total_owed: number
+}
+export async function listPartnersWithOwed(q?: string) {
+  const url = `${base}/api/partners` + (q ? `?q=${encodeURIComponent(q)}` : '')
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to load partners (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  return (await res.json()) as { partners: PartnerWithOwed[] }
+}
+
 // ---- Create/Fetch/Update Customer ----
 export type CustomerType = 'BLV' | 'Partner'
 export type NewCustomerInput = {
@@ -221,10 +237,3 @@ export async function updateProduct(input: {
   }
   return r.json();
 }
-
-
-
-
-
-
-
