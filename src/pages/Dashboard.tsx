@@ -48,9 +48,7 @@ export default function Dashboard() {
 
   return (
     <div className="grid">
-      <div className="card">
-        <h3>Financial Overview</h3>
-        
+      <div className="card">        
         {loading ? (
           <div className="helper">Loading...</div>
         ) : err ? (
@@ -106,8 +104,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-        
-        <div className="helper" style={{ marginTop: 12 }}>From customer database</div>
       </div>
 
       <div className="card">
