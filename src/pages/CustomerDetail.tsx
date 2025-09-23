@@ -2,10 +2,9 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
-import { formatUSAny } from '../lib/time'  // shared US formatter (MM/DD/YY), TZ-safe
+import { formatUSAny } from '../lib/time'
 
 export default function CustomerDetailPage() {
-  // Hooks
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,7 +44,7 @@ export default function CustomerDetailPage() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
-  // ✅ Use ONLY customer.customer_type now
+  // ONLY use customer.customer_type
   const isPartnerCustomer = useMemo(
     () => (customer as any).customer_type === 'Partner',
     [customer]
@@ -55,9 +54,9 @@ export default function CustomerDetailPage() {
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Narrower date column; tiny gap to pull middle text left
-  const DATE_COL = 78 // px
-  const LINE_GAP = 4  // px
+  // Layout
+  const DATE_COL = 72
+  const LINE_GAP = 4
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -79,9 +78,8 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
+      {/* Two columns: LEFT collapsible info; RIGHT owed (right-aligned) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        {/* LEFT */}
         <div>
           {!showInfo ? (
             <button
@@ -103,7 +101,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">Type</div>
-                <div>{(customer as any).customer_type ?? '—'}</div> {/* ✅ no fallback to .type */}
+                <div>{(customer as any).customer_type ?? '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -126,7 +124,6 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
@@ -221,4 +218,5 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
