@@ -8,8 +8,12 @@ function fmtIntMoney(n: number) {
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [ordersErr, setOrdersErr] = useState<string | null>(null)
+  const [showAllOrders, setShowAllOrders] = useState(false)
   
   // Load customers data for totals
   useEffect(() => {
@@ -22,6 +26,29 @@ export default function Dashboard() {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
+      }
+    })()
+  }, [])
+
+  // Load recent orders data
+  useEffect(() => {
+    (async () => {
+      try {
+        setOrdersLoading(true); setOrdersErr(null)
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/recent-orders`, { cache: 'no-store' })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(`Failed to load recent orders (status ${res.status}) ${text?.slice(0,140)}`)
+        }
+        const data = await res.json()
+        setRecentOrders(data.orders)
+        console.log('Recent orders loaded:', data.orders)
+      } catch (e: any) {
+        setOrdersErr(e?.message || String(e))
+        console.error('Orders loading error:', e)
+      } finally {
+        setOrdersLoading(false)
       }
     })()
   }, [])
@@ -42,9 +69,21 @@ export default function Dashboard() {
     [totalOwedToMe, totalOwedToPartners]
   )
 
-  // Keep local orders for recent orders display
+  // Keep local orders for maintenance section only
   const orders = getOrders()
-  const recent = orders.slice(-5).reverse()
+
+  // Show 5 or 10 orders based on expand state
+  const shownOrders = showAllOrders ? recentOrders.slice(0, 10) : recentOrders.slice(0, 5)
+
+  // Compact layout constants (same as CustomerDetail)
+  const DATE_COL = 65 // px
+  const LINE_GAP = 4
+
+  // Simple date formatter
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
+  }
 
   return (
     <div className="grid">
@@ -107,17 +146,80 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h3>Recent orders</h3>
-        {recent.length === 0 ? (
-          <div className="helper">No orders yet. Add one from "New Order".</div>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <h3 style={{margin:0}}>Most recently registered orders</h3>
+          {recentOrders.length > 5 && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {showAllOrders ? (
+                <>
+                  <button
+                    className="helper"
+                    onClick={() => setShowAllOrders(false)}
+                    style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+                  >
+                    Collapse
+                  </button>
+                  {recentOrders.length > 10 && (
+                    <button
+                      className="helper"
+                      onClick={() => {/* TODO: implement loading more than 10 */}}
+                      style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+                    >
+                      Show 5 more
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  className="helper"
+                  onClick={() => setShowAllOrders(true)}
+                  style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+                >
+                  Show 5 more
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {ordersLoading ? (
+          <p className="helper">Loading orders...</p>
+        ) : ordersErr ? (
+          <p style={{ color: 'salmon' }}>Error loading orders: {ordersErr}</p>
+        ) : recentOrders.length === 0 ? (
+          <p className="helper">No orders yet.</p>
         ) : (
-          <ul style={{margin:0, paddingLeft:16}}>
-            {recent.map(o => (
-              <li key={o.id}>
-                #{o.orderNo} · {o.productName} × {o.qty} · ${ (o.unitPrice * o.qty).toFixed(2) } · {o.date}
-              </li>
-            ))}
-          </ul>
+          <div style={{display:'grid', gap:10, marginTop: 12}}>
+            {shownOrders.map(o => {
+              const middle = o.product_name && o.qty != null
+                ? `${o.product_name} / ${o.qty} / $${Number(o.unit_price ?? 0).toFixed(2)}`
+                : `${o.lines} line(s)`
+
+              return (
+                <div
+                  key={o.id}
+                  style={{
+                    display:'grid',
+                    gridTemplateColumns:`${DATE_COL}px 1fr auto`,
+                    gap:LINE_GAP,
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
+                >
+                  {/* DATE (MM/DD/YY) */}
+                  <div className="helper">{formatDate(o.order_date)}</div>
+
+                  {/* MIDDLE TEXT */}
+                  <div className="helper">{middle}</div>
+
+                  {/* RIGHT TOTAL */}
+                  <div className="helper" style={{textAlign:'right'}}>
+                    {`$${Math.round(Number(o.total)||0).toLocaleString('en-US')}`}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
