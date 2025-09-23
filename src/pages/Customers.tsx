@@ -57,11 +57,31 @@ export default function Customers() {
     () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
     [visible]
   )
-  // Sum partners' amounts over the visible (filtered) set
-  const totalPartners = useMemo(
-  () => visible.reduce((sum, c) => sum + Number(c.owed_to_partners || 0), 0),
-  [visible]
-)
+  // Replace your current totalPartners useMemo with this debugging version:
+
+const totalPartners = useMemo(() => {
+  console.log('=== DEBUGGING PARTNERS CALCULATION ===')
+  console.log('Total visible customers:', visible.length)
+  
+  if (visible.length > 0) {
+    console.log('First customer sample:', visible[0])
+    console.log('Properties of first customer:', Object.keys(visible[0]))
+  }
+  
+  let debugSum = 0
+  visible.forEach((c, index) => {
+    const partnerAmount = Number(c.owed_to_partners || 0)
+    console.log(`Customer ${index + 1} (${c.name}):`)
+    console.log('  - owed_to_partners:', c.owed_to_partners)
+    console.log('  - parsed amount:', partnerAmount)
+    debugSum += partnerAmount
+  })
+  
+  console.log('Final partners total:', debugSum)
+  console.log('=== END DEBUGGING ===')
+  
+  return visible.reduce((sum, c) => sum + Number(c.owed_to_partners || 0), 0)
+}, [visible])
 
   // "My $" = Total owed to me - Owed to Partners
   const myDollars = useMemo(
