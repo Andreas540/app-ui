@@ -195,7 +195,7 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px auto 1fr auto`,
+                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -204,8 +204,8 @@ export default function CustomerDetailPage() {
                   {/* DATE (MM/DD/YY) */}
                   <div className="helper">{formatUSAny((o as any).order_date)}</div>
 
-                  {/* DELIVERY CHECKMARK */}
-                  <div style={{ width: 16, textAlign: 'center' }}>
+                  {/* DELIVERY CHECKMARK - moved to column 2 */}
+                  <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
                     <button
                       onClick={() => handleDeliveryToggle(o.id, !(o as any).delivered)}
                       style={{ 
@@ -228,7 +228,7 @@ export default function CustomerDetailPage() {
                   {/* MIDDLE TEXT — compact like the date */}
                   <div className="helper">{withPartner}</div>
 
-                  {/* RIGHT TOTAL — also compact to match */}
+                  {/* RIGHT TOTAL — with $ sign */}
                   <div className="helper" style={{textAlign:'right'}}>{`${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}</div>
                 </div>
               )
@@ -259,7 +259,7 @@ export default function CustomerDetailPage() {
                 key={p.id}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 1fr auto`,
+                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
@@ -268,10 +268,13 @@ export default function CustomerDetailPage() {
                 {/* DATE */}
                 <div className="helper">{formatUSAny((p as any).payment_date)}</div>
 
+                {/* EMPTY COLUMN for alignment with orders checkmark column */}
+                <div></div>
+
                 {/* TYPE */}
                 <div className="helper">{(p as any).payment_type}</div>
 
-                {/* AMOUNT (compact) */}
+                {/* AMOUNT with $ sign */}
                 <div className="helper" style={{textAlign:'right'}}>
                   {`${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
                 </div>
