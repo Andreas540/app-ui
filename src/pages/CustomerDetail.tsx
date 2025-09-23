@@ -165,10 +165,11 @@ export default function CustomerDetailPage() {
               >
                 <div className="helper">{fmtUS((o as any).order_date)}</div>
                 <div>
-                  {(o as any).product_name && (o as any).qty != null
-                    ? `${(o as any).product_name}  /  ${(o as any).qty}`
-                    : `${o.lines} line(s)`}
-                </div>
+  {(o as any).product_name && (o as any).qty != null
+    ? `${(o as any).product_name}  /  ${(o as any).qty}  /  ${fmtMoney((o as any).unit_price)}  /  ${fmtIntMoney((o as any).partner_amount ?? 0)}`
+    : `${o.lines} line(s)`}
+</div>
+
                 <div style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
               </div>
             ))}

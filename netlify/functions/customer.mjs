@@ -18,11 +18,8 @@ async function getCustomer(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // basic customer
     const cust = await sql`
-      SELECT id, name,
-             customer_type,       -- BLV | Partner
-             shipping_cost, phone,
+      SELECT id, name, customer_type, shipping_cost, phone,
              address1, address2, city, state, postal_code
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
@@ -31,7 +28,6 @@ async function getCustomer(event) {
     if (cust.length === 0) return cors(404, { error: 'Not found' })
     const customer = cust[0]
 
-    // totals
     const totals = await sql`
       WITH o AS (
         SELECT SUM(oi.qty * oi.unit_price)::numeric(12,2) AS total_orders
@@ -50,33 +46,54 @@ async function getCustomer(event) {
       FROM o, p
     `
 
-    // orders: include product_name + qty when it's a single-line order
+    /* Recent orders with:
+       - product_name / qty / unit_price from first line (typical 1-line orders)
+       - partner_amount = SUM(order_partners.amount) for that order
+       - total = SUM(qty*unit_price) across all lines
+    */
     const orders = await sql`
       SELECT
         o.id,
         o.order_no,
-        (o.order_date::date) AS order_date,     -- strip time to avoid TZ shifts
+        o.order_date,
         o.delivered,
+        -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
         COUNT(oi.id) AS lines,
-        CASE WHEN COUNT(oi.id) = 1 THEN MAX(p.name) END AS product_name,
-        CASE WHEN COUNT(oi.id) = 1 THEN MAX(oi.qty)  END AS qty
+        -- first line snapshot
+        fl.product_name,
+        fl.qty,
+        fl.unit_price,
+        -- partner splits total for the order
+        pa.partner_amount
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN products p     ON p.id = oi.product_id
-      WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${id}
-      GROUP BY o.id
-      ORDER BY o.order_date DESC, o.order_no DESC
-      LIMIT 200
+      LEFT JOIN LATERAL (
+        SELECT p.name AS product_name, oi2.qty, oi2.unit_price
+        FROM order_items oi2
+        JOIN products p ON p.id = oi2.product_id
+        WHERE oi2.order_id = o.id
+        ORDER BY oi2.id ASC
+        LIMIT 1
+      ) fl ON true
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(SUM(op.amount),0)::numeric(12,2) AS partner_amount
+        FROM order_partners op
+        WHERE op.order_id = o.id
+      ) pa ON true
+      WHERE o.tenant_id = ${TENANT_ID}
+        AND o.customer_id = ${id}
+      GROUP BY o.id, fl.product_name, fl.qty, fl.unit_price, pa.partner_amount
+      ORDER BY o.order_date DESC
+      LIMIT 20
     `
 
-    // payments
     const payments = await sql`
-      SELECT id, (payment_date::date) AS payment_date, payment_type, amount
+      SELECT id, payment_date, payment_type, amount
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
-      ORDER BY payment_date DESC, id DESC
-      LIMIT 200
+      ORDER BY payment_date DESC
+      LIMIT 20
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
@@ -99,12 +116,11 @@ async function updateCustomer(event) {
       phone, address1, address2, city, state, postal_code
     } = body || {}
 
-    if (!id) return cors(400, { error: 'id is required' })
+    if (!id)   return cors(400, { error: 'id is required' })
     if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
     if (customer_type && !['BLV','Partner'].includes(customer_type)) {
       return cors(400, { error: 'invalid customer_type' })
     }
-
     const sc = (shipping_cost === null || shipping_cost === undefined)
       ? null
       : Number(shipping_cost)
@@ -147,6 +163,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 
