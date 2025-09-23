@@ -1,10 +1,11 @@
 // src/pages/CustomerDetail.tsx
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 
 export default function CustomerDetailPage() {
+  // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,7 +29,7 @@ export default function CustomerDetailPage() {
     })()
   }, [id])
 
-  // Helpers
+  // --- Helpers (no hooks here) ---
   function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
   function phoneHref(p?: string) {
@@ -43,20 +44,15 @@ export default function CustomerDetailPage() {
   const { customer, totals, orders, payments } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
-
-  // ONLY use customer.customer_type
-  const isPartnerCustomer = useMemo(
-    () => (customer as any).customer_type === 'Partner',
-    [customer]
-  )
+  const isPartnerCustomer = customer.customer_type === 'Partner'
 
   // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Layout
-  const DATE_COL = 72
-  const LINE_GAP = 4
+  // Compact layout constants
+  const DATE_COL = 78 // px (smaller; pulls middle text left)
+  const LINE_GAP = 4  // tighter than default
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -78,8 +74,9 @@ export default function CustomerDetailPage() {
         <Link to="/customers" className="helper">&larr; Back to customers</Link>
       </div>
 
-      {/* Two columns: LEFT collapsible info; RIGHT owed (right-aligned) */}
+      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        {/* LEFT */}
         <div>
           {!showInfo ? (
             <button
@@ -101,7 +98,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">Type</div>
-                <div>{(customer as any).customer_type ?? '—'}</div>
+                <div>{customer.customer_type}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -124,6 +121,7 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
+        {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
@@ -148,16 +146,16 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
           <div style={{display:'grid', gap:10}}>
             {shownOrders.map(o => {
-              const product = (o as any).product_name
-              const qty = (o as any).qty
-              const unitPrice = (o as any).unit_price
-              const partnerAmt = (o as any).partner_amount
-              const middleText =
-                product != null && qty != null && unitPrice != null
-                  ? `${product}  /  ${qty}  /  $${Number(unitPrice).toFixed(2)}${
-                      isPartnerCustomer && Number(partnerAmt) > 0 ? `  /  $${Number(partnerAmt).toFixed(2)}` : ''
-                    }`
+              // NOTE: server should provide product_name, qty, unit_price, partner_amount
+              const middle =
+                (o as any).product_name && (o as any).qty != null
+                  ? `${(o as any).product_name} / ${(o as any).qty} / $${Number((o as any).unit_price ?? 0).toFixed(2)}`
                   : `${o.lines} line(s)`
+
+              const withPartner = isPartnerCustomer && (o as any).partner_amount != null
+                ? `${middle} / $${Number((o as any).partner_amount).toFixed(2)}`
+                : middle
+
               return (
                 <div
                   key={o.id}
@@ -169,9 +167,14 @@ export default function CustomerDetailPage() {
                     padding:'8px 0'
                   }}
                 >
+                  {/* DATE (MM/DD/YY) */}
                   <div className="helper">{formatUSAny((o as any).order_date)}</div>
-                  <div className="helper">{middleText}</div>
-                  <div className="helper" style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
+
+                  {/* MIDDLE TEXT — compact like the date */}
+                  <div className="helper">{withPartner}</div>
+
+                  {/* RIGHT TOTAL — also compact to match */}
+                  <div className="helper" style={{textAlign:'right'}}>{`${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}</div>
                 </div>
               )
             })}
@@ -207,9 +210,16 @@ export default function CustomerDetailPage() {
                   padding:'8px 0'
                 }}
               >
+                {/* DATE */}
                 <div className="helper">{formatUSAny((p as any).payment_date)}</div>
+
+                {/* TYPE */}
                 <div className="helper">{(p as any).payment_type}</div>
-                <div className="helper" style={{textAlign:'right'}}>{fmtIntMoney((p as any).amount)}</div>
+
+                {/* AMOUNT (compact) */}
+                <div className="helper" style={{textAlign:'right'}}>
+                  {`${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
+                </div>
               </div>
             ))}
           </div>
@@ -218,5 +228,6 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
