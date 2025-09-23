@@ -1,7 +1,8 @@
 // src/pages/CustomerDetail.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
+import { formatUSAny } from '../lib/time'  // shared US formatter (MM/DD/YY), TZ-safe
 
 export default function CustomerDetailPage() {
   // Hooks
@@ -35,13 +36,6 @@ export default function CustomerDetailPage() {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
   }
-  // US date with 2-digit year: 9/22/25
-  function fmtUS(d: string | Date | undefined) {
-    if (!d) return ''
-    const dt = typeof d === 'string' ? new Date(d) : d
-    if (Number.isNaN(dt.getTime())) return String(d)
-    return dt.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
-  }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -51,16 +45,19 @@ export default function CustomerDetailPage() {
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
 
+  // ✅ Use ONLY customer.customer_type now
+  const isPartnerCustomer = useMemo(
+    () => (customer as any).customer_type === 'Partner',
+    [customer]
+  )
+
   // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Only show partner amount for Partner customers
-  const isPartnerCustomer = (customer as any).customer_type === 'Partner'
-
-  // —— Layout knobs (the “blank space” you asked about) ——
-  const DATE_COL = 52 // px  ← tweak here (smaller = middle moves further left)
-  const ROW_GAP  = 2  // px  ← tweak here (smaller = less gap between columns)
+  // Narrower date column; tiny gap to pull middle text left
+  const DATE_COL = 78 // px
+  const LINE_GAP = 4  // px
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
@@ -106,7 +103,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">Type</div>
-                <div>{(customer as any).customer_type ?? '—'}</div>
+                <div>{(customer as any).customer_type ?? '—'}</div> {/* ✅ no fallback to .type */}
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -153,30 +150,34 @@ export default function CustomerDetailPage() {
 
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
           <div style={{display:'grid', gap:10}}>
-            {shownOrders.map(o => (
-              <div
-                key={o.id}
-                style={{
-                  display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:ROW_GAP, // ← and here (the column gap)
-                  borderBottom:'1px solid #eee',
-                  padding:'8px 0'
-                }}
-              >
-                <div className="helper">{fmtUS((o as any).order_date)}</div>
-                <div className="helper">
-                  {(o as any).product_name && (o as any).qty != null
-                    ? `${(o as any).product_name}  /  ${(o as any).qty}  /  ${fmtMoney((o as any).unit_price)}${
-                        isPartnerCustomer ? `  /  ${fmtIntMoney((o as any).partner_amount ?? 0)}` : ''
-                      }`
-                    : `${o.lines} line(s)`}
+            {shownOrders.map(o => {
+              const product = (o as any).product_name
+              const qty = (o as any).qty
+              const unitPrice = (o as any).unit_price
+              const partnerAmt = (o as any).partner_amount
+              const middleText =
+                product != null && qty != null && unitPrice != null
+                  ? `${product}  /  ${qty}  /  $${Number(unitPrice).toFixed(2)}${
+                      isPartnerCustomer && Number(partnerAmt) > 0 ? `  /  $${Number(partnerAmt).toFixed(2)}` : ''
+                    }`
+                  : `${o.lines} line(s)`
+              return (
+                <div
+                  key={o.id}
+                  style={{
+                    display:'grid',
+                    gridTemplateColumns:`${DATE_COL}px 1fr auto`,
+                    gap:LINE_GAP,
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
+                >
+                  <div className="helper">{formatUSAny((o as any).order_date)}</div>
+                  <div className="helper">{middleText}</div>
+                  <div className="helper" style={{textAlign:'right'}}>{fmtIntMoney((o as any).total)}</div>
                 </div>
-                <div className="helper" style={{textAlign:'right'}}>
-                  {fmtIntMoney((o as any).total)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -204,16 +205,14 @@ export default function CustomerDetailPage() {
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
-                  gap:ROW_GAP, // ← and here (the column gap)
+                  gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
               >
-                <div className="helper">{fmtUS((p as any).payment_date)}</div>
+                <div className="helper">{formatUSAny((p as any).payment_date)}</div>
                 <div className="helper">{(p as any).payment_type}</div>
-                <div className="helper" style={{textAlign:'right'}}>
-                  {fmtIntMoney((p as any).amount)}
-                </div>
+                <div className="helper" style={{textAlign:'right'}}>{fmtIntMoney((p as any).amount)}</div>
               </div>
             ))}
           </div>
@@ -222,28 +221,4 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
