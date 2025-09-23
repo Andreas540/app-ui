@@ -43,7 +43,7 @@ async function getRecentOrders(event) {
       ) fl ON true
       WHERE o.tenant_id = ${TENANT_ID}
       GROUP BY o.id, o.order_no, o.order_date, o.delivered, c.name, fl.product_name, fl.qty, fl.unit_price
-      ORDER BY o.order_date DESC, o.id DESC
+      ORDER BY o.order_no DESC, o.id DESC
       LIMIT 15
     `;
 

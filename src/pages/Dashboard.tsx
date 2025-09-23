@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { clearOrders } from '../lib/storage'
+import { formatUSAny } from '../lib/time'
 
 function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
@@ -77,11 +78,6 @@ export default function Dashboard() {
   const DATE_COL = 65 // px
   const LINE_GAP = 4
 
-  // Simple date formatter
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
-  }
 // Handle delivery toggle for orders
 const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
   try {
@@ -234,7 +230,7 @@ const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean
                   }}
                 >
                   {/* DATE (MM/DD/YY) */}
-                  <div className="helper">{formatDate(o.order_date)}</div>
+                  <div className="helper">{formatUSAny(o.order_date)}</div>
 {/* DELIVERY CHECKMARK - add this div */}
 <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
   <button
