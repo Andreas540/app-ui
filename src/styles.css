@@ -390,8 +390,8 @@ button.primary:focus-visible,
 .brand-title {
   position: relative;
   overflow: hidden;
-  height: 2.4em; /* Increased height for two text lines */
-  width: 80px;
+  height: 2.8em; /* Increased height for two text lines */
+  width: 100px;
   color: var(--text);
   background: red !important;
   border: 2px solid yellow !important;
@@ -409,7 +409,7 @@ button.primary:focus-visible,
   background: none !important;
   color: var(--text) !important;
   padding: 0 !important;
-  font-size: 12px; /* Smaller text */
+  font-size: 10px; /* Smaller text */
   text-align: center; /* Center multi-line text */
   line-height: 1.2; /* Tighter line spacing */
 }
