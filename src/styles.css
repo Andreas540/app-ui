@@ -32,9 +32,9 @@ button{padding:8px 12px;border-radius:10px;border:1px solid #2b355e;background:#
 button.primary{background:var(--primary);border-color:var(--primary)}
 button:hover{filter:brightness(1.05)}
 /* --- Mobile-first helpers --- */
-html { overflow-y: scroll; }
+html { overflow-y: scroll; }               /* prevents width jump when a page gets a scrollbar */
 @supports (height: 100svh) {
-  .layout { min-height: calc(100svh - 52px); }
+  .layout { min-height: calc(100svh - 52px); }  /* stable viewport height on mobile */
 }
 
 /* hidden by default on desktop */
@@ -70,9 +70,8 @@ html { overflow-y: scroll; }
 
   /* main content spacing on mobile */
   .content{ padding: 16px; }
-  .row{ grid-template-columns: 1fr; }
+  .row{ grid-template-columns: 1fr; } /* stack form fields */
 }
-
 /* iOS: prevent zoom on focus (keep ≥16px) */
 input, select, textarea { font-size:16px; }
 
@@ -84,9 +83,8 @@ select{
 /* Consistent control height */
 input, select{
   min-height:40px;
-  line-height:40px;
+  line-height:40px; /* harmless on most types */
 }
-
 /* === Consistent control sizing + no zoom on iOS === */
 :root { --control-h: 44px; }
 
@@ -94,7 +92,7 @@ input, select, textarea {
   box-sizing: border-box;
   height: var(--control-h);
   line-height: calc(var(--control-h) - 2px);
-  font-size: 16px;
+  font-size: 16px;            /* prevents iOS zoom */
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid #2b355e;
@@ -105,7 +103,7 @@ input, select, textarea {
 /* Make <select> match inputs and add a small chevron */
 select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  padding-right: 32px;
+  padding-right: 32px; /* room for chevron */
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="%23aab2d5"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -131,27 +129,26 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 @media (max-width: 768px) {
   .row { grid-template-columns: 1fr; }
 }
-
 /* === Lock to mobile viewport; no visible scrollbars === */
 :root { --topbar-h: 52px; --control-h: 44px; }
 
 html, body, #root { height: 100dvh; overflow: hidden; }
 .topbar { height: var(--topbar-h); box-sizing: border-box; }
-.layout { height: calc(100dvh - var(--topbar-h)); }
+.layout { height: calc(100dvh - var(--topbar-h)); }    /* fills the rest of the screen */
 .content{
   height: 100%;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: auto;                      /* still scrollable if needed */
+  -webkit-overflow-scrolling: touch;   /* smooth on iOS */
+  scrollbar-width: none;               /* hide Firefox scrollbar */
 }
-.content::-webkit-scrollbar{ display:none }
+.content::-webkit-scrollbar{ display:none } /* hide WebKit scrollbar */
 
 /* === Uniform control size + proper select/date alignment === */
 input, select, textarea{
   box-sizing: border-box;
   height: var(--control-h);
-  font-size: 16px;
-  padding: 10px 12px;
+  font-size: 16px;                   /* prevent iOS zoom */
+  padding: 10px 12px;                /* vertical centering */
   border-radius: 10px;
   border: 1px solid #2b355e;
   background: #0b1026;
@@ -161,9 +158,9 @@ input, select, textarea{
 /* Select: left-aligned text, vertically centered, custom chevron */
 select{
   -webkit-appearance:none; -moz-appearance:none; appearance:none;
-  line-height: normal;
-  text-align: left; text-indent: 0;
-  padding-right: 32px;
+  line-height: normal;                 /* avoids clipped text */
+  text-align: left; text-indent: 0;   /* ensure left alignment */
+  padding-right: 32px;                 /* room for chevron */
   background-image: url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="%23aab2d5"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
@@ -183,8 +180,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 /* Number: remove spinners so text sits centered */
 input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-
+input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
 /* Make whole customer row look like plain text, but keep focus ring */
 .row-link {
   display: grid;
@@ -202,8 +198,8 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* Optional: remove gray tap highlight on iOS */
 .row-link { -webkit-tap-highlight-color: transparent; }
-
 /* --- Header: hamburger + quick buttons --- */
 .topbar {
   position: sticky;
@@ -222,9 +218,9 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
 
 /* Primary blue used across the app */
 :root {
-  --btn-blue: #3b82f6;
-  --btn-blue-hover: #2563eb;
-  --btn-blue-active: #1d4ed8;
+  --btn-blue: #3b82f6;   /* blue-500 */
+  --btn-blue-hover: #2563eb; /* blue-600 */
+  --btn-blue-active: #1d4ed8; /* blue-700 */
 }
 
 /* Hamburger button */
@@ -235,11 +231,11 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
   background: var(--btn-blue);
   color: #fff;
   border-radius: 10px;
-  display: flex;
-  flex-direction: column;
+  display: flex;                     /* stack bars vertically */
+  flex-direction: column;            /* ⬅️ important */
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 4px;                          /* space between bars */
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
@@ -255,7 +251,7 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
 .hamburger span {
   width: 18px;
   height: 3px;
-  background: #fff;
+  background: #fff;      /* white bars */
   border-radius: 2px;
 }
 
@@ -288,16 +284,16 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
   outline-offset: 2px;
   border-radius: 10px;
 }
-
 /* === Brand palette (same blue everywhere) === */
 :root {
-  --brand-blue: #3b82f6;
-  --brand-blue-hover: #2563eb;
-  --brand-blue-active: #1d4ed8;
-  --brand-contrast: #ffffff;
+  /* If your "Create New Customer" button used another blue, change this one value */
+  --brand-blue: #3b82f6;          /* primary blue */
+  --brand-blue-hover: #2563eb;    /* hover */
+  --brand-blue-active: #1d4ed8;   /* active/focus */
+  --brand-contrast: #ffffff;      /* text on blue */
 }
 
-/* Unify all primary buttons */
+/* Unify all primary buttons (existing .primary will be overridden here) */
 button.primary,
 .icon-btn,
 .hamburger {
@@ -334,7 +330,7 @@ button.primary:focus-visible,
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--brand-blue-active);
+  background: var(--brand-blue-active);  /* dark blue banner */
   border-bottom: none;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
@@ -346,7 +342,7 @@ button.primary:focus-visible,
   height: 40px;
   border-radius: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column;   /* stack bars vertically */
   align-items: center;
   justify-content: center;
   gap: 4px;
@@ -356,7 +352,7 @@ button.primary:focus-visible,
 .hamburger span {
   width: 18px;
   height: 3px;
-  background: var(--brand-contrast);
+  background: var(--brand-contrast);  /* white bars */
   border-radius: 2px;
 }
 
@@ -379,26 +375,21 @@ button.primary:focus-visible,
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-
 /* Make top bar match the page background */
 .topbar {
-  background: var(--bg) !important;
+  background: var(--bg) !important;  /* #0B1020 */
   border-bottom: none;
 }
-
 /* --- spacing utilities --- */
 .vsp-12 { display:block; height:12px !important; }
-.brand-title { color: var(--text); }
-
+.brand-title { color: var(--text); }  /* keep title white */
 /* Keep two columns even on phones when explicitly requested */
 @media (max-width: 768px) {
   .row.row-2col-mobile { grid-template-columns: 1fr 1fr; }
 }
-
 /* Brand title animation container */
 .brand-title {
   position: relative;
   overflow: hidden;
   height: 1.2em;
-  color: var(--text);
 }
