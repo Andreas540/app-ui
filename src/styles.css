@@ -390,18 +390,23 @@ button.primary:focus-visible,
 .brand-title {
   position: relative;
   overflow: hidden;
-  height: 2em; /* Increased height to accommodate both texts */
+  height: 1.2em;
+  width: 80px; /* Fixed width to prevent layout issues */
   color: var(--text);
-  background: red !important;
-  border: 2px solid yellow !important;
-  display: flex;
-  align-items: center; /* Center content vertically */
+  background: red !important; /* Keep for now */
+  border: 2px solid yellow !important; /* Keep for now */
 }
+
 .brand-title > div {
-  background: blue !important;
-  color: white !important;
-  padding: 4px !important;
-  position: relative !important; /* Change from absolute to relative */
-  transform: none !important; /* Disable transforms temporarily */
-  transition: none !important; /* Disable transitions temporarily */
+  position: absolute !important; /* Back to absolute positioning */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: none !important; /* Remove blue background */
+  color: var(--text) !important;
+  padding: 0 !important;
+  font-size: 14px; /* Smaller text to fit */
 }
