@@ -14,12 +14,27 @@ import Partners from './pages/Partners'
 import CreatePartner from './pages/CreatePartner'
 import PartnerDetail from './pages/PartnerDetail'
 import InventoryDashboard from './pages/InventoryDashboard'
+import Login from './pages/Login'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
-  const [userLevel, setUserLevel] = useState(localStorage.getItem('userLevel') || 'admin') // Default to admin
+  const [userLevel, setUserLevel] = useState<'admin' | 'inventory' | null>(
+    localStorage.getItem('userLevel') as 'admin' | 'inventory' || null
+  )
+
+  // Handle login
+  const handleLogin = (level: 'admin' | 'inventory') => {
+    setUserLevel(level)
+    localStorage.setItem('userLevel', level)
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    setUserLevel(null)
+    localStorage.removeItem('userLevel')
+  }
 
   useEffect(() => {
     try {
@@ -55,6 +70,11 @@ export default function App() {
   }, [userName])
 
   console.log('About to render - showWelcome:', showWelcome, 'userName:', userName)
+
+  // Show login screen if not authenticated
+  if (!userLevel) {
+    return <Login onLogin={handleLogin} />
+  }
 
   return (
     <div className="app">
@@ -126,6 +146,20 @@ export default function App() {
               <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
               <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+              <button 
+                onClick={handleLogout}
+                style={{ 
+                  background: 'transparent', 
+                  border: '1px solid var(--muted)', 
+                  color: 'var(--muted)',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  marginTop: '8px'
+                }}
+              >
+                Logout
+              </button>
             </>
           )}
         </nav>
