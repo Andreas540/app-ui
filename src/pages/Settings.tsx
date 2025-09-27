@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react'
 
+// Define available shortcuts with their properties
+const AVAILABLE_SHORTCUTS = [
+  { id: 'D', label: 'Dashboard', title: 'Dashboard', route: '/' },
+  { id: 'O', label: 'New Order', title: 'New Order', route: '/orders/new' },
+  { id: 'P', label: 'Payments', title: 'Payments', route: '/payments' },
+  { id: 'C', label: 'Customers', title: 'Customers', route: '/customers' },
+  { id: 'I', label: 'Inventory', title: 'Inventory', route: '/inventory' }
+]
+
+const DEFAULT_SHORTCUTS = ['D', 'O', 'P', 'C']
+
 export default function Settings() {
   const [tenantName, setTenantName] = useState('')
   const [tenantLoading, setTenantLoading] = useState(true)
   const [userName, setUserName] = useState('')
   const [themeColor, setThemeColor] = useState('#6aa1ff')
+  const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
   const [hasChanges, setHasChanges] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -31,28 +43,47 @@ export default function Settings() {
 
   // Track changes to enable/disable save button
   useEffect(() => {
-    // For now, only userName changes trigger the save state
-    // Later we can add other fields that should be saved
-    setHasChanges(userName.trim() !== '')
-  }, [userName])
+    // Check if userName or shortcuts have changed from defaults
+    const shortcutsChanged = JSON.stringify(selectedShortcuts) !== JSON.stringify(DEFAULT_SHORTCUTS)
+    setHasChanges(userName.trim() !== '' || shortcutsChanged)
+  }, [userName, selectedShortcuts])
+
+  const toggleShortcut = (shortcutId: string) => {
+    setSelectedShortcuts(prev => {
+      if (prev.includes(shortcutId)) {
+        // Remove shortcut
+        return prev.filter(id => id !== shortcutId)
+      } else if (prev.length < 5) {
+        // Add shortcut (max 5)
+        // Maintain the original order: add in correct position
+        const newShortcuts = [...prev, shortcutId]
+        return AVAILABLE_SHORTCUTS
+          .map(s => s.id)
+          .filter(id => newShortcuts.includes(id))
+      }
+      return prev // Can't add more than 5
+    })
+  }
 
   const handleSave = async () => {
     if (!hasChanges) return
 
     setSaving(true)
     try {
-      // TODO: API call to save user settings
-      // For now, just simulate saving to localStorage
-      localStorage.setItem('userSettings', JSON.stringify({
+      // Save user settings including shortcuts
+      const settings = {
         userName: userName.trim(),
-        themeColor
-      }))
+        themeColor,
+        selectedShortcuts
+      }
+      
+      localStorage.setItem('userSettings', JSON.stringify(settings))
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500))
       
       setHasChanges(false)
-      console.log('Settings saved:', { userName, themeColor })
+      console.log('Settings saved:', settings)
     } catch (error) {
       console.error('Failed to save settings:', error)
       alert('Failed to save settings. Please try again.')
@@ -69,6 +100,7 @@ export default function Settings() {
         const settings = JSON.parse(saved)
         setUserName(settings.userName || '')
         setThemeColor(settings.themeColor || '#6aa1ff')
+        setSelectedShortcuts(settings.selectedShortcuts || DEFAULT_SHORTCUTS)
       }
     } catch (error) {
       console.error('Failed to load saved settings:', error)
@@ -129,6 +161,44 @@ export default function Settings() {
             setHasChanges(true)
           }}
         />
+      </div>
+
+      {/* Shortcut button selector */}
+      <div style={{marginTop:20}}>
+        <label>Quick access buttons ({selectedShortcuts.length}/5 selected)</label>
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          marginTop: 8,
+          flexWrap: 'wrap'
+        }}>
+          {AVAILABLE_SHORTCUTS.map(shortcut => {
+            const isSelected = selectedShortcuts.includes(shortcut.id)
+            return (
+              <button
+                key={shortcut.id}
+                onClick={() => toggleShortcut(shortcut.id)}
+                style={{
+                  width: 40,
+                  height: 40,
+                  border: '1px solid var(--primary)',
+                  background: isSelected ? 'var(--primary)' : 'transparent',
+                  color: isSelected ? '#fff' : 'var(--primary)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: 14
+                }}
+                title={shortcut.title}
+              >
+                {shortcut.id}
+              </button>
+            )
+          })}
+        </div>
+        <div className="helper" style={{marginTop: 4}}>
+          Select up to 5 quick access buttons for the top navigation
+        </div>
       </div>
 
       <p className="helper" style={{marginTop:16}}>
