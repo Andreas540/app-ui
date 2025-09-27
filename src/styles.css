@@ -390,12 +390,10 @@ button.primary:focus-visible,
 .brand-title {
   position: relative;
   overflow: hidden;
-  height: 5.0em !important; /* Force the height */
+  height: 3.4em !important; /* Force the height */
   width: 90px;
   color: var(--text);
-  background: red !important;
-  border: 2px solid yellow !important;
-  min-height: 5.0em !important; /* Also set min-height */
+  min-height: 3.4em !important; /* Also set min-height */
   max-height: none !important; /* Remove any max-height constraints */
 }
 
@@ -411,7 +409,7 @@ button.primary:focus-visible,
   background: none !important;
   color: var(--text) !important;
   padding: 0 !important;
-  font-size: 10px; /* Smaller text */
+  font-size: 12px; /* Smaller text */
   text-align: center; /* Center multi-line text */
   line-height: 1.1; /* Tighter line spacing */
 }
