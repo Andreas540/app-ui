@@ -42,7 +42,7 @@ export default function App() {
   const timer = setTimeout(() => {
     console.log('Timer fired, hiding welcome')
     setShowWelcome(false)
-  }, 3000)
+  }, 5000)
 
   return () => clearTimeout(timer)
 }, [])
@@ -74,7 +74,7 @@ console.log('About to render - showWelcome:', showWelcome, 'userName:', userName
       background: 'blue' // Debug color
     }}
   >
-    Welcome {userName}
+    Welcome {userName}!
   </div>
   <div 
     style={{

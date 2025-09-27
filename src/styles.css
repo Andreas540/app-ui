@@ -409,7 +409,7 @@ button.primary:focus-visible,
   background: none !important;
   color: var(--text) !important;
   padding: 0 !important;
-  font-size: 12px; /* Smaller text */
+  font-size: 14px; /* Smaller text */
   text-align: center; /* Center multi-line text */
   line-height: 1.1; /* Tighter line spacing */
 }
