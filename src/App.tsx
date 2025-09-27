@@ -19,27 +19,31 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
 
-  // Load user name from settings on app start
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('userSettings')
-      if (saved) {
-        const settings = JSON.parse(saved)
-        setUserName(settings.userName || 'User')
-      } else {
-        setUserName('User')
-      }
-    } catch (error) {
+  try {
+    const saved = localStorage.getItem('userSettings')
+    console.log('Raw saved data:', saved)
+    if (saved) {
+      const settings = JSON.parse(saved)
+      console.log('Parsed settings:', settings)
+      setUserName(settings.userName || 'User')
+    } else {
       setUserName('User')
     }
+  } catch (error) {
+    setUserName('User')
+  }
 
-    // Show welcome for 3 seconds, then transition to BLV App
-    const timer = setTimeout(() => {
-      setShowWelcome(false)
-    }, 3000)
+  console.log('Final userName:', userName)
+  console.log('showWelcome initial:', showWelcome)
 
-    return () => clearTimeout(timer)
-  }, [])
+  const timer = setTimeout(() => {
+    console.log('Timer fired, hiding welcome')
+    setShowWelcome(false)
+  }, 3000)
+
+  return () => clearTimeout(timer)
+}, [])
 
   return (
     <div className="app">
