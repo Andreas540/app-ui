@@ -20,6 +20,7 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
+  const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
   const [userLevel, setUserLevel] = useState<'admin' | 'inventory' | null>(
     localStorage.getItem('userLevel') as 'admin' | 'inventory' || null
   )
@@ -46,6 +47,7 @@ export default function App() {
         const loadedName = settings.userName || 'User'
         console.log('Setting userName to:', loadedName)
         setUserName(loadedName)
+        setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C']) // Add this line
       } else {
         console.log('No saved settings, using default')
         setUserName('User')
@@ -112,20 +114,22 @@ export default function App() {
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-          {/* Inventory users only see inventory button */}
-          {userLevel === 'inventory' ? (
-            <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
-          ) : (
-            /* Admin sees everything including inventory */
-            <>
-              <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>
-              <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>
-              <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>
-              <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>
-              <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
-            </>
-          )}
-        </div>
+  {userLevel === 'inventory' ? (
+    // Inventory users only see inventory button if they selected it
+    selectedShortcuts.includes('I') && (
+      <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
+    )
+  ) : (
+    // Admin sees their selected shortcuts
+    <>
+      {selectedShortcuts.includes('D') && <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>}
+      {selectedShortcuts.includes('O') && <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>}
+      {selectedShortcuts.includes('P') && <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>}
+      {selectedShortcuts.includes('C') && <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>}
+      {selectedShortcuts.includes('I') && <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>}
+    </>
+  )}
+</div>
       </header>
 
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}

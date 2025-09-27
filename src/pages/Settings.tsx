@@ -20,6 +20,21 @@ export default function Settings() {
   const [hasChanges, setHasChanges] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Get available shortcuts based on user role
+  const getAvailableShortcuts = () => {
+    const userLevel = localStorage.getItem('userLevel')
+    
+    if (userLevel === 'inventory') {
+      // Inventory users only see inventory shortcut
+      return [{ id: 'I', label: 'Inventory', title: 'Inventory', route: '/inventory' }]
+    } else {
+      // Admin sees all shortcuts
+      return AVAILABLE_SHORTCUTS
+    }
+  }
+
+  const availableShortcuts = getAvailableShortcuts()
+
   // Load tenant information from database
   useEffect(() => {
     (async () => {
@@ -172,7 +187,7 @@ export default function Settings() {
           marginTop: 8,
           flexWrap: 'wrap'
         }}>
-          {AVAILABLE_SHORTCUTS.map(shortcut => {
+          {availableShortcuts.map(shortcut => {
             const isSelected = selectedShortcuts.includes(shortcut.id)
             return (
               <button
