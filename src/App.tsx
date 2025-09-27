@@ -13,45 +13,49 @@ import EditProduct from './pages/EditProduct'
 import Partners from './pages/Partners'
 import CreatePartner from './pages/CreatePartner'
 import PartnerDetail from './pages/PartnerDetail'
+import InventoryDashboard from './pages/InventoryDashboard'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
+  const [userLevel, setUserLevel] = useState(localStorage.getItem('userLevel') || 'admin') // Default to admin
 
   useEffect(() => {
-  try {
-    const saved = localStorage.getItem('userSettings')
-    console.log('Raw saved data:', saved)
-    if (saved) {
-      const settings = JSON.parse(saved)
-      console.log('Parsed settings:', settings)
-      const loadedName = settings.userName || 'User'
-      console.log('Setting userName to:', loadedName)
-      setUserName(loadedName)
-    } else {
-      console.log('No saved settings, using default')
+    try {
+      const saved = localStorage.getItem('userSettings')
+      console.log('Raw saved data:', saved)
+      if (saved) {
+        const settings = JSON.parse(saved)
+        console.log('Parsed settings:', settings)
+        const loadedName = settings.userName || 'User'
+        console.log('Setting userName to:', loadedName)
+        setUserName(loadedName)
+      } else {
+        console.log('No saved settings, using default')
+        setUserName('User')
+      }
+    } catch (error) {
+      console.log('Error loading settings:', error)
       setUserName('User')
     }
-  } catch (error) {
-    console.log('Error loading settings:', error)
-    setUserName('User')
-  }
 
-  // Timer for animation
-  const timer = setTimeout(() => {
-    console.log('Timer fired, hiding welcome')
-    setShowWelcome(false)
-  }, 5000)
+    // Timer for animation
+    const timer = setTimeout(() => {
+      console.log('Timer fired, hiding welcome')
+      setShowWelcome(false)
+    }, 5000)
 
-  return () => clearTimeout(timer)
-}, [])
+    return () => clearTimeout(timer)
+  }, [])
 
-// Add this separate useEffect to log userName changes
-useEffect(() => {
-  console.log('userName state updated to:', userName)
-}, [userName])
-console.log('About to render - showWelcome:', showWelcome, 'userName:', userName)
+  // Add this separate useEffect to log userName changes
+  useEffect(() => {
+    console.log('userName state updated to:', userName)
+  }, [userName])
+
+  console.log('About to render - showWelcome:', showWelcome, 'userName:', userName)
+
   return (
     <div className="app">
       <header className="topbar">
@@ -64,37 +68,43 @@ console.log('About to render - showWelcome:', showWelcome, 'userName:', userName
             <span></span><span></span><span></span>
           </button>
           <div className="brand-title" style={{ position: 'relative', overflow: 'hidden', height: '1.2em' }}>
-
-  <div 
-    style={{
-      transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
-      transition: 'transform 0.6s ease-in-out',
-      position: 'absolute',
-      width: '100%',
-      background: 'blue' // Debug color
-    }}
-  >
-    Welcome {userName}!
-  </div>
-  <div 
-    style={{
-      transform: showWelcome ? 'translateY(100%)' : 'translateY(0)',
-      transition: 'transform 0.6s ease-in-out',
-      position: 'absolute',
-      width: '100%',
-      background: 'green' // Debug color
-    }}
-  >
-    BLV App
-  </div>
-</div>
+            <div 
+              style={{
+                transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
+                transition: 'transform 0.6s ease-in-out',
+                position: 'absolute',
+                width: '100%'
+              }}
+            >
+              Welcome {userName}!
+            </div>
+            <div 
+              style={{
+                transform: showWelcome ? 'translateY(100%)' : 'translateY(0)',
+                transition: 'transform 0.6s ease-in-out',
+                position: 'absolute',
+                width: '100%'
+              }}
+            >
+              BLV App
+            </div>
+          </div>
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-          <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>
-          <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>
-          <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>
-          <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>
+          {/* Inventory users only see inventory button */}
+          {userLevel === 'inventory' ? (
+            <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
+          ) : (
+            /* Admin sees everything including inventory */
+            <>
+              <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>
+              <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>
+              <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>
+              <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>
+              <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
+            </>
+          )}
         </div>
       </header>
 
@@ -102,33 +112,51 @@ console.log('About to render - showWelcome:', showWelcome, 'userName:', userName
 
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
-          <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
-          <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
-          <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
-          <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
-          <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
-          <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
-          
-          <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+          {/* Inventory users only see inventory navigation */}
+          {userLevel === 'inventory' ? (
+            <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+          ) : (
+            /* Admin sees everything */
+            <>
+              <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
+              <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
+              <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
+              <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
+              <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
+              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
+              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+            </>
+          )}
         </nav>
 
         <main className="content">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/orders/new" element={<NewOrder />} />
-            <Route path="/payments" element={<Payments />} />
-            {/* ⬇️ NEW routes */}
-            <Route path="/products/new" element={<NewProduct />} />
-            <Route path="/products/edit" element={<EditProduct />} />
-            <Route path="/customers" element={<Customers />} />
-            {/* not in side-nav */}
-            <Route path="/customers/new" element={<CreateCustomer />} />
-            <Route path="/customers/:id" element={<CustomerDetail />} />
-            <Route path="/customers/:id/edit" element={<EditCustomer />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/partners" element={<Partners />} />
-            <Route path="/partners/new" element={<CreatePartner />} />
-            <Route path="/partners/:id" element={<PartnerDetail />} />
+            {/* Inventory users only see inventory routes */}
+            {userLevel === 'inventory' ? (
+              <>
+                <Route path="/" element={<InventoryDashboard />} />
+                <Route path="/inventory" element={<InventoryDashboard />} />
+              </>
+            ) : (
+              /* Admin sees all routes */
+              <>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/orders/new" element={<NewOrder />} />
+                <Route path="/payments" element={<Payments />} />
+                <Route path="/products/new" element={<NewProduct />} />
+                <Route path="/products/edit" element={<EditProduct />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/customers/new" element={<CreateCustomer />} />
+                <Route path="/customers/:id" element={<CustomerDetail />} />
+                <Route path="/customers/:id/edit" element={<EditCustomer />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/partners" element={<Partners />} />
+                <Route path="/partners/new" element={<CreatePartner />} />
+                <Route path="/partners/:id" element={<PartnerDetail />} />
+                <Route path="/inventory" element={<InventoryDashboard />} />
+              </>
+            )}
           </Routes>
         </main>
       </div>
