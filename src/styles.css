@@ -390,11 +390,13 @@ button.primary:focus-visible,
 .brand-title {
   position: relative;
   overflow: hidden;
-  height: 5.0em; /* Increased height for two text lines */
-  width: 100px;
+  height: 5.0em !important; /* Force the height */
+  width: 90px;
   color: var(--text);
   background: red !important;
   border: 2px solid yellow !important;
+  min-height: 5.0em !important; /* Also set min-height */
+  max-height: none !important; /* Remove any max-height constraints */
 }
 
 .brand-title > div {
