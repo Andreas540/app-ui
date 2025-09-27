@@ -26,17 +26,19 @@ export default function App() {
     if (saved) {
       const settings = JSON.parse(saved)
       console.log('Parsed settings:', settings)
-      setUserName(settings.userName || 'User')
+      const loadedName = settings.userName || 'User'
+      console.log('Setting userName to:', loadedName)
+      setUserName(loadedName)
     } else {
+      console.log('No saved settings, using default')
       setUserName('User')
     }
   } catch (error) {
+    console.log('Error loading settings:', error)
     setUserName('User')
   }
 
-  console.log('Final userName:', userName)
-  console.log('showWelcome initial:', showWelcome)
-
+  // Timer for animation
   const timer = setTimeout(() => {
     console.log('Timer fired, hiding welcome')
     setShowWelcome(false)
@@ -44,6 +46,11 @@ export default function App() {
 
   return () => clearTimeout(timer)
 }, [])
+
+// Add this separate useEffect to log userName changes
+useEffect(() => {
+  console.log('userName state updated to:', userName)
+}, [userName])
 
   return (
     <div className="app">
