@@ -387,18 +387,13 @@ button.primary:focus-visible,
 @media (max-width: 768px) {
   .row.row-2col-mobile { grid-template-columns: 1fr 1fr; }
 }
-/* Brand title animation container */
 .brand-title {
   position: relative;
   overflow: hidden;
-  height: 1.2em;
-}
-/* Add this to your styles.css temporarily for debugging */
-.brand-title {
-  position: relative;
-  overflow: hidden;
-  height: 1.2em;
+  height: 2em; /* Increased height to accommodate both texts */
   color: var(--text);
-  background: red !important; /* Debug - should show red background */
-  border: 2px solid yellow !important; /* Debug - should show yellow border */
+  background: red !important;
+  border: 2px solid yellow !important;
+  display: flex;
+  align-items: center; /* Center content vertically */
 }
