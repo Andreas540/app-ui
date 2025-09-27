@@ -132,9 +132,27 @@ export default function App() {
 
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
-          {/* Inventory users only see inventory navigation */}
+          {/* Inventory users see inventory navigation + settings + logout */}
           {userLevel === 'inventory' ? (
-            <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+            <>
+              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+              <button 
+                onClick={handleLogout}
+                style={{ 
+                  background: 'transparent', 
+                  border: '1px solid var(--muted)', 
+                  color: 'var(--muted)',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  marginTop: '8px',
+                  width: '75%'
+                }}
+              >
+                Logout
+              </button>
+            </>
           ) : (
             /* Admin sees everything */
             <>
@@ -155,7 +173,8 @@ export default function App() {
                   padding: '10px 12px',
                   borderRadius: '10px',
                   cursor: 'pointer',
-                  marginTop: '8px'
+                  marginTop: '8px',
+                  width: '75%'
                 }}
               >
                 Logout
@@ -166,11 +185,12 @@ export default function App() {
 
         <main className="content">
           <Routes>
-            {/* Inventory users only see inventory routes */}
+            {/* Inventory users see inventory routes + settings */}
             {userLevel === 'inventory' ? (
               <>
                 <Route path="/" element={<InventoryDashboard />} />
                 <Route path="/inventory" element={<InventoryDashboard />} />
+                <Route path="/settings" element={<Settings />} />
               </>
             ) : (
               /* Admin sees all routes */
