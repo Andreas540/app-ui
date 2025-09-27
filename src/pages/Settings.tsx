@@ -95,19 +95,18 @@ export default function Settings() {
       {/* Two column layout for Tenant name and User */}
       <div className="row row-2col-mobile" style={{marginTop:12}}>
         <div>
-          <label>Tenant name</label>
+          <label>Company</label>
           <input 
             value={tenantLoading ? 'Loading...' : tenantName} 
             disabled
-            placeholder="Loading tenant info..." 
+            placeholder="Loading company info..." 
             style={{ 
-              backgroundColor: '#f5f5f5',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--primary)',
+              color: '#999',
               cursor: 'not-allowed'
             }}
           />
-          <div className="helper" style={{marginTop: 4}}>
-            {tenantLoading ? 'Loading from database...' : 'Read-only (from database)'}
-          </div>
         </div>
         <div>
           <label>User</label>
