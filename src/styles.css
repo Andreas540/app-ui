@@ -393,3 +393,12 @@ button.primary:focus-visible,
   overflow: hidden;
   height: 1.2em;
 }
+/* Add this to your styles.css temporarily for debugging */
+.brand-title {
+  position: relative;
+  overflow: hidden;
+  height: 1.2em;
+  color: var(--text);
+  background: red !important; /* Debug - should show red background */
+  border: 2px solid yellow !important; /* Debug - should show yellow border */
+}

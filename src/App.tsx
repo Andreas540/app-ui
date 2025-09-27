@@ -51,7 +51,7 @@ export default function App() {
 useEffect(() => {
   console.log('userName state updated to:', userName)
 }, [userName])
-
+console.log('About to render - showWelcome:', showWelcome, 'userName:', userName)
   return (
     <div className="app">
       <header className="topbar">
@@ -64,27 +64,30 @@ useEffect(() => {
             <span></span><span></span><span></span>
           </button>
           <div className="brand-title" style={{ position: 'relative', overflow: 'hidden', height: '1.2em' }}>
-            <div 
-              style={{
-                transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
-                transition: 'transform 0.6s ease-in-out',
-                position: 'absolute',
-                width: '100%'
-              }}
-            >
-              Welcome {userName}
-            </div>
-            <div 
-              style={{
-                transform: showWelcome ? 'translateY(100%)' : 'translateY(0)',
-                transition: 'transform 0.6s ease-in-out',
-                position: 'absolute',
-                width: '100%'
-              }}
-            >
-              BLV App
-            </div>
-          </div>
+
+  <div 
+    style={{
+      transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
+      transition: 'transform 0.6s ease-in-out',
+      position: 'absolute',
+      width: '100%',
+      background: 'blue' // Debug color
+    }}
+  >
+    Welcome {userName}
+  </div>
+  <div 
+    style={{
+      transform: showWelcome ? 'translateY(100%)' : 'translateY(0)',
+      transition: 'transform 0.6s ease-in-out',
+      position: 'absolute',
+      width: '100%',
+      background: 'green' // Debug color
+    }}
+  >
+    BLV App
+  </div>
+</div>
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
