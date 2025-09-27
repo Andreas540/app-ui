@@ -397,3 +397,11 @@ button.primary:focus-visible,
   display: flex;
   align-items: center; /* Center content vertically */
 }
+.brand-title > div {
+  background: blue !important;
+  color: white !important;
+  padding: 4px !important;
+  position: relative !important; /* Change from absolute to relative */
+  transform: none !important; /* Disable transforms temporarily */
+  transition: none !important; /* Disable transitions temporarily */
+}
