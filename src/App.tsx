@@ -56,7 +56,31 @@ export default function App() {
       console.log('Error loading settings:', error)
       setUserName('User')
     }
+// Listen for settings changes
+useEffect(() => {
+  const handleStorageChange = () => {
+    try {
+      const saved = localStorage.getItem('userSettings')
+      if (saved) {
+        const settings = JSON.parse(saved)
+        setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C'])
+      }
+    } catch (error) {
+      console.log('Error loading updated shortcuts:', error)
+    }
+  }
 
+  // Listen for localStorage changes
+  window.addEventListener('storage', handleStorageChange)
+  
+  // Also listen for custom event from Settings page
+  window.addEventListener('settingsUpdated', handleStorageChange)
+
+  return () => {
+    window.removeEventListener('storage', handleStorageChange)
+    window.removeEventListener('settingsUpdated', handleStorageChange)
+  }
+}, [])
     // Timer for animation
     const timer = setTimeout(() => {
       console.log('Timer fired, hiding welcome')
