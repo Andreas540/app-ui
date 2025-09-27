@@ -93,7 +93,7 @@ export default function Settings() {
       }
       
       localStorage.setItem('userSettings', JSON.stringify(settings))
-      
+      window.location.reload() // Add this line
 
 // Simulate API delay
 await new Promise(resolve => setTimeout(resolve, 500))
