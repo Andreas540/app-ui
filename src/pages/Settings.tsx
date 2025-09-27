@@ -93,8 +93,7 @@ export default function Settings() {
       }
       
       localStorage.setItem('userSettings', JSON.stringify(settings))
-      // Trigger immediate update in App.tsx
-window.dispatchEvent(new Event('settingsUpdated'))
+      
 
 // Simulate API delay
 await new Promise(resolve => setTimeout(resolve, 500))
