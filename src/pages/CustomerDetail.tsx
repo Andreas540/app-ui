@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
 import { formatUSAny } from '../lib/time'
+import OrderDetailModal from '../components/OrderDetailModal'
+import PaymentDetailModal from '../components/PaymentDetailModal'
 
 export default function CustomerDetailPage() {
   // --- Hooks (fixed, stable order) ---
@@ -13,6 +15,10 @@ export default function CustomerDetailPage() {
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [selectedPayment, setSelectedPayment] = useState(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -35,6 +41,16 @@ export default function CustomerDetailPage() {
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
+  }
+
+  const handleOrderClick = (order: any) => {
+    setSelectedOrder(order)
+    setShowOrderModal(true)
+  }
+
+  const handlePaymentClick = (payment: any) => {
+    setSelectedPayment(payment)
+    setShowPaymentModal(true)
   }
 
   const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
@@ -193,12 +209,16 @@ export default function CustomerDetailPage() {
               return (
                 <div
                   key={o.id}
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{
                     display:'grid',
                     gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
-                    padding:'8px 0'
+                    padding:'8px 0',
+                    cursor: 'pointer'
                   }}
                 >
                   {/* DATE (MM/DD/YY) */}
@@ -257,12 +277,16 @@ export default function CustomerDetailPage() {
             {shownPayments.map(p => (
               <div
                 key={p.id}
+                onClick={() => handlePaymentClick(p)}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
-                  padding:'8px 0'
+                  padding:'8px 0',
+                  cursor: 'pointer'
                 }}
               >
                 {/* DATE */}
@@ -283,6 +307,18 @@ export default function CustomerDetailPage() {
           </div>
         )}
       </div>
+
+      <OrderDetailModal 
+        isOpen={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        order={selectedOrder}
+      />
+
+      <PaymentDetailModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        payment={selectedPayment}
+      />
     </div>
   )
 }
