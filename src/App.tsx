@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
 import Customers from './pages/Customers'
@@ -24,13 +24,23 @@ export default function App() {
   const [userLevel, setUserLevel] = useState<'admin' | 'inventory' | null>(
     localStorage.getItem('userLevel') as 'admin' | 'inventory' || null
   )
+  const navigate = useNavigate()
 
   // Handle login
   const handleLogin = (level: 'admin' | 'inventory') => {
     setUserLevel(level)
     localStorage.setItem('userLevel', level)
     setNavOpen(false)
-  }
+    
+    // Use React Router navigation (safer than window.location)
+    setTimeout(() => {
+      if (level === 'inventory') {
+        navigate('/inventory', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
+    }, 0)
+  } // Added missing closing brace
 
   // Handle logout
   const handleLogout = () => {
@@ -222,7 +232,3 @@ export default function App() {
     </div>
   )
 }
-
-
-
-
