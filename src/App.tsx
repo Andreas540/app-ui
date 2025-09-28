@@ -29,7 +29,23 @@ export default function App() {
   const handleLogin = (level: 'admin' | 'inventory') => {
     setUserLevel(level)
     localStorage.setItem('userLevel', level)
+    setNavOpen(false) // Add this line
   }
+// Redirect to appropriate home page after login
+useEffect(() => {
+  if (userLevel) {
+    const currentPath = window.location.pathname
+    
+    // If user is on root path or login, redirect to their home page
+    if (currentPath === '/' || currentPath === '/login') {
+      if (userLevel === 'inventory') {
+        window.location.replace('/inventory')
+      } else {
+        window.location.replace('/')
+      }
+    }
+  }
+}, [userLevel])
 
   // Handle logout
   const handleLogout = () => {
