@@ -29,23 +29,8 @@ export default function App() {
   const handleLogin = (level: 'admin' | 'inventory') => {
     setUserLevel(level)
     localStorage.setItem('userLevel', level)
-    setNavOpen(false) // Add this line
+    setNavOpen(false)
   }
-// Redirect to appropriate home page after login
-useEffect(() => {
-  if (userLevel) {
-    const currentPath = window.location.pathname
-    
-    // If user is on root path or login, redirect to their home page
-    if (currentPath === '/' || currentPath === '/login') {
-      if (userLevel === 'inventory') {
-        window.location.replace('/inventory')
-      } else {
-        window.location.replace('/')
-      }
-    }
-  }
-}, [userLevel])
 
   // Handle logout
   const handleLogout = () => {
@@ -63,7 +48,7 @@ useEffect(() => {
         const loadedName = settings.userName || 'User'
         console.log('Setting userName to:', loadedName)
         setUserName(loadedName)
-        setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C']) // Add this line
+        setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C'])
       } else {
         console.log('No saved settings, using default')
         setUserName('User')
@@ -130,22 +115,22 @@ useEffect(() => {
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-  {userLevel === 'inventory' ? (
-    // Inventory users only see inventory button if they selected it
-    selectedShortcuts.includes('I') && (
-      <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
-    )
-  ) : (
-    // Admin sees their selected shortcuts
-    <>
-      {selectedShortcuts.includes('D') && <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>}
-      {selectedShortcuts.includes('O') && <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>}
-      {selectedShortcuts.includes('P') && <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>}
-      {selectedShortcuts.includes('C') && <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>}
-      {selectedShortcuts.includes('I') && <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>}
-    </>
-  )}
-</div>
+          {userLevel === 'inventory' ? (
+            // Inventory users only see inventory button if they selected it
+            selectedShortcuts.includes('I') && (
+              <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
+            )
+          ) : (
+            // Admin sees their selected shortcuts
+            <>
+              {selectedShortcuts.includes('D') && <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>}
+              {selectedShortcuts.includes('O') && <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>}
+              {selectedShortcuts.includes('P') && <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>}
+              {selectedShortcuts.includes('C') && <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>}
+              {selectedShortcuts.includes('I') && <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>}
+            </>
+          )}
+        </div>
       </header>
 
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
