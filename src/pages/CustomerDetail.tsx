@@ -209,16 +209,12 @@ export default function CustomerDetailPage() {
               return (
                 <div
                   key={o.id}
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{
                     display:'grid',
                     gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
-                    padding:'8px 0',
-                    cursor: 'pointer'
+                    padding:'8px 0'
                   }}
                 >
                   {/* DATE (MM/DD/YY) */}
@@ -227,7 +223,10 @@ export default function CustomerDetailPage() {
                   {/* DELIVERY CHECKMARK - moved to column 2 */}
                   <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
                     <button
-                      onClick={() => handleDeliveryToggle(o.id, !(o as any).delivered)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeliveryToggle(o.id, !(o as any).delivered)
+                      }}
                       style={{ 
                         background: 'transparent', 
                         border: 'none', 
@@ -246,10 +245,26 @@ export default function CustomerDetailPage() {
                   </div>
 
                   {/* MIDDLE TEXT — compact like the date */}
-                  <div className="helper">{withPartner}</div>
+                  <div 
+                    className="helper"
+                    onClick={() => handleOrderClick(o)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {withPartner}
+                  </div>
 
                   {/* RIGHT TOTAL — with $ sign */}
-                  <div className="helper" style={{textAlign:'right'}}>{`$${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}</div>
+                  <div 
+                    className="helper" 
+                    onClick={() => handleOrderClick(o)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{textAlign:'right', cursor: 'pointer'}}
+                  >
+                    {`${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}
+                  </div>
                 </div>
               )
             })}
@@ -277,16 +292,12 @@ export default function CustomerDetailPage() {
             {shownPayments.map(p => (
               <div
                 key={p.id}
-                onClick={() => handlePaymentClick(p)}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
-                  padding:'8px 0',
-                  cursor: 'pointer'
+                  padding:'8px 0'
                 }}
               >
                 {/* DATE */}
@@ -296,11 +307,25 @@ export default function CustomerDetailPage() {
                 <div></div>
 
                 {/* TYPE */}
-                <div className="helper">{(p as any).payment_type}</div>
+                <div 
+                  className="helper"
+                  onClick={() => handlePaymentClick(p)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {(p as any).payment_type}
+                </div>
 
                 {/* AMOUNT with $ sign */}
-                <div className="helper" style={{textAlign:'right'}}>
-                  {`$${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
+                <div 
+                  className="helper" 
+                  onClick={() => handlePaymentClick(p)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{textAlign:'right', cursor: 'pointer'}}
+                >
+                  {`${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
                 </div>
               </div>
             ))}
