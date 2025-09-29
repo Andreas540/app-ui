@@ -16,6 +16,7 @@ async function createOrder(event) {
     const {
       customer_id, product_id, qty, unit_price, date, delivered, discount,
       notes,
+      product_cost, shipping_cost,
       partner_splits
     } = body || {};
 

@@ -134,6 +134,10 @@ export default function NewOrder() {
       if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
     }
 
+    // Parse optional cost overrides
+    const productCostNum = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
+    const shippingCostNum = shippingCostStr.trim() ? parsePriceToNumber(shippingCostStr) : null
+
     try {
       const { order_no } = await createOrder({
         customer_id: person.id,
@@ -144,6 +148,8 @@ export default function NewOrder() {
         delivered,
         discount: 0,
         notes: notes.trim() || undefined,
+        product_cost: productCostNum !== null && Number.isFinite(productCostNum) ? productCostNum : undefined,
+        shipping_cost: shippingCostNum !== null && Number.isFinite(shippingCostNum) ? shippingCostNum : undefined,
         partner_splits: splits.length ? splits : undefined,
       })
       alert(`Saved! Order #${order_no}`)

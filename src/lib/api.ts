@@ -27,6 +27,8 @@ export type NewOrderInput = {
   delivered?: boolean
   discount?: number
   notes?: string
+  product_cost?: number  // Add this
+  shipping_cost?: number // Add this
   partner_splits?: Array<{ partner_id: string; amount: number }>
 }
 export async function createOrder(input: NewOrderInput) {
