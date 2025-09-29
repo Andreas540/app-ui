@@ -13,6 +13,7 @@ export default function EditCustomer() {
   const [name, setName] = useState('')
   const [customerType, setCustomerType] = useState<CustomerType>('BLV')
   const [shippingCost, setShippingCost] = useState<string>('') // string input, will parse to number/null
+  const [applyToHistory, setApplyToHistory] = useState(false)
   const [phone, setPhone] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -58,6 +59,7 @@ export default function EditCustomer() {
         name: name.trim(),
         customer_type: customerType,
         shipping_cost: sc,
+        apply_to_history: applyToHistory,
         phone: phone.trim() || null,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
@@ -81,11 +83,14 @@ export default function EditCustomer() {
         <Link to={id ? `/customers/${id}` : '/customers'} className="helper">Cancel</Link>
       </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
-        <div>
-          <label>Customer Name</label>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
-        </div>
+      {/* Customer Name - full width */}
+      <div style={{ marginTop: 12 }}>
+        <label>Customer Name</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
+      </div>
+
+      {/* Customer Type | Shipping cost | Apply to previous - 3 columns equal width */}
+      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <div>
           <label>Customer Type</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
@@ -93,9 +98,6 @@ export default function EditCustomer() {
             <option value="Partner">Partner</option>
           </select>
         </div>
-      </div>
-
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Shipping cost (USD)</label>
           <input
@@ -106,35 +108,51 @@ export default function EditCustomer() {
             onChange={e=>setShippingCost(e.target.value)}
           />
         </div>
+        <div style={{ display:'flex', alignItems:'end' }}>
+          <label style={{ width:'100%' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, height: '100%' }}>
+              <input
+                type="checkbox"
+                checked={applyToHistory}
+                onChange={e => setApplyToHistory(e.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>Apply new cost to previous orders</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Phone | Address line 1 - 2 columns equal width */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Phone</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
         </div>
-      </div>
-
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Address line 1</label>
           <input value={address1} onChange={e=>setAddress1(e.target.value)} />
         </div>
+      </div>
+
+      {/* Address line 2 | City - 2 columns equal width */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Address line 2</label>
           <input value={address2} onChange={e=>setAddress2(e.target.value)} />
         </div>
-      </div>
-
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>City</label>
           <input value={city} onChange={e=>setCity(e.target.value)} />
         </div>
+      </div>
+
+      {/* State | Postal code - 2 columns equal width */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>State</label>
           <input value={state} onChange={e=>setState(e.target.value)} />
         </div>
-      </div>
-
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Postal code</label>
           <input value={postal} onChange={e=>setPostal(e.target.value)} />
