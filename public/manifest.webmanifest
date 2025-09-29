@@ -1,6 +1,6 @@
 {
-  "name": "App UI",
-  "short_name": "App UI",
+  "name": "BLV App",
+  "short_name": "BLV App",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
