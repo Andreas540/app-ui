@@ -15,6 +15,7 @@ async function createOrder(event) {
     const body = JSON.parse(event.body || '{}');
     const {
       customer_id, product_id, qty, unit_price, date, delivered, discount,
+      notes,
       partner_splits
     } = body || {};
 
@@ -38,8 +39,8 @@ async function createOrder(event) {
 
     // Header
     const hdr = await sql`
-      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount)
-      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0})
+      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount, notes)
+      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0}, ${notes || null})
       RETURNING id
     `;
     const orderId = hdr[0].id;
