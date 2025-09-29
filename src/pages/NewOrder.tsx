@@ -31,6 +31,9 @@ export default function NewOrder() {
   const [partner2Id, setPartner2Id] = useState('')
   const [partner1PerItemStr, setPartner1PerItemStr] = useState('')
   const [partner2PerItemStr, setPartner2PerItemStr] = useState('')
+  const [showMoreFields, setShowMoreFields] = useState(false)
+  const [productCostStr, setProductCostStr] = useState('')
+  const [shippingCostStr, setShippingCostStr] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -326,10 +329,10 @@ export default function NewOrder() {
               <label>To Partner 1 (USD)</label>
               <input
                 type="text"
-                value={partner1Total > 0 ? partner1Total.toFixed(2) : '0.00'}
+                value={partner1Total > 0 ? partner1Total.toFixed(2) : ''}
                 placeholder="auto"
                 readOnly
-                style={{ height: CONTROL_H, opacity: 0.9 }}
+                style={{ height: CONTROL_H, opacity: 0.6 }}
               />
             </div>
           </div>
@@ -364,10 +367,10 @@ export default function NewOrder() {
               <label>To Partner 2 (USD)</label>
               <input
                 type="text"
-                value={partner2Total > 0 ? partner2Total.toFixed(2) : '0.00'}
+                value={partner2Total > 0 ? partner2Total.toFixed(2) : ''}
                 placeholder="auto"
                 readOnly
-                style={{ height: CONTROL_H, opacity: 0.9 }}
+                style={{ height: CONTROL_H, opacity: 0.6 }}
               />
             </div>
           </div>
@@ -386,18 +389,55 @@ export default function NewOrder() {
         />
       </div>
 
+      {/* More fields - Product cost and Shipping cost */}
+      {showMoreFields && (
+        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          <div>
+            <label>Product cost this order</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={productCostStr}
+              onChange={e => setProductCostStr(e.target.value)}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+          <div>
+            <label>Shipping cost this order</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={shippingCostStr}
+              onChange={e => setShippingCostStr(e.target.value)}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+        </div>
+      )}
+
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save order</button>
         <button
           onClick={() => {
             setQtyStr(''); setPriceStr('');
             setNotes('');
+            setQuery(''); setEntityId(''); // Clear customer search
             setPartner1Id(''); setPartner2Id('');
             setPartner1PerItemStr(''); setPartner2PerItemStr('');
+            setProductCostStr(''); setShippingCostStr('');
+            setShowMoreFields(false);
           }}
           style={{ height: CONTROL_H }}
         >
           Clear
+        </button>
+        <button
+          onClick={() => setShowMoreFields(v => !v)}
+          style={{ height: CONTROL_H }}
+        >
+          More
         </button>
       </div>
     </div>
