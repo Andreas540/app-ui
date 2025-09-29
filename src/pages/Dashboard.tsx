@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [ordersErr, setOrdersErr] = useState<string | null>(null)
-  const [showAllOrders, setShowAllOrders] = useState(false)
+  const [orderDisplayCount, setOrderDisplayCount] = useState(5)
   
   // Load customers data for totals
   useEffect(() => {
@@ -70,44 +70,44 @@ export default function Dashboard() {
     [totalOwedToMe, totalOwedToPartners]
   )
 
-
-  // Show 5 or 10 orders based on expand state
-  const shownOrders = showAllOrders ? recentOrders.slice(0, 10) : recentOrders.slice(0, 5)
+  // Show orders based on display count
+  const shownOrders = recentOrders.slice(0, orderDisplayCount)
 
   // Compact layout constants (same as CustomerDetail)
   const DATE_COL = 65 // px
   const LINE_GAP = 4
 
-// Handle delivery toggle for orders
-const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
-  try {
-    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    const res = await fetch(`${base}/api/orders-delivery`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ 
-        order_id: orderId, 
-        delivered: newDeliveredStatus 
-      }),
-    })
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
-    }
-    
-    // Update the local state to reflect the change immediately
-    setRecentOrders(prev => 
-      prev.map(order => 
-        order.id === orderId 
-          ? { ...order, delivered: newDeliveredStatus }
-          : order
+  // Handle delivery toggle for orders
+  const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/orders-delivery`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          order_id: orderId, 
+          delivered: newDeliveredStatus 
+        }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
+      }
+      
+      // Update the local state to reflect the change immediately
+      setRecentOrders(prev => 
+        prev.map(order => 
+          order.id === orderId 
+            ? { ...order, delivered: newDeliveredStatus }
+            : order
+        )
       )
-    )
-  } catch (e: any) {
-    console.error('Failed to toggle delivery status:', e)
-    alert(`Failed to update delivery status: ${e.message}`)
+    } catch (e: any) {
+      console.error('Failed to toggle delivery status:', e)
+      alert(`Failed to update delivery status: ${e.message}`)
+    }
   }
-}
+
   return (
     <div className="grid">
       <div className="card">        
@@ -173,29 +173,19 @@ const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean
           <h3 style={{margin:0}}>Most recently registered orders</h3>
           {recentOrders.length > 5 && (
             <div style={{ display: 'flex', gap: 8 }}>
-              {showAllOrders ? (
-                <>
-                  <button
-                    className="helper"
-                    onClick={() => setShowAllOrders(false)}
-                    style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-                  >
-                    Collapse
-                  </button>
-                  {recentOrders.length > 10 && (
-                    <button
-                      className="helper"
-                      onClick={() => {/* TODO: implement loading more than 10 */}}
-                      style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-                    >
-                      Show 5 more
-                    </button>
-                  )}
-                </>
-              ) : (
+              {orderDisplayCount > 5 && (
                 <button
                   className="helper"
-                  onClick={() => setShowAllOrders(true)}
+                  onClick={() => setOrderDisplayCount(5)}
+                  style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+                >
+                  Collapse
+                </button>
+              )}
+              {orderDisplayCount < 15 && recentOrders.length > orderDisplayCount && (
+                <button
+                  className="helper"
+                  onClick={() => setOrderDisplayCount(prev => prev + 5)}
                   style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
                 >
                   Show 5 more
@@ -231,26 +221,28 @@ const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean
                 >
                   {/* DATE (MM/DD/YY) */}
                   <div className="helper">{formatUSAny(o.order_date)}</div>
-{/* DELIVERY CHECKMARK - add this div */}
-<div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-  <button
-    onClick={() => handleDeliveryToggle(o.id, !o.delivered)}
-    style={{ 
-      background: 'transparent', 
-      border: 'none', 
-      cursor: 'pointer',
-      padding: 0,
-      fontSize: 14
-    }}
-    title={`Mark as ${o.delivered ? 'undelivered' : 'delivered'}`}
-  >
-    {o.delivered ? (
-      <span style={{ color: '#10b981' }}>✓</span>
-    ) : (
-      <span style={{ color: '#d1d5db' }}>○</span>
-    )}
-  </button>
-</div>
+
+                  {/* DELIVERY CHECKMARK */}
+                  <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                    <button
+                      onClick={() => handleDeliveryToggle(o.id, !o.delivered)}
+                      style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 14
+                      }}
+                      title={`Mark as ${o.delivered ? 'undelivered' : 'delivered'}`}
+                    >
+                      {o.delivered ? (
+                        <span style={{ color: '#10b981' }}>✓</span>
+                      ) : (
+                        <span style={{ color: '#d1d5db' }}>○</span>
+                      )}
+                    </button>
+                  </div>
+
                   {/* MIDDLE TEXT */}
                   <div className="helper">{middle}</div>
 
