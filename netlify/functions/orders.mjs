@@ -38,10 +38,28 @@ async function createOrder(event) {
     `;
     const orderNo = Number(nextNo[0].n) || 1;
 
+    // Convert cost fields to numbers or null
+    let productCostNum = null;
+    let shippingCostNum = null;
+    
+    if (product_cost !== undefined && product_cost !== null) {
+      const parsed = Number(product_cost);
+      if (Number.isFinite(parsed)) {
+        productCostNum = parsed;
+      }
+    }
+    
+    if (shipping_cost !== undefined && shipping_cost !== null) {
+      const parsed = Number(shipping_cost);
+      if (Number.isFinite(parsed)) {
+        shippingCostNum = parsed;
+      }
+    }
+
     // Header
     const hdr = await sql`
-      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount, notes)
-      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0}, ${notes || null})
+      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount, notes, product_cost, shipping_cost)
+      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum})
       RETURNING id
     `;
     const orderId = hdr[0].id;

@@ -135,8 +135,22 @@ export default function NewOrder() {
     }
 
     // Parse optional cost overrides
-    const productCostNum = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
-    const shippingCostNum = shippingCostStr.trim() ? parsePriceToNumber(shippingCostStr) : null
+    let productCostToSend: number | undefined = undefined
+    let shippingCostToSend: number | undefined = undefined
+    
+    if (productCostStr.trim()) {
+      const parsed = parsePriceToNumber(productCostStr)
+      if (Number.isFinite(parsed) && parsed > 0) {
+        productCostToSend = parsed
+      }
+    }
+    
+    if (shippingCostStr.trim()) {
+      const parsed = parsePriceToNumber(shippingCostStr)
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        shippingCostToSend = parsed
+      }
+    }
 
     try {
       const { order_no } = await createOrder({
@@ -148,8 +162,8 @@ export default function NewOrder() {
         delivered,
         discount: 0,
         notes: notes.trim() || undefined,
-        product_cost: productCostNum !== null && Number.isFinite(productCostNum) ? productCostNum : undefined,
-        shipping_cost: shippingCostNum !== null && Number.isFinite(shippingCostNum) ? shippingCostNum : undefined,
+        product_cost: productCostToSend,
+        shipping_cost: shippingCostToSend,
         partner_splits: splits.length ? splits : undefined,
       })
       alert(`Saved! Order #${order_no}`)
