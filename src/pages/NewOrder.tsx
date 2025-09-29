@@ -24,6 +24,7 @@ export default function NewOrder() {
   const [qtyStr, setQtyStr] = useState('')        // integer string
   const [priceStr, setPriceStr] = useState('')    // decimal string
   const [delivered, setDelivered] = useState(false) // default unchecked
+  const [notes, setNotes] = useState('')          // optional notes
 
   // Partner splits - now using per-item amounts
   const [partner1Id, setPartner1Id] = useState('')
@@ -139,6 +140,7 @@ export default function NewOrder() {
         date: orderDate,
         delivered,
         discount: 0,
+        notes: notes.trim() || undefined,
         partner_splits: splits.length ? splits : undefined,
       })
       alert(`Saved! Order #${order_no}`)
@@ -148,6 +150,7 @@ export default function NewOrder() {
       setPriceStr('')
       setOrderDate(todayYMD())
       setDelivered(false)
+      setNotes('')
       setPartner1Id(''); setPartner2Id('')
       setPartner1PerItemStr(''); setPartner2PerItemStr('')
     } catch (e: any) {
@@ -323,7 +326,7 @@ export default function NewOrder() {
               <label>To Partner 1 (USD)</label>
               <input
                 type="text"
-                value={partner1Total > 0 ? partner1Total.toFixed(2) : ''}
+                value={partner1Total > 0 ? partner1Total.toFixed(2) : '0.00'}
                 placeholder="auto"
                 readOnly
                 style={{ height: CONTROL_H, opacity: 0.9 }}
@@ -361,7 +364,7 @@ export default function NewOrder() {
               <label>To Partner 2 (USD)</label>
               <input
                 type="text"
-                value={partner2Total > 0 ? partner2Total.toFixed(2) : ''}
+                value={partner2Total > 0 ? partner2Total.toFixed(2) : '0.00'}
                 placeholder="auto"
                 readOnly
                 style={{ height: CONTROL_H, opacity: 0.9 }}
@@ -371,11 +374,24 @@ export default function NewOrder() {
         </>
       )}
 
+      {/* Notes field - always shows, always last */}
+      <div style={{ marginTop: 12 }}>
+        <label>Notes (optional)</label>
+        <input
+          type="text"
+          placeholder="Add notes about this order..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          style={{ height: CONTROL_H }}
+        />
+      </div>
+
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save line</button>
+        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save order</button>
         <button
           onClick={() => {
             setQtyStr(''); setPriceStr('');
+            setNotes('');
             setPartner1Id(''); setPartner2Id('');
             setPartner1PerItemStr(''); setPartner2PerItemStr('');
           }}

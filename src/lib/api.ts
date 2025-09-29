@@ -26,6 +26,7 @@ export type NewOrderInput = {
   date: string         // YYYY-MM-DD
   delivered?: boolean
   discount?: number
+  notes?: string
   partner_splits?: Array<{ partner_id: string; amount: number }>
 }
 export async function createOrder(input: NewOrderInput) {
