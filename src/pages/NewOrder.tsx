@@ -25,11 +25,11 @@ export default function NewOrder() {
   const [priceStr, setPriceStr] = useState('')    // decimal string
   const [delivered, setDelivered] = useState(false) // default unchecked
 
-  // Partner splits
+  // Partner splits - now using per-item amounts
   const [partner1Id, setPartner1Id] = useState('')
   const [partner2Id, setPartner2Id] = useState('')
-  const [partner1AmtStr, setPartner1AmtStr] = useState('')
-  const [partner2AmtStr, setPartner2AmtStr] = useState('')
+  const [partner1PerItemStr, setPartner1PerItemStr] = useState('')
+  const [partner2PerItemStr, setPartner2PerItemStr] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -88,6 +88,22 @@ export default function NewOrder() {
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
+  // Calculate partner amounts: per-item × quantity
+  const partner1PerItem = useMemo(() => parsePriceToNumber(partner1PerItemStr), [partner1PerItemStr])
+  const partner2PerItem = useMemo(() => parsePriceToNumber(partner2PerItemStr), [partner2PerItemStr])
+  
+  const partner1Total = useMemo(() => {
+    if (!Number.isFinite(partner1PerItem) || partner1PerItem <= 0) return 0
+    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
+    return partner1PerItem * qtyInt
+  }, [partner1PerItem, qtyInt])
+
+  const partner2Total = useMemo(() => {
+    if (!Number.isFinite(partner2PerItem) || partner2PerItem <= 0) return 0
+    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
+    return partner2PerItem * qtyInt
+  }, [partner2PerItem, qtyInt])
+
   // IMPORTANT: only customer_type controls this (NOT the legacy "type")
   const personCustomerType = (person as any)?.customer_type
   const isPartnerCustomer = personCustomerType === 'Partner'
@@ -110,10 +126,8 @@ export default function NewOrder() {
     // Build partner_splits only for Partner customers
     const splits: Array<{ partner_id: string; amount: number }> = []
     if (isPartnerCustomer) {
-      const a1 = Number(partner1AmtStr)
-      if (partner1Id && Number.isFinite(a1) && a1 !== 0) splits.push({ partner_id: partner1Id, amount: a1 })
-      const a2 = Number(partner2AmtStr)
-      if (partner2Id && Number.isFinite(a2) && a2 !== 0) splits.push({ partner_id: partner2Id, amount: a2 })
+      if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
+      if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
     }
 
     try {
@@ -135,7 +149,7 @@ export default function NewOrder() {
       setOrderDate(todayYMD())
       setDelivered(false)
       setPartner1Id(''); setPartner2Id('')
-      setPartner1AmtStr(''); setPartner2AmtStr('')
+      setPartner1PerItemStr(''); setPartner2PerItemStr('')
     } catch (e: any) {
       alert(e?.message || 'Save failed')
     }
@@ -279,7 +293,8 @@ export default function NewOrder() {
       {/* Partner splits (only when selected customer's customer_type === 'Partner') */}
       {isPartnerCustomer && (
         <>
-          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          {/* Partner 1 row: 3 columns (2fr, 1fr, 2fr) */}
+          <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
               <label>Partner 1</label>
               <select
@@ -294,19 +309,30 @@ export default function NewOrder() {
               </select>
             </div>
             <div>
+              <label>Per item</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={partner1PerItemStr}
+                onChange={e=>setPartner1PerItemStr(e.target.value)}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+            <div>
               <label>To Partner 1 (USD)</label>
               <input
                 type="text"
-                inputMode="numeric"
-                placeholder="0"
-                value={partner1AmtStr}
-                onChange={e=>setPartner1AmtStr(e.target.value.replace(/[^\d]/g, ''))}
-                style={{ height: CONTROL_H }}
+                value={partner1Total > 0 ? partner1Total.toFixed(2) : ''}
+                placeholder="auto"
+                readOnly
+                style={{ height: CONTROL_H, opacity: 0.9 }}
               />
             </div>
           </div>
 
-          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          {/* Partner 2 row: 3 columns (2fr, 1fr, 2fr) */}
+          <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
               <label>Partner 2</label>
               <select
@@ -321,14 +347,24 @@ export default function NewOrder() {
               </select>
             </div>
             <div>
+              <label>Per item</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={partner2PerItemStr}
+                onChange={e=>setPartner2PerItemStr(e.target.value)}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+            <div>
               <label>To Partner 2 (USD)</label>
               <input
                 type="text"
-                inputMode="numeric"
-                placeholder="0"
-                value={partner2AmtStr}
-                onChange={e=>setPartner2AmtStr(e.target.value.replace(/[^\d]/g, ''))}
-                style={{ height: CONTROL_H }}
+                value={partner2Total > 0 ? partner2Total.toFixed(2) : ''}
+                placeholder="auto"
+                readOnly
+                style={{ height: CONTROL_H, opacity: 0.9 }}
               />
             </div>
           </div>
@@ -341,7 +377,7 @@ export default function NewOrder() {
           onClick={() => {
             setQtyStr(''); setPriceStr('');
             setPartner1Id(''); setPartner2Id('');
-            setPartner1AmtStr(''); setPartner2AmtStr('');
+            setPartner1PerItemStr(''); setPartner2PerItemStr('');
           }}
           style={{ height: CONTROL_H }}
         >
