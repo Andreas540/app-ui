@@ -142,7 +142,7 @@ async function updateCustomer(event) {
     const currentShippingCost = current[0].shipping_cost
     const shippingCostChanged = sc !== null && sc !== currentShippingCost
 
-    // Update customer record
+    // Update customer record (always update to reflect current value)
     const res = await sql`
       UPDATE customers SET
         name = ${name},
@@ -161,25 +161,20 @@ async function updateCustomer(event) {
 
     // Handle shipping cost history if cost changed
     if (shippingCostChanged) {
-      if (apply_to_history) {
-        // Apply to all previous orders: update orders.shipping_cost to new value
-        await sql`
-          UPDATE orders
-          SET shipping_cost = ${sc}
-          WHERE tenant_id = ${TENANT_ID}
-            AND customer_id = ${id}
-            AND shipping_cost IS NULL
-        `
-      }
+      // Determine effective_from based on apply_to_history checkbox
+      const effectiveFrom = apply_to_history ? '1970-01-01' : new Date().toISOString()
       
-      // Record the change in history (always record changes)
+      // Add history entry - backdate if applying to all history
       await sql`
         INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
-        VALUES (${TENANT_ID}, ${id}, ${sc}, NOW())
+        VALUES (${TENANT_ID}, ${id}, ${sc}, ${effectiveFrom})
       `
     }
 
-    return cors(200, { ok: true })
+    return cors(200, { 
+      ok: true,
+      applied_to_history: apply_to_history && shippingCostChanged
+    })
   } catch (e) {
     console.error(e)
     return cors(500, { error: String(e?.message || e) })

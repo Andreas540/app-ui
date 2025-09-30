@@ -94,7 +94,19 @@ async function update(event) {
 
     const sql = neon(DATABASE_URL);
 
-    // Update product record (name and/or current cost)
+    // Get current cost to check if it changed
+    const current = await sql`
+      SELECT cost
+      FROM products
+      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      LIMIT 1
+    `;
+    if (current.length === 0) return cors(404, { error: 'Product not found' });
+
+    const currentCost = current[0].cost;
+    const costChanged = newCostNum !== undefined && newCostNum !== currentCost;
+
+    // Update product record (always update to reflect current value)
     const updatedRows = await sql`
       UPDATE products
       SET name = COALESCE(${name}, name),
@@ -104,33 +116,22 @@ async function update(event) {
     `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 
-    // If cost changed, append a history row (@ now)
-    if (newCostNum !== undefined) {
+    // If cost changed, add history entry
+    if (costChanged) {
+      // Determine effective_from based on apply_to_history checkbox
+      const effectiveFrom = applyToHistory ? '1970-01-01' : new Date().toISOString();
+      
+      // Add history entry - backdate if applying to all history
       await sql`
         INSERT INTO product_cost_history (product_id, cost, effective_from)
-        VALUES (${id}, ${newCostNum}, now())
+        VALUES (${id}, ${newCostNum}, ${effectiveFrom})
       `;
-    }
-
-    // Optional: apply to historical order_items (explicit choice)
-    let affected = 0;
-    if (applyToHistory && newCostNum !== undefined) {
-      const res = await sql`
-        UPDATE order_items oi
-        SET cost = ${newCostNum}
-        FROM orders o
-        WHERE oi.order_id = o.id
-          AND o.tenant_id = ${TENANT_ID}
-          AND oi.product_id = ${id}
-      `;
-      affected = Number(res?.count || 0);
     }
 
     return cors(200, {
       ok: true,
       product: updatedRows[0],
-      applied_to_history: applyToHistory && newCostNum !== undefined,
-      affected_rows: affected
+      applied_to_history: applyToHistory && costChanged
     });
   } catch (e) {
     console.error(e);
