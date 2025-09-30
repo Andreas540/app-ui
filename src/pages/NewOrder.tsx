@@ -34,6 +34,8 @@ export default function NewOrder() {
   const [showMoreFields, setShowMoreFields] = useState(false)
   const [productCostStr, setProductCostStr] = useState('')
   const [shippingCostStr, setShippingCostStr] = useState('')
+  const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
+  const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -51,6 +53,25 @@ export default function NewOrder() {
       }
     })()
   }, [])
+
+  // Fetch historical costs when product or customer changes
+  useEffect(() => {
+    if (!productId || !entityId || !orderDate) return
+    
+    (async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`)
+        if (res.ok) {
+          const data = await res.json()
+          setHistoricalProductCost(data.product_cost)
+          setHistoricalShippingCost(data.shipping_cost)
+        }
+      } catch (e) {
+        console.error('Failed to fetch historical costs:', e)
+      }
+    })()
+  }, [productId, entityId, orderDate])
 
   const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
@@ -107,6 +128,32 @@ export default function NewOrder() {
     if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
     return partner2PerItem * qtyInt
   }, [partner2PerItem, qtyInt])
+
+  // Calculate effective costs (override or historical)
+  const effectiveProductCost = useMemo(() => {
+    const override = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
+    if (override !== null && Number.isFinite(override)) return override
+    return historicalProductCost ?? 0
+  }, [productCostStr, historicalProductCost])
+
+  const effectiveShippingCost = useMemo(() => {
+    const override = shippingCostStr.trim() ? parsePriceToNumber(shippingCostStr) : null
+    if (override !== null && Number.isFinite(override)) return override
+    return historicalShippingCost ?? 0
+  }, [shippingCostStr, historicalShippingCost])
+
+  // Calculate profit
+  const profit = useMemo(() => {
+    if (orderValue <= 0) return 0
+    const totalPartners = partner1Total + partner2Total
+    const totalCosts = (effectiveProductCost * qtyInt) + effectiveShippingCost
+    return orderValue - totalPartners - totalCosts
+  }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, qtyInt])
+
+  const profitPercent = useMemo(() => {
+    if (orderValue <= 0) return 0
+    return (profit / orderValue) * 100
+  }, [profit, orderValue])
 
   // IMPORTANT: only customer_type controls this (NOT the legacy "type")
   const personCustomerType = (person as any)?.customer_type
@@ -189,7 +236,22 @@ export default function NewOrder() {
 
   return (
     <div className="card" style={{maxWidth: 720}}>
-      <h3>New Order</h3>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
+        <h3 style={{ margin:0 }}>New Order</h3>
+        
+        {/* Profit display - top right */}
+        {orderValue > 0 && (
+          <div style={{ textAlign:'right', fontSize: 14 }}>
+            <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
+            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
+              ${profit.toFixed(2)}
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+              {profitPercent.toFixed(1)}%
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Search customer (full width) */}
       <div style={{ marginTop: 12, position: 'relative' }}>
