@@ -13,6 +13,7 @@ import EditProduct from './pages/EditProduct'
 import Partners from './pages/Partners'
 import CreatePartner from './pages/CreatePartner'
 import PartnerDetail from './pages/PartnerDetail'
+import EditPartner from './pages/EditPartner'
 import InventoryDashboard from './pages/InventoryDashboard'
 import Login from './pages/Login'
 
@@ -40,7 +41,7 @@ export default function App() {
         navigate('/', { replace: true })
       }
     }, 0)
-  } // Added missing closing brace
+  }
 
   // Handle logout
   const handleLogout = () => {
@@ -223,6 +224,7 @@ export default function App() {
                 <Route path="/partners" element={<Partners />} />
                 <Route path="/partners/new" element={<CreatePartner />} />
                 <Route path="/partners/:id" element={<PartnerDetail />} />
+                <Route path="/partners/:id/edit" element={<EditPartner />} />
                 <Route path="/inventory" element={<InventoryDashboard />} />
               </>
             )}
