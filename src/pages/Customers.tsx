@@ -9,6 +9,7 @@ function fmtIntMoney(n: number) {
 export default function Customers() {
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
+  const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
@@ -21,6 +22,10 @@ export default function Customers() {
         setLoading(true); setErr(null)
         const res = await listCustomersWithOwed(query.trim() || undefined)
         setCustomers(res.customers)
+        // Get partner totals from API response
+        if ((res as any).partner_totals) {
+          setPartnerTotals((res as any).partner_totals)
+        }
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -57,17 +62,11 @@ export default function Customers() {
     () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
     [visible]
   )
-  // Replace your current totalPartners useMemo with this clean version:
 
-const totalPartners = useMemo(
-  () => visible.reduce((sum, c) => sum + Number(c.owed_to_partners || 0), 0),
-  [visible]
-)
-
-  // "My $" = Total owed to me - Owed to Partners
+  // "My $" = Total owed to me - Net owed to Partners (global, not filtered)
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalVisibleOwed) - Number(totalPartners)),
-    [totalVisibleOwed, totalPartners]
+    () => Math.max(0, Number(totalVisibleOwed) - Number(partnerTotals.net)),
+    [totalVisibleOwed, partnerTotals.net]
   )
 
   return (
@@ -81,7 +80,7 @@ const totalPartners = useMemo(
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
           />
           {(focused && query && suggestions.length > 0) && (
             <div
@@ -126,7 +125,7 @@ const totalPartners = useMemo(
           <Link to="/customers/new">
             <button
               className="primary"
-              style={{ width: '100%', height: 'var(--control-h)' }}  // same height as input
+              style={{ width: '100%', height: 'var(--control-h)' }}
             >
               Create New Customer
             </button>
@@ -168,39 +167,40 @@ const totalPartners = useMemo(
 
       {/* Blank row */}
       <div style={{ height: 8 }} />
-{/* Owed to partners */}
-<div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: '1fr auto',
-    gap: 8,
-    alignItems: 'center',
-  }}
->
-  <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
-  <div style={{ textAlign: 'right', fontWeight: 600 }}>
-    {fmtIntMoney(totalPartners)}
-  </div>
-</div>
 
-{/* My $ */}
-<div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: '1fr auto',
-    gap: 8,
-    alignItems: 'center',
-    marginTop: 4,
-  }}
->
-  <div style={{ fontWeight: 600, color: 'var(--text)' }}>My $</div>
-  <div style={{ textAlign: 'right', fontWeight: 600 }}>
-    {fmtIntMoney(myDollars)}
-  </div>
-</div>
+      {/* Owed to partners (global - not affected by filter) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
+        <div style={{ textAlign: 'right', fontWeight: 600 }}>
+          {fmtIntMoney(partnerTotals.net)}
+        </div>
+      </div>
 
-{/* Blank row */}
-<div style={{ height: 8 }} />
+      {/* My $ */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 8,
+          alignItems: 'center',
+          marginTop: 4,
+        }}
+      >
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>My $</div>
+        <div style={{ textAlign: 'right', fontWeight: 600 }}>
+          {fmtIntMoney(myDollars)}
+        </div>
+      </div>
+
+      {/* Blank row */}
+      <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
 
