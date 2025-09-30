@@ -146,8 +146,9 @@ export default function NewOrder() {
   const profit = useMemo(() => {
     if (orderValue <= 0) return 0
     const totalPartners = partner1Total + partner2Total
-    const totalCosts = (effectiveProductCost * qtyInt) + effectiveShippingCost
-    return orderValue - totalPartners - totalCosts
+    const totalProductCost = effectiveProductCost * qtyInt
+    const totalShippingCost = effectiveShippingCost * qtyInt
+    return orderValue - totalPartners - totalProductCost - totalShippingCost
   }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, qtyInt])
 
   const profitPercent = useMemo(() => {
