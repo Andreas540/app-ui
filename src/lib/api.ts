@@ -27,8 +27,8 @@ export type NewOrderInput = {
   delivered?: boolean
   discount?: number
   notes?: string
-  product_cost?: number  // Add this
-  shipping_cost?: number // Add this
+  product_cost?: number
+  shipping_cost?: number
   partner_splits?: Array<{ partner_id: string; amount: number }>
 }
 export async function createOrder(input: NewOrderInput) {
@@ -44,7 +44,7 @@ export async function createOrder(input: NewOrderInput) {
   return (await res.json()) as { ok: true; order_id: string; order_no: number }
 }
 
-// ---- Payments API ----
+// ---- Payments API (from customers) ----
 export type PaymentType =
   | 'Cash payment' | 'Cash App payment' | 'Credit payment' | 'Shipping fee'
   | 'Discount' | 'Credit' | 'Old tab' | 'Wire Payment' | 'Zelle payment'
@@ -83,6 +83,33 @@ export async function listPayments(limit = 20) {
   }>}
 }
 
+// ---- Partner Payments API (to partners) ----
+export type PartnerPaymentType = 'Cash' | 'Cash app' | 'Other'
+
+export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = [
+  'Cash', 'Cash app', 'Other'
+]
+
+export type NewPartnerPaymentInput = {
+  partner_id: string
+  payment_type: PartnerPaymentType
+  amount: number
+  payment_date: string
+  notes?: string | null
+}
+export async function createPartnerPayment(input: NewPartnerPaymentInput) {
+  const res = await fetch(`${base}/api/partner-payment`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to save partner payment (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  return (await res.json()) as { ok: true; id: string }
+}
+
 // ---- Customers (with totals/owed) ----
 export type CustomerWithOwed = {
   id: string
@@ -90,7 +117,7 @@ export type CustomerWithOwed = {
   customer_type?: 'BLV' | 'Partner'
   total_orders: number
   total_payments: number
-  owed_to_partners?: number   // NEW: from backend
+  owed_to_partners?: number
   owed_to_me: number
 }
 export async function listCustomersWithOwed(q?: string) {
@@ -125,7 +152,7 @@ export type NewCustomerInput = {
   name: string
   customer_type: CustomerType
   shipping_cost?: number | null
-  apply_to_history?: boolean  // Add this line
+  apply_to_history?: boolean
   phone?: string | null
   address1?: string | null
   address2?: string | null
@@ -200,7 +227,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
   return (await res.json()) as { ok: true }
 }
 
-// --- Products (unchanged below) ---
+// --- Products ---
 export async function createProduct(input: { name: string; cost: number }) {
   const res = await fetch('/api/product', {
     method: 'POST',
