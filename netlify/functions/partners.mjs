@@ -1,5 +1,4 @@
-// Create this file: netlify/functions/partners.mjs
-
+// netlify/functions/partners.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')     return listPartners(event);
@@ -25,11 +24,16 @@ async function listPartners(event) {
       FROM partners p
       LEFT JOIN LATERAL (
         SELECT
-          (SELECT COALESCE(SUM(op.amount), 0)
-             FROM orders o
-             JOIN order_partners op ON op.order_id = o.id
-            WHERE o.tenant_id = ${TENANT_ID}
-              AND op.partner_id = p.id) AS total_owed
+          (
+            (SELECT COALESCE(SUM(op.amount), 0)
+               FROM order_partners op
+              WHERE op.partner_id = p.id)
+            -
+            (SELECT COALESCE(SUM(pp.amount), 0)
+               FROM partner_payments pp
+              WHERE pp.tenant_id = ${TENANT_ID}
+                AND pp.partner_id = p.id)
+          ) AS total_owed
       ) t ON TRUE
       WHERE p.tenant_id = ${TENANT_ID}
         ${like ? sql`AND LOWER(p.name) LIKE ${like}` : sql``}

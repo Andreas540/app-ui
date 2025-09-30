@@ -45,7 +45,7 @@ export default function Partners() {
     inputRef.current?.blur()
   }
 
-  // Calculate total owed to partners
+  // Calculate total owed to partners (net of payments already made)
   const totalPartnersOwed = useMemo(
     () => partners.reduce((sum, p) => sum + Number(p.total_owed || 0), 0),
     [partners]
@@ -69,7 +69,7 @@ export default function Partners() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 120)} // allow click on suggestion
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
           />
           {(focused && query && suggestions.length > 0) && (
             <div
@@ -114,7 +114,7 @@ export default function Partners() {
           <Link to="/partners/new">
             <button
               className="primary"
-              style={{ width: '100%', height: 'var(--control-h)' }}  // same height as input
+              style={{ width: '100%', height: 'var(--control-h)' }}
             >
               Create New Partner
             </button>
@@ -125,7 +125,7 @@ export default function Partners() {
       {/* Blank row */}
       <div style={{ height: 20 }} />
 
-      {/* Total owed to partners */}
+      {/* Total owed to partners (net of payments) */}
       <div
         style={{
           display: 'grid',
