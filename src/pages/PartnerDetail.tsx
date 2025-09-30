@@ -99,7 +99,7 @@ export default function PartnerDetailPage() {
 
       {/* Net owed display */}
       <div style={{ marginTop: 12, textAlign:'right' }}>
-        <div className="helper">Net owed to partner</div>
+        <div className="helper">Owed to partner</div>
         <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
       </div>
 
