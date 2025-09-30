@@ -112,7 +112,7 @@ async function updateCustomer(event) {
 
     const body = JSON.parse(event.body || '{}')
     const {
-      id, name, customer_type, shipping_cost,
+      id, name, customer_type, shipping_cost, apply_to_history,
       phone, address1, address2, city, state, postal_code
     } = body || {}
 
@@ -129,6 +129,20 @@ async function updateCustomer(event) {
     }
 
     const sql = neon(DATABASE_URL)
+
+    // Get current shipping cost to check if it changed
+    const current = await sql`
+      SELECT shipping_cost
+      FROM customers
+      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      LIMIT 1
+    `
+    if (current.length === 0) return cors(404, { error: 'Customer not found' })
+
+    const currentShippingCost = current[0].shipping_cost
+    const shippingCostChanged = sc !== null && sc !== currentShippingCost
+
+    // Update customer record
     const res = await sql`
       UPDATE customers SET
         name = ${name},
@@ -144,6 +158,27 @@ async function updateCustomer(event) {
       RETURNING id
     `
     if (res.length === 0) return cors(404, { error: 'Not found' })
+
+    // Handle shipping cost history if cost changed
+    if (shippingCostChanged) {
+      if (apply_to_history) {
+        // Apply to all previous orders: update orders.shipping_cost to new value
+        await sql`
+          UPDATE orders
+          SET shipping_cost = ${sc}
+          WHERE tenant_id = ${TENANT_ID}
+            AND customer_id = ${id}
+            AND shipping_cost IS NULL
+        `
+      }
+      
+      // Record the change in history (always record changes)
+      await sql`
+        INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
+        VALUES (${TENANT_ID}, ${id}, ${sc}, NOW())
+      `
+    }
+
     return cors(200, { ok: true })
   } catch (e) {
     console.error(e)
