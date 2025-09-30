@@ -1,3 +1,4 @@
+// netlify/functions/historical-costs.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET') return getHistoricalCosts(event);
@@ -19,12 +20,16 @@ async function getHistoricalCosts(event) {
 
     const sql = neon(DATABASE_URL);
 
+    // Convert order_date (YYYY-MM-DD) to end of day in EST, then to UTC for comparison
+    // This ensures we catch any changes made "today" in EST
+    const orderDateEndOfDayEST = `${order_date}T23:59:59-05:00`; // End of day EST
+
     // Get product cost from history
     const productCost = await sql`
       SELECT cost
       FROM product_cost_history
       WHERE product_id = ${product_id}
-        AND effective_from <= ${order_date}
+        AND effective_from <= ${orderDateEndOfDayEST}::timestamptz
       ORDER BY effective_from DESC
       LIMIT 1
     `;
@@ -35,7 +40,7 @@ async function getHistoricalCosts(event) {
       FROM shipping_cost_history
       WHERE tenant_id = ${TENANT_ID}
         AND customer_id = ${customer_id}
-        AND effective_from <= ${order_date}
+        AND effective_from <= ${orderDateEndOfDayEST}::timestamptz
       ORDER BY effective_from DESC
       LIMIT 1
     `;
