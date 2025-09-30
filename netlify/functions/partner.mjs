@@ -2,6 +2,7 @@
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET') return getPartner(event);
+  if (event.httpMethod === 'PUT') return updatePartner(event);
   return cors(405, { error: 'Method not allowed' });
 }
 
@@ -89,13 +90,49 @@ async function getPartner(event) {
   }
 }
 
+async function updatePartner(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const { DATABASE_URL, TENANT_ID } = process.env;
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
+
+    const body = JSON.parse(event.body || '{}');
+    const { id, name, phone, address1, address2, city, state, postal_code } = body || {};
+
+    if (!id) return cors(400, { error: 'id is required' });
+    if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' });
+
+    const sql = neon(DATABASE_URL);
+
+    const res = await sql`
+      UPDATE partners SET
+        name = ${name},
+        phone = ${phone ?? null},
+        address1 = ${address1 ?? null},
+        address2 = ${address2 ?? null},
+        city = ${city ?? null},
+        state = ${state ?? null},
+        postal_code = ${postal_code ?? null}
+      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      RETURNING id
+    `;
+    
+    if (res.length === 0) return cors(404, { error: 'Not found' });
+    return cors(200, { ok: true });
+  } catch (e) {
+    console.error(e);
+    return cors(500, { error: String(e?.message || e) });
+  }
+}
+
 function cors(status, body) {
   return {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,OPTIONS',
+      'access-control-allow-methods': 'GET,PUT,OPTIONS',
       'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
