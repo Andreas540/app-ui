@@ -7,6 +7,12 @@ type PartnerDetail = {
   partner: {
     id: string
     name: string
+    phone?: string | null
+    address1?: string | null
+    address2?: string | null
+    city?: string | null
+    state?: string | null
+    postal_code?: string | null
   }
   totals: {
     total_owed: number
@@ -36,6 +42,7 @@ export default function PartnerDetailPage() {
   const [err, setErr] = useState<string | null>(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -62,6 +69,11 @@ export default function PartnerDetailPage() {
   }, [id])
 
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
+  
+  function phoneHref(p?: string) {
+    const s = (p || '').replace(/[^\d+]/g, '')
+    return s ? `tel:${s}` : undefined
+  }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -97,10 +109,50 @@ export default function PartnerDetailPage() {
         <Link to="/partners" className="helper">&larr; Back to partners</Link>
       </div>
 
-      {/* Net owed display */}
-      <div style={{ marginTop: 12, textAlign:'right' }}>
-        <div className="helper">Owed to partner</div>
-        <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
+      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to partner (right-aligned) */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        {/* LEFT */}
+        <div>
+          {!showInfo ? (
+            <button
+              className="helper"
+              onClick={() => setShowInfo(true)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+            >
+              Show info
+            </button>
+          ) : (
+            <div>
+              <button
+                className="helper"
+                onClick={() => setShowInfo(false)}
+                style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+              >
+                Hide info
+              </button>
+
+              <div style={{ marginTop: 10 }}>
+                <div className="helper">Phone</div>
+                <div>{partner.phone ? <a href={phoneHref(partner.phone)}>{partner.phone}</a> : '—'}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">Address</div>
+                <div>
+                  {[partner.address1, partner.address2].filter(Boolean).join(', ') || '—'}
+                  {[partner.address1, partner.address2].filter(Boolean).length > 0 && <br/>}
+                  {[partner.city, partner.state, partner.postal_code].filter(Boolean).join(' ')}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT */}
+        <div style={{ textAlign:'right' }}>
+          <div className="helper">Owed to partner</div>
+          <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
+        </div>
       </div>
 
       {/* Recent orders with this partner */}

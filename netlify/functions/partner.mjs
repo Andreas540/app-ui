@@ -17,9 +17,9 @@ async function getPartner(event) {
 
     const sql = neon(DATABASE_URL);
 
-    // Get partner info
+    // Get partner info with contact details
     const partnerRow = await sql`
-      SELECT id, name
+      SELECT id, name, phone, address1, address2, city, state, postal_code
       FROM partners
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       LIMIT 1
