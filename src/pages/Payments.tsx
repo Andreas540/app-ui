@@ -10,6 +10,9 @@ export default function Payments() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  // Payment direction
+  const [isFromCustomer, setIsFromCustomer] = useState(true)
+
   // form
   const [entityId, setEntityId] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
@@ -69,67 +72,102 @@ export default function Payments() {
 
   return (
     <div className="card" style={{maxWidth:720}}>
+      {/* Payment direction checkboxes */}
+      <div style={{ display:'flex', gap:24, marginBottom:16 }}>
+        <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+          <input
+            type="checkbox"
+            checked={isFromCustomer}
+            onChange={e => {
+              setIsFromCustomer(e.target.checked)
+              if (e.target.checked) setIsFromCustomer(true)
+            }}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>From customer</span>
+        </label>
+        <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+          <input
+            type="checkbox"
+            checked={!isFromCustomer}
+            onChange={e => {
+              if (e.target.checked) setIsFromCustomer(false)
+            }}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>To partner</span>
+        </label>
+      </div>
+
       <h3>Payments</h3>
 
-      <div className="row row-2col-mobile" style={{marginTop:12}}>
-        <div>
-          <label>Customer</label>
-          <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
-            {hasCustomerType ? (
-              <>
-                <optgroup label="BLV customers">
-                  {blv.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </optgroup>
-                <optgroup label="Customer via Partner">
-                  {viaPartner.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </optgroup>
-              </>
-            ) : (
-              people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
-            )}
-          </select>
-        </div>
-        <div>
-          <label>Payment date</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
-        </div>
-      </div>
+      {isFromCustomer ? (
+        <>
+          <div className="row row-2col-mobile" style={{marginTop:12}}>
+            <div>
+              <label>Customer</label>
+              <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
+                {hasCustomerType ? (
+                  <>
+                    <optgroup label="BLV customers">
+                      {blv.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Customer via Partner">
+                      {viaPartner.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </optgroup>
+                  </>
+                ) : (
+                  people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+                )}
+              </select>
+            </div>
+            <div>
+              <label>Payment date</label>
+              <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
+          </div>
 
-      <div className="row row-2col-mobile" style={{marginTop:12}}>
-        <div>
-          <label>Payment Type</label>
-          <select value={paymentType} onChange={e=>setPaymentType(e.target.value as PaymentType)} style={{ height: CONTROL_H }}>
-            {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div>
-          <label>Amount (USD)</label>
-          <input
-            type="text"
-            placeholder="0.00"
-            inputMode="decimal"
-            value={amountStr}
-            onChange={e=>setAmountStr(e.target.value)}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-      </div>
+          <div className="row row-2col-mobile" style={{marginTop:12}}>
+            <div>
+              <label>Payment Type</label>
+              <select value={paymentType} onChange={e=>setPaymentType(e.target.value as PaymentType)} style={{ height: CONTROL_H }}>
+                {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label>Amount (USD)</label>
+              <input
+                type="text"
+                placeholder="0.00"
+                inputMode="decimal"
+                value={amountStr}
+                onChange={e=>setAmountStr(e.target.value)}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+          </div>
 
-      <div className="row" style={{marginTop:12}}>
-        <div style={{gridColumn:'1 / -1'}}>
-          <label>Notes (optional)</label>
-          <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} style={{ height: CONTROL_H }} />
+          <div className="row" style={{marginTop:12}}>
+            <div style={{gridColumn:'1 / -1'}}>
+              <label>Notes (optional)</label>
+              <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
+          </div>
+
+          <div style={{marginTop:16, display:'flex', gap:8}}>
+            <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save payment</button>
+            <button onClick={()=>{ setAmountStr(''); setPaymentType('Cash payment'); setNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
+          </div>
+
+          <p className="helper" style={{marginTop:12}}>
+            Positive = money received; negative = credit/discount/fee if you choose to represent it that way.
+          </p>
+        </>
+      ) : (
+        <div style={{ marginTop: 12 }}>
+          <p className="helper">To partner payment form - coming soon</p>
         </div>
-      </div>
-
-      <div style={{marginTop:16, display:'flex', gap:8}}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save payment</button>
-        <button onClick={()=>{ setAmountStr(''); setPaymentType('Cash payment'); setNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
-      </div>
-
-      <p className="helper" style={{marginTop:12}}>
-        Positive = money received; negative = credit/discount/fee if you choose to represent it that way.
-      </p>
+      )}
     </div>
   )
 }
