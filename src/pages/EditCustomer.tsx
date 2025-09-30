@@ -13,7 +13,7 @@ export default function EditCustomer() {
   const [name, setName] = useState('')
   const [customerType, setCustomerType] = useState<CustomerType>('BLV')
   const [shippingCost, setShippingCost] = useState<string>('') // string input, will parse to number/null
-  const [applyToHistory, setApplyToHistory] = useState(false)
+  const [applyHistory, setApplyHistory] = useState(false)
   const [phone, setPhone] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -59,7 +59,7 @@ export default function EditCustomer() {
         name: name.trim(),
         customer_type: customerType,
         shipping_cost: sc,
-        apply_to_history: applyToHistory,
+        apply_to_history: applyHistory,
         phone: phone.trim() || null,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
@@ -83,14 +83,12 @@ export default function EditCustomer() {
         <Link to={id ? `/customers/${id}` : '/customers'} className="helper">Cancel</Link>
       </div>
 
-      {/* Customer Name - full width */}
-      <div style={{ marginTop: 12 }}>
-        <label>Customer Name</label>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
-      </div>
-
-      {/* Customer Type | Shipping cost | Apply to previous - 3 columns equal width */}
-      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+      {/* Customer Name (2/3) | Customer Type (1/3) */}
+      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <div>
+          <label>Customer Name</label>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
+        </div>
         <div>
           <label>Customer Type</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
@@ -98,8 +96,12 @@ export default function EditCustomer() {
             <option value="Partner">Partner</option>
           </select>
         </div>
+      </div>
+
+      {/* Shipping cost (1/3) | Apply to previous checkbox (2/3) */}
+      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
         <div>
-          <label>Shipping cost (USD)</label>
+          <label>Shipping cost</label>
           <input
             type="text"
             inputMode="decimal"
@@ -113,8 +115,8 @@ export default function EditCustomer() {
             <div style={{ display:'flex', alignItems:'center', gap:8, height: '100%' }}>
               <input
                 type="checkbox"
-                checked={applyToHistory}
-                onChange={e => setApplyToHistory(e.target.checked)}
+                checked={applyHistory}
+                onChange={e => setApplyHistory(e.target.checked)}
                 style={{ width: 18, height: 18 }}
               />
               <span>Apply new cost to previous orders</span>
