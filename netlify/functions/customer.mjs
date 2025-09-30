@@ -161,14 +161,24 @@ async function updateCustomer(event) {
 
     // Handle shipping cost history if cost changed
     if (shippingCostChanged) {
-      // Determine effective_from based on apply_to_history checkbox
-      const effectiveFrom = apply_to_history ? '1970-01-01' : new Date().toISOString()
-      
-      // Add history entry - backdate if applying to all history
-      await sql`
-        INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
-        VALUES (${TENANT_ID}, ${id}, ${sc}, ${effectiveFrom})
-      `
+      if (apply_to_history) {
+        // Delete all previous history entries for this customer
+        await sql`
+          DELETE FROM shipping_cost_history
+          WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
+        `
+        // Insert single entry backdated to beginning - applies to all orders
+        await sql`
+          INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
+          VALUES (${TENANT_ID}, ${id}, ${sc}, '1970-01-01')
+        `
+      } else {
+        // Normal case: add new entry with current timestamp
+        await sql`
+          INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
+          VALUES (${TENANT_ID}, ${id}, ${sc}, NOW())
+        `
+      }
     }
 
     return cors(200, { 

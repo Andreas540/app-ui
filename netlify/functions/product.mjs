@@ -118,14 +118,24 @@ async function update(event) {
 
     // If cost changed, add history entry
     if (costChanged) {
-      // Determine effective_from based on apply_to_history checkbox
-      const effectiveFrom = applyToHistory ? '1970-01-01' : new Date().toISOString();
-      
-      // Add history entry - backdate if applying to all history
-      await sql`
-        INSERT INTO product_cost_history (product_id, cost, effective_from)
-        VALUES (${id}, ${newCostNum}, ${effectiveFrom})
-      `;
+      if (applyToHistory) {
+        // Delete all previous history entries for this product
+        await sql`
+          DELETE FROM product_cost_history
+          WHERE product_id = ${id}
+        `
+        // Insert single entry backdated to beginning - applies to all orders
+        await sql`
+          INSERT INTO product_cost_history (product_id, cost, effective_from)
+          VALUES (${id}, ${newCostNum}, '1970-01-01')
+        `
+      } else {
+        // Normal case: add new entry with current timestamp
+        await sql`
+          INSERT INTO product_cost_history (product_id, cost, effective_from)
+          VALUES (${id}, ${newCostNum}, NOW())
+        `
+      }
     }
 
     return cors(200, {
