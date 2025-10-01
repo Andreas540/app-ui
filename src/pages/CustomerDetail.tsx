@@ -317,7 +317,7 @@ export default function CustomerDetailPage() {
                   {(p as any).payment_type}
                 </div>
 
-                {/* AMOUNT with $ sign */}
+                {/* AMOUNT with minus sign */}
                 <div 
                   className="helper" 
                   onClick={() => handlePaymentClick(p)}
@@ -325,7 +325,7 @@ export default function CustomerDetailPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{textAlign:'right', cursor: 'pointer'}}
                 >
-                  {`${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
+                  {`-${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
                 </div>
               </div>
             ))}
