@@ -18,7 +18,7 @@ async function getOrder(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Get order with first item details
+    // Get order details
     const orders = await sql`
       SELECT
         o.id,
@@ -28,24 +28,34 @@ async function getOrder(event) {
         o.notes,
         o.customer_id,
         c.name AS customer_name,
-        c.customer_type,
-        -- First order item details
-        oi.product_id,
-        oi.qty,
-        oi.unit_price,
-        oi.product_cost_override,
-        oi.shipping_cost_override,
-        p.name AS product_name
+        c.customer_type
       FROM orders o
       JOIN customers c ON c.id = o.customer_id
-      LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN products p ON p.id = oi.product_id
       WHERE o.tenant_id = ${TENANT_ID} AND o.id = ${id}
       LIMIT 1
     `
     
     if (orders.length === 0) return cors(404, { error: 'Order not found' })
     const order = orders[0]
+
+    // Get order items (assuming single-item orders)
+    const items = await sql`
+      SELECT
+        oi.product_id,
+        oi.qty,
+        oi.unit_price,
+        oi.product_cost_override,
+        oi.shipping_cost_override,
+        p.name AS product_name
+      FROM order_items oi
+      LEFT JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = ${id}
+      LIMIT 1
+    `
+
+    if (items.length > 0) {
+      Object.assign(order, items[0])
+    }
 
     // Get partner splits for this order
     const partnerSplits = await sql`
@@ -57,7 +67,7 @@ async function getOrder(event) {
 
     return cors(200, { order, partner_splits: partnerSplits })
   } catch (e) {
-    console.error(e)
+    console.error('getOrder error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
@@ -127,7 +137,7 @@ async function updateOrder(event) {
 
     return cors(200, { ok: true })
   } catch (e) {
-    console.error(e)
+    console.error('updateOrder error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
