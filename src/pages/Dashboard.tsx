@@ -9,6 +9,7 @@ function fmtIntMoney(n: number) {
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
+  const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(true)
@@ -23,6 +24,10 @@ export default function Dashboard() {
         setLoading(true); setErr(null)
         const res = await listCustomersWithOwed()
         setCustomers(res.customers)
+        // Get partner totals from API response
+        if ((res as any).partner_totals) {
+          setPartnerTotals((res as any).partner_totals)
+        }
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -54,20 +59,16 @@ export default function Dashboard() {
     })()
   }, [])
 
-  // Calculate totals from database data
+  // Calculate total owed to me from database data
   const totalOwedToMe = useMemo(
     () => customers.reduce((sum, c) => sum + Number(c.owed_to_me || 0), 0),
     [customers]
   )
-  
-  const totalOwedToPartners = useMemo(
-    () => customers.reduce((sum, c) => sum + Number(c.owed_to_partners || 0), 0),
-    [customers]
-  )
 
+  // My $ = Total owed to me - Net owed to Partners (from API)
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalOwedToMe) - Number(totalOwedToPartners)),
-    [totalOwedToMe, totalOwedToPartners]
+    () => Math.max(0, Number(totalOwedToMe) - Number(partnerTotals.net)),
+    [totalOwedToMe, partnerTotals.net]
   )
 
   // Show orders based on display count
@@ -143,7 +144,7 @@ export default function Dashboard() {
             >
               <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
-                {fmtIntMoney(totalOwedToPartners)}
+                {fmtIntMoney(partnerTotals.net)}
               </div>
             </div>
 
