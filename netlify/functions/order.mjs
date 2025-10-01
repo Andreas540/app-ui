@@ -18,7 +18,7 @@ async function getOrder(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Get order details
+    // Get order details with cost overrides from orders table
     const orders = await sql`
       SELECT
         o.id,
@@ -27,6 +27,8 @@ async function getOrder(event) {
         o.delivered,
         o.notes,
         o.customer_id,
+        o.product_cost,
+        o.shipping_cost,
         c.name AS customer_name,
         c.customer_type
       FROM orders o
@@ -38,14 +40,12 @@ async function getOrder(event) {
     if (orders.length === 0) return cors(404, { error: 'Order not found' })
     const order = orders[0]
 
-    // Get order items (assuming single-item orders)
+    // Get order items
     const items = await sql`
       SELECT
         oi.product_id,
         oi.qty,
         oi.unit_price,
-        oi.product_cost_override,
-        oi.shipping_cost_override,
         p.name AS product_name
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id
@@ -103,23 +103,23 @@ async function updateOrder(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Update order
+    // Update order with cost overrides
     await sql`
       UPDATE orders
       SET order_date = ${date},
           delivered = ${delivered ?? false},
-          notes = ${notes ?? null}
+          notes = ${notes ?? null},
+          product_cost = ${product_cost ?? null},
+          shipping_cost = ${shipping_cost ?? null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `
 
-    // Update order_items (assuming single-item orders for now)
+    // Update order_items
     await sql`
       UPDATE order_items
       SET product_id = ${product_id},
           qty = ${qty},
-          unit_price = ${unit_price},
-          product_cost_override = ${product_cost ?? null},
-          shipping_cost_override = ${shipping_cost ?? null}
+          unit_price = ${unit_price}
       WHERE order_id = ${id}
     `
 
