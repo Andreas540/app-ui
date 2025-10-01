@@ -124,7 +124,17 @@ async function createCustomer(event) {
       RETURNING id
     `;
 
-    return cors(200, { ok: true, id: ins[0].id });
+    const customerId = ins[0].id;
+
+    // Seed shipping cost history at "now" (matching product.mjs pattern)
+    if (ship !== null) {
+      await sql`
+        INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
+        VALUES (${TENANT_ID}, ${customerId}, ${ship}, NOW())
+      `;
+    }
+
+    return cors(200, { ok: true, id: customerId });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });
