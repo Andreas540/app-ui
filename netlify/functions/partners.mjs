@@ -2,6 +2,7 @@
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')     return listPartners(event);
+  if (event.httpMethod === 'POST')    return createPartner(event);
   return cors(405, { error: 'Method not allowed' });
 }
 
@@ -47,13 +48,46 @@ async function listPartners(event) {
   }
 }
 
+async function createPartner(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const { DATABASE_URL, TENANT_ID } = process.env;
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
+
+    const body = JSON.parse(event.body || '{}');
+    const { name, phone, address1, address2, city, state, postal_code } = body || {};
+
+    if (!name || typeof name !== 'string') {
+      return cors(400, { error: 'name is required' });
+    }
+
+    const sql = neon(DATABASE_URL);
+
+    const ins = await sql`
+      INSERT INTO partners (
+        tenant_id, name, phone, address1, address2, city, state, postal_code
+      ) VALUES (
+        ${TENANT_ID}, ${name.trim()}, ${phone ?? null}, ${address1 ?? null}, 
+        ${address2 ?? null}, ${city ?? null}, ${state ?? null}, ${postal_code ?? null}
+      )
+      RETURNING id
+    `;
+
+    return cors(201, { ok: true, id: ins[0].id });
+  } catch (e) {
+    console.error(e);
+    return cors(500, { error: String(e?.message || e) });
+  }
+}
+
 function cors(status, body) {
   return {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
       'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
