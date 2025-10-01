@@ -84,15 +84,15 @@ async function getCustomer(event) {
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${id}
       GROUP BY o.id, fl.product_name, fl.qty, fl.unit_price, pa.partner_amount
-      ORDER BY o.order_date DESC
+      ORDER BY o.order_date DESC, o.order_no DESC
       LIMIT 20
     `
 
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount
+      SELECT id, payment_date, payment_type, amount, created_at
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
-      ORDER BY payment_date DESC
+      ORDER BY payment_date DESC, created_at DESC
       LIMIT 20
     `
 
