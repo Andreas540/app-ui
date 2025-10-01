@@ -170,16 +170,28 @@ export default function App() {
               </button>
             </>
           ) : (
-            /* Admin sees everything */
+            /* Admin sees everything with sections */
             <>
-              <NavLink to="/" end onClick={() => setNavOpen(false)}>Dashboard</NavLink>
+              {/* Sales Section */}
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+              <NavLink to="/" end onClick={() => setNavOpen(false)}>Main Dashboard</NavLink>
               <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
               <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
               <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
               <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
+              
+              {/* Inventory Section */}
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              
+              {/* Other Section */}
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+              
               <button 
                 onClick={handleLogout}
                 style={{ 
@@ -189,7 +201,7 @@ export default function App() {
                   padding: '10px 12px',
                   borderRadius: '10px',
                   cursor: 'pointer',
-                  marginTop: '8px',
+                  marginTop: '16px',
                   width: '75%'
                 }}
               >
