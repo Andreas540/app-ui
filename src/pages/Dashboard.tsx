@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
-import { clearOrders } from '../lib/storage'
 import { formatUSAny } from '../lib/time'
 
 function fmtIntMoney(n: number) {
@@ -256,14 +255,6 @@ export default function Dashboard() {
             })}
           </div>
         )}
-      </div>
-
-      <div className="card">
-        <h3>Maintenance</h3>
-        <button onClick={() => { if (confirm('Delete ALL saved orders?')) { clearOrders(); location.reload(); }}}>
-          Clear saved orders
-        </button>
-        <p className="helper" style={{marginTop:8}}>Local-only; useful while prototyping.</p>
       </div>
     </div>
   )
