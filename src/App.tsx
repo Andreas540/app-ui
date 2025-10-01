@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
+import EditOrder from './pages/EditOrder'
 import Customers from './pages/Customers'
 import Settings from './pages/Settings'
 import Payments from './pages/Payments'
@@ -225,6 +226,7 @@ export default function App() {
               <>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/orders/new" element={<NewOrder />} />
+                <Route path="/orders/:orderId/edit" element={<EditOrder />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/products/new" element={<NewProduct />} />
                 <Route path="/products/edit" element={<EditProduct />} />

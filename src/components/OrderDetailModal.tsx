@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import Modal from './Modal'
 
 interface OrderDetailModalProps {
@@ -145,8 +146,15 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
           paddingTop: 16,
           borderTop: '1px solid var(--line)'
         }}>
+          <Link to={`/orders/${order.id}/edit`} style={{ flex: 1 }}>
+            <button 
+              className="primary"
+              style={{ width: '100%' }}
+            >
+              Edit Order
+            </button>
+          </Link>
           <button 
-            className="primary" 
             onClick={onClose}
             style={{ flex: 1 }}
           >
