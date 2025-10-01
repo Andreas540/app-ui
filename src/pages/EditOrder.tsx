@@ -67,8 +67,14 @@ export default function EditOrder() {
         setNotes(order.notes || '')
         
         // Set cost overrides if they exist
-        if (order.product_cost_override) setProductCostStr(String(order.product_cost_override))
-        if (order.shipping_cost_override) setShippingCostStr(String(order.shipping_cost_override))
+        if (order.product_cost) {
+          setProductCostStr(String(order.product_cost))
+          setShowMoreFields(true)
+        }
+        if (order.shipping_cost) {
+          setShippingCostStr(String(order.shipping_cost))
+          setShowMoreFields(true)
+        }
         
         // Load partner splits
         if (orderData.partner_splits && orderData.partner_splits.length > 0) {
@@ -240,9 +246,29 @@ export default function EditOrder() {
       if (!res.ok) throw new Error('Failed to update order')
       
       alert('Order updated!')
-      navigate(-1) // Go back to previous page
+      navigate(-1)
     } catch (e: any) {
       alert(e?.message || 'Save failed')
+    }
+  }
+
+  async function deleteOrder() {
+    if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
+
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/order`, {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: orderId }),
+      })
+
+      if (!res.ok) throw new Error('Failed to delete order')
+      
+      alert('Order deleted')
+      navigate(-1)
+    } catch (e: any) {
+      alert(e?.message || 'Delete failed')
     }
   }
 
@@ -280,7 +306,7 @@ export default function EditOrder() {
           type="text"
           value={customerName}
           readOnly
-          style={{ height: CONTROL_H, opacity: 0.7, backgroundColor: '#f5f5f5' }}
+          style={{ height: CONTROL_H, opacity: 0.9 }}
         />
       </div>
 
@@ -479,6 +505,18 @@ export default function EditOrder() {
           style={{ height: CONTROL_H }}
         >
           More
+        </button>
+        <button
+          onClick={deleteOrder}
+          style={{ 
+            height: CONTROL_H, 
+            marginLeft: 'auto',
+            backgroundColor: 'salmon',
+            color: 'white',
+            border: 'none'
+          }}
+        >
+          Delete
         </button>
       </div>
     </div>
