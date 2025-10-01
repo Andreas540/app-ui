@@ -180,11 +180,11 @@ export default function App() {
               <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
               <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
               <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
+              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
               
               {/* Inventory Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
               
               {/* Other Section */}
