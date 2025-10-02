@@ -1,109 +1,81 @@
-// netlify/functions/payment.mjs
-const PAYMENT_TYPES = [
-  'Cash payment','Cash App payment','Credit payment','Shipping fee',
-  'Discount','Credit','Old tab','Wire Payment','Zelle payment'
-];
-
+// netlify/functions/payments.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
-  if (event.httpMethod === 'GET')    return getPayment(event);
-  if (event.httpMethod === 'PUT')    return updatePayment(event);
-  if (event.httpMethod === 'DELETE') return deletePayment(event);
+  if (event.httpMethod === 'GET')  return list(event);
+  if (event.httpMethod === 'POST') return create(event);
   return cors(405, { error: 'Method not allowed' });
 }
 
-async function getPayment(event) {
+async function list(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
     const { DATABASE_URL, TENANT_ID } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
-    const id = (event.queryStringParameters?.id || '').trim();
-    if (!id) return cors(400, { error: 'id required' });
-
     const sql = neon(DATABASE_URL);
-
-    const payments = await sql`
-      SELECT p.id, p.customer_id, p.payment_type, p.amount, p.payment_date, p.notes,
-             c.name AS customer_name
+    const limit = Math.min(100, Math.max(1, parseInt(event.queryStringParameters?.limit ?? '20', 10) || 20));
+    
+    const rows = await sql`
+      SELECT p.id, p.payment_date, p.payment_type, p.amount, p.notes,
+             c.name AS customer_name, c.id AS customer_id
       FROM payments p
       JOIN customers c ON c.id = p.customer_id
-      WHERE p.tenant_id = ${TENANT_ID} AND p.id = ${id}
-      LIMIT 1
+      WHERE p.tenant_id = ${TENANT_ID}
+      ORDER BY p.payment_date DESC, p.created_at DESC
+      LIMIT ${limit}
     `;
-    
-    if (payments.length === 0) return cors(404, { error: 'Payment not found' });
-
-    return cors(200, { payment: payments[0] });
+    return cors(200, { payments: rows });
   } catch (e) {
-    console.error('getPayment error:', e);
+    console.error(e);
     return cors(500, { error: String(e?.message || e) });
   }
 }
 
-async function updatePayment(event) {
+async function create(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
     const { DATABASE_URL, TENANT_ID } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
-    const body = JSON.parse(event.body || '{}');
-    const { id, customer_id, payment_type, amount, payment_date, notes } = body;
+    let body;
+    try { body = JSON.parse(event.body || '{}'); }
+    catch { return cors(400, { error: 'Invalid JSON body' }); }
 
-    if (!id) return cors(400, { error: 'id is required' });
-    if (!customer_id) return cors(400, { error: 'customer_id is required' });
-    if (!PAYMENT_TYPES.includes(payment_type)) {
-      return cors(400, { error: 'Invalid payment_type' });
+    const {
+      customer_id,
+      payment_type,
+      amount,
+      payment_date,
+      notes = null,
+      order_id = null
+    } = body;
+
+    if (typeof customer_id !== 'string' || !customer_id) {
+      return cors(400, { error: 'customer_id required' });
+    }
+    if (typeof payment_type !== 'string' || !payment_type) {
+      return cors(400, { error: 'payment_type required' });
     }
     const amountNum = Number(amount);
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       return cors(400, { error: 'amount must be a non-zero number' });
     }
-    if (!payment_date) return cors(400, { error: 'payment_date is required' });
+    if (typeof payment_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(payment_date)) {
+      return cors(400, { error: 'payment_date must be YYYY-MM-DD' });
+    }
 
     const sql = neon(DATABASE_URL);
 
-    await sql`
-      UPDATE payments
-      SET customer_id = ${customer_id},
-          payment_type = ${payment_type},
-          amount = ${amountNum},
-          payment_date = ${payment_date},
-          notes = ${notes || null}
-      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+    const [row] = await sql`
+      INSERT INTO payments (tenant_id, customer_id, payment_type, amount, payment_date, notes, order_id)
+      VALUES (${TENANT_ID}, ${customer_id}, ${payment_type}, ${amountNum}, ${payment_date}, ${notes}, ${order_id})
+      RETURNING id
     `;
-
-    return cors(200, { ok: true });
+    return cors(200, { ok: true, id: row.id });
   } catch (e) {
-    console.error('updatePayment error:', e);
-    return cors(500, { error: String(e?.message || e) });
-  }
-}
-
-async function deletePayment(event) {
-  try {
-    const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
-
-    const body = JSON.parse(event.body || '{}');
-    const { id } = body;
-
-    if (!id) return cors(400, { error: 'id is required' });
-
-    const sql = neon(DATABASE_URL);
-
-    await sql`
-      DELETE FROM payments
-      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-    `;
-
-    return cors(200, { ok: true });
-  } catch (e) {
-    console.error('deletePayment error:', e);
+    console.error(e);
     return cors(500, { error: String(e?.message || e) });
   }
 }
@@ -114,7 +86,7 @@ function cors(status, body) {
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,PUT,DELETE,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
       'access-control-allow-headers': 'content-type',
     },
     body: JSON.stringify(body),
