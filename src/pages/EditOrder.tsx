@@ -97,23 +97,24 @@ export default function EditOrder() {
   }, [orderId])
 
   // Fetch historical costs when product or customer changes
-  useEffect(() => {
-    if (!productId || !customerId || !orderDate) return
-    
-    (async () => {
-      try {
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${orderDate}`)
-        if (res.ok) {
-          const data = await res.json()
-          setHistoricalProductCost(data.product_cost)
-          setHistoricalShippingCost(data.shipping_cost)
-        }
-      } catch (e) {
-        console.error('Failed to fetch historical costs:', e)
+useEffect(() => {
+  if (!productId || !customerId || !orderDate) return
+  
+  (async () => {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const dateOnly = orderDate.split('T')[0] // Extract YYYY-MM-DD from potential ISO string
+      const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${dateOnly}`)
+      if (res.ok) {
+        const data = await res.json()
+        setHistoricalProductCost(data.product_cost)
+        setHistoricalShippingCost(data.shipping_cost)
       }
-    })()
-  }, [productId, customerId, orderDate])
+    } catch (e) {
+      console.error('Failed to fetch historical costs:', e)
+    }
+  })()
+}, [productId, customerId, orderDate])
 
   const person = useMemo(() => people.find(p => p.id === customerId), [people, customerId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
