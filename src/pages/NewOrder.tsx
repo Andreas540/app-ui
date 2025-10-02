@@ -1,5 +1,6 @@
 // src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -37,6 +38,19 @@ export default function NewOrder() {
   const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
+  // Read URL parameters for pre-populating customer
+const location = useLocation()
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search)
+  const customerId = params.get('customer_id')
+  const customerName = params.get('customer_name')
+  
+  if (customerId && customerName) {
+    setEntityId(customerId)
+    setQuery(customerName)
+  }
+}, [location.search])
   useEffect(() => {
     (async () => {
       try {

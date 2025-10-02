@@ -120,8 +120,25 @@ export default function CustomerDetailPage() {
           >
             ✎
           </Link>
+          <Link
+            to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button 
+              className="primary"
+              style={{ 
+                width: 80, 
+                height: 20, 
+                fontSize: 12, 
+                padding: '0 8px',
+                borderRadius: 6
+              }}
+            >
+              New order
+            </button>
+          </Link>
         </div>
-        <Link to="/customers" className="helper">&larr; Back to customers</Link>
+        <Link to="/customers" className="helper">&larr; Customers</Link>
       </div>
 
       {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
