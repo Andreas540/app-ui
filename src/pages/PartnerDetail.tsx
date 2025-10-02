@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { formatUSAny } from '../lib/time'
+import OrderDetailModal from '../components/OrderDetailModal'
+import PaymentDetailModal from '../components/PaymentDetailModal'
 
 type PartnerDetail = {
   partner: {
@@ -43,6 +45,10 @@ export default function PartnerDetailPage() {
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [selectedPayment, setSelectedPayment] = useState(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -73,6 +79,16 @@ export default function PartnerDetailPage() {
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
+  }
+
+  const handleOrderClick = (order: any) => {
+    setSelectedOrder(order)
+    setShowOrderModal(true)
+  }
+
+  const handlePaymentClick = (payment: any) => {
+    setSelectedPayment(payment)
+    setShowPaymentModal(true)
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -184,18 +200,46 @@ export default function PartnerDetailPage() {
                 }}
               >
                 {/* DATE */}
-                <div className="helper">{formatUSAny(o.order_date)}</div>
+                <div 
+                  className="helper"
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {formatUSAny(o.order_date)}
+                </div>
 
                 {/* CUSTOMER NAME */}
-                <div className="helper">{o.customer_name}</div>
+                <div 
+                  className="helper"
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {o.customer_name}
+                </div>
 
                 {/* PARTNER AMOUNT */}
-                <div className="helper" style={{textAlign:'right'}}>
+                <div 
+                  className="helper" 
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{textAlign:'right', cursor: 'pointer'}}
+                >
                   {fmtIntMoney(o.partner_amount)}
                 </div>
 
                 {/* ORDER TOTAL */}
-                <div className="helper" style={{textAlign:'right', paddingLeft:12}}>
+                <div 
+                  className="helper" 
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{textAlign:'right', paddingLeft:12, cursor: 'pointer'}}
+                >
                   {fmtIntMoney(o.total)}
                 </div>
               </div>
@@ -233,13 +277,35 @@ export default function PartnerDetailPage() {
                 }}
               >
                 {/* DATE */}
-                <div className="helper">{formatUSAny(p.payment_date)}</div>
+                <div 
+                  className="helper"
+                  onClick={() => handlePaymentClick(p)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {formatUSAny(p.payment_date)}
+                </div>
 
                 {/* TYPE */}
-                <div className="helper">{p.payment_type}</div>
+                <div 
+                  className="helper"
+                  onClick={() => handlePaymentClick(p)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {p.payment_type}
+                </div>
 
                 {/* AMOUNT */}
-                <div className="helper" style={{textAlign:'right'}}>
+                <div 
+                  className="helper" 
+                  onClick={() => handlePaymentClick(p)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{textAlign:'right', cursor: 'pointer'}}
+                >
                   {fmtIntMoney(p.amount)}
                 </div>
               </div>
@@ -247,6 +313,19 @@ export default function PartnerDetailPage() {
           </div>
         )}
       </div>
+
+      <OrderDetailModal 
+        isOpen={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        order={selectedOrder}
+      />
+
+      <PaymentDetailModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        payment={selectedPayment}
+        isPartnerPayment={true}
+      />
     </div>
   )
 }
