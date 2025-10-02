@@ -63,10 +63,17 @@ export default function Customers() {
     [visible]
   )
 
-  // "My $" = Total owed to me - Net owed to Partners (global, not filtered)
+  // Partner net respecting the type filter (BLV contributes 0; All/Partner use API total)
+  const filteredPartnerNet = useMemo(() => {
+    const net = Number(partnerTotals.net) || 0
+    if (filterType === 'BLV') return 0
+    return net
+  }, [partnerTotals.net, filterType])
+
+  // "My $" = Total owed to me (filtered) - Owed to partners (filtered)
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalVisibleOwed) - Number(partnerTotals.net)),
-    [totalVisibleOwed, partnerTotals.net]
+    () => Math.max(0, Number(totalVisibleOwed) - Number(filteredPartnerNet)),
+    [totalVisibleOwed, filteredPartnerNet]
   )
 
   return (
@@ -168,7 +175,7 @@ export default function Customers() {
       {/* Blank row */}
       <div style={{ height: 8 }} />
 
-      {/* Owed to partners (global - not affected by filter) */}
+      {/* Owed to partners (respects BLV/Partner filter) */}
       <div
         style={{
           display: 'grid',
@@ -179,7 +186,7 @@ export default function Customers() {
       >
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {fmtIntMoney(partnerTotals.net)}
+          {fmtIntMoney(filteredPartnerNet)}
         </div>
       </div>
 
@@ -236,6 +243,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
