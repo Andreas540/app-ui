@@ -34,34 +34,35 @@ export default function Payments() {
   const [partnerNotes, setPartnerNotes] = useState('')
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true); setErr(null)
-        const { customers, partners: bootPartners } = await fetchBootstrap()
-        setPeople(customers as unknown as CustomerLite[])
-        setPartners(bootPartners ?? [])
+  (async () => {
+    try {
+      setLoading(true); setErr(null)
+      const { customers, partners: bootPartners } = await fetchBootstrap()
+      setPeople(customers as unknown as CustomerLite[])
+      setPartners(bootPartners ?? [])
+      
+      // Check if we're coming from CustomerDetail with a pre-selected customer
+      const params = new URLSearchParams(location.search)
+      const preselectedCustomerId = params.get('customer_id')
+      
+      if (preselectedCustomerId) {
+        setEntityId(preselectedCustomerId)
+        setIsFromCustomer(true)
+      } else {
+        // Only set default customer if no pre-selection
         setEntityId((customers[0]?.id as string) ?? '')
-        if (bootPartners && bootPartners.length > 0) {
-          setPartnerId(bootPartners[0].id)
-        }
-      } catch (e:any) {
-        setErr(e?.message || String(e))
-      } finally {
-        setLoading(false)
       }
-    })()
-  }, [])
-
-  // Read URL parameters for pre-populating customer
-  useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const customerId = params.get('customer_id')
-    
-    if (customerId) {
-      setEntityId(customerId)
-      setIsFromCustomer(true)
+      
+      if (bootPartners && bootPartners.length > 0) {
+        setPartnerId(bootPartners[0].id)
+      }
+    } catch (e:any) {
+      setErr(e?.message || String(e))
+    } finally {
+      setLoading(false)
     }
-  }, [location.search])
+  })()
+}, [location.search])
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
