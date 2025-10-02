@@ -137,7 +137,7 @@ export default function CustomerDetailPage() {
           <button
             className="primary"
             style={{
-              width: 140,           // equal width
+              width: 100,           // equal width
               height: 28,
               fontSize: 12,
               padding: '0 10px',
@@ -156,7 +156,7 @@ export default function CustomerDetailPage() {
           <button
             className="primary"
             style={{
-              width: 140,           // equal width; wide enough for full label
+              width: 100,           // equal width; wide enough for full label
               height: 28,
               fontSize: 12,
               padding: '0 10px',
