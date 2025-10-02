@@ -1,12 +1,14 @@
 // src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type PartnerRef = { id: string; name: string }
 
 export default function NewOrder() {
+  const navigate = useNavigate()
+const location = useLocation()
   const [people, setPeople] = useState<Person[]>([])
   const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
   const [products, setProducts] = useState<Product[]>([])
@@ -39,7 +41,6 @@ export default function NewOrder() {
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
   // Read URL parameters for pre-populating customer
-const location = useLocation()
 
 useEffect(() => {
   const params = new URLSearchParams(location.search)
@@ -180,68 +181,78 @@ useEffect(() => {
   )
 
   async function save() {
-    if (!person)  { alert('Select a customer first'); return }
-    if (!product) { alert('Pick a product'); return }
+  if (!person)  { alert('Select a customer first'); return }
+  if (!product) { alert('Pick a product'); return }
 
-    const qty = parseInt(qtyStr || '0', 10)
-    if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+  const qty = parseInt(qtyStr || '0', 10)
+  if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
 
-    const unitPrice = parsePriceToNumber(priceStr)
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
+  const unitPrice = parsePriceToNumber(priceStr)
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
 
-    // Build partner_splits only for Partner customers
-    const splits: Array<{ partner_id: string; amount: number }> = []
-    if (isPartnerCustomer) {
-      if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
-      if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
-    }
+  // Build partner_splits only for Partner customers
+  const splits: Array<{ partner_id: string; amount: number }> = []
+  if (isPartnerCustomer) {
+    if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
+    if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
+  }
 
-    // Parse optional cost overrides
-    let productCostToSend: number | undefined = undefined
-    let shippingCostToSend: number | undefined = undefined
-    
-    if (productCostStr.trim()) {
-      const parsed = parsePriceToNumber(productCostStr)
-      if (Number.isFinite(parsed) && parsed > 0) {
-        productCostToSend = parsed
-      }
-    }
-    
-    if (shippingCostStr.trim()) {
-      const parsed = parsePriceToNumber(shippingCostStr)
-      if (Number.isFinite(parsed) && parsed >= 0) {
-        shippingCostToSend = parsed
-      }
-    }
-
-    try {
-      const { order_no } = await createOrder({
-        customer_id: person.id,
-        product_id: product.id,
-        qty,
-        unit_price: unitPrice,
-        date: orderDate,
-        delivered,
-        discount: 0,
-        notes: notes.trim() || undefined,
-        product_cost: productCostToSend,
-        shipping_cost: shippingCostToSend,
-        partner_splits: splits.length ? splits : undefined,
-      })
-      alert(`Saved! Order #${order_no}`)
-
-      // quick reset (keep same customer/product)
-      setQtyStr('')
-      setPriceStr('')
-      setOrderDate(todayYMD())
-      setDelivered(false)
-      setNotes('')
-      setPartner1Id(''); setPartner2Id('')
-      setPartner1PerItemStr(''); setPartner2PerItemStr('')
-    } catch (e: any) {
-      alert(e?.message || 'Save failed')
+  // Parse optional cost overrides
+  let productCostToSend: number | undefined = undefined
+  let shippingCostToSend: number | undefined = undefined
+  
+  if (productCostStr.trim()) {
+    const parsed = parsePriceToNumber(productCostStr)
+    if (Number.isFinite(parsed) && parsed > 0) {
+      productCostToSend = parsed
     }
   }
+  
+  if (shippingCostStr.trim()) {
+    const parsed = parsePriceToNumber(shippingCostStr)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      shippingCostToSend = parsed
+    }
+  }
+
+  try {
+    const { order_no } = await createOrder({
+      customer_id: person.id,
+      product_id: product.id,
+      qty,
+      unit_price: unitPrice,
+      date: orderDate,
+      delivered,
+      discount: 0,
+      notes: notes.trim() || undefined,
+      product_cost: productCostToSend,
+      shipping_cost: shippingCostToSend,
+      partner_splits: splits.length ? splits : undefined,
+    })
+    alert(`Saved! Order #${order_no}`)
+
+    // Check if we should navigate back to customer detail
+    const params = new URLSearchParams(location.search)
+    const returnTo = params.get('return_to')
+    const returnId = params.get('return_id')
+    
+    if (returnTo === 'customer' && returnId) {
+      navigate(`/customers/${returnId}`)
+      return
+    }
+
+    // Otherwise just reset form (keep same customer/product)
+    setQtyStr('')
+    setPriceStr('')
+    setOrderDate(todayYMD())
+    setDelivered(false)
+    setNotes('')
+    setPartner1Id(''); setPartner2Id('')
+    setPartner1PerItemStr(''); setPartner2PerItemStr('')
+  } catch (e: any) {
+    alert(e?.message || 'Save failed')
+  }
+}
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>

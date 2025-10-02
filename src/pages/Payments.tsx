@@ -1,5 +1,6 @@
 // src/pages/Payments.tsx
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType, createPayment, createPartnerPayment } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -7,6 +8,9 @@ type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner
 type PartnerLite = { id: string; name: string }
 
 export default function Payments() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const [people, setPeople] = useState<CustomerLite[]>([])
   const [partners, setPartners] = useState<PartnerLite[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,6 +52,17 @@ export default function Payments() {
     })()
   }, [])
 
+  // Read URL parameters for pre-populating customer
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const customerId = params.get('customer_id')
+    
+    if (customerId) {
+      setEntityId(customerId)
+      setIsFromCustomer(true)
+    }
+  }, [location.search])
+
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
 
@@ -67,6 +82,18 @@ export default function Payments() {
         notes: notes.trim() || null,
       })
       alert('Payment saved!')
+      
+      // Check if we should navigate back
+      const params = new URLSearchParams(location.search)
+      const returnTo = params.get('return_to')
+      const returnId = params.get('return_id')
+      
+      if (returnTo === 'customer' && returnId) {
+        navigate(`/customers/${returnId}`)
+        return
+      }
+      
+      // Otherwise reset form
       setAmountStr('')
       setPaymentType('Cash payment')
       setNotes('')

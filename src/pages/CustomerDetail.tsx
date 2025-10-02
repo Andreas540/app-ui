@@ -106,6 +106,11 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
+      {/* Back link above customer name */}
+      <div style={{ marginBottom: 8 }}>
+        <Link to="/customers" className="helper">&larr; Customers</Link>
+      </div>
+
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
           <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -121,13 +126,13 @@ export default function CustomerDetailPage() {
             ✎
           </Link>
           <Link
-            to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
+            to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
             style={{ textDecoration: 'none' }}
           >
             <button 
               className="primary"
               style={{ 
-                width: 80, 
+                width: 88,
                 height: 20, 
                 fontSize: 12, 
                 padding: '0 8px',
@@ -137,8 +142,24 @@ export default function CustomerDetailPage() {
               New order
             </button>
           </Link>
+          <Link
+            to={`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button 
+              className="primary"
+              style={{ 
+                width: 88,
+                height: 20, 
+                fontSize: 12, 
+                padding: '0 8px',
+                borderRadius: 6
+              }}
+            >
+              New payment
+            </button>
+          </Link>
         </div>
-        <Link to="/customers" className="helper">&larr; Customers</Link>
       </div>
 
       {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
@@ -360,6 +381,7 @@ export default function CustomerDetailPage() {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         payment={selectedPayment}
+        isPartnerPayment={false}
       />
     </div>
   )
