@@ -1,16 +1,18 @@
+import { Link } from 'react-router-dom'
 import Modal from './Modal'
 
 interface PaymentDetailModalProps {
   isOpen: boolean
   onClose: () => void
   payment: any
+  isPartnerPayment?: boolean // NEW: distinguish payment type
 }
 
 function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
 }
 
-export default function PaymentDetailModal({ isOpen, onClose, payment }: PaymentDetailModalProps) {
+export default function PaymentDetailModal({ isOpen, onClose, payment, isPartnerPayment = false }: PaymentDetailModalProps) {
   if (!payment) return null
 
   const formatDate = (dateStr: string) => {
@@ -89,6 +91,13 @@ export default function PaymentDetailModal({ isOpen, onClose, payment }: Payment
               </div>
             )}
 
+            {payment.partner_name && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="helper">Partner</div>
+                <div style={{ fontWeight: 600 }}>{payment.partner_name}</div>
+              </div>
+            )}
+
             {payment.order_id && (
               <div style={{ marginBottom: 16 }}>
                 <div className="helper">Related Order</div>
@@ -136,8 +145,15 @@ export default function PaymentDetailModal({ isOpen, onClose, payment }: Payment
           paddingTop: 16,
           borderTop: '1px solid var(--line)'
         }}>
+          <Link to={`/payments/${payment.id}/edit?type=${isPartnerPayment ? 'partner' : 'customer'}`} style={{ flex: 1 }}>
+            <button 
+              className="primary"
+              style={{ width: '100%' }}
+            >
+              Edit Payment
+            </button>
+          </Link>
           <button 
-            className="primary" 
             onClick={onClose}
             style={{ flex: 1 }}
           >

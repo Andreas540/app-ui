@@ -17,6 +17,7 @@ import PartnerDetail from './pages/PartnerDetail'
 import EditPartner from './pages/EditPartner'
 import InventoryDashboard from './pages/InventoryDashboard'
 import Login from './pages/Login'
+import EditPayment from './pages/EditPayment'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -240,6 +241,7 @@ export default function App() {
                 <Route path="/partners/:id" element={<PartnerDetail />} />
                 <Route path="/partners/:id/edit" element={<EditPartner />} />
                 <Route path="/inventory" element={<InventoryDashboard />} />
+                <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
               </>
             )}
           </Routes>
