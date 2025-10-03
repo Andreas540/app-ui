@@ -4,6 +4,9 @@ import { useParams, Link } from 'react-router-dom'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import PrintDialog from '../components/PrintDialog'
+import { PrintManager } from '../lib/printManager'
+import type { PrintOptions } from '../lib/printManager'
 
 type PartnerDetail = {
   partner: {
@@ -49,6 +52,18 @@ export default function PartnerDetailPage() {
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  
+  // Print dialog state
+  const [showPrintDialog, setShowPrintDialog] = useState(false)
+  const [printOptions, setPrintOptions] = useState<PrintOptions | null>(null)
+
+  // Register print dialog handler
+  useEffect(() => {
+    PrintManager.setDialogHandler((options) => {
+      setPrintOptions(options)
+      setShowPrintDialog(true)
+    })
+  }, [])
 
   useEffect(() => {
     (async () => {
@@ -122,11 +137,26 @@ export default function PartnerDetailPage() {
             ✎
           </Link>
         </div>
-        <Link to="/partners" className="helper">&larr; Back to partners</Link>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={() => PrintManager.openPrintDialog()}
+            className="print-button"
+            title="Print to PDF"
+          >
+            🖨️ Print
+          </button>
+          <Link to="/partners" className="helper">&larr; Back to partners</Link>
+        </div>
       </div>
 
-      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to partner (right-aligned) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      {/* Partner Info - Printable */}
+      <div 
+        data-printable
+        data-printable-id="partner-info"
+        data-printable-title="Partner Information"
+        className="row row-2col-mobile" 
+        style={{ marginTop: 12 }}
+      >
         {/* LEFT */}
         <div>
           {!showInfo ? (
@@ -171,8 +201,13 @@ export default function PartnerDetailPage() {
         </div>
       </div>
 
-      {/* Recent orders with this partner */}
-      <div style={{ marginTop: 20 }}>
+      {/* Recent orders - Printable */}
+      <div 
+        data-printable
+        data-printable-id="orders"
+        data-printable-title="Orders with Partner Stake"
+        style={{ marginTop: 20 }}
+      >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Orders with partner stake</h4>
           {orders.length > 5 && (
@@ -199,7 +234,6 @@ export default function PartnerDetailPage() {
                   padding:'8px 0'
                 }}
               >
-                {/* DATE */}
                 <div 
                   className="helper"
                   onClick={() => handleOrderClick(o)}
@@ -210,7 +244,6 @@ export default function PartnerDetailPage() {
                   {formatUSAny(o.order_date)}
                 </div>
 
-                {/* CUSTOMER NAME */}
                 <div 
                   className="helper"
                   onClick={() => handleOrderClick(o)}
@@ -221,7 +254,6 @@ export default function PartnerDetailPage() {
                   {o.customer_name}
                 </div>
 
-                {/* PARTNER AMOUNT */}
                 <div 
                   className="helper" 
                   onClick={() => handleOrderClick(o)}
@@ -232,7 +264,6 @@ export default function PartnerDetailPage() {
                   {fmtIntMoney(o.partner_amount)}
                 </div>
 
-                {/* ORDER TOTAL */}
                 <div 
                   className="helper" 
                   onClick={() => handleOrderClick(o)}
@@ -248,8 +279,13 @@ export default function PartnerDetailPage() {
         )}
       </div>
 
-      {/* Payments to partner */}
-      <div style={{ marginTop: 20 }}>
+      {/* Payments - Printable */}
+      <div 
+        data-printable
+        data-printable-id="payments"
+        data-printable-title="Payments to Partner"
+        style={{ marginTop: 20 }}
+      >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Payments to partner</h4>
           {payments.length > 5 && (
@@ -276,7 +312,6 @@ export default function PartnerDetailPage() {
                   padding:'8px 0'
                 }}
               >
-                {/* DATE */}
                 <div 
                   className="helper"
                   onClick={() => handlePaymentClick(p)}
@@ -287,7 +322,6 @@ export default function PartnerDetailPage() {
                   {formatUSAny(p.payment_date)}
                 </div>
 
-                {/* TYPE */}
                 <div 
                   className="helper"
                   onClick={() => handlePaymentClick(p)}
@@ -298,7 +332,6 @@ export default function PartnerDetailPage() {
                   {p.payment_type}
                 </div>
 
-                {/* AMOUNT */}
                 <div 
                   className="helper" 
                   onClick={() => handlePaymentClick(p)}
@@ -325,6 +358,12 @@ export default function PartnerDetailPage() {
         onClose={() => setShowPaymentModal(false)}
         payment={selectedPayment}
         isPartnerPayment={true}
+      />
+
+      <PrintDialog
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        options={printOptions}
       />
     </div>
   )

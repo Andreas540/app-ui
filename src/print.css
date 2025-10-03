@@ -1,0 +1,71 @@
+/* src/print.css */
+
+/* Hide elements during print that shouldn't appear */
+@media print {
+  /* Hide navigation, buttons, and UI elements */
+  .icon-btn,
+  button,
+  a.helper,
+  .helper[style*="cursor: pointer"] {
+    display: none !important;
+  }
+
+  /* Hide sections marked as not printable */
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Optimize layout for printing */
+  body {
+    background: white;
+    color: black;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure good page breaks */
+  h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Keep tables and grids together when possible */
+  [data-printable] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Better spacing for print */
+  [data-printable] + [data-printable] {
+    margin-top: 24px;
+  }
+}
+
+/* Print button styling (visible on screen, hidden in print) */
+.print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.print-button:hover {
+  background: var(--panel, #f5f5f5);
+  border-color: #999;
+}
+
+@media print {
+  .print-button {
+    display: none !important;
+  }
+}
