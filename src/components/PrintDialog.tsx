@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { PrintManager } from '../lib/printManager'
 import type { PrintOptions } from '../lib/printManager'
 
-
 interface PrintDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -24,7 +23,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
       if (!prev) return prev
       return {
         ...prev,
-        sections: prev.sections.map(s => 
+        sections: prev.sections.map(s =>
           s.id === id ? { ...s, selected: !s.selected } : s
         )
       }
@@ -67,7 +66,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
   const selectedCount = localOptions.sections.filter(s => s.selected).length
 
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         top: 0,
@@ -82,7 +81,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
       }}
       onClick={onClose}
     >
-      <div 
+      <div
         className="card"
         style={{
           maxWidth: 500,
@@ -124,27 +123,43 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 8 }}>
+          {/* Checklist — no frames, smaller checkboxes, wrapped text */}
+          <div style={{ display: 'grid', gap: 6 }}>
             {localOptions.sections.map(section => (
               <label
                 key={section.id}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   gap: 8,
-                  padding: 8,
-                  border: '1px solid #eee',
-                  borderRadius: 4,
+                  padding: 6,
                   cursor: 'pointer'
+                  // intentionally no border/frame
                 }}
               >
                 <input
                   type="checkbox"
                   checked={section.selected}
                   onChange={() => handleToggleSection(section.id)}
-                  style={{ cursor: 'pointer' }}
+                  style={{
+                    cursor: 'pointer',
+                    width: 14,
+                    height: 14,
+                    marginTop: 2 // align with first text line
+                  }}
                 />
-                <span>{section.title}</span>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,              // allow flex child to shrink
+                    maxWidth: '100%',
+                    whiteSpace: 'normal',     // wrap lines
+                    wordBreak: 'break-word',  // break long tokens
+                    overflowWrap: 'anywhere'  // extra safety for very long words/URLs
+                  }}
+                >
+                  {section.title}
+                </span>
               </label>
             ))}
           </div>
