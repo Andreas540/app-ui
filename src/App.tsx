@@ -18,6 +18,7 @@ import EditPartner from './pages/EditPartner'
 import InventoryDashboard from './pages/InventoryDashboard'
 import Login from './pages/Login'
 import EditPayment from './pages/EditPayment'
+import './print.css'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
