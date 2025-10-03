@@ -108,6 +108,19 @@ html, body {
   color: #000 !important;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Force black text (and links) in the print document */
+#print-root,
+#print-root * {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  opacity: 1 !important;
+}
+#print-root a, #print-root a:visited {
+  color: #000 !important;
+  text-decoration: none;
+}
+
 #print-root {
   display: block !important;
   max-width: 100% !important;
@@ -217,6 +230,19 @@ html, body {
   color: #000 !important;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Force black text (and links) in preview */
+#print-root,
+#print-root * {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  opacity: 1 !important;
+}
+#print-root a, #print-root a:visited {
+  color: #000 !important;
+  text-decoration: none;
+}
+
 #print-root {
   display: block !important;
   max-width: 100% !important;
@@ -279,4 +305,5 @@ ${selectedHtml || '<p>No sections selected.</p>'}
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 }
+
 

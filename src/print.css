@@ -38,7 +38,13 @@
     --card: #fff !important;
     --text: #000 !important;
   }
-
+/* Force black text for everything in printable content */
+[data-printable],
+[data-printable] * {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important; /* iOS/WebKit */
+  opacity: 1 !important;                    /* defeats muted/disabled grays */
+}
   /* Core document */
   html, body, #root, #app, .app, .app-root {
     background: #fff !important;
