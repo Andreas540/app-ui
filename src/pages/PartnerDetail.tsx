@@ -29,8 +29,13 @@ type PartnerDetail = {
     order_no: number
     order_date: string
     customer_name: string
-    partner_amount: number
-    total: number
+    // NEW fields from backend:
+    product_name?: string | null
+    qty?: number | null
+    unit_price?: number | null
+    // amounts:
+    total: number              // order total (amount)
+    partner_amount: number     // this partner's amount on the order
   }>
   payments: Array<{
     id: string
@@ -90,6 +95,7 @@ export default function PartnerDetailPage() {
   }, [id])
 
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
+  function fmtMoney(n:number) { return `$${(Number(n)||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
   
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
@@ -118,6 +124,7 @@ export default function PartnerDetailPage() {
 
   // Compact layout constants
   const DATE_COL = 55
+  const NUM_COL  = 72
   const LINE_GAP = 4
 
   return (
@@ -218,7 +225,7 @@ export default function PartnerDetailPage() {
         </div>
       </section>
 
-      {/* === PRINTABLE BLOCK 2: Orders === */}
+      {/* === PRINTABLE BLOCK 2: Orders (updated columns) === */}
       <section 
         data-printable
         data-printable-id="orders"
@@ -247,15 +254,16 @@ export default function PartnerDetailPage() {
                 data-print-row
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 1fr auto auto`,
-                  gap:LINE_GAP,
+                  gridTemplateColumns: `${DATE_COL}px 1fr 1.2fr ${NUM_COL}px ${NUM_COL}px ${NUM_COL}px ${NUM_COL}px`,
+                  gap: LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
               >
+                {/* Date */}
                 <div 
                   className="helper"
-                  data-date={o.order_date} // ISO date for exact sorting/filtering
+                  data-date={o.order_date}
                   onClick={() => handleOrderClick(o)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -264,17 +272,53 @@ export default function PartnerDetailPage() {
                   {formatUSAny(o.order_date)}
                 </div>
 
+                {/* Customer */}
                 <div 
                   className="helper"
-                  data-customer={o.customer_name} // explicit customer hook
+                  data-customer={o.customer_name}
                   onClick={() => handleOrderClick(o)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
                 >
                   {o.customer_name}
                 </div>
 
+                {/* Product (first line) */}
+                <div 
+                  className="helper"
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ cursor: 'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+                  title={o.product_name || undefined}
+                >
+                  {o.product_name || '—'}
+                </div>
+
+                {/* Qty */}
+                <div 
+                  className="helper"
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ textAlign:'right', cursor: 'pointer' }}
+                >
+                  {o.qty ?? '—'}
+                </div>
+
+                {/* Unit price */}
+                <div 
+                  className="helper"
+                  onClick={() => handleOrderClick(o)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  style={{ textAlign:'right', cursor: 'pointer' }}
+                >
+                  {o.unit_price != null ? fmtMoney(o.unit_price) : '—'}
+                </div>
+
+                {/* Amount (order total) — moved next to unit price */}
                 <div 
                   className="helper" 
                   onClick={() => handleOrderClick(o)}
@@ -282,9 +326,10 @@ export default function PartnerDetailPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{textAlign:'right', cursor: 'pointer'}}
                 >
-                  {fmtIntMoney(o.partner_amount)}
+                  {fmtMoney(o.total)}
                 </div>
 
+                {/* Partner amount — moved to far right */}
                 <div 
                   className="helper" 
                   onClick={() => handleOrderClick(o)}
@@ -292,7 +337,7 @@ export default function PartnerDetailPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{textAlign:'right', paddingLeft:12, cursor: 'pointer'}}
                 >
-                  {fmtIntMoney(o.total)}
+                  {fmtMoney(o.partner_amount)}
                 </div>
               </div>
             ))}
@@ -328,7 +373,7 @@ export default function PartnerDetailPage() {
                 data-print-row
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 1fr auto`,
+                  gridTemplateColumns:`${DATE_COL}px 1fr ${NUM_COL}px`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
@@ -336,7 +381,7 @@ export default function PartnerDetailPage() {
               >
                 <div 
                   className="helper"
-                  data-date={p.payment_date} // ISO date for exact sorting/filtering
+                  data-date={p.payment_date}
                   onClick={() => handlePaymentClick(p)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -362,7 +407,7 @@ export default function PartnerDetailPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   style={{textAlign:'right', cursor: 'pointer'}}
                 >
-                  {fmtIntMoney(p.amount)}
+                  {fmtMoney(p.amount)}
                 </div>
               </div>
             ))}
@@ -391,3 +436,4 @@ export default function PartnerDetailPage() {
     </div>
   )
 }
+
