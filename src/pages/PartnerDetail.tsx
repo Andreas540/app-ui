@@ -29,13 +29,12 @@ type PartnerDetail = {
     order_no: number
     order_date: string
     customer_name: string
-    // NEW fields from backend:
+    // new fields provided by backend
     product_name?: string | null
     qty?: number | null
     unit_price?: number | null
-    // amounts:
-    total: number              // order total (amount)
-    partner_amount: number     // this partner's amount on the order
+    total: number              // order total (calculated amount)
+    partner_amount: number     // this partner's amount on the order (far right)
   }>
   payments: Array<{
     id: string
@@ -57,7 +56,7 @@ export default function PartnerDetailPage() {
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  
+
   // Print dialog state
   const [showPrintDialog, setShowPrintDialog] = useState(false)
   const [printOptions, setPrintOptions] = useState<PrintOptions | null>(null)
@@ -75,15 +74,15 @@ export default function PartnerDetailPage() {
       try {
         if (!id) { setErr('Missing id'); setLoading(false); return }
         setLoading(true); setErr(null)
-        
+
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
-        
+
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(`Failed to load partner (status ${res.status}) ${text?.slice(0,140)}`)
         }
-        
+
         const d = await res.json()
         setData(d)
       } catch (e: any) {
@@ -96,7 +95,7 @@ export default function PartnerDetailPage() {
 
   function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
   function fmtMoney(n:number) { return `$${(Number(n)||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
-  
+
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -122,9 +121,8 @@ export default function PartnerDetailPage() {
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
-  // Compact layout constants
+  // Compact layout constants (match CustomerDetail)
   const DATE_COL = 55
-  const NUM_COL  = 72
   const LINE_GAP = 4
 
   return (
@@ -159,10 +157,7 @@ export default function PartnerDetailPage() {
       </div>
 
       {/* Partner Info - NOT printable (kept on screen only) */}
-      <div 
-        className="row row-2col-mobile" 
-        style={{ marginTop: 12 }}
-      >
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         {/* LEFT */}
         <div>
           {!showInfo ? (
@@ -225,7 +220,7 @@ export default function PartnerDetailPage() {
         </div>
       </section>
 
-      {/* === PRINTABLE BLOCK 2: Orders (updated columns) === */}
+      {/* === PRINTABLE BLOCK 2: Orders (CustomerDetail-like layout) === */}
       <section 
         data-printable
         data-printable-id="orders"
@@ -246,101 +241,68 @@ export default function PartnerDetailPage() {
         </div>
 
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-          // Container that holds the rows to sort/filter
           <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
-            {shownOrders.map(o => (
-              <div
-                key={o.id}
-                data-print-row
-                style={{
-                  display:'grid',
-                  gridTemplateColumns: `${DATE_COL}px 1fr 1.2fr ${NUM_COL}px ${NUM_COL}px ${NUM_COL}px ${NUM_COL}px`,
-                  gap: LINE_GAP,
-                  borderBottom:'1px solid #eee',
-                  padding:'8px 0'
-                }}
-              >
-                {/* Date */}
-                <div 
-                  className="helper"
-                  data-date={o.order_date}
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {formatUSAny(o.order_date)}
-                </div>
+            {shownOrders.map(o => {
+              const middleLine2 = [
+                o.product_name || '—',
+                (o.qty ?? '—'),
+                (o.unit_price != null ? fmtMoney(o.unit_price) : '—'),
+                fmtMoney(o.total) // order amount (calculated total) in middle line
+              ].join(' / ')
 
-                {/* Customer */}
-                <div 
-                  className="helper"
-                  data-customer={o.customer_name}
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+              return (
+                <div
+                  key={o.id}
+                  data-print-row
+                  style={{
+                    display:'grid',
+                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`, // match CustomerDetail
+                    gap:LINE_GAP,
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
                 >
-                  {o.customer_name}
-                </div>
+                  {/* DATE */}
+                  <div 
+                    className="helper"
+                    data-date={o.order_date}       // for print sort/filter
+                  >
+                    {formatUSAny(o.order_date)}
+                  </div>
 
-                {/* Product (first line) */}
-                <div 
-                  className="helper"
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
-                  title={o.product_name || undefined}
-                >
-                  {o.product_name || '—'}
-                </div>
+                  {/* ICON SPACER (kept empty for alignment with CustomerDetail checkmark col) */}
+                  <div style={{ width: 20 }}></div>
 
-                {/* Qty */}
-                <div 
-                  className="helper"
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ textAlign:'right', cursor: 'pointer' }}
-                >
-                  {o.qty ?? '—'}
-                </div>
+                  {/* MIDDLE: Line 1 = Customer (sortable); Line 2 = Product / Qty / Unit / Order amount */}
+                  <div 
+                    className="helper"
+                    onClick={() => handleOrderClick(o)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div>
+                      <strong data-customer={o.customer_name}>{o.customer_name}</strong>
+                    </div>
+                    <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
+                      {middleLine2}
+                    </div>
+                  </div>
 
-                {/* Unit price */}
-                <div 
-                  className="helper"
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ textAlign:'right', cursor: 'pointer' }}
-                >
-                  {o.unit_price != null ? fmtMoney(o.unit_price) : '—'}
+                  {/* RIGHT: Partner amount (far right) */}
+                  <div 
+                    className="helper" 
+                    onClick={() => handleOrderClick(o)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{textAlign:'right', cursor: 'pointer'}}
+                    title="Partner amount"
+                  >
+                    {fmtMoney(o.partner_amount)}
+                  </div>
                 </div>
-
-                {/* Amount (order total) — moved next to unit price */}
-                <div 
-                  className="helper" 
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{textAlign:'right', cursor: 'pointer'}}
-                >
-                  {fmtMoney(o.total)}
-                </div>
-
-                {/* Partner amount — moved to far right */}
-                <div 
-                  className="helper" 
-                  onClick={() => handleOrderClick(o)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{textAlign:'right', paddingLeft:12, cursor: 'pointer'}}
-                >
-                  {fmtMoney(o.partner_amount)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
@@ -354,7 +316,7 @@ export default function PartnerDetailPage() {
       >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Payments to partner</h4>
-          {payments.length > 5 && (
+        {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
@@ -373,23 +335,24 @@ export default function PartnerDetailPage() {
                 data-print-row
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 1fr ${NUM_COL}px`,
+                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`, // align with orders
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
                 }}
               >
+                {/* DATE */}
                 <div 
                   className="helper"
                   data-date={p.payment_date}
-                  onClick={() => handlePaymentClick(p)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer' }}
                 >
                   {formatUSAny(p.payment_date)}
                 </div>
 
+                {/* EMPTY spacer col */}
+                <div style={{ width: 20 }}></div>
+
+                {/* TYPE */}
                 <div 
                   className="helper"
                   onClick={() => handlePaymentClick(p)}
@@ -400,6 +363,7 @@ export default function PartnerDetailPage() {
                   {p.payment_type}
                 </div>
 
+                {/* AMOUNT */}
                 <div 
                   className="helper" 
                   onClick={() => handlePaymentClick(p)}
@@ -436,4 +400,5 @@ export default function PartnerDetailPage() {
     </div>
   )
 }
+
 
