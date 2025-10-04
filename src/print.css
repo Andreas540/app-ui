@@ -2,8 +2,8 @@
 
 /* Page box & defaults */
 @page {
-  size: A4;          /* use 'letter' if you prefer US Letter, or 'auto' */
-  margin: 12mm;
+  size: A4;
+  margin: 15mm 20mm;  /* top/bottom 15mm, left/right 20mm */
 }
 
 /* Ensure print snapshot honors selections immediately (before @media print applies) */
@@ -17,105 +17,170 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--panel, #f5f5f5); /* <- choose your screen color here */
+  background: var(--panel, #f5f5f5);
   border: 1px solid #999;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
-  color: inherit;          /* or set a specific text color */
-  transition: none;        /* keep identical on hover */
+  color: inherit;
+  transition: none;
 }
 .print-button:hover {
-  background: var(--panel, #f5f5f5);   /* same as normal */
-  border-color: #999;                  /* same as normal */
+  background: var(--panel, #f5f5f5);
+  border-color: #999;
 }
 
 @media print {
-  /* If you theme via CSS variables, override to white-on-black for print */
+  /* Theme overrides */
   :root {
     --bg: #fff !important;
     --panel: #fff !important;
     --card: #fff !important;
     --text: #000 !important;
   }
-/* Force black text for everything in printable content */
-[data-printable],
-[data-printable] * {
-  color: #000 !important;
-  -webkit-text-fill-color: #000 !important; /* iOS/WebKit */
-  opacity: 1 !important;                    /* defeats muted/disabled grays */
-}
+
+  /* Force black text everywhere */
+  [data-printable],
+  [data-printable] * {
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+    opacity: 1 !important;
+  }
+
   /* Core document */
-html, body, #root, #app, .app, .app-root {
-  background: #fff !important;
-  color: #000 !important;
-  font: 11pt/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  overflow: visible !important; /* avoid clipping on pagination */
-}
+  html, body, #root, #app, .app, .app-root {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-/* Ensure readable text sizes */
-p, div, span, td, th, li {
-  font-size: 10pt !important;
-}
+  /* Ensure all text uses same font */
+  * {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+  }
 
-.helper {
-  font-size: 9pt !important;
-}
+  /* Readable text sizes */
+  p, div, span, td, th, li {
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .helper {
+    font-size: 9pt !important;
+  }
+
+  h3 {
+    font-size: 14pt !important;
+  }
+
+  h4 {
+    font-size: 12pt !important;
+  }
 
   /* Fidelity & box model */
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  *, *::before, *::after { box-sizing: border-box; }
+  * { 
+    -webkit-print-color-adjust: exact; 
+    print-color-adjust: exact; 
+  }
+  *, *::before, *::after { 
+    box-sizing: border-box; 
+  }
 
   /* Hide UI controls */
   .icon-btn, .print-button, button, a.helper, nav, header, footer {
     display: none !important;
   }
-  /* Also honor deselection inside print context */
-  .print-hidden { display: none !important; }
+  .print-hidden { 
+    display: none !important; 
+  }
 
-  /* Remove effects that print poorly */
+  /* Remove effects */
   .card, .panel, [class*="shadow"] {
     box-shadow: none !important;
     border: none !important;
     max-width: 100% !important;
-    overflow: visible !important; /* prevent content clipping */
+    overflow: visible !important;
     background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
+
   .container, .row {
     overflow: visible !important;
     background: #fff !important;
   }
-  [style*="position: sticky"], .sticky { position: static !important; top: auto !important; }
-  [style*="transform"], .transform { transform: none !important; }
 
-  /* Kill any background images/gradients that might bleed through */
-  * { background-image: none !important; }
+  [style*="position: sticky"], .sticky { 
+    position: static !important; 
+    top: auto !important; 
+  }
+  [style*="transform"], .transform { 
+    transform: none !important; 
+  }
 
-  /* Layout simplification for reliability (esp. iOS WebKit) */
-  .row, .row-2col-mobile, [data-printable] { display: block !important; }
+  /* Kill background images */
+  * { 
+    background-image: none !important; 
+  }
 
-  /* Let large sections split across pages (prevents single-page truncation) */
+  /* Layout simplification */
+  .row, .row-2col-mobile, [data-printable] { 
+    display: block !important; 
+  }
+
+  /* Let sections split across pages */
   [data-printable] {
     break-inside: auto !important;
     page-break-inside: auto !important;
+    padding: 12px 0 !important;
   }
 
-  /* Spacing between printable sections */
-  [data-printable] + [data-printable] { margin-top: 16px !important; }
+  /* Spacing between sections */
+  [data-printable] + [data-printable] { 
+    margin-top: 20px !important;
+    padding-top: 20px !important;
+    border-top: 1px solid #ddd !important;
+  }
 
-  /* Typography & images */
+  /* Make sure grid rows have borders */
+  [data-printable] > div > div[style*="display:grid"] > div {
+    border-bottom: 1px solid #ddd !important;
+    padding: 6px 0 !important;
+  }
+
+  /* Typography */
   h3, h4 {
     break-after: avoid;
     page-break-after: avoid;
-    margin: 0 0 6px;
+    margin: 0 0 8px !important;
+    font-weight: 600 !important;
   }
-  img, svg { max-width: 100%; height: auto; }
 
-  /* Page-break helpers you can apply in JSX when needed */
-  .avoid-break { break-inside: avoid; page-break-inside: avoid; }
-  .force-break { break-before: page; page-break-before: always; }
+  img, svg { 
+    max-width: 100%; 
+    height: auto; 
+  }
+
+  /* Page-break helpers */
+  .avoid-break { 
+    break-inside: avoid; 
+    page-break-inside: avoid; 
+  }
+  .force-break { 
+    break-before: page; 
+    page-break-before: always; 
+  }
 }
 
-/* Ensure screen-only button hidden in print */
-@media print { .print-button { display: none !important; } }
+/* Ensure button hidden in print */
+@media print { 
+  .print-button { 
+    display: none !important; 
+  } 
+}
 
