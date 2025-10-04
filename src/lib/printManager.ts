@@ -13,20 +13,22 @@ export interface PrintOptions {
   sortOrder?: 'asc' | 'desc'
 }
 
+// Extended settings passed from PrintDialog
+export interface PrintSettings extends PrintOptions {
+  includeAll?: boolean
+  lastThreeMonths?: boolean
+  sortByDate?: boolean
+  sortByCustomer?: boolean
+}
+
 export class PrintManager {
   private static currentOptions: PrintOptions | null = null
   private static onOpenDialog: ((options: PrintOptions) => void) | null = null
 
-  /**
-   * Register a callback to open the print dialog
-   */
   static setDialogHandler(handler: (options: PrintOptions) => void) {
     this.onOpenDialog = handler
   }
 
-  /**
-   * Scan the current page for printable sections and open the dialog
-   */
   static openPrintDialog() {
     const sections = this.detectPrintableSections()
     if (sections.length === 0) {
@@ -43,9 +45,6 @@ export class PrintManager {
     this.onOpenDialog?.(this.currentOptions)
   }
 
-  /**
-   * Detect all elements marked as printable on the page
-   */
   private static detectPrintableSections(): PrintableSection[] {
     const elements = document.querySelectorAll<HTMLElement>('[data-printable]')
     return Array.from(elements).map((el) => ({
@@ -54,20 +53,141 @@ export class PrintManager {
         `section-${Math.random().toString(36).slice(2)}`,
       title: el.getAttribute('data-printable-title') || 'Untitled Section',
       element: el,
-      selected: true, // default to selected
+      selected: true,
     }))
   }
 
   /**
-   * Print in an isolated document so pagination matches Preview and
-   * isn't affected by app layout (vh, sticky, overflow, etc).
-   * Keeps the 300ms cushion as requested.
+   * Filter and sort HTML content based on settings
    */
-  static async print(options: PrintOptions) {
-    // Give the UI a beat to settle after toggling selections (keep 300ms)
+  private static processContent(html: string, settings: PrintSettings): string {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+
+    // Process orders section
+    const ordersSection = doc.querySelector('[data-printable-id="orders"]')
+    if (ordersSection) {
+      const container = ordersSection.querySelector('[style*="display:grid"]')
+      if (container) {
+        this.processRows(container, settings, 'orders')
+      }
+    }
+
+    // Process payments section
+    const paymentsSection = doc.querySelector('[data-printable-id="payments"]')
+    if (paymentsSection) {
+      const container = paymentsSection.querySelector('[style*="display:grid"]')
+      if (container) {
+        this.processRows(container, settings, 'payments')
+      }
+    }
+
+    return doc.body.innerHTML
+  }
+
+  private static processRows(
+    container: Element,
+    settings: PrintSettings,
+    type: 'orders' | 'payments'
+  ) {
+    const rows = Array.from(container.children) as HTMLElement[]
+    
+    // Filter by date if "last 3 months" is selected
+    const filteredRows = settings.lastThreeMonths
+      ? this.filterLastThreeMonths(rows)
+      : rows
+
+    // Remove filtered out rows from DOM
+    rows.forEach(row => {
+      if (!filteredRows.includes(row)) {
+        row.remove()
+      }
+    })
+
+    // Sort remaining rows
+    let sortedRows = [...filteredRows]
+    
+    if (settings.sortByDate) {
+      sortedRows = this.sortByDate(sortedRows)
+    } else if (settings.sortByCustomer && type === 'orders') {
+      sortedRows = this.sortByCustomer(sortedRows)
+    }
+
+    // Reorder DOM elements
+    sortedRows.forEach(row => {
+      container.appendChild(row)
+    })
+  }
+
+  private static filterLastThreeMonths(rows: HTMLElement[]): HTMLElement[] {
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+
+    return rows.filter(row => {
+      const dateStr = this.extractDate(row)
+      if (!dateStr) return true
+      
+      const rowDate = this.parseDate(dateStr)
+      return rowDate && rowDate >= threeMonthsAgo
+    })
+  }
+
+  private static sortByDate(rows: HTMLElement[]): HTMLElement[] {
+    return rows.sort((a, b) => {
+      const dateA = this.parseDate(this.extractDate(a))
+      const dateB = this.parseDate(this.extractDate(b))
+      
+      if (!dateA || !dateB) return 0
+      return dateB.getTime() - dateA.getTime() // Newest first
+    })
+  }
+
+  private static sortByCustomer(rows: HTMLElement[]): HTMLElement[] {
+    return rows.sort((a, b) => {
+      const customerA = this.extractCustomerName(a)
+      const customerB = this.extractCustomerName(b)
+      
+      return customerA.localeCompare(customerB)
+    })
+  }
+
+  private static extractDate(row: HTMLElement): string {
+    const firstChild = row.children[0] as HTMLElement
+    return firstChild?.textContent?.trim() || ''
+  }
+
+  private static extractCustomerName(row: HTMLElement): string {
+    const secondChild = row.children[1] as HTMLElement
+    return secondChild?.textContent?.trim() || ''
+  }
+
+  private static parseDate(dateStr: string): Date | null {
+    if (!dateStr) return null
+    
+    // Expected format: "9/29/25" or "MM/DD/YY"
+    const parts = dateStr.split('/')
+    if (parts.length !== 3) return null
+    
+    const month = parseInt(parts[0], 10) - 1
+    const day = parseInt(parts[1], 10)
+    let year = parseInt(parts[2], 10)
+    
+    // Convert 2-digit year to 4-digit
+    if (year < 100) {
+      year += 2000
+    }
+    
+    const date = new Date(year, month, day)
+    return isNaN(date.getTime()) ? null : date
+  }
+
+  /**
+   * Print with filtering and sorting applied
+   */
+  static async print(options: PrintSettings) {
     await new Promise((r) => setTimeout(r, 300))
 
-    // 1) Collect styles from current app
+    // Collect styles
     const styleTags = Array.from(document.querySelectorAll<HTMLStyleElement>('style'))
       .map(s => s.textContent || '')
       .join('\n')
@@ -77,8 +197,8 @@ export class PrintManager {
       .map(l => `<link rel="stylesheet" href="${l.href}">`)
       .join('\n')
 
-    // 2) Collect selected sections (DOM order)
-    const selectedHtml = Array.from(
+    // Collect selected sections
+    let selectedHtml = Array.from(
       document.querySelectorAll<HTMLElement>('[data-printable]')
     )
       .map(el => {
@@ -89,7 +209,9 @@ export class PrintManager {
       .filter(Boolean)
       .join('\n')
 
-    // 3) Build clean print HTML (same approach as Preview) and auto-print
+    // Apply filtering and sorting to the HTML
+    selectedHtml = this.processContent(selectedHtml, options)
+
     const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -100,7 +222,6 @@ ${linkTags}
 <style>
 ${styleTags}
 
-/* Base normalization */
 html, body {
   height: auto !important;
   overflow: visible !important;
@@ -109,7 +230,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Force black text (and links) in the print document */
 #print-root,
 #print-root * {
   color: #000 !important;
@@ -128,24 +248,20 @@ html, body {
   background: #fff !important;
 }
 
-/* Prevent clipping from app containers */
 .card, .panel, .container, .row {
   overflow: visible !important;
   background: #fff !important;
 }
 
-/* Allow multi-page */
 [data-printable] {
   display: block !important;
   break-inside: auto !important;
   page-break-inside: auto !important;
 }
 
-/* Utilities */
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
 
-/* Print rules */
 @page { size: A4; margin: 12mm; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -161,13 +277,11 @@ html, body {
 ${selectedHtml || '<p>No sections selected.</p>'}
 </div>
 <script>
-  // Give the browser a moment to paint, then open the print dialog
   setTimeout(function () { try { window.print(); } catch (e) {} }, 100);
 </script>
 </body>
 </html>`
 
-    // 4) Open the print document (new tab on desktop, same tab on iOS/PWA)
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
 
@@ -179,22 +293,16 @@ ${selectedHtml || '<p>No sections selected.</p>'}
       (navigator as any).standalone === true
 
     if (isIOS || isStandalone) {
-      window.location.href = url // same-tab is most reliable on iOS/PWA
+      window.location.href = url
     } else {
       const w = window.open(url, '_blank', 'noopener')
-      if (!w) window.location.href = url // fallback if blocked
+      if (!w) window.location.href = url
     }
 
-    // Best-effort revoke after a while
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 
-  /**
-   * Generate a preview (new tab where possible, same-tab on iOS/PWA),
-   * honoring selected sections and copying styles for visual parity.
-   */
   static openPreview(options: PrintOptions) {
-    // Collect app-injected styles
     const styleTags = Array.from(document.querySelectorAll<HTMLStyleElement>('style'))
       .map(s => s.textContent || '')
       .join('\n')
@@ -202,7 +310,6 @@ ${selectedHtml || '<p>No sections selected.</p>'}
       .map(l => `<link rel="stylesheet" href="${l.href}">`)
       .join('\n')
 
-    // Collect selected sections (DOM order)
     const selectedHtml = Array.from(document.querySelectorAll<HTMLElement>('[data-printable]'))
       .map(el => {
         const id = el.getAttribute('data-printable-id') || ''
@@ -222,7 +329,6 @@ ${linkTags}
 <style>
 ${styleTags}
 
-/* Base preview normalization (screen) */
 html, body {
   height: auto !important;
   overflow: auto !important;
@@ -231,7 +337,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Force black text (and links) in preview */
 #print-root,
 #print-root * {
   color: #000 !important;
@@ -250,24 +355,20 @@ html, body {
   background: #fff !important;
 }
 
-/* Prevent clipping from app containers */
 .card, .panel, .container, .row {
   overflow: visible !important;
   background: #fff !important;
 }
 
-/* Ensure long content can paginate when the print dialog opens */
 [data-printable] {
   display: block !important;
   break-inside: auto !important;
   page-break-inside: auto !important;
 }
 
-/* Utilities */
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
 
-/* Print-specific in the preview tab */
 @page { size: A4; margin: 12mm; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -296,10 +397,10 @@ ${selectedHtml || '<p>No sections selected.</p>'}
       (navigator as any).standalone === true
 
     if (isIOS || isStandalone) {
-      window.location.href = url // same tab (reliable on iOS/PWA)
+      window.location.href = url
     } else {
       const w = window.open(url, '_blank', 'noopener')
-      if (!w) window.location.href = url // fallback if blocked
+      if (!w) window.location.href = url
     }
 
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
