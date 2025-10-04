@@ -139,23 +139,20 @@ export default function PartnerDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
-  onClick={() => PrintManager.openPrintDialog()}
-  className="icon-btn"
-  title="Print to PDF"
-  aria-label="Print to PDF"
-  style={{ width: 20, height: 20, fontSize: 14, lineHeight: 1, borderRadius: 6 }}
->
-  🖨️
-</button>
+            onClick={() => PrintManager.openPrintDialog()}
+            className="icon-btn"
+            title="Print to PDF"
+            aria-label="Print to PDF"
+            style={{ width: 20, height: 20, fontSize: 14, lineHeight: 1, borderRadius: 6 }}
+          >
+            🖨️
+          </button>
           <Link to="/partners" className="helper">&larr; Back to partners</Link>
         </div>
       </div>
 
-      {/* Partner Info - Printable */}
+      {/* Partner Info - NOT printable (kept on screen only) */}
       <div 
-        data-printable
-        data-printable-id="partner-info"
-        data-printable-title="Partner Information"
         className="row row-2col-mobile" 
         style={{ marginTop: 12 }}
       >
@@ -196,15 +193,33 @@ export default function PartnerDetailPage() {
           )}
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT (screen view) */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to partner</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
         </div>
       </div>
 
-      {/* Recent orders - Printable */}
-      <div 
+      {/* === PRINTABLE BLOCK 1: Owed to Partner === */}
+      <section
+        data-printable
+        data-printable-id="owed"
+        data-printable-title="Owed to Partner"
+        style={{ marginTop: 12 }}
+      >
+        <h4 style={{ margin: 0 }}>Owed to Partner</h4>
+        <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+          <span className="helper">Partner</span>
+          <strong>{partner.name}</strong>
+        </div>
+        <div style={{ marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+          <span className="helper">Net owed</span>
+          <strong>{fmtIntMoney(totals.net_owed)}</strong>
+        </div>
+      </section>
+
+      {/* === PRINTABLE BLOCK 2: Orders === */}
+      <section 
         data-printable
         data-printable-id="orders"
         data-printable-title="Orders with Partner Stake"
@@ -224,10 +239,12 @@ export default function PartnerDetailPage() {
         </div>
 
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-          <div style={{display:'grid', gap:10, marginTop:12}}>
+          // Container that holds the rows to sort/filter
+          <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
             {shownOrders.map(o => (
               <div
                 key={o.id}
+                data-print-row
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto auto`,
@@ -238,6 +255,7 @@ export default function PartnerDetailPage() {
               >
                 <div 
                   className="helper"
+                  data-date={o.order_date} // ISO date for exact sorting/filtering
                   onClick={() => handleOrderClick(o)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -248,6 +266,7 @@ export default function PartnerDetailPage() {
 
                 <div 
                   className="helper"
+                  data-customer={o.customer_name} // explicit customer hook
                   onClick={() => handleOrderClick(o)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -279,10 +298,10 @@ export default function PartnerDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Payments - Printable */}
-      <div 
+      {/* === PRINTABLE BLOCK 3: Payments === */}
+      <section 
         data-printable
         data-printable-id="payments"
         data-printable-title="Payments to Partner"
@@ -302,10 +321,11 @@ export default function PartnerDetailPage() {
         </div>
 
         {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
-          <div style={{display:'grid', gap:10, marginTop:12}}>
+          <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
             {shownPayments.map(p => (
               <div
                 key={p.id}
+                data-print-row
                 style={{
                   display:'grid',
                   gridTemplateColumns:`${DATE_COL}px 1fr auto`,
@@ -316,6 +336,7 @@ export default function PartnerDetailPage() {
               >
                 <div 
                   className="helper"
+                  data-date={p.payment_date} // ISO date for exact sorting/filtering
                   onClick={() => handlePaymentClick(p)}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -347,7 +368,7 @@ export default function PartnerDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       <OrderDetailModal 
         isOpen={showOrderModal}

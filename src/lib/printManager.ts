@@ -11,12 +11,19 @@ export interface PrintOptions {
   sortOrder?: 'asc' | 'desc'
 }
 
-// Extended settings passed from PrintDialog
 export interface PrintSettings extends PrintOptions {
   includeAll?: boolean
   lastThreeMonths?: boolean
   sortByDate?: boolean
   sortByCustomer?: boolean
+}
+
+type ExtractOverrides = {
+  rowSelector?: string | null
+  customerSelector?: string | null
+  customerAttr?: string | null
+  dateSelector?: string | null
+  dateAttr?: string | null
 }
 
 export class PrintManager {
@@ -46,13 +53,11 @@ export class PrintManager {
   private static detectPrintableSections(): PrintableSection[] {
     const elements = document.querySelectorAll<HTMLElement>('[data-printable]')
     return Array.from(elements).map((el) => {
-      // ensure a stable id exists on the DOM element itself
       let id = el.getAttribute('data-printable-id')
       if (!id) {
         id = `section-${Math.random().toString(36).slice(2)}`
         el.setAttribute('data-printable-id', id)
       }
-
       return {
         id,
         title: el.getAttribute('data-printable-title') || 'Untitled Section',
@@ -62,21 +67,35 @@ export class PrintManager {
     })
   }
 
-  /**
-   * Filter and sort HTML content based on settings
-   */
+  /** Filter and sort HTML content based on settings */
   private static processContent(html: string, settings: PrintSettings): string {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    // helper to find the rows container inside a section
     const selectContainer = (sectionEl: Element | null): Element | null => {
       if (!sectionEl) return null
       return (
-        sectionEl.querySelector('[data-print-rows]') ||       // explicit hook (recommended)
-        sectionEl.querySelector('[style*="display:grid"]') || // legacy inline style
-        sectionEl                                             // fallback: section’s direct children
+        sectionEl.querySelector('[data-print-rows]') ||
+        sectionEl.querySelector('[style*="display:grid"]') ||
+        sectionEl
       )
+    }
+
+    const processSection = (section: Element | null, type: 'orders' | 'payments') => {
+      if (!section) return
+      const container = selectContainer(section)
+      if (!container) return
+
+      // Read optional overrides from section attributes
+      const overrides: ExtractOverrides = {
+        rowSelector: section.getAttribute('data-row-selector'),
+        customerSelector: section.getAttribute('data-customer-selector'),
+        customerAttr: section.getAttribute('data-customer-attr'),
+        dateSelector: section.getAttribute('data-date-selector'),
+        dateAttr: section.getAttribute('data-date-attr'),
+      }
+
+      this.processRows(container, settings, type, overrides)
     }
 
     const ordersSection =
@@ -85,37 +104,24 @@ export class PrintManager {
       doc.querySelector('[data-printable-id="payments"], [data-printable-section="payments"]')
 
     let touched = false
+    if (ordersSection) { processSection(ordersSection, 'orders'); touched = true }
+    if (paymentsSection) { processSection(paymentsSection, 'payments'); touched = true }
 
-    if (ordersSection) {
-      const container = selectContainer(ordersSection)
-      if (container) {
-        this.processRows(container, settings, 'orders')
-        touched = true
-      }
-    }
-
-    if (paymentsSection) {
-      const container = selectContainer(paymentsSection)
-      if (container) {
-        this.processRows(container, settings, 'payments')
-        touched = true
-      }
-    }
-
-    // Fallback: if no named sections exist, still process generic printable blocks
+    // Fallback: process all generic printable sections as 'orders'
     if (!touched) {
       const genericSections = Array.from(doc.querySelectorAll('[data-printable]'))
-      for (const sec of genericSections) {
-        const container = selectContainer(sec)
-        if (container) this.processRows(container, settings, 'orders')
-      }
+      for (const sec of genericSections) processSection(sec, 'orders')
     }
 
     return doc.body.innerHTML
   }
 
-  // Prefer explicit row hooks if present (avoids reordering headers/footers)
-  private static getRowElements(container: Element): { rows: HTMLElement[]; explicit: boolean } {
+  /** Prefer explicit row selector, else [data-print-row], else direct children */
+  private static getRowElements(container: Element, overrides?: ExtractOverrides): { rows: HTMLElement[], explicit: boolean } {
+    if (overrides?.rowSelector) {
+      const custom = Array.from(container.querySelectorAll<HTMLElement>(overrides.rowSelector))
+      if (custom.length) return { rows: custom, explicit: true }
+    }
     const explicitRows = Array.from(container.querySelectorAll<HTMLElement>('[data-print-row]'))
     if (explicitRows.length > 0) return { rows: explicitRows, explicit: true }
     const direct = Array.from(container.children) as HTMLElement[]
@@ -125,28 +131,25 @@ export class PrintManager {
   private static processRows(
     container: Element,
     settings: PrintSettings,
-    type: 'orders' | 'payments'
+    type: 'orders' | 'payments',
+    overrides?: ExtractOverrides
   ) {
-    const { rows, explicit } = this.getRowElements(container)
+    const { rows, explicit } = this.getRowElements(container, overrides)
     if (rows.length === 0) return
 
-    // ---- Filtering (safe): only remove if lastThreeMonths is ON and we actually parsed dates
+    // ---- Filtering (safe)
     let filteredRows = rows
     let usedFilter = false
-
     if (settings.lastThreeMonths) {
       const threeMonthsAgo = new Date()
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
 
       const tmp = rows.filter(row => {
-        const dateStr = this.extractDate(row)
+        const dateStr = this.extractDate(row, overrides)
         const rowDate = this.parseDate(dateStr)
-        // keep rows with no date (don’t accidentally drop headers/notes)
         if (!dateStr || !rowDate) return true
         return rowDate >= threeMonthsAgo
       })
-
-      // apply filter only if it actually changed the set (prevents accidental wipes)
       if (tmp.length > 0 && tmp.length <= rows.length) {
         filteredRows = tmp
         usedFilter = tmp.length !== rows.length
@@ -156,26 +159,25 @@ export class PrintManager {
     // ---- Sorting
     let sortedRows = [...filteredRows]
     if (settings.sortByDate) {
-      sortedRows = this.sortByDate(sortedRows)
+      sortedRows = this.sortByDate(sortedRows, overrides)
     } else if (settings.sortByCustomer && type === 'orders') {
-      sortedRows = this.sortByCustomer(sortedRows)
+      sortedRows = this.sortByCustomer(sortedRows, overrides)
+      // Debug (first 10) to confirm extractor:
+      try {
+        const names = sortedRows.slice(0, 10).map(r => this.extractCustomerName(r, overrides))
+        // This logs inside the main window (harmless in production prints)
+        console.log('[Print] Sample customer names:', names)
+      } catch {}
     }
 
     // ---- Write back to DOM safely
-    // If we had explicit row hooks, remove only those; keep headers/footers untouched.
     if (explicit) {
-      // Remove only managed rows from DOM
       rows.forEach(r => r.remove())
-      // Append back in new order
       const frag = document.createDocumentFragment()
       sortedRows.forEach(r => frag.appendChild(r))
       container.appendChild(frag)
     } else {
-      // No explicit hooks: do NOT remove anything.
-      // Just move known rows to the end in sorted order (keeps non-row children intact).
-      // This may reorder where rows appear, but it won't blank the page.
       sortedRows.forEach(r => container.appendChild(r))
-      // If a filter was used and actually reduced rows, we can (carefully) remove the ones not in filteredRows.
       if (usedFilter) {
         const keep = new Set(filteredRows)
         rows.forEach(r => { if (!keep.has(r)) r.remove() })
@@ -183,60 +185,76 @@ export class PrintManager {
     }
   }
 
-  private static sortByDate(rows: HTMLElement[]): HTMLElement[] {
+  private static sortByDate(rows: HTMLElement[], overrides?: ExtractOverrides): HTMLElement[] {
     return rows.slice().sort((a, b) => {
-      const aDate = this.parseDate(this.extractDate(a))
-      const bDate = this.parseDate(this.extractDate(b))
+      const aDate = this.parseDate(this.extractDate(a, overrides))
+      const bDate = this.parseDate(this.extractDate(b, overrides))
       if (!aDate && !bDate) return 0
       if (!aDate) return 1
       if (!bDate) return -1
-      return bDate.getTime() - aDate.getTime() // Newest first
+      return bDate.getTime() - aDate.getTime()
     })
   }
 
-  private static sortByCustomer(rows: HTMLElement[]): HTMLElement[] {
+  private static sortByCustomer(rows: HTMLElement[], overrides?: ExtractOverrides): HTMLElement[] {
     return rows.slice().sort((a, b) => {
-      const aName = this.extractCustomerName(a)
-      const bName = this.extractCustomerName(b)
+      const aName = this.extractCustomerName(a, overrides) || ''
+      const bName = this.extractCustomerName(b, overrides) || ''
       return aName.localeCompare(bName, undefined, { sensitivity: 'base' })
     })
   }
 
-  // --- extraction helpers ---
+  // --- extraction helpers with overrides ---
 
-  private static extractDate(row: HTMLElement): string {
-    // Prefer explicit attribute
+  private static extractDate(row: HTMLElement, overrides?: ExtractOverrides): string {
+    // Section-defined selector/attr wins
+    if (overrides?.dateSelector) {
+      const node = row.querySelector(overrides.dateSelector) as HTMLElement | null
+      if (node) {
+        if (overrides.dateAttr) {
+          const v = node.getAttribute(overrides.dateAttr)
+          if (v) return v.trim()
+        }
+        const t = node.textContent
+        if (t) return t.trim()
+      }
+    }
+    // Built-in: attribute
     const attr = (row.querySelector('[data-date]') as HTMLElement | null)?.getAttribute('data-date')
     if (attr) return attr.trim()
-
-    // Fallback: first immediate child text
+    // Built-in: first cell text
     const firstChild = row.children[0] as HTMLElement | undefined
     return firstChild?.textContent?.trim() || ''
   }
 
-  private static extractCustomerName(row: HTMLElement): string {
+  private static extractCustomerName(row: HTMLElement, overrides?: ExtractOverrides): string {
+    // Section-defined selector/attr wins
+    if (overrides?.customerSelector) {
+      const node = row.querySelector(overrides.customerSelector) as HTMLElement | null
+      if (node) {
+        if (overrides.customerAttr) {
+          const v = node.getAttribute(overrides.customerAttr)
+          if (v) return v.trim()
+        }
+        const t = node.textContent
+        if (t) return t.trim()
+      }
+    }
+    // Built-ins
     const byAttr = (row.querySelector('[data-customer]') as HTMLElement | null)?.getAttribute('data-customer')
     if (byAttr) return byAttr.trim()
-
     const byClass = (row.querySelector('.customer') as HTMLElement | null)?.textContent
     if (byClass) return byClass.trim()
-
     const byCol = (row.querySelector('[data-col="customer"]') as HTMLElement | null)?.textContent
     if (byCol) return byCol.trim()
-
-    // Fallback: second immediate child text
     const secondChild = row.children[1] as HTMLElement | undefined
     return secondChild?.textContent?.trim() || ''
   }
 
   private static parseDate(dateStr: string): Date | null {
     if (!dateStr) return null
-
-    // ISO or RFC-ish first
     const iso = new Date(dateStr)
     if (!isNaN(iso.getTime())) return iso
-
-    // M/D/YY or M/D/YYYY
     const slash = dateStr.split('/')
     if (slash.length === 3) {
       const month = parseInt(slash[0], 10) - 1
@@ -246,27 +264,20 @@ export class PrintManager {
       const d = new Date(year, month, day)
       return isNaN(d.getTime()) ? null : d
     }
-
     return null
   }
 
-  /**
-   * Print with filtering and sorting applied
-   */
+  /** Print with filtering and sorting applied */
   static async print(options: PrintSettings) {
     await new Promise((r) => setTimeout(r, 300))
 
-    // Collect styles
     const styleTags = Array.from(document.querySelectorAll<HTMLStyleElement>('style'))
       .map(s => s.textContent || '')
       .join('\n')
-    const linkTags = Array.from(
-      document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')
-    )
+    const linkTags = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
       .map(l => `<link rel="stylesheet" href="${l.href}">`)
       .join('\n')
 
-    // Collect selected sections
     const originalSelectedHtml = Array.from(
       document.querySelectorAll<HTMLElement>('[data-printable]')
     )
@@ -278,10 +289,8 @@ export class PrintManager {
       .filter(Boolean)
       .join('\n')
 
-    // Apply filtering and sorting to the HTML
     let processedHtml = this.processContent(originalSelectedHtml, options)
     if (!processedHtml || processedHtml.trim() === '') {
-      // Safety net: never ship an empty print page
       processedHtml = originalSelectedHtml || '<p>No sections selected.</p>'
     }
 
@@ -294,47 +303,14 @@ export class PrintManager {
 ${linkTags}
 <style>
 ${styleTags}
-
-html, body {
-  height: auto !important;
-  overflow: visible !important;
-  background: #fff !important;
-  color: #000 !important;
-  -webkit-font-smoothing: antialiased;
-}
-
-#print-root,
-#print-root * {
-  color: #000 !important;
-  -webkit-text-fill-color: #000 !important;
-  opacity: 1 !important;
-}
-#print-root a, #print-root a:visited {
-  color: #000 !important;
-  text-decoration: none;
-}
-
-#print-root {
-  display: block !important;
-  max-width: 100% !important;
-  overflow: visible !important;
-  background: #fff !important;
-}
-
-.card, .panel, .container, .row {
-  overflow: visible !important;
-  background: #fff !important;
-}
-
-[data-printable] {
-  display: block !important;
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-
+html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; -webkit-font-smoothing: antialiased; }
+#print-root, #print-root * { color: #000 !important; -webkit-text-fill-color: #000 !important; opacity: 1 !important; }
+#print-root a, #print-root a:visited { color: #000 !important; text-decoration: none; }
+#print-root { display: block !important; max-width: 100% !important; overflow: visible !important; background: #fff !important; }
+.card, .panel, .container, .row { overflow: visible !important; background: #fff !important; }
+[data-printable] { display: block !important; break-inside: auto !important; page-break-inside: auto !important; }
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
-
 @page { size: A4; margin: 12mm; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -401,47 +377,14 @@ ${processedHtml}
 ${linkTags}
 <style>
 ${styleTags}
-
-html, body {
-  height: auto !important;
-  overflow: auto !important;
-  background: #fff !important;
-  color: #000 !important;
-  -webkit-font-smoothing: antialiased;
-}
-
-#print-root,
-#print-root * {
-  color: #000 !important;
-  -webkit-text-fill-color: #000 !important;
-  opacity: 1 !important;
-}
-#print-root a, #print-root a:visited {
-  color: #000 !important;
-  text-decoration: none;
-}
-
-#print-root {
-  display: block !important;
-  max-width: 100% !important;
-  overflow: visible !important;
-  background: #fff !important;
-}
-
-.card, .panel, .container, .row {
-  overflow: visible !important;
-  background: #fff !important;
-}
-
-[data-printable] {
-  display: block !important;
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-
+html, body { height: auto !important; overflow: auto !important; background: #fff !important; color: #000 !important; -webkit-font-smoothing: antialiased; }
+#print-root, #print-root * { color: #000 !important; -webkit-text-fill-color: #000 !important; opacity: 1 !important; }
+#print-root a, #print-root a:visited { color: #000 !important; text-decoration: none; }
+#print-root { display: block !important; max-width: 100% !important; overflow: visible !important; background: #fff !important; }
+.card, .panel, .container, .row { overflow: visible !important; background: #fff !important; }
+[data-printable] { display: block !important; break-inside: auto !important; page-break-inside: auto !important; }
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
-
 @page { size: A4; margin: 12mm; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -479,6 +422,7 @@ ${selectedHtml || '<p>No sections selected.</p>'}
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 }
+
 
 
 
