@@ -14,7 +14,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
   const [includeAll, setIncludeAll] = useState(true)
   const [lastThreeMonths, setLastThreeMonths] = useState(false)
   const [sortByDate, setSortByDate] = useState(false)
-  const [sortByCustomer, setSortByCustomer] = useState(false)
+  const [sortByCustomer, setSortByCustomer] = useState(true)
 
   useEffect(() => {
     setLocalOptions(options)
@@ -54,6 +54,34 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
     })
   }
 
+  const handleIncludeAllChange = (checked: boolean) => {
+    setIncludeAll(checked)
+    if (checked) {
+      setLastThreeMonths(false)
+    }
+  }
+
+  const handleLastThreeMonthsChange = (checked: boolean) => {
+    setLastThreeMonths(checked)
+    if (checked) {
+      setIncludeAll(false)
+    }
+  }
+
+  const handleSortByDateChange = (checked: boolean) => {
+    setSortByDate(checked)
+    if (checked) {
+      setSortByCustomer(false)
+    }
+  }
+
+  const handleSortByCustomerChange = (checked: boolean) => {
+    setSortByCustomer(checked)
+    if (checked) {
+      setSortByDate(false)
+    }
+  }
+
   const handlePrint = () => {
     if (localOptions) {
       // Pass filter/sort options to print manager
@@ -66,12 +94,6 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
       }
       PrintManager.print(printSettings as any)
       onClose()
-    }
-  }
-
-  const handlePreview = () => {
-    if (localOptions) {
-      PrintManager.openPreview(localOptions)
     }
   }
 
@@ -123,7 +145,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
 
         <div style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h4 style={{ margin: 0 }}>Select sections to print</h4>
+            <h4 style={{ margin: 0 }}>Sections to print</h4>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="helper" onClick={handleSelectAll} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
                 Select all
@@ -167,15 +189,9 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
             ))}
           </div>
 
-          <div style={{ marginTop: 16, padding: 8, backgroundColor: 'var(--panel)', borderRadius: 4 }}>
-            <span className="helper">
-              {selectedCount} of {localOptions.sections.length} sections selected
-            </span>
-          </div>
-
           {/* Filter and Sort Options */}
           <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 16 }}>
-            <h4 style={{ margin: '0 0 12px 0' }}>Options</h4>
+            <h4 style={{ margin: '0 0 12px 0' }}>More options</h4>
             
             <div style={{ display: 'grid', gap: 4 }}>
               <label
@@ -190,7 +206,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                 <input
                   type="checkbox"
                   checked={includeAll}
-                  onChange={(e) => setIncludeAll(e.target.checked)}
+                  onChange={(e) => handleIncludeAllChange(e.target.checked)}
                   style={{
                     cursor: 'pointer',
                     width: 16,
@@ -216,7 +232,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                 <input
                   type="checkbox"
                   checked={lastThreeMonths}
-                  onChange={(e) => setLastThreeMonths(e.target.checked)}
+                  onChange={(e) => handleLastThreeMonthsChange(e.target.checked)}
                   style={{
                     cursor: 'pointer',
                     width: 16,
@@ -242,7 +258,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                 <input
                   type="checkbox"
                   checked={sortByDate}
-                  onChange={(e) => setSortByDate(e.target.checked)}
+                  onChange={(e) => handleSortByDateChange(e.target.checked)}
                   style={{
                     cursor: 'pointer',
                     width: 16,
@@ -252,7 +268,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Sort by date
+                  Sort by order date
                 </span>
               </label>
 
@@ -268,7 +284,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                 <input
                   type="checkbox"
                   checked={sortByCustomer}
-                  onChange={(e) => setSortByCustomer(e.target.checked)}
+                  onChange={(e) => handleSortByCustomerChange(e.target.checked)}
                   style={{
                     cursor: 'pointer',
                     width: 16,
@@ -278,7 +294,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Sort by customer (ascending)
+                  Sort by customer
                 </span>
               </label>
             </div>
@@ -286,20 +302,6 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
         </div>
 
         <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <button
-            onClick={handlePreview}
-            disabled={selectedCount === 0}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ddd',
-              borderRadius: 4,
-              background: 'white',
-              cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
-              opacity: selectedCount === 0 ? 0.5 : 1
-            }}
-          >
-            Preview
-          </button>
           <button
             onClick={handlePrint}
             disabled={selectedCount === 0}
