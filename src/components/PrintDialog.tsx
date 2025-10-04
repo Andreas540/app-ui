@@ -11,6 +11,10 @@ interface PrintDialogProps {
 
 export default function PrintDialog({ isOpen, onClose, options }: PrintDialogProps) {
   const [localOptions, setLocalOptions] = useState<PrintOptions | null>(options)
+  const [includeAll, setIncludeAll] = useState(true)
+  const [lastThreeMonths, setLastThreeMonths] = useState(false)
+  const [sortByDate, setSortByDate] = useState(false)
+  const [sortByCustomer, setSortByCustomer] = useState(false)
 
   useEffect(() => {
     setLocalOptions(options)
@@ -52,7 +56,15 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
 
   const handlePrint = () => {
     if (localOptions) {
-      PrintManager.print(localOptions)
+      // Pass filter/sort options to print manager
+      const printSettings = {
+        ...localOptions,
+        includeAll,
+        lastThreeMonths,
+        sortByDate,
+        sortByCustomer
+      }
+      PrintManager.print(printSettings as any)
       onClose()
     }
   }
@@ -123,18 +135,17 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
             </div>
           </div>
 
-          {/* Checklist — no frames, smaller checkboxes, wrapped text */}
-          <div style={{ display: 'grid', gap: 6 }}>
+          {/* Section checkboxes - tighter spacing */}
+          <div style={{ display: 'grid', gap: 4 }}>
             {localOptions.sections.map(section => (
               <label
                 key={section.id}
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   gap: 8,
-                  padding: 6,
+                  padding: '4px 0',
                   cursor: 'pointer'
-                  // intentionally no border/frame
                 }}
               >
                 <input
@@ -143,21 +154,13 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   onChange={() => handleToggleSection(section.id)}
                   style={{
                     cursor: 'pointer',
-                    width: 14,
-                    height: 14,
-                    marginTop: 2 // align with first text line
+                    width: 16,
+                    height: 16,
+                    margin: 0,
+                    flexShrink: 0
                   }}
                 />
-                <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,              // allow flex child to shrink
-                    maxWidth: '100%',
-                    whiteSpace: 'normal',     // wrap lines
-                    wordBreak: 'break-word',  // break long tokens
-                    overflowWrap: 'anywhere'  // extra safety for very long words/URLs
-                  }}
-                >
+                <span style={{ flex: 1 }}>
                   {section.title}
                 </span>
               </label>
@@ -168,6 +171,117 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
             <span className="helper">
               {selectedCount} of {localOptions.sections.length} sections selected
             </span>
+          </div>
+
+          {/* Filter and Sort Options */}
+          <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 16 }}>
+            <h4 style={{ margin: '0 0 12px 0' }}>Options</h4>
+            
+            <div style={{ display: 'grid', gap: 4 }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 0',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeAll}
+                  onChange={(e) => setIncludeAll(e.target.checked)}
+                  style={{
+                    cursor: 'pointer',
+                    width: 16,
+                    height: 16,
+                    margin: 0,
+                    flexShrink: 0
+                  }}
+                />
+                <span style={{ flex: 1 }}>
+                  Include all orders and payments
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 0',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={lastThreeMonths}
+                  onChange={(e) => setLastThreeMonths(e.target.checked)}
+                  style={{
+                    cursor: 'pointer',
+                    width: 16,
+                    height: 16,
+                    margin: 0,
+                    flexShrink: 0
+                  }}
+                />
+                <span style={{ flex: 1 }}>
+                  Include last 3 months only
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 0',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sortByDate}
+                  onChange={(e) => setSortByDate(e.target.checked)}
+                  style={{
+                    cursor: 'pointer',
+                    width: 16,
+                    height: 16,
+                    margin: 0,
+                    flexShrink: 0
+                  }}
+                />
+                <span style={{ flex: 1 }}>
+                  Sort by date
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 0',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sortByCustomer}
+                  onChange={(e) => setSortByCustomer(e.target.checked)}
+                  style={{
+                    cursor: 'pointer',
+                    width: 16,
+                    height: 16,
+                    margin: 0,
+                    flexShrink: 0
+                  }}
+                />
+                <span style={{ flex: 1 }}>
+                  Sort by customer (ascending)
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 

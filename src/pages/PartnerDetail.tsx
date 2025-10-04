@@ -139,12 +139,14 @@ export default function PartnerDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
-            onClick={() => PrintManager.openPrintDialog()}
-            className="print-button"
-            title="Print to PDF"
-          >
-            🖨️ Print
-          </button>
+  onClick={() => PrintManager.openPrintDialog()}
+  className="icon-btn"
+  title="Print to PDF"
+  aria-label="Print to PDF"
+  style={{ width: 20, height: 20, fontSize: 14, lineHeight: 1, borderRadius: 6 }}
+>
+  🖨️
+</button>
           <Link to="/partners" className="helper">&larr; Back to partners</Link>
         </div>
       </div>
