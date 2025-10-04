@@ -46,7 +46,7 @@ export class PrintManager {
   private static detectPrintableSections(): PrintableSection[] {
     const elements = document.querySelectorAll<HTMLElement>('[data-printable]')
     return Array.from(elements).map((el) => {
-      // CHANGE 1: ensure a stable id is present on the DOM element itself
+      // ensure a stable id exists on the DOM element itself
       let id = el.getAttribute('data-printable-id')
       if (!id) {
         id = `section-${Math.random().toString(36).slice(2)}`
@@ -69,13 +69,13 @@ export class PrintManager {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    // CHANGE 2: more robust lookup for sections and their row containers
+    // helper to find the rows container inside a section
     const selectContainer = (sectionEl: Element | null): Element | null => {
       if (!sectionEl) return null
       return (
-        sectionEl.querySelector('[data-print-rows]') ||               // explicit hook if present
-        sectionEl.querySelector('[style*="display:grid"]') ||         // legacy inline style
-        sectionEl                                                     // fallback: direct children are rows
+        sectionEl.querySelector('[data-print-rows]') ||       // explicit hook
+        sectionEl.querySelector('[style*="display:grid"]') || // legacy inline style
+        sectionEl                                             // fallback: section’s direct children
       )
     }
 
@@ -94,21 +94,24 @@ export class PrintManager {
       if (container) this.processRows(container, settings, 'payments')
     }
 
-    // Fallback: if no named sections were found, process any generic printable sections
-    // so sorting/filtering still applies to the selected blocks the user chose.
+    // Fallback: if no named sections exist, still process generic printable blocks
     if (!ordersSection && !paymentsSection) {
       const genericSections = Array.from(doc.querySelectorAll('[data-printable]'))
       for (const sec of genericSections) {
         const container = selectContainer(sec)
-        if (container) {
-          // Assume 'orders' shape to enable customer sorting when requested.
-          // (Payments sorting by customer is skipped by type check inside processRows.)
-          this.processRows(container, settings, 'orders')
-        }
+        if (container) this.processRows(container, settings, 'orders')
       }
     }
 
     return doc.body.innerHTML
+  }
+
+  private static getRowElements(container: Element): HTMLElement[] {
+    // Prefer explicit row hooks if present (avoids reordering headers/footers)
+    const explicit = Array.from(container.querySelectorAll<HTMLElement>('[data-print-row]'))
+    if (explicit.length > 0) return explicit
+    // Else: fallback to direct children
+    return Array.from(container.children) as HTMLElement[]
   }
 
   private static processRows(
@@ -116,30 +119,32 @@ export class PrintManager {
     settings: PrintSettings,
     type: 'orders' | 'payments'
   ) {
-    const rows = Array.from(container.children) as HTMLElement[]
-    
+    const rows = this.getRowElements(container)
+
     // Filter by date if "last 3 months" is selected
     const filteredRows = settings.lastThreeMonths
       ? this.filterLastThreeMonths(rows)
       : rows
 
     // Remove filtered out rows from DOM
-    rows.forEach(row => {
-      if (!filteredRows.includes(row)) {
-        row.remove()
+    const filteredSet = new Set(filteredRows)
+    Array.from(container.children).forEach((child) => {
+      const el = child as HTMLElement
+      if (!filteredSet.has(el) && rows.includes(el)) {
+        el.remove()
       }
     })
 
     // Sort remaining rows
     let sortedRows = [...filteredRows]
-    
+
     if (settings.sortByDate) {
       sortedRows = this.sortByDate(sortedRows)
     } else if (settings.sortByCustomer && type === 'orders') {
       sortedRows = this.sortByCustomer(sortedRows)
     }
 
-    // Reorder DOM elements
+    // Reorder DOM elements (only the rows we manage)
     sortedRows.forEach(row => {
       container.appendChild(row)
     })
@@ -152,7 +157,7 @@ export class PrintManager {
     return rows.filter(row => {
       const dateStr = this.extractDate(row)
       if (!dateStr) return true
-      
+
       const rowDate = this.parseDate(dateStr)
       return rowDate && rowDate >= threeMonthsAgo
     })
@@ -162,7 +167,7 @@ export class PrintManager {
     return rows.sort((a, b) => {
       const dateA = this.parseDate(this.extractDate(a))
       const dateB = this.parseDate(this.extractDate(b))
-      
+
       if (!dateA || !dateB) return 0
       return dateB.getTime() - dateA.getTime() // Newest first
     })
@@ -172,39 +177,58 @@ export class PrintManager {
     return rows.sort((a, b) => {
       const customerA = this.extractCustomerName(a)
       const customerB = this.extractCustomerName(b)
-      
-      return customerA.localeCompare(customerB)
+      return customerA.localeCompare(customerB, undefined, { sensitivity: 'base' })
     })
   }
 
+  // --- extraction helpers ---
+
   private static extractDate(row: HTMLElement): string {
-    const firstChild = row.children[0] as HTMLElement
+    // Prefer explicit attribute
+    const attrDate = (row.querySelector('[data-date]') as HTMLElement | null)?.getAttribute('data-date')
+    if (attrDate) return attrDate.trim()
+
+    // Fallback: first immediate child text
+    const firstChild = row.children[0] as HTMLElement | undefined
     return firstChild?.textContent?.trim() || ''
   }
 
   private static extractCustomerName(row: HTMLElement): string {
-    const secondChild = row.children[1] as HTMLElement
+    // Prefer explicit attribute/selector
+    const byAttr = (row.querySelector('[data-customer]') as HTMLElement | null)?.getAttribute('data-customer')
+    if (byAttr) return byAttr.trim()
+
+    const byClass = (row.querySelector('.customer') as HTMLElement | null)?.textContent
+    if (byClass) return byClass.trim()
+
+    const byCol = (row.querySelector('[data-col="customer"]') as HTMLElement | null)?.textContent
+    if (byCol) return byCol.trim()
+
+    // Fallback: second immediate child text
+    const secondChild = row.children[1] as HTMLElement | undefined
     return secondChild?.textContent?.trim() || ''
   }
 
   private static parseDate(dateStr: string): Date | null {
     if (!dateStr) return null
-    
-    // Expected format: "9/29/25" or "MM/DD/YY"
+
+    // Allow YYYY-MM-DD, MM/DD/YY, MM/DD/YYYY
+    // Try ISO first
+    const iso = new Date(dateStr)
+    if (!isNaN(iso.getTime())) return iso
+
+    // Try M/D/YY or MM/DD/YY or MM/DD/YYYY
     const parts = dateStr.split('/')
-    if (parts.length !== 3) return null
-    
-    const month = parseInt(parts[0], 10) - 1
-    const day = parseInt(parts[1], 10)
-    let year = parseInt(parts[2], 10)
-    
-    // Convert 2-digit year to 4-digit
-    if (year < 100) {
-      year += 2000
+    if (parts.length === 3) {
+      const month = parseInt(parts[0], 10) - 1
+      const day = parseInt(parts[1], 10)
+      let year = parseInt(parts[2], 10)
+      if (year < 100) year += 2000
+      const d = new Date(year, month, day)
+      return isNaN(d.getTime()) ? null : d
     }
-    
-    const date = new Date(year, month, day)
-    return isNaN(date.getTime()) ? null : date
+
+    return null
   }
 
   /**
@@ -432,6 +456,7 @@ ${selectedHtml || '<p>No sections selected.</p>'}
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 }
+
 
 
 
