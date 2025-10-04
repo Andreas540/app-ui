@@ -156,7 +156,7 @@ export default function PartnerDetailPage() {
         </div>
       </div>
 
-      {/* Partner Info - NOT printable (kept on screen only) */}
+      {/* Partner Info + Owed to partner (right) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         {/* LEFT */}
         <div>
@@ -195,32 +195,19 @@ export default function PartnerDetailPage() {
           )}
         </div>
 
-        {/* RIGHT (screen view) */}
-        <div style={{ textAlign:'right' }}>
+        {/* RIGHT (printable): Owed to partner */}
+        <div
+          data-printable
+          data-printable-id="owed"
+          data-printable-title="Owed to Partner"
+          style={{ textAlign:'right' }}
+        >
           <div className="helper">Owed to partner</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
         </div>
       </div>
 
-      {/* === PRINTABLE BLOCK 1: Owed to Partner === */}
-      <section
-        data-printable
-        data-printable-id="owed"
-        data-printable-title="Owed to Partner"
-        style={{ marginTop: 12 }}
-      >
-        <h4 style={{ margin: 0 }}>Owed to Partner</h4>
-        <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-          <span className="helper">Partner</span>
-          <strong>{partner.name}</strong>
-        </div>
-        <div style={{ marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
-          <span className="helper">Net owed</span>
-          <strong>{fmtIntMoney(totals.net_owed)}</strong>
-        </div>
-      </section>
-
-      {/* === PRINTABLE BLOCK 2: Orders (CustomerDetail-like layout) === */}
+      {/* === Orders (CustomerDetail-like layout) === */}
       <section 
         data-printable
         data-printable-id="orders"
@@ -247,7 +234,7 @@ export default function PartnerDetailPage() {
                 o.product_name || '—',
                 (o.qty ?? '—'),
                 (o.unit_price != null ? fmtMoney(o.unit_price) : '—'),
-                fmtMoney(o.total) // order amount (calculated total) in middle line
+                fmtMoney(o.total)
               ].join(' / ')
 
               return (
@@ -256,7 +243,7 @@ export default function PartnerDetailPage() {
                   data-print-row
                   style={{
                     display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`, // match CustomerDetail
+                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                     gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
@@ -265,15 +252,15 @@ export default function PartnerDetailPage() {
                   {/* DATE */}
                   <div 
                     className="helper"
-                    data-date={o.order_date}       // for print sort/filter
+                    data-date={o.order_date}
                   >
                     {formatUSAny(o.order_date)}
                   </div>
 
-                  {/* ICON SPACER (kept empty for alignment with CustomerDetail checkmark col) */}
+                  {/* spacer */}
                   <div style={{ width: 20 }}></div>
 
-                  {/* MIDDLE: Line 1 = Customer (sortable); Line 2 = Product / Qty / Unit / Order amount */}
+                  {/* MIDDLE: Customer (sortable) + details line */}
                   <div 
                     className="helper"
                     onClick={() => handleOrderClick(o)}
@@ -289,7 +276,7 @@ export default function PartnerDetailPage() {
                     </div>
                   </div>
 
-                  {/* RIGHT: Partner amount (far right) */}
+                  {/* RIGHT: Partner amount */}
                   <div 
                     className="helper" 
                     onClick={() => handleOrderClick(o)}
@@ -307,7 +294,7 @@ export default function PartnerDetailPage() {
         )}
       </section>
 
-      {/* === PRINTABLE BLOCK 3: Payments === */}
+      {/* === Payments === */}
       <section 
         data-printable
         data-printable-id="payments"
@@ -316,7 +303,7 @@ export default function PartnerDetailPage() {
       >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <h4 style={{margin:0}}>Payments to partner</h4>
-        {payments.length > 5 && (
+          {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
@@ -335,7 +322,7 @@ export default function PartnerDetailPage() {
                 data-print-row
                 style={{
                   display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`, // align with orders
+                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                   gap:LINE_GAP,
                   borderBottom:'1px solid #eee',
                   padding:'8px 0'
@@ -349,7 +336,7 @@ export default function PartnerDetailPage() {
                   {formatUSAny(p.payment_date)}
                 </div>
 
-                {/* EMPTY spacer col */}
+                {/* spacer */}
                 <div style={{ width: 20 }}></div>
 
                 {/* TYPE */}
@@ -400,5 +387,6 @@ export default function PartnerDetailPage() {
     </div>
   )
 }
+
 
 
