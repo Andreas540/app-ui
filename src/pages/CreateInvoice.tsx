@@ -217,17 +217,27 @@ export default function CreateInvoicePage() {
                             flexShrink: 0
                           }}
                         />
-                        <div style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: '70px 1fr 60px 80px',
-                          gap: 12,
-                          flex: 1,
-                          minWidth: 0
-                        }}>
-                          <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
-                          <div style={{ textAlign: 'right' }}>{order.quantity}</div>
-                          <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '70px 1fr',
+                            gap: 12,
+                            marginBottom: 4
+                          }}>
+                            <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                          </div>
+                          <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '70px 1fr 70px 70px',
+                            gap: 12,
+                            color: '#666'
+                          }}>
+                            <div></div>
+                            <div>Qty: {order.quantity}</div>
+                            <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
+                            <div style={{ textAlign: 'right', fontWeight: 500, color: '#000' }}>{fmtMoney(order.amount)}</div>
+                          </div>
                         </div>
                       </div>
                     ))}
