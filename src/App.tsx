@@ -19,6 +19,7 @@ import InventoryDashboard from './pages/InventoryDashboard'
 import Login from './pages/Login'
 import EditPayment from './pages/EditPayment'
 import './print.css'
+import CreateInvoicePage from './pages/CreateInvoice'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -184,6 +185,7 @@ export default function App() {
               <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
               <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
               <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
+              <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>Create Invoice</NavLink>
               
               {/* Inventory Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
@@ -243,6 +245,7 @@ export default function App() {
                 <Route path="/partners/:id/edit" element={<EditPartner />} />
                 <Route path="/inventory" element={<InventoryDashboard />} />
                 <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
+                <Route path="/invoices/create" element={<CreateInvoicePage />} />
               </>
             )}
           </Routes>
