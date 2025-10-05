@@ -12,12 +12,26 @@ type Customer = {
   postal_code?: string | null
 }
 
+type Order = {
+  order_id: string
+  item_id: string
+  product: string
+  quantity: number
+  unit_price: number
+  amount: number
+  order_date: string
+}
+
 export default function CreateInvoicePage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
+  const [orders, setOrders] = useState<Order[]>([])
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Load customers on mount
   useEffect(() => {
     (async () => {
       try {
@@ -42,7 +56,59 @@ export default function CreateInvoicePage() {
     })()
   }, [])
 
+  // Load orders when customer changes
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setOrders([])
+      setSelectedOrders(new Set())
+      return
+    }
+
+    (async () => {
+      try {
+        setOrdersLoading(true)
+        setError(null)
+
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, { cache: 'no-store' })
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(`Failed to load orders (status ${res.status}) ${text?.slice(0, 140)}`)
+        }
+
+        const data = await res.json()
+        setOrders(data.orders)
+        setSelectedOrders(new Set())
+      } catch (e: any) {
+        setError(e?.message || String(e))
+      } finally {
+        setOrdersLoading(false)
+      }
+    })()
+  }, [selectedCustomerId])
+
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId)
+
+  const toggleOrder = (itemId: string) => {
+    const newSelected = new Set(selectedOrders)
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId)
+    } else {
+      newSelected.add(itemId)
+    }
+    setSelectedOrders(newSelected)
+  }
+
+  const selectAll = () => {
+    setSelectedOrders(new Set(orders.map(o => o.item_id)))
+  }
+
+  const unselectAll = () => {
+    setSelectedOrders(new Set())
+  }
+
+  const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
@@ -82,7 +148,7 @@ export default function CreateInvoicePage() {
           </div>
 
           {selectedCustomer && (
-            <div style={{ padding: 16, backgroundColor: 'var(--panel)', borderRadius: 4 }}>
+            <div style={{ padding: 16, backgroundColor: 'var(--panel)', borderRadius: 4, marginBottom: 20 }}>
               <h4 style={{ margin: '0 0 12px 0' }}>Customer Address</h4>
               <div>
                 {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
@@ -99,6 +165,88 @@ export default function CreateInvoicePage() {
                 )}
               </div>
             </div>
+          )}
+
+          {selectedCustomerId && (
+            <>
+              <h4 style={{ marginTop: 20, marginBottom: 12 }}>Orders (Last 20)</h4>
+              
+              {ordersLoading && <p>Loading orders...</p>}
+              
+              {!ordersLoading && orders.length === 0 && (
+                <p className="helper">No orders found for this customer.</p>
+              )}
+
+              {!ordersLoading && orders.length > 0 && (
+                <>
+                  <div style={{
+                    border: '1px solid #ddd',
+                    borderRadius: 4,
+                    maxHeight: 300,
+                    overflowY: 'auto',
+                    marginBottom: 12
+                  }}>
+                    {orders.map(order => (
+                      <div
+                        key={order.item_id}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '40px 1fr 80px 100px 100px',
+                          gap: 12,
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #eee',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.has(order.item_id)}
+                          onChange={() => toggleOrder(order.item_id)}
+                          style={{ cursor: 'pointer', width: 18, height: 18 }}
+                        />
+                        <div>{order.product}</div>
+                        <div style={{ textAlign: 'right' }}>{order.quantity}</div>
+                        <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
+                        <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={selectAll}
+                      style={{
+                        padding: '8px 16px',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        background: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={unselectAll}
+                      style={{
+                        padding: '8px 16px',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        background: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Unselect All
+                    </button>
+                  </div>
+
+                  {selectedOrders.size > 0 && (
+                    <div style={{ marginTop: 16, padding: 12, backgroundColor: 'var(--panel)', borderRadius: 4 }}>
+                      <strong>{selectedOrders.size}</strong> order item(s) selected
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}

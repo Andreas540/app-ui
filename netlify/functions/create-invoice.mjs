@@ -15,19 +15,21 @@ function cors(status, body) {
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
-  if (event.httpMethod === 'GET') return getCustomers(event);
+  if (event.httpMethod === 'GET') return getData(event);
   return cors(405, { error: 'Method not allowed' });
 }
 
-async function getCustomers(event) {
+async function getData(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
     const { DATABASE_URL, TENANT_ID } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
 
+    const customerId = event.queryStringParameters?.customerId;
     const sql = neon(DATABASE_URL);
 
+    // Get all customers for dropdown
     const customers = await sql`
       SELECT id, name, address1, address2, city, state, postal_code
       FROM customers
@@ -35,7 +37,29 @@ async function getCustomers(event) {
       ORDER BY name ASC
     `;
 
-    return cors(200, { customers });
+    // If customerId provided, get their orders
+    let orders = [];
+    if (customerId) {
+      orders = await sql`
+        SELECT 
+          o.id as order_id,
+          oi.id as item_id,
+          p.name as product,
+          oi.qty as quantity,
+          oi.unit_price,
+          (oi.qty * oi.unit_price) as amount,
+          o.order_date
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        JOIN products p ON p.id = oi.product_id
+        WHERE o.customer_id = ${customerId}
+          AND o.tenant_id = ${TENANT_ID}
+        ORDER BY o.order_date DESC, o.id DESC
+        LIMIT 20
+      `;
+    }
+
+    return cors(200, { customers, orders });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });
