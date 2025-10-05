@@ -31,7 +31,6 @@ export default function CreateInvoicePage() {
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load customers on mount
   useEffect(() => {
     (async () => {
       try {
@@ -56,7 +55,6 @@ export default function CreateInvoicePage() {
     })()
   }, [])
 
-  // Load orders when customer changes
   useEffect(() => {
     if (!selectedCustomerId) {
       setOrders([])
@@ -109,6 +107,11 @@ export default function CreateInvoicePage() {
   }
 
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
+  
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(-2)}`
+  }
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
@@ -122,54 +125,58 @@ export default function CreateInvoicePage() {
 
       {!loading && !error && (
         <>
-          <div style={{ marginBottom: 20 }}>
-            <label htmlFor="customer-select" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              Select customer
-            </label>
-            <select
-              id="customer-select"
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: 14,
-                border: '1px solid #ddd',
-                borderRadius: 4,
-              }}
-            >
-              <option value="">-- Select a customer --</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedCustomer && (
-            <div style={{ padding: 16, backgroundColor: 'var(--panel)', borderRadius: 4, marginBottom: 20 }}>
-              <h4 style={{ margin: '0 0 12px 0' }}>Customer Address</h4>
-              <div>
-                {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
-                {selectedCustomer.address2 && <div>{selectedCustomer.address2}</div>}
-                {(selectedCustomer.city || selectedCustomer.state || selectedCustomer.postal_code) && (
-                  <div>
-                    {[selectedCustomer.city, selectedCustomer.state, selectedCustomer.postal_code]
-                      .filter(Boolean)
-                      .join(' ')}
-                  </div>
-                )}
-                {!selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
-                  <div className="helper">No address on file</div>
-                )}
-              </div>
+          <div style={{ display: 'flex', gap: 40, marginBottom: 20 }}>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="customer-select" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                Select customer
+              </label>
+              <select
+                id="customer-select"
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: 14,
+                  border: '1px solid #ddd',
+                  borderRadius: 4,
+                }}
+              >
+                <option value="">-- Select a customer --</option>
+                {customers.map(customer => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+
+            {selectedCustomer && (
+              <div style={{ flex: 1 }}>
+                <div style={{ marginBottom: 8, height: 21 }}></div>
+                <div style={{ fontSize: 14 }}>
+                  {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
+                  {selectedCustomer.address2 && <div>{selectedCustomer.address2}</div>}
+                  {(selectedCustomer.city || selectedCustomer.state || selectedCustomer.postal_code) && (
+                    <div>
+                      {[selectedCustomer.city, selectedCustomer.state, selectedCustomer.postal_code]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </div>
+                  )}
+                  {!selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
+                    <div className="helper">No address on file</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {selectedCustomerId && (
             <>
-              <h4 style={{ marginTop: 20, marginBottom: 12 }}>Orders (Last 20)</h4>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                Select orders to be included
+              </label>
               
               {ordersLoading && <p>Loading orders...</p>}
               
@@ -190,24 +197,38 @@ export default function CreateInvoicePage() {
                       <div
                         key={order.item_id}
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns: '40px 1fr 80px 100px 100px',
+                          display: 'flex',
                           gap: 12,
                           padding: '12px 16px',
                           borderBottom: '1px solid #eee',
-                          alignItems: 'center'
+                          alignItems: 'flex-start',
+                          fontSize: 14
                         }}
                       >
                         <input
                           type="checkbox"
                           checked={selectedOrders.has(order.item_id)}
                           onChange={() => toggleOrder(order.item_id)}
-                          style={{ cursor: 'pointer', width: 18, height: 18 }}
+                          style={{ 
+                            cursor: 'pointer', 
+                            width: 14, 
+                            height: 14,
+                            marginTop: 2,
+                            flexShrink: 0
+                          }}
                         />
-                        <div>{order.product}</div>
-                        <div style={{ textAlign: 'right' }}>{order.quantity}</div>
-                        <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
-                        <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '70px 1fr 60px 80px',
+                          gap: 12,
+                          flex: 1,
+                          minWidth: 0
+                        }}>
+                          <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
+                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                          <div style={{ textAlign: 'right' }}>{order.quantity}</div>
+                          <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
