@@ -202,7 +202,8 @@ export default function CreateInvoicePage() {
                           padding: '12px 16px',
                           borderBottom: '1px solid #eee',
                           alignItems: 'flex-start',
-                          fontSize: 14
+                          fontSize: 14,
+                          color: '#fff'
                         }}
                       >
                         <input
@@ -220,23 +221,22 @@ export default function CreateInvoicePage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ 
                             display: 'grid', 
-                            gridTemplateColumns: '70px 1fr',
+                            gridTemplateColumns: '70px 1fr 80px',
                             gap: 12,
                             marginBottom: 4
                           }}>
                             <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
                             <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                            <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
                           </div>
                           <div style={{ 
                             display: 'grid', 
-                            gridTemplateColumns: '70px 1fr 70px 70px',
-                            gap: 12,
-                            color: '#666'
+                            gridTemplateColumns: '70px 1fr 80px',
+                            gap: 12
                           }}>
+                            <div>{order.quantity}</div>
+                            <div>{fmtMoney(order.unit_price)}</div>
                             <div></div>
-                            <div>Qty: {order.quantity}</div>
-                            <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
-                            <div style={{ textAlign: 'right', fontWeight: 500, color: '#000' }}>{fmtMoney(order.amount)}</div>
                           </div>
                         </div>
                       </div>
