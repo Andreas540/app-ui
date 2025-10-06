@@ -360,13 +360,13 @@ export default function InvoicePreview() {
              - even smaller bottom padding.
              This keeps Subtotal/Total visible and prevents page 2. */
           .ios-print .invoice-viewport > div {
-            width: calc(8.5in / 0.98) !important;
-            height: calc(11in / 0.98) !important;
-            transform: scale(0.98) !important;
+            width: calc(8.5in / 0.95) !important;
+            height: calc(11in / 0.95) !important;
+            transform: scale(0.95) !important;
             transform-origin: top left !important;
           }
           .ios-print .invoice-page {
-            padding: 0.35in 0.3in 0.5in 0.3in !important;
+            padding: 0.32in 0.26in 0.44in 0.26in !important;
           }
 
           /* Never break inside important blocks */
