@@ -29,19 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // Page-scoped viewport override (applies only while this page is mounted)
-  useEffect(() => {
-    const tag = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')
-    if (!tag) return
-    const prev = tag.getAttribute('content') ?? 'width=device-width, initial-scale=1.0'
-    tag.setAttribute(
-      'content',
-      'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content'
-    )
-    return () => {
-      tag.setAttribute('content', prev)
-    }
-  }, [])
+  // 🔁 Revert: NO viewport meta override here (it was causing issues)
 
   // Logical canvas at 96dpi: Letter 8.5×11in → 816×1056 px
   const BASE_W = 816
@@ -75,7 +63,7 @@ export default function InvoicePreview() {
     }
   }, [])
 
-  // Lock background & scrolling in preview
+  // Lock background & scrolling in preview (screen only)
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -86,11 +74,6 @@ export default function InvoicePreview() {
       document.body.style.overflow = prevOv
     }
   }, [])
-
-  const isIOS =
-    typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
-
-  const print = () => window.print()
 
   const fmtDate = (s: string) => {
     const d = new Date(s)
@@ -107,76 +90,34 @@ export default function InvoicePreview() {
   async function openPdf() {
     try {
       if (!invoiceData) return
-
-      // Lazy-load to avoid bundler/TS issues
       const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
 
       const doc = await PDFDocument.create()
-      // Letter in points (72 pt/in): 612 x 792
+      // Letter (72 pt/in): 612 x 792
       const page = doc.addPage([612, 792])
 
       const font = await doc.embedFont(StandardFonts.Helvetica)
       const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
 
-      // Safe margins (iOS-friendly)
-      const M_LEFT = 0.5 * 72
-      const M_RIGHT = 0.5 * 72
-      const M_TOP = 0.5 * 72
-      const M_BOTTOM = 0.75 * 72 // extra bottom so totals never clip
-
+      const M_LEFT = 0.5 * 72, M_RIGHT = 0.5 * 72, M_TOP = 0.5 * 72, M_BOTTOM = 0.75 * 72
+      const blue = rgb(0.1, 0.3, 0.56)
       let y = 792 - M_TOP
 
-      const drawText = (
-        text: string,
-        x: number,
-        yval: number,
-        size = 12,
-        col = rgb(0, 0, 0),
-        bold = false
-      ) => {
-        page.drawText(text, {
-          x,
-          y: yval,
-          size,
-          font: bold ? fontBold : font,
-          color: col,
-        })
-      }
-
-      const line = (
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number,
-        w = 0.5,
-        col = rgb(0.8, 0.8, 0.8)
-      ) => {
-        page.drawLine({
-          start: { x: x1, y: y1 },
-          end: { x: x2, y: y2 },
-          thickness: w,
-          color: col,
-        })
-      }
+      const drawText = (text: string, x: number, yv: number, size = 12, col = rgb(0,0,0), bold = false) =>
+        page.drawText(text, { x, y: yv, size, font: bold ? fontBold : font, color: col })
+      const line = (x1: number, y1: number, x2: number, y2: number, w = 0.5) =>
+        page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: rgb(0.8,0.8,0.8) })
 
       // Header
-      page.drawRectangle({
-        x: M_LEFT,
-        y: y - 100,
-        width: 100,
-        height: 100,
-        color: rgb(0, 0, 0),
-      })
-      drawText('BLV', M_LEFT + 35, y - 60, 18, rgb(1, 1, 1), true)
-
-      drawText('BLV Pack Design LLC', M_LEFT + 120, y - 16, 16, rgb(0, 0, 0), true)
+      page.drawRectangle({ x: M_LEFT, y: y - 100, width: 100, height: 100, color: rgb(0,0,0) })
+      drawText('BLV', M_LEFT + 35, y - 60, 18, rgb(1,1,1), true)
+      drawText('BLV Pack Design LLC', M_LEFT + 120, y - 16, 16, rgb(0,0,0), true)
       drawText('13967 SW 119th Ave', M_LEFT + 120, y - 34)
       drawText('Miami, FL 33186', M_LEFT + 120, y - 50)
       drawText('(305) 798-3317', M_LEFT + 120, y - 70)
 
-      // Invoice meta
+      // Meta
       const rightX = 612 - M_RIGHT - 200
-      const blue = rgb(0.1, 0.3, 0.56)
       const labels = ['Invoice #', 'Invoice date', 'Due date', 'Est. delivery']
       const values = [
         invoiceData.invoiceNo,
@@ -188,25 +129,15 @@ export default function InvoicePreview() {
         drawText(lab, rightX, y - 16 - i * 16, 11, blue, true)
         drawText(values[i], rightX + 80, y - 16 - i * 16, 11)
       })
-
       y -= 120
 
-      // Address & payment section
-      const col1X = M_LEFT
-      const col2X = M_LEFT + 220
-      const col3X = 612 - M_RIGHT - 220
-
+      // Addresses & payment
+      const col1X = M_LEFT, col2X = M_LEFT + 220, col3X = 612 - M_RIGHT - 220
       drawText('Invoice for', col1X, y, 12, blue, true)
       drawText(invoiceData.customer.name, col1X, y - 18)
       if (invoiceData.customer.address1) drawText(invoiceData.customer.address1, col1X, y - 34)
       if (invoiceData.customer.address2) drawText(invoiceData.customer.address2, col1X, y - 50)
-      const cityLine = [
-        invoiceData.customer.city,
-        invoiceData.customer.state,
-        invoiceData.customer.postal_code,
-      ]
-        .filter(Boolean)
-        .join(', ')
+      const cityLine = [invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')
       drawText(cityLine, col1X, y - 66)
 
       drawText('Payment method', col2X, y, 12, blue, true)
@@ -226,10 +157,9 @@ export default function InvoicePreview() {
         drawText(pair[0], col3X, y - 18 - i * 14, 10)
         drawText(pair[1], col3X + 110, y - 18 - i * 14, 10)
       })
-
       y -= 120
 
-      // Table header
+      // Items
       line(M_LEFT, y - 4, 612 - M_RIGHT, y - 4, 0.5)
       const thY = y - 22
       drawText('Description', M_LEFT, thY, 11, blue, true)
@@ -238,50 +168,32 @@ export default function InvoicePreview() {
       drawText('Total price', 612 - M_RIGHT - 80, thY, 11, blue, true)
       line(M_LEFT, thY - 6, 612 - M_RIGHT, thY - 6, 0.5)
 
-      // Line items
       let rowY = thY - 24
       const lineGap = 18
-      const textWidth = (s: string, size = 12, bold = false) =>
-        (bold ? fontBold : font).widthOfTextAtSize(s, size)
-
-      invoiceData.orders.forEach((o) => {
+      const textWidth = (s: string, size = 12, bold = false) => (bold ? fontBold : font).widthOfTextAtSize(s, size)
+      invoiceData.orders.forEach(o => {
         drawText(o.product, M_LEFT, rowY)
-
-        const qtyStr = String(o.quantity)
-        const unitStr = money(o.unit_price)
-        const amtStr = money(o.amount)
-
+        const qtyStr = String(o.quantity), unitStr = money(o.unit_price), amtStr = money(o.amount)
         const qtyX = 612 - M_RIGHT - 360 + 220 + 40 - textWidth(qtyStr, 12)
         const unitX = 612 - M_RIGHT - 220 + 80 - textWidth(unitStr, 12)
         const amtX = 612 - M_RIGHT - 80 + 60 - textWidth(amtStr, 12)
-
-        drawText(qtyStr, qtyX, rowY)
-        drawText(unitStr, unitX, rowY)
-        drawText(amtStr, amtX, rowY)
-
+        drawText(qtyStr, qtyX, rowY); drawText(unitStr, unitX, rowY); drawText(amtStr, amtX, rowY)
         rowY -= lineGap
       })
 
-      // Totals block (guaranteed above bottom margin)
+      // Totals (guaranteed visible)
       y = Math.min(rowY - 8, 792 - M_BOTTOM - 110)
       line(M_LEFT, y, 612 - M_RIGHT, y, 1)
-      const totalsY = y - 28
-      const labelX = 612 - M_RIGHT - 160
-      const valueX = 612 - M_RIGHT - 20
-
-      const subtotalStr = money(subtotal)
-      const totalStr = money(total)
-
+      const totalsY = y - 28, labelX = 612 - M_RIGHT - 160, valueX = 612 - M_RIGHT - 20
+      const subtotalStr = money(subtotal), totalStr = money(total)
       drawText('Subtotal', labelX - 80, totalsY, 12)
       drawText(subtotalStr, valueX - textWidth(subtotalStr, 12), totalsY, 12)
-
       drawText('Adjustments/Discount', labelX - 80, totalsY - 18, 12)
       drawText('-', valueX - textWidth('-', 12), totalsY - 18, 12)
-
       drawText('Total', labelX - 80, totalsY - 40, 14, undefined, true)
       drawText(totalStr, valueX - textWidth(totalStr, 14, true), totalsY - 40, 14, undefined, true)
 
-      // Stream to blob and open — TS/DOM-safe without "ab"
+      // Stream to blob & open (TS/DOM-safe)
       const pdfBytes: Uint8Array = await doc.save()
       const blobParts: BlobPart[] = [new Uint8Array(pdfBytes)]
       const blob = new globalThis.Blob(blobParts, { type: 'application/pdf' })
@@ -313,65 +225,58 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* Controls */}
+      {/* Controls — sticky footer bar, always visible on screen. No plain Print on mobile; we only surface "Open PDF". */}
       <div
-        className="no-print"
+        className="no-print invoice-controls"
         style={{
           position: 'fixed',
-          right: 'max(12px, env(safe-area-inset-right))',
-          bottom: 'max(12px, env(safe-area-inset-bottom))',
+          left: 0,
+          right: 0,
+          bottom: 0,
           zIndex: 100000,
+          padding: '10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left))',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'saturate(180%) blur(8px)',
+          boxShadow: '0 -4px 18px rgba(0,0,0,0.12)',
           display: 'flex',
           gap: 8,
+          justifyContent: 'center',
+          alignItems: 'center',
           flexWrap: 'wrap',
         }}
       >
-        {!isIOS && (
-          <button
-            onClick={print}
-            style={{
-              padding: '12px 14px',
-              border: 'none',
-              borderRadius: 12,
-              background: '#007bff',
-              color: '#fff',
-              fontWeight: 600,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
-            }}
-          >
-            Print
-          </button>
-        )}
+        {/* Desktop users can still use browser print via the PDF tab if they want */}
         <button
           onClick={openPdf}
           style={{
-            padding: '12px 14px',
+            padding: '12px 16px',
             border: 'none',
             borderRadius: 12,
             background: '#198754',
             color: '#fff',
-            fontWeight: 600,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+            fontWeight: 700,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
           Open PDF
         </button>
+
         <button
           onClick={() => navigate(-1)}
           style={{
-            padding: '12px 14px',
+            padding: '12px 16px',
             border: 'none',
             borderRadius: 12,
             background: '#6c757d',
             color: '#fff',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
           Back
         </button>
       </div>
 
-      {/* Preview viewport (unchanged) */}
+      {/* Preview viewport */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -415,7 +320,7 @@ export default function InvoicePreview() {
               WebkitTextSizeAdjust: '100%',
               textSizeAdjust: '100%',
               wordBreak: 'normal',
-              overflowWrap: 'anywhere',
+              overflow: 'hidden', // prevent outer overflow
             }}
           >
             {/* Header */}
@@ -470,27 +375,29 @@ export default function InvoicePreview() {
               </div>
             </div>
 
-            {/* Items */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderTop: '1px solid #ddd' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontWeight: 'bold', color: '#1a4d8f', fontSize: 14, borderBottom: '1px solid #ddd' }}>
-                  <div>Description</div>
-                  <div style={{ textAlign: 'right' }}>Qty</div>
-                  <div style={{ textAlign: 'right' }}>Unit price</div>
-                  <div style={{ textAlign: 'right' }}>Total price</div>
-                </div>
-                {orders.map((o, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontSize: 14, borderBottom: '1px solid #eee' }}>
-                    <div>{o.product}</div>
-                    <div style={{ textAlign: 'right' }}>{o.quantity}</div>
-                    <div style={{ textAlign: 'right' }}>{money(o.unit_price)}</div>
-                    <div style={{ textAlign: 'right' }}>{money(o.amount)}</div>
+            {/* Items + totals (preview clamp so totals are always visible) */}
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+              {/* Scroll area only in SCREEN preview; print keeps full height */}
+              <div className="items-scroll" style={{ flex: 1, minHeight: 0 }}>
+                <div style={{ borderTop: '1px solid #ddd' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontWeight: 'bold', color: '#1a4d8f', fontSize: 14, borderBottom: '1px solid #ddd' }}>
+                    <div>Description</div>
+                    <div style={{ textAlign: 'right' }}>Qty</div>
+                    <div style={{ textAlign: 'right' }}>Unit price</div>
+                    <div style={{ textAlign: 'right' }}>Total price</div>
                   </div>
-                ))}
+                  {orders.map((o, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontSize: 14, borderBottom: '1px solid #eee' }}>
+                      <div>{o.product}</div>
+                      <div style={{ textAlign: 'right' }}>{o.quantity}</div>
+                      <div style={{ textAlign: 'right' }}>{money(o.unit_price)}</div>
+                      <div style={{ textAlign: 'right' }}>{money(o.amount)}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ flex: 1 }} />
-
+              {/* Totals fixed at bottom in preview */}
               <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
                   <div style={{ textAlign: 'right' }}>
@@ -513,7 +420,13 @@ export default function InvoicePreview() {
       <style>{`
         :root { --app-top-offset: 56px; } /* adjust if your mobile header is taller */
 
-        /* Desktop/Android print base */
+        /* Screen-only clamp so totals don't disappear in preview */
+        @media screen {
+          .items-scroll { overflow: auto; }
+          .invoice-controls { /* ensure footer doesn't overlap content on short screens */ }
+        }
+
+        /* Print: identical layout, no scroll, true Letter page */
         @page { size: 8.5in 11in; margin: 0; }
         @media print {
           html, body { background: #fff !important; }
@@ -543,14 +456,16 @@ export default function InvoicePreview() {
             page-break-inside: avoid;
             break-inside: avoid;
           }
+          .items-scroll { overflow: visible !important; } /* no scroll in print */
         }
 
-        /* Smooth scaling in preview (iOS) */
+        /* Smooth scaling in preview */
         .invoice-viewport > div { will-change: transform; }
       `}</style>
     </>
   )
 }
+
 
 
 
