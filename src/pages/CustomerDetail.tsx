@@ -201,6 +201,13 @@ export default function CustomerDetailPage() {
                 <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
               </div>
 
+              {/* ✨ NEW: Company name */}
+  <div style={{ marginTop: 12 }}>
+    <div className="helper">Company name</div>
+    <div>{customer.company_name || '—'}</div>
+  </div>
+  {/* ✨ END NEW */}
+
               <div style={{ marginTop: 12 }}>
                 <div className="helper">Phone</div>
                 <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}</div>
