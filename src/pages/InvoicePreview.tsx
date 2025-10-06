@@ -29,7 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // 8.5×11in @ 96dpi → 816×1056 px (logical canvas)
+  // 8.5×11in @ 96dpi → 816×1056 px
   const BASE_W = 816
   const BASE_H = 1056
   const ASPECT = BASE_H / BASE_W
@@ -102,11 +102,17 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // --- Helper: trigger download/open without popups (works mobile/desktop) ---
+  // --- Device hint: iOS? (Safari native PDF viewer path)
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1)
+  const pdfBtnLabel = isIOS ? 'Open PDF' : 'Download PDF'
+
+  // helper to trigger a link
   function triggerLink(href: string, filename?: string, openNewTab = false) {
     const a = document.createElement('a')
     a.href = href
-    if (filename) a.download = filename
+    if (filename && !isIOS) a.download = filename // iOS ignores download on data: URIs
     if (openNewTab) {
       a.target = '_blank'
       a.rel = 'noopener noreferrer'
@@ -116,7 +122,7 @@ export default function InvoicePreview() {
     a.remove()
   }
 
-  // 1) Open as Image (PNG) — best reliability on iPhone (Share/Print from Photos)
+  // Open as Image (PNG) — super reliable on iPhone (Share/Print from Photos)
   async function openAsImage() {
     const node = pageRef.current
     if (!node) return alert('No invoice to export.')
@@ -129,12 +135,11 @@ export default function InvoicePreview() {
       height: BASE_H,
       style: { transform: 'none', transformOrigin: 'top left' },
     })
-    // On mobile, opening in a new tab is friendlier than direct download
     triggerLink(dataUrl, 'invoice.png', true)
   }
 
-  // 2) Download PDF — no popups, no Blob; force download via data URI
-  async function downloadPdf() {
+  // Open/Download PDF — iOS opens same-tab viewer; desktop downloads
+  async function openOrDownloadPdf() {
     const node = pageRef.current
     if (!node) return alert('No invoice to export.')
 
@@ -167,8 +172,14 @@ export default function InvoicePreview() {
     page.drawImage(png, { x, y, width: drawW, height: drawH })
 
     const dataUri: string = await doc.saveAsBase64({ dataUri: true })
-    // Force download (desktop downloads; iOS puts in Downloads and offers Open In…)
-    triggerLink(dataUri, 'invoice.pdf', false)
+
+    if (isIOS) {
+      // Open in SAME TAB → iOS native PDF viewer (Share → Print)
+      window.location.assign(dataUri)
+    } else {
+      // Desktop → download
+      triggerLink(dataUri, 'invoice.pdf', false)
+    }
   }
 
   if (!invoiceData) {
@@ -210,7 +221,7 @@ export default function InvoicePreview() {
         }}
       >
         <button
-          onClick={downloadPdf}
+          onClick={openOrDownloadPdf}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -221,7 +232,7 @@ export default function InvoicePreview() {
             boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
-          Download PDF
+          {pdfBtnLabel}
         </button>
         <button
           onClick={openAsImage}
@@ -408,6 +419,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
