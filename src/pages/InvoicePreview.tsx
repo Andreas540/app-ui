@@ -25,26 +25,27 @@ type InvoiceData = {
 }
 
 export default function InvoicePreview() {
-  const location = useLocation()
+  const { state } = useLocation()
   const navigate = useNavigate()
-  const invoiceData = location.state as InvoiceData | undefined
+  const invoiceData = state as InvoiceData | undefined
 
-  // Base logical canvas (96 dpi): 8.5in × 11in → 816 × 1056
+  // Logical canvas at 96dpi: 8.5in × 11in → 816 × 1056 px
   const BASE_W = 816
   const BASE_H = 1056
+  const ASPECT = BASE_H / BASE_W // 11 / 8.5
 
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  // Recompute scale based on actual viewport box (no env()/visualViewport JS parsing)
+  // Compute a single uniform scale so the whole page fits with padding
   const recomputeScale = () => {
-    const el = viewportRef.current
-    if (!el) return
-    const pad = 12 // visual breathing room
-    const availW = Math.max(0, el.clientWidth - pad * 2)
-    const availH = Math.max(0, el.clientHeight - pad * 2)
-    const next = Math.min(availW / BASE_W, availH / BASE_H)
-    setScale(next > 0 && Number.isFinite(next) ? next : 1)
+    const host = viewportRef.current
+    if (!host) return
+    const P = 12 // px breathing room around the page in the viewport
+    const vw = Math.max(0, host.clientWidth - P * 2)
+    const vh = Math.max(0, host.clientHeight - P * 2)
+    const s = Math.min(vw / BASE_W, vh / BASE_H)
+    setScale(s > 0 && Number.isFinite(s) ? s : 1)
   }
 
   useLayoutEffect(() => {
@@ -52,38 +53,35 @@ export default function InvoicePreview() {
     const r = () => recomputeScale()
     window.addEventListener('resize', r)
     window.addEventListener('orientationchange', r)
-    // iOS address-bar show/hide can change the layout without resize → RAF tick
-    let raf = requestAnimationFrame(r)
+    // iOS address-bar changes without resize:
+    const id = requestAnimationFrame(r)
     return () => {
       window.removeEventListener('resize', r)
       window.removeEventListener('orientationchange', r)
-      cancelAnimationFrame(raf)
+      cancelAnimationFrame(id)
     }
   }, [])
 
-  // Screen background & scroll lock
+  // Lock background & scrolling while preview is open
   useEffect(() => {
     const prevBg = document.body.style.background
-    const prevOverflow = document.body.style.overflow
+    const prevOv = document.body.style.overflow
     document.body.style.background = '#f2f3f5'
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.background = prevBg
-      document.body.style.overflow = prevOverflow
+      document.body.style.overflow = prevOv
     }
   }, [])
 
-  const handlePrint = () => window.print()
+  const print = () => window.print()
 
-  const formatDate = (s: string) => {
+  const fmtDate = (s: string) => {
     const d = new Date(s)
     return isNaN(d.getTime()) ? s : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
   }
   const money = (n: number) => `$${Number(n).toFixed(2)}`
-  const subtotal = useMemo(
-    () => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0),
-    [invoiceData]
-  )
+  const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
   if (!invoiceData) {
@@ -102,26 +100,25 @@ export default function InvoicePreview() {
     )
   }
 
-  const { invoiceNo, invoiceDate, dueDate, deliveryDate, paymentMethod, customer, orders } =
-    invoiceData
+  const { invoiceNo, invoiceDate, dueDate, deliveryDate, paymentMethod, customer, orders } = invoiceData
 
   return (
     <>
-      {/* Controls — bottom-right, safe-area aware; visible on mobile; hidden in print */}
+      {/* Controls (visible on mobile, hidden in print) */}
       <div
         className="no-print"
         style={{
           position: 'fixed',
           right: 'max(12px, env(safe-area-inset-right))',
           bottom: 'max(12px, env(safe-area-inset-bottom))',
-          zIndex: 100_000,
+          zIndex: 100000,
           display: 'flex',
           gap: 8,
           flexWrap: 'wrap',
         }}
       >
         <button
-          onClick={handlePrint}
+          onClick={print}
           style={{
             padding: '12px 14px',
             border: 'none',
@@ -149,7 +146,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Viewport — uses 100dvh and honors your app’s top bar via CSS var */}
+      {/* Viewport — uses 100dvh and your app’s top bar (override the var if needed) */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -157,11 +154,9 @@ export default function InvoicePreview() {
           position: 'fixed',
           left: 0,
           right: 0,
-          // Set this var globally if your top bar is taller on mobile
           top: 'calc(var(--app-top-offset, 56px) + env(safe-area-inset-top))',
           height: 'calc(100dvh - var(--app-top-offset, 56px) - env(safe-area-inset-top))',
           background: '#f2f3f5',
-          // Center with flex (avoids iOS grid+transform bug)
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -169,18 +164,19 @@ export default function InvoicePreview() {
           zIndex: 9999,
         }}
       >
-        {/* Scale wrapper — flex centers this box; transform keeps it centered */}
+        {/* Scale wrapper: fixed px box; never stretches; keeps aspect via fixed dimensions */}
         <div
           style={{
             width: BASE_W,
             height: BASE_H,
+            // Belt & suspenders: ensure ratio stays 11/8.5 even if CSS elsewhere pokes at it
+            aspectRatio: `${ASPECT}`,
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
-            // Helps iOS Safari with transformed layers
             willChange: 'transform',
           }}
         >
-          {/* Actual page */}
+          {/* The actual page */}
           <div
             className="invoice-page"
             style={{
@@ -191,11 +187,15 @@ export default function InvoicePreview() {
               fontFamily: 'Arial, sans-serif',
               boxSizing: 'border-box',
               boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-              // Extra bottom padding so Total never gets clipped by printer margins
-              padding: '48px 48px 72px 48px', // 0.5in sides & top, ~0.75in bottom
+              padding: '48px 48px 76px 48px', // extra bottom so "Total" never clips
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
+              // Prevent iOS text inflation that causes the “oblong / wraps to 2 rows”
+              WebkitTextSizeAdjust: '100%',
+              textSizeAdjust: '100%',
+              // Keep long words from wrapping unexpectedly
+              wordBreak: 'normal',
+              overflowWrap: 'anywhere',
             }}
           >
             {/* Header */}
@@ -214,11 +214,11 @@ export default function InvoicePreview() {
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
                   <div>{invoiceNo}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
-                  <div>{formatDate(invoiceDate)}</div>
+                  <div>{fmtDate(invoiceDate)}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
-                  <div>{formatDate(dueDate)}</div>
+                  <div>{fmtDate(dueDate)}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery</div>
-                  <div>{formatDate(deliveryDate)}</div>
+                  <div>{fmtDate(deliveryDate)}</div>
                 </div>
               </div>
             </div>
@@ -291,14 +291,15 @@ export default function InvoicePreview() {
       </div>
 
       <style>{`
-        /* Adjust this globally if your app bar height differs on mobile */
+        /* If your mobile top bar is not 56px, override this var globally */
         :root { --app-top-offset: 56px; }
 
-        /* Print: exact Letter; remove scaling; keep extra bottom padding */
+        /* PRINT — identical DOM, no scaling, true Letter page */
         @page { size: 8.5in 11in; margin: 0; }
         @media print {
           html, body { background: #fff !important; }
           .no-print { display: none !important; }
+
           .invoice-viewport {
             position: static !important;
             height: auto !important;
@@ -309,21 +310,25 @@ export default function InvoicePreview() {
             transform: none !important;
             width: 8.5in !important;
             height: 11in !important;
+            aspect-ratio: auto !important;
           }
           .invoice-page {
             width: 100% !important;
             height: 100% !important;
-            padding: 0.5in 0.5in 0.75in 0.5in !important; /* extra bottom so Total never clips */
+            padding: 0.5in 0.5in 0.8in 0.5in !important; /* generous bottom */
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            break-inside: avoid;
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
             page-break-inside: avoid;
+            break-inside: avoid;
           }
         }
       `}</style>
     </>
   )
 }
+
 
 
