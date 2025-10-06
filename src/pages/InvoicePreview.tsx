@@ -46,14 +46,11 @@ export default function InvoicePreview() {
     const P = 12
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
-
-    // ignore tiny iOS toolbar wiggles
     if (lastHostH.current) {
       const delta = Math.abs(vh - lastHostH.current)
       if (delta < 80) return
     }
     lastHostH.current = vh
-
     const s = Math.min(vw / BASE_W, vh / BASE_H)
     setScale(s > 0 && Number.isFinite(s) ? s : 1)
   }
@@ -82,7 +79,6 @@ export default function InvoicePreview() {
     }
   }, [])
 
-  // lock background scroll while preview is open
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -102,28 +98,59 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // --- Device hint: iOS? (Safari native PDF viewer path)
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1)
-  const pdfBtnLabel = isIOS ? 'Open PDF' : 'Download PDF'
+  // --- Same-tab viewers (no Blob, no popup, no direct data: navigation) ---
 
-  // helper to trigger a link
-  function triggerLink(href: string, filename?: string, openNewTab = false) {
-    const a = document.createElement('a')
-    a.href = href
-    if (filename && !isIOS) a.download = filename // iOS ignores download on data: URIs
-    if (openNewTab) {
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
+  function writeViewerHtml(title: string, bodyHtml: string) {
+    // Replace the SPA page with a minimal viewer shell.
+    document.open()
+    document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>${title}</title>
+  <style>
+    :root { color-scheme: light; }
+    html,body { height:100%; margin:0; background:#fff; }
+    body { display:flex; flex-direction:column; font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#222; }
+    header { padding:10px 12px; border-bottom:1px solid #e5e5e5; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    button, a.btn {
+      appearance:none; border:0; border-radius:10px; padding:10px 14px;
+      font-weight:600; background:#0d6efd; color:#fff; text-decoration:none; cursor:pointer;
     }
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+    button.secondary, a.secondary { background:#6c757d; }
+    main { position:relative; flex:1; }
+    iframe, img { position:absolute; inset:0; width:100%; height:100%; border:0; object-fit:contain; background:#fff; }
+    .note { padding:10px 12px; border-top:1px solid #e5e5e5; color:#555; }
+  </style>
+</head>
+<body>
+  <header>
+    <button onclick="window.print()">Print</button>
+    <a id="dl" class="btn secondary" href="#" download>Download</a>
+    <button class="secondary" onclick="history.back()">Back</button>
+  </header>
+  <main>
+    ${bodyHtml}
+  </main>
+  <div class="note">If the viewer is blank, use the Download button.</div>
+  <script>
+    // Make external links safe
+    (function(){
+      const a = document.getElementById('dl');
+      if (!a) return;
+      const href = a.getAttribute('data-href');
+      const name = a.getAttribute('data-name');
+      if (href) { a.href = href; }
+      if (name) { a.setAttribute('download', name); }
+    })();
+  </script>
+</body>
+</html>`)
+    document.close()
   }
 
-  // Open as Image (PNG) — super reliable on iPhone (Share/Print from Photos)
-  async function openAsImage() {
+  async function openImageViewer() {
     const node = pageRef.current
     if (!node) return alert('No invoice to export.')
     const { toPng } = await import('html-to-image')
@@ -135,14 +162,18 @@ export default function InvoicePreview() {
       height: BASE_H,
       style: { transform: 'none', transformOrigin: 'top left' },
     })
-    triggerLink(dataUrl, 'invoice.png', true)
+    // Inline an <img> with the PNG data URL; also expose a Download button
+    writeViewerHtml(
+      'Invoice Image',
+      `<img src="${dataUrl}" alt="Invoice PNG"/><a id="dl" class="btn secondary" data-href="${dataUrl}" data-name="invoice.png"></a>`
+    )
   }
 
-  // Open/Download PDF — iOS opens same-tab viewer; desktop downloads
-  async function openOrDownloadPdf() {
+  async function openPdfViewer() {
     const node = pageRef.current
     if (!node) return alert('No invoice to export.')
 
+    // 1) DOM → PNG bytes
     const { toPng } = await import('html-to-image')
     const pngDataUrl = await toPng(node, {
       pixelRatio: 2,
@@ -152,16 +183,15 @@ export default function InvoicePreview() {
       height: BASE_H,
       style: { transform: 'none', transformOrigin: 'top left' },
     })
-
     const res = await fetch(pngDataUrl)
     const pngBytes = new Uint8Array(await res.arrayBuffer())
 
+    // 2) Build a US Letter PDF with the PNG inside (no Blob needed)
     const { PDFDocument } = await import('pdf-lib')
     const doc = await PDFDocument.create()
-    const page = doc.addPage([612, 792]) // US Letter @ 72pt/in
+    const page = doc.addPage([612, 792]) // 8.5×11 in at 72pt/in
     const png = await doc.embedPng(pngBytes)
-
-    const margin = 0.5 * 72 // 0.5 in
+    const margin = 0.5 * 72
     const maxW = 612 - margin * 2
     const maxH = 792 - margin * 2
     const s = Math.min(maxW / png.width, maxH / png.height)
@@ -171,15 +201,14 @@ export default function InvoicePreview() {
     const y = margin + (maxH - drawH) / 2
     page.drawImage(png, { x, y, width: drawW, height: drawH })
 
+    // 3) Get a data URI (avoids Blob typing and object URLs)
     const dataUri: string = await doc.saveAsBase64({ dataUri: true })
 
-    if (isIOS) {
-      // Open in SAME TAB → iOS native PDF viewer (Share → Print)
-      window.location.assign(dataUri)
-    } else {
-      // Desktop → download
-      triggerLink(dataUri, 'invoice.pdf', false)
-    }
+    // 4) Inline an <iframe> that points at the data URI, with Download button
+    writeViewerHtml(
+      'Invoice PDF',
+      `<iframe src="${dataUri}" title="Invoice PDF"></iframe><a id="dl" class="btn secondary" data-href="${dataUri}" data-name="invoice.pdf"></a>`
+    )
   }
 
   if (!invoiceData) {
@@ -221,7 +250,7 @@ export default function InvoicePreview() {
         }}
       >
         <button
-          onClick={openOrDownloadPdf}
+          onClick={openPdfViewer}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -232,10 +261,10 @@ export default function InvoicePreview() {
             boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
-          {pdfBtnLabel}
+          Open PDF
         </button>
         <button
-          onClick={openAsImage}
+          onClick={openImageViewer}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -246,7 +275,7 @@ export default function InvoicePreview() {
             boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
-          Open as Image
+          Open Image
         </button>
         <button
           onClick={() => navigate(-1)}
@@ -405,11 +434,7 @@ export default function InvoicePreview() {
 
       <style>{`
         :root { --app-top-offset: 56px; }
-
-        @media screen {
-          .items-scroll { overflow: auto; }
-        }
-
+        @media screen { .items-scroll { overflow: auto; } }
         @media print {
           .no-print { display: none !important; }
           @page { size: 8.5in 11in; margin: 0; }
@@ -419,6 +444,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
