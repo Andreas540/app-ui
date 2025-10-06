@@ -20,6 +20,7 @@ import Login from './pages/Login'
 import EditPayment from './pages/EditPayment'
 import './print.css'
 import CreateInvoicePage from './pages/CreateInvoice'
+import InvoicePreview from './pages/InvoicePreview'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -246,6 +247,7 @@ export default function App() {
                 <Route path="/inventory" element={<InventoryDashboard />} />
                 <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
                 <Route path="/invoices/create" element={<CreateInvoicePage />} />
+                <Route path="/invoices/preview" element={<InvoicePreview />} />
               </>
             )}
           </Routes>
