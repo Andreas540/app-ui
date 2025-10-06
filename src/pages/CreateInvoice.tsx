@@ -410,7 +410,7 @@ export default function CreateInvoicePage() {
                             {invoiceNo}
                           </div>
 
-                          <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+                          <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontWeight: 600, marginBottom: 4 }}>BLV company info:</div>
                               <div>BLV Pack Design LLC</div>
@@ -433,6 +433,21 @@ export default function CreateInvoicePage() {
                               <div>Routing Number (ABA): 026009593</div>
                             </div>
                           </div>
+
+                          <button
+                            style={{
+                              padding: '10px 20px',
+                              border: 'none',
+                              borderRadius: 10,
+                              background: 'var(--accent)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 500
+                            }}
+                          >
+                            Preview Invoice
+                          </button>
                         </div>
                       )}
                     </>
