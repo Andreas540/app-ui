@@ -29,6 +29,20 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
+  // NEW: page-scoped viewport override (applies only while this page is mounted)
+  useEffect(() => {
+    const tag = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')
+    if (!tag) return
+    const prev = tag.getAttribute('content') ?? 'width=device-width, initial-scale=1.0'
+    tag.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content'
+    )
+    return () => {
+      tag.setAttribute('content', prev)
+    }
+  }, [])
+
   // Logical canvas at 96dpi: 8.5in × 11in → 816 × 1056 px
   const BASE_W = 816
   const BASE_H = 1056
@@ -329,6 +343,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
