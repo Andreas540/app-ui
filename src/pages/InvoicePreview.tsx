@@ -29,21 +29,34 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = location.state as InvoiceData | undefined
 
-  // Base “print” page size at 96 dpi: 8.5in × 11in -> 816 × 1056 px
-  // (The DOM uses inches for print, but we scale this pixel canvas for screen preview.)
+  // Base canvas at 96dpi: 8.5in × 11in → 816 × 1056 px
   const BASE_W = 816
   const BASE_H = 1056
 
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  // Fit the page into the viewport without cropping or double-scroll.
+  // Read the app top bar height via CSS variable, fallback depending on width
+  const getTopOffset = () => {
+    const cs = getComputedStyle(document.documentElement)
+    const raw = cs.getPropertyValue('--app-top-offset').trim()
+    const fromVar = raw ? parseFloat(raw) : NaN
+    const defaultMobile = window.innerWidth <= 640 ? 56 : 0
+    return Number.isFinite(fromVar) ? fromVar : defaultMobile
+  }
+
   const recomputeScale = () => {
-    const pad = 16 // small breathing room around the page
+    const pad = 12 // viewport breathing room
+    const safeTop = Number((window as any).visualViewport?.offsetTop || 0)
+    const safeBottomInset =
+      Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)')) || 0
+    const topOffset = getTopOffset()
+
     const vw = window.innerWidth - pad * 2
-    const vh = window.innerHeight - pad * 2
+    const vh = window.innerHeight - (pad * 2 + topOffset + safeTop + safeBottomInset)
+
     const next = Math.min(vw / BASE_W, vh / BASE_H)
-    setScale(Number.isFinite(next) && next > 0 ? next : 1)
+    setScale(next > 0 && Number.isFinite(next) ? next : 1)
   }
 
   useLayoutEffect(() => {
@@ -73,8 +86,9 @@ export default function InvoicePreview() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return dateStr
-    return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
+    return isNaN(d.getTime())
+      ? dateStr
+      : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
   }
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
   const subtotal = useMemo(
@@ -91,9 +105,11 @@ export default function InvoicePreview() {
           display: 'grid',
           placeItems: 'center',
           background: '#fff',
+          padding: 24,
+          textAlign: 'center',
         }}
       >
-        <div style={{ textAlign: 'center' }}>
+        <div>
           <p style={{ marginBottom: 12 }}>No invoice data found.</p>
           <button
             onClick={() => navigate('/invoices/create')}
@@ -118,31 +134,31 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* Screen-only controls (hidden in print) */}
+      {/* Screen-only controls (bottom-right, safe-area aware) */}
       <div
-        id="invoice-screen-controls"
         className="no-print"
         style={{
           position: 'fixed',
-          right: 12,
-          top: 12,
-          zIndex: 99999, // above your app's top bar
+          right: `calc(12px + env(safe-area-inset-right))`,
+          bottom: `calc(12px + env(safe-area-inset-bottom))`,
+          zIndex: 99999,
           display: 'flex',
           gap: 8,
+          flexWrap: 'wrap',
         }}
       >
         <button
           onClick={handlePrint}
           style={{
-            padding: '10px 14px',
+            padding: '12px 14px',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 12,
             background: '#007bff',
             color: '#fff',
             cursor: 'pointer',
             fontSize: 14,
             fontWeight: 600,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
           }}
         >
           Print
@@ -150,51 +166,59 @@ export default function InvoicePreview() {
         <button
           onClick={() => navigate(-1)}
           style={{
-            padding: '10px 14px',
+            padding: '12px 14px',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 12,
             background: '#6c757d',
             color: '#fff',
             cursor: 'pointer',
             fontSize: 14,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
           }}
         >
           Back
         </button>
       </div>
 
-      {/* Viewport host (locks to screen, centers the page, no scrollbars) */}
+      {/* Viewport host (respects app top-bar height) */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
         style={{
           position: 'fixed',
-          inset: 0,
+          top: 'calc(var(--app-top-offset, 56px) + env(safe-area-inset-top))',
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: 'grid',
           placeItems: 'center',
           overflow: 'hidden',
           background: '#f2f3f5',
-          // Avoid accidental parent stacking contexts clipping
           zIndex: 9999,
+          padding: 12,
         }}
       >
-        {/* This element is a 8.5×11in page designed in px, scaled for screen */}
+        {/* The page canvas in px; scaled to fit and centered */}
         <div
           className="invoice-page"
           style={{
             width: BASE_W,
             height: BASE_H,
             transform: `scale(${scale})`,
-            transformOrigin: 'top left',
+            transformOrigin: 'center center',
             background: '#fff',
             color: '#333',
             fontFamily: 'Arial, sans-serif',
             boxSizing: 'border-box',
             boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-            padding: 48, // 0.5in at 96dpi
+            // Increased bottom padding to ensure totals never get clipped
+            padding: '48px 48px 64px 48px', // 0.5in sides/top, ~0.67in bottom
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
+            // Prevent any accidental page breaks
+            breakInside: 'avoid',
+            pageBreakInside: 'avoid',
           }}
         >
           {/* Header */}
@@ -367,43 +391,45 @@ export default function InvoicePreview() {
         </div>
       </div>
 
-      {/* Screen & print styles */}
+      {/* Screen + Print CSS */}
       <style>{`
-        /* PRINT: make the page real Letter size and remove scaling/decoration */
-        @page {
-          size: 8.5in 11in; /* letter portrait */
-          margin: 0;
+        /* You can override this globally if your app bar is taller */
+        :root { --app-top-offset: 0px; }
+        @media (max-width: 640px) {
+          :root { --app-top-offset: 56px; }
         }
+
+        /* Print: exact Letter; no scaling; no clipping; colors preserved */
+        @page { size: 8.5in 11in; margin: 0; }
         @media print {
-          html, body {
-            background: #fff !important;
-          }
-          .no-print {
-            display: none !important;
-          }
+          html, body { background: #fff !important; }
+          .no-print { display: none !important; }
           .invoice-viewport {
             position: static !important;
             inset: auto !important;
             display: block !important;
             background: #fff !important;
             overflow: visible !important;
+            padding: 0 !important;
           }
           .invoice-page {
             width: 8.5in !important;
             height: 11in !important;
-            padding: 0.5in !important;
+            padding: 0.5in 0.5in 0.75in 0.5in !important; /* extra bottom to keep totals safe */
             transform: none !important;
             box-shadow: none !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
         }
 
-        /* SAFARI iOS: help avoid flicker during scale (optional) */
-        .invoice-page {
-          will-change: transform;
-        }
+        /* Safari/iOS: smoother scaling */
+        .invoice-page { will-change: transform; }
       `}</style>
     </>
   )
 }
+
