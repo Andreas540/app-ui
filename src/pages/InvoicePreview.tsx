@@ -29,7 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // NEW: page-scoped viewport override (applies only while this page is mounted)
+  // Page-scoped viewport override (mobile preview stability, safe areas)
   useEffect(() => {
     const tag = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')
     if (!tag) return
@@ -38,24 +38,21 @@ export default function InvoicePreview() {
       'content',
       'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content'
     )
-    return () => {
-      tag.setAttribute('content', prev)
-    }
+    return () => { tag.setAttribute('content', prev) }
   }, [])
 
-  // Logical canvas at 96dpi: 8.5in × 11in → 816 × 1056 px
+  // Logical canvas at 96dpi: Letter 8.5×11in → 816×1056 px
   const BASE_W = 816
   const BASE_H = 1056
-  const ASPECT = BASE_H / BASE_W // 11 / 8.5
+  const ASPECT = BASE_H / BASE_W
 
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  // Compute a single uniform scale so the whole page fits with padding
   const recomputeScale = () => {
     const host = viewportRef.current
     if (!host) return
-    const P = 12 // px breathing room around the page in the viewport
+    const P = 12 // breathing room in preview
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
     const s = Math.min(vw / BASE_W, vh / BASE_H)
@@ -67,8 +64,7 @@ export default function InvoicePreview() {
     const r = () => recomputeScale()
     window.addEventListener('resize', r)
     window.addEventListener('orientationchange', r)
-    // iOS address-bar changes without resize:
-    const id = requestAnimationFrame(r)
+    const id = requestAnimationFrame(r) // iOS URL bar show/hide
     return () => {
       window.removeEventListener('resize', r)
       window.removeEventListener('orientationchange', r)
@@ -76,16 +72,13 @@ export default function InvoicePreview() {
     }
   }, [])
 
-  // Lock background & scrolling while preview is open
+  // Lock background & scrolling in preview
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
     document.body.style.background = '#f2f3f5'
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.background = prevBg
-      document.body.style.overflow = prevOv
-    }
+    return () => { document.body.style.background = prevBg; document.body.style.overflow = prevOv }
   }, [])
 
   const print = () => window.print()
@@ -118,7 +111,7 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* Controls (visible on mobile, hidden in print) */}
+      {/* Controls (visible on screen, hidden in print) */}
       <div
         className="no-print"
         style={{
@@ -160,7 +153,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Viewport — uses 100dvh and your app’s top bar (override the var if needed) */}
+      {/* Preview viewport */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -178,19 +171,18 @@ export default function InvoicePreview() {
           zIndex: 9999,
         }}
       >
-        {/* Scale wrapper: fixed px box; never stretches; keeps aspect via fixed dimensions */}
+        {/* Scale wrapper */}
         <div
           style={{
             width: BASE_W,
             height: BASE_H,
-            // Belt & suspenders: ensure ratio stays 11/8.5 even if CSS elsewhere pokes at it
             aspectRatio: `${ASPECT}`,
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
             willChange: 'transform',
           }}
         >
-          {/* The actual page */}
+          {/* Page */}
           <div
             className="invoice-page"
             style={{
@@ -201,13 +193,11 @@ export default function InvoicePreview() {
               fontFamily: 'Arial, sans-serif',
               boxSizing: 'border-box',
               boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-              padding: '48px 48px 76px 48px', // extra bottom so "Total" never clips
+              padding: '48px 48px 76px 48px', // generous bottom in preview
               display: 'flex',
               flexDirection: 'column',
-              // Prevent iOS text inflation that causes the “oblong / wraps to 2 rows”
               WebkitTextSizeAdjust: '100%',
               textSizeAdjust: '100%',
-              // Keep long words from wrapping unexpectedly
               wordBreak: 'normal',
               overflowWrap: 'anywhere',
             }}
@@ -300,15 +290,14 @@ export default function InvoicePreview() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </div>{/* .invoice-page */}
+        </div>{/* scale wrapper */}
+      </div>{/* viewport */}
 
       <style>{`
-        /* If your mobile top bar is not 56px, override this var globally */
-        :root { --app-top-offset: 56px; }
+        :root { --app-top-offset: 56px; } /* adjust if your mobile header is taller */
 
-        /* PRINT — identical DOM, no scaling, true Letter page */
+        /* PRINT: base */
         @page { size: 8.5in 11in; margin: 0; }
         @media print {
           html, body { background: #fff !important; }
@@ -320,7 +309,9 @@ export default function InvoicePreview() {
             overflow: visible !important;
             background: #fff !important;
           }
-          .invoice-viewport > div { /* scale wrapper */
+
+          /* Base (desktop + most Android) print sheet */
+          .invoice-viewport > div {
             transform: none !important;
             width: 8.5in !important;
             height: 11in !important;
@@ -329,7 +320,8 @@ export default function InvoicePreview() {
           .invoice-page {
             width: 100% !important;
             height: 100% !important;
-            padding: 0.5in 0.5in 0.8in 0.5in !important; /* generous bottom */
+            /* tighter padding so totals stay on page across drivers */
+            padding: 0.4in 0.4in 0.6in 0.4in !important;
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -338,11 +330,40 @@ export default function InvoicePreview() {
             page-break-inside: avoid;
             break-inside: avoid;
           }
+
+          /* iOS Safari compensation:
+             Many iOS drivers ignore @page margins and impose hardware margins.
+             We oversize the sheet slightly and scale down so content uses more of the page
+             without overflowing, keeping Subtotal/Total visible and preventing page 2. */
+          @supports (-webkit-touch-callout: none) {
+            .invoice-viewport > div {
+              /* expand physical space and scale to fit */
+              width: calc(8.5in / 0.985) !important;
+              height: calc(11in / 0.985) !important;
+              transform: scale(0.985) !important;
+              transform-origin: top left !important;
+            }
+            .invoice-page {
+              padding: 0.35in 0.35in 0.55in 0.35in !important;
+            }
+          }
+
+          /* Belt & suspenders: never break inside these key blocks */
+          .invoice-page,
+          .invoice-page > *,
+          .invoice-page div {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
         }
+
+        /* Smooth scaling in preview (iOS) */
+        .invoice-viewport > div { will-change: transform; }
       `}</style>
     </>
   )
 }
+
 
 
 
