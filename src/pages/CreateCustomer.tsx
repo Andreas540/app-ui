@@ -1,3 +1,4 @@
+// src/pages/CreateCustomer.tsx
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createCustomer, type CustomerType } from '../lib/api'
@@ -7,6 +8,9 @@ export default function CreateCustomer() {
 
   const [name, setName] = useState('')
   const [ctype, setCtype] = useState<CustomerType>('BLV')  // BLV | Partner
+
+  // NEW: company name (DB column: company_name)
+  const [companyName, setCompanyName] = useState('')
 
   // Shipping UI state
   type ShipMode = 'preset' | 'custom'
@@ -41,6 +45,9 @@ export default function CreateCustomer() {
         name: name.trim(),
         customer_type: ctype,
         shipping_cost: ship,
+        // NEW: pass company_name only if provided
+        company_name: companyName.trim() || undefined,
+
         phone: phone.trim() || undefined,
         address1: address1.trim() || undefined,
         address2: address2.trim() || undefined,
@@ -50,7 +57,7 @@ export default function CreateCustomer() {
       })
       alert('Customer created')
       navigate('/customers')
-    } catch (e:any) {
+    } catch (e: any) {
       alert(e?.message || 'Save failed')
     }
   }
@@ -73,11 +80,11 @@ export default function CreateCustomer() {
         </div>
       </div>
 
+      {/* Row with Shipping Cost, Company name (new 4th field), Phone */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>Shipping Cost</label>
 
-          {/* When on presets: a select with 0, 0.35, Custom… */}
           {shipMode === 'preset' ? (
             <select
               value={shipPreset}
@@ -97,7 +104,6 @@ export default function CreateCustomer() {
               <option value="custom">Custom…</option>
             </select>
           ) : (
-            // When custom: show ONE decimal input in the same spot
             <div style={{ display:'flex', gap:8 }}>
               <input
                 ref={customInputRef}
@@ -117,6 +123,16 @@ export default function CreateCustomer() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* NEW: Company name (4th overall field) */}
+        <div>
+          <label>Company name</label>
+          <input
+            type="text"
+            value={companyName}
+            onChange={e=>setCompanyName(e.target.value)}
+          />
         </div>
 
         <div>
@@ -158,3 +174,4 @@ export default function CreateCustomer() {
     </div>
   )
 }
+

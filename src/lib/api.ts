@@ -153,6 +153,7 @@ export type NewCustomerInput = {
   customer_type: CustomerType
   shipping_cost?: number | null
   apply_to_history?: boolean
+  company_name?: string | null   // <-- add this
   phone?: string | null
   address1?: string | null
   address2?: string | null

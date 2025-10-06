@@ -86,6 +86,7 @@ async function createCustomer(event) {
       name,
       customer_type,
       shipping_cost,
+      company_name,
       phone,
       address1,
       address2,
@@ -114,10 +115,10 @@ async function createCustomer(event) {
 
     const ins = await sql`
       INSERT INTO customers (
-        tenant_id, name, customer_type, shipping_cost,
+        tenant_id, name, customer_type, shipping_cost, company_name,
         phone, address1, address2, city, state, postal_code
       ) VALUES (
-        ${TENANT_ID}, ${name.trim()}, ${customer_type}, ${ship},
+        ${TENANT_ID}, ${name.trim()}, ${customer_type}, ${ship}, ${company_name ?? null},
         ${phone ?? null}, ${address1 ?? null}, ${address2 ?? null},
         ${city ?? null}, ${state ?? null}, ${postal_code ?? null}
       )
