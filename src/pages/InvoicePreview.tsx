@@ -29,7 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // Page-scoped viewport override (mobile preview stability, safe areas)
+  // Page-scoped viewport override (so only this page uses full-bleed safe areas)
   useEffect(() => {
     const tag = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')
     if (!tag) return
@@ -49,6 +49,7 @@ export default function InvoicePreview() {
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
 
+  // Fit-to-viewport scaling (screen preview)
   const recomputeScale = () => {
     const host = viewportRef.current
     if (!host) return
@@ -64,7 +65,7 @@ export default function InvoicePreview() {
     const r = () => recomputeScale()
     window.addEventListener('resize', r)
     window.addEventListener('orientationchange', r)
-    const id = requestAnimationFrame(r) // iOS URL bar show/hide
+    const id = requestAnimationFrame(r) // account for mobile URL bar changes
     return () => {
       window.removeEventListener('resize', r)
       window.removeEventListener('orientationchange', r)
@@ -81,7 +82,33 @@ export default function InvoicePreview() {
     return () => { document.body.style.background = prevBg; document.body.style.overflow = prevOv }
   }, [])
 
-  const print = () => window.print()
+  // --- PRINT HANDLER with iOS compensation ---
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const print = () => {
+    const root = document.documentElement
+    let cleanup: (() => void) | null = null
+
+    if (isIOS) {
+      root.classList.add('ios-print')
+      const remove = () => root.classList.remove('ios-print')
+      const mq = window.matchMedia('print')
+      const onChange = () => { if (!mq.matches) remove() }
+      mq.addEventListener?.('change', onChange)
+      const after = () => remove()
+      window.addEventListener('afterprint', after)
+      cleanup = () => {
+        window.removeEventListener('afterprint', after)
+        mq.removeEventListener?.('change', onChange)
+        remove()
+      }
+    }
+
+    // Give the class a tick to apply before invoking the dialog
+    setTimeout(() => {
+      window.print()
+      if (cleanup) setTimeout(cleanup, 0)
+    }, 30)
+  }
 
   const fmtDate = (s: string) => {
     const d = new Date(s)
@@ -297,7 +324,7 @@ export default function InvoicePreview() {
       <style>{`
         :root { --app-top-offset: 56px; } /* adjust if your mobile header is taller */
 
-        /* PRINT: base */
+        /* Desktop/Android print base */
         @page { size: 8.5in 11in; margin: 0; }
         @media print {
           html, body { background: #fff !important; }
@@ -309,8 +336,6 @@ export default function InvoicePreview() {
             overflow: visible !important;
             background: #fff !important;
           }
-
-          /* Base (desktop + most Android) print sheet */
           .invoice-viewport > div {
             transform: none !important;
             width: 8.5in !important;
@@ -320,8 +345,7 @@ export default function InvoicePreview() {
           .invoice-page {
             width: 100% !important;
             height: 100% !important;
-            /* tighter padding so totals stay on page across drivers */
-            padding: 0.4in 0.4in 0.6in 0.4in !important;
+            padding: 0.4in 0.35in 0.6in 0.35in !important; /* tighter sides/bottom */
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -331,24 +355,21 @@ export default function InvoicePreview() {
             break-inside: avoid;
           }
 
-          /* iOS Safari compensation:
-             Many iOS drivers ignore @page margins and impose hardware margins.
-             We oversize the sheet slightly and scale down so content uses more of the page
-             without overflowing, keeping Subtotal/Total visible and preventing page 2. */
-          @supports (-webkit-touch-callout: none) {
-            .invoice-viewport > div {
-              /* expand physical space and scale to fit */
-              width: calc(8.5in / 0.985) !important;
-              height: calc(11in / 0.985) !important;
-              transform: scale(0.985) !important;
-              transform-origin: top left !important;
-            }
-            .invoice-page {
-              padding: 0.35in 0.35in 0.55in 0.35in !important;
-            }
+          /* iOS-only print compensation:
+             - slightly oversize the sheet then scale down,
+             - even smaller bottom padding.
+             This keeps Subtotal/Total visible and prevents page 2. */
+          .ios-print .invoice-viewport > div {
+            width: calc(8.5in / 0.98) !important;
+            height: calc(11in / 0.98) !important;
+            transform: scale(0.98) !important;
+            transform-origin: top left !important;
+          }
+          .ios-print .invoice-page {
+            padding: 0.35in 0.3in 0.5in 0.3in !important;
           }
 
-          /* Belt & suspenders: never break inside these key blocks */
+          /* Never break inside important blocks */
           .invoice-page,
           .invoice-page > *,
           .invoice-page div {
@@ -363,6 +384,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
