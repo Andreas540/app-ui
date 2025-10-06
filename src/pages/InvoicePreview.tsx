@@ -47,7 +47,6 @@ export default function InvoicePreview() {
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
 
-    // Ignore tiny visual-viewport wiggles (iOS toolbars / share sheet)
     if (lastHostH.current) {
       const delta = Math.abs(vh - lastHostH.current)
       if (delta < 80) return
@@ -82,7 +81,6 @@ export default function InvoicePreview() {
     }
   }, [])
 
-  // Lock background & scrolling in preview
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -102,36 +100,43 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // -------- Open PDF (EXACT snapshot of HTML page) --------
+  // -------- Open PDF (snapshot) — data URI path (no Blob/URL APIs) --------
   async function openPdf() {
+    const popup = window.open('', '_blank', 'noopener,noreferrer')
+    if (popup) {
+      try {
+        popup.document.title = 'Invoice PDF'
+        popup.document.body.style.margin = '0'
+        popup.document.body.style.fontFamily =
+          'system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif'
+        popup.document.body.innerHTML =
+          '<div style="padding:24px;font-size:16px;color:#444">Building PDF…</div>'
+      } catch { /* ignore */ }
+    }
+
     try {
       const node = pageRef.current
-      if (!node) return
+      if (!node) throw new Error('No invoice page to capture')
 
-      // 1) Render the page DOM to a PNG (pixel-perfect snapshot)
       const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(node, {
-        pixelRatio: 2,            // crisp output on retina
+        pixelRatio: 2,
         backgroundColor: '#FFFFFF',
-        width: BASE_W,            // match our logical canvas
+        cacheBust: true,
+        width: BASE_W,
         height: BASE_H,
-        style: {
-          transform: 'none',      // ignore preview scale
-          transformOrigin: 'top left',
-        },
+        style: { transform: 'none', transformOrigin: 'top left' },
       })
 
-      // 2) Turn PNG into bytes
       const res = await fetch(dataUrl)
       const pngBytes = new Uint8Array(await res.arrayBuffer())
 
-      // 3) Embed into a Letter PDF with safe margins
       const { PDFDocument } = await import('pdf-lib')
       const doc = await PDFDocument.create()
       const page = doc.addPage([612, 792]) // Letter @ 72pt/in
       const png = await doc.embedPng(pngBytes)
 
-      const margin = 0.5 * 72 // 0.5in
+      const margin = 0.5 * 72
       const maxW = 612 - margin * 2
       const maxH = 792 - margin * 2
       const s = Math.min(maxW / png.width, maxH / png.height)
@@ -139,17 +144,34 @@ export default function InvoicePreview() {
       const drawH = png.height * s
       const x = margin + (maxW - drawW) / 2
       const y = margin + (maxH - drawH) / 2
-
       page.drawImage(png, { x, y, width: drawW, height: drawH })
 
-      // 4) Stream & open
-      const bytes: Uint8Array = await doc.save()
-      const blob = new Blob([new Uint8Array(bytes)] as BlobPart[], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
+      // Get a data URI directly; avoids Blob + URL.createObjectURL
+      const dataUri: string = await doc.saveAsBase64({ dataUri: true })
+
+      if (popup && !popup.closed) {
+        popup.location.replace(dataUri)
+      } else {
+        // Fallback: hidden link
+        const a = document.createElement('a')
+        a.href = dataUri
+        a.target = '_blank'
+        a.rel = 'noopener noreferrer'
+        a.download = 'invoice.pdf'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      }
     } catch (err) {
       console.error('PDF snapshot failed:', err)
-      alert('Could not build PDF snapshot.')
+      if (popup && !popup.closed) {
+        try {
+          popup.document.body.innerHTML =
+            '<div style="padding:24px;font-size:16px;color:#b00020">Could not build PDF snapshot.</div>'
+        } catch { /* ignore */ }
+      } else {
+        alert('Could not build PDF snapshot.')
+      }
     }
   }
 
@@ -220,7 +242,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* HTML Preview (unchanged look) */}
+      {/* HTML Preview */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -320,7 +342,7 @@ export default function InvoicePreview() {
               </div>
             </div>
 
-            {/* Items + totals (preview clamp so totals always visible) */}
+            {/* Items + totals */}
             <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
               <div className="items-scroll" style={{ flex: 1, minHeight: 0 }}>
                 <div style={{ borderTop: '1px solid #ddd' }}>
@@ -376,6 +398,8 @@ export default function InvoicePreview() {
     </>
   )
 }
+
+
 
 
 
