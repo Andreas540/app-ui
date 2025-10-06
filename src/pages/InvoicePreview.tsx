@@ -72,9 +72,16 @@ export default function InvoicePreview() {
   }
 
   return (
-    <div style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+    <div style={{ background: '#fff', minHeight: '100vh' }}>
       {/* Print button - only visible on screen */}
-      <div className="no-print" style={{ padding: 20, borderBottom: '1px solid #ddd', background: '#fff' }}>
+      <div className="no-print" style={{ 
+        padding: 20, 
+        borderBottom: '1px solid #ddd', 
+        background: 'var(--bg)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10
+      }}>
         <button
           onClick={handlePrint}
           style={{
@@ -109,36 +116,40 @@ export default function InvoicePreview() {
       {/* Scaled invoice container */}
       <div style={{ 
         display: 'flex', 
-        justifyContent: 'center', 
-        padding: 20,
-        transformOrigin: 'top center'
+        justifyContent: 'center',
+        background: '#fff',
+        minHeight: 'calc(100vh - 80px)'
       }}>
         <div style={{
           transform: `scale(${scale})`,
-          transformOrigin: 'top center'
+          transformOrigin: 'top center',
+          margin: '20px 0'
         }}>
-          {/* Invoice content - US Letter size */}
+          {/* Invoice content - US Letter size (8.5" x 11") */}
           <div style={{ 
             width: 816, // 8.5 inches * 96 DPI
+            height: 1056, // 11 inches * 96 DPI
             padding: 48,
             fontFamily: 'Arial, sans-serif',
             color: '#333',
             background: '#fff',
-            boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 280px', gap: 24, marginBottom: 32 }}>
-              {/* Logo */}
+            <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 280px', gap: 24, marginBottom: 28 }}>
+              {/* Logo - smaller */}
               <div style={{ 
-                width: 140, 
-                height: 140, 
+                width: 100, 
+                height: 100, 
                 background: '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#fff',
                 fontWeight: 'bold',
-                fontSize: 24
+                fontSize: 20
               }}>
                 BLV
               </div>
@@ -167,7 +178,7 @@ export default function InvoicePreview() {
             </div>
 
             {/* Invoice for, Payment, Wire Transfer */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: 24, marginBottom: 32 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: 24, marginBottom: 28 }}>
               <div style={{ fontSize: 14 }}>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
                 <div>{customer.name}</div>
@@ -201,55 +212,60 @@ export default function InvoicePreview() {
             </div>
 
             {/* Items table */}
-            <div style={{ marginTop: 32, borderTop: '1px solid #ddd' }}>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 100px 120px 140px',
-                gap: 16,
-                padding: '12px 0',
-                fontWeight: 'bold',
-                color: '#1a4d8f',
-                fontSize: 14,
-                borderBottom: '1px solid #ddd'
-              }}>
-                <div>Description</div>
-                <div style={{ textAlign: 'right' }}>Qty</div>
-                <div style={{ textAlign: 'right' }}>Unit price</div>
-                <div style={{ textAlign: 'right' }}>Total price</div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ borderTop: '1px solid #ddd' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 100px 120px 140px',
+                  gap: 16,
+                  padding: '12px 0',
+                  fontWeight: 'bold',
+                  color: '#1a4d8f',
+                  fontSize: 14,
+                  borderBottom: '1px solid #ddd'
+                }}>
+                  <div>Description</div>
+                  <div style={{ textAlign: 'right' }}>Qty</div>
+                  <div style={{ textAlign: 'right' }}>Unit price</div>
+                  <div style={{ textAlign: 'right' }}>Total price</div>
+                </div>
+
+                {orders.map((order, index) => (
+                  <div 
+                    key={index}
+                    style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 100px 120px 140px',
+                      gap: 16,
+                      padding: '12px 0',
+                      fontSize: 14,
+                      borderBottom: '1px solid #eee'
+                    }}
+                  >
+                    <div>{order.product}</div>
+                    <div style={{ textAlign: 'right' }}>{order.quantity}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
+                  </div>
+                ))}
               </div>
 
-              {orders.map((order, index) => (
-                <div 
-                  key={index}
-                  style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 100px 120px 140px',
-                    gap: 16,
-                    padding: '12px 0',
-                    fontSize: 14,
-                    borderBottom: '1px solid #eee'
-                  }}
-                >
-                  <div>{order.product}</div>
-                  <div style={{ textAlign: 'right' }}>{order.quantity}</div>
-                  <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
-                  <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
-                </div>
-              ))}
-            </div>
+              {/* Spacer to push totals to bottom */}
+              <div style={{ flex: 1 }}></div>
 
-            {/* Totals */}
-            <div style={{ marginTop: 32, borderTop: '2px solid #333', paddingTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ marginBottom: 12 }}>Subtotal</div>
-                  <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
-                  <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
-                </div>
-                <div style={{ textAlign: 'right', minWidth: 140 }}>
-                  <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
-                  <div style={{ marginBottom: 12 }}>-</div>
-                  <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
+              {/* Totals */}
+              <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ marginBottom: 12 }}>Subtotal</div>
+                    <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
+                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
+                  </div>
+                  <div style={{ textAlign: 'right', minWidth: 140 }}>
+                    <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
+                    <div style={{ marginBottom: 12 }}>-</div>
+                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
+                  </div>
                 </div>
               </div>
             </div>
