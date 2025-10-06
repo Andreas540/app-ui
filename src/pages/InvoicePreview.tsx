@@ -91,21 +91,6 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // Snapshot → PNG data URL (pixel-perfect)
-  async function snapshotToPng(): Promise<string> {
-    const node = pageRef.current
-    if (!node) throw new Error('No invoice to export.')
-    const { toPng } = await import('html-to-image')
-    return toPng(node, {
-      pixelRatio: 2,
-      backgroundColor: '#FFFFFF',
-      cacheBust: true,
-      width: BASE_W,
-      height: BASE_H,
-      style: { transform: 'none', transformOrigin: 'top left' },
-    })
-  }
-
   // Desktop-only: Download PDF (unchanged from your good path)
   async function onDownloadPdfDesktop() {
     try {
@@ -153,10 +138,18 @@ export default function InvoicePreview() {
     }
   }
 
-  // Mobile: Open Image (no print button on mobile)
+  // Mobile: Open Image (no print on mobile)
   async function onOpenImageMobile() {
     try {
-      const dataUrl = await snapshotToPng()
+      const { toPng } = await import('html-to-image')
+      const dataUrl = await toPng(pageRef.current!, {
+        pixelRatio: 2,
+        backgroundColor: '#FFFFFF',
+        cacheBust: true,
+        width: BASE_W,
+        height: BASE_H,
+        style: { transform: 'none', transformOrigin: 'top left' },
+      })
       setOverlayImg(dataUrl)
       setOverlayOpen(true)
     } catch (e) {
@@ -203,7 +196,6 @@ export default function InvoicePreview() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Desktop: keep Print + Download PDF */}
         {!isMobile && (
           <>
             <button
@@ -237,7 +229,6 @@ export default function InvoicePreview() {
           </>
         )}
 
-        {/* Mobile: ONLY Open Image (no print) */}
         {isMobile && (
           <button
             onClick={onOpenImageMobile}
@@ -319,7 +310,14 @@ export default function InvoicePreview() {
             }}
           >
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 270px', gap: 12, marginBottom: 18 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '100px 1fr 250px', // narrower right column → shifts left slightly
+                gap: 12,
+                marginBottom: 18,
+              }}
+            >
               <div style={{ width: 100, height: 100, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 20 }}>
                 BLV
               </div>
@@ -329,22 +327,35 @@ export default function InvoicePreview() {
                 <div>Miami, FL 33186</div>
                 <div style={{ marginTop: 8 }}>(305) 798-3317</div>
               </div>
+
+              {/* Right panel: labels left, values right */}
               <div style={{ fontSize: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 8px' }}>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
-                  <div>{invoiceData.invoiceNo}</div>
+                  <div style={{ textAlign: 'right' }}>{invoiceData.invoiceNo}</div>
+
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
-                  <div>{fmtDate(invoiceData.invoiceDate)}</div>
+                  <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.invoiceDate)}</div>
+
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
-                  <div>{fmtDate(invoiceData.dueDate)}</div>
+                  <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.dueDate)}</div>
+
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery</div>
-                  <div>{fmtDate(invoiceData.deliveryDate)}</div>
+                  <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.deliveryDate)}</div>
                 </div>
               </div>
             </div>
 
             {/* Addresses & meta */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 270px', gap: 12, marginBottom: 18, fontSize: 14 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 250px', // narrower → column sits a bit more left
+                gap: 12,
+                marginBottom: 18,
+                fontSize: 14,
+              }}
+            >
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
                 <div>{invoiceData.customer.name}</div>
@@ -352,20 +363,32 @@ export default function InvoicePreview() {
                 {invoiceData.customer.address2 && <div>{invoiceData.customer.address2}</div>}
                 <div>{[invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')}</div>
               </div>
+
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
                 <div style={{ marginBottom: 16 }}>{invoiceData.paymentMethod}</div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
                 <div>Julian de Armas</div>
               </div>
+
+              {/* Wire instructions: labels left, values right */}
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
-                  <div>Company Name:</div><div>BLV Pack Design LLC</div>
-                  <div>Bank Name:</div><div>Bank of America</div>
-                  <div>Account Name:</div><div>BLV Pack Design LLC</div>
-                  <div>Account Number:</div><div>898161854242</div>
-                  <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div><div>026009593</div>
+                  <div>Company Name:</div>
+                  <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
+
+                  <div>Bank Name:</div>
+                  <div style={{ textAlign: 'right' }}>Bank of America</div>
+
+                  <div>Account Name:</div>
+                  <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
+
+                  <div>Account Number:</div>
+                  <div style={{ textAlign: 'right' }}>898161854242</div>
+
+                  <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
+                  <div style={{ textAlign: 'right' }}>026009593</div>
                 </div>
               </div>
             </div>
@@ -410,7 +433,7 @@ export default function InvoicePreview() {
         </div>{/* scale wrapper */}
       </div>{/* viewport */}
 
-      {/* Mobile snapshot overlay (controls moved to bottom) */}
+      {/* Mobile snapshot overlay (controls at bottom) */}
       {overlayOpen && overlayImg && (
         <div
           className="snapshot-overlay no-print"
@@ -431,7 +454,7 @@ export default function InvoicePreview() {
             />
           </div>
 
-          {/* Bottom bar controls (visible, not behind top menu) */}
+          {/* Bottom bar controls */}
           <div
             style={{
               padding: '10px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left))',
@@ -482,6 +505,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
