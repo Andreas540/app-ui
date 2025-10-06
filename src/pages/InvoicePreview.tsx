@@ -29,7 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // 8.5×11in @ 96dpi → 816×1056 px
+  // Logical Letter canvas: 8.5×11in @96dpi → 816×1056 px
   const BASE_W = 816
   const BASE_H = 1056
   const ASPECT = BASE_H / BASE_W
@@ -37,48 +37,41 @@ export default function InvoicePreview() {
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
   const pageRef = useRef<HTMLDivElement>(null)
-  const lastHostH = useRef<number>(0)
-  const resizeTimer = useRef<number | null>(null)
 
+  // Overlay viewer state (keeps us inside the SPA)
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewerSrc, setViewerSrc] = useState<string | null>(null)
+  const [viewerKind, setViewerKind] = useState<'pdf' | 'png'>('pdf')
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  // Fit page to available viewport area (respecting your app’s top bar)
   const recomputeScale = () => {
     const host = viewportRef.current
     if (!host) return
     const P = 12
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
-    if (lastHostH.current) {
-      const delta = Math.abs(vh - lastHostH.current)
-      if (delta < 80) return
-    }
-    lastHostH.current = vh
     const s = Math.min(vw / BASE_W, vh / BASE_H)
     setScale(s > 0 && Number.isFinite(s) ? s : 1)
   }
 
   useLayoutEffect(() => {
     recomputeScale()
-    const onResize = () => {
-      if (resizeTimer.current) window.clearTimeout(resizeTimer.current)
-      resizeTimer.current = window.setTimeout(() => {
-        recomputeScale()
-        resizeTimer.current = null
-      }, 120)
-    }
-    window.addEventListener('resize', onResize)
-    window.addEventListener('orientationchange', onResize)
+    const r = () => recomputeScale()
+    window.addEventListener('resize', r)
+    window.addEventListener('orientationchange', r)
     const vv = (window as any).visualViewport as VisualViewport | undefined
-    const onVV = () => onResize()
-    vv?.addEventListener?.('resize', onVV)
-    vv?.addEventListener?.('scroll', onVV)
+    vv?.addEventListener?.('resize', r)
+    vv?.addEventListener?.('scroll', r)
     return () => {
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('orientationchange', onResize)
-      vv?.removeEventListener?.('resize', onVV)
-      vv?.removeEventListener?.('scroll', onVV)
-      if (resizeTimer.current) window.clearTimeout(resizeTimer.current)
+      window.removeEventListener('resize', r)
+      window.removeEventListener('orientationchange', r)
+      vv?.removeEventListener?.('resize', r)
+      vv?.removeEventListener?.('scroll', r)
     }
   }, [])
 
+  // Lock app background while preview is open
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -98,63 +91,12 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // --- Same-tab viewers (no Blob, no popup, no direct data: navigation) ---
-
-  function writeViewerHtml(title: string, bodyHtml: string) {
-    // Replace the SPA page with a minimal viewer shell.
-    document.open()
-    document.write(`<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>${title}</title>
-  <style>
-    :root { color-scheme: light; }
-    html,body { height:100%; margin:0; background:#fff; }
-    body { display:flex; flex-direction:column; font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#222; }
-    header { padding:10px 12px; border-bottom:1px solid #e5e5e5; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    button, a.btn {
-      appearance:none; border:0; border-radius:10px; padding:10px 14px;
-      font-weight:600; background:#0d6efd; color:#fff; text-decoration:none; cursor:pointer;
-    }
-    button.secondary, a.secondary { background:#6c757d; }
-    main { position:relative; flex:1; }
-    iframe, img { position:absolute; inset:0; width:100%; height:100%; border:0; object-fit:contain; background:#fff; }
-    .note { padding:10px 12px; border-top:1px solid #e5e5e5; color:#555; }
-  </style>
-</head>
-<body>
-  <header>
-    <button onclick="window.print()">Print</button>
-    <a id="dl" class="btn secondary" href="#" download>Download</a>
-    <button class="secondary" onclick="history.back()">Back</button>
-  </header>
-  <main>
-    ${bodyHtml}
-  </main>
-  <div class="note">If the viewer is blank, use the Download button.</div>
-  <script>
-    // Make external links safe
-    (function(){
-      const a = document.getElementById('dl');
-      if (!a) return;
-      const href = a.getAttribute('data-href');
-      const name = a.getAttribute('data-name');
-      if (href) { a.href = href; }
-      if (name) { a.setAttribute('download', name); }
-    })();
-  </script>
-</body>
-</html>`)
-    document.close()
-  }
-
-  async function openImageViewer() {
+  // Snapshot current page DOM → PNG dataURL (pixel-perfect)
+  async function snapshotToPng(): Promise<string> {
     const node = pageRef.current
-    if (!node) return alert('No invoice to export.')
+    if (!node) throw new Error('No invoice to export.')
     const { toPng } = await import('html-to-image')
-    const dataUrl = await toPng(node, {
+    return toPng(node, {
       pixelRatio: 2,
       backgroundColor: '#FFFFFF',
       cacheBust: true,
@@ -162,36 +104,18 @@ export default function InvoicePreview() {
       height: BASE_H,
       style: { transform: 'none', transformOrigin: 'top left' },
     })
-    // Inline an <img> with the PNG data URL; also expose a Download button
-    writeViewerHtml(
-      'Invoice Image',
-      `<img src="${dataUrl}" alt="Invoice PNG"/><a id="dl" class="btn secondary" data-href="${dataUrl}" data-name="invoice.png"></a>`
-    )
   }
 
-  async function openPdfViewer() {
-    const node = pageRef.current
-    if (!node) return alert('No invoice to export.')
-
-    // 1) DOM → PNG bytes
-    const { toPng } = await import('html-to-image')
-    const pngDataUrl = await toPng(node, {
-      pixelRatio: 2,
-      backgroundColor: '#FFFFFF',
-      cacheBust: true,
-      width: BASE_W,
-      height: BASE_H,
-      style: { transform: 'none', transformOrigin: 'top left' },
-    })
+  // Build a US Letter PDF (data URI) with the PNG inside (no Blob)
+  async function buildPdfDataUri(pngDataUrl: string): Promise<string> {
     const res = await fetch(pngDataUrl)
     const pngBytes = new Uint8Array(await res.arrayBuffer())
-
-    // 2) Build a US Letter PDF with the PNG inside (no Blob needed)
     const { PDFDocument } = await import('pdf-lib')
     const doc = await PDFDocument.create()
-    const page = doc.addPage([612, 792]) // 8.5×11 in at 72pt/in
+    const page = doc.addPage([612, 792]) // 8.5×11 at 72pt/in
     const png = await doc.embedPng(pngBytes)
-    const margin = 0.5 * 72
+
+    const margin = 0.5 * 72 // 0.5in
     const maxW = 612 - margin * 2
     const maxH = 792 - margin * 2
     const s = Math.min(maxW / png.width, maxH / png.height)
@@ -201,14 +125,68 @@ export default function InvoicePreview() {
     const y = margin + (maxH - drawH) / 2
     page.drawImage(png, { x, y, width: drawW, height: drawH })
 
-    // 3) Get a data URI (avoids Blob typing and object URLs)
-    const dataUri: string = await doc.saveAsBase64({ dataUri: true })
+    return doc.saveAsBase64({ dataUri: true })
+  }
 
-    // 4) Inline an <iframe> that points at the data URI, with Download button
-    writeViewerHtml(
-      'Invoice PDF',
-      `<iframe src="${dataUri}" title="Invoice PDF"></iframe><a id="dl" class="btn secondary" data-href="${dataUri}" data-name="invoice.pdf"></a>`
-    )
+  async function onOpenPdf() {
+    try {
+      const png = await snapshotToPng()
+      const pdfDataUri = await buildPdfDataUri(png)
+      setViewerKind('pdf')
+      setViewerSrc(pdfDataUri)
+      setViewerOpen(true)
+    } catch (e) {
+      console.error(e)
+      alert('Could not create PDF.')
+    }
+  }
+
+  async function onOpenImage() {
+    try {
+      const png = await snapshotToPng()
+      setViewerKind('png')
+      setViewerSrc(png)
+      setViewerOpen(true)
+    } catch (e) {
+      console.error(e)
+      alert('Could not create image.')
+    }
+  }
+
+  function onDownload() {
+    if (!viewerSrc) return
+    const a = document.createElement('a')
+    a.href = viewerSrc
+    a.download = viewerKind === 'pdf' ? 'invoice.pdf' : 'invoice.png'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  function onPrint() {
+    if (viewerKind === 'pdf' && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.focus()
+      iframeRef.current.contentWindow.print()
+    } else if (viewerKind === 'png' && viewerSrc) {
+      // Open a tiny print-friendly window for the image
+      const w = window.open('', '_blank')
+      if (!w) return
+      w.document.open()
+      w.document.write(`<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Print</title>
+<style>
+  html,body{margin:0;height:100%}
+  img{display:block;max-width:100%;max-height:100vh;margin:0 auto}
+  @page{size:auto;margin:0}
+</style>
+</head>
+<body>
+  <img src="${viewerSrc}" onload="window.focus();window.print();">
+</body></html>`)
+      w.document.close()
+    }
   }
 
   if (!invoiceData) {
@@ -229,7 +207,7 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* footer controls */}
+      {/* Footer controls (stay above your app chrome) */}
       <div
         className="no-print"
         style={{
@@ -250,7 +228,7 @@ export default function InvoicePreview() {
         }}
       >
         <button
-          onClick={openPdfViewer}
+          onClick={onOpenPdf}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -264,7 +242,7 @@ export default function InvoicePreview() {
           Open PDF
         </button>
         <button
-          onClick={openImageViewer}
+          onClick={onOpenImage}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -292,7 +270,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* HTML preview */}
+      {/* Preview viewport */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -432,6 +410,62 @@ export default function InvoicePreview() {
         </div>{/* scale wrapper */}
       </div>{/* viewport */}
 
+      {/* In-app full-screen viewer overlay (no history changes, no popups) */}
+      {viewerOpen && (
+        <div
+          className="no-print"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100001,
+            background: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            style={{
+              padding: '10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left))',
+              paddingTop: 'max(10px, env(safe-area-inset-top))',
+              borderBottom: '1px solid #e5e5e5',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              background: '#fff',
+            }}
+          >
+            <button onClick={onPrint} style={{ padding: '10px 14px', border: 0, borderRadius: 10, background: '#0d6efd', color: '#fff', fontWeight: 700 }}>
+              Print
+            </button>
+            <button onClick={onDownload} style={{ padding: '10px 14px', border: 0, borderRadius: 10, background: '#198754', color: '#fff', fontWeight: 700 }}>
+              Download
+            </button>
+            <button onClick={() => setViewerOpen(false)} style={{ padding: '10px 14px', border: 0, borderRadius: 10, background: '#6c757d', color: '#fff' }}>
+              Close
+            </button>
+          </div>
+
+          <div style={{ position: 'relative', flex: 1 }}>
+            {viewerKind === 'pdf' && viewerSrc && (
+              <iframe
+                ref={iframeRef}
+                title="Invoice PDF"
+                src={viewerSrc}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, background: '#fff' }}
+              />
+            )}
+            {viewerKind === 'png' && viewerSrc && (
+              <img
+                src={viewerSrc}
+                alt="Invoice PNG"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#fff' }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       <style>{`
         :root { --app-top-offset: 56px; }
         @media screen { .items-scroll { overflow: auto; } }
@@ -444,6 +478,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
