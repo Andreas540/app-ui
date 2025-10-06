@@ -88,16 +88,17 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Invoice content */}
+      {/* Invoice content - US Letter proportions */}
       <div style={{ 
-        maxWidth: 800, 
+        maxWidth: 816, // 8.5 inches * 96 DPI
         margin: '0 auto', 
-        padding: 40,
+        padding: '40px 48px',
         fontFamily: 'Arial, sans-serif',
-        color: '#333'
+        color: '#333',
+        background: '#fff'
       }}>
         {/* Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 1fr', gap: 40, marginBottom: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 280px', gap: 24, marginBottom: 32 }}>
           {/* Logo placeholder */}
           <div style={{ 
             width: 140, 
@@ -108,22 +109,23 @@ export default function InvoicePreview() {
             justifyContent: 'center',
             color: '#fff',
             fontWeight: 'bold',
-            fontSize: 24
+            fontSize: 24,
+            flexShrink: 0
           }}>
             BLV
           </div>
 
           {/* Company info */}
-          <div style={{ fontSize: 14 }}>
-            <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
+          <div style={{ fontSize: 13 }}>
+            <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
             <div>13967 SW 119th Ave</div>
             <div>Miami, FL 33186</div>
             <div style={{ marginTop: 8 }}>(305) 798-3317</div>
           </div>
 
-          {/* Invoice details */}
-          <div style={{ fontSize: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '8px 12px' }}>
+          {/* Invoice details - wider to fit content on one line */}
+          <div style={{ fontSize: 13 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '6px 8px' }}>
               <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
               <div>{invoiceNo}</div>
               <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
@@ -137,9 +139,9 @@ export default function InvoicePreview() {
         </div>
 
         {/* Invoice for, Payment method, Wire Transfer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 40, marginBottom: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: 24, marginBottom: 32 }}>
           {/* Invoice for */}
-          <div style={{ fontSize: 14 }}>
+          <div style={{ fontSize: 13 }}>
             <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
             <div>{customer.name}</div>
             {customer.address1 && <div>{customer.address1}</div>}
@@ -148,18 +150,18 @@ export default function InvoicePreview() {
           </div>
 
           {/* Payment method + Our contact */}
-          <div style={{ fontSize: 14 }}>
+          <div style={{ fontSize: 13 }}>
             <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
-            <div style={{ marginBottom: 20 }}>{paymentMethod}</div>
+            <div style={{ marginBottom: 16 }}>{paymentMethod}</div>
             
             <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
             <div>Julian de Armas</div>
           </div>
 
-          {/* Wire Transfer Instructions */}
-          <div style={{ fontSize: 14 }}>
+          {/* Wire Transfer Instructions - wider column */}
+          <div style={{ fontSize: 13 }}>
             <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px', fontSize: 13 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 12 }}>
               <div>Company Name:</div>
               <div>BLV Pack Design LLC</div>
               <div>Bank Name:</div>
