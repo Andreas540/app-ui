@@ -29,6 +29,10 @@ export default function CreateInvoicePage() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [confirmedOrders, setConfirmedOrders] = useState<Order[]>([])
   const [showingConfirmed, setShowingConfirmed] = useState(false)
+  const [invoiceDate, setInvoiceDate] = useState<string>('')
+  const [dueDate, setDueDate] = useState<string>('')
+  const [deliveryDate, setDeliveryDate] = useState<string>('')
+  const [paymentMethod, setPaymentMethod] = useState<string>('Wire Transfer')
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -269,7 +273,7 @@ export default function CreateInvoicePage() {
                     </>
                   ) : (
                     <>
-                      <div style={{ fontSize: 14, marginBottom: 12 }}>
+                      <div style={{ fontSize: 14, marginBottom: 20 }}>
                         {confirmedOrders.map(order => (
                           <div key={order.item_id} style={{ marginBottom: 8 }}>
                             <div>{formatDate(order.order_date)} - {order.product}</div>
@@ -278,6 +282,85 @@ export default function CreateInvoicePage() {
                             </div>
                           </div>
                         ))}
+                      </div>
+
+                      <div style={{ display: 'grid', gap: 16, marginBottom: 20 }}>
+                        <div>
+                          <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                            Invoice date
+                          </label>
+                          <input
+                            id="invoice-date"
+                            type="date"
+                            value={invoiceDate}
+                            onChange={(e) => setInvoiceDate(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              fontSize: 14,
+                              border: '1px solid #ddd',
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                            Due date
+                          </label>
+                          <input
+                            id="due-date"
+                            type="date"
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              fontSize: 14,
+                              border: '1px solid #ddd',
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                            Est. delivery date
+                          </label>
+                          <input
+                            id="delivery-date"
+                            type="date"
+                            value={deliveryDate}
+                            onChange={(e) => setDeliveryDate(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              fontSize: 14,
+                              border: '1px solid #ddd',
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="payment-method" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                            Payment method
+                          </label>
+                          <select
+                            id="payment-method"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              fontSize: 14,
+                              border: '1px solid #ddd',
+                              borderRadius: 4,
+                            }}
+                          >
+                            <option value="Wire Transfer">Wire Transfer</option>
+                          </select>
+                        </div>
                       </div>
 
                       <button
