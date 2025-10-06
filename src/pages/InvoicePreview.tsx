@@ -10,6 +10,7 @@ type InvoiceData = {
   paymentMethod: string
   customer: {
     name: string
+    company_name?: string | null
     address1?: string | null
     address2?: string | null
     city?: string | null
@@ -359,6 +360,7 @@ export default function InvoicePreview() {
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
                 <div>{invoiceData.customer.name}</div>
+                {invoiceData.customer.company_name && <div>{invoiceData.customer.company_name}</div>}
                 {invoiceData.customer.address1 && <div>{invoiceData.customer.address1}</div>}
                 {invoiceData.customer.address2 && <div>{invoiceData.customer.address2}</div>}
                 <div>{[invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')}</div>
