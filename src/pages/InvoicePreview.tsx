@@ -29,10 +29,10 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // Device mode: treat phones+tablets as "mobile"
+  // Device hint: treat phones/tablets as mobile
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
-  // Logical US Letter canvas at 96dpi
+  // US Letter canvas at 96dpi
   const BASE_W = 816
   const BASE_H = 1056
   const ASPECT = BASE_H / BASE_W
@@ -41,10 +41,9 @@ export default function InvoicePreview() {
   const viewportRef = useRef<HTMLDivElement>(null)
   const pageRef = useRef<HTMLDivElement>(null)
 
-  // Snapshot overlay (mobile print & open image)
+  // Mobile snapshot overlay state
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [overlayImg, setOverlayImg] = useState<string | null>(null)
-  const [autoPrint, setAutoPrint] = useState(false)
 
   const recomputeScale = () => {
     const host = viewportRef.current
@@ -92,7 +91,7 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // --- Snapshot → PNG data URL (pixel-perfect of preview) ---
+  // Snapshot → PNG data URL (pixel-perfect)
   async function snapshotToPng(): Promise<string> {
     const node = pageRef.current
     if (!node) throw new Error('No invoice to export.')
@@ -107,27 +106,7 @@ export default function InvoicePreview() {
     })
   }
 
-  // --- Buttons ---
-
-  // Desktop print = print the HTML (your print CSS already good)
-  // Mobile print = snapshot overlay then print the image (exact match)
-  async function onPrint() {
-    if (isMobile) {
-      try {
-        const dataUrl = await snapshotToPng()
-        setOverlayImg(dataUrl)
-        setAutoPrint(true)
-        setOverlayOpen(true)
-      } catch (e) {
-        console.error(e)
-        alert('Could not prepare print.')
-      }
-    } else {
-      window.print()
-    }
-  }
-
-  // Desktop only: generate PDF and force download via data URI
+  // Desktop-only: Download PDF (unchanged from your good path)
   async function onDownloadPdfDesktop() {
     try {
       const node = pageRef.current
@@ -148,10 +127,10 @@ export default function InvoicePreview() {
 
       const { PDFDocument } = await import('pdf-lib')
       const doc = await PDFDocument.create()
-      const page = doc.addPage([612, 792]) // 8.5×11in @72pt/in
+      const page = doc.addPage([612, 792]) // 8.5x11in @72pt/in
       const png = await doc.embedPng(pngBytes)
 
-      const margin = 0.5 * 72 // 0.5in
+      const margin = 0.5 * 72
       const maxW = 612 - margin * 2
       const maxH = 792 - margin * 2
       const s = Math.min(maxW / png.width, maxH / png.height)
@@ -162,8 +141,6 @@ export default function InvoicePreview() {
       page.drawImage(png, { x, y, width: drawW, height: drawH })
 
       const dataUri: string = await doc.saveAsBase64({ dataUri: true })
-
-      // Force download (no history changes)
       const a = document.createElement('a')
       a.href = dataUri
       a.download = 'invoice.pdf'
@@ -176,28 +153,17 @@ export default function InvoicePreview() {
     }
   }
 
-  // Mobile: open snapshot image overlay (no PDF)
+  // Mobile: Open Image (no print button on mobile)
   async function onOpenImageMobile() {
     try {
       const dataUrl = await snapshotToPng()
       setOverlayImg(dataUrl)
-      setAutoPrint(false)
       setOverlayOpen(true)
     } catch (e) {
       console.error(e)
       alert('Could not create image.')
     }
   }
-
-  // Print after overlay image rendered (mobile only)
-  useEffect(() => {
-    if (!overlayOpen || !autoPrint) return
-    const id = setTimeout(() => {
-      window.focus()
-      window.print()
-    }, 150)
-    return () => clearTimeout(id)
-  }, [overlayOpen, autoPrint])
 
   if (!invoiceData) {
     return (
@@ -237,38 +203,41 @@ export default function InvoicePreview() {
           flexWrap: 'wrap',
         }}
       >
-        <button
-          onClick={onPrint}
-          style={{
-            padding: '12px 16px',
-            border: 'none',
-            borderRadius: 12,
-            background: '#0d6efd',
-            color: '#fff',
-            fontWeight: 700,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-          }}
-        >
-          Print
-        </button>
-
+        {/* Desktop: keep Print + Download PDF */}
         {!isMobile && (
-          <button
-            onClick={onDownloadPdfDesktop}
-            style={{
-              padding: '12px 16px',
-              border: 'none',
-              borderRadius: 12,
-              background: '#198754',
-              color: '#fff',
-              fontWeight: 700,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-            }}
-          >
-            Download PDF
-          </button>
+          <>
+            <button
+              onClick={() => window.print()}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderRadius: 12,
+                background: '#0d6efd',
+                color: '#fff',
+                fontWeight: 700,
+                boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              }}
+            >
+              Print
+            </button>
+            <button
+              onClick={onDownloadPdfDesktop}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderRadius: 12,
+                background: '#198754',
+                color: '#fff',
+                fontWeight: 700,
+                boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              }}
+            >
+              Download PDF
+            </button>
+          </>
         )}
 
+        {/* Mobile: ONLY Open Image (no print) */}
         {isMobile && (
           <button
             onClick={onOpenImageMobile}
@@ -441,10 +410,10 @@ export default function InvoicePreview() {
         </div>{/* scale wrapper */}
       </div>{/* viewport */}
 
-      {/* Mobile snapshot overlay */}
+      {/* Mobile snapshot overlay (controls moved to bottom) */}
       {overlayOpen && overlayImg && (
         <div
-          className="no-print"
+          className="snapshot-overlay no-print"
           style={{
             position: 'fixed',
             inset: 0,
@@ -454,14 +423,23 @@ export default function InvoicePreview() {
             flexDirection: 'column',
           }}
         >
+          <div style={{ position: 'relative', flex: 1, background: '#fff' }}>
+            <img
+              src={overlayImg}
+              alt="Invoice Snapshot"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </div>
+
+          {/* Bottom bar controls (visible, not behind top menu) */}
           <div
             style={{
-              padding: '10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left))',
-              paddingTop: 'max(10px, env(safe-area-inset-top))',
-              borderBottom: '1px solid #e5e5e5',
+              padding: '10px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left))',
+              borderTop: '1px solid #e5e5e5',
               display: 'flex',
               gap: 8,
               alignItems: 'center',
+              justifyContent: 'center',
               flexWrap: 'wrap',
               background: '#fff',
             }}
@@ -484,28 +462,9 @@ export default function InvoicePreview() {
                 fontWeight: 700,
               }}
             >
-              Download Image
+              Download invoice
             </a>
-            <span style={{ color: '#666', fontSize: 13 }}>
-              Tip: Share → Print for best results.
-            </span>
-          </div>
-
-          <div style={{ position: 'relative', flex: 1, background: '#fff' }}>
-            <img
-              src={overlayImg}
-              alt="Invoice Snapshot"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
-              onLoad={() => {
-                if (autoPrint) {
-                  setTimeout(() => {
-                    window.focus()
-                    window.print()
-                    setAutoPrint(false)
-                  }, 100)
-                }
-              }}
-            />
+            <span style={{ color: '#666', fontSize: 13 }}>Press invoice to share</span>
           </div>
         </div>
       )}
@@ -517,13 +476,13 @@ export default function InvoicePreview() {
           .no-print { display: none !important; }
           @page { size: 8.5in 11in; margin: 0; }
           html, body { background: #fff !important; }
-          /* Print the snapshot full-bleed and centered (mobile path) */
           .snapshot-overlay img { width: 100%; height: 100vh; object-fit: contain; }
         }
       `}</style>
     </>
   )
 }
+
 
 
 
