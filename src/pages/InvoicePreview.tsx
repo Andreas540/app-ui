@@ -1,5 +1,6 @@
 // src/pages/InvoicePreview.tsx
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 
 type InvoiceData = {
   invoiceNo: string
@@ -27,6 +28,23 @@ export default function InvoicePreview() {
   const location = useLocation()
   const navigate = useNavigate()
   const invoiceData = location.state as InvoiceData
+  const [scale, setScale] = useState(1)
+
+  useEffect(() => {
+    const updateScale = () => {
+      const windowWidth = window.innerWidth
+      const invoiceWidth = 816 // 8.5 inches * 96 DPI
+      if (windowWidth < invoiceWidth) {
+        setScale(windowWidth / invoiceWidth)
+      } else {
+        setScale(1)
+      }
+    }
+
+    updateScale()
+    window.addEventListener('resize', updateScale)
+    return () => window.removeEventListener('resize', updateScale)
+  }, [])
 
   if (!invoiceData) {
     return (
@@ -54,9 +72,9 @@ export default function InvoicePreview() {
   }
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh' }}>
+    <div style={{ background: '#f5f5f5', minHeight: '100vh' }}>
       {/* Print button - only visible on screen */}
-      <div className="no-print" style={{ padding: 20, borderBottom: '1px solid #ddd' }}>
+      <div className="no-print" style={{ padding: 20, borderBottom: '1px solid #ddd', background: '#fff' }}>
         <button
           onClick={handlePrint}
           style={{
@@ -88,154 +106,164 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Invoice content - US Letter proportions */}
+      {/* Scaled invoice container */}
       <div style={{ 
-        maxWidth: '100%',
-        width: '100%',
-        margin: '0 auto', 
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-        color: '#333',
-        background: '#fff',
-        boxSizing: 'border-box'
+        display: 'flex', 
+        justifyContent: 'center', 
+        padding: 20,
+        transformOrigin: 'top center'
       }}>
-        {/* Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            {/* Logo placeholder */}
-            <div style={{ 
-              width: 100, 
-              height: 100, 
-              background: '#000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 'bold',
-              fontSize: 20,
-              flexShrink: 0
-            }}>
-              BLV
-            </div>
-
-            {/* Company info */}
-            <div style={{ fontSize: 12, flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 6 }}>BLV Pack Design LLC</div>
-              <div>13967 SW 119th Ave</div>
-              <div>Miami, FL 33186</div>
-              <div style={{ marginTop: 4 }}>(305) 798-3317</div>
-            </div>
-          </div>
-
-          {/* Invoice details */}
-          <div style={{ fontSize: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', maxWidth: 300 }}>
-              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
-              <div>{invoiceNo}</div>
-              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
-              <div>{formatDate(invoiceDate)}</div>
-              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
-              <div>{formatDate(dueDate)}</div>
-              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery date</div>
-              <div>{formatDate(deliveryDate)}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Invoice for, Payment method, Wire Transfer */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-          {/* Invoice for */}
-          <div style={{ fontSize: 12 }}>
-            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 6 }}>Invoice for</div>
-            <div>{customer.name}</div>
-            {customer.address1 && <div>{customer.address1}</div>}
-            {customer.address2 && <div>{customer.address2}</div>}
-            <div>{[customer.city, customer.state, customer.postal_code].filter(Boolean).join(', ')}</div>
-          </div>
-
-          {/* Payment method + Our contact */}
-          <div style={{ fontSize: 12 }}>
-            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 6 }}>Payment method</div>
-            <div style={{ marginBottom: 12 }}>{paymentMethod}</div>
-            
-            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 6 }}>Our contact</div>
-            <div>Julian de Armas</div>
-          </div>
-
-          {/* Wire Transfer Instructions */}
-          <div style={{ fontSize: 12 }}>
-            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 6 }}>Wire Transfer Instructions</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 11 }}>
-              <div>Company Name:</div>
-              <div>BLV Pack Design LLC</div>
-              <div>Bank Name:</div>
-              <div>Bank of America</div>
-              <div>Account Name:</div>
-              <div>BLV Pack Design LLC</div>
-              <div>Account Number:</div>
-              <div>898161854242</div>
-              <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
-              <div>026009593</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Items table */}
-        <div style={{ marginTop: 40, borderTop: '1px solid #ddd' }}>
-          {/* Table header */}
+        <div style={{
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center'
+        }}>
+          {/* Invoice content - US Letter size */}
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1fr 100px 120px 140px',
-            gap: 16,
-            padding: '12px 0',
-            fontWeight: 'bold',
-            color: '#1a4d8f',
-            fontSize: 14,
-            borderBottom: '1px solid #ddd'
+            width: 816, // 8.5 inches * 96 DPI
+            padding: 48,
+            fontFamily: 'Arial, sans-serif',
+            color: '#333',
+            background: '#fff',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)'
           }}>
-            <div>Description</div>
-            <div style={{ textAlign: 'right' }}>Qty</div>
-            <div style={{ textAlign: 'right' }}>Unit price</div>
-            <div style={{ textAlign: 'right' }}>Total price</div>
-          </div>
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 280px', gap: 24, marginBottom: 32 }}>
+              {/* Logo */}
+              <div style={{ 
+                width: 140, 
+                height: 140, 
+                background: '#000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: 24
+              }}>
+                BLV
+              </div>
 
-          {/* Table rows */}
-          {orders.map((order, index) => (
-            <div 
-              key={index}
-              style={{ 
+              {/* Company info */}
+              <div style={{ fontSize: 14 }}>
+                <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
+                <div>13967 SW 119th Ave</div>
+                <div>Miami, FL 33186</div>
+                <div style={{ marginTop: 8 }}>(305) 798-3317</div>
+              </div>
+
+              {/* Invoice details */}
+              <div style={{ fontSize: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '6px 8px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
+                  <div>{invoiceNo}</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
+                  <div>{formatDate(invoiceDate)}</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
+                  <div>{formatDate(dueDate)}</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery date</div>
+                  <div>{formatDate(deliveryDate)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice for, Payment, Wire Transfer */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: 24, marginBottom: 32 }}>
+              <div style={{ fontSize: 14 }}>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
+                <div>{customer.name}</div>
+                {customer.address1 && <div>{customer.address1}</div>}
+                {customer.address2 && <div>{customer.address2}</div>}
+                <div>{[customer.city, customer.state, customer.postal_code].filter(Boolean).join(', ')}</div>
+              </div>
+
+              <div style={{ fontSize: 14 }}>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
+                <div style={{ marginBottom: 16 }}>{paymentMethod}</div>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
+                <div>Julian de Armas</div>
+              </div>
+
+              <div style={{ fontSize: 14 }}>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
+                  <div>Company Name:</div>
+                  <div>BLV Pack Design LLC</div>
+                  <div>Bank Name:</div>
+                  <div>Bank of America</div>
+                  <div>Account Name:</div>
+                  <div>BLV Pack Design LLC</div>
+                  <div>Account Number:</div>
+                  <div>898161854242</div>
+                  <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
+                  <div>026009593</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Items table */}
+            <div style={{ marginTop: 32, borderTop: '1px solid #ddd' }}>
+              <div style={{ 
                 display: 'grid', 
                 gridTemplateColumns: '1fr 100px 120px 140px',
                 gap: 16,
                 padding: '12px 0',
+                fontWeight: 'bold',
+                color: '#1a4d8f',
                 fontSize: 14,
-                borderBottom: '1px solid #eee'
-              }}
-            >
-              <div>{order.product}</div>
-              <div style={{ textAlign: 'right' }}>{order.quantity}</div>
-              <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
-              <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
-            </div>
-          ))}
-        </div>
+                borderBottom: '1px solid #ddd'
+              }}>
+                <div>Description</div>
+                <div style={{ textAlign: 'right' }}>Qty</div>
+                <div style={{ textAlign: 'right' }}>Unit price</div>
+                <div style={{ textAlign: 'right' }}>Total price</div>
+              </div>
 
-        {/* Totals */}
-        <div style={{ marginTop: 40, borderTop: '2px solid #333', paddingTop: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ marginBottom: 12 }}>Subtotal</div>
-              <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
-              <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
+              {orders.map((order, index) => (
+                <div 
+                  key={index}
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 100px 120px 140px',
+                    gap: 16,
+                    padding: '12px 0',
+                    fontSize: 14,
+                    borderBottom: '1px solid #eee'
+                  }}
+                >
+                  <div>{order.product}</div>
+                  <div style={{ textAlign: 'right' }}>{order.quantity}</div>
+                  <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
+                  <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
+                </div>
+              ))}
             </div>
-            <div style={{ textAlign: 'right', minWidth: 140 }}>
-              <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
-              <div style={{ marginBottom: 12 }}>-</div>
-              <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
+
+            {/* Totals */}
+            <div style={{ marginTop: 32, borderTop: '2px solid #333', paddingTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ marginBottom: 12 }}>Subtotal</div>
+                  <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
+                </div>
+                <div style={{ textAlign: 'right', minWidth: 140 }}>
+                  <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
+                  <div style={{ marginBottom: 12 }}>-</div>
+                  <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; }
+          div[style*="transform: scale"] { transform: none !important; }
+        }
+      `}</style>
     </div>
   )
 }
