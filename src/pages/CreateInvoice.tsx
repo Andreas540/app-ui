@@ -406,8 +406,32 @@ export default function CreateInvoicePage() {
                           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             Invoice no
                           </label>
-                          <div style={{ fontSize: 18, fontWeight: 600 }}>
+                          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
                             {invoiceNo}
+                          </div>
+
+                          <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>BLV company info:</div>
+                              <div>BLV Pack Design LLC</div>
+                              <div>13967 SW 119th Ave</div>
+                              <div>Miami, FL 33186</div>
+                              <div>(305) 798-3317</div>
+                            </div>
+
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>Our contact:</div>
+                              <div>Julian de Armas</div>
+                            </div>
+
+                            <div>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>Wire Transfer Instructions:</div>
+                              <div>Company Name: BLV Pack Design LLC</div>
+                              <div>Bank Name: Bank of America</div>
+                              <div>Account Name: BLV Pack Design LLC</div>
+                              <div>Account Number: 898161854242</div>
+                              <div>Routing Number (ABA): 026009593</div>
+                            </div>
                           </div>
                         </div>
                       )}
