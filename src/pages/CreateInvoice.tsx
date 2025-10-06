@@ -1,6 +1,5 @@
-// src/pages/CreateInvoice.tsx
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 type Customer = {
   id: string
@@ -23,6 +22,7 @@ type Order = {
 }
 
 export default function CreateInvoicePage() {
+  const navigate = useNavigate()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -93,7 +93,6 @@ export default function CreateInvoicePage() {
     })()
   }, [selectedCustomerId])
 
-  // Generate invoice number when all dates are filled
   useEffect(() => {
     if (invoiceDate && dueDate && deliveryDate && selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId)
@@ -103,7 +102,7 @@ export default function CreateInvoicePage() {
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const year = String(date.getFullYear()).slice(-2)
       const customerInitials = customer.name.slice(0, 2).toUpperCase()
-      const randomNum = Math.floor(Math.random() * 9000) + 1000 // 1000-9999
+      const randomNum = Math.floor(Math.random() * 9000) + 1000
       const invoiceNumber = `${month}${year}-${customerInitials}${randomNum}`
       setInvoiceNo(invoiceNumber)
     } else {
@@ -132,6 +131,22 @@ export default function CreateInvoicePage() {
   const handleNewSelection = () => {
     setShowingConfirmed(false)
     setSelectedOrders(new Set())
+  }
+
+  const handlePreviewInvoice = () => {
+    if (!selectedCustomer) return
+
+    const invoiceData = {
+      invoiceNo,
+      invoiceDate,
+      dueDate,
+      deliveryDate,
+      paymentMethod,
+      customer: selectedCustomer,
+      orders: confirmedOrders
+    }
+
+    navigate('/invoices/preview', { state: invoiceData })
   }
 
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
@@ -435,6 +450,7 @@ export default function CreateInvoicePage() {
                           </div>
 
                           <button
+                            onClick={handlePreviewInvoice}
                             style={{
                               padding: '10px 20px',
                               border: 'none',
