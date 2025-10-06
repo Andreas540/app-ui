@@ -1,6 +1,6 @@
 // src/pages/InvoicePreview.tsx
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 type InvoiceData = {
   invoiceNo: string
@@ -28,22 +28,18 @@ export default function InvoicePreview() {
   const location = useLocation()
   const navigate = useNavigate()
   const invoiceData = location.state as InvoiceData
-  const [scale, setScale] = useState(1)
 
   useEffect(() => {
-    const updateScale = () => {
-      const windowWidth = window.innerWidth
-      const invoiceWidth = 816 // 8.5 inches * 96 DPI
-      if (windowWidth < invoiceWidth) {
-        setScale(windowWidth / invoiceWidth)
-      } else {
-        setScale(1)
-      }
+    // Add print-specific styles to body
+    document.body.style.background = '#fff'
+    document.body.style.margin = '0'
+    document.body.style.padding = '0'
+    
+    return () => {
+      document.body.style.background = ''
+      document.body.style.margin = ''
+      document.body.style.padding = ''
     }
-
-    updateScale()
-    window.addEventListener('resize', updateScale)
-    return () => window.removeEventListener('resize', updateScale)
   }, [])
 
   if (!invoiceData) {
@@ -72,15 +68,15 @@ export default function InvoicePreview() {
   }
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh' }}>
-      {/* Print button - only visible on screen */}
+    <>
+      {/* Print buttons - only visible on screen */}
       <div className="no-print" style={{ 
-        padding: 20, 
-        borderBottom: '1px solid #ddd', 
-        background: 'var(--bg)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        zIndex: 1000,
+        display: 'flex',
+        gap: 12
       }}>
         <button
           onClick={handlePrint}
@@ -88,12 +84,12 @@ export default function InvoicePreview() {
             padding: '10px 20px',
             border: 'none',
             borderRadius: 10,
-            background: 'var(--accent)',
+            background: '#007bff',
             color: '#fff',
             cursor: 'pointer',
             fontSize: 14,
             fontWeight: 500,
-            marginRight: 12
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
           }}
         >
           Print Invoice
@@ -102,171 +98,153 @@ export default function InvoicePreview() {
           onClick={() => navigate('/invoices/create')}
           style={{
             padding: '10px 20px',
-            border: '1px solid #ddd',
+            border: 'none',
             borderRadius: 10,
-            background: '#fff',
+            background: '#6c757d',
+            color: '#fff',
             cursor: 'pointer',
-            fontSize: 14
+            fontSize: 14,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
           }}
         >
-          Back to Create
+          Back
         </button>
       </div>
 
-      {/* Scaled invoice container */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center',
+      {/* Invoice - this IS the page */}
+      <div className="invoice-page" style={{ 
+        width: '8.5in',
+        height: '11in',
+        margin: '0 auto',
+        padding: '0.5in',
+        fontFamily: 'Arial, sans-serif',
+        color: '#333',
         background: '#fff',
-        minHeight: 'calc(100vh - 80px)'
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
-        <div style={{
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-          margin: '20px 0'
-        }}>
-          {/* Invoice content - US Letter size (8.5" x 11") */}
+        {/* Header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 2.8in', gap: '0.25in', marginBottom: '0.3in' }}>
           <div style={{ 
-            width: 816, // 8.5 inches * 96 DPI
-            height: 1056, // 11 inches * 96 DPI
-            padding: 48,
-            fontFamily: 'Arial, sans-serif',
-            color: '#333',
-            background: '#fff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            width: 100, 
+            height: 100, 
+            background: '#000',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: 20
           }}>
-            {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 280px', gap: 24, marginBottom: 28 }}>
-              {/* Logo - smaller */}
-              <div style={{ 
-                width: 100, 
-                height: 100, 
-                background: '#000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 'bold',
-                fontSize: 20
-              }}>
-                BLV
-              </div>
+            BLV
+          </div>
 
-              {/* Company info */}
-              <div style={{ fontSize: 14 }}>
-                <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
-                <div>13967 SW 119th Ave</div>
-                <div>Miami, FL 33186</div>
-                <div style={{ marginTop: 8 }}>(305) 798-3317</div>
-              </div>
+          <div style={{ fontSize: 14 }}>
+            <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
+            <div>13967 SW 119th Ave</div>
+            <div>Miami, FL 33186</div>
+            <div style={{ marginTop: 8 }}>(305) 798-3317</div>
+          </div>
 
-              {/* Invoice details */}
-              <div style={{ fontSize: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '6px 8px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
-                  <div>{invoiceNo}</div>
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
-                  <div>{formatDate(invoiceDate)}</div>
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
-                  <div>{formatDate(dueDate)}</div>
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery date</div>
-                  <div>{formatDate(deliveryDate)}</div>
-                </div>
-              </div>
+          <div style={{ fontSize: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 8px' }}>
+              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
+              <div>{invoiceNo}</div>
+              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
+              <div>{formatDate(invoiceDate)}</div>
+              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
+              <div>{formatDate(dueDate)}</div>
+              <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery date</div>
+              <div>{formatDate(deliveryDate)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2.8in', gap: '0.25in', marginBottom: '0.3in' }}>
+          <div style={{ fontSize: 14 }}>
+            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
+            <div>{customer.name}</div>
+            {customer.address1 && <div>{customer.address1}</div>}
+            {customer.address2 && <div>{customer.address2}</div>}
+            <div>{[customer.city, customer.state, customer.postal_code].filter(Boolean).join(', ')}</div>
+          </div>
+
+          <div style={{ fontSize: 14 }}>
+            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
+            <div style={{ marginBottom: 16 }}>{paymentMethod}</div>
+            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
+            <div>Julian de Armas</div>
+          </div>
+
+          <div style={{ fontSize: 14 }}>
+            <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
+              <div>Company Name:</div>
+              <div>BLV Pack Design LLC</div>
+              <div>Bank Name:</div>
+              <div>Bank of America</div>
+              <div>Account Name:</div>
+              <div>BLV Pack Design LLC</div>
+              <div>Account Number:</div>
+              <div>898161854242</div>
+              <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
+              <div>026009593</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ borderTop: '1px solid #ddd' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 100px 120px 140px',
+              gap: 16,
+              padding: '12px 0',
+              fontWeight: 'bold',
+              color: '#1a4d8f',
+              fontSize: 14,
+              borderBottom: '1px solid #ddd'
+            }}>
+              <div>Description</div>
+              <div style={{ textAlign: 'right' }}>Qty</div>
+              <div style={{ textAlign: 'right' }}>Unit price</div>
+              <div style={{ textAlign: 'right' }}>Total price</div>
             </div>
 
-            {/* Invoice for, Payment, Wire Transfer */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 280px', gap: 24, marginBottom: 28 }}>
-              <div style={{ fontSize: 14 }}>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
-                <div>{customer.name}</div>
-                {customer.address1 && <div>{customer.address1}</div>}
-                {customer.address2 && <div>{customer.address2}</div>}
-                <div>{[customer.city, customer.state, customer.postal_code].filter(Boolean).join(', ')}</div>
-              </div>
-
-              <div style={{ fontSize: 14 }}>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
-                <div style={{ marginBottom: 16 }}>{paymentMethod}</div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
-                <div>Julian de Armas</div>
-              </div>
-
-              <div style={{ fontSize: 14 }}>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
-                  <div>Company Name:</div>
-                  <div>BLV Pack Design LLC</div>
-                  <div>Bank Name:</div>
-                  <div>Bank of America</div>
-                  <div>Account Name:</div>
-                  <div>BLV Pack Design LLC</div>
-                  <div>Account Number:</div>
-                  <div>898161854242</div>
-                  <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
-                  <div>026009593</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Items table */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderTop: '1px solid #ddd' }}>
-                <div style={{ 
+            {orders.map((order, index) => (
+              <div 
+                key={index}
+                style={{ 
                   display: 'grid', 
                   gridTemplateColumns: '1fr 100px 120px 140px',
                   gap: 16,
                   padding: '12px 0',
-                  fontWeight: 'bold',
-                  color: '#1a4d8f',
                   fontSize: 14,
-                  borderBottom: '1px solid #ddd'
-                }}>
-                  <div>Description</div>
-                  <div style={{ textAlign: 'right' }}>Qty</div>
-                  <div style={{ textAlign: 'right' }}>Unit price</div>
-                  <div style={{ textAlign: 'right' }}>Total price</div>
-                </div>
-
-                {orders.map((order, index) => (
-                  <div 
-                    key={index}
-                    style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: '1fr 100px 120px 140px',
-                      gap: 16,
-                      padding: '12px 0',
-                      fontSize: 14,
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <div>{order.product}</div>
-                    <div style={{ textAlign: 'right' }}>{order.quantity}</div>
-                    <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
-                    <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
-                  </div>
-                ))}
+                  borderBottom: '1px solid #eee'
+                }}
+              >
+                <div>{order.product}</div>
+                <div style={{ textAlign: 'right' }}>{order.quantity}</div>
+                <div style={{ textAlign: 'right' }}>{fmtMoney(order.unit_price)}</div>
+                <div style={{ textAlign: 'right' }}>{fmtMoney(order.amount)}</div>
               </div>
+            ))}
+          </div>
 
-              {/* Spacer to push totals to bottom */}
-              <div style={{ flex: 1 }}></div>
+          <div style={{ flex: 1 }}></div>
 
-              {/* Totals */}
-              <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ marginBottom: 12 }}>Subtotal</div>
-                    <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
-                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
-                  </div>
-                  <div style={{ textAlign: 'right', minWidth: 140 }}>
-                    <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
-                    <div style={{ marginBottom: 12 }}>-</div>
-                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
-                  </div>
-                </div>
+          <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ marginBottom: 12 }}>Subtotal</div>
+                <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
+                <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
+              </div>
+              <div style={{ textAlign: 'right', minWidth: 140 }}>
+                <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
+                <div style={{ marginBottom: 12 }}>-</div>
+                <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
               </div>
             </div>
           </div>
@@ -275,11 +253,32 @@ export default function InvoicePreview() {
 
       <style>{`
         @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; }
-          div[style*="transform: scale"] { transform: none !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print { 
+            display: none !important; 
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .invoice-page {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+        @media screen and (max-width: 900px) {
+          .invoice-page {
+            transform: scale(0.45);
+            transform-origin: top center;
+            margin-bottom: -500px;
+          }
         }
       `}</style>
-    </div>
+    </>
   )
 }
