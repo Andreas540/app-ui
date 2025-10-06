@@ -89,7 +89,7 @@ export default function InvoicePreview() {
     return isNaN(d.getTime()) ? s : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
   }
   const money = (n: number) => `$${Number(n).toFixed(2)}`
-  const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
+  const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + Number(o.amount), 0), [invoiceData])
   const total = subtotal
 
   // Desktop-only: Download PDF (unchanged from your good path)
@@ -316,7 +316,7 @@ export default function InvoicePreview() {
                 display: 'grid',
                 gridTemplateColumns: '100px 1fr 290px', // narrower right column → shifts left slightly
                 gap: 12,
-                marginBottom: 18,
+                marginBottom: 26,
               }}
             >
               <div style={{ width: 100, height: 100, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 20 }}>
@@ -353,7 +353,8 @@ export default function InvoicePreview() {
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 290px', // narrower → column sits a bit more left
                 gap: 12,
-                marginBottom: 18,
+                marginBottom: 40,
+                marginTop: 12,  // Add this line
                 fontSize: 14,
               }}
             >
