@@ -36,6 +36,7 @@ export default function InvoicePreview() {
 
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
+  const pageRef = useRef<HTMLDivElement>(null)
   const lastHostH = useRef<number>(0)
   const resizeTimer = useRef<number | null>(null)
 
@@ -68,13 +69,10 @@ export default function InvoicePreview() {
     }
     window.addEventListener('resize', onResize)
     window.addEventListener('orientationchange', onResize)
-
-    // iOS visualViewport changes: also debounce them
     const vv = (window as any).visualViewport as VisualViewport | undefined
     const onVV = () => onResize()
     vv?.addEventListener?.('resize', onVV)
     vv?.addEventListener?.('scroll', onVV)
-
     return () => {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
@@ -101,126 +99,57 @@ export default function InvoicePreview() {
     return isNaN(d.getTime()) ? s : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
   }
   const money = (n: number) => `$${Number(n).toFixed(2)}`
-  const subtotal = useMemo(
-    () => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0),
-    [invoiceData]
-  )
+  const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // -------- PDF (stable, print-perfect on mobile) --------
+  // -------- Open PDF (EXACT snapshot of HTML page) --------
   async function openPdf() {
     try {
-      if (!invoiceData) return
-      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
+      const node = pageRef.current
+      if (!node) return
+
+      // 1) Render the page DOM to a PNG (pixel-perfect snapshot)
+      const { toPng } = await import('html-to-image')
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,            // crisp output on retina
+        backgroundColor: '#FFFFFF',
+        width: BASE_W,            // match our logical canvas
+        height: BASE_H,
+        style: {
+          transform: 'none',      // ignore preview scale
+          transformOrigin: 'top left',
+        },
+      })
+
+      // 2) Turn PNG into bytes
+      const res = await fetch(dataUrl)
+      const pngBytes = new Uint8Array(await res.arrayBuffer())
+
+      // 3) Embed into a Letter PDF with safe margins
+      const { PDFDocument } = await import('pdf-lib')
       const doc = await PDFDocument.create()
       const page = doc.addPage([612, 792]) // Letter @ 72pt/in
+      const png = await doc.embedPng(pngBytes)
 
-      const font = await doc.embedFont(StandardFonts.Helvetica)
-      const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
-      const M_LEFT = 0.5 * 72, M_RIGHT = 0.5 * 72, M_TOP = 0.5 * 72, M_BOTTOM = 0.75 * 72
-      const blue = rgb(0.1, 0.3, 0.56)
+      const margin = 0.5 * 72 // 0.5in
+      const maxW = 612 - margin * 2
+      const maxH = 792 - margin * 2
+      const s = Math.min(maxW / png.width, maxH / png.height)
+      const drawW = png.width * s
+      const drawH = png.height * s
+      const x = margin + (maxW - drawW) / 2
+      const y = margin + (maxH - drawH) / 2
 
-      const drawText = (text: string, x: number, y: number, size = 12, col = rgb(0,0,0), bold = false) =>
-        page.drawText(text, { x, y, size, font: bold ? fontBold : font, color: col })
-      const line = (x1: number, y1: number, x2: number, y2: number, w = 0.5) =>
-        page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: rgb(0.8,0.8,0.8) })
+      page.drawImage(png, { x, y, width: drawW, height: drawH })
 
-      let y = 792 - M_TOP
-
-      // Header
-      page.drawRectangle({ x: M_LEFT, y: y - 100, width: 100, height: 100, color: rgb(0,0,0) })
-      drawText('BLV', M_LEFT + 35, y - 60, 18, rgb(1,1,1), true)
-      drawText('BLV Pack Design LLC', M_LEFT + 120, y - 16, 16, rgb(0,0,0), true)
-      drawText('13967 SW 119th Ave', M_LEFT + 120, y - 34)
-      drawText('Miami, FL 33186', M_LEFT + 120, y - 50)
-      drawText('(305) 798-3317', M_LEFT + 120, y - 70)
-
-      // Meta
-      const rightX = 612 - M_RIGHT - 200
-      const labels = ['Invoice #', 'Invoice date', 'Due date', 'Est. delivery']
-      const values = [
-        invoiceData.invoiceNo,
-        fmtDate(invoiceData.invoiceDate),
-        fmtDate(invoiceData.dueDate),
-        fmtDate(invoiceData.deliveryDate),
-      ]
-      labels.forEach((lab, i) => {
-        drawText(lab, rightX, y - 16 - i * 16, 11, blue, true)
-        drawText(values[i], rightX + 80, y - 16 - i * 16, 11)
-      })
-      y -= 120
-
-      // Addresses & payment
-      const col1X = M_LEFT, col2X = M_LEFT + 220, col3X = 612 - M_RIGHT - 220
-      drawText('Invoice for', col1X, y, 12, blue, true)
-      drawText(invoiceData.customer.name, col1X, y - 18)
-      invoiceData.customer.address1 && drawText(invoiceData.customer.address1, col1X, y - 34)
-      invoiceData.customer.address2 && drawText(invoiceData.customer.address2, col1X, y - 50)
-      const cityLine = [invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')
-      drawText(cityLine, col1X, y - 66)
-
-      drawText('Payment method', col2X, y, 12, blue, true)
-      drawText(invoiceData.paymentMethod, col2X, y - 18)
-      drawText('Our contact', col2X, y - 42, 12, blue, true)
-      drawText('Julian de Armas', col2X, y - 60)
-
-      drawText('Wire Transfer Instructions', col3X, y, 12, blue, true)
-      const wt = [
-        ['Company Name:', 'BLV Pack Design LLC'],
-        ['Bank Name:', 'Bank of America'],
-        ['Account Name:', 'BLV Pack Design LLC'],
-        ['Account Number:', '898161854242'],
-        ['Routing Number (ABA):', '026009593'],
-      ]
-      wt.forEach((pair, i) => {
-        drawText(pair[0], col3X, y - 18 - i * 14, 10)
-        drawText(pair[1], col3X + 110, y - 18 - i * 14, 10)
-      })
-      y -= 120
-
-      // Items
-      line(M_LEFT, y - 4, 612 - M_RIGHT, y - 4, 0.5)
-      const thY = y - 22
-      drawText('Description', M_LEFT, thY, 11, blue, true)
-      drawText('Qty', 612 - M_RIGHT - 360 + 220, thY, 11, blue, true)
-      drawText('Unit price', 612 - M_RIGHT - 220, thY, 11, blue, true)
-      drawText('Total price', 612 - M_RIGHT - 80, thY, 11, blue, true)
-      line(M_LEFT, thY - 6, 612 - M_RIGHT, thY - 6, 0.5)
-
-      let rowY = thY - 24
-      const lineGap = 18
-      const textWidth = (s: string, size = 12, bold = false) =>
-        (bold ? fontBold : font).widthOfTextAtSize(s, size)
-      invoiceData.orders.forEach(o => {
-        drawText(o.product, M_LEFT, rowY)
-        const qtyStr = String(o.quantity), unitStr = money(o.unit_price), amtStr = money(o.amount)
-        const qtyX = 612 - M_RIGHT - 360 + 220 + 40 - textWidth(qtyStr, 12)
-        const unitX = 612 - M_RIGHT - 220 + 80 - textWidth(unitStr, 12)
-        const amtX = 612 - M_RIGHT - 80 + 60 - textWidth(amtStr, 12)
-        drawText(qtyStr, qtyX, rowY); drawText(unitStr, unitX, rowY); drawText(amtStr, amtX, rowY)
-        rowY -= lineGap
-      })
-
-      // Totals (guaranteed visible)
-      y = Math.min(rowY - 8, 792 - M_BOTTOM - 110)
-      line(M_LEFT, y, 612 - M_RIGHT, y, 1)
-      const totalsY = y - 28, labelX = 612 - M_RIGHT - 160, valueX = 612 - M_RIGHT - 20
-      const subtotalStr = money(subtotal), totalStr = money(total)
-      drawText('Subtotal', labelX - 80, totalsY, 12)
-      drawText(subtotalStr, valueX - textWidth(subtotalStr, 12), totalsY, 12)
-      drawText('Adjustments/Discount', labelX - 80, totalsY - 18, 12)
-      drawText('-', valueX - textWidth('-', 12), totalsY - 18, 12)
-      drawText('Total', labelX - 80, totalsY - 40, 14, undefined, true)
-      drawText(totalStr, valueX - textWidth(totalStr, 14, true), totalsY - 40, 14, undefined, true)
-
-      // Open PDF
-      const pdfBytes: Uint8Array = await doc.save()
-      const blob = new globalThis.Blob([new Uint8Array(pdfBytes)] as BlobPart[], { type: 'application/pdf' })
+      // 4) Stream & open
+      const bytes: Uint8Array = await doc.save()
+      const blob = new Blob([new Uint8Array(bytes)] as BlobPart[], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (err) {
-      console.error('PDF generation failed:', err)
-      alert('Could not generate PDF. Make sure "pdf-lib" is installed and try again.')
+      console.error('PDF snapshot failed:', err)
+      alert('Could not build PDF snapshot.')
     }
   }
 
@@ -240,11 +169,9 @@ export default function InvoicePreview() {
     )
   }
 
-  const { invoiceNo, invoiceDate, dueDate, deliveryDate, paymentMethod, customer, orders } = invoiceData
-
   return (
     <>
-      {/* Footer controls (no print) */}
+      {/* Footer controls */}
       <div
         className="no-print"
         style={{
@@ -293,7 +220,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Preview viewport (uses 100svh so share-sheet/toolbars don't rescale it) */}
+      {/* HTML Preview (unchanged look) */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -322,6 +249,7 @@ export default function InvoicePreview() {
           }}
         >
           <div
+            ref={pageRef}
             className="invoice-page"
             style={{
               width: '100%',
@@ -354,13 +282,13 @@ export default function InvoicePreview() {
               <div style={{ fontSize: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 8px' }}>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
-                  <div>{invoiceNo}</div>
+                  <div>{invoiceData.invoiceNo}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
-                  <div>{fmtDate(invoiceDate)}</div>
+                  <div>{fmtDate(invoiceData.invoiceDate)}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
-                  <div>{fmtDate(dueDate)}</div>
+                  <div>{fmtDate(invoiceData.dueDate)}</div>
                   <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery</div>
-                  <div>{fmtDate(deliveryDate)}</div>
+                  <div>{fmtDate(invoiceData.deliveryDate)}</div>
                 </div>
               </div>
             </div>
@@ -369,14 +297,14 @@ export default function InvoicePreview() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 270px', gap: 12, marginBottom: 18, fontSize: 14 }}>
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
-                <div>{customer.name}</div>
-                {customer.address1 && <div>{customer.address1}</div>}
-                {customer.address2 && <div>{customer.address2}</div>}
-                <div>{[customer.city, customer.state, customer.postal_code].filter(Boolean).join(', ')}</div>
+                <div>{invoiceData.customer.name}</div>
+                {invoiceData.customer.address1 && <div>{invoiceData.customer.address1}</div>}
+                {invoiceData.customer.address2 && <div>{invoiceData.customer.address2}</div>}
+                <div>{[invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')}</div>
               </div>
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
-                <div style={{ marginBottom: 16 }}>{paymentMethod}</div>
+                <div style={{ marginBottom: 16 }}>{invoiceData.paymentMethod}</div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
                 <div>Julian de Armas</div>
               </div>
@@ -402,7 +330,7 @@ export default function InvoicePreview() {
                     <div style={{ textAlign: 'right' }}>Unit price</div>
                     <div style={{ textAlign: 'right' }}>Total price</div>
                   </div>
-                  {orders.map((o, i) => (
+                  {(invoiceData.orders || []).map((o, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontSize: 14, borderBottom: '1px solid #eee' }}>
                       <div>{o.product}</div>
                       <div style={{ textAlign: 'right' }}>{o.quantity}</div>
@@ -439,40 +367,16 @@ export default function InvoicePreview() {
           .items-scroll { overflow: auto; }
         }
 
-        /* Print mirrors the preview page size */
-        @page { size: 8.5in 11in; margin: 0; }
         @media print {
           .no-print { display: none !important; }
-          .invoice-viewport {
-            position: static !important;
-            height: auto !important;
-            overflow: visible !important;
-            background: #fff !important;
-          }
-          .invoice-viewport > div {
-            transform: none !important;
-            width: 8.5in !important;
-            height: 11in !important;
-            aspect-ratio: auto !important;
-          }
-          .invoice-page {
-            width: 100% !important;
-            height: 100% !important;
-            padding: 0.4in 0.35in 0.6in 0.35in !important;
-            box-shadow: none !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            -webkit-text-size-adjust: 100% !important;
-            text-size-adjust: 100% !important;
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
-          .items-scroll { overflow: visible !important; }
+          @page { size: 8.5in 11in; margin: 0; }
+          html, body { background: #fff !important; }
         }
       `}</style>
     </>
   )
 }
+
 
 
 
