@@ -284,7 +284,24 @@ export default function CreateInvoicePage() {
                         ))}
                       </div>
 
-                      <div style={{ display: 'grid', gap: 16, marginBottom: 20 }}>
+                      <button
+                        onClick={handleNewSelection}
+                        style={{
+                          padding: '10px 20px',
+                          border: 'none',
+                          borderRadius: 10,
+                          background: 'var(--accent)',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          marginBottom: 20
+                        }}
+                      >
+                        New selection
+                      </button>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                         <div>
                           <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             Invoice date
@@ -322,7 +339,9 @@ export default function CreateInvoicePage() {
                             }}
                           />
                         </div>
+                      </div>
 
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div>
                           <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             Est. delivery date
@@ -362,22 +381,6 @@ export default function CreateInvoicePage() {
                           </select>
                         </div>
                       </div>
-
-                      <button
-                        onClick={handleNewSelection}
-                        style={{
-                          padding: '10px 20px',
-                          border: 'none',
-                          borderRadius: 10,
-                          background: 'var(--accent)',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 500
-                        }}
-                      >
-                        New selection
-                      </button>
                     </>
                   )}
                 </>
