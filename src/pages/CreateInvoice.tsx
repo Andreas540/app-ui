@@ -33,6 +33,7 @@ export default function CreateInvoicePage() {
   const [dueDate, setDueDate] = useState<string>('')
   const [deliveryDate, setDeliveryDate] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<string>('Wire Transfer')
+  const [invoiceNo, setInvoiceNo] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +92,24 @@ export default function CreateInvoicePage() {
       }
     })()
   }, [selectedCustomerId])
+
+  // Generate invoice number when all dates are filled
+  useEffect(() => {
+    if (invoiceDate && dueDate && deliveryDate && selectedCustomerId) {
+      const customer = customers.find(c => c.id === selectedCustomerId)
+      if (!customer) return
+      
+      const date = new Date(invoiceDate)
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = String(date.getFullYear()).slice(-2)
+      const customerInitials = customer.name.slice(0, 2).toUpperCase()
+      const randomNum = Math.floor(Math.random() * 9000) + 1000 // 1000-9999
+      const invoiceNumber = `${month}${year}-${customerInitials}${randomNum}`
+      setInvoiceNo(invoiceNumber)
+    } else {
+      setInvoiceNo('')
+    }
+  }, [invoiceDate, dueDate, deliveryDate, selectedCustomerId, customers])
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId)
 
@@ -381,6 +400,17 @@ export default function CreateInvoicePage() {
                           </select>
                         </div>
                       </div>
+
+                      {invoiceNo && (
+                        <div style={{ marginTop: 16 }}>
+                          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                            Invoice no
+                          </label>
+                          <div style={{ fontSize: 18, fontWeight: 600 }}>
+                            {invoiceNo}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </>
