@@ -29,41 +29,62 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // 🔁 Revert: NO viewport meta override here (it was causing issues)
-
-  // Logical canvas at 96dpi: Letter 8.5×11in → 816×1056 px
+  // 8.5×11in at 96dpi → 816×1056 px
   const BASE_W = 816
   const BASE_H = 1056
   const ASPECT = BASE_H / BASE_W
 
   const [scale, setScale] = useState(1)
   const viewportRef = useRef<HTMLDivElement>(null)
+  const lastHostH = useRef<number>(0)
+  const resizeTimer = useRef<number | null>(null)
 
-  // Fit-to-viewport scaling (screen preview)
   const recomputeScale = () => {
     const host = viewportRef.current
     if (!host) return
-    const P = 12 // breathing room in preview
+    const P = 12
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
+
+    // Ignore tiny visual-viewport wiggles (iOS toolbars / share sheet)
+    if (lastHostH.current) {
+      const delta = Math.abs(vh - lastHostH.current)
+      if (delta < 80) return
+    }
+    lastHostH.current = vh
+
     const s = Math.min(vw / BASE_W, vh / BASE_H)
     setScale(s > 0 && Number.isFinite(s) ? s : 1)
   }
 
   useLayoutEffect(() => {
     recomputeScale()
-    const r = () => recomputeScale()
-    window.addEventListener('resize', r)
-    window.addEventListener('orientationchange', r)
-    const id = requestAnimationFrame(r) // account for mobile URL bar changes
+    const onResize = () => {
+      if (resizeTimer.current) window.clearTimeout(resizeTimer.current)
+      resizeTimer.current = window.setTimeout(() => {
+        recomputeScale()
+        resizeTimer.current = null
+      }, 120)
+    }
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+
+    // iOS visualViewport changes: also debounce them
+    const vv = (window as any).visualViewport as VisualViewport | undefined
+    const onVV = () => onResize()
+    vv?.addEventListener?.('resize', onVV)
+    vv?.addEventListener?.('scroll', onVV)
+
     return () => {
-      window.removeEventListener('resize', r)
-      window.removeEventListener('orientationchange', r)
-      cancelAnimationFrame(id)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+      vv?.removeEventListener?.('resize', onVV)
+      vv?.removeEventListener?.('scroll', onVV)
+      if (resizeTimer.current) window.clearTimeout(resizeTimer.current)
     }
   }, [])
 
-  // Lock background & scrolling in preview (screen only)
+  // Lock background & scrolling in preview
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -86,27 +107,25 @@ export default function InvoicePreview() {
   )
   const total = subtotal
 
-  // ---------- PDF GENERATION (dynamic import; TS/DOM-safe blob creation) ----------
+  // -------- PDF (stable, print-perfect on mobile) --------
   async function openPdf() {
     try {
       if (!invoiceData) return
       const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
-
       const doc = await PDFDocument.create()
-      // Letter (72 pt/in): 612 x 792
-      const page = doc.addPage([612, 792])
+      const page = doc.addPage([612, 792]) // Letter @ 72pt/in
 
       const font = await doc.embedFont(StandardFonts.Helvetica)
       const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
-
       const M_LEFT = 0.5 * 72, M_RIGHT = 0.5 * 72, M_TOP = 0.5 * 72, M_BOTTOM = 0.75 * 72
       const blue = rgb(0.1, 0.3, 0.56)
-      let y = 792 - M_TOP
 
-      const drawText = (text: string, x: number, yv: number, size = 12, col = rgb(0,0,0), bold = false) =>
-        page.drawText(text, { x, y: yv, size, font: bold ? fontBold : font, color: col })
+      const drawText = (text: string, x: number, y: number, size = 12, col = rgb(0,0,0), bold = false) =>
+        page.drawText(text, { x, y, size, font: bold ? fontBold : font, color: col })
       const line = (x1: number, y1: number, x2: number, y2: number, w = 0.5) =>
         page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: rgb(0.8,0.8,0.8) })
+
+      let y = 792 - M_TOP
 
       // Header
       page.drawRectangle({ x: M_LEFT, y: y - 100, width: 100, height: 100, color: rgb(0,0,0) })
@@ -135,8 +154,8 @@ export default function InvoicePreview() {
       const col1X = M_LEFT, col2X = M_LEFT + 220, col3X = 612 - M_RIGHT - 220
       drawText('Invoice for', col1X, y, 12, blue, true)
       drawText(invoiceData.customer.name, col1X, y - 18)
-      if (invoiceData.customer.address1) drawText(invoiceData.customer.address1, col1X, y - 34)
-      if (invoiceData.customer.address2) drawText(invoiceData.customer.address2, col1X, y - 50)
+      invoiceData.customer.address1 && drawText(invoiceData.customer.address1, col1X, y - 34)
+      invoiceData.customer.address2 && drawText(invoiceData.customer.address2, col1X, y - 50)
       const cityLine = [invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')
       drawText(cityLine, col1X, y - 66)
 
@@ -170,7 +189,8 @@ export default function InvoicePreview() {
 
       let rowY = thY - 24
       const lineGap = 18
-      const textWidth = (s: string, size = 12, bold = false) => (bold ? fontBold : font).widthOfTextAtSize(s, size)
+      const textWidth = (s: string, size = 12, bold = false) =>
+        (bold ? fontBold : font).widthOfTextAtSize(s, size)
       invoiceData.orders.forEach(o => {
         drawText(o.product, M_LEFT, rowY)
         const qtyStr = String(o.quantity), unitStr = money(o.unit_price), amtStr = money(o.amount)
@@ -193,10 +213,9 @@ export default function InvoicePreview() {
       drawText('Total', labelX - 80, totalsY - 40, 14, undefined, true)
       drawText(totalStr, valueX - textWidth(totalStr, 14, true), totalsY - 40, 14, undefined, true)
 
-      // Stream to blob & open (TS/DOM-safe)
+      // Open PDF
       const pdfBytes: Uint8Array = await doc.save()
-      const blobParts: BlobPart[] = [new Uint8Array(pdfBytes)]
-      const blob = new globalThis.Blob(blobParts, { type: 'application/pdf' })
+      const blob = new globalThis.Blob([new Uint8Array(pdfBytes)] as BlobPart[], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (err) {
@@ -207,7 +226,7 @@ export default function InvoicePreview() {
 
   if (!invoiceData) {
     return (
-      <div style={{ height: '100dvh', display: 'grid', placeItems: 'center', background: '#fff' }}>
+      <div style={{ height: '100svh', display: 'grid', placeItems: 'center', background: '#fff' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ marginBottom: 12 }}>No invoice data found.</p>
           <button
@@ -225,9 +244,9 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* Controls — sticky footer bar, always visible on screen. No plain Print on mobile; we only surface "Open PDF". */}
+      {/* Footer controls (no print) */}
       <div
-        className="no-print invoice-controls"
+        className="no-print"
         style={{
           position: 'fixed',
           left: 0,
@@ -245,7 +264,6 @@ export default function InvoicePreview() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Desktop users can still use browser print via the PDF tab if they want */}
         <button
           onClick={openPdf}
           style={{
@@ -260,7 +278,6 @@ export default function InvoicePreview() {
         >
           Open PDF
         </button>
-
         <button
           onClick={() => navigate(-1)}
           style={{
@@ -276,7 +293,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* Preview viewport */}
+      {/* Preview viewport (uses 100svh so share-sheet/toolbars don't rescale it) */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -285,7 +302,7 @@ export default function InvoicePreview() {
           left: 0,
           right: 0,
           top: 'calc(var(--app-top-offset, 56px) + env(safe-area-inset-top))',
-          height: 'calc(100dvh - var(--app-top-offset, 56px) - env(safe-area-inset-top))',
+          height: 'calc(100svh - var(--app-top-offset, 56px) - env(safe-area-inset-top))',
           background: '#f2f3f5',
           display: 'flex',
           alignItems: 'center',
@@ -320,7 +337,7 @@ export default function InvoicePreview() {
               WebkitTextSizeAdjust: '100%',
               textSizeAdjust: '100%',
               wordBreak: 'normal',
-              overflow: 'hidden', // prevent outer overflow
+              overflow: 'hidden',
             }}
           >
             {/* Header */}
@@ -375,9 +392,8 @@ export default function InvoicePreview() {
               </div>
             </div>
 
-            {/* Items + totals (preview clamp so totals are always visible) */}
+            {/* Items + totals (preview clamp so totals always visible) */}
             <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
-              {/* Scroll area only in SCREEN preview; print keeps full height */}
               <div className="items-scroll" style={{ flex: 1, minHeight: 0 }}>
                 <div style={{ borderTop: '1px solid #ddd' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontWeight: 'bold', color: '#1a4d8f', fontSize: 14, borderBottom: '1px solid #ddd' }}>
@@ -397,7 +413,6 @@ export default function InvoicePreview() {
                 </div>
               </div>
 
-              {/* Totals fixed at bottom in preview */}
               <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
                   <div style={{ textAlign: 'right' }}>
@@ -418,20 +433,16 @@ export default function InvoicePreview() {
       </div>{/* viewport */}
 
       <style>{`
-        :root { --app-top-offset: 56px; } /* adjust if your mobile header is taller */
+        :root { --app-top-offset: 56px; }
 
-        /* Screen-only clamp so totals don't disappear in preview */
         @media screen {
           .items-scroll { overflow: auto; }
-          .invoice-controls { /* ensure footer doesn't overlap content on short screens */ }
         }
 
-        /* Print: identical layout, no scroll, true Letter page */
+        /* Print mirrors the preview page size */
         @page { size: 8.5in 11in; margin: 0; }
         @media print {
-          html, body { background: #fff !important; }
           .no-print { display: none !important; }
-
           .invoice-viewport {
             position: static !important;
             height: auto !important;
@@ -456,15 +467,13 @@ export default function InvoicePreview() {
             page-break-inside: avoid;
             break-inside: avoid;
           }
-          .items-scroll { overflow: visible !important; } /* no scroll in print */
+          .items-scroll { overflow: visible !important; }
         }
-
-        /* Smooth scaling in preview */
-        .invoice-viewport > div { will-change: transform; }
       `}</style>
     </>
   )
 }
+
 
 
 
