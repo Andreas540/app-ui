@@ -29,7 +29,7 @@ export default function InvoicePreview() {
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
 
-  // 8.5×11in at 96dpi → 816×1056 px (logical canvas)
+  // 8.5×11in @ 96dpi → 816×1056 px (logical canvas)
   const BASE_W = 816
   const BASE_H = 1056
   const ASPECT = BASE_H / BASE_W
@@ -47,7 +47,7 @@ export default function InvoicePreview() {
     const vw = Math.max(0, host.clientWidth - P * 2)
     const vh = Math.max(0, host.clientHeight - P * 2)
 
-    // Ignore tiny visual-viewport wiggles (iOS toolbars / share sheet)
+    // ignore tiny iOS toolbar wiggles
     if (lastHostH.current) {
       const delta = Math.abs(vh - lastHostH.current)
       if (delta < 80) return
@@ -82,7 +82,7 @@ export default function InvoicePreview() {
     }
   }, [])
 
-  // Lock background & scrolling in preview
+  // lock background scroll while preview is open
   useEffect(() => {
     const prevBg = document.body.style.background
     const prevOv = document.body.style.overflow
@@ -102,122 +102,73 @@ export default function InvoicePreview() {
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + o.amount, 0), [invoiceData])
   const total = subtotal
 
-  // -------- Open PDF (snapshot) — data URI + embedded iframe (iOS-safe) --------
-  async function openPdf() {
-    // Open a tab synchronously to avoid popup blockers
-    const popup = window.open('', '_blank', 'noopener,noreferrer')
-    if (popup) {
-      try {
-        popup.document.open()
-        popup.document.write(`<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Invoice PDF</title>
-  <style>
-    html,body { margin:0; height:100%; }
-    .wrap { position:fixed; inset:0; display:flex; flex-direction:column; }
-    header { font: 14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:8px 12px; color:#555; }
-    iframe,embed { flex:1; border:0; width:100%; }
-    .fallback { padding:10px 12px; font: 14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
-    a { color:#0d6efd; text-decoration:underline; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>Preparing PDF…</header>
-    <iframe id="pdfFrame" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
-    <div class="fallback" id="fallback" style="display:none">
-      If the viewer is blank, <a id="dl" href="#" download="invoice.pdf" rel="noopener">tap here to open/download the PDF.</a>
-    </div>
-  </div>
-</body>
-</html>`)
-        popup.document.close()
-      } catch { /* some browsers may restrict writing — we still try later */ }
+  // --- Helper: trigger download/open without popups (works mobile/desktop) ---
+  function triggerLink(href: string, filename?: string, openNewTab = false) {
+    const a = document.createElement('a')
+    a.href = href
+    if (filename) a.download = filename
+    if (openNewTab) {
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
     }
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
 
-    try {
-      const node = pageRef.current
-      if (!node) throw new Error('No invoice page to capture')
+  // 1) Open as Image (PNG) — best reliability on iPhone (Share/Print from Photos)
+  async function openAsImage() {
+    const node = pageRef.current
+    if (!node) return alert('No invoice to export.')
+    const { toPng } = await import('html-to-image')
+    const dataUrl = await toPng(node, {
+      pixelRatio: 2,
+      backgroundColor: '#FFFFFF',
+      cacheBust: true,
+      width: BASE_W,
+      height: BASE_H,
+      style: { transform: 'none', transformOrigin: 'top left' },
+    })
+    // On mobile, opening in a new tab is friendlier than direct download
+    triggerLink(dataUrl, 'invoice.png', true)
+  }
 
-      // 1) Render DOM → PNG (pixel-perfect)
-      const { toPng } = await import('html-to-image')
-      const dataUrl = await toPng(node, {
-        pixelRatio: 2,
-        backgroundColor: '#FFFFFF',
-        cacheBust: true,
-        width: BASE_W,
-        height: BASE_H,
-        style: { transform: 'none', transformOrigin: 'top left' },
-      })
+  // 2) Download PDF — no popups, no Blob; force download via data URI
+  async function downloadPdf() {
+    const node = pageRef.current
+    if (!node) return alert('No invoice to export.')
 
-      // 2) PNG bytes
-      const res = await fetch(dataUrl)
-      const pngBytes = new Uint8Array(await res.arrayBuffer())
+    const { toPng } = await import('html-to-image')
+    const pngDataUrl = await toPng(node, {
+      pixelRatio: 2,
+      backgroundColor: '#FFFFFF',
+      cacheBust: true,
+      width: BASE_W,
+      height: BASE_H,
+      style: { transform: 'none', transformOrigin: 'top left' },
+    })
 
-      // 3) Wrap in a US Letter PDF
-      const { PDFDocument } = await import('pdf-lib')
-      const doc = await PDFDocument.create()
-      const page = doc.addPage([612, 792]) // Letter @ 72pt/in
-      const png = await doc.embedPng(pngBytes)
+    const res = await fetch(pngDataUrl)
+    const pngBytes = new Uint8Array(await res.arrayBuffer())
 
-      const margin = 0.5 * 72
-      const maxW = 612 - margin * 2
-      const maxH = 792 - margin * 2
-      const s = Math.min(maxW / png.width, maxH / png.height)
-      const drawW = png.width * s
-      const drawH = png.height * s
-      const x = margin + (maxW - drawW) / 2
-      const y = margin + (maxH - drawH) / 2
-      page.drawImage(png, { x, y, width: drawW, height: drawH })
+    const { PDFDocument } = await import('pdf-lib')
+    const doc = await PDFDocument.create()
+    const page = doc.addPage([612, 792]) // US Letter @ 72pt/in
+    const png = await doc.embedPng(pngBytes)
 
-      // 4) Data URI (no Blob/URL.createObjectURL)
-      const dataUri: string = await doc.saveAsBase64({ dataUri: true })
+    const margin = 0.5 * 72 // 0.5 in
+    const maxW = 612 - margin * 2
+    const maxH = 792 - margin * 2
+    const s = Math.min(maxW / png.width, maxH / png.height)
+    const drawW = png.width * s
+    const drawH = png.height * s
+    const x = margin + (maxW - drawW) / 2
+    const y = margin + (maxH - drawH) / 2
+    page.drawImage(png, { x, y, width: drawW, height: drawH })
 
-      // 5) Inject into the already-open page via an iframe (iOS-friendly)
-      if (popup && !popup.closed) {
-        try {
-          const iframe = popup.document.getElementById('pdfFrame') as HTMLIFrameElement | null
-          if (iframe) {
-            iframe.src = dataUri
-            const h = popup.document.querySelector('header')
-            if (h) h.textContent = 'Invoice PDF'
-            const dl = popup.document.getElementById('dl') as HTMLAnchorElement | null
-            if (dl) dl.href = dataUri
-            const fb = popup.document.getElementById('fallback') as HTMLElement | null
-            if (fb) fb.style.display = 'block'
-          } else {
-            // Fallback: navigate the tab if iframe is missing
-            popup.location.replace(dataUri)
-          }
-        } catch {
-          // As a last resort, navigate the tab
-          popup.location.replace(dataUri)
-        }
-      } else {
-        // If the popup was blocked, try a hidden link
-        const a = document.createElement('a')
-        a.href = dataUri
-        a.target = '_blank'
-        a.rel = 'noopener noreferrer'
-        a.download = 'invoice.pdf'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-      }
-    } catch (err) {
-      console.error('PDF snapshot failed:', err)
-      if (popup && !popup.closed) {
-        try {
-          popup.document.body.innerHTML =
-            '<div style="padding:24px;font:16px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#b00020">Could not build PDF snapshot.</div>'
-        } catch { /* ignore */ }
-      } else {
-        alert('Could not build PDF snapshot.')
-      }
-    }
+    const dataUri: string = await doc.saveAsBase64({ dataUri: true })
+    // Force download (desktop downloads; iOS puts in Downloads and offers Open In…)
+    triggerLink(dataUri, 'invoice.pdf', false)
   }
 
   if (!invoiceData) {
@@ -238,7 +189,7 @@ export default function InvoicePreview() {
 
   return (
     <>
-      {/* Footer controls */}
+      {/* footer controls */}
       <div
         className="no-print"
         style={{
@@ -259,7 +210,21 @@ export default function InvoicePreview() {
         }}
       >
         <button
-          onClick={openPdf}
+          onClick={downloadPdf}
+          style={{
+            padding: '12px 16px',
+            border: 'none',
+            borderRadius: 12,
+            background: '#0d6efd',
+            color: '#fff',
+            fontWeight: 700,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+          }}
+        >
+          Download PDF
+        </button>
+        <button
+          onClick={openAsImage}
           style={{
             padding: '12px 16px',
             border: 'none',
@@ -270,7 +235,7 @@ export default function InvoicePreview() {
             boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
-          Open PDF
+          Open as Image
         </button>
         <button
           onClick={() => navigate(-1)}
@@ -287,7 +252,7 @@ export default function InvoicePreview() {
         </button>
       </div>
 
-      {/* HTML Preview (unchanged layout) */}
+      {/* HTML preview */}
       <div
         ref={viewportRef}
         className="invoice-viewport"
@@ -307,8 +272,8 @@ export default function InvoicePreview() {
       >
         <div
           style={{
-            width: 816,
-            height: 1056,
+            width: BASE_W,
+            height: BASE_H,
             aspectRatio: `${ASPECT}`,
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
@@ -326,7 +291,7 @@ export default function InvoicePreview() {
               fontFamily: 'Arial, sans-serif',
               boxSizing: 'border-box',
               boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-              padding: '48px 48px 76px 48px', // keep totals visible in preview
+              padding: '48px 48px 76px 48px',
               display: 'flex',
               flexDirection: 'column',
               WebkitTextSizeAdjust: '100%',
@@ -443,6 +408,7 @@ export default function InvoicePreview() {
     </>
   )
 }
+
 
 
 
