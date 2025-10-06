@@ -19,7 +19,7 @@ async function getCustomer(event) {
     const sql = neon(DATABASE_URL)
 
     const cust = await sql`
-      SELECT id, name, customer_type, shipping_cost, phone,
+      SELECT id, name, customer_type, shipping_cost, company_name, phone,
              address1, address2, city, state, postal_code
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
@@ -112,7 +112,7 @@ async function updateCustomer(event) {
 
     const body = JSON.parse(event.body || '{}')
     const {
-      id, name, customer_type, shipping_cost, apply_to_history,
+      id, name, customer_type, shipping_cost, apply_to_history, company_name,
       phone, address1, address2, city, state, postal_code
     } = body || {}
 
@@ -148,6 +148,7 @@ async function updateCustomer(event) {
         name = ${name},
         customer_type = ${customer_type ?? null},
         shipping_cost = ${sc},
+        company_name = ${company_name ?? null},
         phone = ${phone ?? null},
         address1 = ${address1 ?? null},
         address2 = ${address2 ?? null},

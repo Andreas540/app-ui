@@ -194,6 +194,7 @@ export type CustomerDetail = {
     name: string
     customer_type?: 'BLV' | 'Partner'
     shipping_cost?: number | null
+    company_name?: string | null
     phone?: string | null
     address1?: string | null
     address2?: string | null

@@ -1,3 +1,4 @@
+// src/pages/EditCustomer.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/api'
@@ -14,6 +15,10 @@ export default function EditCustomer() {
   const [customerType, setCustomerType] = useState<CustomerType>('BLV')
   const [shippingCost, setShippingCost] = useState<string>('') // string input, will parse to number/null
   const [applyHistory, setApplyHistory] = useState(false)
+
+  // ✨ NEW: company name state
+  const [companyName, setCompanyName] = useState('')   // ✨ NEW
+
   const [phone, setPhone] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -31,6 +36,8 @@ export default function EditCustomer() {
         setName(c.name || '')
         setCustomerType((c.customer_type as CustomerType) || 'BLV')
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
+        // ✨ NEW: prefill company name
+        setCompanyName(c.company_name || '')           // ✨ NEW
         setPhone(c.phone || '')
         setAddress1(c.address1 || '')
         setAddress2(c.address2 || '')
@@ -60,6 +67,8 @@ export default function EditCustomer() {
         customer_type: customerType,
         shipping_cost: sc,
         apply_to_history: applyHistory,
+        // ✨ NEW: include company_name when saving
+        company_name: companyName.trim() || null,      // ✨ NEW
         phone: phone.trim() || null,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
@@ -125,6 +134,19 @@ export default function EditCustomer() {
         </div>
       </div>
 
+      {/* ✨ NEW: Company name — placed BETWEEN Shipping cost and Phone */}
+      <div style={{ marginTop: 12 }}>
+        <div>
+          <label>Company name</label>
+          <input
+            value={companyName}
+            onChange={e=>setCompanyName(e.target.value)}
+            placeholder="e.g. Acme Corp"
+          />
+        </div>
+      </div>
+      {/* ✨ END NEW */}
+
       {/* Phone | Address line 1 - 2 columns equal width */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
@@ -168,3 +190,4 @@ export default function EditCustomer() {
     </div>
   )
 }
+
