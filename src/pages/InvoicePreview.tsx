@@ -313,7 +313,7 @@ export default function InvoicePreview() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '100px 1fr 250px', // narrower right column → shifts left slightly
+                gridTemplateColumns: '100px 1fr 240px', // narrower right column → shifts left slightly
                 gap: 12,
                 marginBottom: 18,
               }}
@@ -350,7 +350,7 @@ export default function InvoicePreview() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 250px', // narrower → column sits a bit more left
+                gridTemplateColumns: '1fr 1fr 240px', // narrower → column sits a bit more left
                 gap: 12,
                 marginBottom: 18,
                 fontSize: 14,
