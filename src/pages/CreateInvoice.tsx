@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 type Customer = {
   id: string
   name: string
+  company_name?: string | null
   address1?: string | null
   address2?: string | null
   city?: string | null
@@ -198,6 +199,7 @@ export default function CreateInvoicePage() {
               <div style={{ flex: 1 }}>
                 <div style={{ marginBottom: 8, height: 21 }}></div>
                 <div style={{ fontSize: 14 }}>
+                  {selectedCustomer.company_name && <div>{selectedCustomer.company_name}</div>}
                   {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
                   {selectedCustomer.address2 && <div>{selectedCustomer.address2}</div>}
                   {(selectedCustomer.city || selectedCustomer.state || selectedCustomer.postal_code) && (
@@ -207,7 +209,8 @@ export default function CreateInvoicePage() {
                         .join(' ')}
                     </div>
                   )}
-                  {!selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
+                  <div>United States</div>
+                  {!selectedCustomer.company_name && !selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
                     <div className="helper">No address on file</div>
                   )}
                 </div>
