@@ -83,6 +83,19 @@ export default function InvoicePreview() {
       document.body.style.overflow = prevOv
     }
   }, [])
+  // Set dynamic document title for print/download
+useEffect(() => {
+  if (!invoiceData) return
+  
+  const originalTitle = document.title
+  const companyName = invoiceData.customer.company_name || ''
+  const invoiceNo = invoiceData.invoiceNo || 'Invoice'
+  document.title = companyName ? `${invoiceNo} - ${companyName}` : invoiceNo
+  
+  return () => {
+    document.title = originalTitle
+  }
+}, [invoiceData])
 
   const fmtDate = (s: string) => {
     const d = new Date(s)
@@ -319,9 +332,13 @@ export default function InvoicePreview() {
                 marginBottom: 26,
               }}
             >
-              <div style={{ width: 100, height: 100, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 20 }}>
-                BLV
-              </div>
+              <div style={{ width: 100, height: 100 }}>
+  <img 
+    src="/icons/icon-192.png" 
+    alt="BLV Logo"
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+  />
+</div>
               <div style={{ fontSize: 14 }}>
                 <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
                 <div>13967 SW 119th Ave</div>
