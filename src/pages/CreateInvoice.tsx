@@ -27,6 +27,8 @@ export default function CreateInvoicePage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
+  const [confirmedOrders, setConfirmedOrders] = useState<Order[]>([])
+  const [showingConfirmed, setShowingConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,11 +100,14 @@ export default function CreateInvoicePage() {
     setSelectedOrders(newSelected)
   }
 
-  const selectAll = () => {
-    setSelectedOrders(new Set(orders.map(o => o.item_id)))
+  const handleChooseSelected = () => {
+    const selected = orders.filter(o => selectedOrders.has(o.item_id))
+    setConfirmedOrders(selected)
+    setShowingConfirmed(true)
   }
 
-  const unselectAll = () => {
+  const handleNewSelection = () => {
+    setShowingConfirmed(false)
     setSelectedOrders(new Set())
   }
 
@@ -186,94 +191,111 @@ export default function CreateInvoicePage() {
 
               {!ordersLoading && orders.length > 0 && (
                 <>
-                  <div style={{
-                    border: '1px solid #ddd',
-                    borderRadius: 4,
-                    maxHeight: 300,
-                    overflowY: 'auto',
-                    marginBottom: 12
-                  }}>
-                    {orders.map(order => (
-                      <div
-                        key={order.item_id}
+                  {!showingConfirmed ? (
+                    <>
+                      <div style={{
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        maxHeight: 300,
+                        overflowY: 'auto',
+                        marginBottom: 12
+                      }}>
+                        {orders.map(order => (
+                          <div
+                            key={order.item_id}
+                            style={{
+                              display: 'flex',
+                              gap: 12,
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #eee',
+                              alignItems: 'flex-start',
+                              fontSize: 14,
+                              color: '#fff'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedOrders.has(order.item_id)}
+                              onChange={() => toggleOrder(order.item_id)}
+                              style={{ 
+                                cursor: 'pointer', 
+                                width: 14, 
+                                height: 14,
+                                marginTop: 2,
+                                flexShrink: 0
+                              }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '70px 1fr 80px',
+                                gap: 12,
+                                marginBottom: 4
+                              }}>
+                                <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
+                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                                <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                              </div>
+                              <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '70px 1fr 80px',
+                                gap: 12
+                              }}>
+                                <div>{order.quantity}</div>
+                                <div>{fmtMoney(order.unit_price)}</div>
+                                <div></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={handleChooseSelected}
+                        disabled={selectedOrders.size === 0}
                         style={{
-                          display: 'flex',
-                          gap: 12,
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #eee',
-                          alignItems: 'flex-start',
+                          padding: '10px 20px',
+                          border: 'none',
+                          borderRadius: 10,
+                          background: selectedOrders.size === 0 ? '#ccc' : 'var(--accent)',
+                          color: '#fff',
+                          cursor: selectedOrders.size === 0 ? 'not-allowed' : 'pointer',
                           fontSize: 14,
-                          color: '#fff'
+                          fontWeight: 500
                         }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedOrders.has(order.item_id)}
-                          onChange={() => toggleOrder(order.item_id)}
-                          style={{ 
-                            cursor: 'pointer', 
-                            width: 14, 
-                            height: 14,
-                            marginTop: 2,
-                            flexShrink: 0
-                          }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: '70px 1fr 80px',
-                            gap: 12,
-                            marginBottom: 4
-                          }}>
-                            <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
-                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
-                            <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                        Choose selected
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 14, marginBottom: 12 }}>
+                        {confirmedOrders.map(order => (
+                          <div key={order.item_id} style={{ marginBottom: 8 }}>
+                            <div>{formatDate(order.order_date)} - {order.product}</div>
+                            <div style={{ marginLeft: 20 }}>
+                              Qty: {order.quantity} × {fmtMoney(order.unit_price)} = {fmtMoney(order.amount)}
+                            </div>
                           </div>
-                          <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: '70px 1fr 80px',
-                            gap: 12
-                          }}>
-                            <div>{order.quantity}</div>
-                            <div>{fmtMoney(order.unit_price)}</div>
-                            <div></div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      onClick={selectAll}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                        background: 'white',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={unselectAll}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                        background: 'white',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Unselect All
-                    </button>
-                  </div>
-
-                  {selectedOrders.size > 0 && (
-                    <div style={{ marginTop: 16, padding: 12, backgroundColor: 'var(--panel)', borderRadius: 4 }}>
-                      <strong>{selectedOrders.size}</strong> order item(s) selected
-                    </div>
+                      <button
+                        onClick={handleNewSelection}
+                        style={{
+                          padding: '10px 20px',
+                          border: 'none',
+                          borderRadius: 10,
+                          background: 'var(--accent)',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 500
+                        }}
+                      >
+                        New selection
+                      </button>
+                    </>
                   )}
                 </>
               )}
