@@ -9,6 +9,7 @@ type PartnerRef = { id: string; name: string }
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
+
   const [people, setPeople] = useState<Person[]>([])
   const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
   const [products, setProducts] = useState<Product[]>([])
@@ -24,26 +25,25 @@ export default function NewOrder() {
   // Form fields
   const [productId, setProductId] = useState('')
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
-  const [qtyStr, setQtyStr] = useState('')        // integer string
-  const [priceStr, setPriceStr] = useState('')    // decimal string
+  const [qtyStr, setQtyStr] = useState('') // integer string
+  const [priceStr, setPriceStr] = useState('') // decimal string
   const [delivered, setDelivered] = useState(false) // default unchecked
-  const [notes, setNotes] = useState('')          // optional notes
+  const [notes, setNotes] = useState('') // optional notes
 
-  // Partner splits - per-item amounts
+  // Partner splits - now using per-item amounts
   const [partner1Id, setPartner1Id] = useState('')
   const [partner2Id, setPartner2Id] = useState('')
   const [partner1PerItemStr, setPartner1PerItemStr] = useState('')
   const [partner2PerItemStr, setPartner2PerItemStr] = useState('')
+
   const [showMoreFields, setShowMoreFields] = useState(false)
   const [productCostStr, setProductCostStr] = useState('')
   const [shippingCostStr, setShippingCostStr] = useState('')
   const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
+  const [historicalPrice, setHistoricalPrice] = useState<number | null>(null)
 
-  // NEW: last unit price for current customer+product
-  const [lastUnitPrice, setLastUnitPrice] = useState<number | null | undefined>(undefined)
-
-  // Pre-populate customer via URL
+  // Read URL parameters for pre-populating customer
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const customerId = params.get('customer_id')
@@ -71,10 +71,10 @@ export default function NewOrder() {
     })()
   }, [])
 
-  // Historical costs
+  // Fetch historical costs when product or customer changes
   useEffect(() => {
     if (!productId || !entityId || !orderDate) return
-    ;(async () => {
+    (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`)
@@ -89,36 +89,27 @@ export default function NewOrder() {
     })()
   }, [productId, entityId, orderDate])
 
-  // Fetch last unit price (kept minimal; no layout changes)
+  // Fetch last price when product or customer changes
   useEffect(() => {
-    if (!productId || !entityId) {
-      setLastUnitPrice(undefined)
-      return
-    }
-    ;(async () => {
+    if (!productId || !entityId || !orderDate) return
+    (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}`)
+        const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`)
         if (res.ok) {
           const data = await res.json()
-          setLastUnitPrice(
-            typeof data?.last_unit_price === 'number'
-              ? data.last_unit_price
-              : (data?.last_unit_price ?? null)
-          )
-        } else {
-          setLastUnitPrice(null)
+          setHistoricalPrice(data.unit_price)
         }
-      } catch {
-        setLastUnitPrice(null)
+      } catch (e) {
+        console.error('Failed to fetch last price:', e)
       }
     })()
-  }, [productId, entityId])
+  }, [productId, entityId, orderDate])
 
-  const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
+  const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
-  // Suggestions
+  // Suggestions (like Customers.tsx)
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -141,21 +132,23 @@ export default function NewOrder() {
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
+
   function parsePriceToNumber(s: string) {
     const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
     const num = Number(cleaned)
     return Number.isFinite(num) ? num : NaN
   }
 
-  const qtyInt   = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
+  const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
   const priceNum = useMemo(() => parsePriceToNumber(priceStr), [priceStr])
+
   const orderValue = useMemo(() => {
     if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
     if (!Number.isFinite(priceNum) || priceNum <= 0) return 0
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
-  // Partner totals
+  // Calculate partner amounts: per-item × quantity
   const partner1PerItem = useMemo(() => parsePriceToNumber(partner1PerItemStr), [partner1PerItemStr])
   const partner2PerItem = useMemo(() => parsePriceToNumber(partner2PerItemStr), [partner2PerItemStr])
 
@@ -171,7 +164,7 @@ export default function NewOrder() {
     return partner2PerItem * qtyInt
   }, [partner2PerItem, qtyInt])
 
-  // Effective costs
+  // Calculate effective costs (override or historical)
   const effectiveProductCost = useMemo(() => {
     const override = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
     if (override !== null && Number.isFinite(override)) return override
@@ -184,7 +177,7 @@ export default function NewOrder() {
     return historicalShippingCost ?? 0
   }, [shippingCostStr, historicalShippingCost])
 
-  // Profit
+  // Calculate profit
   const profit = useMemo(() => {
     if (orderValue <= 0) return 0
     const totalPartners = partner1Total + partner2Total
@@ -198,12 +191,17 @@ export default function NewOrder() {
     return (profit / orderValue) * 100
   }, [profit, orderValue])
 
-  // Only customer_type controls this
+  // IMPORTANT: only customer_type controls this (NOT the legacy "type")
   const personCustomerType = (person as any)?.customer_type
   const isPartnerCustomer = personCustomerType === 'Partner'
 
+  const partner2Options = useMemo(
+    () => partners.filter(p => p.id !== partner1Id),
+    [partners, partner1Id]
+  )
+
   async function save() {
-    if (!person)  { alert('Select a customer first'); return }
+    if (!person) { alert('Select a customer first'); return }
     if (!product) { alert('Pick a product'); return }
 
     const qty = parseInt(qtyStr || '0', 10)
@@ -219,16 +217,22 @@ export default function NewOrder() {
       if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
     }
 
-    // Optional overrides
+    // Parse optional cost overrides
     let productCostToSend: number | undefined = undefined
     let shippingCostToSend: number | undefined = undefined
+
     if (productCostStr.trim()) {
       const parsed = parsePriceToNumber(productCostStr)
-      if (Number.isFinite(parsed) && parsed > 0) productCostToSend = parsed
+      if (Number.isFinite(parsed) && parsed > 0) {
+        productCostToSend = parsed
+      }
     }
+
     if (shippingCostStr.trim()) {
       const parsed = parsePriceToNumber(shippingCostStr)
-      if (Number.isFinite(parsed) && parsed >= 0) shippingCostToSend = parsed
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        shippingCostToSend = parsed
+      }
     }
 
     try {
@@ -245,18 +249,20 @@ export default function NewOrder() {
         shipping_cost: shippingCostToSend,
         partner_splits: splits.length ? splits : undefined,
       })
+
       alert(`Saved! Order #${order_no}`)
 
-      // Return path handling
+      // Check if we should navigate back to customer detail
       const params = new URLSearchParams(location.search)
       const returnTo = params.get('return_to')
       const returnId = params.get('return_id')
+
       if (returnTo === 'customer' && returnId) {
         navigate(`/customers/${returnId}`)
         return
       }
 
-      // Reset some fields (keep same customer/product)
+      // Otherwise just reset form (keep same customer/product)
       setQtyStr('')
       setPriceStr('')
       setOrderDate(todayYMD())
@@ -279,6 +285,8 @@ export default function NewOrder() {
     <div className="card" style={{maxWidth: 720}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <h3 style={{ margin:0 }}>New Order</h3>
+
+        {/* Profit display - top right */}
         {orderValue > 0 && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
@@ -292,7 +300,7 @@ export default function NewOrder() {
         )}
       </div>
 
-      {/* Search customer */}
+      {/* Search customer (full width) */}
       <div style={{ marginTop: 12, position: 'relative' }}>
         <label>Search customer</label>
         <input
@@ -310,13 +318,21 @@ export default function NewOrder() {
           onBlur={() => setTimeout(() => setFocused(false), 120)}
           style={{ height: CONTROL_H }}
         />
+
         {(focused && query && suggestions.length > 0) && (
           <div
             style={{
               position: 'absolute',
-              top: '100%', left: 0, right: 0, marginTop: 4,
-              borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff',
-              padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
+              top: '100%',
+              left: 0,
+              right: 0,
+              marginTop: 4,
+              borderRadius: 10,
+              background: 'rgba(47,109,246,0.90)',
+              color: '#fff',
+              padding: 6,
+              zIndex: 50,
+              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
             }}
           >
             {suggestions.map(s => (
@@ -325,8 +341,14 @@ export default function NewOrder() {
                 className="primary"
                 onClick={() => pickSuggestion(s.id, s.name)}
                 style={{
-                  width: '100%', background: 'transparent', border: 'none', textAlign: 'left',
-                  padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer',
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  color: '#fff',
+                  borderRadius: 8,
+                  cursor: 'pointer',
                 }}
               >
                 {s.name}
@@ -346,12 +368,17 @@ export default function NewOrder() {
         </div>
         <div>
           <label>Order date</label>
-          <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} style={{ height: CONTROL_H }} />
+          <input
+            type="date"
+            value={orderDate}
+            onChange={e=>setOrderDate(e.target.value)}
+            style={{ height: CONTROL_H }}
+          />
         </div>
       </div>
 
-      {/* Quantity | Price + Price last time */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12, alignItems:'end' }}>
+      {/* Quantity | Price | Price last time */}
+      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
         <div>
           <label>Quantity</label>
           <input
@@ -363,40 +390,26 @@ export default function NewOrder() {
             style={{ height: CONTROL_H }}
           />
         </div>
-
-        {/* Keep original column; place last-price to the RIGHT of input */}
         <div>
           <label>Price</label>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr max-content', gap:12, alignItems:'end' }}>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={priceStr}
-              onChange={e => setPriceStr(e.target.value)}
-              style={{ height: CONTROL_H }}
-            />
-            <div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Price last time</div>
-              <div
-                style={{
-                  height: CONTROL_H,
-                  display:'flex',
-                  alignItems:'center',
-                  padding:'0 10px',
-                  borderRadius:8,
-                  background:'var(--surface-muted, #f5f6f8)',
-                  border:'1px solid var(--border, #e5e7eb)',
-                  fontWeight:600,
-                  color:'#111',
-                  minWidth: 96,
-                }}
-                title={lastUnitPrice != null ? `$${lastUnitPrice.toFixed(2)}` : '—'}
-              >
-                {lastUnitPrice == null ? '—' : `$${lastUnitPrice.toFixed(2)}`}
-              </div>
-            </div>
-          </div>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={priceStr}
+            onChange={e => setPriceStr(e.target.value)}
+            style={{ height: CONTROL_H }}
+          />
+        </div>
+        <div>
+          <label>Price last time</label>
+          <input
+            type="text"
+            value={historicalPrice !== null ? historicalPrice.toFixed(2) : '—'}
+            placeholder="—"
+            readOnly
+            style={{ height: CONTROL_H, opacity: 0.6 }}
+          />
         </div>
       </div>
 
@@ -431,7 +444,7 @@ export default function NewOrder() {
       {/* Partner splits (only when selected customer's customer_type === 'Partner') */}
       {isPartnerCustomer && (
         <>
-          {/* Partner 1 row */}
+          {/* Partner 1 row: 3 columns (2fr, 1fr, 2fr) */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
               <label>Partner 1</label>
@@ -469,7 +482,7 @@ export default function NewOrder() {
             </div>
           </div>
 
-          {/* Partner 2 row */}
+          {/* Partner 2 row: 3 columns (2fr, 1fr, 2fr) */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
               <label>Partner 2</label>
@@ -479,7 +492,7 @@ export default function NewOrder() {
                 style={{ height: CONTROL_H }}
               >
                 <option value="">—</option>
-                {partners.filter(p => p.id !== partner1Id).map(p => (
+                {partner2Options.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
@@ -509,7 +522,7 @@ export default function NewOrder() {
         </>
       )}
 
-      {/* Notes */}
+      {/* Notes field - always shows, always last */}
       <div style={{ marginTop: 12 }}>
         <label>Notes (optional)</label>
         <input
@@ -521,7 +534,7 @@ export default function NewOrder() {
         />
       </div>
 
-      {/* More fields */}
+      {/* More fields - Product cost and Shipping cost */}
       {showMoreFields && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
@@ -553,19 +566,18 @@ export default function NewOrder() {
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save order</button>
         <button
           onClick={() => {
-            setQtyStr(''); setPriceStr('');
-            setNotes('');
-            setQuery(''); setEntityId('');
-            setPartner1Id(''); setPartner2Id('');
-            setPartner1PerItemStr(''); setPartner2PerItemStr('');
-            setProductCostStr(''); setShippingCostStr('');
-            setShowMoreFields(false);
+            setQtyStr(''); setPriceStr(''); setNotes(''); setQuery(''); setEntityId(''); // Clear customer search
+            setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('');
+            setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false);
           }}
           style={{ height: CONTROL_H }}
         >
           Clear
         </button>
-        <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>
+        <button
+          onClick={() => setShowMoreFields(v => !v)}
+          style={{ height: CONTROL_H }}
+        >
           More
         </button>
       </div>
