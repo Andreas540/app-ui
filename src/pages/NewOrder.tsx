@@ -6,9 +6,12 @@ import { todayYMD } from '../lib/time'
 
 type PartnerRef = { id: string; name: string }
 
+// ✨ shared width so Price matches both "Per item" inputs
+const PER_ITEM_INPUT_WIDTH = 180
+
 export default function NewOrder() {
   const navigate = useNavigate()
-const location = useLocation()
+  const location = useLocation()
   const [people, setPeople] = useState<Person[]>([])
   const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
   const [products, setProducts] = useState<Product[]>([])
@@ -40,18 +43,20 @@ const location = useLocation()
   const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
-  // Read URL parameters for pre-populating customer
+  // ✨ last unit price for current (customer, product)
+  const [lastUnitPrice, setLastUnitPrice] = useState<number | null | undefined>(undefined)
 
-useEffect(() => {
-  const params = new URLSearchParams(location.search)
-  const customerId = params.get('customer_id')
-  const customerName = params.get('customer_name')
-  
-  if (customerId && customerName) {
-    setEntityId(customerId)
-    setQuery(customerName)
-  }
-}, [location.search])
+  // Read URL parameters for pre-populating customer
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const customerId = params.get('customer_id')
+    const customerName = params.get('customer_name')
+    if (customerId && customerName) {
+      setEntityId(customerId)
+      setQuery(customerName)
+    }
+  }, [location.search])
+
   useEffect(() => {
     (async () => {
       try {
@@ -72,7 +77,7 @@ useEffect(() => {
   // Fetch historical costs when product or customer changes
   useEffect(() => {
     if (!productId || !entityId || !orderDate) return
-    
+
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -87,6 +92,33 @@ useEffect(() => {
       }
     })()
   }, [productId, entityId, orderDate])
+
+  // ✨ Fetch last unit price when product or customer changes
+  useEffect(() => {
+    if (!productId || !entityId) {
+      setLastUnitPrice(undefined)
+      return
+    }
+    (async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}`)
+        if (res.ok) {
+          const data = await res.json()
+          // expect { last_unit_price: number | null }
+          setLastUnitPrice(
+            typeof data?.last_unit_price === 'number'
+              ? data.last_unit_price
+              : (data?.last_unit_price ?? null)
+          )
+        } else {
+          setLastUnitPrice(null)
+        }
+      } catch {
+        setLastUnitPrice(null)
+      }
+    })()
+  }, [productId, entityId])
 
   const person  = useMemo(() => people.find(p => p.id === entityId),   [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
@@ -131,7 +163,7 @@ useEffect(() => {
   // Calculate partner amounts: per-item × quantity
   const partner1PerItem = useMemo(() => parsePriceToNumber(partner1PerItemStr), [partner1PerItemStr])
   const partner2PerItem = useMemo(() => parsePriceToNumber(partner2PerItemStr), [partner2PerItemStr])
-  
+
   const partner1Total = useMemo(() => {
     if (!Number.isFinite(partner1PerItem) || partner1PerItem <= 0) return 0
     if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
@@ -181,78 +213,71 @@ useEffect(() => {
   )
 
   async function save() {
-  if (!person)  { alert('Select a customer first'); return }
-  if (!product) { alert('Pick a product'); return }
+    if (!person)  { alert('Select a customer first'); return }
+    if (!product) { alert('Pick a product'); return }
 
-  const qty = parseInt(qtyStr || '0', 10)
-  if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+    const qty = parseInt(qtyStr || '0', 10)
+    if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
 
-  const unitPrice = parsePriceToNumber(priceStr)
-  if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
+    const unitPrice = parsePriceToNumber(priceStr)
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
 
-  // Build partner_splits only for Partner customers
-  const splits: Array<{ partner_id: string; amount: number }> = []
-  if (isPartnerCustomer) {
-    if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
-    if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
-  }
-
-  // Parse optional cost overrides
-  let productCostToSend: number | undefined = undefined
-  let shippingCostToSend: number | undefined = undefined
-  
-  if (productCostStr.trim()) {
-    const parsed = parsePriceToNumber(productCostStr)
-    if (Number.isFinite(parsed) && parsed > 0) {
-      productCostToSend = parsed
-    }
-  }
-  
-  if (shippingCostStr.trim()) {
-    const parsed = parsePriceToNumber(shippingCostStr)
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      shippingCostToSend = parsed
-    }
-  }
-
-  try {
-    const { order_no } = await createOrder({
-      customer_id: person.id,
-      product_id: product.id,
-      qty,
-      unit_price: unitPrice,
-      date: orderDate,
-      delivered,
-      discount: 0,
-      notes: notes.trim() || undefined,
-      product_cost: productCostToSend,
-      shipping_cost: shippingCostToSend,
-      partner_splits: splits.length ? splits : undefined,
-    })
-    alert(`Saved! Order #${order_no}`)
-
-    // Check if we should navigate back to customer detail
-    const params = new URLSearchParams(location.search)
-    const returnTo = params.get('return_to')
-    const returnId = params.get('return_id')
-    
-    if (returnTo === 'customer' && returnId) {
-      navigate(`/customers/${returnId}`)
-      return
+    // Build partner_splits only for Partner customers
+    const splits: Array<{ partner_id: string; amount: number }> = []
+    if (isPartnerCustomer) {
+      if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
+      if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
     }
 
-    // Otherwise just reset form (keep same customer/product)
-    setQtyStr('')
-    setPriceStr('')
-    setOrderDate(todayYMD())
-    setDelivered(false)
-    setNotes('')
-    setPartner1Id(''); setPartner2Id('')
-    setPartner1PerItemStr(''); setPartner2PerItemStr('')
-  } catch (e: any) {
-    alert(e?.message || 'Save failed')
+    // Parse optional cost overrides
+    let productCostToSend: number | undefined = undefined
+    let shippingCostToSend: number | undefined = undefined
+    if (productCostStr.trim()) {
+      const parsed = parsePriceToNumber(productCostStr)
+      if (Number.isFinite(parsed) && parsed > 0) productCostToSend = parsed
+    }
+    if (shippingCostStr.trim()) {
+      const parsed = parsePriceToNumber(shippingCostStr)
+      if (Number.isFinite(parsed) && parsed >= 0) shippingCostToSend = parsed
+    }
+
+    try {
+      const { order_no } = await createOrder({
+        customer_id: person.id,
+        product_id: product.id,
+        qty,
+        unit_price: unitPrice,
+        date: orderDate,
+        delivered,
+        discount: 0,
+        notes: notes.trim() || undefined,
+        product_cost: productCostToSend,
+        shipping_cost: shippingCostToSend,
+        partner_splits: splits.length ? splits : undefined,
+      })
+      alert(`Saved! Order #${order_no}`)
+
+      // Navigate back if instructed via query params
+      const params = new URLSearchParams(location.search)
+      const returnTo = params.get('return_to')
+      const returnId = params.get('return_id')
+      if (returnTo === 'customer' && returnId) {
+        navigate(`/customers/${returnId}`)
+        return
+      }
+
+      // Otherwise reset some fields (keep same customer/product)
+      setQtyStr('')
+      setPriceStr('')
+      setOrderDate(todayYMD())
+      setDelivered(false)
+      setNotes('')
+      setPartner1Id(''); setPartner2Id('')
+      setPartner1PerItemStr(''); setPartner2PerItemStr('')
+    } catch (e: any) {
+      alert(e?.message || 'Save failed')
+    }
   }
-}
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -264,7 +289,6 @@ useEffect(() => {
     <div className="card" style={{maxWidth: 720}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <h3 style={{ margin:0 }}>New Order</h3>
-        
         {/* Profit display - top right */}
         {orderValue > 0 && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
@@ -301,16 +325,9 @@ useEffect(() => {
           <div
             style={{
               position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              marginTop: 4,
-              borderRadius: 10,
-              background: 'rgba(47,109,246,0.90)',
-              color: '#fff',
-              padding: 6,
-              zIndex: 50,
-              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
+              top: '100%', left: 0, right: 0, marginTop: 4,
+              borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff',
+              padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
             }}
           >
             {suggestions.map(s => (
@@ -319,14 +336,8 @@ useEffect(() => {
                 className="primary"
                 onClick={() => pickSuggestion(s.id, s.name)}
                 style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  color: '#fff',
-                  borderRadius: 8,
-                  cursor: 'pointer',
+                  width: '100%', background: 'transparent', border: 'none', textAlign: 'left',
+                  padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer',
                 }}
               >
                 {s.name}
@@ -350,8 +361,8 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Quantity | Order price */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      {/* Quantity | Price + "Price last time" */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12, alignItems: 'end' }}>
         <div>
           <label>Quantity</label>
           <input
@@ -363,16 +374,41 @@ useEffect(() => {
             style={{ height: CONTROL_H }}
           />
         </div>
-        <div>
-          <label>Order price (USD)</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={priceStr}
-            onChange={e => setPriceStr(e.target.value)}
-            style={{ height: CONTROL_H }}
-          />
+
+        {/* Right side: Price input (fixed width) + last price block */}
+        <div style={{ display: 'grid', gridTemplateColumns: `${PER_ITEM_INPUT_WIDTH}px 1fr`, gap: 12, alignItems: 'end' }}>
+          <div>
+            {/* ✨ label changed */}
+            <label>Price</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={priceStr}
+              onChange={e => setPriceStr(e.target.value)}
+              style={{ height: CONTROL_H, width: PER_ITEM_INPUT_WIDTH }}
+            />
+          </div>
+
+          {/* ✨ last price panel */}
+          <div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Price last time</div>
+            <div
+              style={{
+                height: CONTROL_H,
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 10px',
+                borderRadius: 8,
+                background: 'var(--surface-muted, #f5f6f8)',
+                border: '1px solid var(--border, #e5e7eb)',
+                fontWeight: 600,
+              }}
+              title={lastUnitPrice != null ? `$${lastUnitPrice.toFixed(2)}` : '—'}
+            >
+              {lastUnitPrice == null ? '—' : `$${lastUnitPrice.toFixed(2)}`}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -430,7 +466,7 @@ useEffect(() => {
                 placeholder="0.00"
                 value={partner1PerItemStr}
                 onChange={e=>setPartner1PerItemStr(e.target.value)}
-                style={{ height: CONTROL_H }}
+                style={{ height: CONTROL_H, width: PER_ITEM_INPUT_WIDTH }}
               />
             </div>
             <div>
@@ -468,7 +504,7 @@ useEffect(() => {
                 placeholder="0.00"
                 value={partner2PerItemStr}
                 onChange={e=>setPartner2PerItemStr(e.target.value)}
-                style={{ height: CONTROL_H }}
+                style={{ height: CONTROL_H, width: PER_ITEM_INPUT_WIDTH }}
               />
             </div>
             <div>
@@ -551,6 +587,8 @@ useEffect(() => {
     </div>
   )
 }
+
+
 
 
 
