@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { formatUSAny } from '../lib/time'
+import OrderDetailModal from '../components/OrderDetailModal'
 
 function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const [err, setErr] = useState<string | null>(null)
   const [ordersErr, setOrdersErr] = useState<string | null>(null)
   const [orderDisplayCount, setOrderDisplayCount] = useState(5)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
   
   // Load customers data for totals
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function Dashboard() {
   const shownOrders = recentOrders.slice(0, orderDisplayCount)
 
   // Compact layout constants (same as CustomerDetail)
-  const DATE_COL = 65 // px
+  const DATE_COL = 55
   const LINE_GAP = 4
 
   // Handle delivery toggle for orders
@@ -106,6 +109,11 @@ export default function Dashboard() {
       console.error('Failed to toggle delivery status:', e)
       alert(`Failed to update delivery status: ${e.message}`)
     }
+  }
+
+  const handleOrderClick = (order: any) => {
+    setSelectedOrder(order)
+    setShowOrderModal(true)
   }
 
   return (
@@ -170,7 +178,7 @@ export default function Dashboard() {
 
       <div className="card">
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h3 style={{margin:0}}>Most recently registered orders</h3>
+          <h3 style={{margin:0, fontSize: 16}}>Most recently registered orders</h3>
           {recentOrders.length > 5 && (
             <div style={{ display: 'flex', gap: 8 }}>
               {orderDisplayCount > 5 && (
@@ -202,53 +210,81 @@ export default function Dashboard() {
         ) : recentOrders.length === 0 ? (
           <p className="helper">No orders yet.</p>
         ) : (
-          <div style={{display:'grid', gap:10, marginTop: 12}}>
+          <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
-              const middle = o.product_name && o.qty != null
-                ? `${o.product_name} / ${o.qty} / $${Number(o.unit_price ?? 0).toFixed(2)}`
+              const detailsLine = o.product_name && o.qty != null
+                ? `${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / $${Number(o.unit_price ?? 0).toFixed(2)}`
                 : `${o.lines} line(s)`
 
               return (
                 <div
                   key={o.id}
                   style={{
-                    display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                    gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
-                    padding:'8px 0'
+                    paddingTop: '12px',
+                    paddingBottom: '12px'
                   }}
                 >
-                  {/* DATE (MM/DD/YY) */}
-                  <div className="helper">{formatUSAny(o.order_date)}</div>
+                  <div
+                    style={{
+                      display:'grid',
+                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                      gap:LINE_GAP,
+                    }}
+                  >
+                    {/* DATE (MM/DD/YY) */}
+                    <div className="helper">{formatUSAny(o.order_date)}</div>
 
-                  {/* DELIVERY CHECKMARK */}
-                  <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-                    <button
-                      onClick={() => handleDeliveryToggle(o.id, !o.delivered)}
-                      style={{ 
-                        background: 'transparent', 
-                        border: 'none', 
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: 14
-                      }}
-                      title={`Mark as ${o.delivered ? 'undelivered' : 'delivered'}`}
+                    {/* DELIVERY CHECKMARK */}
+                    <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeliveryToggle(o.id, !o.delivered)
+                        }}
+                        style={{ 
+                          background: 'transparent', 
+                          border: 'none', 
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: 14
+                        }}
+                        title={`Mark as ${o.delivered ? 'undelivered' : 'delivered'}`}
+                      >
+                        {o.delivered ? (
+                          <span style={{ color: '#10b981' }}>✓</span>
+                        ) : (
+                          <span style={{ color: '#d1d5db' }}>○</span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* MIDDLE: Customer name + details */}
+                    <div 
+                      className="helper"
+                      onClick={() => handleOrderClick(o)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
-                      {o.delivered ? (
-                        <span style={{ color: '#10b981' }}>✓</span>
-                      ) : (
-                        <span style={{ color: '#d1d5db' }}>○</span>
-                      )}
-                    </button>
-                  </div>
+                      <div>
+                        <strong>{o.customer_name}</strong>
+                      </div>
+                      <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
+                        {detailsLine}
+                      </div>
+                    </div>
 
-                  {/* MIDDLE TEXT */}
-                  <div className="helper">{middle}</div>
-
-                  {/* RIGHT TOTAL */}
-                  <div className="helper" style={{textAlign:'right'}}>
-                    {`$${Math.round(Number(o.total)||0).toLocaleString('en-US')}`}
+                    {/* RIGHT TOTAL — with $ sign */}
+                    <div 
+                      className="helper" 
+                      onClick={() => handleOrderClick(o)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{textAlign:'right', cursor: 'pointer'}}
+                    >
+                      ${Math.round(Number(o.total)||0).toLocaleString('en-US')}
+                    </div>
                   </div>
                 </div>
               )
@@ -256,6 +292,12 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <OrderDetailModal 
+        isOpen={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        order={selectedOrder}
+      />
     </div>
   )
 }
