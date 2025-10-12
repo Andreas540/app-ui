@@ -202,11 +202,11 @@ export default function CustomerDetailPage() {
               </div>
 
               {/* ✨ NEW: Company name */}
-  <div style={{ marginTop: 12 }}>
-    <div className="helper">Company name</div>
-    <div>{customer.company_name || '—'}</div>
-  </div>
-  {/* ✨ END NEW */}
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">Company name</div>
+                <div>{customer.company_name || '—'}</div>
+              </div>
+              {/* ✨ END NEW */}
 
               <div style={{ marginTop: 12 }}>
                 <div className="helper">Phone</div>
@@ -251,72 +251,104 @@ export default function CustomerDetailPage() {
               // NOTE: server should provide product_name, qty, unit_price, partner_amount
               const middle =
                 (o as any).product_name && (o as any).qty != null
-                  ? `${(o as any).product_name} / ${(o as any).qty} / $${Number((o as any).unit_price ?? 0).toFixed(2)}`
+                  ? `${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / $${Number((o as any).unit_price ?? 0).toFixed(2)}`
                   : `${o.lines} line(s)`
 
               const withPartner = isPartnerCustomer && (o as any).partner_amount != null
                 ? `${middle} / $${Math.round(Number((o as any).partner_amount))}`
                 : middle
 
+              const hasNotes = (o as any).notes && (o as any).notes.trim()
+
               return (
                 <div
                   key={o.id}
                   style={{
-                    display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                    gap:LINE_GAP,
                     borderBottom:'1px solid #eee',
                     padding:'8px 0'
                   }}
                 >
-                  {/* DATE (MM/DD/YY) */}
-                  <div className="helper">{formatUSAny((o as any).order_date)}</div>
+                  <div
+                    style={{
+                      display:'grid',
+                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                      gap:LINE_GAP,
+                    }}
+                  >
+                    {/* DATE (MM/DD/YY) */}
+                    <div className="helper">{formatUSAny((o as any).order_date)}</div>
 
-                  {/* DELIVERY CHECKMARK - moved to column 2 */}
-                  <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeliveryToggle(o.id, !(o as any).delivered)
-                      }}
-                      style={{ 
-                        background: 'transparent', 
-                        border: 'none', 
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: 14
-                      }}
-                      title={`Mark as ${(o as any).delivered ? 'undelivered' : 'delivered'}`}
+                    {/* DELIVERY CHECKMARK - moved to column 2 */}
+                    <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeliveryToggle(o.id, !(o as any).delivered)
+                        }}
+                        style={{ 
+                          background: 'transparent', 
+                          border: 'none', 
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: 14
+                        }}
+                        title={`Mark as ${(o as any).delivered ? 'undelivered' : 'delivered'}`}
+                      >
+                        {(o as any).delivered ? (
+                          <span style={{ color: '#10b981' }}>✓</span>
+                        ) : (
+                          <span style={{ color: '#d1d5db' }}>○</span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* MIDDLE TEXT — compact like the date */}
+                    <div 
+                      className="helper"
+                      onClick={() => handleOrderClick(o)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ cursor: 'pointer' }}
                     >
-                      {(o as any).delivered ? (
-                        <span style={{ color: '#10b981' }}>✓</span>
-                      ) : (
-                        <span style={{ color: '#d1d5db' }}>○</span>
-                      )}
-                    </button>
+                      {withPartner}
+                    </div>
+
+                    {/* RIGHT TOTAL — with $ sign */}
+                    <div 
+                      className="helper" 
+                      onClick={() => handleOrderClick(o)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{textAlign:'right', cursor: 'pointer'}}
+                    >
+                      ${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}
+                    </div>
                   </div>
 
-                  {/* MIDDLE TEXT — compact like the date */}
-                  <div 
-                    className="helper"
-                    onClick={() => handleOrderClick(o)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {withPartner}
-                  </div>
-
-                  {/* RIGHT TOTAL — with $ sign */}
-                  <div 
-                    className="helper" 
-                    onClick={() => handleOrderClick(o)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    style={{textAlign:'right', cursor: 'pointer'}}
-                  >
-                    {`${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}`}
-                  </div>
+                  {/* NOTES ROW */}
+                  {hasNotes && (
+                    <div
+                      style={{
+                        display:'grid',
+                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                        gap:LINE_GAP,
+                        marginTop: 4
+                      }}
+                    >
+                      <div></div>
+                      <div></div>
+                      <div 
+                        className="helper"
+                        onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {(o as any).notes}
+                      </div>
+                      <div></div>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -341,46 +373,80 @@ export default function CustomerDetailPage() {
 
         {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
           <div style={{display:'grid', gap:10}}>
-            {shownPayments.map(p => (
-              <div
-                key={p.id}
-                style={{
-                  display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                  gap:LINE_GAP,
-                  borderBottom:'1px solid #eee',
-                  padding:'8px 0'
-                }}
-              >
-                {/* DATE */}
-                <div className="helper">{formatUSAny((p as any).payment_date)}</div>
+            {shownPayments.map(p => {
+              const hasNotes = (p as any).notes && (p as any).notes.trim()
 
-                {/* EMPTY COLUMN for alignment with orders checkmark column */}
-                <div></div>
-
-                {/* TYPE */}
-                <div 
-                  className="helper"
-                  onClick={() => handlePaymentClick(p)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer' }}
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
                 >
-                  {(p as any).payment_type}
-                </div>
+                  <div
+                    style={{
+                      display:'grid',
+                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                      gap:LINE_GAP,
+                    }}
+                  >
+                    {/* DATE */}
+                    <div className="helper">{formatUSAny((p as any).payment_date)}</div>
 
-                {/* AMOUNT with minus sign */}
-                <div 
-                  className="helper" 
-                  onClick={() => handlePaymentClick(p)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{textAlign:'right', cursor: 'pointer'}}
-                >
-                  {`-${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}`}
+                    {/* EMPTY COLUMN for alignment with orders checkmark column */}
+                    <div></div>
+
+                    {/* TYPE */}
+                    <div 
+                      className="helper"
+                      onClick={() => handlePaymentClick(p)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {(p as any).payment_type}
+                    </div>
+
+                    {/* AMOUNT with minus sign */}
+                    <div 
+                      className="helper" 
+                      onClick={() => handlePaymentClick(p)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{textAlign:'right', cursor: 'pointer'}}
+                    >
+                      -${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}
+                    </div>
+                  </div>
+
+                  {/* NOTES ROW */}
+                  {hasNotes && (
+                    <div
+                      style={{
+                        display:'grid',
+                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                        gap:LINE_GAP,
+                        marginTop: 4
+                      }}
+                    >
+                      <div></div>
+                      <div></div>
+                      <div 
+                        className="helper"
+                        onClick={() => handlePaymentClick(p)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {(p as any).notes}
+                      </div>
+                      <div></div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
