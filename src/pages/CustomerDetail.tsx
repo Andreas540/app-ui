@@ -265,8 +265,8 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     borderBottom:'1px solid #eee',
-                    paddingTop: '8px',
-                    paddingBottom: '8px'
+                    paddingTop: '12px',
+                    paddingBottom: '12px'
                   }}
                 >
                   <div
@@ -309,7 +309,7 @@ export default function CustomerDetailPage() {
                       onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
                       {withPartner}
                     </div>
@@ -343,7 +343,7 @@ export default function CustomerDetailPage() {
                         onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}
                       >
                         {(o as any).notes}
                       </div>
@@ -382,8 +382,8 @@ export default function CustomerDetailPage() {
                   key={p.id}
                   style={{
                     borderBottom:'1px solid #eee',
-                    paddingTop: '8px',
-                    paddingBottom: '8px'
+                    paddingTop: '12px',
+                    paddingBottom: '12px'
                   }}
                 >
                   <div
@@ -405,7 +405,7 @@ export default function CustomerDetailPage() {
                       onClick={() => handlePaymentClick(p)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
                       {(p as any).payment_type}
                     </div>
@@ -439,7 +439,7 @@ export default function CustomerDetailPage() {
                         onClick={() => handlePaymentClick(p)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}
                       >
                         {(p as any).notes}
                       </div>
