@@ -57,6 +57,7 @@ async function getCustomer(event) {
         o.order_no,
         o.order_date,
         o.delivered,
+        o.notes,
         -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
         COUNT(oi.id) AS lines,
@@ -89,7 +90,7 @@ async function getCustomer(event) {
     `
 
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount, created_at
+      SELECT id, payment_date, payment_type, amount, notes, created_at
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ORDER BY payment_date DESC, created_at DESC
