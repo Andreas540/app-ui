@@ -265,7 +265,8 @@ export default function CustomerDetailPage() {
                   key={o.id}
                   style={{
                     borderBottom:'1px solid #eee',
-                    padding:'8px 0'
+                    paddingTop: '8px',
+    paddingBottom: '8px'
                   }}
                 >
                   <div
@@ -381,7 +382,8 @@ export default function CustomerDetailPage() {
                   key={p.id}
                   style={{
                     borderBottom:'1px solid #eee',
-                    padding:'8px 0'
+                    paddingTop: '8px',
+    paddingBottom: '8px'
                   }}
                 >
                   <div
