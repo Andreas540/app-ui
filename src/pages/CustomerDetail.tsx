@@ -246,7 +246,7 @@ export default function CustomerDetailPage() {
         </div>
 
         {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
-          <div style={{display:'grid', gap:10}}>
+          <div style={{display:'grid'}}>
             {shownOrders.map(o => {
               // NOTE: server should provide product_name, qty, unit_price, partner_amount
               const middle =
@@ -266,7 +266,7 @@ export default function CustomerDetailPage() {
                   style={{
                     borderBottom:'1px solid #eee',
                     paddingTop: '8px',
-    paddingBottom: '8px'
+                    paddingBottom: '8px'
                   }}
                 >
                   <div
@@ -373,7 +373,7 @@ export default function CustomerDetailPage() {
         </div>
 
         {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
-          <div style={{display:'grid', gap:10}}>
+          <div style={{display:'grid'}}>
             {shownPayments.map(p => {
               const hasNotes = (p as any).notes && (p as any).notes.trim()
 
@@ -383,7 +383,7 @@ export default function CustomerDetailPage() {
                   style={{
                     borderBottom:'1px solid #eee',
                     paddingTop: '8px',
-    paddingBottom: '8px'
+                    paddingBottom: '8px'
                   }}
                 >
                   <div
