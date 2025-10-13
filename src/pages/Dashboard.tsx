@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [orderDisplayCount, setOrderDisplayCount] = useState(5)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
+  const [orderFilter, setOrderFilter] = useState<'Most recent' | 'Not delivered'>('Most recent')
   
   // Load customers data for totals
   useEffect(() => {
@@ -73,8 +74,16 @@ export default function Dashboard() {
     [totalOwedToMe, partnerTotals.net]
   )
 
+  // Filter orders based on selected filter
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === 'Not delivered') {
+      return recentOrders.filter(o => !o.delivered)
+    }
+    return recentOrders
+  }, [recentOrders, orderFilter])
+
   // Show orders based on display count
-  const shownOrders = recentOrders.slice(0, orderDisplayCount)
+  const shownOrders = filteredOrders.slice(0, orderDisplayCount)
 
   // Compact layout constants (same as CustomerDetail)
   const DATE_COL = 55
@@ -115,6 +124,11 @@ export default function Dashboard() {
     setSelectedOrder(order)
     setShowOrderModal(true)
   }
+
+  // Determine title based on filter
+  const ordersTitle = orderFilter === 'Not delivered' 
+    ? 'Not delivered orders' 
+    : 'Most recently registered orders'
 
   return (
     <div className="grid">
@@ -177,9 +191,42 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
+        {/* Filter buttons */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          <button 
+            className="primary" 
+            onClick={() => {
+              setOrderFilter('Most recent')
+              setOrderDisplayCount(5)
+            }}
+            aria-pressed={orderFilter === 'Most recent'}
+            style={{ height: 'calc(var(--control-h) * 0.67)' }}
+          >
+            Most recent
+          </button>
+          <button 
+            className="primary" 
+            onClick={() => {
+              setOrderFilter('Not delivered')
+              setOrderDisplayCount(5)
+            }}
+            aria-pressed={orderFilter === 'Not delivered'}
+            style={{ height: 'calc(var(--control-h) * 0.67)' }}
+          >
+            Not delivered
+          </button>
+        </div>
+
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h3 style={{margin:0, fontSize: 16}}>Most recently registered orders</h3>
-          {recentOrders.length > 5 && (
+          <h3 style={{margin:0, fontSize: 16}}>{ordersTitle}</h3>
+          {filteredOrders.length > 5 && (
             <div style={{ display: 'flex', gap: 8 }}>
               {orderDisplayCount > 5 && (
                 <button
@@ -190,7 +237,7 @@ export default function Dashboard() {
                   Collapse
                 </button>
               )}
-              {orderDisplayCount < 15 && recentOrders.length > orderDisplayCount && (
+              {orderDisplayCount < 15 && filteredOrders.length > orderDisplayCount && (
                 <button
                   className="helper"
                   onClick={() => setOrderDisplayCount(prev => prev + 5)}
@@ -207,8 +254,8 @@ export default function Dashboard() {
           <p className="helper">Loading orders...</p>
         ) : ordersErr ? (
           <p style={{ color: 'salmon' }}>Error loading orders: {ordersErr}</p>
-        ) : recentOrders.length === 0 ? (
-          <p className="helper">No orders yet.</p>
+        ) : filteredOrders.length === 0 ? (
+          <p className="helper">No orders found.</p>
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
