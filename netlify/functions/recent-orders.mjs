@@ -22,6 +22,7 @@ async function getRecentOrders(event) {
         o.order_no,
         o.order_date,
         o.delivered,
+        o.notes,
         c.name as customer_name,
         -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,

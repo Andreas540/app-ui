@@ -216,6 +216,8 @@ export default function Dashboard() {
                 ? `${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / $${Number(o.unit_price ?? 0).toFixed(2)}`
                 : `${o.lines} line(s)`
 
+              const hasNotes = o.notes && o.notes.trim()
+
               return (
                 <div
                   key={o.id}
@@ -286,6 +288,31 @@ export default function Dashboard() {
                       ${Math.round(Number(o.total)||0).toLocaleString('en-US')}
                     </div>
                   </div>
+
+                  {/* NOTES ROW */}
+                  {hasNotes && (
+                    <div
+                      style={{
+                        display:'grid',
+                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                        gap:LINE_GAP,
+                        marginTop: 4
+                      }}
+                    >
+                      <div></div>
+                      <div></div>
+                      <div 
+                        className="helper"
+                        onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}
+                      >
+                        {o.notes}
+                      </div>
+                      <div></div>
+                    </div>
+                  )}
                 </div>
               )
             })}
