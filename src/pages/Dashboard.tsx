@@ -224,10 +224,10 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap: 8, alignItems:'center', marginTop: 12}}>
           <h3 style={{margin:0, fontSize: 16}}>{ordersTitle}</h3>
           {filteredOrders.length > 5 && (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               {orderDisplayCount > 5 && (
                 <button
                   className="helper"
