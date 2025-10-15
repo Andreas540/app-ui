@@ -17,3 +17,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+  # Scheduled function to update product costs hourly
+[functions."scheduled-update-product-costs"]
+  schedule = "0 * * * *"
