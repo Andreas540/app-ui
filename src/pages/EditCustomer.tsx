@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/api'
+import { todayYMD } from '../lib/time'
 
 export default function EditCustomer() {
   const { id } = useParams<{ id: string }>()
@@ -13,12 +14,10 @@ export default function EditCustomer() {
   // form state
   const [name, setName] = useState('')
   const [customerType, setCustomerType] = useState<CustomerType>('BLV')
-  const [shippingCost, setShippingCost] = useState<string>('') // string input, will parse to number/null
-  const [applyHistory, setApplyHistory] = useState(false)
-
-  // ✨ NEW: company name state
-  const [companyName, setCompanyName] = useState('')   // ✨ NEW
-
+  const [shippingCost, setShippingCost] = useState<string>('')
+  const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
+  const [companyName, setCompanyName] = useState('')
   const [phone, setPhone] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -36,14 +35,15 @@ export default function EditCustomer() {
         setName(c.name || '')
         setCustomerType((c.customer_type as CustomerType) || 'BLV')
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
-        // ✨ NEW: prefill company name
-        setCompanyName(c.company_name || '')           // ✨ NEW
+        setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
         setAddress1(c.address1 || '')
         setAddress2(c.address2 || '')
         setCity(c.city || '')
         setState(c.state || '')
         setPostal(c.postal_code || '')
+        setCostOption('next')
+        setSpecificDate(todayYMD())
       } catch (e:any) {
         setErr(e?.message || String(e))
       } finally {
@@ -56,9 +56,13 @@ export default function EditCustomer() {
     if (!id) return
     if (!name.trim()) { alert('Name is required'); return }
 
-    // parse shipping cost: empty -> null; otherwise number
     const sc = shippingCost.trim() === '' ? null : Number(shippingCost.replace(',', '.'))
     if (sc != null && !Number.isFinite(sc)) { alert('Shipping cost must be a number (or leave empty)'); return }
+
+    if (costOption === 'specific' && !specificDate) {
+      alert('Please select a date')
+      return
+    }
 
     try {
       await updateCustomer({
@@ -66,9 +70,9 @@ export default function EditCustomer() {
         name: name.trim(),
         customer_type: customerType,
         shipping_cost: sc,
-        apply_to_history: applyHistory,
-        // ✨ NEW: include company_name when saving
-        company_name: companyName.trim() || null,      // ✨ NEW
+        apply_to_history: costOption === 'history',
+        effective_date: costOption === 'specific' ? specificDate : undefined,
+        company_name: companyName.trim() || null,
         phone: phone.trim() || null,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
@@ -92,23 +96,14 @@ export default function EditCustomer() {
         <Link to={id ? `/customers/${id}` : '/customers'} className="helper">Cancel</Link>
       </div>
 
-      {/* Customer Name (2/3) | Customer Type (1/3) */}
-      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-        <div>
-          <label>Customer Name</label>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
-        </div>
-        <div>
-          <label>Customer Type</label>
-          <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
-            <option value="BLV">BLV</option>
-            <option value="Partner">Partner</option>
-          </select>
-        </div>
+      {/* Customer Name - full width */}
+      <div style={{ marginTop: 12 }}>
+        <label>Customer Name</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
       </div>
 
-      {/* Shipping cost (1/3) | Apply to previous checkbox (2/3) */}
-      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+      {/* Shipping cost | Customer Type */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Shipping cost</label>
           <input
@@ -119,35 +114,75 @@ export default function EditCustomer() {
             onChange={e=>setShippingCost(e.target.value)}
           />
         </div>
-        <div style={{ display:'flex', alignItems:'end' }}>
-          <label style={{ width:'100%' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, height: '100%' }}>
-              <input
-                type="checkbox"
-                checked={applyHistory}
-                onChange={e => setApplyHistory(e.target.checked)}
-                style={{ width: 18, height: 18 }}
-              />
-              <span>Apply new cost to previous orders</span>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* ✨ NEW: Company name — placed BETWEEN Shipping cost and Phone */}
-      <div style={{ marginTop: 12 }}>
         <div>
-          <label>Company name</label>
-          <input
-            value={companyName}
-            onChange={e=>setCompanyName(e.target.value)}
-            placeholder="e.g. Acme Corp"
-          />
+          <label>Customer Type</label>
+          <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
+            <option value="BLV">BLV</option>
+            <option value="Partner">Partner</option>
+          </select>
         </div>
       </div>
-      {/* ✨ END NEW */}
 
-      {/* Phone | Address line 1 - 2 columns equal width */}
+      {/* Cost application options */}
+      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="costOption"
+            checked={costOption === 'history'}
+            onChange={() => setCostOption('history')}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>Apply new cost to all previous orders</span>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="costOption"
+            checked={costOption === 'next'}
+            onChange={() => setCostOption('next')}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>New cost valid from next order</span>
+        </label>
+
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="costOption"
+              checked={costOption === 'specific'}
+              onChange={() => setCostOption('specific')}
+              style={{ width: 18, height: 18 }}
+            />
+            <span>Valid from specific date</span>
+          </label>
+          
+          {costOption === 'specific' && (
+            <div style={{ marginTop: 8, marginLeft: 28 }}>
+              <input
+                type="date"
+                value={specificDate}
+                onChange={e => setSpecificDate(e.target.value)}
+                style={{ width: '100%', maxWidth: 200 }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Company name - full width */}
+      <div style={{ marginTop: 12 }}>
+        <label>Company name</label>
+        <input
+          value={companyName}
+          onChange={e=>setCompanyName(e.target.value)}
+          placeholder="e.g. Acme Corp"
+        />
+      </div>
+
+      {/* Phone | Address line 1 */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Phone</label>
@@ -159,7 +194,7 @@ export default function EditCustomer() {
         </div>
       </div>
 
-      {/* Address line 2 | City - 2 columns equal width */}
+      {/* Address line 2 | City */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Address line 2</label>
@@ -171,7 +206,7 @@ export default function EditCustomer() {
         </div>
       </div>
 
-      {/* State | Postal code - 2 columns equal width */}
+      {/* State | Postal code */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>State</label>

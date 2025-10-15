@@ -213,7 +213,7 @@ export async function fetchCustomerDetail(id: string) {
   return (await res.json()) as CustomerDetail
 }
 
-export type UpdateCustomerInput = NewCustomerInput & { id: string }
+export type UpdateCustomerInput = NewCustomerInput & { id: string; effective_date?: string }
 export async function updateCustomer(input: UpdateCustomerInput) {
   const res = await fetch(`${base}/api/customer`, {
     method: 'PUT',

@@ -46,11 +46,6 @@ async function getCustomer(event) {
       FROM o, p
     `
 
-    /* Recent orders with:
-       - product_name / qty / unit_price from first line (typical 1-line orders)
-       - partner_amount = SUM(order_partners.amount) for that order
-       - total = SUM(qty*unit_price) across all lines
-    */
     const orders = await sql`
       SELECT
         o.id,
@@ -58,14 +53,11 @@ async function getCustomer(event) {
         o.order_date,
         o.delivered,
         o.notes,
-        -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
         COUNT(oi.id) AS lines,
-        -- first line snapshot
         fl.product_name,
         fl.qty,
         fl.unit_price,
-        -- partner splits total for the order
         pa.partner_amount
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -113,7 +105,7 @@ async function updateCustomer(event) {
 
     const body = JSON.parse(event.body || '{}')
     const {
-      id, name, customer_type, shipping_cost, apply_to_history, company_name,
+      id, name, customer_type, shipping_cost, apply_to_history, effective_date, company_name,
       phone, address1, address2, city, state, postal_code
     } = body || {}
 
@@ -143,12 +135,34 @@ async function updateCustomer(event) {
     const currentShippingCost = current[0].shipping_cost
     const shippingCostChanged = sc !== null && sc !== currentShippingCost
 
-    // Update customer record (always update to reflect current value)
+    // Determine if we should update customers.shipping_cost immediately
+    let shouldUpdateShippingCostNow = false;
+    
+    if (shippingCostChanged) {
+      if (apply_to_history) {
+        // Applying to all history = effective immediately
+        shouldUpdateShippingCostNow = true;
+      } else if (effective_date) {
+        // Check if effective date is today or in the past
+        const effectiveDateObj = new Date(effective_date + 'T00:00:00Z');
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        shouldUpdateShippingCostNow = effectiveDateObj <= today;
+      } else {
+        // No specific date = from next order = effective now
+        shouldUpdateShippingCostNow = true;
+      }
+    }
+
+    // Update customer record
     const res = await sql`
       UPDATE customers SET
         name = ${name},
         customer_type = ${customer_type ?? null},
-        shipping_cost = ${sc},
+        shipping_cost = CASE 
+          WHEN ${shouldUpdateShippingCostNow} THEN ${sc}
+          ELSE shipping_cost
+        END,
         company_name = ${company_name ?? null},
         phone = ${phone ?? null},
         address1 = ${address1 ?? null},
@@ -173,6 +187,12 @@ async function updateCustomer(event) {
         await sql`
           INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
           VALUES (${TENANT_ID}, ${id}, ${sc}, '1970-01-01')
+        `
+      } else if (effective_date) {
+        // Insert entry with specific date
+        await sql`
+          INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
+          VALUES (${TENANT_ID}, ${id}, ${sc}, ${effective_date})
         `
       } else {
         // Normal case: add new entry with current timestamp
