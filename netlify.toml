@@ -21,3 +21,7 @@
   # Scheduled function to update product costs hourly
 [functions."scheduled-update-product-costs"]
   schedule = "0 * * * *"
+
+  # Scheduled function to update shipping costs hourly
+[functions."scheduled-update-shipping-costs"]
+  schedule = "0 * * * *"
