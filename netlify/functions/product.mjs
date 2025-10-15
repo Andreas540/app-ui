@@ -77,6 +77,7 @@ async function update(event) {
     const body = JSON.parse(event.body || '{}');
     const id = (body.id || '').trim();
     const name = typeof body.name === 'string' ? body.name.trim() : undefined;
+    const effectiveDate = body.effective_date; // ✨ NEW: Get effective_date
 
     // Strict boolean coercion for checkbox
     const rawApply = body.apply_to_history;
@@ -129,8 +130,14 @@ async function update(event) {
           INSERT INTO product_cost_history (product_id, cost, effective_from)
           VALUES (${id}, ${newCostNum}, '1970-01-01')
         `
+      } else if (effectiveDate) {
+        // ✨ NEW: Insert entry with specific date
+        await sql`
+          INSERT INTO product_cost_history (product_id, cost, effective_from)
+          VALUES (${id}, ${newCostNum}, ${effectiveDate})
+        `
       } else {
-        // Normal case: add new entry with current timestamp
+        // Normal case: add new entry with current timestamp (valid from next order)
         await sql`
           INSERT INTO product_cost_history (product_id, cost, effective_from)
           VALUES (${id}, ${newCostNum}, NOW())

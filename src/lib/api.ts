@@ -255,6 +255,7 @@ export async function updateProduct(input: {
   name?: string;
   cost?: number;
   apply_to_history?: boolean;
+  effective_date?: string;
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
   const r = await fetch('/api/product', {
     method: 'PUT',

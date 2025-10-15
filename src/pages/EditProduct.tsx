@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
+import { todayYMD } from '../lib/time'
 
 export default function EditProduct() {
   const [products, setProducts] = useState<ProductWithCost[]>([])
@@ -9,7 +10,8 @@ export default function EditProduct() {
   const [selectedId, setSelectedId] = useState('')
   const [newName, setNewName] = useState('')
   const [costStr, setCostStr] = useState('') // decimal string
-  const [applyHistory, setApplyHistory] = useState(false)
+  const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -35,6 +37,8 @@ export default function EditProduct() {
     if (!selected) return
     setNewName(selected.name)
     setCostStr(selected.cost == null ? '' : String(selected.cost))
+    setCostOption('next')
+    setSpecificDate(todayYMD())
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseCostInput(s: string) {
@@ -49,20 +53,36 @@ export default function EditProduct() {
     const costNum = Number((costStr || '').replace(',', '.'))
     if (!Number.isFinite(costNum) || costNum < 0) { alert('Enter a valid cost ≥ 0'); return }
 
+    if (costOption === 'specific' && !specificDate) {
+      alert('Please select a date')
+      return
+    }
+
     try {
       setSaving(true)
       const res = await updateProduct({
         id: selected.id,
         name,
         cost: costNum,
-        apply_to_history: applyHistory,
+        apply_to_history: costOption === 'history',
+        effective_date: costOption === 'specific' ? specificDate : undefined,
       })
-      alert(`Updated "${res.product.name}"${res.applied_to_history ? ' (applied to history)' : ''}`)
+      
+      let message = `Updated "${res.product.name}"`
+      if (res.applied_to_history) {
+        message += ' (applied to all previous orders)'
+      } else if (costOption === 'specific') {
+        message += ` (effective from ${specificDate})`
+      }
+      
+      alert(message)
+      
       // refresh the list to reflect any name/cost changes
       const { products } = await listProducts()
       setProducts(products)
       setSelectedId(res.product.id)
-      setApplyHistory(false)
+      setCostOption('next')
+      setSpecificDate(todayYMD())
     } catch (e:any) {
       alert(e?.message || 'Update failed')
     } finally {
@@ -101,26 +121,63 @@ export default function EditProduct() {
         </div>
       </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 12 }}>
+        <label>New product cost (USD)</label>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={costStr}
+          onChange={e=>setCostStr(parseCostInput(e.target.value))}
+        />
+      </div>
+
+      {/* Cost application options */}
+      <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="costOption"
+            checked={costOption === 'history'}
+            onChange={() => setCostOption('history')}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>Apply new cost to all previous orders</span>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="costOption"
+            checked={costOption === 'next'}
+            onChange={() => setCostOption('next')}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>New cost valid from next order</span>
+        </label>
+
         <div>
-          <label>New product cost (USD)</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={costStr}
-            onChange={e=>setCostStr(parseCostInput(e.target.value))}
-          />
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <input
-            id="applyHistory"
-            type="checkbox"
-            checked={applyHistory}
-            onChange={e=>setApplyHistory(e.target.checked)}
-            style={{ width: 20, height: 20 }}
-          />
-          <label htmlFor="applyHistory" style={{ margin: 0 }}>Apply new cost to previous orders</label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="costOption"
+              checked={costOption === 'specific'}
+              onChange={() => setCostOption('specific')}
+              style={{ width: 18, height: 18 }}
+            />
+            <span>Valid from specific date</span>
+          </label>
+          
+          {costOption === 'specific' && (
+            <div style={{ marginTop: 8, marginLeft: 28 }}>
+              <input
+                type="date"
+                value={specificDate}
+                onChange={e => setSpecificDate(e.target.value)}
+                style={{ width: '100%', maxWidth: 200 }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -128,7 +185,17 @@ export default function EditProduct() {
         <button className="primary" onClick={save} disabled={saving} style={{ height: BTN_H }}>
           {saving ? 'Saving…' : 'Save changes'}
         </button>
-        <button onClick={() => { if (selected) { setNewName(selected.name); setCostStr(selected.cost == null ? '' : String(selected.cost)); } setApplyHistory(false); }} disabled={saving}>
+        <button 
+          onClick={() => { 
+            if (selected) { 
+              setNewName(selected.name); 
+              setCostStr(selected.cost == null ? '' : String(selected.cost)); 
+            } 
+            setCostOption('next'); 
+            setSpecificDate(todayYMD());
+          }} 
+          disabled={saving}
+        >
           Reset
         </button>
       </div>
