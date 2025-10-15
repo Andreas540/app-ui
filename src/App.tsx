@@ -21,6 +21,7 @@ import EditPayment from './pages/EditPayment'
 import './print.css'
 import CreateInvoicePage from './pages/CreateInvoice'
 import InvoicePreview from './pages/InvoicePreview'
+import PriceChecker from './pages/PriceChecker'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -183,6 +184,7 @@ export default function App() {
               <NavLink to="/" end onClick={() => setNavOpen(false)}>Main Dashboard</NavLink>
               <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
               <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
+              <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>Price Checker</NavLink>
               <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
               <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
               <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
@@ -248,6 +250,7 @@ export default function App() {
                 <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
                 <Route path="/invoices/create" element={<CreateInvoicePage />} />
                 <Route path="/invoices/preview" element={<InvoicePreview />} />
+                <Route path="/price-checker" element={<PriceChecker />} />
               </>
             )}
           </Routes>
