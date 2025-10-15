@@ -77,7 +77,7 @@ async function update(event) {
     const body = JSON.parse(event.body || '{}');
     const id = (body.id || '').trim();
     const name = typeof body.name === 'string' ? body.name.trim() : undefined;
-    const effectiveDate = body.effective_date; // ✨ NEW: Get effective_date
+    const effectiveDate = body.effective_date;
 
     // Strict boolean coercion for checkbox
     const rawApply = body.apply_to_history;
@@ -107,11 +107,33 @@ async function update(event) {
     const currentCost = current[0].cost;
     const costChanged = newCostNum !== undefined && newCostNum !== currentCost;
 
-    // Update product record (always update to reflect current value)
+    // Determine if we should update products.cost immediately
+    let shouldUpdateProductCostNow = false;
+    
+    if (costChanged) {
+      if (applyToHistory) {
+        // Applying to all history = effective immediately
+        shouldUpdateProductCostNow = true;
+      } else if (effectiveDate) {
+        // Check if effective date is today or in the past
+        const effectiveDateObj = new Date(effectiveDate + 'T00:00:00Z');
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        shouldUpdateProductCostNow = effectiveDateObj <= today;
+      } else {
+        // No specific date = from next order = effective now
+        shouldUpdateProductCostNow = true;
+      }
+    }
+
+    // Update product record
     const updatedRows = await sql`
       UPDATE products
       SET name = COALESCE(${name}, name),
-          cost = COALESCE(${newCostNum}, cost)
+          cost = CASE 
+            WHEN ${shouldUpdateProductCostNow} THEN ${newCostNum}
+            ELSE cost
+          END
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       RETURNING id, name, cost
     `;
@@ -131,7 +153,7 @@ async function update(event) {
           VALUES (${id}, ${newCostNum}, '1970-01-01')
         `
       } else if (effectiveDate) {
-        // ✨ NEW: Insert entry with specific date
+        // Insert entry with specific date
         await sql`
           INSERT INTO product_cost_history (product_id, cost, effective_from)
           VALUES (${id}, ${newCostNum}, ${effectiveDate})
