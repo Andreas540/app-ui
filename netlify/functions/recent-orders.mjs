@@ -14,6 +14,9 @@ async function getRecentOrders(event) {
     if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
 
     const sql = neon(DATABASE_URL);
+    
+    // Get filter from query parameters
+    const filter = event.queryStringParameters?.filter;
 
     // Get the 15 most recent orders across all customers
     const orders = await sql`
@@ -43,7 +46,8 @@ async function getRecentOrders(event) {
         LIMIT 1
       ) fl ON true
       WHERE o.tenant_id = ${TENANT_ID}
-      GROUP BY o.id, o.order_no, o.order_date, o.delivered, c.name, fl.product_name, fl.qty, fl.unit_price
+        ${filter === 'not-delivered' ? sql`AND o.delivered = false` : sql``}
+      GROUP BY o.id, o.order_no, o.order_date, o.delivered, o.notes, c.name, fl.product_name, fl.qty, fl.unit_price
       ORDER BY o.order_no DESC, o.id DESC
       LIMIT 15
     `;

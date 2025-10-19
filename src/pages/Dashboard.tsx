@@ -45,7 +45,8 @@ export default function Dashboard() {
       try {
         setOrdersLoading(true); setOrdersErr(null)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/recent-orders`, { cache: 'no-store' })
+        const filterParam = orderFilter === 'Not delivered' ? '?filter=not-delivered' : ''
+        const res = await fetch(`${base}/api/recent-orders${filterParam}`, { cache: 'no-store' })
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(`Failed to load recent orders (status ${res.status}) ${text?.slice(0,140)}`)
@@ -60,7 +61,7 @@ export default function Dashboard() {
         setOrdersLoading(false)
       }
     })()
-  }, [])
+  }, [orderFilter])
 
   // Calculate total owed to me from database data
   const totalOwedToMe = useMemo(
@@ -74,16 +75,8 @@ export default function Dashboard() {
     [totalOwedToMe, partnerTotals.net]
   )
 
-  // Filter orders based on selected filter
-  const filteredOrders = useMemo(() => {
-    if (orderFilter === 'Not delivered') {
-      return recentOrders.filter(o => !o.delivered)
-    }
-    return recentOrders
-  }, [recentOrders, orderFilter])
-
   // Show orders based on display count
-  const shownOrders = filteredOrders.slice(0, orderDisplayCount)
+  const shownOrders = recentOrders.slice(0, orderDisplayCount)
 
   // Compact layout constants (same as CustomerDetail)
   const DATE_COL = 55
@@ -226,7 +219,7 @@ export default function Dashboard() {
 
         <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap: 8, alignItems:'center', marginTop: 12}}>
           <h3 style={{margin:0, fontSize: 16}}>{ordersTitle}</h3>
-          {filteredOrders.length > 5 && (
+          {recentOrders.length > 5 && (
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               {orderDisplayCount > 5 && (
                 <button
@@ -237,7 +230,7 @@ export default function Dashboard() {
                   Collapse
                 </button>
               )}
-              {orderDisplayCount < 15 && filteredOrders.length > orderDisplayCount && (
+              {orderDisplayCount < 15 && recentOrders.length > orderDisplayCount && (
                 <button
                   className="helper"
                   onClick={() => setOrderDisplayCount(prev => prev + 5)}
@@ -254,7 +247,7 @@ export default function Dashboard() {
           <p className="helper">Loading orders...</p>
         ) : ordersErr ? (
           <p style={{ color: 'salmon' }}>Error loading orders: {ordersErr}</p>
-        ) : filteredOrders.length === 0 ? (
+        ) : recentOrders.length === 0 ? (
           <p className="helper">No orders found.</p>
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
