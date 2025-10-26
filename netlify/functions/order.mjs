@@ -99,10 +99,31 @@ async function updateOrder(event) {
     if (!customer_id) return cors(400, { error: 'customer_id is required' })
     if (!product_id) return cors(400, { error: 'product_id is required' })
     if (!qty || qty <= 0) return cors(400, { error: 'qty must be > 0' })
-    if (!unit_price || unit_price <= 0) return cors(400, { error: 'unit_price must be > 0' })
     if (!date) return cors(400, { error: 'date is required' })
 
     const sql = neon(DATABASE_URL)
+
+    // Look up product name to decide if negative price is allowed
+    const products = await sql`
+      SELECT name
+      FROM products
+      WHERE id = ${product_id}
+      LIMIT 1
+    `
+    if (products.length === 0) return cors(400, { error: 'Invalid product_id' })
+
+    const productName = (products[0].name || '').trim().toLowerCase()
+    const isRefundProduct = productName === 'refund/discount'
+
+    // Validate unit_price according to product type
+    if (typeof unit_price !== 'number' || Number.isNaN(unit_price)) {
+      return cors(400, { error: 'unit_price must be a number' })
+    }
+    if (isRefundProduct) {
+      if (!(unit_price < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' })
+    } else {
+      if (!(unit_price > 0)) return cors(400, { error: 'unit_price must be > 0' })
+    }
 
     // Update order with cost overrides
     await sql`

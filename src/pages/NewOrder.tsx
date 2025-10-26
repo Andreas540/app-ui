@@ -26,7 +26,7 @@ export default function NewOrder() {
   const [productId, setProductId] = useState('')
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
   const [qtyStr, setQtyStr] = useState('') // integer string
-  const [priceStr, setPriceStr] = useState('') // decimal string
+  const [priceStr, setPriceStr] = useState('') // decimal string (can be negative for Refund/Discount)
   const [delivered, setDelivered] = useState(false) // default unchecked
   const [notes, setNotes] = useState('') // optional notes
 
@@ -109,6 +109,12 @@ export default function NewOrder() {
   const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
+  // Is this the Refund/Discount product? (name match, case-insensitive)
+  const isRefundProduct = useMemo(
+    () => (product?.name || '').trim().toLowerCase() === 'refund/discount',
+    [product]
+  )
+
   // Suggestions (like Customers.tsx)
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -133,18 +139,20 @@ export default function NewOrder() {
     return digits.replace(/^0+(?=\d)/, '')
   }
 
+  // Allow optional leading "-" for refund product entries
   function parsePriceToNumber(s: string) {
-    const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
-    const num = Number(cleaned)
-    return Number.isFinite(num) ? num : NaN
+    const m = s.match(/-?\d+(?:[.,]\d+)?/)
+    if (!m) return NaN
+    return Number(m[0].replace(',', '.'))
   }
 
   const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
   const priceNum = useMemo(() => parsePriceToNumber(priceStr), [priceStr])
 
+  // Allow negative order value when refund product is selected
   const orderValue = useMemo(() => {
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
-    if (!Number.isFinite(priceNum) || priceNum <= 0) return 0
+    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return NaN
+    if (!Number.isFinite(priceNum)) return NaN
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
@@ -177,9 +185,9 @@ export default function NewOrder() {
     return historicalShippingCost ?? 0
   }, [shippingCostStr, historicalShippingCost])
 
-  // Calculate profit
+  // Profit: only meaningful for positive revenue orders, keep 0 otherwise
   const profit = useMemo(() => {
-    if (orderValue <= 0) return 0
+    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
     const totalPartners = partner1Total + partner2Total
     const totalProductCost = effectiveProductCost * qtyInt
     const totalShippingCost = effectiveShippingCost * qtyInt
@@ -187,7 +195,7 @@ export default function NewOrder() {
   }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, qtyInt])
 
   const profitPercent = useMemo(() => {
-    if (orderValue <= 0) return 0
+    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
     return (profit / orderValue) * 100
   }, [profit, orderValue])
 
@@ -200,6 +208,14 @@ export default function NewOrder() {
     [partners, partner1Id]
   )
 
+  // When switching to the refund product, auto-prefix "-" in the price
+  useEffect(() => {
+    if (!isRefundProduct) return
+    if (priceStr && !priceStr.trim().startsWith('-')) {
+      setPriceStr(prev => prev ? ('-' + prev.replace(/^-+/, '')) : '-0.00')
+    }
+  }, [isRefundProduct]) // only when product flips into refund
+
   async function save() {
     if (!person) { alert('Select a customer first'); return }
     if (!product) { alert('Pick a product'); return }
@@ -208,11 +224,17 @@ export default function NewOrder() {
     if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
 
     const unitPrice = parsePriceToNumber(priceStr)
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
+    if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
+    if (isRefundProduct) {
+      if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
+    } else {
+      if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
+    }
 
     // Build partner_splits only for Partner customers
     const splits: Array<{ partner_id: string; amount: number }> = []
     if (isPartnerCustomer) {
+      // Refunds typically shouldn't pay partners; UI only adds > 0
       if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
       if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
     }
@@ -240,7 +262,7 @@ export default function NewOrder() {
         customer_id: person.id,
         product_id: product.id,
         qty,
-        unit_price: unitPrice,
+        unit_price: unitPrice, // negative allowed for Refund/Discount
         date: orderDate,
         delivered,
         discount: 0,
@@ -270,6 +292,8 @@ export default function NewOrder() {
       setNotes('')
       setPartner1Id(''); setPartner2Id('')
       setPartner1PerItemStr(''); setPartner2PerItemStr('')
+      setProductCostStr(''); setShippingCostStr('')
+      setShowMoreFields(false)
     } catch (e: any) {
       alert(e?.message || 'Save failed')
     }
@@ -286,8 +310,8 @@ export default function NewOrder() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <h3 style={{ margin:0 }}>New Order</h3>
 
-        {/* Profit display - top right */}
-        {orderValue > 0 && (
+        {/* Profit display - top right (only for positive orders) */}
+        {Number.isFinite(orderValue) && orderValue > 0 && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
@@ -397,7 +421,15 @@ export default function NewOrder() {
             inputMode="decimal"
             placeholder="0.00"
             value={priceStr}
-            onChange={e => setPriceStr(e.target.value)}
+            onChange={e => {
+              const val = e.target.value
+              if (isRefundProduct) {
+                const v = val.trim().startsWith('-') ? val : ('-' + val.replace(/^-+/, ''))
+                setPriceStr(v)
+              } else {
+                setPriceStr(val)
+              }
+            }}
             style={{ height: CONTROL_H }}
           />
         </div>
@@ -405,7 +437,11 @@ export default function NewOrder() {
           <label>Price last time</label>
           <input
             type="text"
-            value={historicalPrice !== null ? historicalPrice.toFixed(2) : '—'}
+            value={
+              historicalPrice !== null
+                ? (isRefundProduct ? (-Math.abs(historicalPrice)).toFixed(2) : historicalPrice.toFixed(2))
+                : '—'
+            }
             placeholder="—"
             readOnly
             style={{ height: CONTROL_H, opacity: 0.6 }}
@@ -419,10 +455,10 @@ export default function NewOrder() {
           <label>Order value (USD)</label>
           <input
             type="text"
-            value={orderValue > 0 ? orderValue.toFixed(2) : ''}
+            value={Number.isFinite(orderValue) ? orderValue.toFixed(2) : ''}
             placeholder="auto"
             readOnly
-            style={{ height: CONTROL_H, opacity: 0.9 }}
+            style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(orderValue) && orderValue < 0 ? 'salmon' : undefined }}
           />
         </div>
         <div style={{ display:'flex', alignItems:'end' }}>
@@ -566,7 +602,7 @@ export default function NewOrder() {
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save order</button>
         <button
           onClick={() => {
-            setQtyStr(''); setPriceStr(''); setNotes(''); setQuery(''); setEntityId(''); // Clear customer search
+            setQtyStr(''); setPriceStr(''); setNotes(''); setQuery(''); setEntityId('');
             setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('');
             setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false);
           }}
@@ -584,6 +620,7 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
 

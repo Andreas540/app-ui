@@ -1,4 +1,4 @@
-// netlify/functions/order.mjs
+// netlify/functions/orders.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'POST')    return createOrder(event);
@@ -23,12 +23,34 @@ async function createOrder(event) {
     const qtyInt = parseInt(qty, 10);
     const unitPriceNum = Number(unit_price);
 
+    // Required fields (0 not allowed for qty or unit price)
     if (!customer_id || !product_id || !qtyInt || !unitPriceNum || !date) {
       return cors(400, { error: 'Missing fields: customer_id, product_id, qty, unit_price, date' });
     }
     if (!(qtyInt > 0)) return cors(400, { error: 'qty must be > 0' });
 
     const sql = neon(DATABASE_URL);
+
+    // NEW: enforce unit_price sign based on product name (Refund/Discount => price must be negative)
+    const prodRows = await sql`
+      SELECT name
+      FROM products
+      WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+      LIMIT 1
+    `;
+    if (prodRows.length === 0) return cors(400, { error: 'Invalid product_id' });
+
+    const productName = (prodRows[0].name || '').trim().toLowerCase();
+    const isRefundProduct = productName === 'refund/discount';
+
+    if (!Number.isFinite(unitPriceNum)) {
+      return cors(400, { error: 'unit_price must be a number' });
+    }
+    if (isRefundProduct) {
+      if (!(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
+    } else {
+      if (!(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
+    }
 
     // Next order number per-tenant
     const nextNo = await sql`
@@ -76,25 +98,25 @@ async function createOrder(event) {
       )
     `;
 
-    // ⬇️ NEW: Partner splits
+    // Partner splits (insert only finite, non-zero)
     if (Array.isArray(partner_splits) && partner_splits.length) {
       for (const s of partner_splits) {
-        const pid = s?.partner_id?.trim?.()
-        const amt = Number(s?.amount)
-        if (!pid || !Number.isFinite(amt) || amt === 0) continue
+        const pid = s?.partner_id?.trim?.();
+        const amt = Number(s?.amount);
+        if (!pid || !Number.isFinite(amt) || amt === 0) continue;
 
         // Ensure partner belongs to tenant
         const exists = await sql`
           SELECT 1 FROM partners
           WHERE id = ${pid} AND tenant_id = ${TENANT_ID}
           LIMIT 1
-        `
-        if (exists.length === 0) continue
+        `;
+        if (exists.length === 0) continue;
 
         await sql`
           INSERT INTO order_partners (order_id, partner_id, amount)
           VALUES (${orderId}, ${pid}, ${amt})
-        `
+        `;
       }
     }
 
@@ -117,6 +139,7 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
 
 
 
