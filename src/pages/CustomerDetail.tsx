@@ -104,6 +104,14 @@ export default function CustomerDetailPage() {
   const DATE_COL = 55 // px (smaller; pulls middle text left)
   const LINE_GAP = 4  // tighter than default
 
+  // ---- NEW: Adjust "Owed to me" to add back negative payments (Loan/Deposit etc.) ----
+  const negPaymentsAbs = payments.reduce((sum, p: any) => {
+    const a = Number(p.amount) || 0
+    return a < 0 ? sum + Math.abs(a) : sum
+  }, 0)
+  // Display: add negatives (counteract subtraction behavior and turn it into addition)
+  const owedToMeDisplay = (totals as any).owed_to_me + (negPaymentsAbs * 2)
+
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
       {/* Header row: Name + Edit (left), Back link (right) */}
@@ -226,7 +234,7 @@ export default function CustomerDetailPage() {
         {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
+          <div style={{ fontWeight: 700 }}>{fmtIntMoney(owedToMeDisplay)}</div>
         </div>
       </div>
 
@@ -376,6 +384,15 @@ export default function CustomerDetailPage() {
           <div style={{display:'grid'}}>
             {shownPayments.map(p => {
               const hasNotes = (p as any).notes && (p as any).notes.trim()
+              const amt = Number((p as any).amount) || 0
+              const absRounded = Math.round(Math.abs(amt)).toLocaleString('en-US')
+
+              // Display rule:
+              //  - positive amounts => "-$123" (reduce what’s owed)
+              //  - negative amounts => "$123"  (do NOT show a minus)
+              const amountDisplay = amt < 0
+                ? `$${absRounded}`
+                : `-$${absRounded}`
 
               return (
                 <div
@@ -410,7 +427,7 @@ export default function CustomerDetailPage() {
                       {(p as any).payment_type}
                     </div>
 
-                    {/* AMOUNT with minus sign */}
+                    {/* AMOUNT with conditional sign */}
                     <div 
                       className="helper" 
                       onClick={() => handlePaymentClick(p)}
@@ -418,7 +435,7 @@ export default function CustomerDetailPage() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{textAlign:'right', cursor: 'pointer'}}
                     >
-                      -${Math.round(Number((p as any).amount)||0).toLocaleString('en-US')}
+                      {amountDisplay}
                     </div>
                   </div>
 
@@ -468,4 +485,5 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
