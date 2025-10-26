@@ -104,14 +104,6 @@ export default function CustomerDetailPage() {
   const DATE_COL = 55 // px (smaller; pulls middle text left)
   const LINE_GAP = 4  // tighter than default
 
-  // ---- NEW: Adjust "Owed to me" to add back negative payments (Loan/Deposit etc.) ----
-  const negPaymentsAbs = payments.reduce((sum, p: any) => {
-    const a = Number(p.amount) || 0
-    return a < 0 ? sum + Math.abs(a) : sum
-  }, 0)
-  // Display: add negatives (counteract subtraction behavior and turn it into addition)
-  const owedToMeDisplay = (totals as any).owed_to_me + (negPaymentsAbs * 2)
-
   return (
     <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
       {/* Header row: Name + Edit (left), Back link (right) */}
@@ -234,7 +226,7 @@ export default function CustomerDetailPage() {
         {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney(owedToMeDisplay)}</div>
+          <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
         </div>
       </div>
 
@@ -485,5 +477,6 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
