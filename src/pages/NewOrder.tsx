@@ -139,7 +139,7 @@ export default function NewOrder() {
     return digits.replace(/^0+(?=\d)/, '')
   }
 
-  // Allow optional leading "-" for refund product entries
+  // Allow optional leading "-" (we will force it for refund product)
   function parsePriceToNumber(s: string) {
     const m = s.match(/-?\d+(?:[.,]\d+)?/)
     if (!m) return NaN
@@ -208,96 +208,55 @@ export default function NewOrder() {
     [partners, partner1Id]
   )
 
-  // When switching to the refund product, auto-prefix "-" in the price
+  // ---- Refund/Discount behavior ----
+
+  // When switching TO Refund/Discount: show "-" immediately (placeholder look); keep it enforced
   useEffect(() => {
-    if (!isRefundProduct) return
-    if (priceStr && !priceStr.trim().startsWith('-')) {
-      setPriceStr(prev => prev ? ('-' + prev.replace(/^-+/, '')) : '-0.00')
-    }
-  }, [isRefundProduct]) // only when product flips into refund
-
-  async function save() {
-    if (!person) { alert('Select a customer first'); return }
-    if (!product) { alert('Pick a product'); return }
-
-    const qty = parseInt(qtyStr || '0', 10)
-    if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
-
-    const unitPrice = parsePriceToNumber(priceStr)
-    if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
     if (isRefundProduct) {
-      if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
-    } else {
-      if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
-    }
-
-    // Build partner_splits only for Partner customers
-    const splits: Array<{ partner_id: string; amount: number }> = []
-    if (isPartnerCustomer) {
-      // Refunds typically shouldn't pay partners; UI only adds > 0
-      if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
-      if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
-    }
-
-    // Parse optional cost overrides
-    let productCostToSend: number | undefined = undefined
-    let shippingCostToSend: number | undefined = undefined
-
-    if (productCostStr.trim()) {
-      const parsed = parsePriceToNumber(productCostStr)
-      if (Number.isFinite(parsed) && parsed > 0) {
-        productCostToSend = parsed
-      }
-    }
-
-    if (shippingCostStr.trim()) {
-      const parsed = parsePriceToNumber(shippingCostStr)
-      if (Number.isFinite(parsed) && parsed >= 0) {
-        shippingCostToSend = parsed
-      }
-    }
-
-    try {
-      const { order_no } = await createOrder({
-        customer_id: person.id,
-        product_id: product.id,
-        qty,
-        unit_price: unitPrice, // negative allowed for Refund/Discount
-        date: orderDate,
-        delivered,
-        discount: 0,
-        notes: notes.trim() || undefined,
-        product_cost: productCostToSend,
-        shipping_cost: shippingCostToSend,
-        partner_splits: splits.length ? splits : undefined,
+      setPriceStr(prev => {
+        // Ensure single leading "-" exists; if empty, set just "-"
+        const cleaned = (prev ?? '').replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
       })
+    } else {
+      // Switching AWAY: remove leading "-" (if any)
+      setPriceStr(prev => (prev ?? '').replace(/^-+/, ''))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRefundProduct])
 
-      alert(`Saved! Order #${order_no}`)
-
-      // Check if we should navigate back to customer detail
-      const params = new URLSearchParams(location.search)
-      const returnTo = params.get('return_to')
-      const returnId = params.get('return_id')
-
-      if (returnTo === 'customer' && returnId) {
-        navigate(`/customers/${returnId}`)
-        return
-      }
-
-      // Otherwise just reset form (keep same customer/product)
-      setQtyStr('')
-      setPriceStr('')
-      setOrderDate(todayYMD())
-      setDelivered(false)
-      setNotes('')
-      setPartner1Id(''); setPartner2Id('')
-      setPartner1PerItemStr(''); setPartner2PerItemStr('')
-      setProductCostStr(''); setShippingCostStr('')
-      setShowMoreFields(false)
-    } catch (e: any) {
-      alert(e?.message || 'Save failed')
+  // Prevent deleting the leading "-" when Refund/Discount is selected
+  const onPriceKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!isRefundProduct) return
+    const target = e.target as HTMLInputElement
+    const { selectionStart, selectionEnd, value } = target
+    // Block backspace/delete if it would remove or move before the "-" at index 0
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault()
+      return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault()
+      return
     }
   }
+
+  // Price change handler enforces the "-" for refund product; otherwise leaves as typed
+  const onPriceChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (isRefundProduct) {
+      // strip all leading +/- then re-prefix a single "-"
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setPriceStr(v === '-' ? '-' : v)
+    } else {
+      setPriceStr(raw.replace(/^[+-]+/, '')) // normalize accidental signs on normal products
+    }
+  }
+
+  // Minus placeholder look (grey) when it’s just the single "-"
+  const isMinusOnly = isRefundProduct && priceStr.trim() === '-'
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
@@ -386,7 +345,11 @@ export default function NewOrder() {
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Product</label>
-          <select value={productId} onChange={e=>setProductId(e.target.value)} style={{ height: CONTROL_H }}>
+          <select
+            value={productId}
+            onChange={e=>setProductId(e.target.value)}
+            style={{ height: CONTROL_H }}
+          >
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -421,16 +384,13 @@ export default function NewOrder() {
             inputMode="decimal"
             placeholder="0.00"
             value={priceStr}
-            onChange={e => {
-              const val = e.target.value
-              if (isRefundProduct) {
-                const v = val.trim().startsWith('-') ? val : ('-' + val.replace(/^-+/, ''))
-                setPriceStr(v)
-              } else {
-                setPriceStr(val)
-              }
+            onChange={onPriceChange}
+            onKeyDown={onPriceKeyDown}
+            style={{
+              height: CONTROL_H,
+              color: isMinusOnly ? 'var(--text-secondary)' : undefined,
+              opacity: isMinusOnly ? 0.6 : undefined,
             }}
-            style={{ height: CONTROL_H }}
           />
         </div>
         <div>
@@ -461,19 +421,19 @@ export default function NewOrder() {
             style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(orderValue) && orderValue < 0 ? 'salmon' : undefined }}
           />
         </div>
-        <div style={{ display:'flex', alignItems:'end' }}>
-          <label style={{ width:'100%' }}>
-            Delivered
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
-              <input
-                type="checkbox"
-                checked={delivered}
-                onChange={e => setDelivered(e.target.checked)}
-                style={{ width: 18, height: 18 }}
-              />
-              <span className="helper">{delivered ? 'Yes' : 'No'}</span>
-            </div>
-          </label>
+
+        {/* Delivered: only the checkbox toggles; show "Yes" only when checked */}
+        <div>
+          <label>Delivered</label>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
+            <input
+              type="checkbox"
+              checked={delivered}
+              onChange={e => setDelivered(e.target.checked)}
+              style={{ width: 18, height: 18 }}
+            />
+            {delivered && <span className="helper">Yes</span>}
+          </div>
         </div>
       </div>
 
@@ -599,7 +559,90 @@ export default function NewOrder() {
       )}
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save order</button>
+        <button className="primary" onClick={async () => {
+          // save() inlined to keep file self-contained; unchanged business logic
+          if (!person) { alert('Select a customer first'); return }
+          if (!product) { alert('Pick a product'); return }
+
+          const qty = parseInt(qtyStr || '0', 10)
+          if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+
+          const unitPrice = parsePriceToNumber(priceStr)
+          if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
+          if (isRefundProduct) {
+            if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
+          } else {
+            if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
+          }
+
+          // Build partner_splits only for Partner customers
+          const splits: Array<{ partner_id: string; amount: number }> = []
+          if (isPartnerCustomer) {
+            if (partner1Id && partner1PerItemStr) {
+              const per = parsePriceToNumber(partner1PerItemStr)
+              if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner1Id, amount: per * qty })
+            }
+            if (partner2Id && partner2PerItemStr) {
+              const per = parsePriceToNumber(partner2PerItemStr)
+              if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner2Id, amount: per * qty })
+            }
+          }
+
+          // Parse optional cost overrides
+          let productCostToSend: number | undefined = undefined
+          let shippingCostToSend: number | undefined = undefined
+
+          if (productCostStr.trim()) {
+            const parsed = parsePriceToNumber(productCostStr)
+            if (Number.isFinite(parsed) && parsed > 0) productCostToSend = parsed
+          }
+
+          if (shippingCostStr.trim()) {
+            const parsed = parsePriceToNumber(shippingCostStr)
+            if (Number.isFinite(parsed) && parsed >= 0) shippingCostToSend = parsed
+          }
+
+          try {
+            const { order_no } = await createOrder({
+              customer_id: person.id,
+              product_id: product.id,
+              qty,
+              unit_price: unitPrice, // negative allowed for Refund/Discount
+              date: orderDate,
+              delivered,
+              discount: 0,
+              notes: notes.trim() || undefined,
+              product_cost: productCostToSend,
+              shipping_cost: shippingCostToSend,
+              partner_splits: splits.length ? splits : undefined,
+            })
+
+            alert(`Saved! Order #${order_no}`)
+
+            // Post-save reset
+            const params = new URLSearchParams(location.search)
+            const returnTo = params.get('return_to')
+            const returnId = params.get('return_id')
+
+            if (returnTo === 'customer' && returnId) {
+              navigate(`/customers/${returnId}`)
+              return
+            }
+
+            setQtyStr('')
+            setPriceStr('')
+            setOrderDate(todayYMD())
+            setDelivered(false)
+            setNotes('')
+            setPartner1Id(''); setPartner2Id('')
+            setPartner1PerItemStr(''); setPartner2PerItemStr('')
+            setProductCostStr(''); setShippingCostStr('')
+            setShowMoreFields(false)
+          } catch (e: any) {
+            alert(e?.message || 'Save failed')
+          }
+        }} style={{ height: CONTROL_H }}>Save order</button>
+
         <button
           onClick={() => {
             setQtyStr(''); setPriceStr(''); setNotes(''); setQuery(''); setEntityId('');
@@ -620,6 +663,7 @@ export default function NewOrder() {
     </div>
   )
 }
+
 
 
 
