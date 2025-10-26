@@ -34,44 +34,88 @@ export default function Payments() {
   const [partnerNotes, setPartnerNotes] = useState('')
 
   useEffect(() => {
-  (async () => {
-    try {
-      setLoading(true); setErr(null)
-      const { customers, partners: bootPartners } = await fetchBootstrap()
-      setPeople(customers as unknown as CustomerLite[])
-      setPartners(bootPartners ?? [])
-      
-      // Check if we're coming from CustomerDetail with a pre-selected customer
-      const params = new URLSearchParams(location.search)
-      const preselectedCustomerId = params.get('customer_id')
-      
-      if (preselectedCustomerId) {
-        setEntityId(preselectedCustomerId)
-        setIsFromCustomer(true)
-      } else {
-        // Only set default customer if no pre-selection
-        setEntityId((customers[0]?.id as string) ?? '')
+    (async () => {
+      try {
+        setLoading(true); setErr(null)
+        const { customers, partners: bootPartners } = await fetchBootstrap()
+        setPeople(customers as unknown as CustomerLite[])
+        setPartners(bootPartners ?? [])
+        
+        // Preselect customer if coming from detail page
+        const params = new URLSearchParams(location.search)
+        const preselectedCustomerId = params.get('customer_id')
+        if (preselectedCustomerId) {
+          setEntityId(preselectedCustomerId)
+          setIsFromCustomer(true)
+        } else {
+          setEntityId((customers[0]?.id as string) ?? '')
+        }
+        if (bootPartners && bootPartners.length > 0) {
+          setPartnerId(bootPartners[0].id)
+        }
+      } catch (e:any) {
+        setErr(e?.message || String(e))
+      } finally {
+        setLoading(false)
       }
-      
-      if (bootPartners && bootPartners.length > 0) {
-        setPartnerId(bootPartners[0].id)
-      }
-    } catch (e:any) {
-      setErr(e?.message || String(e))
-    } finally {
-      setLoading(false)
-    }
-  })()
-}, [location.search])
+    })()
+  }, [location.search])
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
+
+  // --- Loan/Deposit behavior (mirror Refund/Discount minus handling) ---
+  const isLoanDeposit = useMemo(
+    () => (paymentType || '').trim().toLowerCase() === 'loan/deposit',
+    [paymentType]
+  )
+
+  // Show "-" immediately when selecting Loan/Deposit; remove when switching away
+  useEffect(() => {
+    if (isLoanDeposit) {
+      setAmountStr(prev => {
+        const cleaned = (prev ?? '').replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
+      })
+    } else {
+      setAmountStr(prev => (prev ?? '').replace(/^-+/, ''))
+    }
+  }, [isLoanDeposit])
+
+  // Prevent deleting the leading "-" when Loan/Deposit is selected
+  const onAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!isLoanDeposit) return
+    const target = e.target as HTMLInputElement
+    const { selectionStart, selectionEnd, value } = target
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+  }
+
+  // Enforce a single leading "-" for Loan/Deposit; otherwise accept user input (including negatives)
+  const onAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (isLoanDeposit) {
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setAmountStr(v === '-' ? '-' : v)
+    } else {
+      setAmountStr(raw)
+    }
+  }
+
+  // Minus placeholder look (grey) when it’s just the single "-"
+  const isMinusOnly = isLoanDeposit && amountStr.trim() === '-'
 
   async function saveCustomerPayment() {
     if (!customer) { alert('Select a customer'); return }
     const amountNum = Number((amountStr || '').replace(',', '.'))
     if (!Number.isFinite(amountNum) || amountNum === 0) {
-      alert('Enter a non-zero amount (use negative for discounts/fees if you like)')
+      alert('Enter a non-zero amount (use negative for credits if desired)')
       return
     }
     try {
@@ -83,18 +127,13 @@ export default function Payments() {
         notes: notes.trim() || null,
       })
       alert('Payment saved!')
-      
-      // Check if we should navigate back
       const params = new URLSearchParams(location.search)
       const returnTo = params.get('return_to')
       const returnId = params.get('return_id')
-      
       if (returnTo === 'customer' && returnId) {
         navigate(`/customers/${returnId}`)
         return
       }
-      
-      // Otherwise reset form
       setAmountStr('')
       setPaymentType('Cash payment')
       setNotes('')
@@ -144,9 +183,7 @@ export default function Payments() {
           <input
             type="checkbox"
             checked={isFromCustomer}
-            onChange={e => {
-              if (e.target.checked) setIsFromCustomer(true)
-            }}
+            onChange={e => { if (e.target.checked) setIsFromCustomer(true) }}
             style={{ width: 18, height: 18 }}
           />
           <span>From customer</span>
@@ -155,9 +192,7 @@ export default function Payments() {
           <input
             type="checkbox"
             checked={!isFromCustomer}
-            onChange={e => {
-              if (e.target.checked) setIsFromCustomer(false)
-            }}
+            onChange={e => { if (e.target.checked) setIsFromCustomer(false) }}
             style={{ width: 18, height: 18 }}
           />
           <span>To partner</span>
@@ -195,7 +230,11 @@ export default function Payments() {
           <div className="row row-2col-mobile" style={{marginTop:12}}>
             <div>
               <label>Payment Type</label>
-              <select value={paymentType} onChange={e=>setPaymentType(e.target.value as PaymentType)} style={{ height: CONTROL_H }}>
+              <select
+                value={paymentType}
+                onChange={e=>setPaymentType(e.target.value as PaymentType)}
+                style={{ height: CONTROL_H }}
+              >
                 {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -206,8 +245,13 @@ export default function Payments() {
                 placeholder="0.00"
                 inputMode="decimal"
                 value={amountStr}
-                onChange={e=>setAmountStr(e.target.value)}
-                style={{ height: CONTROL_H }}
+                onChange={onAmountChange}
+                onKeyDown={onAmountKeyDown}
+                style={{
+                  height: CONTROL_H,
+                  color: isMinusOnly ? 'var(--text-secondary)' : undefined,
+                  opacity: isMinusOnly ? 0.6 : undefined,
+                }}
               />
             </div>
           </div>
@@ -287,5 +331,6 @@ export default function Payments() {
     </div>
   )
 }
+
 
 
