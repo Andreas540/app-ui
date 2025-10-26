@@ -78,7 +78,7 @@ async function getCustomer(event) {
         AND o.customer_id = ${id}
       GROUP BY o.id, fl.product_name, fl.qty, fl.unit_price, pa.partner_amount
       ORDER BY o.order_date DESC, o.order_no DESC
-      LIMIT 20
+      LIMIT 30
     `
 
     const payments = await sql`
@@ -86,7 +86,7 @@ async function getCustomer(event) {
       FROM payments
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ORDER BY payment_date DESC, created_at DESC
-      LIMIT 20
+      LIMIT 30
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
