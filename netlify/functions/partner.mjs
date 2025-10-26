@@ -1,3 +1,4 @@
+// netlify/functions/partner.mjs
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET') return getPartner(event);
@@ -42,33 +43,22 @@ async function getPartner(event) {
     const totalPaid = Number(totals[0].total_paid);
     const netOwed = totalOwed - totalPaid;
 
-    /* Orders where this partner has a stake.
-       We return:
-       - order header fields
-       - customer_name
-       - total = SUM(qty*unit_price) across all lines
-       - first line snapshot: product_name, qty, unit_price (typical one-line orders)
-       - partner_amount = SUM(order_partners.amount) for THIS partner and order
-    */
+    /* Orders where this partner has a stake. */
     const orders = await sql`
       SELECT
         o.id,
         o.order_no,
         o.order_date,
         c.name AS customer_name,
-        -- full order total (sum of all lines)
         COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS total,
-        -- first line snapshot (product / qty / unit_price)
         fl.product_name,
         fl.qty,
         fl.unit_price,
-        -- partner amount for THIS partner on this order
         pa.partner_amount
       FROM order_partners op
       JOIN orders o ON o.id = op.order_id
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      -- first line (by id) for display
       LEFT JOIN LATERAL (
         SELECT p.name AS product_name, oi2.qty, oi2.unit_price
         FROM order_items oi2
@@ -77,7 +67,6 @@ async function getPartner(event) {
         ORDER BY oi2.id ASC
         LIMIT 1
       ) fl ON TRUE
-      -- partner-specific amount for this order
       LEFT JOIN LATERAL (
         SELECT COALESCE(SUM(op2.amount), 0)::numeric(12,2) AS partner_amount
         FROM order_partners op2
@@ -94,9 +83,9 @@ async function getPartner(event) {
       LIMIT 100
     `;
 
-    // Payments to this partner
+    // Payments to this partner (⬅️ now includes notes)
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount
+      SELECT id, payment_date, payment_type, amount, notes
       FROM partner_payments
       WHERE tenant_id = ${TENANT_ID}
         AND partner_id = ${id}
@@ -168,3 +157,4 @@ function cors(status, body) {
     body: JSON.stringify(body),
   };
 }
+
