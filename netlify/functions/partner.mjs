@@ -91,7 +91,7 @@ async function getPartner(event) {
         fl.product_name, fl.qty, fl.unit_price,
         pa.partner_amount
       ORDER BY o.order_date DESC, o.order_no DESC
-      LIMIT 20
+      LIMIT 100
     `;
 
     // Payments to this partner
@@ -101,7 +101,7 @@ async function getPartner(event) {
       WHERE tenant_id = ${TENANT_ID}
         AND partner_id = ${id}
       ORDER BY payment_date DESC
-      LIMIT 20
+      LIMIT 100
     `;
 
     return cors(200, {
