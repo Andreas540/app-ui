@@ -1,3 +1,4 @@
+// src/pages/EditOrder.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { fetchBootstrap, type Person, type Product } from '../lib/api'
@@ -67,11 +68,11 @@ export default function EditOrder() {
         setNotes(order.notes || '')
         
         // Set cost overrides if they exist
-        if (order.product_cost) {
+        if (order.product_cost !== null && order.product_cost !== undefined) {
           setProductCostStr(String(order.product_cost))
           setShowMoreFields(true)
         }
-        if (order.shipping_cost) {
+        if (order.shipping_cost !== null && order.shipping_cost !== undefined) {
           setShippingCostStr(String(order.shipping_cost))
           setShowMoreFields(true)
         }
@@ -97,48 +98,57 @@ export default function EditOrder() {
   }, [orderId])
 
   // Fetch historical costs when product or customer changes
-useEffect(() => {
-  if (!productId || !customerId || !orderDate) return
-  
-  (async () => {
-    try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const dateOnly = orderDate.split('T')[0] // Extract YYYY-MM-DD from potential ISO string
-      const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${dateOnly}`)
-      if (res.ok) {
-        const data = await res.json()
-        setHistoricalProductCost(data.product_cost)
-        setHistoricalShippingCost(data.shipping_cost)
+  useEffect(() => {
+    if (!productId || !customerId || !orderDate) return
+    
+    (async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const dateOnly = orderDate.split('T')[0] // Extract YYYY-MM-DD from potential ISO string
+        const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${dateOnly}`)
+        if (res.ok) {
+          const data = await res.json()
+          setHistoricalProductCost(data.product_cost)
+          setHistoricalShippingCost(data.shipping_cost)
+        }
+      } catch (e) {
+        console.error('Failed to fetch historical costs:', e)
       }
-    } catch (e) {
-      console.error('Failed to fetch historical costs:', e)
-    }
-  })()
-}, [productId, customerId, orderDate])
+    })()
+  }, [productId, customerId, orderDate])
 
   const person = useMemo(() => people.find(p => p.id === customerId), [people, customerId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
+
+  // Is this the Refund/Discount product?
+  const isRefundProduct = useMemo(
+    () => (product?.name || '').trim().toLowerCase() === 'refund/discount',
+    [product]
+  )
 
   // Helpers
   function parseQty(s: string) {
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
+  // Allow optional leading "-" for Refund/Discount
   function parsePriceToNumber(s: string) {
-    const cleaned = s.replace(/[^0-9.,]/g, '').replace(',', '.')
-    const num = Number(cleaned)
-    return Number.isFinite(num) ? num : NaN
+    const m = s.match(/-?\d+(?:[.,]\d+)?/)
+    if (!m) return NaN
+    return Number(m[0].replace(',', '.'))
   }
 
   const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
   const priceNum = useMemo(() => parsePriceToNumber(priceStr), [priceStr])
+
+  // Allow negative order value when refund product is selected
   const orderValue = useMemo(() => {
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
-    if (!Number.isFinite(priceNum) || priceNum <= 0) return 0
+    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return NaN
+    if (!Number.isFinite(priceNum)) return NaN
     return qtyInt * priceNum
   }, [qtyInt, priceNum])
 
-  // Calculate partner amounts
+  // Partner amounts
   const partner1PerItem = useMemo(() => parsePriceToNumber(partner1PerItemStr), [partner1PerItemStr])
   const partner2PerItem = useMemo(() => parsePriceToNumber(partner2PerItemStr), [partner2PerItemStr])
   
@@ -154,7 +164,7 @@ useEffect(() => {
     return partner2PerItem * qtyInt
   }, [partner2PerItem, qtyInt])
 
-  // Calculate effective costs
+  // Effective costs
   const effectiveProductCost = useMemo(() => {
     const override = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
     if (override !== null && Number.isFinite(override)) return override
@@ -167,9 +177,9 @@ useEffect(() => {
     return historicalShippingCost ?? 0
   }, [shippingCostStr, historicalShippingCost])
 
-  // Calculate profit
+  // Profit (hide when Refund/Discount)
   const profit = useMemo(() => {
-    if (orderValue <= 0) return 0
+    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
     const totalPartners = partner1Total + partner2Total
     const totalProductCost = effectiveProductCost * qtyInt
     const totalShippingCost = effectiveShippingCost * qtyInt
@@ -177,7 +187,7 @@ useEffect(() => {
   }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, qtyInt])
 
   const profitPercent = useMemo(() => {
-    if (orderValue <= 0) return 0
+    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
     return (profit / orderValue) * 100
   }, [profit, orderValue])
 
@@ -189,6 +199,47 @@ useEffect(() => {
     [partners, partner1Id]
   )
 
+  // --- Refund/Discount input behavior (mirror NewOrder) ---
+
+  // When switching TO Refund/Discount: show "-" immediately; switching away removes it
+  useEffect(() => {
+    if (isRefundProduct) {
+      setPriceStr(prev => {
+        const cleaned = (prev ?? '').replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
+      })
+    } else {
+      setPriceStr(prev => (prev ?? '').replace(/^-+/, ''))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRefundProduct])
+
+  // Prevent deleting the leading "-" when Refund/Discount is selected
+  const onPriceKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!isRefundProduct) return
+    const target = e.target as HTMLInputElement
+    const { selectionStart, selectionEnd, value } = target
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+  }
+
+  // Enforce a single leading "-" for refund; strip signs otherwise
+  const onPriceChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (isRefundProduct) {
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setPriceStr(v === '-' ? '-' : v)
+    } else {
+      setPriceStr(raw.replace(/^[+-]+/, ''))
+    }
+  }
+
   async function save() {
     if (!person) { alert('Customer missing'); return }
     if (!product) { alert('Product missing'); return }
@@ -197,13 +248,24 @@ useEffect(() => {
     if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
 
     const unitPrice = parsePriceToNumber(priceStr)
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) { alert('Enter a valid unit price > 0'); return }
+    if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
+    if (isRefundProduct) {
+      if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
+    } else {
+      if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
+    }
 
     // Build partner_splits
     const splits: Array<{ partner_id: string; amount: number }> = []
     if (isPartnerCustomer) {
-      if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
-      if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
+      if (partner1Id && partner1PerItemStr) {
+        const per = parsePriceToNumber(partner1PerItemStr)
+        if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner1Id, amount: per * qty })
+      }
+      if (partner2Id && partner2PerItemStr) {
+        const per = parsePriceToNumber(partner2PerItemStr)
+        if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner2Id, amount: per * qty })
+      }
     }
 
     // Parse optional cost overrides
@@ -286,8 +348,8 @@ useEffect(() => {
           <div className="helper" style={{ marginTop: 4 }}>Order #{orderNo}</div>
         </div>
         
-        {/* Profit display - top right */}
-        {orderValue > 0 && (
+        {/* Profit display - top right (hidden for Refund/Discount) */}
+        {Number.isFinite(orderValue) && orderValue > 0 && !isRefundProduct && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
@@ -345,7 +407,8 @@ useEffect(() => {
             inputMode="decimal"
             placeholder="0.00"
             value={priceStr}
-            onChange={e => setPriceStr(e.target.value)}
+            onChange={onPriceChange}
+            onKeyDown={onPriceKeyDown}
             style={{ height: CONTROL_H }}
           />
         </div>
@@ -357,7 +420,7 @@ useEffect(() => {
           <label>Order value (USD)</label>
           <input
             type="text"
-            value={orderValue > 0 ? orderValue.toFixed(2) : ''}
+            value={Number.isFinite(orderValue) ? orderValue.toFixed(2) : ''}
             placeholder="auto"
             readOnly
             style={{ height: CONTROL_H, opacity: 0.9 }}
