@@ -41,6 +41,7 @@ type PartnerDetail = {
     payment_date: string
     payment_type: string
     amount: number
+    notes?: string | null      // ⬅️ include notes so we can render as requested
   }>
 }
 
@@ -316,52 +317,64 @@ export default function PartnerDetailPage() {
 
         {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
           <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
-            {shownPayments.map(p => (
-              <div
-                key={p.id}
-                data-print-row
-                style={{
-                  display:'grid',
-                  gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                  gap:LINE_GAP,
-                  borderBottom:'1px solid #eee',
-                  padding:'8px 0'
-                }}
-              >
-                {/* DATE */}
-                <div 
-                  className="helper"
-                  data-date={p.payment_date}
-                >
-                  {formatUSAny(p.payment_date)}
-                </div>
+            {shownPayments.map(p => {
+              const notes = (p.notes ?? '').trim()
+              const isOther = (p.payment_type || '').toLowerCase() === 'other'
+              const mainLine = isOther ? (notes || 'Other') : p.payment_type
 
-                {/* spacer */}
-                <div style={{ width: 20 }}></div>
-
-                {/* TYPE */}
-                <div 
-                  className="helper"
-                  onClick={() => handlePaymentClick(p)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{ cursor: 'pointer' }}
+              return (
+                <div
+                  key={p.id}
+                  data-print-row
+                  style={{
+                    display:'grid',
+                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                    gap:LINE_GAP,
+                    borderBottom:'1px solid #eee',
+                    padding:'8px 0'
+                  }}
                 >
-                  {p.payment_type}
-                </div>
+                  {/* DATE */}
+                  <div 
+                    className="helper"
+                    data-date={p.payment_date}
+                  >
+                    {formatUSAny(p.payment_date)}
+                  </div>
 
-                {/* AMOUNT */}
-                <div 
-                  className="helper" 
-                  onClick={() => handlePaymentClick(p)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  style={{textAlign:'right', cursor: 'pointer'}}
-                >
-                  {fmtMoney(p.amount)}
+                  {/* spacer */}
+                  <div style={{ width: 20 }}></div>
+
+                  {/* TYPE (+ optional notes line) */}
+                  <div 
+                    className="helper"
+                    onClick={() => handlePaymentClick(p)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div>{mainLine}</div>
+                    {/* When NOT "Other", show notes below if present */}
+                    {!isOther && notes && (
+                      <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
+                        {notes}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AMOUNT */}
+                  <div 
+                    className="helper" 
+                    onClick={() => handlePaymentClick(p)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{textAlign:'right', cursor: 'pointer'}}
+                  >
+                    {fmtMoney(p.amount)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
@@ -387,6 +400,7 @@ export default function PartnerDetailPage() {
     </div>
   )
 }
+
 
 
 
