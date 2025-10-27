@@ -64,7 +64,20 @@ export default function Payments() {
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
 
-  // --- Loan/Deposit behavior (mirror Refund/Discount minus handling) ---
+  // ---- Minus handling helpers (keep caret to the right of '-') ----
+  function keepCaretAfterMinus(input: HTMLInputElement | null) {
+    if (!input) return
+    if (input.value.startsWith('-')) {
+      const s = input.selectionStart ?? 0
+      const e = input.selectionEnd ?? 0
+      if (s < 1 || e < 1) {
+        const pos = Math.max(1, s, e)
+        input.setSelectionRange(pos, pos)
+      }
+    }
+  }
+
+  // --- Customer side: Loan/Deposit (mirror Refund/Discount minus handling) ---
   const isLoanDeposit = useMemo(
     () => (paymentType || '').trim().toLowerCase() === 'loan/deposit',
     [paymentType]
@@ -86,7 +99,7 @@ export default function Payments() {
   // Prevent deleting the leading "-" when Loan/Deposit is selected
   const onAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (!isLoanDeposit) return
-    const target = e.target as HTMLInputElement
+    const target = e.currentTarget
     const { selectionStart, selectionEnd, value } = target
     if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
       e.preventDefault(); return
@@ -95,8 +108,6 @@ export default function Payments() {
       e.preventDefault(); return
     }
   }
-
-  // Enforce a single leading "-" for Loan/Deposit; otherwise accept user input (including negatives)
   const onAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const raw = e.target.value
     if (isLoanDeposit) {
@@ -107,10 +118,67 @@ export default function Payments() {
       setAmountStr(raw)
     }
   }
-
-  // Minus placeholder look (grey) when it’s just the single "-"
+  const onAmountSelect: React.ReactEventHandler<HTMLInputElement> = (e) => {
+    if (!isLoanDeposit) return
+    keepCaretAfterMinus(e.currentTarget)
+  }
+  const onAmountFocusOrClick: React.MouseEventHandler<HTMLInputElement> & React.FocusEventHandler<HTMLInputElement> = (e: any) => {
+    if (!isLoanDeposit) return
+    // Wait a tick so the browser applies the click selection, then adjust
+    requestAnimationFrame(() => keepCaretAfterMinus(e.currentTarget))
+  }
   const isMinusOnly = isLoanDeposit && amountStr.trim() === '-'
 
+  // --- Partner side: Add to debt (mirror the same minus behavior) ---
+  const isAddToDebt = useMemo(
+    () => (partnerPaymentType || '').trim().toLowerCase() === 'add to debt',
+    [partnerPaymentType]
+  )
+
+  useEffect(() => {
+    if (isAddToDebt) {
+      setPartnerAmountStr(prev => {
+        const cleaned = (prev ?? '').replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
+      })
+    } else {
+      setPartnerAmountStr(prev => (prev ?? '').replace(/^-+/, ''))
+    }
+  }, [isAddToDebt])
+
+  const onPartnerAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!isAddToDebt) return
+    const target = e.currentTarget
+    const { selectionStart, selectionEnd, value } = target
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+  }
+  const onPartnerAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (isAddToDebt) {
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setPartnerAmountStr(v === '-' ? '-' : v)
+    } else {
+      setPartnerAmountStr(raw)
+    }
+  }
+  const onPartnerAmountSelect: React.ReactEventHandler<HTMLInputElement> = (e) => {
+    if (!isAddToDebt) return
+    keepCaretAfterMinus(e.currentTarget)
+  }
+  const onPartnerAmountFocusOrClick: React.MouseEventHandler<HTMLInputElement> & React.FocusEventHandler<HTMLInputElement> = (e: any) => {
+    if (!isAddToDebt) return
+    requestAnimationFrame(() => keepCaretAfterMinus(e.currentTarget))
+  }
+  const isPartnerMinusOnly = isAddToDebt && partnerAmountStr.trim() === '-'
+
+  // --- Save handlers ---
   async function saveCustomerPayment() {
     if (!customer) { alert('Select a customer'); return }
     const amountNum = Number((amountStr || '').replace(',', '.'))
@@ -247,6 +315,9 @@ export default function Payments() {
                 value={amountStr}
                 onChange={onAmountChange}
                 onKeyDown={onAmountKeyDown}
+                onSelect={onAmountSelect}
+                onFocus={onAmountFocusOrClick}
+                onClick={onAmountFocusOrClick}
                 style={{
                   height: CONTROL_H,
                   color: isMinusOnly ? 'var(--text-secondary)' : undefined,
@@ -307,8 +378,16 @@ export default function Payments() {
                     placeholder="0.00"
                     inputMode="decimal"
                     value={partnerAmountStr}
-                    onChange={e=>setPartnerAmountStr(e.target.value)}
-                    style={{ height: CONTROL_H }}
+                    onChange={onPartnerAmountChange}
+                    onKeyDown={onPartnerAmountKeyDown}
+                    onSelect={onPartnerAmountSelect}
+                    onFocus={onPartnerAmountFocusOrClick}
+                    onClick={onPartnerAmountFocusOrClick}
+                    style={{
+                      height: CONTROL_H,
+                      color: isPartnerMinusOnly ? 'var(--text-secondary)' : undefined,
+                      opacity: isPartnerMinusOnly ? 0.6 : undefined,
+                    }}
                   />
                 </div>
               </div>
@@ -331,6 +410,7 @@ export default function Payments() {
     </div>
   )
 }
+
 
 
 
