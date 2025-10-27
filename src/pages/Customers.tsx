@@ -16,13 +16,15 @@ export default function Customers() {
   const [filterType, setFilterType] = useState<'All' | 'BLV' | 'Partner'>('All')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
+  // Net owed for partner "JJ Boston" to exclude from Owed to partners
+  const [jjNet, setJjNet] = useState<number>(0)
+
   useEffect(() => {
     (async () => {
       try {
         setLoading(true); setErr(null)
         const res = await listCustomersWithOwed(query.trim() || undefined)
         setCustomers(res.customers)
-        // Get partner totals from API response
         if ((res as any).partner_totals) {
           setPartnerTotals((res as any).partner_totals)
         }
@@ -33,6 +35,28 @@ export default function Customers() {
       }
     })()
   }, [query])
+
+  // Load JJ Boston's partner net so we can exclude it
+  useEffect(() => {
+    (async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const bootRes = await fetch(`${base}/api/bootstrap`, { cache: 'no-store' })
+        if (!bootRes.ok) throw new Error('bootstrap failed')
+        const boot = await bootRes.json()
+        const partners: Array<{ id: string; name: string }> = boot.partners ?? []
+        const jj = partners.find(p => (p.name || '').trim().toLowerCase() === 'jj boston')
+        if (!jj) { setJjNet(0); return }
+        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('partner fetch failed')
+        const data = await res.json()
+        const net = Number(data?.totals?.net_owed ?? 0)
+        setJjNet(Number.isFinite(net) ? net : 0)
+      } catch {
+        setJjNet(0) // safe fallback
+      }
+    })()
+  }, [])
 
   // Suggestions from current results; show while typing/focused
   const suggestions = useMemo(() => {
@@ -67,12 +91,13 @@ export default function Customers() {
     [visible]
   )
 
-  // Partner net respecting the type filter (BLV contributes 0; All/Partner use API total)
+  // Owed to partners: exclude JJ Boston; BLV filter shows 0
   const filteredPartnerNet = useMemo(() => {
-    const net = Number(partnerTotals.net) || 0
     if (filterType === 'BLV') return 0
-    return net
-  }, [partnerTotals.net, filterType])
+    const net = Number(partnerTotals.net) || 0
+    const adjusted = net - (Number(jjNet) || 0)
+    return adjusted < 0 ? 0 : adjusted
+  }, [partnerTotals.net, filterType, jjNet])
 
   // "My $" = Total owed to me (filtered) - Owed to partners (filtered), never below 0
   const myDollars = useMemo(
@@ -179,7 +204,7 @@ export default function Customers() {
       {/* Blank row */}
       <div style={{ height: 8 }} />
 
-      {/* Owed to partners (respects BLV/Partner filter) */}
+      {/* Owed to partners (respects BLV/Partner filter, excludes JJ Boston) */}
       <div
         style={{
           display: 'grid',
@@ -247,6 +272,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
