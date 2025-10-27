@@ -363,6 +363,7 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="revenue"
                   position="top"
+                  offset={6}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
@@ -372,13 +373,14 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profit"
                   position="top"
+                  offset={6}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Bar>
 
-              {/* Line (Profit %) on right axis, no dots, no animations; label on top */}
+              {/* Line (Profit %) on right axis, no dots, no animations; label like bar labels */}
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -392,8 +394,9 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profitPct"
                   position="top"
+                  offset={6}
                   formatter={(v: any) => fmtPct1(Number(v))}
-                  fill="#111"
+                  fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Line>
@@ -588,6 +591,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
