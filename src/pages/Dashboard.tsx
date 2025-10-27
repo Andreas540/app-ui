@@ -9,7 +9,6 @@ import {
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   LabelList,
 } from 'recharts'
 
@@ -229,6 +228,9 @@ export default function Dashboard() {
       ? 'Not delivered orders'
       : 'Most recently registered orders'
 
+  // Prevent focus outline on chart by making wrapper unfocusable
+  const chartWrapRef = useRef<HTMLDivElement | null>(null)
+
   return (
     <div className="grid">
       {/* -------- Card 1: Totals -------- */}
@@ -298,32 +300,39 @@ export default function Dashboard() {
           {monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
         </div>
 
-        <div style={{ flex: 1, minHeight: 180 }}>
+        <div
+          ref={chartWrapRef}
+          tabIndex={-1}
+          style={{ flex: 1, minHeight: 180, outline: 'none' }}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={monthly}
-              margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+              margin={{ top: 12, right: 16, bottom: 8, left: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
+              {/* No grid; removes dotted frame/lines */}
+
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                tickLine={false}
                 tickFormatter={(m) => {
-                  // expect 'YYYY-MM'; render 'MMM YY'
                   const [y, mm] = (m || '').split('-').map(Number)
                   if (!y || !mm) return String(m || '')
                   const d = new Date(y, mm - 1, 1)
                   return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
                 }}
               />
-              {/* Left axis = $, no tick labels */}
+              {/* Left axis = $, no tick labels; add headroom via domain */}
               <YAxis
                 yAxisId="left"
                 tick={false}
                 axisLine={false}
                 width={0}
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
               />
-              {/* Right axis = %, data is 0..1; no tick labels */}
+              {/* Right axis = %, 0..max*1.1; no tick labels */}
               <YAxis
                 yAxisId="right"
                 orientation="right"
@@ -334,7 +343,14 @@ export default function Dashboard() {
               />
 
               {/* Bars */}
-              <Bar yAxisId="left" dataKey="revenue" name="Revenue" fill="#fbbf24" isAnimationActive={false}>
+              <Bar
+                yAxisId="left"
+                dataKey="revenue"
+                name="Revenue"
+                fill="#f59e0b"          // darker orange
+                isAnimationActive={false}
+                barSize={22}
+              >
                 <LabelList
                   dataKey="revenue"
                   position="top"
@@ -342,7 +358,14 @@ export default function Dashboard() {
                   style={{ fontSize: 10 }}
                 />
               </Bar>
-              <Bar yAxisId="left" dataKey="profit" name="Profit" fill="#60a5fa" isAnimationActive={false}>
+              <Bar
+                yAxisId="left"
+                dataKey="profit"
+                name="Profit"
+                fill="#60a5fa"          // light blue
+                isAnimationActive={false}
+                barSize={22}
+              >
                 <LabelList
                   dataKey="profit"
                   position="top"
@@ -351,13 +374,14 @@ export default function Dashboard() {
                 />
               </Bar>
 
-              {/* Line (Profit %) on right axis */}
+              {/* Line (Profit %) on right axis, dots not interactive */}
               <Line
                 yAxisId="right"
                 type="monotone"
                 dataKey="profitPct"
                 name="Profit %"
                 dot={{ r: 3 }}
+                activeDot={false}       // no click/hover enlarge
                 strokeWidth={2}
                 stroke="#374151"
                 isAnimationActive={false}
@@ -560,6 +584,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
