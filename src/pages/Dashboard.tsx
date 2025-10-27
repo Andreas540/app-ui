@@ -63,9 +63,13 @@ export default function Dashboard() {
     })()
   }, [orderFilter])
 
-  // Calculate total owed to me from database data
+  // Total owed to me: sum positives only (treat negatives as 0)
   const totalOwedToMe = useMemo(
-    () => customers.reduce((sum, c) => sum + Number(c.owed_to_me || 0), 0),
+    () =>
+      customers.reduce((sum, c) => {
+        const n = Number(c.owed_to_me || 0)
+        return sum + Math.max(0, n)
+      }, 0),
     [customers]
   )
 
@@ -368,3 +372,4 @@ export default function Dashboard() {
     </div>
   )
 }
+
