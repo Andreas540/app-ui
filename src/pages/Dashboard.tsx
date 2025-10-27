@@ -348,14 +348,14 @@ export default function Dashboard() {
                 width={0}
                 domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
               />
-              {/* Right axis = %, 0..max*1.1 (cap at <=100%) */}
+              {/* Right axis = %, fixed to 0..45% as requested */}
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 tick={false}
                 axisLine={false}
                 width={0}
-                domain={[0, (dataMax: number) => Math.min(1, Math.max(0.6, Math.round(((dataMax || 0) * 1.1) * 10) / 10))]}
+                domain={[0, 0.45]}
               />
 
               {/* Bars: darker orange + light blue; labels on top; NO animations; 50% wider */}
@@ -363,7 +363,7 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="revenue"
                   position="top"
-                  offset={6}
+                  offset={10}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
@@ -373,14 +373,14 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profit"
                   position="top"
-                  offset={6}
+                  offset={10}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Bar>
 
-              {/* Line (Profit %) on right axis, no dots, no animations; label like bar labels */}
+              {/* Profit % line restored, right axis, labels styled like bars */}
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -394,7 +394,7 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profitPct"
                   position="top"
-                  offset={6}
+                  offset={10}
                   formatter={(v: any) => fmtPct1(Number(v))}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
@@ -591,6 +591,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
