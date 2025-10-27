@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -37,6 +37,21 @@ type MonthlyPoint = {
   profitPct: number // 0..1
 }
 
+// Fixed-but-responsive height: shorter on phones, taller on desktop
+const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
+
+// Small fetch helper
+async function fetchMonthly3(): Promise<MonthlyPoint[]> {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  const data = await res.json()
+  return (Array.isArray(data?.rows) ? data.rows : []) as MonthlyPoint[]
+}
+
 export default function Dashboard() {
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
@@ -57,22 +72,6 @@ export default function Dashboard() {
   const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
   const [monthlyLoading, setMonthlyLoading] = useState(true)
   const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
-
-  // Measure first block height to make chart 2x that height (but clamp)
-  const topCardRef = useRef<HTMLDivElement | null>(null)
-  const [chartHeight, setChartHeight] = useState<number>(320)
-  useEffect(() => {
-    if (!topCardRef.current) return
-    const el = topCardRef.current
-    const ro = new ResizeObserver(() => {
-      const h = el.getBoundingClientRect().height
-      const next = Math.round(h * 2)
-      setChartHeight(prev => (Number.isFinite(h) && h > 0 && next !== prev ? next : prev))
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  const clampedChartHeight = Math.max(240, Math.min(chartHeight, 520))
 
   // Load customers data for totals
   useEffect(() => {
@@ -136,27 +135,40 @@ export default function Dashboard() {
     })()
   }, [orderFilter])
 
-  // Load monthly metrics (last 3 months) for chart
+  // Load monthly metrics (last 3 months) + keep it updated
   useEffect(() => {
-    (async () => {
+    let stop = false
+    const load = async () => {
       try {
         setMonthlyLoading(true); setMonthlyErr(null)
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
-        if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
-        }
-        const data = await res.json()
-        const rows: MonthlyPoint[] = Array.isArray(data?.rows) ? data.rows : []
-        setMonthly(rows)
+        const rows = await fetchMonthly3()
+        if (!stop) setMonthly(rows)
       } catch (e: any) {
-        setMonthlyErr(e?.message || String(e))
+        if (!stop) setMonthlyErr(e?.message || String(e))
       } finally {
-        setMonthlyLoading(false)
+        if (!stop) setMonthlyLoading(false)
       }
-    })()
+    }
+
+    load() // initial
+    const id = setInterval(load, 30_000) // poll every 30s
+
+    const onVis = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    window.addEventListener('visibilitychange', onVis)
+
+    return () => {
+      stop = true
+      clearInterval(id)
+      window.removeEventListener('visibilitychange', onVis)
+    }
   }, [])
+
+  // Also refresh monthly when the orders list length changes (new orders registered)
+  useEffect(() => {
+    fetchMonthly3().then(setMonthly).catch(() => {})
+  }, [recentOrders.length])
 
   // Total owed to me: sum positives only (treat negatives as 0)
   const totalOwedToMe = useMemo(
@@ -228,13 +240,10 @@ export default function Dashboard() {
       ? 'Not delivered orders'
       : 'Most recently registered orders'
 
-  // Prevent focus outline on chart by making wrapper unfocusable
-  const chartWrapRef = useRef<HTMLDivElement | null>(null)
-
   return (
     <div className="grid">
       {/* -------- Card 1: Totals -------- */}
-      <div className="card" ref={topCardRef}>        
+      <div className="card">        
         {loading ? (
           <div className="helper">Loading...</div>
         ) : err ? (
@@ -292,25 +301,19 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* -------- Card 2: Chart (2x height of Card 1, clamped) -------- */}
-      <div className="card" style={{ height: clampedChartHeight, display: 'flex', flexDirection: 'column' }}>
+      {/* -------- Card 2: Chart (responsive height, zero interaction) -------- */}
+      <div className="card" style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
           <h3 style={{ margin: 0, fontSize: 16 }}>Revenue & Profit (last 3 months)</h3>
           {monthlyLoading && <span className="helper">Loading…</span>}
           {monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
         </div>
 
-        <div
-          ref={chartWrapRef}
-          tabIndex={-1}
-          style={{ flex: 1, minHeight: 180, outline: 'none' }}
-        >
+        {/* pointerEvents: 'none' = no hover/click/focus interactions */}
+        <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={monthly}
-              margin={{ top: 12, right: 16, bottom: 8, left: 0 }}
-            >
-              {/* No grid; removes dotted frame/lines */}
+            <ComposedChart data={monthly} margin={{ top: 12, right: 16, bottom: 8, left: 0 }}>
+              {/* No grid/legend/tooltip */}
 
               <XAxis
                 dataKey="month"
@@ -324,33 +327,26 @@ export default function Dashboard() {
                   return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
                 }}
               />
-              {/* Left axis = $, no tick labels; add headroom via domain */}
+              {/* Left axis = $, hidden ticks; add 10% headroom */}
               <YAxis
                 yAxisId="left"
                 tick={false}
                 axisLine={false}
                 width={0}
-                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+                domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
               />
-              {/* Right axis = %, 0..max*1.1; no tick labels */}
+              {/* Right axis = %, 0..max*1.1 (cap at <=100%) */}
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 tick={false}
                 axisLine={false}
                 width={0}
-                domain={[0, (dataMax: number) => Math.max(0.6, Math.round((dataMax * 1.1) * 10) / 10)]}
+                domain={[0, (dataMax: number) => Math.min(1, Math.max(0.6, Math.round(((dataMax || 0) * 1.1) * 10) / 10))]}
               />
 
-              {/* Bars */}
-              <Bar
-                yAxisId="left"
-                dataKey="revenue"
-                name="Revenue"
-                fill="#f59e0b"          // darker orange
-                isAnimationActive={false}
-                barSize={22}
-              >
+              {/* Bars: darker orange + light blue; labels on top; NO animations */}
+              <Bar yAxisId="left" dataKey="revenue" fill="#f59e0b" isAnimationActive={false} barSize={22}>
                 <LabelList
                   dataKey="revenue"
                   position="top"
@@ -358,14 +354,7 @@ export default function Dashboard() {
                   style={{ fontSize: 10 }}
                 />
               </Bar>
-              <Bar
-                yAxisId="left"
-                dataKey="profit"
-                name="Profit"
-                fill="#60a5fa"          // light blue
-                isAnimationActive={false}
-                barSize={22}
-              >
+              <Bar yAxisId="left" dataKey="profit" fill="#60a5fa" isAnimationActive={false} barSize={22}>
                 <LabelList
                   dataKey="profit"
                   position="top"
@@ -374,16 +363,15 @@ export default function Dashboard() {
                 />
               </Bar>
 
-              {/* Line (Profit %) on right axis, dots not interactive */}
+              {/* Line (Profit %) on right axis, no dots, no animations; label on top */}
               <Line
                 yAxisId="right"
                 type="monotone"
                 dataKey="profitPct"
-                name="Profit %"
-                dot={{ r: 3 }}
-                activeDot={false}       // no click/hover enlarge
-                strokeWidth={2}
                 stroke="#374151"
+                strokeWidth={2}
+                dot={false}
+                activeDot={false}
                 isAnimationActive={false}
               >
                 <LabelList
@@ -584,6 +572,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
