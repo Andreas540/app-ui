@@ -10,8 +10,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend,
   LabelList,
 } from 'recharts'
 
@@ -56,24 +54,26 @@ export default function Dashboard() {
   // JJ Boston's net (to exclude from partner totals)
   const [jjNet, setJjNet] = useState<number | null>(null)
 
-  // --- NEW: monthly metrics for the chart (last 3 months) ---
+  // Monthly metrics for the chart (last 3 months)
   const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
   const [monthlyLoading, setMonthlyLoading] = useState(true)
   const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
 
-  // --- Measure first block height to make chart 2x that height ---
+  // Measure first block height to make chart 2x that height (but clamp)
   const topCardRef = useRef<HTMLDivElement | null>(null)
-  const [chartHeight, setChartHeight] = useState<number>(320) // sensible default
+  const [chartHeight, setChartHeight] = useState<number>(320)
   useEffect(() => {
     if (!topCardRef.current) return
     const el = topCardRef.current
     const ro = new ResizeObserver(() => {
       const h = el.getBoundingClientRect().height
-      if (Number.isFinite(h) && h > 0) setChartHeight(Math.round(h * 2))
+      const next = Math.round(h * 2)
+      setChartHeight(prev => (Number.isFinite(h) && h > 0 && next !== prev ? next : prev))
     })
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  const clampedChartHeight = Math.max(240, Math.min(chartHeight, 520))
 
   // Load customers data for totals
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function Dashboard() {
     })()
   }, [orderFilter])
 
-  // --- NEW: Load monthly metrics (last 3 months) for chart ---
+  // Load monthly metrics (last 3 months) for chart
   useEffect(() => {
     (async () => {
       try {
@@ -224,7 +224,6 @@ export default function Dashboard() {
     setShowOrderModal(true)
   }
 
-  // FIXED: proper ternary producing a string
   const ordersTitle =
     orderFilter === 'Not delivered'
       ? 'Not delivered orders'
@@ -291,8 +290,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* -------- Card 2: Chart (2x height of Card 1) -------- */}
-      <div className="card" style={{ height: chartHeight, display: 'flex', flexDirection: 'column' }}>
+      {/* -------- Card 2: Chart (2x height of Card 1, clamped) -------- */}
+      <div className="card" style={{ height: clampedChartHeight, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
           <h3 style={{ margin: 0, fontSize: 16 }}>Revenue & Profit (last 3 months)</h3>
           {monthlyLoading && <span className="helper">Loading…</span>}
@@ -308,6 +307,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="month"
+                tick={{ fontSize: 11 }}
                 tickFormatter={(m) => {
                   // expect 'YYYY-MM'; render 'MMM YY'
                   const [y, mm] = (m || '').split('-').map(Number)
@@ -316,46 +316,42 @@ export default function Dashboard() {
                   return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
                 }}
               />
-              {/* Left axis = $ */}
+              {/* Left axis = $, no tick labels */}
               <YAxis
                 yAxisId="left"
-                tickFormatter={(v) => `$${fmtK1(Number(v))}`}
-                width={60}
+                tick={false}
+                axisLine={false}
+                width={0}
               />
-              {/* Right axis = % */}
+              {/* Right axis = %, data is 0..1; no tick labels */}
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tickFormatter={(v) => `${Number(v).toFixed(0)}%`}
-                width={45}
-                domain={[0, (dataMax: number) => Math.max(100, Math.ceil(dataMax / 10) * 10)]}
+                tick={false}
+                axisLine={false}
+                width={0}
+                domain={[0, (dataMax: number) => Math.max(0.6, Math.round((dataMax * 1.1) * 10) / 10)]}
               />
-              <Tooltip
-                formatter={(value: any, name: any) => {
-                  if (name === 'Profit %') return [fmtPct1(Number(value)), name]
-                  return [fmtMoney(Number(value)), name]
-                }}
-                labelFormatter={(label: any) => `Month: ${label}`}
-              />
-              <Legend />
 
               {/* Bars */}
-              <Bar yAxisId="left" dataKey="revenue" name="Revenue">
+              <Bar yAxisId="left" dataKey="revenue" name="Revenue" fill="#fbbf24" isAnimationActive={false}>
                 <LabelList
                   dataKey="revenue"
                   position="top"
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                  style={{ fontSize: 10 }}
                 />
               </Bar>
-              <Bar yAxisId="left" dataKey="profit" name="Profit">
+              <Bar yAxisId="left" dataKey="profit" name="Profit" fill="#60a5fa" isAnimationActive={false}>
                 <LabelList
                   dataKey="profit"
                   position="top"
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                  style={{ fontSize: 10 }}
                 />
               </Bar>
 
-              {/* Line (Profit %) */}
+              {/* Line (Profit %) on right axis */}
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -363,11 +359,14 @@ export default function Dashboard() {
                 name="Profit %"
                 dot={{ r: 3 }}
                 strokeWidth={2}
+                stroke="#374151"
+                isAnimationActive={false}
               >
                 <LabelList
                   dataKey="profitPct"
                   position="top"
                   formatter={(v: any) => fmtPct1(Number(v))}
+                  style={{ fontSize: 10 }}
                 />
               </Line>
             </ComposedChart>
@@ -561,6 +560,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
