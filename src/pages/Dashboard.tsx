@@ -3,8 +3,18 @@ import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 
+function fmtMoney(n: number) {
+  const v = Number(n) || 0
+  const sign = v < 0 ? '-' : ''
+  const abs = Math.abs(v)
+  return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
+  const v = Number(n) || 0
+  const sign = v < 0 ? '-' : ''
+  const abs = Math.abs(v)
+  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
 }
 
 export default function Dashboard() {
@@ -286,7 +296,7 @@ export default function Dashboard() {
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
               const detailsLine = o.product_name && o.qty != null
-                ? `${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / $${Number(o.unit_price ?? 0).toFixed(2)}`
+                ? `${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / ${fmtMoney(o.unit_price ?? 0)}`
                 : `${o.lines} line(s)`
 
               const hasNotes = o.notes && o.notes.trim()
@@ -350,7 +360,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* RIGHT TOTAL — with $ sign */}
+                    {/* RIGHT TOTAL — with $ sign and correct minus placement */}
                     <div 
                       className="helper" 
                       onClick={() => handleOrderClick(o)}
@@ -358,7 +368,7 @@ export default function Dashboard() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{textAlign:'right', cursor: 'pointer'}}
                     >
-                      ${Math.round(Number(o.total)||0).toLocaleString('en-US')}
+                      {fmtIntMoney(o.total)}
                     </div>
                   </div>
 
@@ -401,5 +411,6 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
