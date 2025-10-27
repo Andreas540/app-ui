@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 
 function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
+  const v = Number(n) || 0
+  const sign = v < 0 ? '-' : ''
+  const abs = Math.abs(v)
+  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
 }
 
 export default function Customers() {
@@ -272,6 +275,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
