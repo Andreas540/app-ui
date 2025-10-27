@@ -19,6 +19,9 @@ export default function Dashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [orderFilter, setOrderFilter] = useState<'Most recent' | 'Not delivered'>('Most recent')
+
+  // JJ Boston's net (to exclude from partner totals)
+  const [jjNet, setJjNet] = useState<number | null>(null)
   
   // Load customers data for totals
   useEffect(() => {
@@ -27,7 +30,6 @@ export default function Dashboard() {
         setLoading(true); setErr(null)
         const res = await listCustomersWithOwed()
         setCustomers(res.customers)
-        // Get partner totals from API response
         if ((res as any).partner_totals) {
           setPartnerTotals((res as any).partner_totals)
         }
@@ -35,6 +37,30 @@ export default function Dashboard() {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
+      }
+    })()
+  }, [])
+
+  // Load JJ Boston partner net and exclude it from partner totals
+  useEffect(() => {
+    (async () => {
+      try {
+        // fetch partners via bootstrap
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const bootRes = await fetch(`${base}/api/bootstrap`, { cache: 'no-store' })
+        if (!bootRes.ok) throw new Error('Failed to load partners')
+        const boot = await bootRes.json()
+        const partners: Array<{ id: string; name: string }> = boot.partners ?? []
+        const jj = partners.find(p => (p.name || '').trim().toLowerCase() === 'jj boston')
+        if (!jj) { setJjNet(0); return }
+        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to load JJ Boston totals')
+        const data = await res.json()
+        const net = Number(data?.totals?.net_owed ?? 0)
+        setJjNet(Number.isFinite(net) ? net : 0)
+      } catch {
+        // If anything fails, just don't exclude (safe fallback)
+        setJjNet(0)
       }
     })()
   }, [])
@@ -53,10 +79,8 @@ export default function Dashboard() {
         }
         const data = await res.json()
         setRecentOrders(data.orders)
-        console.log('Recent orders loaded:', data.orders)
       } catch (e: any) {
         setOrdersErr(e?.message || String(e))
-        console.error('Orders loading error:', e)
       } finally {
         setOrdersLoading(false)
       }
@@ -73,10 +97,18 @@ export default function Dashboard() {
     [customers]
   )
 
-  // My $ = Total owed to me - Net owed to Partners (from API)
+  // Owed to partners excluding JJ Boston
+  const owedToPartnersExJJ = useMemo(() => {
+    const net = Number(partnerTotals.net) || 0
+    const jj = Number(jjNet) || 0
+    const adjusted = net - jj
+    return adjusted < 0 ? 0 : adjusted
+  }, [partnerTotals.net, jjNet])
+
+  // My $ = Total owed to me - (Owed to partners excluding JJ)
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalOwedToMe) - Number(partnerTotals.net)),
-    [totalOwedToMe, partnerTotals.net]
+    () => Math.max(0, Number(totalOwedToMe) - Number(owedToPartnersExJJ)),
+    [totalOwedToMe, owedToPartnersExJJ]
   )
 
   // Show orders based on display count
@@ -103,7 +135,6 @@ export default function Dashboard() {
         throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
       }
       
-      // Update the local state to reflect the change immediately
       setRecentOrders(prev => 
         prev.map(order => 
           order.id === orderId 
@@ -112,7 +143,6 @@ export default function Dashboard() {
         )
       )
     } catch (e: any) {
-      console.error('Failed to toggle delivery status:', e)
       alert(`Failed to update delivery status: ${e.message}`)
     }
   }
@@ -122,7 +152,6 @@ export default function Dashboard() {
     setShowOrderModal(true)
   }
 
-  // Determine title based on filter
   const ordersTitle = orderFilter === 'Not delivered' 
     ? 'Not delivered orders' 
     : 'Most recently registered orders'
@@ -151,7 +180,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Owed to partners */}
+            {/* Owed to partners (excluding JJ Boston) */}
             <div
               style={{
                 display: 'grid',
@@ -162,7 +191,7 @@ export default function Dashboard() {
             >
               <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
-                {fmtIntMoney(partnerTotals.net)}
+                {fmtIntMoney(owedToPartnersExJJ)}
               </div>
             </div>
 
@@ -372,4 +401,5 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
