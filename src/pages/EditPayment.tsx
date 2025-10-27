@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+// src/pages/EditPayment.tsx
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType } from '../lib/api'
 import { todayYMD } from '../lib/time'
@@ -57,6 +58,74 @@ export default function EditPayment() {
       }
     })()
   }, [paymentId, isPartnerPayment])
+
+  // ---------- Minus handling (Loan/Deposit & Add to debt) ----------
+  const requiresMinus = useMemo(() => {
+    const t = String(paymentType || '').trim().toLowerCase()
+    return isPartnerPayment ? t === 'add to debt' : t === 'loan/deposit'
+  }, [paymentType, isPartnerPayment])
+
+  // Ensure minus is present/removed when type toggles
+  useEffect(() => {
+    setAmountStr(prev => {
+      const curr = prev ?? ''
+      if (requiresMinus) {
+        const cleaned = curr.replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
+      } else {
+        return curr.replace(/^-+/, '')
+      }
+    })
+  }, [requiresMinus])
+
+  // Keep caret after the leading '-'
+  function keepCaretAfterMinus(input: HTMLInputElement | null) {
+    if (!input || !requiresMinus) return
+    if (input.value.startsWith('-')) {
+      const s = input.selectionStart ?? 0
+      const e = input.selectionEnd ?? 0
+      if (s < 1 || e < 1) {
+        const pos = Math.max(1, s, e)
+        input.setSelectionRange(pos, pos)
+      }
+    }
+  }
+
+  const onAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!requiresMinus) return
+    const target = e.currentTarget
+    const { selectionStart, selectionEnd, value } = target
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+  }
+
+  const onAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (requiresMinus) {
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setAmountStr(v === '-' ? '-' : v)
+    } else {
+      setAmountStr(raw)
+    }
+  }
+
+  const onAmountSelect: React.ReactEventHandler<HTMLInputElement> = (e) => {
+    if (!requiresMinus) return
+    keepCaretAfterMinus(e.currentTarget)
+  }
+
+  const onAmountFocusOrClick: React.MouseEventHandler<HTMLInputElement> & React.FocusEventHandler<HTMLInputElement> = (e: any) => {
+    if (!requiresMinus) return
+    requestAnimationFrame(() => keepCaretAfterMinus(e.currentTarget))
+  }
+
+  const isMinusOnly = requiresMinus && amountStr.trim() === '-'
 
   async function save() {
     const amountNum = Number((amountStr || '').replace(',', '.'))
@@ -165,8 +234,16 @@ export default function EditPayment() {
             placeholder="0.00"
             inputMode="decimal"
             value={amountStr}
-            onChange={e=>setAmountStr(e.target.value)}
-            style={{ height: CONTROL_H }}
+            onChange={onAmountChange}
+            onKeyDown={onAmountKeyDown}
+            onSelect={onAmountSelect}
+            onFocus={onAmountFocusOrClick}
+            onClick={onAmountFocusOrClick}
+            style={{
+              height: CONTROL_H,
+              color: isMinusOnly ? 'var(--text-secondary)' : undefined,
+              opacity: isMinusOnly ? 0.6 : undefined,
+            }}
           />
         </div>
       </div>
