@@ -36,8 +36,18 @@ export default function CustomerDetailPage() {
   }, [id])
 
   // --- Helpers (no hooks here) ---
-  function fmtMoney(n:number) { return `$${(Number(n) || 0).toFixed(2)}` }
-  function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
+  function fmtMoney(n: number) {
+    const v = Number(n) || 0
+    const sign = v < 0 ? '-' : ''
+    const abs = Math.abs(v)
+    return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  function fmtIntMoney(n: number) {
+    const v = Number(n) || 0
+    const sign = v < 0 ? '-' : ''
+    const abs = Math.abs(v)
+    return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
+  }
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -251,11 +261,11 @@ export default function CustomerDetailPage() {
               // NOTE: server should provide product_name, qty, unit_price, partner_amount
               const middle =
                 (o as any).product_name && (o as any).qty != null
-                  ? `${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / $${Number((o as any).unit_price ?? 0).toFixed(2)}`
+                  ? `${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / ${fmtMoney((o as any).unit_price ?? 0)}`
                   : `${o.lines} line(s)`
 
               const withPartner = isPartnerCustomer && (o as any).partner_amount != null
-                ? `${middle} / $${Math.round(Number((o as any).partner_amount))}`
+                ? `${middle} / ${fmtIntMoney((o as any).partner_amount)}`
                 : middle
 
               const hasNotes = (o as any).notes && (o as any).notes.trim()
@@ -314,7 +324,7 @@ export default function CustomerDetailPage() {
                       {withPartner}
                     </div>
 
-                    {/* RIGHT TOTAL — with $ sign */}
+                    {/* RIGHT TOTAL — with $ sign and proper minus placement */}
                     <div 
                       className="helper" 
                       onClick={() => handleOrderClick(o)}
@@ -322,7 +332,7 @@ export default function CustomerDetailPage() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{textAlign:'right', cursor: 'pointer'}}
                     >
-                      ${Math.round(Number((o as any).total)||0).toLocaleString('en-US')}
+                      {fmtIntMoney((o as any).total)}
                     </div>
                   </div>
 
@@ -477,6 +487,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
