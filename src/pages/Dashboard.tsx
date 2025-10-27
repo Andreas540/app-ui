@@ -51,13 +51,12 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const data = await res.json()
   const rows = Array.isArray(data?.rows) ? data.rows : []
 
-  // Normalize possible key variants and types:
+  // Normalize possible keys and then compute profitPct = profit / revenue (client-side truth)
   return rows.map((r: any) => {
     const month = String(r.month ?? '')
     const revenue = Number(r.revenue ?? 0)
     const profit = Number(r.profit ?? 0)
-    const profitPctRaw = r.profitPct ?? r.profit_pct ?? r.profitpercent ?? 0
-    const profitPct = Number(profitPctRaw) || 0
+    const profitPct = revenue > 0 ? profit / revenue : 0
     return { month, revenue, profit, profitPct }
   }) as MonthlyPoint[]
 }
@@ -368,7 +367,7 @@ export default function Dashboard() {
                 domain={[0, 0.45]}
               />
 
-              {/* Bars: darker orange + light blue; labels on top; NO animations; 50% wider */}
+              {/* Bars: orange + light blue; labels; NO animations */}
               <Bar yAxisId="left" dataKey="revenue" fill="#f59e0b" isAnimationActive={false} barSize={33}>
                 <LabelList
                   dataKey="revenue"
@@ -390,7 +389,7 @@ export default function Dashboard() {
                 />
               </Bar>
 
-              {/* Profit % line on right axis, labels styled like bars */}
+              {/* Profit % line on right axis */}
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -601,6 +600,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
