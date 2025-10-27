@@ -211,13 +211,14 @@ export default function Payments() {
 
       // 2) Mirror to partner payments if Partner credit
       if (isPartnerCredit) {
-        const noteFallback = `Partner credit used by ${customer.name}`
+        const partnerNote =
+          `Partner credit${notes.trim() ? ' — ' + notes.trim() : ''}`
         await createPartnerPayment({
           partner_id: partnerCreditPartnerId,
           payment_type: 'Other',
           amount: amountNum,
           payment_date: date,
-          notes: (notes.trim() || noteFallback),
+          notes: partnerNote,
         })
       }
 
@@ -462,6 +463,7 @@ export default function Payments() {
     </div>
   )
 }
+
 
 
 
