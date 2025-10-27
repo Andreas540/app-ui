@@ -1,7 +1,15 @@
 // src/pages/Payments.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType, createPayment, createPartnerPayment } from '../lib/api'
+import {
+  fetchBootstrap,
+  PAYMENT_TYPES,
+  PARTNER_PAYMENT_TYPES,
+  type PaymentType,
+  type PartnerPaymentType,
+  createPayment,
+  createPartnerPayment
+} from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner' }
@@ -25,6 +33,8 @@ export default function Payments() {
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
+  // Partner selector shown only when PaymentType === "Partner credit"
+  const [partnerForCreditId, setPartnerForCreditId] = useState('')
 
   // form - partner payments
   const [partnerId, setPartnerId] = useState('')
@@ -52,6 +62,7 @@ export default function Payments() {
         }
         if (bootPartners && bootPartners.length > 0) {
           setPartnerId(bootPartners[0].id)
+          setPartnerForCreditId(bootPartners[0].id) // sensible default for Partner credit
         }
       } catch (e:any) {
         setErr(e?.message || String(e))
@@ -63,6 +74,12 @@ export default function Payments() {
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
+
+  // Detect Partner credit (From customer flow)
+  const isPartnerCredit = useMemo(
+    () => (paymentType || '').trim().toLowerCase() === 'partner credit',
+    [paymentType]
+  )
 
   // ---- Minus handling helpers (keep caret to the right of '-') ----
   function keepCaretAfterMinus(input: HTMLInputElement | null) {
@@ -180,12 +197,23 @@ export default function Payments() {
   // --- Save handlers ---
   async function saveCustomerPayment() {
     if (!customer) { alert('Select a customer'); return }
+
+    // Require partner selection when "Partner credit"
+    if (isPartnerCredit) {
+      if (!partnerForCreditId) {
+        alert('Choose a partner for this Partner credit.')
+        return
+      }
+    }
+
     const amountNum = Number((amountStr || '').replace(',', '.'))
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       alert('Enter a non-zero amount (use negative for credits if desired)')
       return
     }
+
     try {
+      // 1) Save the customer payment
       await createPayment({
         customer_id: customer.id,
         payment_type: paymentType,
@@ -193,6 +221,19 @@ export default function Payments() {
         payment_date: date,
         notes: notes.trim() || null,
       })
+
+      // 2) If Partner credit, also save a partner payment (type Other, note prefixed)
+      if (isPartnerCredit) {
+        const partnerNote = `Partner credit${notes.trim() ? ` - ${notes.trim()}` : ''}`
+        await createPartnerPayment({
+          partner_id: partnerForCreditId,
+          payment_type: 'Other' as PartnerPaymentType,
+          amount: amountNum,
+          payment_date: date,
+          notes: partnerNote,
+        })
+      }
+
       alert('Payment saved!')
       const params = new URLSearchParams(location.search)
       const returnTo = params.get('return_to')
@@ -204,6 +245,8 @@ export default function Payments() {
       setAmountStr('')
       setPaymentType('Cash payment')
       setNotes('')
+      // Reset partner-for-credit to first partner for convenience
+      if (partners.length) setPartnerForCreditId(partners[0].id)
     } catch (e:any) {
       alert(e?.message || 'Save failed')
     }
@@ -253,7 +296,7 @@ export default function Payments() {
             onChange={e => { if (e.target.checked) setIsFromCustomer(true) }}
             style={{ width: 18, height: 18 }}
           />
-        <span>From customer</span>
+          <span>From customer</span>
         </label>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
@@ -299,7 +342,13 @@ export default function Payments() {
               <label>Payment Type</label>
               <select
                 value={paymentType}
-                onChange={e=>setPaymentType(e.target.value as PaymentType)}
+                onChange={e=>{
+                  setPaymentType(e.target.value as PaymentType)
+                  // If switching into Partner credit and no partner chosen yet, default to first partner
+                  if ((e.target.value || '').toLowerCase() === 'partner credit' && !partnerForCreditId && partners.length) {
+                    setPartnerForCreditId(partners[0].id)
+                  }
+                }}
                 style={{ height: CONTROL_H }}
               >
                 {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -326,6 +375,24 @@ export default function Payments() {
             </div>
           </div>
 
+          {/* Partner selector shown only for Partner credit */}
+          {isPartnerCredit && (
+            <div className="row" style={{marginTop:12}}>
+              <div style={{gridColumn:'1 / -1'}}>
+                <label>Partner</label>
+                <select
+                  value={partnerForCreditId}
+                  onChange={e=>setPartnerForCreditId(e.target.value)}
+                  style={{ height: CONTROL_H, width: '100%' }}
+                >
+                  {partners.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="row" style={{marginTop:12}}>
             <div style={{gridColumn:'1 / -1'}}>
               <label>Notes (optional)</label>
@@ -335,7 +402,17 @@ export default function Payments() {
 
           <div style={{marginTop:16, display:'flex', gap:8}}>
             <button className="primary" onClick={saveCustomerPayment} style={{ height: CONTROL_H }}>Save payment</button>
-            <button onClick={()=>{ setAmountStr(''); setPaymentType('Cash payment'); setNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
+            <button
+              onClick={()=>{ 
+                setAmountStr(''); 
+                setPaymentType('Cash payment'); 
+                setNotes(''); 
+                if (partners.length) setPartnerForCreditId(partners[0].id)
+              }}
+              style={{ height: CONTROL_H }}
+            >
+              Clear
+            </button>
           </div>
 
           <p className="helper" style={{marginTop:12}}>
@@ -409,6 +486,7 @@ export default function Payments() {
     </div>
   )
 }
+
 
 
 
