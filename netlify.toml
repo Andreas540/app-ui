@@ -8,6 +8,12 @@
 [functions]
   directory = "netlify/functions"
 
+# exact route for monthly metrics
+[[redirects]]
+  from = "/api/metrics/monthly"
+  to   = "/.netlify/functions/metrics-monthly"
+  status = 200
+  
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
