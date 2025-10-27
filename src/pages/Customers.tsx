@@ -57,9 +57,13 @@ export default function Customers() {
     return customers.filter(c => (c as any).customer_type === filterType)
   }, [customers, filterType])
 
-  // Sum owed_to_me over the visible (filtered) set
+  // Sum owed_to_me over the visible (filtered) set, BUT treat negatives as 0 for the total
   const totalVisibleOwed = useMemo(
-    () => visible.reduce((sum, c) => sum + Number((c as any).owed_to_me || 0), 0),
+    () =>
+      visible.reduce((sum, c) => {
+        const n = Number((c as any).owed_to_me || 0)
+        return sum + Math.max(0, n)
+      }, 0),
     [visible]
   )
 
@@ -70,7 +74,7 @@ export default function Customers() {
     return net
   }, [partnerTotals.net, filterType])
 
-  // "My $" = Total owed to me (filtered) - Owed to partners (filtered)
+  // "My $" = Total owed to me (filtered) - Owed to partners (filtered), never below 0
   const myDollars = useMemo(
     () => Math.max(0, Number(totalVisibleOwed) - Number(filteredPartnerNet)),
     [totalVisibleOwed, filteredPartnerNet]
@@ -243,6 +247,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
