@@ -1,20 +1,43 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  LabelList,
+} from 'recharts'
 
+// --- Money format helpers (with correct minus placement) ---
 function fmtMoney(n: number) {
   const v = Number(n) || 0
   const sign = v < 0 ? '-' : ''
   const abs = Math.abs(v)
   return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
-
 function fmtIntMoney(n: number) {
   const v = Number(n) || 0
   const sign = v < 0 ? '-' : ''
   const abs = Math.abs(v)
   return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
+}
+
+// --- Chart label helpers ---
+const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K` // thousands, 1 decimal
+const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
+
+type MonthlyPoint = {
+  month: string // e.g. "2025-08"
+  revenue: number
+  profit: number
+  profitPct: number // 0..1
 }
 
 export default function Dashboard() {
@@ -32,7 +55,26 @@ export default function Dashboard() {
 
   // JJ Boston's net (to exclude from partner totals)
   const [jjNet, setJjNet] = useState<number | null>(null)
-  
+
+  // --- NEW: monthly metrics for the chart (last 3 months) ---
+  const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
+  const [monthlyLoading, setMonthlyLoading] = useState(true)
+  const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
+
+  // --- Measure first block height to make chart 2x that height ---
+  const topCardRef = useRef<HTMLDivElement | null>(null)
+  const [chartHeight, setChartHeight] = useState<number>(320) // sensible default
+  useEffect(() => {
+    if (!topCardRef.current) return
+    const el = topCardRef.current
+    const ro = new ResizeObserver(() => {
+      const h = el.getBoundingClientRect().height
+      if (Number.isFinite(h) && h > 0) setChartHeight(Math.round(h * 2))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   // Load customers data for totals
   useEffect(() => {
     (async () => {
@@ -55,7 +97,6 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        // fetch partners via bootstrap
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const bootRes = await fetch(`${base}/api/bootstrap`, { cache: 'no-store' })
         if (!bootRes.ok) throw new Error('Failed to load partners')
@@ -69,7 +110,6 @@ export default function Dashboard() {
         const net = Number(data?.totals?.net_owed ?? 0)
         setJjNet(Number.isFinite(net) ? net : 0)
       } catch {
-        // If anything fails, just don't exclude (safe fallback)
         setJjNet(0)
       }
     })()
@@ -96,6 +136,28 @@ export default function Dashboard() {
       }
     })()
   }, [orderFilter])
+
+  // --- NEW: Load monthly metrics (last 3 months) for chart ---
+  useEffect(() => {
+    (async () => {
+      try {
+        setMonthlyLoading(true); setMonthlyErr(null)
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
+        }
+        const data = await res.json()
+        const rows: MonthlyPoint[] = Array.isArray(data?.rows) ? data.rows : []
+        setMonthly(rows)
+      } catch (e: any) {
+        setMonthlyErr(e?.message || String(e))
+      } finally {
+        setMonthlyLoading(false)
+      }
+    })()
+  }, [])
 
   // Total owed to me: sum positives only (treat negatives as 0)
   const totalOwedToMe = useMemo(
@@ -162,13 +224,16 @@ export default function Dashboard() {
     setShowOrderModal(true)
   }
 
-  const ordersTitle = orderFilter === 'Not delivered' 
-    ? 'Not delivered orders' 
-    : 'Most recently registered orders'
+  // FIXED: proper ternary producing a string
+  const ordersTitle =
+    orderFilter === 'Not delivered'
+      ? 'Not delivered orders'
+      : 'Most recently registered orders'
 
   return (
     <div className="grid">
-      <div className="card">        
+      {/* -------- Card 1: Totals -------- */}
+      <div className="card" ref={topCardRef}>        
         {loading ? (
           <div className="helper">Loading...</div>
         ) : err ? (
@@ -226,6 +291,91 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* -------- Card 2: Chart (2x height of Card 1) -------- */}
+      <div className="card" style={{ height: chartHeight, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
+          <h3 style={{ margin: 0, fontSize: 16 }}>Revenue & Profit (last 3 months)</h3>
+          {monthlyLoading && <span className="helper">Loading…</span>}
+          {monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
+        </div>
+
+        <div style={{ flex: 1, minHeight: 180 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={monthly}
+              margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="month"
+                tickFormatter={(m) => {
+                  // expect 'YYYY-MM'; render 'MMM YY'
+                  const [y, mm] = (m || '').split('-').map(Number)
+                  if (!y || !mm) return String(m || '')
+                  const d = new Date(y, mm - 1, 1)
+                  return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
+                }}
+              />
+              {/* Left axis = $ */}
+              <YAxis
+                yAxisId="left"
+                tickFormatter={(v) => `$${fmtK1(Number(v))}`}
+                width={60}
+              />
+              {/* Right axis = % */}
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(v) => `${Number(v).toFixed(0)}%`}
+                width={45}
+                domain={[0, (dataMax: number) => Math.max(100, Math.ceil(dataMax / 10) * 10)]}
+              />
+              <Tooltip
+                formatter={(value: any, name: any) => {
+                  if (name === 'Profit %') return [fmtPct1(Number(value)), name]
+                  return [fmtMoney(Number(value)), name]
+                }}
+                labelFormatter={(label: any) => `Month: ${label}`}
+              />
+              <Legend />
+
+              {/* Bars */}
+              <Bar yAxisId="left" dataKey="revenue" name="Revenue">
+                <LabelList
+                  dataKey="revenue"
+                  position="top"
+                  formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                />
+              </Bar>
+              <Bar yAxisId="left" dataKey="profit" name="Profit">
+                <LabelList
+                  dataKey="profit"
+                  position="top"
+                  formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                />
+              </Bar>
+
+              {/* Line (Profit %) */}
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="profitPct"
+                name="Profit %"
+                dot={{ r: 3 }}
+                strokeWidth={2}
+              >
+                <LabelList
+                  dataKey="profitPct"
+                  position="top"
+                  formatter={(v: any) => fmtPct1(Number(v))}
+                />
+              </Line>
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* -------- Card 3: Orders -------- */}
       <div className="card">
         {/* Filter buttons */}
         <div
@@ -411,6 +561,8 @@ export default function Dashboard() {
     </div>
   )
 }
+
+
 
 
 
