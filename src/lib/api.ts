@@ -46,10 +46,10 @@ export async function createOrder(input: NewOrderInput) {
 
 // ---- Payments API (from customers) ----
 export type PaymentType =
-  | 'Cash payment' | 'Cash App payment' | 'Wire Transfer' | 'Zelle payment' | 'Partner credit' | 'Loan/Deposit'
+  | 'Cash payment' | 'Cash App payment' | 'Wire Transfer' | 'Zelle payment' | 'Partner credit' | 'Loan/Deposit' | 'Repayment'
 
 export const PAYMENT_TYPES: PaymentType[] = [
-  'Cash payment','Cash App payment','Wire Transfer','Zelle payment','Partner credit','Loan/Deposit'
+  'Cash payment','Cash App payment','Wire Transfer','Zelle payment','Partner credit','Loan/Deposit','Repayment'
 ]
 
 export type NewPaymentInput = {

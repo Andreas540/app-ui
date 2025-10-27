@@ -1,15 +1,7 @@
 // src/pages/Payments.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  fetchBootstrap,
-  PAYMENT_TYPES,
-  PARTNER_PAYMENT_TYPES,
-  type PaymentType,
-  type PartnerPaymentType,
-  createPayment,
-  createPartnerPayment,
-} from '../lib/api'
+import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType, createPayment, createPartnerPayment } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner' }
@@ -33,8 +25,6 @@ export default function Payments() {
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
-  // Partner for "Partner credit"
-  const [partnerCreditPartnerId, setPartnerCreditPartnerId] = useState('')
 
   // form - partner payments
   const [partnerId, setPartnerId] = useState('')
@@ -51,6 +41,7 @@ export default function Payments() {
         setPeople(customers as unknown as CustomerLite[])
         setPartners(bootPartners ?? [])
         
+        // Preselect customer if coming from detail page
         const params = new URLSearchParams(location.search)
         const preselectedCustomerId = params.get('customer_id')
         if (preselectedCustomerId) {
@@ -59,10 +50,8 @@ export default function Payments() {
         } else {
           setEntityId((customers[0]?.id as string) ?? '')
         }
-
         if (bootPartners && bootPartners.length > 0) {
           setPartnerId(bootPartners[0].id)
-          setPartnerCreditPartnerId(bootPartners[0].id)
         }
       } catch (e:any) {
         setErr(e?.message || String(e))
@@ -75,7 +64,7 @@ export default function Payments() {
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
 
-  // ---- Minus handling helpers (Loan/Deposit & Add to debt) ----
+  // ---- Minus handling helpers (keep caret to the right of '-') ----
   function keepCaretAfterMinus(input: HTMLInputElement | null) {
     if (!input) return
     if (input.value.startsWith('-')) {
@@ -88,14 +77,15 @@ export default function Payments() {
     }
   }
 
-  // From customer: Loan/Deposit (negative)
-  const isLoanDeposit = useMemo(
-    () => (paymentType || '').trim().toLowerCase() === 'loan/deposit',
-    [paymentType]
-  )
+  // --- Customer side: Loan/Deposit & Repayment (same minus behavior) ---
+  const isCustomerMinusType = useMemo(() => {
+    const t = (paymentType || '').trim().toLowerCase()
+    return t === 'loan/deposit' || t === 'repayment'
+  }, [paymentType])
 
+  // Show "-" immediately when selecting minus-type; remove when switching away
   useEffect(() => {
-    if (isLoanDeposit) {
+    if (isCustomerMinusType) {
       setAmountStr(prev => {
         const cleaned = (prev ?? '').replace(/^-+/, '')
         const next = '-' + cleaned
@@ -104,10 +94,11 @@ export default function Payments() {
     } else {
       setAmountStr(prev => (prev ?? '').replace(/^-+/, ''))
     }
-  }, [isLoanDeposit])
+  }, [isCustomerMinusType])
 
+  // Prevent deleting the leading "-" when minus-type is selected
   const onAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    if (!isLoanDeposit) return
+    if (!isCustomerMinusType) return
     const target = e.currentTarget
     const { selectionStart, selectionEnd, value } = target
     if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
@@ -119,7 +110,7 @@ export default function Payments() {
   }
   const onAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const raw = e.target.value
-    if (isLoanDeposit) {
+    if (isCustomerMinusType) {
       const withoutSigns = raw.replace(/^[+-]+/, '')
       const v = '-' + withoutSigns
       setAmountStr(v === '-' ? '-' : v)
@@ -128,20 +119,21 @@ export default function Payments() {
     }
   }
   const onAmountSelect: React.ReactEventHandler<HTMLInputElement> = (e) => {
-    if (!isLoanDeposit) return
+    if (!isCustomerMinusType) return
     keepCaretAfterMinus(e.currentTarget)
   }
   const onAmountFocusOrClick: React.MouseEventHandler<HTMLInputElement> & React.FocusEventHandler<HTMLInputElement> = (e: any) => {
-    if (!isLoanDeposit) return
+    if (!isCustomerMinusType) return
     requestAnimationFrame(() => keepCaretAfterMinus(e.currentTarget))
   }
-  const isMinusOnly = isLoanDeposit && amountStr.trim() === '-'
+  const isMinusOnly = isCustomerMinusType && amountStr.trim() === '-'
 
-  // To partner: Add to debt (negative)
+  // --- Partner side: Add to debt (same minus behavior) ---
   const isAddToDebt = useMemo(
     () => (partnerPaymentType || '').trim().toLowerCase() === 'add to debt',
     [partnerPaymentType]
   )
+
   useEffect(() => {
     if (isAddToDebt) {
       setPartnerAmountStr(prev => {
@@ -153,6 +145,7 @@ export default function Payments() {
       setPartnerAmountStr(prev => (prev ?? '').replace(/^-+/, ''))
     }
   }, [isAddToDebt])
+
   const onPartnerAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (!isAddToDebt) return
     const target = e.currentTarget
@@ -184,7 +177,7 @@ export default function Payments() {
   }
   const isPartnerMinusOnly = isAddToDebt && partnerAmountStr.trim() === '-'
 
-  // Save handlers
+  // --- Save handlers ---
   async function saveCustomerPayment() {
     if (!customer) { alert('Select a customer'); return }
     const amountNum = Number((amountStr || '').replace(',', '.'))
@@ -192,15 +185,7 @@ export default function Payments() {
       alert('Enter a non-zero amount (use negative for credits if desired)')
       return
     }
-
-    const isPartnerCredit = (paymentType || '').trim().toLowerCase() === 'partner credit'
-    if (isPartnerCredit && !partnerCreditPartnerId) {
-      alert('Select a partner for Partner credit')
-      return
-    }
-
     try {
-      // 1) Save the customer payment
       await createPayment({
         customer_id: customer.id,
         payment_type: paymentType,
@@ -208,22 +193,7 @@ export default function Payments() {
         payment_date: date,
         notes: notes.trim() || null,
       })
-
-      // 2) Mirror to partner payments if Partner credit
-      if (isPartnerCredit) {
-        const partnerNote =
-          `Partner credit${notes.trim() ? ' — ' + notes.trim() : ''}`
-        await createPartnerPayment({
-          partner_id: partnerCreditPartnerId,
-          payment_type: 'Other',
-          amount: amountNum,
-          payment_date: date,
-          notes: partnerNote,
-        })
-      }
-
       alert('Payment saved!')
-
       const params = new URLSearchParams(location.search)
       const returnTo = params.get('return_to')
       const returnId = params.get('return_id')
@@ -231,11 +201,9 @@ export default function Payments() {
         navigate(`/customers/${returnId}`)
         return
       }
-
       setAmountStr('')
       setPaymentType('Cash payment')
       setNotes('')
-      if (partners.length > 0) setPartnerCreditPartnerId(partners[0].id)
     } catch (e:any) {
       alert(e?.message || 'Save failed')
     }
@@ -274,12 +242,9 @@ export default function Payments() {
   const viaPartner = people.filter(p => p.customer_type === 'Partner')
   const hasCustomerType = blv.length + viaPartner.length > 0
 
-  const isPartnerCreditSelected =
-    isFromCustomer && (paymentType || '').trim().toLowerCase() === 'partner credit'
-
   return (
     <div className="card" style={{maxWidth:720}}>
-      {/* Payment direction */}
+      {/* Payment direction checkboxes */}
       <div style={{ display:'flex', gap:24, marginBottom:16 }}>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
@@ -288,7 +253,7 @@ export default function Payments() {
             onChange={e => { if (e.target.checked) setIsFromCustomer(true) }}
             style={{ width: 18, height: 18 }}
           />
-          <span>From customer</span>
+        <span>From customer</span>
         </label>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
@@ -329,55 +294,36 @@ export default function Payments() {
             </div>
           </div>
 
-          <div style={{marginTop:12, display:'grid', gridTemplateColumns:'1fr', gap:12}}>
-            <div className="row row-2col-mobile">
-              <div>
-                <label>Payment Type</label>
-                <select
-                  value={paymentType}
-                  onChange={e=>setPaymentType(e.target.value as PaymentType)}
-                  style={{ height: CONTROL_H }}
-                >
-                  {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>Amount (USD)</label>
-                <input
-                  type="text"
-                  placeholder="0.00"
-                  inputMode="decimal"
-                  value={amountStr}
-                  onChange={onAmountChange}
-                  onKeyDown={onAmountKeyDown}
-                  onSelect={onAmountSelect}
-                  onFocus={onAmountFocusOrClick}
-                  onClick={onAmountFocusOrClick}
-                  style={{
-                    height: CONTROL_H,
-                    color: isMinusOnly ? 'var(--text-secondary)' : undefined,
-                    opacity: isMinusOnly ? 0.6 : undefined,
-                  }}
-                />
-              </div>
+          <div className="row row-2col-mobile" style={{marginTop:12}}>
+            <div>
+              <label>Payment Type</label>
+              <select
+                value={paymentType}
+                onChange={e=>setPaymentType(e.target.value as PaymentType)}
+                style={{ height: CONTROL_H }}
+              >
+                {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
-
-            {isPartnerCreditSelected && (
-              <div className="row">
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label>Partner</label>
-                  <select
-                    value={partnerCreditPartnerId}
-                    onChange={(e)=>setPartnerCreditPartnerId(e.target.value)}
-                    style={{ height: CONTROL_H }}
-                  >
-                    {partners.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+            <div>
+              <label>Amount (USD)</label>
+              <input
+                type="text"
+                placeholder="0.00"
+                inputMode="decimal"
+                value={amountStr}
+                onChange={onAmountChange}
+                onKeyDown={onAmountKeyDown}
+                onSelect={onAmountSelect}
+                onFocus={onAmountFocusOrClick}
+                onClick={onAmountFocusOrClick}
+                style={{
+                  height: CONTROL_H,
+                  color: isMinusOnly ? 'var(--text-secondary)' : undefined,
+                  opacity: isMinusOnly ? 0.6 : undefined,
+                }}
+              />
+            </div>
           </div>
 
           <div className="row" style={{marginTop:12}}>
@@ -463,6 +409,7 @@ export default function Payments() {
     </div>
   )
 }
+
 
 
 
