@@ -29,19 +29,18 @@ type PartnerDetail = {
     order_no: number
     order_date: string
     customer_name: string
-    // new fields provided by backend
     product_name?: string | null
     qty?: number | null
     unit_price?: number | null
-    total: number              // order total (calculated amount)
-    partner_amount: number     // this partner's amount on the order (far right)
+    total: number
+    partner_amount: number
   }>
   payments: Array<{
     id: string
     payment_date: string
     payment_type: string
     amount: number
-    notes?: string | null      // ⬅️ include notes so we can render as requested
+    notes?: string | null
   }>
 }
 
@@ -94,8 +93,12 @@ export default function PartnerDetailPage() {
     })()
   }, [id])
 
-  function fmtIntMoney(n:number) { return `$${Math.round(Number(n)||0).toLocaleString('en-US')}` }
-  function fmtMoney(n:number) { return `$${(Number(n)||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
+  function fmtIntMoney(n:number) {
+    return `$${Math.round(Number(n)||0).toLocaleString('en-US')}`
+  }
+  function fmtMoney(n:number) {
+    return `$${(Number(n)||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
 
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
@@ -251,17 +254,14 @@ export default function PartnerDetailPage() {
                   }}
                 >
                   {/* DATE */}
-                  <div 
-                    className="helper"
-                    data-date={o.order_date}
-                  >
+                  <div className="helper" data-date={o.order_date}>
                     {formatUSAny(o.order_date)}
                   </div>
 
                   {/* spacer */}
                   <div style={{ width: 20 }}></div>
 
-                  {/* MIDDLE: Customer (sortable) + details line */}
+                  {/* MIDDLE */}
                   <div 
                     className="helper"
                     onClick={() => handleOrderClick(o)}
@@ -269,9 +269,7 @@ export default function PartnerDetailPage() {
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     style={{ cursor: 'pointer' }}
                   >
-                    <div>
-                      <strong data-customer={o.customer_name}>{o.customer_name}</strong>
-                    </div>
+                    <div><strong data-customer={o.customer_name}>{o.customer_name}</strong></div>
                     <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
                       {middleLine2}
                     </div>
@@ -320,7 +318,13 @@ export default function PartnerDetailPage() {
             {shownPayments.map(p => {
               const notes = (p.notes ?? '').trim()
               const isOther = (p.payment_type || '').toLowerCase() === 'other'
+              const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
               const mainLine = isOther ? (notes || 'Other') : p.payment_type
+
+              // Amount display: "-$..." for all, except "+$..." (no minus) for Add to debt
+              const amountStr = isAddToDebt
+                ? fmtMoney(Math.abs(p.amount))
+                : `-${fmtMoney(Math.abs(p.amount))}`
 
               return (
                 <div
@@ -335,10 +339,7 @@ export default function PartnerDetailPage() {
                   }}
                 >
                   {/* DATE */}
-                  <div 
-                    className="helper"
-                    data-date={p.payment_date}
-                  >
+                  <div className="helper" data-date={p.payment_date}>
                     {formatUSAny(p.payment_date)}
                   </div>
 
@@ -354,7 +355,6 @@ export default function PartnerDetailPage() {
                     style={{ cursor: 'pointer' }}
                   >
                     <div>{mainLine}</div>
-                    {/* When NOT "Other", show notes below if present */}
                     {!isOther && notes && (
                       <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
                         {notes}
@@ -362,15 +362,16 @@ export default function PartnerDetailPage() {
                     )}
                   </div>
 
-                  {/* AMOUNT */}
+                  {/* AMOUNT: "-$..." except Add to debt */}
                   <div 
                     className="helper" 
                     onClick={() => handlePaymentClick(p)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     style={{textAlign:'right', cursor: 'pointer'}}
+                    title={isAddToDebt ? 'Added to debt' : 'Payment to partner'}
                   >
-                    {fmtMoney(p.amount)}
+                    {amountStr}
                   </div>
                 </div>
               )
@@ -400,6 +401,7 @@ export default function PartnerDetailPage() {
     </div>
   )
 }
+
 
 
 
