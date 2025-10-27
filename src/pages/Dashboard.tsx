@@ -27,11 +27,11 @@ function fmtIntMoney(n: number) {
 }
 
 // --- Chart label helpers ---
-const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K` // thousands, 1 decimal
+const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K`
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 type MonthlyPoint = {
-  month: string // e.g. "2025-08"
+  month: string // "YYYY-MM"
   revenue: number
   profit: number
   profitPct: number // 0..1
@@ -40,7 +40,7 @@ type MonthlyPoint = {
 // Fixed-but-responsive height: shorter on phones, taller on desktop
 const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
 
-// Small fetch helper
+// ---- FETCH & NORMALIZE MONTHLY DATA ----
 async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
   const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
@@ -49,7 +49,17 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
     throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
   }
   const data = await res.json()
-  return (Array.isArray(data?.rows) ? data.rows : []) as MonthlyPoint[]
+  const rows = Array.isArray(data?.rows) ? data.rows : []
+
+  // Normalize possible key variants and types:
+  return rows.map((r: any) => {
+    const month = String(r.month ?? '')
+    const revenue = Number(r.revenue ?? 0)
+    const profit = Number(r.profit ?? 0)
+    const profitPctRaw = r.profitPct ?? r.profit_pct ?? r.profitpercent ?? 0
+    const profitPct = Number(profitPctRaw) || 0
+    return { month, revenue, profit, profitPct }
+  }) as MonthlyPoint[]
 }
 
 export default function Dashboard() {
@@ -200,7 +210,7 @@ export default function Dashboard() {
     return adjusted < 0 ? 0 : adjusted
   }, [partnerTotals.net, jjNet])
 
-  // My $ = Total owed to me - (Owed to partners excluding JJ)
+  // My $
   const myDollars = useMemo(
     () => Math.max(0, Number(totalOwedToMe) - Number(owedToPartnersExJJ)),
     [totalOwedToMe, owedToPartnersExJJ]
@@ -348,7 +358,7 @@ export default function Dashboard() {
                 width={0}
                 domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
               />
-              {/* Right axis = %, fixed to 0..45% as requested */}
+              {/* Right axis = %, fixed 0..45% */}
               <YAxis
                 yAxisId="right"
                 orientation="right"
@@ -363,7 +373,7 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="revenue"
                   position="top"
-                  offset={10}
+                  offset={12}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
@@ -373,14 +383,14 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profit"
                   position="top"
-                  offset={10}
+                  offset={12}
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Bar>
 
-              {/* Profit % line restored, right axis, labels styled like bars */}
+              {/* Profit % line on right axis, labels styled like bars */}
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -394,7 +404,7 @@ export default function Dashboard() {
                 <LabelList
                   dataKey="profitPct"
                   position="top"
-                  offset={10}
+                  offset={12}
                   formatter={(v: any) => fmtPct1(Number(v))}
                   fill="#fff"
                   style={{ fontSize: 12, fontWeight: 700 }}
@@ -591,6 +601,8 @@ export default function Dashboard() {
     </div>
   )
 }
+
+
 
 
 
