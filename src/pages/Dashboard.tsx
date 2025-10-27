@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
   const [monthlyLoading, setMonthlyLoading] = useState(true)
   const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
+  const [monthlyFirstLoad, setMonthlyFirstLoad] = useState(true)
 
   // Load customers data for totals
   useEffect(() => {
@@ -135,10 +136,10 @@ export default function Dashboard() {
     })()
   }, [orderFilter])
 
-  // Load monthly metrics (last 3 months) + keep it updated
+  // Initial monthly load (show loading only this time)
   useEffect(() => {
     let stop = false
-    const load = async () => {
+    const initial = async () => {
       try {
         setMonthlyLoading(true); setMonthlyErr(null)
         const rows = await fetchMonthly3()
@@ -146,28 +147,39 @@ export default function Dashboard() {
       } catch (e: any) {
         if (!stop) setMonthlyErr(e?.message || String(e))
       } finally {
-        if (!stop) setMonthlyLoading(false)
+        if (!stop) { setMonthlyLoading(false); setMonthlyFirstLoad(false) }
       }
     }
+    initial()
+    return () => { stop = true }
+  }, [])
 
-    load() // initial
-    const id = setInterval(load, 30_000) // poll every 30s
-
-    const onVis = () => {
-      if (document.visibilityState === 'visible') load()
+  // Silent polling every 30s (skip when tab hidden)
+  useEffect(() => {
+    let stop = false
+    const loadSilent = async () => {
+      try {
+        if (document.visibilityState !== 'visible') return
+        const rows = await fetchMonthly3()
+        if (!stop) setMonthly(rows)
+      } catch {
+        // swallow silent errors
+      }
     }
+    const id = setInterval(loadSilent, 30_000)
+    const onVis = () => { if (document.visibilityState === 'visible') loadSilent() }
     window.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      stop = true
-      clearInterval(id)
-      window.removeEventListener('visibilitychange', onVis)
-    }
+    return () => { stop = true; clearInterval(id); window.removeEventListener('visibilitychange', onVis) }
   }, [])
 
   // Also refresh monthly when the orders list length changes (new orders registered)
   useEffect(() => {
-    fetchMonthly3().then(setMonthly).catch(() => {})
+    (async () => {
+      try {
+        const rows = await fetchMonthly3()
+        setMonthly(rows)
+      } catch {}
+    })()
   }, [recentOrders.length])
 
   // Total owed to me: sum positives only (treat negatives as 0)
@@ -305,7 +317,8 @@ export default function Dashboard() {
       <div className="card" style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
           <h3 style={{ margin: 0, fontSize: 16 }}>Revenue & Profit (last 3 months)</h3>
-          {monthlyLoading && <span className="helper">Loading…</span>}
+          {/* Show loading only on first load to avoid flicker */}
+          {monthlyFirstLoad && monthlyLoading && <span className="helper">Loading…</span>}
           {monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
         </div>
 
@@ -345,21 +358,23 @@ export default function Dashboard() {
                 domain={[0, (dataMax: number) => Math.min(1, Math.max(0.6, Math.round(((dataMax || 0) * 1.1) * 10) / 10))]}
               />
 
-              {/* Bars: darker orange + light blue; labels on top; NO animations */}
-              <Bar yAxisId="left" dataKey="revenue" fill="#f59e0b" isAnimationActive={false} barSize={22}>
+              {/* Bars: darker orange + light blue; labels on top; NO animations; 50% wider */}
+              <Bar yAxisId="left" dataKey="revenue" fill="#f59e0b" isAnimationActive={false} barSize={33}>
                 <LabelList
                   dataKey="revenue"
                   position="top"
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                  style={{ fontSize: 10 }}
+                  fill="#fff"
+                  style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Bar>
-              <Bar yAxisId="left" dataKey="profit" fill="#60a5fa" isAnimationActive={false} barSize={22}>
+              <Bar yAxisId="left" dataKey="profit" fill="#60a5fa" isAnimationActive={false} barSize={33}>
                 <LabelList
                   dataKey="profit"
                   position="top"
                   formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                  style={{ fontSize: 10 }}
+                  fill="#fff"
+                  style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Bar>
 
@@ -378,7 +393,8 @@ export default function Dashboard() {
                   dataKey="profitPct"
                   position="top"
                   formatter={(v: any) => fmtPct1(Number(v))}
-                  style={{ fontSize: 10 }}
+                  fill="#111"
+                  style={{ fontSize: 12, fontWeight: 700 }}
                 />
               </Line>
             </ComposedChart>
@@ -572,6 +588,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
