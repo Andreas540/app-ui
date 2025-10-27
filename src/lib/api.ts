@@ -82,10 +82,10 @@ export async function listPayments(limit = 20) {
 }
 
 // ---- Partner Payments API (to partners) ----
-export type PartnerPaymentType = 'Cash' | 'Cash app' | 'Other'
+export type PartnerPaymentType = 'Cash' | 'Cash app' | 'Other' | 'Add to debt'
 
 export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = [
-  'Cash', 'Cash app', 'Other'
+  'Cash', 'Cash app', 'Other', 'Add to debt'
 ]
 
 export type NewPartnerPaymentInput = {
