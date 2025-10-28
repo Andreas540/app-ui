@@ -17,6 +17,7 @@ export default function Customers() {
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
   const [filterType, setFilterType] = useState<'All' | 'BLV' | 'Partner'>('All')
+  const [sortBy, setSortBy] = useState<'owed' | 'name'>('owed') // sorting: default "Owed amount"
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   // Net owed for partner "JJ Boston" to exclude from Owed to partners
@@ -83,6 +84,19 @@ export default function Customers() {
     if (filterType === 'All') return customers
     return customers.filter(c => (c as any).customer_type === filterType)
   }, [customers, filterType])
+
+  // Apply sorting to the visible set
+  const sortedVisible = useMemo(() => {
+    const arr = [...visible]
+    if (sortBy === 'owed') {
+      // Sort by owed amount (desc)
+      arr.sort((a, b) => Number(b.owed_to_me || 0) - Number(a.owed_to_me || 0))
+    } else {
+      // Sort by customer name (A→Z)
+      arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    }
+    return arr
+  }, [visible, sortBy])
 
   // Sum owed_to_me over the visible (filtered) set, BUT treat negatives as 0 for the total
   const totalVisibleOwed = useMemo(
@@ -238,7 +252,37 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Blank row */}
+      {/* Spacer between "My $" and Sort by */}
+      <div style={{ height: 8 }} />
+
+      {/* Sort row */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>Sort by</div>
+        <div>
+          <select
+            aria-label="Sort customers by"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'owed' | 'name')}
+            style={{
+              height: 'calc(var(--control-h) * 0.67)',
+              borderRadius: 8,
+              padding: '0 10px',
+            }}
+          >
+            <option value="owed">Owed amount</option>
+            <option value="name">Customer name</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Same spacer below sorting as above */}
       <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
@@ -247,11 +291,11 @@ export default function Customers() {
       <div style={{ marginTop: 12 }}>
         {loading ? (
           <p>Loading…</p>
-        ) : visible.length === 0 ? (
+        ) : sortedVisible.length === 0 ? (
           <p className="helper">No customers.</p>
         ) : (
           <div>
-            {visible.map((c) => (
+            {sortedVisible.map((c) => (
               <Link key={c.id} to={`/customers/${c.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
@@ -267,7 +311,7 @@ export default function Customers() {
       </div>
 
       {/* Clear search below the (single) result */}
-      {query && visible.length === 1 && (
+      {query && sortedVisible.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
         </div>
@@ -275,6 +319,7 @@ export default function Customers() {
     </div>
   )
 }
+
 
 
 
