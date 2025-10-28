@@ -142,10 +142,21 @@ export default function NewOrder() {
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
+  // UPDATED: allow ".5" / ",5" (and "-.5") to parse as 0.5
   function parsePriceToNumber(s: string) {
-    const m = s.match(/-?\d+(?:[.,]\d+)?/)
-    if (!m) return NaN
-    return Number(m[0].replace(',', '.'))
+    if (!s) return NaN
+    // Normalize commas to dots
+    let t = s.trim().replace(',', '.')
+    // If user starts with "." or "-.", prefix a leading zero for safe parsing
+    t = t.replace(/^(-)?\.(\d+)/, '$10.$2')
+
+    // Strict match: signed decimal number, allowing no leading digit before dot
+    const m = t.match(/^-?(?:\d+(?:\.\d+)?|\.\d+)$/)
+    if (m) return Number(m[0])
+
+    // Fallback: first reasonable numeric token
+    const fallback = t.match(/-?(?:\d+\.\d+|\d+)/)
+    return fallback ? Number(fallback[0]) : NaN
   }
 
   const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
@@ -658,6 +669,8 @@ export default function NewOrder() {
     </div>
   )
 }
+
+
 
 
 
