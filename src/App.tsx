@@ -22,6 +22,8 @@ import './print.css'
 import CreateInvoicePage from './pages/CreateInvoice'
 import InvoicePreview from './pages/InvoicePreview'
 import PriceChecker from './pages/PriceChecker'
+import Suppliers from './pages/Suppliers'
+import CreateSupplier from './pages/CreateSupplier'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -194,6 +196,7 @@ export default function App() {
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              <NavLink to="/suppliers" onClick={() => setNavOpen(false)}>Suppliers</NavLink>
               
               {/* Other Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
@@ -251,6 +254,8 @@ export default function App() {
                 <Route path="/invoices/create" element={<CreateInvoicePage />} />
                 <Route path="/invoices/preview" element={<InvoicePreview />} />
                 <Route path="/price-checker" element={<PriceChecker />} />
+                <Route path="/suppliers" element={<Suppliers />} />
+<Route path="/suppliers/new" element={<CreateSupplier />} />
               </>
             )}
           </Routes>
