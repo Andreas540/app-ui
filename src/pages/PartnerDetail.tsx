@@ -174,10 +174,21 @@ export default function PartnerDetailPage() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const paymentDate = getCurrentDateEST()
       
-      // Generate a shared reference ID for linking the two payments
-      const transferReference = `TRANSFER-${Date.now()}`
+      // Get partner names
+      const fromPartnerName = data?.partner.name || 'Unknown'
+      const toPartner = allPartners.find(p => p.id === transferToPartnerId)
+      const toPartnerName = toPartner?.name || 'Unknown'
 
-      // Create array of 2 payments with DIFFERENT IDs but same reference in notes
+      // Create notes with transfer info and user notes
+      const fromNotes = transferNotes.trim() 
+        ? `Transfer to ${toPartnerName} | ${transferNotes.trim()}`
+        : `Transfer to ${toPartnerName}`
+      
+      const toNotes = transferNotes.trim()
+        ? `Transfer from ${fromPartnerName} | ${transferNotes.trim()}`
+        : `Transfer from ${fromPartnerName}`
+
+      // Create array of 2 payments with DIFFERENT IDs
       const payments = [
         {
           id: crypto.randomUUID(), // Unique ID for first payment
@@ -185,15 +196,15 @@ export default function PartnerDetailPage() {
           payment_date: paymentDate,
           payment_type: 'Partner transfer',
           amount: amount, // Positive (they gave money away)
-          notes: transferNotes.trim() ? `${transferReference} | ${transferNotes.trim()}` : transferReference
+          notes: fromNotes
         },
         {
-          id: crypto.randomUUID(), // Unique ID for second payment (different from first)
+          id: crypto.randomUUID(), // Unique ID for second payment
           partner_id: transferToPartnerId, // Selected partner (TO)
           payment_date: paymentDate,
           payment_type: 'Partner transfer',
           amount: -amount, // Negative (they received money)
-          notes: transferNotes.trim() ? `${transferReference} | ${transferNotes.trim()}` : transferReference
+          notes: toNotes
         }
       ]
 
@@ -210,7 +221,6 @@ export default function PartnerDetailPage() {
       }
 
       // Show confirmation
-      const toPartnerName = allPartners.find(p => p.id === transferToPartnerId)?.name || 'partner'
       alert(`Transfer of ${fmtMoney(amount)} to ${toPartnerName} completed successfully!`)
 
       // Reset form and hide
