@@ -174,26 +174,26 @@ export default function PartnerDetailPage() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const paymentDate = getCurrentDateEST()
       
-      // Generate a unique ID for both payments (UUID-like)
-      const transferId = crypto.randomUUID()
+      // Generate a shared reference ID for linking the two payments
+      const transferReference = `TRANSFER-${Date.now()}`
 
-      // Create array of 2 payments
+      // Create array of 2 payments with DIFFERENT IDs but same reference in notes
       const payments = [
         {
-          id: transferId,
+          id: crypto.randomUUID(), // Unique ID for first payment
           partner_id: id, // Current partner (FROM)
           payment_date: paymentDate,
           payment_type: 'Partner transfer',
           amount: amount, // Positive (they gave money away)
-          notes: transferNotes.trim() || null
+          notes: transferNotes.trim() ? `${transferReference} | ${transferNotes.trim()}` : transferReference
         },
         {
-          id: transferId,
+          id: crypto.randomUUID(), // Unique ID for second payment (different from first)
           partner_id: transferToPartnerId, // Selected partner (TO)
           payment_date: paymentDate,
           payment_type: 'Partner transfer',
           amount: -amount, // Negative (they received money)
-          notes: transferNotes.trim() || null
+          notes: transferNotes.trim() ? `${transferReference} | ${transferNotes.trim()}` : transferReference
         }
       ]
 
