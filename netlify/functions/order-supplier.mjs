@@ -39,8 +39,7 @@ export const handler = async (event) => {
         if (!supplier_id || !product_id) return json(400, { error: 'Missing supplier_id or product_id' })
 
         // Find most recent product_cost for this supplier+product
-        // We join through orders_suppliers to ensure supplier match, and scope by tenant.
-        const rows = await sql/*sql*/`
+        const rows = await sql`
           select ois.product_cost
           from order_items_suppliers ois
           join orders_suppliers os
@@ -50,7 +49,7 @@ export const handler = async (event) => {
             and os.supplier_id = ${supplier_id}
             and ois.product_id = ${product_id}
           order by ois.created_at desc
-          limit 1;
+          limit 1
         `
         const last_cost = rows?.[0]?.product_cost ?? null
         return json(200, { last_cost })
@@ -85,11 +84,8 @@ export const handler = async (event) => {
 
       if (cleaned.length === 0) return json(400, { error: 'No valid lines (need product_id, integer qty>=1, cost)' })
 
-      // Use a single transaction
-      const res = await sql/*sql*/`
-        begin;
-
-        -- Insert header; order_no is auto via trigger
+      // Insert header; order_no is auto via trigger
+      const res = await sql`
         insert into orders_suppliers (
           tenant_id, supplier_id, order_no, order_date, est_delivery_date,
           delivered, received, in_customs, delivery_date, discount,
@@ -101,35 +97,35 @@ export const handler = async (event) => {
           ${!!delivered}, ${!!received}, ${!!in_customs},
           null, 0, 0, 0, ${notes}
         )
-        returning id;
+        returning id
       `
+      
       const orderId = res?.[0]?.id
       if (!orderId) {
-        await sql`rollback;`
         return json(500, { error: 'Failed to create supplier order' })
       }
 
       // Batch insert lines
-      await sql/*sql*/`
-        insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost)
-        select * from unnest (
-          array[${cleaned.map(()=>tenantId)}]::uuid[],
-          array[${cleaned.map(()=>orderId)}]::uuid[],
-          array[${cleaned.map(l=>l.product_id)}]::uuid[],
-          array[${cleaned.map(l=>l.qty)}]::numeric[],
-          array[${cleaned.map(l=>l.product_cost)}]::numeric[],
-          array[${cleaned.map(l=>l.shipping_cost)}]::numeric[]
-        );
-      `
+      for (const line of cleaned) {
+        await sql`
+          insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost)
+          values (
+            ${tenantId},
+            ${orderId},
+            ${line.product_id},
+            ${line.qty},
+            ${line.product_cost},
+            ${line.shipping_cost}
+          )
+        `
+      }
 
-      await sql`commit;`
       return json(200, { order_id: orderId })
     }
 
     return json(405, { error: 'Method Not Allowed' })
   } catch (err) {
-    // If a transaction was open, try to roll it back silently
-    try { const sql = neon(process.env.DATABASE_URL); await sql`rollback;` } catch {}
+    console.error('order-supplier error:', err)
     return json(500, { error: String(err?.message || err) })
   }
 }
