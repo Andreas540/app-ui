@@ -1,139 +1,115 @@
-/* --- Keep your existing styles --- */
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-
-  /* Needed so the app layout can size to viewport height */
+/* ===================== Base & Reset ===================== */
+html, body, #root {
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
+/* Vite template bits kept minimal */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+.logo:hover { filter: drop-shadow(0 0 2em #646cffaa); }
+.logo.react:hover { filter: drop-shadow(0 0 2em #61dafbaa); }
 
 @keyframes logo-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
-
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+  a:nth-of-type(2) .logo { animation: logo-spin infinite 20s linear; }
 }
 
-.card {
-  padding: 2em;
-}
+/* Cards */
+.card { padding: 2em; }
+.read-the-docs { color: #888; }
 
-.read-the-docs {
-  color: #888;
-}
+/* ===================== App Layout ===================== */
+/* Height of your top bar — adjust if needed */
+:root { --topbar-h: 56px; }
 
-/* ====================================================================== */
-/*                            NEW LAYOUT RULES                             */
-/*  Make the overall app use the full viewport height and push scrolling   */
-/*  into the left nav and the main content areas (desktop).                */
-/* ====================================================================== */
-
-html, body {
-  height: 100%;
-  margin: 0;               /* avoid unexpected page scroll gaps */
-  padding: 0;
-}
-
-/* Set your topbar height once; adjust if your header is taller/shorter */
-:root {
-  --topbar-h: 56px;
-}
-
-/* The app wraps header + 2-column layout */
+/* App is column: topbar + 2-column layout */
 .app {
   min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* If you have a .topbar element, this makes its height explicit.
-   (Won’t override your existing styles except height/line-height) */
+/* Ensure your .topbar consumes the declared height */
 .topbar {
   height: var(--topbar-h);
   line-height: var(--topbar-h);
 }
 
-/* The layout area under the top bar fills the viewport height minus header.
-   min-height:0 lets its children become scroll containers inside the grid. */
+/* Two-column grid under the topbar; children can scroll */
 .layout {
   height: calc(100vh - var(--topbar-h));
   display: grid;
-  grid-template-columns: 260px 1fr; /* adjust to your nav width if different */
+  grid-template-columns: 260px 1fr; /* adjust if your nav is different */
   gap: 0;
-
-  /* Critical for proper scrolling inside grid children */
-  min-height: 0;
-
-  /* Prevent double scrollbars around the whole layout */
-  overflow: hidden;
+  min-height: 0;   /* CRITICAL: allow children to shrink & scroll */
+  overflow: hidden;/* avoid double scrollbars */
 }
 
-/* Left navigation: independently scrollable when taller than viewport */
+/* Left navigation: independent scroll */
 .nav {
   overflow-y: auto;
-  min-height: 0;           /* critical inside CSS grid */
+  min-height: 0;   /* CRITICAL inside CSS grid */
 }
 
-/* Main content: independently scrollable */
+/* Main content: independent scroll */
 .content {
   overflow-y: auto;
-  min-height: 0;           /* critical inside CSS grid */
-  padding: 16px;           /* keep some breathing room around pages */
+  min-height: 0;   /* CRITICAL inside CSS grid */
+  padding: 16px;
   box-sizing: border-box;
 }
 
-/* Mobile: collapse to single column; your existing nav overlay logic still applies */
+/* ===================== Desktop Helpers ===================== */
+/* If any big cards/pages previously set overflow on themselves, remove it.
+   Scrolling should happen on .content, not inside the card. */
+
+/* ===================== Mobile Layout ===================== */
 @media (max-width: 768px) {
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* content column only */
   }
 }
-/* Smooth, independent scrolling on iOS too */
+
+/* Smooth iOS scroll for the nav */
 .nav { -webkit-overflow-scrolling: touch; }
 
-/* Mobile overlay menu specifics */
+/* Mobile hamburger/overlay behavior */
 @media (max-width: 768px) {
   .nav {
-    position: fixed;                /* sit above content */
+    position: fixed;
     top: var(--topbar-h);
     left: 0;
     bottom: 0;
-    width: 80vw;                    /* or your preferred width */
+    width: 80vw;
     max-width: 320px;
-    transform: translateX(-100%);   /* hidden by default */
+    transform: translateX(-100%);  /* hidden by default */
     transition: transform .25s ease;
-    overflow-y: auto;               /* independent scroll */
+    overflow-y: auto;
     max-height: calc(100vh - var(--topbar-h));
+    background: var(--panel, #111); /* tweak as you like */
+    z-index: 1000;
   }
   .nav.open { transform: translateX(0); }
 
-  /* Dark backdrop; also prevents background scrolling */
+  /* Backdrop that blocks background scroll */
   .scrim {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.35);
+    z-index: 900;
   }
 
-  /* Optional: stop content from scrolling while menu is open */
+  /* Freeze main content while nav is open (optional) */
   .nav.open ~ .content { overflow: hidden; }
 }
+
 
