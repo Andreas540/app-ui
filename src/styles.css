@@ -36,8 +36,10 @@ a {
 
 /* ===================== Top Bar ===================== */
 .topbar {
-  position: sticky;
+  position: fixed; /* Changed from sticky to fixed */
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   height: var(--topbar-h);
   display: flex;
@@ -55,31 +57,20 @@ a {
 }
 
 .brand-title {
-  position: relative;
-  overflow: hidden;
-  height: 3.4em;
-  width: 90px;
-  color: var(--text);
   font-weight: 700;
-}
-
-.brand-title > div {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--text);
   font-size: 14px;
-  text-align: center;
-  line-height: 1.1;
+  line-height: 1.2;
+  min-width: 90px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===================== Layout (Desktop) ===================== */
 .layout {
   height: calc(100vh - var(--topbar-h));
+  margin-top: var(--topbar-h); /* Add space for fixed topbar */
   display: grid;
   grid-template-columns: 220px 1fr;
   overflow: hidden;
@@ -225,6 +216,7 @@ button.primary:hover,
 
 button.primary:active,
 .icon-btn.active,
+.icon-btn[aria-current="true"],
 .hamburger:active {
   background: var(--brand-blue-active);
   border-color: var(--brand-blue-active);
@@ -259,7 +251,7 @@ button.primary:focus-visible,
   border-radius: 2px;
 }
 
-/* ===================== Quick Buttons ===================== */
+/* ===================== Quick Buttons / Shortcuts ===================== */
 .quick-buttons {
   margin-left: auto;
   display: flex;
