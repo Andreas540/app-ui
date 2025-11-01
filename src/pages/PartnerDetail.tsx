@@ -175,7 +175,7 @@ export default function PartnerDetailPage() {
       const paymentDate = getCurrentDateEST()
       
       // Generate a unique ID for both payments (UUID-like)
-      const transferId = `transfer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const transferId = crypto.randomUUID()
 
       // Create array of 2 payments
       const payments = [
