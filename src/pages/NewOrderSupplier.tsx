@@ -48,7 +48,7 @@ export default function NewOrderSupplier() {
 
         const [sRes, pRes] = await Promise.allSettled([
           fetch(`${base}/api/suppliers`, { cache: 'no-store' }),
-          fetch(`${base}/api/products?fields=id,name&limit=1000`, { cache: 'no-store' }),
+          fetch(`${base}/api/product`, { cache: 'no-store' }),
         ])
 
         if (sRes.status === 'fulfilled' && sRes.value.ok) {
