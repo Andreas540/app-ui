@@ -44,6 +44,11 @@ type PartnerDetail = {
   }>
 }
 
+type Partner = {
+  id: string
+  name: string
+}
+
 export default function PartnerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<PartnerDetail | null>(null)
@@ -57,6 +62,14 @@ export default function PartnerDetailPage() {
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
+  // Transfer state
+  const [showTransferForm, setShowTransferForm] = useState(false)
+  const [transferAmount, setTransferAmount] = useState('')
+  const [transferToPartnerId, setTransferToPartnerId] = useState('')
+  const [transferNotes, setTransferNotes] = useState('')
+  const [allPartners, setAllPartners] = useState<Partner[]>([])
+  const [transferring, setTransferring] = useState(false)
+
   // Print dialog state
   const [showPrintDialog, setShowPrintDialog] = useState(false)
   const [printOptions, setPrintOptions] = useState<PrintOptions | null>(null)
@@ -68,6 +81,22 @@ export default function PartnerDetailPage() {
       setShowPrintDialog(true)
     })
   }, [])
+
+  // Load all partners for the dropdown
+  useEffect(() => {
+    (async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/partners`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to load partners')
+        const partners = await res.json()
+        // Filter out the current partner from the dropdown
+        setAllPartners(partners.filter((p: Partner) => p.id !== id))
+      } catch (e) {
+        console.error('Failed to load partners:', e)
+      }
+    })()
+  }, [id])
 
   useEffect(() => {
     (async () => {
@@ -105,6 +134,17 @@ export default function PartnerDetailPage() {
     return s ? `tel:${s}` : undefined
   }
 
+  // Get current date in EST timezone, format as YYYY-MM-DD
+  function getCurrentDateEST(): string {
+    const now = new Date()
+    // Convert to EST (UTC-5 or UTC-4 depending on DST)
+    const estDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const year = estDate.getFullYear()
+    const month = String(estDate.getMonth() + 1).padStart(2, '0')
+    const day = String(estDate.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const handleOrderClick = (order: any) => {
     setSelectedOrder(order)
     setShowOrderModal(true)
@@ -113,6 +153,100 @@ export default function PartnerDetailPage() {
   const handlePaymentClick = (payment: any) => {
     setSelectedPayment(payment)
     setShowPaymentModal(true)
+  }
+
+  const handleTransferSubmit = async () => {
+    // Validation
+    const amount = parseFloat(transferAmount.replace(/,/g, ''))
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount')
+      return
+    }
+    if (!transferToPartnerId) {
+      alert('Please select a partner to transfer to')
+      return
+    }
+
+    setTransferring(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const paymentDate = getCurrentDateEST()
+      
+      // Generate a unique ID for both payments (UUID-like)
+      const transferId = `transfer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      // Create array of 2 payments
+      const payments = [
+        {
+          id: transferId,
+          partner_id: id, // Current partner (FROM)
+          payment_date: paymentDate,
+          payment_type: 'Partner transfer',
+          amount: amount, // Positive (they gave money away)
+          notes: transferNotes.trim() || null
+        },
+        {
+          id: transferId,
+          partner_id: transferToPartnerId, // Selected partner (TO)
+          payment_date: paymentDate,
+          payment_type: 'Partner transfer',
+          amount: -amount, // Negative (they received money)
+          notes: transferNotes.trim() || null
+        }
+      ]
+
+      // Submit both payments
+      const res = await fetch(`${base}/api/partner-transfer`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ payments })
+      })
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Failed to create transfer (status ${res.status}) ${text?.slice(0,140)}`)
+      }
+
+      // Show confirmation
+      const toPartnerName = allPartners.find(p => p.id === transferToPartnerId)?.name || 'partner'
+      alert(`Transfer of ${fmtMoney(amount)} to ${toPartnerName} completed successfully!`)
+
+      // Reset form and hide
+      setTransferAmount('')
+      setTransferToPartnerId('')
+      setTransferNotes('')
+      setShowTransferForm(false)
+
+      // Reload partner data to show new payment
+      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { cache: 'no-store' })
+      if (reloadRes.ok) {
+        const d = await reloadRes.json()
+        setData(d)
+      }
+    } catch (e: any) {
+      console.error('Transfer failed:', e)
+      alert(`Transfer failed: ${e.message}`)
+    } finally {
+      setTransferring(false)
+    }
+  }
+
+  // Format amount input with thousand separator
+  const handleAmountChange = (value: string) => {
+    // Remove all non-digits and non-decimal points
+    const cleaned = value.replace(/[^\d.]/g, '')
+    
+    // Allow only one decimal point
+    const parts = cleaned.split('.')
+    if (parts.length > 2) return
+    
+    // Format the integer part with thousand separators
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    
+    // Keep max 2 decimal places
+    const decimalPart = parts[1] ? parts[1].substring(0, 2) : ''
+    
+    setTransferAmount(decimalPart ? `${integerPart}.${decimalPart}` : integerPart)
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -159,6 +293,79 @@ export default function PartnerDetailPage() {
           <Link to="/partners" className="helper">&larr; Back to partners</Link>
         </div>
       </div>
+
+      {/* New Transfer button */}
+      <div style={{ display:'flex', gap:8, marginTop: 8 }}>
+        <button
+          className="primary"
+          onClick={() => setShowTransferForm(v => !v)}
+          style={{
+            width: 100,
+            height: 28,
+            fontSize: 12,
+            padding: '0 10px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          New transfer
+        </button>
+      </div>
+
+      {/* Transfer Form (collapsible) */}
+      {showTransferForm && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--panel)', borderRadius: 10, border: '1px solid var(--line)' }}>
+          {/* First row: Amount and To Partner */}
+          <div className="row row-2col-mobile" style={{ marginBottom: 12 }}>
+            <div>
+              <label>Amount (USD)</label>
+              <input
+                type="text"
+                value={transferAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label>To Partner</label>
+              <select
+                value={transferToPartnerId}
+                onChange={(e) => setTransferToPartnerId(e.target.value)}
+              >
+                <option value="">Select partner...</option>
+                {allPartners.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Second row: Notes and Make transfer button */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label>Notes</label>
+              <input
+                type="text"
+                value={transferNotes}
+                onChange={(e) => setTransferNotes(e.target.value)}
+                placeholder="Optional notes..."
+              />
+            </div>
+            <button
+              className="primary"
+              onClick={handleTransferSubmit}
+              disabled={transferring}
+              style={{
+                height: 'var(--control-h)',
+                padding: '0 16px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {transferring ? 'Processing...' : 'Make transfer'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Partner Info + Owed to partner (right) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
