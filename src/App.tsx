@@ -197,8 +197,8 @@ export default function App() {
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
-              <NavLink to="/suppliers" onClick={() => setNavOpen(false)}>Suppliers</NavLink>
-              <NavLink to="/suppliers/orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
+              <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
+<NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
               
               {/* Other Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
@@ -258,7 +258,7 @@ export default function App() {
                 <Route path="/price-checker" element={<PriceChecker />} />
                 <Route path="/suppliers" element={<Suppliers />} />
 <Route path="/suppliers/new" element={<CreateSupplier />} />
-<Route path="/suppliers/orders/new" element={<NewOrderSupplier />} />
+<Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
               </>
             )}
           </Routes>
