@@ -89,9 +89,11 @@ export default function PartnerDetailPage() {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const res = await fetch(`${base}/api/partners`, { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to load partners')
-        const partners = await res.json()
+        const data = await res.json()
+        // The API returns { partners: [...] }
+        const partnersList = data.partners || []
         // Filter out the current partner from the dropdown
-        setAllPartners(partners.filter((p: Partner) => p.id !== id))
+        setAllPartners(partnersList.filter((p: Partner) => p.id !== id))
       } catch (e) {
         console.error('Failed to load partners:', e)
       }
@@ -231,7 +233,7 @@ export default function PartnerDetailPage() {
     }
   }
 
-  // Format amount input with thousand separator
+  // Format amount input with thousand separator and decimals
   const handleAmountChange = (value: string) => {
     // Remove all non-digits and non-decimal points
     const cleaned = value.replace(/[^\d.]/g, '')
@@ -241,12 +243,19 @@ export default function PartnerDetailPage() {
     if (parts.length > 2) return
     
     // Format the integer part with thousand separators
-    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    const integerPart = parts[0] ? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
     
     // Keep max 2 decimal places
-    const decimalPart = parts[1] ? parts[1].substring(0, 2) : ''
+    const decimalPart = parts.length > 1 ? parts[1].substring(0, 2) : ''
     
-    setTransferAmount(decimalPart ? `${integerPart}.${decimalPart}` : integerPart)
+    // Construct the formatted value
+    if (parts.length > 1) {
+      // User has typed a decimal point
+      setTransferAmount(`${integerPart}.${decimalPart}`)
+    } else {
+      // No decimal point yet
+      setTransferAmount(integerPart)
+    }
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
