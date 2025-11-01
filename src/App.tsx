@@ -110,7 +110,7 @@ export default function App() {
           >
             <span></span><span></span><span></span>
           </button>
-          <div className="brand-title" style={{ position: 'relative', overflow: 'hidden', height: '1.2em' }}>
+          <div className="brand-title">
             <div 
               style={{
                 transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',

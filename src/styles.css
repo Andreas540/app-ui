@@ -11,6 +11,7 @@
   --brand-blue-hover: #2563eb;
   --brand-blue-active: #1d4ed8;
   --brand-contrast: #ffffff;
+  --primary: #3b82f6;
 }
 
 /* ===================== Base Reset ===================== */
@@ -57,14 +58,16 @@ a {
 }
 
 .brand-title {
+  position: relative;
+  overflow: hidden;
+  height: 2.4em;  /* Space for 2 lines */
+  width: 90px;
+  min-width: 90px;
+  max-width: 150px;
   font-weight: 700;
   color: var(--text);
   font-size: 14px;
   line-height: 1.2;
-  min-width: 90px;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ===================== Layout (Desktop) ===================== */
