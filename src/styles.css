@@ -1,187 +1,291 @@
-/* src/styles.css */
-*{box-sizing:border-box}
-:root{--bg:#0b1020;--panel:#0f1630;--line:#1f2747;--text:#e6e9ef;--muted:#aab2d5;--primary:#2f6df6}
-html,body,#root{height:100%}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
-a{color:inherit;text-decoration:none}
-
-/* Top bar */
-.topbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d1328;border-bottom:1px solid var(--line)}
-.brand{font-weight:700}
-
-/* Layout */
-.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100dvh - 52px)}
-.nav{padding:12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
-.nav a{padding:10px 12px;border-radius:10px}
-.nav a.active{background:#1a2347}
-
-/* Main content */
-.content{padding:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 1px 0 #0003}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.big{font-size:28px;font-weight:700}
-.helper{color:var(--muted);font-size:12px}
-
-/* Forms */
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-input,select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid #2b355e;background:#0b1026;color:var(--text)}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* Buttons */
-button{padding:8px 12px;border-radius:10px;border:1px solid #2b355e;background:#141c3c;color:var(--text);cursor:pointer}
-button.primary{background:var(--primary);border-color:var(--primary)}
-button:hover{filter:brightness(1.05)}
-/* --- Mobile-first helpers --- */
-html { overflow-y: scroll; }               /* prevents width jump when a page gets a scrollbar */
-@supports (height: 100svh) {
-  .layout { min-height: calc(100svh - 52px); }  /* stable viewport height on mobile */
+/* ===================== CSS Variables ===================== */
+:root {
+  --topbar-h: 52px;
+  --control-h: 44px;
+  --bg: #0b1020;
+  --panel: #0f1630;
+  --line: #1f2747;
+  --text: #e6e9ef;
+  --muted: #aab2d5;
+  --brand-blue: #3b82f6;
+  --brand-blue-hover: #2563eb;
+  --brand-blue-active: #1d4ed8;
+  --brand-contrast: #ffffff;
 }
 
-/* hidden by default on desktop */
-.hamburger { display: none; }
+/* ===================== Base Reset ===================== */
+* { box-sizing: border-box; }
 
-/* hamburger icon bars */
-.hamburger span{ display:block; width:18px; height:2px; background:var(--text); margin:2px 0; }
-
-/* --- Mobile breakpoint --- */
-@media (max-width: 768px) {
-  .layout{ grid-template-columns: 1fr; }
-
-  /* top bar shows menu button */
-  .topbar{ position: sticky; top: 0; z-index: 40; }
-  .brand{ display: flex; align-items: center; gap: 8px; }
-  .hamburger{
-    display: inline-flex; align-items:center; justify-content:center;
-    width:40px; height:40px; border-radius:10px; background:#141c3c; border:1px solid #2b355e;
-  }
-
-  /* slide-in nav */
-  .nav{
-    position: fixed; inset: 0 auto 0 0; height: 100%;
-    width: 280px; padding-top: 64px; background:#0d1328; border-right:1px solid var(--line);
-    transform: translateX(-100%); transition: transform .25s ease; z-index: 30;
-  }
-  .nav.open{ transform: translateX(0); }
-
-  /* dark backdrop behind the drawer */
-  .scrim{
-    position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(2px); z-index: 20;
-  }
-
-  /* main content spacing on mobile */
-  .content{ padding: 16px; }
-  .row{ grid-template-columns: 1fr; } /* stack form fields */
-}
-/* iOS: prevent zoom on focus (keep ≥16px) */
-input, select, textarea { font-size:16px; }
-
-/* Make selects match inputs visually */
-select{
-  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Only root should control overflow */
 }
 
-/* Consistent control height */
-input, select{
-  min-height:40px;
-  line-height:40px; /* harmless on most types */
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
-/* === Consistent control sizing + no zoom on iOS === */
-:root { --control-h: 44px; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ===================== Top Bar ===================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-title {
+  position: relative;
+  overflow: hidden;
+  height: 3.4em;
+  width: 90px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.brand-title > div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* ===================== Layout (Desktop) ===================== */
+.layout {
+  height: calc(100vh - var(--topbar-h));
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  overflow: hidden;
+  min-height: 0; /* Critical for grid children to scroll */
+}
+
+/* ===================== Navigation (Scrollable) ===================== */
+.nav {
+  padding: 12px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto; /* Independent scroll */
+  min-height: 0; /* Critical for grid child */
+  -webkit-overflow-scrolling: touch; /* Smooth iOS scroll */
+}
+
+.nav a {
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex-shrink: 0; /* Prevent nav items from shrinking */
+}
+
+.nav a.active {
+  background: #1a2347;
+}
+
+/* ===================== Main Content (Scrollable) ===================== */
+.content {
+  padding: 16px;
+  overflow-y: auto; /* Independent scroll */
+  min-height: 0; /* Critical for grid child */
+  -webkit-overflow-scrolling: touch; /* Smooth iOS scroll */
+}
+
+/* ===================== Cards & Components ===================== */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 0 #0003;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.big {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.helper {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ===================== Forms ===================== */
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
 
 input, select, textarea {
-  box-sizing: border-box;
+  width: 100%;
   height: var(--control-h);
-  line-height: calc(var(--control-h) - 2px);
-  font-size: 16px;            /* prevents iOS zoom */
-  padding: 8px 12px;
+  font-size: 16px; /* Prevents iOS zoom */
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #2b355e;
   background: #0b1026;
   color: var(--text);
 }
 
-/* Make <select> match inputs and add a small chevron */
 select {
-  -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  padding-right: 32px; /* room for chevron */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 32px;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="%23aab2d5"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px 12px;
 }
 
-/* Normalize <input type="date"> to same height */
 input[type="date"] {
-  -webkit-appearance: none; appearance: none;
-  height: var(--control-h);
-  line-height: calc(var(--control-h) - 2px);
-  padding: 0 12px;
+  -webkit-appearance: none;
+  appearance: none;
 }
+
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1); opacity: .8; cursor: pointer;
+  filter: invert(1);
+  opacity: 0.8;
+  cursor: pointer;
 }
 
-/* Remove number spinners to align text better */
 input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-/* Stack fields on small screens (keeps width stable) */
-@media (max-width: 768px) {
-  .row { grid-template-columns: 1fr; }
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
-/* === Lock to mobile viewport; no visible scrollbars === */
-:root { --topbar-h: 52px; --control-h: 44px; }
 
-html, body, #root { height: 100dvh; overflow: hidden; }
-.topbar { height: var(--topbar-h); box-sizing: border-box; }
-.layout { height: calc(100dvh - var(--topbar-h)); }    /* fills the rest of the screen */
-.content{
-  height: 100%;
-  overflow: auto;                      /* still scrollable if needed */
-  -webkit-overflow-scrolling: touch;   /* smooth on iOS */
-  scrollbar-width: none;               /* hide Firefox scrollbar */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
-.content::-webkit-scrollbar{ display:none } /* hide WebKit scrollbar */
 
-/* === Uniform control size + proper select/date alignment === */
-input, select, textarea{
-  box-sizing: border-box;
-  height: var(--control-h);
-  font-size: 16px;                   /* prevent iOS zoom */
-  padding: 10px 12px;                /* vertical centering */
+/* ===================== Buttons ===================== */
+button {
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid #2b355e;
-  background: #0b1026;
+  background: #141c3c;
   color: var(--text);
+  cursor: pointer;
 }
 
-/* Select: left-aligned text, vertically centered, custom chevron */
-select{
-  -webkit-appearance:none; -moz-appearance:none; appearance:none;
-  line-height: normal;                 /* avoids clipped text */
-  text-align: left; text-indent: 0;   /* ensure left alignment */
-  padding-right: 32px;                 /* room for chevron */
-  background-image: url('data:image/svg+xml;utf8,\
-<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="%23aab2d5"><path d="M7 10l5 5 5-5z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 12px 12px;
+button:hover {
+  filter: brightness(1.05);
 }
 
-/* Date input: same visual height, centered text */
-input[type="date"]{
-  -webkit-appearance:none; appearance:none;
-  line-height: normal;
-  padding: 10px 12px;
-}
-input[type="date"]::-webkit-calendar-picker-indicator{
-  filter: invert(1); opacity:.8; cursor:pointer;
+button.primary,
+.icon-btn,
+.hamburger {
+  background: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  color: var(--brand-contrast);
 }
 
-/* Number: remove spinners so text sits centered */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
-/* Make whole customer row look like plain text, but keep focus ring */
+button.primary:hover,
+.icon-btn:hover,
+.hamburger:hover {
+  background: var(--brand-blue-hover);
+  border-color: var(--brand-blue-hover);
+}
+
+button.primary:active,
+.icon-btn.active,
+.hamburger:active {
+  background: var(--brand-blue-active);
+  border-color: var(--brand-blue-active);
+}
+
+button.primary:focus-visible,
+.icon-btn:focus-visible,
+.hamburger:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ===================== Hamburger Menu ===================== */
+.hamburger {
+  display: none; /* Hidden on desktop */
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hamburger span {
+  width: 18px;
+  height: 3px;
+  background: var(--brand-contrast);
+  border-radius: 2px;
+}
+
+/* ===================== Quick Buttons ===================== */
+.quick-buttons {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===================== Utilities ===================== */
+.vsp-12 {
+  display: block;
+  height: 12px;
+}
+
 .row-link {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -190,226 +294,73 @@ input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin
   border-bottom: 1px solid #eee;
   color: inherit;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.row-link:visited { color: inherit; }
-.row-link:hover { text-decoration: none; }
+
+.row-link:visited {
+  color: inherit;
+}
+
+.row-link:hover {
+  text-decoration: none;
+}
+
 .row-link:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.6);
+  outline: 2px solid rgba(59, 130, 246, 0.6);
   outline-offset: 2px;
   border-radius: 6px;
 }
-/* Optional: remove gray tap highlight on iOS */
-.row-link { -webkit-tap-highlight-color: transparent; }
-/* --- Header: hamburger + quick buttons --- */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-}
 
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-title { font-weight: 700; }
-
-/* Primary blue used across the app */
-:root {
-  --btn-blue: #3b82f6;   /* blue-500 */
-  --btn-blue-hover: #2563eb; /* blue-600 */
-  --btn-blue-active: #1d4ed8; /* blue-700 */
-}
-
-/* Hamburger button */
-.hamburger {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--btn-blue);
-  background: var(--btn-blue);
-  color: #fff;
-  border-radius: 10px;
-  display: flex;                     /* stack bars vertically */
-  flex-direction: column;            /* ⬅️ important */
-  align-items: center;
-  justify-content: center;
-  gap: 4px;                          /* space between bars */
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-.hamburger:hover { background: var(--btn-blue-hover); border-color: var(--btn-blue-hover); }
-.hamburger:active { background: var(--btn-blue-active); border-color: var(--btn-blue-active); }
-.hamburger:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.6);
-  outline-offset: 2px;
-  border-radius: 10px;
-}
-
-/* The three bars */
-.hamburger span {
-  width: 18px;
-  height: 3px;
-  background: #fff;      /* white bars */
-  border-radius: 2px;
-}
-
-/* Right-side quick nav buttons */
-.quick-buttons {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--btn-blue);
-  background: var(--btn-blue);
-  color: #fff;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  text-decoration: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.icon-btn:hover { background: var(--btn-blue-hover); border-color: var(--btn-blue-hover); }
-.icon-btn.active { background: var(--btn-blue-active); border-color: var(--btn-blue-active); }
-.icon-btn:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.6);
-  outline-offset: 2px;
-  border-radius: 10px;
-}
-/* === Brand palette (same blue everywhere) === */
-:root {
-  /* If your "Create New Customer" button used another blue, change this one value */
-  --brand-blue: #3b82f6;          /* primary blue */
-  --brand-blue-hover: #2563eb;    /* hover */
-  --brand-blue-active: #1d4ed8;   /* active/focus */
-  --brand-contrast: #ffffff;      /* text on blue */
-}
-
-/* Unify all primary buttons (existing .primary will be overridden here) */
-button.primary,
-.icon-btn,
-.hamburger {
-  background: var(--brand-blue);
-  border: 1px solid var(--brand-blue);
-  color: var(--brand-contrast);
-}
-button.primary:hover,
-.icon-btn:hover,
-.hamburger:hover {
-  background: var(--brand-blue-hover);
-  border-color: var(--brand-blue-hover);
-}
-button.primary:active,
-.icon-btn.active,
-.hamburger:active {
-  background: var(--brand-blue-active);
-  border-color: var(--brand-blue-active);
-}
-button.primary:focus-visible,
-.icon-btn:focus-visible,
-.hamburger:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.6);
-  outline-offset: 2px;
-  border-radius: 10px;
-}
-
-/* --- Header: dark blue bar, white title, buttons use same blue --- */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: var(--brand-blue-active);  /* dark blue banner */
-  border-bottom: none;
-}
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-title { font-weight: 700; color: var(--brand-contrast); }
-
-/* Hamburger with three stacked white bars */
-.hamburger {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;   /* stack bars vertically */
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-.hamburger span {
-  width: 18px;
-  height: 3px;
-  background: var(--brand-contrast);  /* white bars */
-  border-radius: 2px;
-}
-
-/* Right-side quick nav buttons (same blue) */
-.quick-buttons {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  text-decoration: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-/* Make top bar match the page background */
-.topbar {
-  background: var(--bg) !important;  /* #0B1020 */
-  border-bottom: none;
-}
-/* --- spacing utilities --- */
-.vsp-12 { display:block; height:12px !important; }
-.brand-title { color: var(--text); }  /* keep title white */
-/* Keep two columns even on phones when explicitly requested */
+/* ===================== Mobile Styles ===================== */
 @media (max-width: 768px) {
-  .row.row-2col-mobile { grid-template-columns: 1fr 1fr; }
-}
-.brand-title {
-  position: relative;
-  overflow: hidden;
-  height: 3.4em !important; /* Force the height */
-  width: 90px;
-  color: var(--text);
-  min-height: 3.4em !important; /* Also set min-height */
-  max-height: none !important; /* Remove any max-height constraints */
-}
+  .layout {
+    grid-template-columns: 1fr;
+  }
 
-.brand-title > div {
-  position: absolute !important;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center; /* Center text horizontally */
-  background: none !important;
-  color: var(--text) !important;
-  padding: 0 !important;
-  font-size: 14px; /* Smaller text */
-  text-align: center; /* Center multi-line text */
-  line-height: 1.1; /* Tighter line spacing */
+  .hamburger {
+    display: flex;
+  }
+
+  /* Slide-in nav */
+  .nav {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 30;
+    overflow-y: auto; /* Still scrollable on mobile */
+  }
+
+  .nav.open {
+    transform: translateX(0);
+  }
+
+  /* Freeze main content while nav is open */
+  .nav.open ~ .content {
+    overflow: hidden;
+  }
+
+  /* Dark backdrop */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(2px);
+    z-index: 20;
+  }
+
+  /* Stack form fields on mobile */
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Keep two columns when explicitly requested */
+  .row.row-2col-mobile {
+    grid-template-columns: 1fr 1fr;
+  }
 }
