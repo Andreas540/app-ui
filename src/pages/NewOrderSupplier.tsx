@@ -174,7 +174,7 @@ export default function NewOrderSupplier() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 900, overflowY: 'auto' }}>
+    <div className="card" style={{ maxWidth: 900 }}>
       <h3>New Order (S)</h3>
 
       {err && <p style={{ color:'salmon' }}>Error: {err}</p>}
