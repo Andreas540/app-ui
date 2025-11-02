@@ -236,7 +236,7 @@ export default function CustomerDetailPage() {
         {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
           <div className="helper">Owed to me</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney((totals as any).owed_to_me)}</div>
+          <div style={{ fontWeight: 700 }}>{fmtMoney((totals as any).owed_to_me)}</div>
         </div>
       </div>
 
@@ -324,7 +324,7 @@ export default function CustomerDetailPage() {
                       {withPartner}
                     </div>
 
-                    {/* RIGHT TOTAL — with $ sign and proper minus placement */}
+                    {/* RIGHT TOTAL — show with 2 decimals */}
                     <div 
                       className="helper" 
                       onClick={() => handleOrderClick(o)}
@@ -332,7 +332,7 @@ export default function CustomerDetailPage() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{textAlign:'right', cursor: 'pointer'}}
                     >
-                      {fmtIntMoney((o as any).total)}
+                      {fmtMoney((o as any).total)}
                     </div>
                   </div>
 
@@ -387,14 +387,14 @@ export default function CustomerDetailPage() {
             {shownPayments.map(p => {
               const hasNotes = (p as any).notes && (p as any).notes.trim()
               const amt = Number((p as any).amount) || 0
-              const absRounded = Math.round(Math.abs(amt)).toLocaleString('en-US')
+              const abs2dec = Math.abs(amt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
               // Display rule:
-              //  - positive amounts => "-$123" (reduce what’s owed)
-              //  - negative amounts => "$123"  (do NOT show a minus)
+              //  - positive amounts => "-$xx.xx" (reduce what’s owed)
+              //  - negative amounts => "$xx.xx"  (do NOT show a minus)
               const amountDisplay = amt < 0
-                ? `$${absRounded}`
-                : `-$${absRounded}`
+                ? `$${abs2dec}`
+                : `-$${abs2dec}`
 
               return (
                 <div
@@ -429,7 +429,7 @@ export default function CustomerDetailPage() {
                       {(p as any).payment_type}
                     </div>
 
-                    {/* AMOUNT with conditional sign */}
+                    {/* AMOUNT with conditional sign, 2 decimals */}
                     <div 
                       className="helper" 
                       onClick={() => handlePaymentClick(p)}
@@ -487,6 +487,7 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
+
 
 
 
