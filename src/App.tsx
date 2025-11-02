@@ -25,6 +25,7 @@ import PriceChecker from './pages/PriceChecker'
 import Suppliers from './pages/Suppliers'
 import CreateSupplier from './pages/CreateSupplier'
 import NewOrderSupplier from './pages/NewOrderSupplier'
+import SupplierDetail from './pages/SupplierDetail'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -259,6 +260,7 @@ export default function App() {
                 <Route path="/suppliers" element={<Suppliers />} />
 <Route path="/suppliers/new" element={<CreateSupplier />} />
 <Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
+<Route path="/suppliers/:id" element={<SupplierDetail />} />
               </>
             )}
           </Routes>
