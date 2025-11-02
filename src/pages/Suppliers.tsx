@@ -172,18 +172,19 @@ export default function Suppliers() {
         ) : (
           <div>
             {visible.map((s) => (
-              // You can link to a future SupplierDetail page if/when you add it
-              <div key={s.id} className="row-link" style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{s.name}</div>
-                  <div className="helper">{s.country || '—'}</div>
+              <Link key={s.id} to={`/suppliers/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="row-link" style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{s.name}</div>
+                    <div className="helper">{s.country || '—'}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', alignSelf: 'center', lineHeight: 1.2 }}>
+                    {/* Right side: two numbers (placeholders until tables exist) */}
+                    <div>{fmtIntMoney(s.total_amount ?? 0)}</div>
+                    <div className="helper">{(Number(s.total_qty) || 0).toLocaleString('en-US')} units</div>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right', alignSelf: 'center', lineHeight: 1.2 }}>
-                  {/* Right side: two numbers (placeholders until tables exist) */}
-                  <div>{fmtIntMoney(s.total_amount ?? 0)}</div>
-                  <div className="helper">{(Number(s.total_qty) || 0).toLocaleString('en-US')} units</div>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
