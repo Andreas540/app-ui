@@ -1,6 +1,6 @@
 // src/pages/NewOrderSupplier.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 type Supplier = { id: string; name: string }
 type Product  = { id: string; name: string }
@@ -21,6 +21,7 @@ const todayYMD = () => {
 
 export default function NewOrderSupplier() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products,  setProducts]  = useState<Product[]>([])
@@ -70,6 +71,14 @@ export default function NewOrderSupplier() {
         setLoading(false)
       }
     })()
+  }, [])
+
+  // Pre-fill supplier from URL if provided
+  useEffect(() => {
+    const supplierIdParam = searchParams.get('supplier_id')
+    if (supplierIdParam) {
+      setSupplierId(supplierIdParam)
+    }
   }, [])
 
   // Fetch last cost for a given supplier+product
