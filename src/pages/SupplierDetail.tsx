@@ -308,11 +308,8 @@ export default function SupplierDetailPage() {
     borderBottom:'1px solid #eee',
     paddingTop: '12px',
     paddingBottom: '12px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s ease'
+    cursor: 'pointer'
   }}
-  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 >
                   {/* First row: Date + Order number + Status + Total */}
                   <div
