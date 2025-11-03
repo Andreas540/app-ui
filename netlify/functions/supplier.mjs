@@ -49,13 +49,20 @@ async function getSupplier(event) {
         os.order_no,
         os.order_date,
         os.notes,
+        os.delivered,
+        os.delivery_date,
+        os.received,
+        os.received_date,
+        os.in_customs,
+        os.in_customs_date,
+        os.est_delivery_date,
         COALESCE(SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost),0)::numeric(12,2) AS total,
         COUNT(ois.id) AS lines
       FROM orders_suppliers os
       LEFT JOIN order_items_suppliers ois ON ois.order_id = os.id
       WHERE os.tenant_id = ${TENANT_ID}
         AND os.supplier_id = ${id}
-      GROUP BY os.id
+      GROUP BY os.id, os.order_no, os.order_date, os.notes, os.delivered, os.delivery_date, os.received, os.received_date, os.in_customs, os.in_customs_date, os.est_delivery_date
       ORDER BY os.order_date DESC, os.order_no DESC
       LIMIT 100
     `
