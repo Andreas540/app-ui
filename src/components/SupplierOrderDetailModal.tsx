@@ -26,30 +26,30 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
   if (!order) return null
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return 'N/A'
+  if (!dateStr) return 'N/A'
+  
+  try {
+    // Parse as local date to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number)
     
-    try {
-      // Parse as local date to avoid timezone issues
-      const [year, month, day] = dateStr.split('-').map(Number)
-      
-      // Validate the parsed values
-      if (!year || !month || !day) return 'N/A'
-      
-      const date = new Date(year, month - 1, day)
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) return 'N/A'
-      
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long',
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    } catch (e) {
-      return 'N/A'
-    }
+    // Validate the parsed values
+    if (!year || !month || !day) return 'N/A'
+    
+    const date = new Date(year, month - 1, day)
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'N/A'
+    
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  } catch (e) {
+    return 'N/A'
   }
+}
 
   // Determine status for display
   let statusText = 'Pending'
