@@ -26,16 +26,22 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
   if (!order) return null
 
   const formatDate = (dateStr: string) => {
+  console.log('formatDate received:', dateStr, 'type:', typeof dateStr)
+  
   if (!dateStr) return 'N/A'
   
   try {
     // Parse as local date to avoid timezone issues
     const [year, month, day] = dateStr.split('-').map(Number)
     
+    console.log('Parsed values:', { year, month, day })
+    
     // Validate the parsed values
     if (!year || !month || !day) return 'N/A'
     
     const date = new Date(year, month - 1, day)
+    
+    console.log('Created date:', date)
     
     // Check if date is valid
     if (isNaN(date.getTime())) return 'N/A'
@@ -47,6 +53,7 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
       day: 'numeric' 
     })
   } catch (e) {
+    console.log('formatDate error:', e)
     return 'N/A'
   }
 }
