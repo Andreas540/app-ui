@@ -26,6 +26,7 @@ import Suppliers from './pages/Suppliers'
 import CreateSupplier from './pages/CreateSupplier'
 import NewOrderSupplier from './pages/NewOrderSupplier'
 import SupplierDetail from './pages/SupplierDetail'
+import EditOrderSupplier from './pages/EditOrderSupplier'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -261,6 +262,7 @@ export default function App() {
 <Route path="/suppliers/new" element={<CreateSupplier />} />
 <Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
 <Route path="/suppliers/:id" element={<SupplierDetail />} />
+<Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
               </>
             )}
           </Routes>
