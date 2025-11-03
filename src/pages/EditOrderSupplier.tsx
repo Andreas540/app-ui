@@ -161,23 +161,27 @@ export default function EditOrderSupplier() {
   }, [supplierId, lines])
 
   async function handleSave() {
-    if (!canSave) {
-      alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).')
-      return
-    }
-    try {
-      setSaving(true)
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  console.log('canSave:', canSave)
+  console.log('supplierId:', supplierId)
+  console.log('lines:', lines)
+  
+  if (!canSave) {
+    alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).')
+    return
+  }
+  try {
+    setSaving(true)
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-      const cleanLines = lines
-        .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && l.cost !== '' && /^-?\d+(\.\d{1,3})?$/.test(l.cost))
-        .map((l) => ({
-          id: l.id || undefined,
-          product_id: l.product_id,
-          qty: Number(l.qty),
-          product_cost: Number(Number(l.cost).toFixed(3)),
-          shipping_cost: 0,
-        }))
+    const cleanLines = lines
+      .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && l.cost !== '' && /^-?\d+(\.\d{1,3})?$/.test(l.cost))
+      .map((l) => ({
+        id: l.id || undefined,
+        product_id: l.product_id,
+        qty: Number(l.qty),
+        product_cost: Number(Number(l.cost).toFixed(3)),
+        shipping_cost: 0,
+      }))
 
       const body = {
         id,
