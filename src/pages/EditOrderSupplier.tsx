@@ -19,6 +19,13 @@ const todayYMD = () => {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
+// --- Helpers mirrored from EditOrder pattern ---
+function parsePriceToNumber(s: string) {
+  const m = (s ?? '').match(/-?\d+(?:[.,]\d+)?/)
+  if (!m) return NaN
+  return Number(m[0].replace(',', '.'))
+}
+
 export default function EditOrderSupplier() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -155,67 +162,73 @@ export default function EditOrderSupplier() {
     if (!supplierId) return false
     return lines.some((l) => {
       const qtyInt = /^[1-9]\d*$/.test(l.qty)
-      const costOk = l.cost !== '' && /^-?\d+(\.\d{1,3})?$/.test(l.cost)
+      const costNum = parsePriceToNumber(l.cost)
+      const costOk =
+        Number.isFinite(costNum) &&
+        /^-?\d+(\.\d{1,3})?$/.test(String(costNum)) // keep ≤ 3 decimals like before
       return l.product_id && qtyInt && costOk
     })
   }, [supplierId, lines])
 
   async function handleSave() {
     alert('Button was clicked!')
-  console.log('canSave:', canSave)
-  console.log('supplierId:', supplierId)
-  console.log('lines:', lines)
+    console.log('canSave:', canSave)
+    console.log('supplierId:', supplierId)
+    console.log('lines:', lines)
   
-  if (!canSave) {
-    alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).')
-    return
-  }
-  try {
-    setSaving(true)
-    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
-    const cleanLines = lines
-      .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && l.cost !== '' && /^-?\d+(\.\d{1,3})?$/.test(l.cost))
-      .map((l) => ({
-        id: l.id || undefined,
-        product_id: l.product_id,
-        qty: Number(l.qty),
-        product_cost: Number(Number(l.cost).toFixed(3)),
-        shipping_cost: 0,
-      }))
-
-    const body = {
-      id,
-      supplier_id: supplierId,
-      delivered,
-      delivery_date: delivered && deliveryDate ? deliveryDate : null,
-      received,
-      received_date: received && receivedDate ? receivedDate : null,
-      in_customs: inCustoms,
-      in_customs_date: inCustoms && inCustomsDate ? inCustomsDate : null,
-      order_date: orderDate || null,
-      est_delivery_date: estDeliveryDate || null,
-      notes: notes?.trim() || null,
-      lines: cleanLines,
+    if (!canSave) {
+      alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).')
+      return
     }
+    try {
+      setSaving(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-    const res = await fetch(`${base}/api/order-supplier`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      const t = await res.text().catch(() => '')
-      throw new Error(`Save failed (${res.status}) ${t?.slice(0, 140)}`)
+      const cleanLines = lines
+        .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && Number.isFinite(parsePriceToNumber(l.cost)))
+        .map((l) => {
+          const cost = parsePriceToNumber(l.cost)
+          return {
+            id: l.id || undefined,
+            product_id: l.product_id,
+            qty: Number(l.qty),
+            product_cost: Number(cost.toFixed(3)),
+            shipping_cost: 0,
+          }
+        })
+
+      const body = {
+        id,
+        supplier_id: supplierId,
+        delivered,
+        delivery_date: delivered && deliveryDate ? deliveryDate : null,
+        received,
+        received_date: received && receivedDate ? receivedDate : null,
+        in_customs: inCustoms,
+        in_customs_date: inCustoms && inCustomsDate ? inCustomsDate : null,
+        order_date: orderDate || null,
+        est_delivery_date: estDeliveryDate || null,
+        notes: notes?.trim() || null,
+        lines: cleanLines,
+      }
+
+      const res = await fetch(`${base}/api/order-supplier`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const t = await res.text().catch(() => '')
+        throw new Error(`Save failed (${res.status}) ${t?.slice(0, 140)}`)
+      }
+      alert('Supplier order updated.')
+      navigate(-1)
+    } catch (e: any) {
+      alert(e?.message || 'Save failed')
+    } finally {
+      setSaving(false)
     }
-    alert('Supplier order updated.')
-    navigate(-1)
-  } catch (e: any) {
-    alert(e?.message || 'Save failed')
-  } finally {
-    setSaving(false)
-  }
-} // <-- This closing brace was missing!
+  } // <-- keep structure identical
 
   async function handleDelete() {
     if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
@@ -283,10 +296,8 @@ export default function EditOrderSupplier() {
             <div>
               <label>Quantity</label>
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                step="1"
-                min="1"
                 value={l.qty}
                 onChange={(e) => {
                   const v = e.target.value
@@ -301,12 +312,13 @@ export default function EditOrderSupplier() {
             <div>
               <label>Cost</label>
               <input
-                type="number"
-                step="0.001"
+                type="text"
+                inputMode="decimal"
                 value={l.cost}
                 onChange={(e) => {
-                  const v = e.target.value
-                  if (v === '' || /^-?\d+(\.\d{0,3})?$/.test(v)) updateLine(idx, { cost: v })
+                  const raw = e.target.value
+                  const dot = raw.replace(',', '.')
+                  if (dot === '' || /^-?\d+(\.\d{0,3})?$/.test(dot)) updateLine(idx, { cost: dot })
                 }}
               />
             </div>
