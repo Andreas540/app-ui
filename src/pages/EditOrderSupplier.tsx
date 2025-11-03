@@ -183,38 +183,38 @@ export default function EditOrderSupplier() {
         shipping_cost: 0,
       }))
 
-      const body = {
-        id,
-        supplier_id: supplierId,
-        delivered,
-        delivery_date: delivered && deliveryDate ? deliveryDate : null,
-        received,
-        received_date: received && receivedDate ? receivedDate : null,
-        in_customs: inCustoms,
-        in_customs_date: inCustoms && inCustomsDate ? inCustomsDate : null,
-        order_date: orderDate || null,
-        est_delivery_date: estDeliveryDate || null,
-        notes: notes?.trim() || null,
-        lines: cleanLines,
-      }
-
-      const res = await fetch(`${base}/api/order-supplier`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const t = await res.text().catch(() => '')
-        throw new Error(`Save failed (${res.status}) ${t?.slice(0, 140)}`)
-      }
-      alert('Supplier order updated.')
-      navigate(-1)
-    } catch (e: any) {
-      alert(e?.message || 'Save failed')
-    } finally {
-      setSaving(false)
+    const body = {
+      id,
+      supplier_id: supplierId,
+      delivered,
+      delivery_date: delivered && deliveryDate ? deliveryDate : null,
+      received,
+      received_date: received && receivedDate ? receivedDate : null,
+      in_customs: inCustoms,
+      in_customs_date: inCustoms && inCustomsDate ? inCustomsDate : null,
+      order_date: orderDate || null,
+      est_delivery_date: estDeliveryDate || null,
+      notes: notes?.trim() || null,
+      lines: cleanLines,
     }
+
+    const res = await fetch(`${base}/api/order-supplier`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      throw new Error(`Save failed (${res.status}) ${t?.slice(0, 140)}`)
+    }
+    alert('Supplier order updated.')
+    navigate(-1)
+  } catch (e: any) {
+    alert(e?.message || 'Save failed')
+  } finally {
+    setSaving(false)
   }
+} // <-- This closing brace was missing!
 
   async function handleDelete() {
     if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
