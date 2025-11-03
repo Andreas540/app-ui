@@ -161,6 +161,7 @@ export default function EditOrderSupplier() {
   }, [supplierId, lines])
 
   async function handleSave() {
+    alert('Button was clicked!')
   console.log('canSave:', canSave)
   console.log('supplierId:', supplierId)
   console.log('lines:', lines)
