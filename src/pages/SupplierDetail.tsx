@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { formatUSAny } from '../lib/time'
+import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 
 interface Supplier {
   id: string
@@ -72,6 +73,7 @@ export default function SupplierDetailPage() {
   const [err, setErr] = useState<string | null>(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -300,13 +302,18 @@ export default function SupplierDetailPage() {
 
               return (
                 <div
-                  key={o.id}
-                  style={{
-                    borderBottom:'1px solid #eee',
-                    paddingTop: '12px',
-                    paddingBottom: '12px'
-                  }}
-                >
+  key={o.id}
+  onClick={() => setSelectedOrder(o)}
+  style={{
+    borderBottom:'1px solid #eee',
+    paddingTop: '12px',
+    paddingBottom: '12px',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease'
+  }}
+  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+>
                   {/* First row: Date + Order number + Status + Total */}
                   <div
                     style={{
@@ -407,6 +414,13 @@ export default function SupplierDetailPage() {
         <h4 style={{margin:0}}>Payments to supplier</h4>
         <p className="helper">No payments yet.</p>
       </div>
+    {/* Modal */}
+      <SupplierOrderDetailModal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        order={selectedOrder}
+        supplierName={supplier.name}
+      />
     </div>
   )
 }
