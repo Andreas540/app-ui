@@ -32,6 +32,13 @@ interface Order {
   total: number
   lines: number
   items: OrderItem[]
+  delivered: boolean
+  delivery_date?: string
+  received: boolean
+  received_date?: string
+  in_customs: boolean
+  in_customs_date?: string
+  est_delivery_date?: string
 }
 
 interface Totals {
@@ -242,6 +249,55 @@ export default function SupplierDetailPage() {
               const hasNotes = o.notes && o.notes.trim()
               const totalShippingCost = o.items.reduce((sum, item) => sum + Number(item.shipping_total || 0), 0)
 
+              // Determine status badge
+              let statusBadge = null
+              if (o.received && o.received_date) {
+                statusBadge = (
+                  <span style={{
+                    backgroundColor: '#22c55e',
+                    color: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Received: {formatUSAny(o.received_date)}
+                  </span>
+                )
+              } else if (o.in_customs && o.in_customs_date) {
+                statusBadge = (
+                  <span style={{
+                    backgroundColor: '#f97316',
+                    color: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    In customs: {formatUSAny(o.in_customs_date)}
+                  </span>
+                )
+              } else if (o.delivered && o.delivery_date) {
+                statusBadge = (
+                  <span style={{
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Delivered: {formatUSAny(o.delivery_date)}
+                  </span>
+                )
+              } else if (o.est_delivery_date) {
+                statusBadge = (
+                  <span className="helper" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                    Est. delivery: {formatUSAny(o.est_delivery_date)}
+                  </span>
+                )
+              }
+
               return (
                 <div
                   key={o.id}
@@ -251,12 +307,13 @@ export default function SupplierDetailPage() {
                     paddingBottom: '12px'
                   }}
                 >
-                  {/* First row: Date + Order number + Total */}
+                  {/* First row: Date + Order number + Status + Total */}
                   <div
                     style={{
                       display:'grid',
                       gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
                       gap:LINE_GAP,
+                      alignItems: 'center'
                     }}
                   >
                     {/* DATE (MM/DD/YY) */}
@@ -265,9 +322,10 @@ export default function SupplierDetailPage() {
                     {/* EMPTY COLUMN for alignment */}
                     <div></div>
 
-                    {/* ORDER NUMBER */}
-                    <div className="helper" style={{ lineHeight: '1.4' }}>
-                      {o.order_no}
+                    {/* ORDER NUMBER + STATUS */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, lineHeight: '1.4' }}>
+                      <span className="helper">#{o.order_no}</span>
+                      {statusBadge}
                     </div>
 
                     {/* TOTAL COST */}
