@@ -26,7 +26,7 @@ function parsePriceToNumber(s: string) {
   return Number(m[0].replace(',', '.'))
 }
 
-// A helper to detect a brand-new fully blank line (ignore it for validation/payload)
+// Detect a brand-new fully blank line (ignore for validation/payload)
 function isBrandNewBlank(l: Line) {
   const hasId = !!(l.id && l.id.trim())
   const hasAny = (l.product_id && l.product_id.trim()) || (l.qty && l.qty.trim()) || (l.cost && l.cost.trim())
@@ -185,9 +185,9 @@ export default function EditOrderSupplier() {
     })
   }, [supplierId, relevantLines])
 
-  // Optional: quick DEV reason (kept; harmless in prod)
+  // Reason helper (used for the tooltip)
   const disableReason = useMemo(() => {
-    if (supplierId === '') return 'Missing supplierId'
+    if (supplierId === '') return 'Missing supplier'
     if (relevantLines.length === 0) return 'Add at least one product line'
     for (const l of relevantLines) {
       if (!l.product_id) return 'Pick product'
@@ -488,14 +488,16 @@ export default function EditOrderSupplier() {
 
       {/* Actions */}
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button type="button" className="primary" onClick={handleSave} disabled={!canSave || saving} style={{ height: 'var(--control-h)' }}>
+        <button
+          type="button"
+          className="primary"
+          onClick={handleSave}
+          disabled={!canSave || saving}
+          title={!canSave ? (disableReason || 'All lines must be valid') : 'Click to save'}
+          style={{ height: 'var(--control-h)' }}
+        >
           {saving ? 'Saving…' : 'Save changes'}
         </button>
-        {(!canSave || saving) && import.meta.env.DEV && (
-          <div className="helper" style={{ alignSelf:'center', color:'#888' }}>
-            {saving ? 'Saving…' : `Disabled: ${disableReason || 'all lines must be valid'}`}
-          </div>
-        )}
         <button onClick={() => navigate(-1)} style={{ height: 'var(--control-h)' }}>
           Cancel
         </button>
@@ -515,6 +517,7 @@ export default function EditOrderSupplier() {
     </div>
   )
 }
+
 
 
 
