@@ -21,7 +21,7 @@ const NewCost = () => {
   const [cost, setCost] = useState<string>('');
   const [costDate, setCostDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<string>('');   // formatted display string
   
   // Options from backend
   const [costCategoryOptions, setCostCategoryOptions] = useState<string[]>([]);
@@ -72,47 +72,82 @@ const NewCost = () => {
     }
   };
 
+  // --- AMOUNT INPUT (accepts "." or "," as decimal; leaves empty when cleared) ---
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const raw = e.target.value;
+    const raw = e.target.value;
 
-  // Keep only digits, dots, commas
-  let s = raw.replace(/[^\d.,]/g, '');
+    // Allow only digits, commas, dots
+    let s = raw.replace(/[^\d.,]/g, '');
 
-  // If there's no dot but exactly one comma, treat that comma as the decimal separator.
-  const commaCount = (s.match(/,/g) || []).length;
-  if (!s.includes('.') && commaCount === 1) {
-    s = s.replace(',', '.'); // now we have a dot as decimal
-  }
+    // If there's already a dot, treat all commas as thousands separators (remove them)
+    if (s.includes('.')) {
+      s = s.replace(/,/g, '');
+    } else {
+      // No dot present. If there are commas, interpret the LAST comma as decimal separator.
+      const commaCount = (s.match(/,/g) || []).length;
+      if (commaCount >= 1) {
+        if (commaCount === 1) {
+          s = s.replace(',', '.'); // single comma → decimal point
+        } else {
+          // Multiple commas: take the LAST as decimal, earlier commas are thousands separators
+          const last = s.lastIndexOf(',');
+          const intPart = s.slice(0, last).replace(/,/g, '');
+          const decPart = s.slice(last + 1).replace(/,/g, '');
+          s = intPart + '.' + decPart;
+        }
+      }
+      // now there is at most one dot and no commas
+    }
 
-  // Remove any remaining commas (they are thousands separators)
-  s = s.replace(/,/g, '');
+    // Remove extra dots beyond the first
+    const firstDot = s.indexOf('.');
+    if (firstDot !== -1) {
+      s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
+    }
 
-  // Allow only a single decimal dot
-  const dotIdx = s.indexOf('.');
-  if (dotIdx !== -1) {
-    // strip any extra dots after the first
-    s = s.slice(0, dotIdx + 1) + s.slice(dotIdx + 1).replace(/\./g, '');
-  }
+    // If user cleared everything (or typed only separators that got stripped)
+    if (s === '') {
+      setAmount(''); // leave empty, no auto "0"
+      return;
+    }
 
-  // Split parts
-  const [intRaw, decRaw] = s.split('.');
-  const intPart = (intRaw || '').replace(/^0+(?=\d)/, ''); // trim leading zeros but keep single 0
-  const decPart = (decRaw || '').slice(0, 2);              // max 2 decimals
+    // Split integer and decimal
+    const [intRaw = '', decRaw = ''] = s.split('.');
+    // Limit decimals to 2
+    const decPart = decRaw.slice(0, 2);
 
-  // Add thousand separators to integer part
-  const intWithSep = (intPart === '' ? '0' : intPart).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Trim leading zeros but keep a single zero if there are digits
+    let intPart = intRaw.replace(/^0+(?=\d)/, '');
 
-  // Rebuild formatted
-  const formatted = dotIdx !== -1 ? `${intWithSep}.${decPart}` : intWithSep;
+    // For display:
+    // - If there is a decimal dot, show "0" when integer is empty (e.g., ".5" → "0.5")
+    // - If there is no dot and integer is empty, keep it empty (user cleared the field)
+    const hasDot = s.includes('.');
+    const intForDisplay = intPart === ''
+      ? (hasDot ? '0' : '')   // allow empty when no decimal; show 0 when decimal exists
+      : intPart;
 
-  setAmount(formatted);
-};
+    // Add thousands separators to integer part (if we have one)
+    const intWithSep = intForDisplay === ''
+      ? ''
+      : intForDisplay.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-const parseAmount = (formattedAmount: string): number => {
-  // strip thousands sep, parse US-style decimal
-  const n = Number((formattedAmount || '').replace(/,/g, ''));
-  return Number.isFinite(n) ? n : 0;
-};
+    // Rebuild final formatted
+    const formatted =
+      hasDot
+        ? `${intWithSep === '' ? '0' : intWithSep}.${decPart}`
+        : intWithSep;
+
+    setAmount(formatted);
+  };
+
+  const parseAmount = (formattedAmount: string): number => {
+    // If empty, return NaN-safe 0 (validation will catch empty/zero)
+    if (!formattedAmount) return 0;
+    // strip thousands sep, parse US-style decimal
+    const n = Number(formattedAmount.replace(/,/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  };
 
   const validateForm = (): boolean => {
     if (!costCategory) {
@@ -131,7 +166,11 @@ const parseAmount = (formattedAmount: string): number => {
       setError('Please select a date');
       return false;
     }
-    if (!amount || parseAmount(amount) <= 0) {
+    if (amount.trim() === '') {
+      setError('Please enter an amount');
+      return false;
+    }
+    if (parseAmount(amount) <= 0) {
       setError('Please enter a valid amount');
       return false;
     }
@@ -139,19 +178,14 @@ const parseAmount = (formattedAmount: string): number => {
       setError('Recurrence interval must be at least 1');
       return false;
     }
-    
     return true;
   };
 
   const handleSave = async () => {
     setError('');
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-    
     try {
       const costData = {
         business_private: businessPrivate,
@@ -170,11 +204,7 @@ const parseAmount = (formattedAmount: string): number => {
       };
 
       await createCost(costData);
-      
-      // Show success message
       alert('Cost saved successfully!');
-      
-      // Clear form
       handleClear();
     } catch (err: any) {
       console.error('Error saving cost:', err);
@@ -186,10 +216,7 @@ const parseAmount = (formattedAmount: string): number => {
 
   const handleClear = () => {
     setCostCategory('');
-    setRecurringDetails({
-      recur_kind: 'monthly',
-      recur_interval: 1
-    });
+    setRecurringDetails({ recur_kind: 'monthly', recur_interval: 1 });
     setCostType('');
     setCost('');
     setCostDate('');
