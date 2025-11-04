@@ -73,46 +73,46 @@ const NewCost = () => {
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    
-    // First, normalize comma to dot
-    let normalized = rawValue.replace(/,/g, '.');
-    
-    // Remove all characters except digits and the first dot
-    normalized = normalized.replace(/[^\d.]/g, '');
-    
-    // Keep only the first dot
-    const dotIndex = normalized.indexOf('.');
-    if (dotIndex !== -1) {
-      normalized = normalized.substring(0, dotIndex + 1) + normalized.substring(dotIndex + 1).replace(/\./g, '');
-    }
-    
-    // Split into integer and decimal parts
-    const parts = normalized.split('.');
-    let integerPart = parts[0] || '';
-    let decimalPart = parts[1] || '';
-    
-    // Limit decimal to 2 places
-    if (decimalPart.length > 2) {
-      decimalPart = decimalPart.slice(0, 2);
-    }
-    
-    // Add thousand separators to integer part (only for display)
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
-    // Build the formatted value
-    let formatted = formattedInteger;
-    if (normalized.includes('.')) {
-      formatted = formattedInteger + '.' + decimalPart;
-    }
-    
-    setAmount(formatted);
-  };
+  const raw = e.target.value;
 
-  const parseAmount = (formattedAmount: string): number => {
-    // Remove commas and parse as float
-    return parseFloat(formattedAmount.replace(/,/g, '')) || 0;
-  };
+  // Keep only digits, dots, commas
+  let s = raw.replace(/[^\d.,]/g, '');
+
+  // If there's no dot but exactly one comma, treat that comma as the decimal separator.
+  const commaCount = (s.match(/,/g) || []).length;
+  if (!s.includes('.') && commaCount === 1) {
+    s = s.replace(',', '.'); // now we have a dot as decimal
+  }
+
+  // Remove any remaining commas (they are thousands separators)
+  s = s.replace(/,/g, '');
+
+  // Allow only a single decimal dot
+  const dotIdx = s.indexOf('.');
+  if (dotIdx !== -1) {
+    // strip any extra dots after the first
+    s = s.slice(0, dotIdx + 1) + s.slice(dotIdx + 1).replace(/\./g, '');
+  }
+
+  // Split parts
+  const [intRaw, decRaw] = s.split('.');
+  const intPart = (intRaw || '').replace(/^0+(?=\d)/, ''); // trim leading zeros but keep single 0
+  const decPart = (decRaw || '').slice(0, 2);              // max 2 decimals
+
+  // Add thousand separators to integer part
+  const intWithSep = (intPart === '' ? '0' : intPart).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  // Rebuild formatted
+  const formatted = dotIdx !== -1 ? `${intWithSep}.${decPart}` : intWithSep;
+
+  setAmount(formatted);
+};
+
+const parseAmount = (formattedAmount: string): number => {
+  // strip thousands sep, parse US-style decimal
+  const n = Number((formattedAmount || '').replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
 
   const validateForm = (): boolean => {
     if (!costCategory) {
