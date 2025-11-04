@@ -158,20 +158,22 @@ export default function EditOrderSupplier() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId])
 
-  // Validate on the **normalized string**, not String(Number(...))
+  // A) Require at least one line and ALL lines valid
   const canSave = useMemo(() => {
     if (!supplierId) return false
-    return lines.some((l) => {
+    if (lines.length === 0) return false
+    return lines.every((l) => {
       const qtyInt = /^[1-9]\d*$/.test(l.qty)
       const dot = (l.cost ?? '').replace(',', '.')
       const costOk = dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot)
-      return l.product_id && qtyInt && costOk
+      return !!l.product_id && qtyInt && costOk
     })
   }, [supplierId, lines])
 
   // (DEV only) quick reason helper so you immediately see why it's disabled
   const disableReason = useMemo(() => {
     if (supplierId === '') return 'Missing supplierId'
+    if (lines.length === 0) return 'Add at least one line'
     for (const l of lines) {
       if (!l.product_id) return 'Pick product'
       if (!/^[1-9]\d*$/.test(l.qty || '')) return 'Qty must be integer ≥ 1'
@@ -182,31 +184,25 @@ export default function EditOrderSupplier() {
   }, [supplierId, lines])
 
   async function handleSave() {
-    alert('Button was clicked!')
-    console.log('canSave:', canSave)
-    console.log('supplierId:', supplierId)
-    console.log('lines:', lines)
-  
     if (!canSave) {
-      alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).')
+      alert('Select a supplier and make every line valid: product, integer qty, and a cost (≤3 decimals).')
       return
     }
     try {
       setSaving(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-      const cleanLines = lines
-        .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && (l.cost ?? '') !== '')
-        .map((l) => {
-          const cost = parsePriceToNumber(l.cost)
-          return {
-            id: l.id || undefined,
-            product_id: l.product_id,
-            qty: Number(l.qty),
-            product_cost: Number(cost.toFixed(3)),
-            shipping_cost: 0,
-          }
-        })
+      // B) Map ALL lines (no filter) because canSave guarantees validity
+      const cleanLines = lines.map((l) => {
+        const cost = parsePriceToNumber(l.cost)
+        return {
+          id: l.id || undefined,
+          product_id: l.product_id,
+          qty: Number(l.qty),
+          product_cost: Number(cost.toFixed(3)),
+          shipping_cost: 0,
+        }
+      })
 
       const body = {
         id,
@@ -482,7 +478,7 @@ export default function EditOrderSupplier() {
         </button>
         {(!canSave || saving) && import.meta.env.DEV && (
           <div className="helper" style={{ alignSelf:'center', color:'#888' }}>
-            {saving ? 'Saving…' : `Disabled: ${disableReason || 'fill at least one valid line'}`}
+            {saving ? 'Saving…' : `Disabled: ${disableReason || 'all lines must be valid'}`}
           </div>
         )}
         <button onClick={() => navigate(-1)} style={{ height: 'var(--control-h)' }}>
@@ -504,4 +500,5 @@ export default function EditOrderSupplier() {
     </div>
   )
 }
+
 
