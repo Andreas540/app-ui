@@ -72,14 +72,16 @@ const NewCost = () => {
     }
   };
 
-  const formatAmount = (value: string): string => {
-    // First, normalize comma to dot for decimal separator
-    let normalized = value.replace(/,/g, '.');
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
     
-    // Remove all characters except digits and dots
+    // First, normalize comma to dot
+    let normalized = rawValue.replace(/,/g, '.');
+    
+    // Remove all characters except digits and the first dot
     normalized = normalized.replace(/[^\d.]/g, '');
     
-    // Handle multiple dots - keep only the first one
+    // Keep only the first dot
     const dotIndex = normalized.indexOf('.');
     if (dotIndex !== -1) {
       normalized = normalized.substring(0, dotIndex + 1) + normalized.substring(dotIndex + 1).replace(/\./g, '');
@@ -88,24 +90,22 @@ const NewCost = () => {
     // Split into integer and decimal parts
     const parts = normalized.split('.');
     let integerPart = parts[0] || '';
-    const decimalPart = parts[1] || '';
-    
-    // Add thousand separators to integer part
-    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    let decimalPart = parts[1] || '';
     
     // Limit decimal to 2 places
-    const limitedDecimal = decimalPart.slice(0, 2);
-    
-    // Combine parts
-    if (normalized.includes('.')) {
-      // User has typed a dot, show it even if no decimals yet
-      return limitedDecimal ? `${integerPart}.${limitedDecimal}` : `${integerPart}.`;
+    if (decimalPart.length > 2) {
+      decimalPart = decimalPart.slice(0, 2);
     }
-    return integerPart;
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatAmount(e.target.value);
+    
+    // Add thousand separators to integer part (only for display)
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Build the formatted value
+    let formatted = formattedInteger;
+    if (normalized.includes('.')) {
+      formatted = formattedInteger + '.' + decimalPart;
+    }
+    
     setAmount(formatted);
   };
 
@@ -288,7 +288,7 @@ const NewCost = () => {
             <input
               type="text"
               inputMode="numeric"
-              value={recurringDetails.recur_interval}
+              value={recurringDetails.recur_interval === 0 ? '' : recurringDetails.recur_interval}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, ''); // Only digits
                 setRecurringDetails({
