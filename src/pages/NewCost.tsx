@@ -73,77 +73,106 @@ const NewCost = () => {
   };
 
   // ---------- AMOUNT INPUT ----------
-  // Change: normalize but DO NOT add thousands separators while typing.
+  // Accept "." or "," as decimal while typing; don't add thousands separators until blur.
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
 
-    // Allow only digits, commas, dots
+    // Keep only digits, commas, dots
     let s = raw.replace(/[^\d.,]/g, '');
 
-    // If there's already a dot, treat all commas as thousands separators (remove them)
+    // Detect if the user just typed a decimal separator at the end
+    const endsWithSep = /[.,]$/.test(s);
+
+    // If a DOT already exists somewhere, treat all commas as thousands -> remove them
     if (s.includes('.')) {
       s = s.replace(/,/g, '');
     } else {
-      // No dot present. If there are commas, interpret the LAST comma as decimal separator.
+      // No dot present yet.
       const commaCount = (s.match(/,/g) || []).length;
       if (commaCount >= 1) {
         if (commaCount === 1) {
-          s = s.replace(',', '.'); // single comma → decimal point
+          // Single comma. If it's the last char, keep it as a trailing decimal marker for UX;
+          // we will convert to '.' below but preserve trailing-dot state.
+          s = s.replace(',', '.');
         } else {
+          // Multiple commas: interpret the LAST comma as decimal sep, others as thousands (remove)
           const last = s.lastIndexOf(',');
-          const intPart = s.slice(0, last).replace(/,/g, '');
-          const decPart = s.slice(last + 1).replace(/,/g, '');
-          s = intPart + '.' + decPart;
+          const intPart0 = s.slice(0, last).replace(/,/g, '');
+          const decPart0 = s.slice(last + 1).replace(/,/g, '');
+          s = intPart0 + '.' + decPart0;
         }
       }
+      // Now there is at most one dot and no commas
     }
 
-    // Ensure only a single dot overall
+    // Ensure only one dot overall (strip extras after first)
     const firstDot = s.indexOf('.');
     if (firstDot !== -1) {
       s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
     }
 
-    // If user cleared everything, keep empty
+    // If user cleared everything or typed only non-numerics
     if (s === '') {
       setAmount('');
       return;
     }
 
-    // Limit to 2 decimals while typing
-    const [i = '', d = ''] = s.split('.');
-    const dec = d.slice(0, 2);
+    // Split integer and decimals (if any)
+    const parts = s.split('.');
+    const intRaw = parts[0] ?? '';
+    let decRaw = parts[1] ?? '';
 
-    // Do NOT add thousand separators here; keep it raw to avoid caret jumps
-    setAmount(dec.length ? `${i}.${dec}` : i);
+    // If user just typed a decimal separator at the end, and we have a dot,
+    // keep a trailing dot visually (don't force-remove it).
+    const keepTrailingDot = endsWithSep && s.includes('.') && decRaw === '';
+
+    // Limit decimals to 2 while typing
+    if (!keepTrailingDot) {
+      decRaw = decRaw.slice(0, 2);
+    }
+
+    // Build raw display value WITHOUT thousands separators (prevents caret jumps)
+    if (keepTrailingDot) {
+      // show trailing dot
+      setAmount(`${intRaw}.`);
+    } else if (s.includes('.')) {
+      setAmount(`${intRaw}.${decRaw}`);
+    } else {
+      setAmount(intRaw);
+    }
   };
 
-  // On focus: strip any formatting (commas) to keep typing smooth
+  // On focus: strip any commas (if any) to keep typing smooth
   const handleAmountFocus = () => {
     if (!amount) return;
     setAmount(amount.replace(/,/g, ''));
   };
 
-  // On blur: pretty-format with thousand separators (if not empty)
+  // On blur: pretty-format with thousands separators and normalize decimals to 2 places
   const handleAmountBlur = () => {
-    if (amount.trim() === '') return;
+    const a = amount.trim();
+    if (a === '') return;
 
-    // Split int/dec
-    const [i = '', d = ''] = amount.replace(/,/g, '').split('.');
-    const intPart = i === '' ? '0' : i.replace(/^0+(?=\d)/, ''); // keep single 0
-    const dec = d.slice(0, 2);
+    // Normalize: remove commas, ensure dot decimal
+    let s = a.replace(/,/g, '');
 
-    // Add thousands separators to integer part
+    // If ends with a dot (user typed "123."), finalize as "123.00"
+    if (s.endsWith('.')) s = s.slice(0, -1);
+
+    const [i0 = '', d0 = ''] = s.split('.');
+    const intPart = (i0 === '' ? '0' : i0).replace(/^0+(?=\d)/, ''); // keep single 0
+    let dec = d0;
+    if (dec.length === 0) dec = '00';
+    else if (dec.length === 1) dec = dec + '0';
+    else dec = dec.slice(0, 2);
+
     const intWithSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-    // Rebuild for display
-    const formatted = dec.length ? `${intWithSep}.${dec}` : intWithSep;
-
-    setAmount(formatted);
+    setAmount(`${intWithSep}.${dec}`);
   };
 
   const parseAmount = (formattedAmount: string): number => {
     if (!formattedAmount) return 0;
+    // Strip thousands and parse US-style decimal
     const n = Number(formattedAmount.replace(/,/g, ''));
     return Number.isFinite(n) ? n : 0;
   };
@@ -470,4 +499,5 @@ const NewCost = () => {
 };
 
 export default NewCost;
+
 
