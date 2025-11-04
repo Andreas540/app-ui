@@ -31,8 +31,8 @@ const NewCost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // Derived state
-  const isRecurring = costCategory.toLowerCase().includes('recurring');
+  // Derived state - check if it's recurring (but NOT non-recurring)
+  const isRecurring = costCategory.toLowerCase().includes('recurring') && !costCategory.toLowerCase().includes('non-recurring');
 
   // Load cost category options when businessPrivate changes
   useEffect(() => {
