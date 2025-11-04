@@ -269,3 +269,42 @@ export async function updateProduct(input: {
   }
   return r.json();
 }
+
+export async function getCostCategories(type: 'B' | 'P') {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/cost/categories?type=${type}`)  // changed costs → cost
+  if (!res.ok) throw new Error('Failed to fetch cost categories')
+  return res.json()
+}
+
+export async function getCostTypes(category: string) {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/cost/types?category=${encodeURIComponent(category)}`)  // changed costs → cost
+  if (!res.ok) throw new Error('Failed to fetch cost types')
+  return res.json()
+}
+
+export async function createCost(costData: {
+  business_private: 'B' | 'P'
+  cost_category: string
+  cost_type: string
+  cost: string
+  amount: number
+  cost_date?: string
+  start_date?: string
+  end_date?: string | null
+  recur_kind?: 'monthly' | 'weekly' | 'yearly'
+  recur_interval?: number
+}) {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/cost`, {  // changed costs → cost
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(costData)
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to create cost' }))
+    throw new Error(err.error || err.message || 'Failed to create cost')
+  }
+  return res.json()
+}
