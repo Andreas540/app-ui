@@ -21,7 +21,7 @@ const NewCost = () => {
   const [cost, setCost] = useState<string>('');
   const [costDate, setCostDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');   // formatted display string
+  const [amount, setAmount] = useState<string>('');   // display string (raw while typing)
   
   // Options from backend
   const [costCategoryOptions, setCostCategoryOptions] = useState<string[]>([]);
@@ -72,7 +72,8 @@ const NewCost = () => {
     }
   };
 
-  // --- AMOUNT INPUT (accepts "." or "," as decimal; leaves empty when cleared) ---
+  // ---------- AMOUNT INPUT ----------
+  // Change: normalize but DO NOT add thousands separators while typing.
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
 
@@ -89,65 +90,64 @@ const NewCost = () => {
         if (commaCount === 1) {
           s = s.replace(',', '.'); // single comma → decimal point
         } else {
-          // Multiple commas: take the LAST as decimal, earlier commas are thousands separators
           const last = s.lastIndexOf(',');
           const intPart = s.slice(0, last).replace(/,/g, '');
           const decPart = s.slice(last + 1).replace(/,/g, '');
           s = intPart + '.' + decPart;
         }
       }
-      // now there is at most one dot and no commas
     }
 
-    // Remove extra dots beyond the first
+    // Ensure only a single dot overall
     const firstDot = s.indexOf('.');
     if (firstDot !== -1) {
       s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
     }
 
-    // If user cleared everything (or typed only separators that got stripped)
+    // If user cleared everything, keep empty
     if (s === '') {
-      setAmount(''); // leave empty, no auto "0"
+      setAmount('');
       return;
     }
 
-    // Split integer and decimal
-    const [intRaw = '', decRaw = ''] = s.split('.');
-    // Limit decimals to 2
-    const decPart = decRaw.slice(0, 2);
+    // Limit to 2 decimals while typing
+    const [i = '', d = ''] = s.split('.');
+    const dec = d.slice(0, 2);
 
-    // Trim leading zeros but keep a single zero if there are digits
-    let intPart = intRaw.replace(/^0+(?=\d)/, '');
+    // Do NOT add thousand separators here; keep it raw to avoid caret jumps
+    setAmount(dec.length ? `${i}.${dec}` : i);
+  };
 
-    // For display:
-    // - If there is a decimal dot, show "0" when integer is empty (e.g., ".5" → "0.5")
-    // - If there is no dot and integer is empty, keep it empty (user cleared the field)
-    const hasDot = s.includes('.');
-    const intForDisplay = intPart === ''
-      ? (hasDot ? '0' : '')   // allow empty when no decimal; show 0 when decimal exists
-      : intPart;
+  // On focus: strip any formatting (commas) to keep typing smooth
+  const handleAmountFocus = () => {
+    if (!amount) return;
+    setAmount(amount.replace(/,/g, ''));
+  };
 
-    // Add thousands separators to integer part (if we have one)
-    const intWithSep = intForDisplay === ''
-      ? ''
-      : intForDisplay.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  // On blur: pretty-format with thousand separators (if not empty)
+  const handleAmountBlur = () => {
+    if (amount.trim() === '') return;
 
-    // Rebuild final formatted
-    const formatted =
-      hasDot
-        ? `${intWithSep === '' ? '0' : intWithSep}.${decPart}`
-        : intWithSep;
+    // Split int/dec
+    const [i = '', d = ''] = amount.replace(/,/g, '').split('.');
+    const intPart = i === '' ? '0' : i.replace(/^0+(?=\d)/, ''); // keep single 0
+    const dec = d.slice(0, 2);
+
+    // Add thousands separators to integer part
+    const intWithSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Rebuild for display
+    const formatted = dec.length ? `${intWithSep}.${dec}` : intWithSep;
 
     setAmount(formatted);
   };
 
   const parseAmount = (formattedAmount: string): number => {
-    // If empty, return NaN-safe 0 (validation will catch empty/zero)
     if (!formattedAmount) return 0;
-    // strip thousands sep, parse US-style decimal
     const n = Number(formattedAmount.replace(/,/g, ''));
     return Number.isFinite(n) ? n : 0;
   };
+  // ---------- END AMOUNT INPUT ----------
 
   const validateForm = (): boolean => {
     if (!costCategory) {
@@ -431,6 +431,8 @@ const NewCost = () => {
             inputMode="decimal"
             value={amount}
             onChange={handleAmountChange}
+            onFocus={handleAmountFocus}
+            onBlur={handleAmountBlur}
             placeholder="0.00"
             disabled={loading}
             style={{ height: CONTROL_H }}
@@ -468,3 +470,4 @@ const NewCost = () => {
 };
 
 export default NewCost;
+
