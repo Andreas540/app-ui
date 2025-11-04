@@ -73,11 +73,20 @@ const NewCost = () => {
   };
 
   const formatAmount = (value: string): string => {
-    // Remove all non-digit and non-decimal characters
-    const cleaned = value.replace(/[^\d.]/g, '');
+    // First, normalize comma to dot for decimal separator
+    let normalized = value.replace(/,/g, '.');
+    
+    // Remove all characters except digits and dots
+    normalized = normalized.replace(/[^\d.]/g, '');
+    
+    // Handle multiple dots - keep only the first one
+    const dotIndex = normalized.indexOf('.');
+    if (dotIndex !== -1) {
+      normalized = normalized.substring(0, dotIndex + 1) + normalized.substring(dotIndex + 1).replace(/\./g, '');
+    }
     
     // Split into integer and decimal parts
-    const parts = cleaned.split('.');
+    const parts = normalized.split('.');
     let integerPart = parts[0] || '';
     const decimalPart = parts[1] || '';
     
@@ -88,7 +97,11 @@ const NewCost = () => {
     const limitedDecimal = decimalPart.slice(0, 2);
     
     // Combine parts
-    return limitedDecimal ? `${integerPart}.${limitedDecimal}` : integerPart;
+    if (normalized.includes('.')) {
+      // User has typed a dot, show it even if no decimals yet
+      return limitedDecimal ? `${integerPart}.${limitedDecimal}` : `${integerPart}.`;
+    }
+    return integerPart;
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,13 +286,25 @@ const NewCost = () => {
           <div>
             <label>Every (interval)</label>
             <input
-              type="number"
-              min="1"
+              type="text"
+              inputMode="numeric"
               value={recurringDetails.recur_interval}
-              onChange={(e) => setRecurringDetails({
-                ...recurringDetails,
-                recur_interval: parseInt(e.target.value) || 1
-              })}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, ''); // Only digits
+                setRecurringDetails({
+                  ...recurringDetails,
+                  recur_interval: val === '' ? 0 : parseInt(val, 10)
+                });
+              }}
+              onBlur={(e) => {
+                // Set to 1 if empty on blur
+                if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                  setRecurringDetails({
+                    ...recurringDetails,
+                    recur_interval: 1
+                  });
+                }
+              }}
               style={{ height: CONTROL_H }}
             />
             <p className="helper" style={{ marginTop: 4 }}>
