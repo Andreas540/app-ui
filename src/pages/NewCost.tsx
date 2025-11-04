@@ -329,20 +329,19 @@ const NewCost = () => {
       {/* Date Fields - Show when category is selected */}
       {costCategory && (
         <>
-          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-            <div>
-              <label>{isRecurring ? 'Start Date' : 'Date'}</label>
-              <input
-                type="date"
-                value={costDate}
-                onChange={(e) => setCostDate(e.target.value)}
-                disabled={loading}
-                style={{ height: CONTROL_H }}
-              />
-            </div>
-
-            {/* End Date - Only for recurring costs */}
-            {isRecurring && (
+          {isRecurring ? (
+            // Recurring: Show Start Date and End Date in two columns
+            <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+              <div>
+                <label>Start Date</label>
+                <input
+                  type="date"
+                  value={costDate}
+                  onChange={(e) => setCostDate(e.target.value)}
+                  disabled={loading}
+                  style={{ height: CONTROL_H }}
+                />
+              </div>
               <div>
                 <label>End Date (optional)</label>
                 <input
@@ -354,8 +353,20 @@ const NewCost = () => {
                   style={{ height: CONTROL_H }}
                 />
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            // Non-recurring: Show single Date field
+            <div style={{ marginTop: 12 }}>
+              <label>Date</label>
+              <input
+                type="date"
+                value={costDate}
+                onChange={(e) => setCostDate(e.target.value)}
+                disabled={loading}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
+          )}
         </>
       )}
 
