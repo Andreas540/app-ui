@@ -33,6 +33,14 @@ function isBrandNewBlank(l: Line) {
   return !hasId && !hasAny
 }
 
+// Normalize any qty-like value to an integer string (e.g. "5000.000" -> "5000")
+function toQtyIntString(v: any): string {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return ''
+  const t = Math.trunc(n)
+  return t > 0 ? String(t) : ''
+}
+
 export default function EditOrderSupplier() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -99,13 +107,13 @@ export default function EditOrderSupplier() {
         setEstDeliveryDate(order.est_delivery_date ? order.est_delivery_date.split('T')[0] : '')
         setNotes(order.notes || '')
         
-        // Load order items
+        // Load order items — normalize qty to integer string so UI/validation accept it
         if (orderData.items && orderData.items.length > 0) {
           setLines(
             orderData.items.map((item: any) => ({
               id: item.id,
               product_id: item.product_id,
-              qty: String(item.qty ?? ''),
+              qty: toQtyIntString(item.qty), // <-- normalize "5000.000" -> "5000"
               cost: String(item.product_cost ?? '').replace(',', '.'), // normalize just in case
               lastCost: null,
             }))
@@ -166,8 +174,6 @@ export default function EditOrderSupplier() {
   }, [supplierId])
 
   // Consider only "relevant" lines:
-  //   • Existing rows (l.id) are always relevant (must be valid to avoid accidental deletion).
-  //   • New rows without any input (brand-new blank) are ignored.
   const relevantLines = useMemo(
     () => lines.filter(l => !!l.id || !isBrandNewBlank(l)),
     [lines]
@@ -213,7 +219,7 @@ export default function EditOrderSupplier() {
         return {
           id: l.id || undefined,
           product_id: l.product_id,
-          qty: Number(l.qty),
+          qty: Number(toQtyIntString(l.qty)), // ensure integer
           product_cost: Number(cost.toFixed(3)),
           shipping_cost: 0,
         }
@@ -324,6 +330,11 @@ export default function EditOrderSupplier() {
                 onChange={(e) => {
                   const v = e.target.value
                   if (v === '' || /^[0-9]+$/.test(v)) updateLine(idx, { qty: v })
+                }}
+                onBlur={(e) => {
+                  // normalize any accidental decimals pasted/typed into an int string
+                  const norm = toQtyIntString(e.target.value)
+                  updateLine(idx, { qty: norm })
                 }}
               />
             </div>
@@ -517,6 +528,7 @@ export default function EditOrderSupplier() {
     </div>
   )
 }
+
 
 
 
