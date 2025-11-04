@@ -19,7 +19,7 @@ const todayYMD = () => {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-// --- Helpers mirrored from EditOrder pattern ---
+// Parse like EditOrder: accept , or . then normalize to dot for Number()
 function parsePriceToNumber(s: string) {
   const m = (s ?? '').match(/-?\d+(?:[.,]\d+)?/)
   if (!m) return NaN
@@ -158,16 +158,27 @@ export default function EditOrderSupplier() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId])
 
+  // Validate on the **normalized string**, not String(Number(...))
   const canSave = useMemo(() => {
     if (!supplierId) return false
     return lines.some((l) => {
       const qtyInt = /^[1-9]\d*$/.test(l.qty)
-      const costNum = parsePriceToNumber(l.cost)
-      const costOk =
-        Number.isFinite(costNum) &&
-        /^-?\d+(\.\d{1,3})?$/.test(String(costNum)) // keep ≤ 3 decimals like before
+      const dot = (l.cost ?? '').replace(',', '.')
+      const costOk = dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot)
       return l.product_id && qtyInt && costOk
     })
+  }, [supplierId, lines])
+
+  // (DEV only) quick reason helper so you immediately see why it's disabled
+  const disableReason = useMemo(() => {
+    if (supplierId === '') return 'Missing supplierId'
+    for (const l of lines) {
+      if (!l.product_id) return 'Pick product'
+      if (!/^[1-9]\d*$/.test(l.qty || '')) return 'Qty must be integer ≥ 1'
+      const dot = (l.cost ?? '').replace(',', '.')
+      if (!(dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot))) return 'Cost must be number (max 3 decimals)'
+    }
+    return ''
   }, [supplierId, lines])
 
   async function handleSave() {
@@ -185,7 +196,7 @@ export default function EditOrderSupplier() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
       const cleanLines = lines
-        .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && Number.isFinite(parsePriceToNumber(l.cost)))
+        .filter((l) => l.product_id && /^[1-9]\d*$/.test(l.qty) && (l.cost ?? '') !== '')
         .map((l) => {
           const cost = parsePriceToNumber(l.cost)
           return {
@@ -228,7 +239,7 @@ export default function EditOrderSupplier() {
     } finally {
       setSaving(false)
     }
-  } // <-- keep structure identical
+  }
 
   async function handleDelete() {
     if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
@@ -466,9 +477,14 @@ export default function EditOrderSupplier() {
 
       {/* Actions */}
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button className="primary" onClick={handleSave} disabled={!canSave || saving} style={{ height: 'var(--control-h)' }}>
+        <button type="button" className="primary" onClick={handleSave} disabled={!canSave || saving} style={{ height: 'var(--control-h)' }}>
           {saving ? 'Saving…' : 'Save changes'}
         </button>
+        {(!canSave || saving) && import.meta.env.DEV && (
+          <div className="helper" style={{ alignSelf:'center', color:'#888' }}>
+            {saving ? 'Saving…' : `Disabled: ${disableReason || 'fill at least one valid line'}`}
+          </div>
+        )}
         <button onClick={() => navigate(-1)} style={{ height: 'var(--control-h)' }}>
           Cancel
         </button>
@@ -488,3 +504,4 @@ export default function EditOrderSupplier() {
     </div>
   )
 }
+
