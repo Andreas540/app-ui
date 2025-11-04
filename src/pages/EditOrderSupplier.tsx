@@ -19,11 +19,18 @@ const todayYMD = () => {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-// Parse like EditOrder: accept , or . then normalize to dot for Number()
+// Accept "," or "." then normalize to "."
 function parsePriceToNumber(s: string) {
   const m = (s ?? '').match(/-?\d+(?:[.,]\d+)?/)
   if (!m) return NaN
   return Number(m[0].replace(',', '.'))
+}
+
+// A helper to detect a brand-new fully blank line (ignore it for validation/payload)
+function isBrandNewBlank(l: Line) {
+  const hasId = !!(l.id && l.id.trim())
+  const hasAny = (l.product_id && l.product_id.trim()) || (l.qty && l.qty.trim()) || (l.cost && l.cost.trim())
+  return !hasId && !hasAny
 }
 
 export default function EditOrderSupplier() {
@@ -98,8 +105,8 @@ export default function EditOrderSupplier() {
             orderData.items.map((item: any) => ({
               id: item.id,
               product_id: item.product_id,
-              qty: String(item.qty),
-              cost: String(item.product_cost),
+              qty: String(item.qty ?? ''),
+              cost: String(item.product_cost ?? '').replace(',', '.'), // normalize just in case
               lastCost: null,
             }))
           )
@@ -158,30 +165,38 @@ export default function EditOrderSupplier() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId])
 
-  // A) Require at least one line and ALL lines valid
+  // Consider only "relevant" lines:
+  //   • Existing rows (l.id) are always relevant (must be valid to avoid accidental deletion).
+  //   • New rows without any input (brand-new blank) are ignored.
+  const relevantLines = useMemo(
+    () => lines.filter(l => !!l.id || !isBrandNewBlank(l)),
+    [lines]
+  )
+
+  // Require supplier, at least one relevant line, and ALL relevant lines valid
   const canSave = useMemo(() => {
     if (!supplierId) return false
-    if (lines.length === 0) return false
-    return lines.every((l) => {
+    if (relevantLines.length === 0) return false
+    return relevantLines.every((l) => {
       const qtyInt = /^[1-9]\d*$/.test(l.qty)
       const dot = (l.cost ?? '').replace(',', '.')
       const costOk = dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot)
       return !!l.product_id && qtyInt && costOk
     })
-  }, [supplierId, lines])
+  }, [supplierId, relevantLines])
 
-  // (DEV only) quick reason helper so you immediately see why it's disabled
+  // Optional: quick DEV reason (kept; harmless in prod)
   const disableReason = useMemo(() => {
     if (supplierId === '') return 'Missing supplierId'
-    if (lines.length === 0) return 'Add at least one line'
-    for (const l of lines) {
+    if (relevantLines.length === 0) return 'Add at least one product line'
+    for (const l of relevantLines) {
       if (!l.product_id) return 'Pick product'
       if (!/^[1-9]\d*$/.test(l.qty || '')) return 'Qty must be integer ≥ 1'
       const dot = (l.cost ?? '').replace(',', '.')
       if (!(dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot))) return 'Cost must be number (max 3 decimals)'
     }
     return ''
-  }, [supplierId, lines])
+  }, [supplierId, relevantLines])
 
   async function handleSave() {
     if (!canSave) {
@@ -192,8 +207,8 @@ export default function EditOrderSupplier() {
       setSaving(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-      // B) Map ALL lines (no filter) because canSave guarantees validity
-      const cleanLines = lines.map((l) => {
+      // Map ALL relevant lines (no filter): server deletes then inserts exactly what we send
+      const cleanLines = relevantLines.map((l) => {
         const cost = parsePriceToNumber(l.cost)
         return {
           id: l.id || undefined,
@@ -226,7 +241,7 @@ export default function EditOrderSupplier() {
       })
       if (!res.ok) {
         const t = await res.text().catch(() => '')
-        throw new Error(`Save failed (${res.status}) ${t?.slice(0, 140)}`)
+        throw new Error(`Save failed (${res.status}) ${t?.slice(0, 200)}`)
       }
       alert('Supplier order updated.')
       navigate(-1)
@@ -500,5 +515,6 @@ export default function EditOrderSupplier() {
     </div>
   )
 }
+
 
 
