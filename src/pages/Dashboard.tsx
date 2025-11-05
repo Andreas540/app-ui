@@ -131,7 +131,7 @@ function ChartSlide({
       {/* pointerEvents: 'none' = no hover/click/focus interactions */}
       <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={enriched} margin={{ top: 12, right: 0, bottom: 8, left: 0 }}>
+          <ComposedChart data={enriched} margin={{ top: 12, right: 0, bottom: 6, left: 0 }}>
             {/* No grid/legend/tooltip */}
             <XAxis
               dataKey="month"
@@ -588,13 +588,13 @@ export default function Dashboard() {
     transition: 'transform 220ms ease',
   }}
 >
-  <div style={{ width:'33.3333%', paddingRight: 16, overflow: 'hidden' }}>
+  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
     <ChartSlide {...slides[0]} />
   </div>
-  <div style={{ width:'33.3333%', paddingLeft: 16, paddingRight: 16, overflow: 'hidden' }}>
+  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
     <ChartSlide {...slides[1]} />
   </div>
-  <div style={{ width:'33.3333%', paddingLeft: 16, overflow: 'hidden' }}>
+  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
     <ChartSlide {...slides[2]} />
   </div>
 </div>
