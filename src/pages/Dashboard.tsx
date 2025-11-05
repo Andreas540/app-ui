@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -30,6 +30,9 @@ function fmtIntMoney(n: number) {
 const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K`
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
+// Fixed-but-responsive height: shorter on phones, taller on desktop
+const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
+
 type MonthlyPoint = {
   month: string // "YYYY-MM"
   revenue: number
@@ -37,10 +40,14 @@ type MonthlyPoint = {
   profitPct: number // 0..1
 }
 
-// Fixed-but-responsive height: shorter on phones, taller on desktop
-const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
+type RpsPoint = {
+  month: string
+  revenue_amount: number
+  operating_profit: number
+  surplus: number
+}
 
-// ---- FETCH & NORMALIZE MONTHLY DATA ----
+// ---- FETCH & NORMALIZE: existing graph (kept as-is) ----
 async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
   const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
@@ -51,7 +58,7 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const data = await res.json()
   const rows = Array.isArray(data?.rows) ? data.rows : []
 
-  // Normalize possible keys and then compute profitPct = profit / revenue (client-side truth)
+  // Normalize and compute % client-side for truth
   return rows.map((r: any) => {
     const month = String(r.month ?? '')
     const revenue = Number(r.revenue ?? 0)
@@ -59,6 +66,141 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
     const profitPct = revenue > 0 ? profit / revenue : 0
     return { month, revenue, profit, profitPct }
   }) as MonthlyPoint[]
+}
+
+// ---- FETCH & NORMALIZE: new graphs (from DB view revenue_profit_surplus_by_month) ----
+async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/metrics/rps-monthly?months=${months}`, { cache: 'no-store' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to load RPS monthly (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  const data = await res.json()
+  const rows = Array.isArray(data?.rows) ? data.rows : []
+  return rows.map((r: any) => ({
+    month: String(r.month ?? ''),
+    revenue_amount: Number(r.revenue_amount ?? 0),
+    operating_profit: Number(r.operating_profit ?? 0),
+    surplus: Number(r.surplus ?? 0),
+  }))
+}
+
+// --- Reusable chart slide ---
+type SlideSpec = {
+  title: string
+  data: any[]
+  bar1Key: string      // revenue key
+  bar2Key: string      // second bar (profit / op / surplus)
+  lineKey: string      // percent key
+  computePct?: (row: any) => number
+}
+
+function ChartSlide({
+  title,
+  data,
+  bar1Key,
+  bar2Key,
+  lineKey,
+  computePct,
+}: SlideSpec) {
+  const enriched = useMemo(() => {
+    if (!computePct) return data
+    return (data || []).map((r: any) => ({
+      ...r,
+      [lineKey]: computePct(r)
+    }))
+  }, [data, computePct, lineKey])
+
+  return (
+    <div className="card" style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
+        <h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3>
+      </div>
+
+      {/* pointerEvents: 'none' = no hover/click/focus interactions */}
+      <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={enriched} margin={{ top: 12, right: 16, bottom: 8, left: 0 }}>
+            {/* No grid/legend/tooltip */}
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 11 }}
+              axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+              tickLine={false}
+              tickFormatter={(m) => {
+                const [y, mm] = (m || '').split('-').map(Number)
+                if (!y || !mm) return String(m || '')
+                const d = new Date(y, mm - 1, 1)
+                return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
+              }}
+            />
+            {/* Left axis = $, hidden ticks; add 10% headroom */}
+            <YAxis
+              yAxisId="left"
+              tick={false}
+              axisLine={false}
+              width={0}
+              domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
+            />
+            {/* Right axis = %, fixed 0..45% */}
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={false}
+              axisLine={false}
+              width={0}
+              domain={[0, 0.45]}
+            />
+
+            {/* Bars: orange (revenue) + light blue (2nd series); labels; NO animations */}
+            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false} barSize={33}>
+              <LabelList
+                dataKey={bar1Key}
+                position="top"
+                offset={12}
+                formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                fill="#fff"
+                style={{ fontSize: 12, fontWeight: 700 }}
+              />
+            </Bar>
+
+            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false} barSize={33}>
+              <LabelList
+                dataKey={bar2Key}
+                position="top"
+                offset={12}
+                formatter={(v: any) => `$${fmtK1(Number(v))}`}
+                fill="#fff"
+                style={{ fontSize: 12, fontWeight: 700 }}
+              />
+            </Bar>
+
+            {/* Percent line on right axis */}
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey={lineKey}
+              stroke="#374151"
+              strokeWidth={2}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey={lineKey}
+                position="top"
+                offset={12}
+                formatter={(v: any) => fmtPct1(Number(v))}
+                fill="#fff"
+                style={{ fontSize: 12, fontWeight: 700 }}
+              />
+            </Line>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -77,11 +219,18 @@ export default function Dashboard() {
   // JJ Boston's net (to exclude from partner totals)
   const [jjNet, setJjNet] = useState<number | null>(null)
 
-  // Monthly metrics for the chart (last 3 months)
+  // Slide index for manual carousel
+  const [slide, setSlide] = useState<0 | 1 | 2>(0)
+  const touchStartX = useRef<number | null>(null)
+
+  // Monthly metrics for slide #1 (existing source)
   const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
   const [monthlyLoading, setMonthlyLoading] = useState(true)
   const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
-  const [monthlyFirstLoad, setMonthlyFirstLoad] = useState(true)
+
+  // Data for slides #2 and #3 (from revenue_profit_surplus_by_month)
+  const [rps, setRps] = useState<RpsPoint[]>([])
+  const [rpsErr, setRpsErr] = useState<string | null>(null)
 
   // Load customers data for totals
   useEffect(() => {
@@ -145,7 +294,7 @@ export default function Dashboard() {
     })()
   }, [orderFilter])
 
-  // Initial monthly load (show loading only this time)
+  // Initial monthly load (slide #1)
   useEffect(() => {
     let stop = false
     const initial = async () => {
@@ -156,10 +305,26 @@ export default function Dashboard() {
       } catch (e: any) {
         if (!stop) setMonthlyErr(e?.message || String(e))
       } finally {
-        if (!stop) { setMonthlyLoading(false); setMonthlyFirstLoad(false) }
+        if (!stop) { setMonthlyLoading(false) }
       }
     }
     initial()
+    return () => { stop = true }
+  }, [])
+
+  // Load RPS (slides #2, #3)
+  useEffect(() => {
+    let stop = false
+    const load = async () => {
+      try {
+        setRpsErr(null)
+        const rows = await fetchRpsMonthly(3)
+        if (!stop) setRps(rows)
+      } catch (e: any) {
+        if (!stop) setRpsErr(e?.message || String(e))
+      }
+    }
+    load()
     return () => { stop = true }
   }, [])
 
@@ -171,6 +336,8 @@ export default function Dashboard() {
         if (document.visibilityState !== 'visible') return
         const rows = await fetchMonthly3()
         if (!stop) setMonthly(rows)
+        const rpsRows = await fetchRpsMonthly(3)
+        if (!stop) setRps(rpsRows)
       } catch {
         // swallow silent errors
       }
@@ -181,12 +348,14 @@ export default function Dashboard() {
     return () => { stop = true; clearInterval(id); window.removeEventListener('visibilitychange', onVis) }
   }, [])
 
-  // Also refresh monthly when the orders list length changes (new orders registered)
+  // Also refresh charts when the orders list length changes (new orders registered)
   useEffect(() => {
     (async () => {
       try {
         const rows = await fetchMonthly3()
         setMonthly(rows)
+        const rpsRows = await fetchRpsMonthly(3)
+        setRps(rpsRows)
       } catch {}
     })()
   }, [recentOrders.length])
@@ -261,6 +430,80 @@ export default function Dashboard() {
       ? 'Not delivered orders'
       : 'Most recently registered orders'
 
+  // --- Carousel interactions ---
+  function next() { setSlide(s => (s === 2 ? 0 : ((s + 1) as 0 | 1 | 2))) }
+  function prev() { setSlide(s => (s === 0 ? 2 : ((s - 1) as 0 | 1 | 2))) }
+
+  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null
+  }
+  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    const startX = touchStartX.current
+    touchStartX.current = null
+    if (startX == null) return
+    const endX = e.changedTouches[0]?.clientX ?? startX
+    const dx = endX - startX
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) next() // swipe left shows next slide
+      else prev()
+    }
+  }
+
+  // Build slide data
+  const slide1: SlideSpec = {
+    title: 'Revenue & Gross profit', // renamed
+    data: monthly,
+    bar1Key: 'revenue',
+    bar2Key: 'profit',
+    lineKey: 'profitPct',
+  }
+
+  // Map RPS rows to slide shape for Operating Profit
+  const slide2Data = useMemo(() => {
+    return rps.map(r => ({
+      month: r.month,
+      revenue: r.revenue_amount,
+      op: r.operating_profit,
+    }))
+  }, [rps])
+
+  const slide2: SlideSpec = {
+    title: 'Revenue & Operating profit',
+    data: slide2Data,
+    bar1Key: 'revenue',
+    bar2Key: 'op',
+    lineKey: 'opPct',
+    computePct: (row) => {
+      const rev = Number(row.revenue || 0)
+      const op  = Number(row.op || 0)
+      return rev > 0 ? op / rev : 0
+    }
+  }
+
+  // Map RPS rows to slide shape for Surplus
+  const slide3Data = useMemo(() => {
+    return rps.map(r => ({
+      month: r.month,
+      revenue: r.revenue_amount,
+      surp: r.surplus,
+    }))
+  }, [rps])
+
+  const slide3: SlideSpec = {
+    title: 'Revenue & Surplus',
+    data: slide3Data,
+    bar1Key: 'revenue',
+    bar2Key: 'surp',
+    lineKey: 'surpPct',
+    computePct: (row) => {
+      const rev = Number(row.revenue || 0)
+      const sp  = Number(row.surp || 0)
+      return rev > 0 ? sp / rev : 0
+    }
+  }
+
+  const slides = [slide1, slide2, slide3]
+
   return (
     <div className="grid">
       {/* -------- Card 1: Totals -------- */}
@@ -322,95 +565,70 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* -------- Card 2: Chart (responsive height, zero interaction) -------- */}
-      <div className="card" style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>Revenue & Profit (last 3 months)</h3>
-          {/* Show loading only on first load to avoid flicker */}
-          {monthlyFirstLoad && monthlyLoading && <span className="helper">Loading…</span>}
-          {monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
+      {/* -------- Card 2: Chart Carousel -------- */}
+      <div
+        className="card"
+        style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Header: title + slide controls + loading/errors */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', marginBottom: 6, gap: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 16 }}>
+            {slides[slide].title}
+          </h3>
+
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            {/* Loading badges only on first load of slide 1 */}
+            {slide === 0 && monthlyLoading && <span className="helper">Loading…</span>}
+            {(slide === 0 && monthlyErr) && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
+            {(slide > 0 && rpsErr) && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+
+            {/* Prev / Next buttons (desktop) */}
+            <div style={{ display:'flex', gap:4 }}>
+              <button className="helper" onClick={prev} title="Previous" style={{ padding:'4px 8px' }}>{'‹'}</button>
+              <button className="helper" onClick={next} title="Next" style={{ padding:'4px 8px' }}>{'›'}</button>
+            </div>
+          </div>
         </div>
 
-        {/* pointerEvents: 'none' = no hover/click/focus interactions */}
-        <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={monthly} margin={{ top: 12, right: 16, bottom: 8, left: 0 }}>
-              {/* No grid/legend/tooltip */}
+        {/* Slides strip */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            width: '300%',
+            transform: `translateX(-${slide * 33.3333}%)`,
+            transition: 'transform 220ms ease',
+          }}
+        >
+          <div style={{ width:'100%', paddingRight: 8 }}>
+            <ChartSlide {...slides[0]} />
+          </div>
+          <div style={{ width:'100%', paddingRight: 8 }}>
+            <ChartSlide {...slides[1]} />
+          </div>
+          <div style={{ width:'100%' }}>
+            <ChartSlide {...slides[2]} />
+          </div>
+        </div>
 
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 11 }}
-                axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
-                tickLine={false}
-                tickFormatter={(m) => {
-                  const [y, mm] = (m || '').split('-').map(Number)
-                  if (!y || !mm) return String(m || '')
-                  const d = new Date(y, mm - 1, 1)
-                  return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
-                }}
-              />
-              {/* Left axis = $, hidden ticks; add 10% headroom */}
-              <YAxis
-                yAxisId="left"
-                tick={false}
-                axisLine={false}
-                width={0}
-                domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
-              />
-              {/* Right axis = %, fixed 0..45% */}
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={false}
-                axisLine={false}
-                width={0}
-                domain={[0, 0.45]}
-              />
-
-              {/* Bars: orange + light blue; labels; NO animations */}
-              <Bar yAxisId="left" dataKey="revenue" fill="#f59e0b" isAnimationActive={false} barSize={33}>
-                <LabelList
-                  dataKey="revenue"
-                  position="top"
-                  offset={12}
-                  formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                  fill="#fff"
-                  style={{ fontSize: 12, fontWeight: 700 }}
-                />
-              </Bar>
-              <Bar yAxisId="left" dataKey="profit" fill="#60a5fa" isAnimationActive={false} barSize={33}>
-                <LabelList
-                  dataKey="profit"
-                  position="top"
-                  offset={12}
-                  formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                  fill="#fff"
-                  style={{ fontSize: 12, fontWeight: 700 }}
-                />
-              </Bar>
-
-              {/* Profit % line on right axis */}
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="profitPct"
-                stroke="#374151"
-                strokeWidth={2}
-                dot={false}
-                activeDot={false}
-                isAnimationActive={false}
-              >
-                <LabelList
-                  dataKey="profitPct"
-                  position="top"
-                  offset={12}
-                  formatter={(v: any) => fmtPct1(Number(v))}
-                  fill="#fff"
-                  style={{ fontSize: 12, fontWeight: 700 }}
-                />
-              </Line>
-            </ComposedChart>
-          </ResponsiveContainer>
+        {/* Dots */}
+        <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
+          {[0,1,2].map(i => (
+            <button
+              key={i}
+              onClick={() => setSlide(i as 0|1|2)}
+              aria-pressed={slide===i}
+              style={{
+                width: 8, height: 8, borderRadius: 8,
+                border: 'none',
+                background: slide===i ? 'var(--primary)' : '#d1d5db',
+                cursor: 'pointer'
+              }}
+              title={`Go to slide ${i+1}`}
+            />
+          ))}
         </div>
       </div>
 
@@ -600,6 +818,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
