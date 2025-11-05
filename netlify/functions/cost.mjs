@@ -106,21 +106,20 @@ async function createCost(event) {
     if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
 
     const body = JSON.parse(event.body || '{}')
-    
     const {
       business_private,
       cost_category,
       cost_type,
-      cost,
+      cost,          // optional now
       amount,
-      cost_date,        // for non-recurring
-      start_date,       // for recurring
-      end_date,         // for recurring (optional)
-      recur_kind,       // for recurring
-      recur_interval    // for recurring
+      cost_date,     // for non-recurring
+      start_date,    // for recurring
+      end_date,      // for recurring (optional)
+      recur_kind,    // for recurring
+      recur_interval // for recurring
     } = body
 
-    // Validation
+    // Base validation
     if (!business_private || (business_private !== 'B' && business_private !== 'P')) {
       return cors(400, { error: 'business_private must be B or P' })
     }
@@ -130,17 +129,16 @@ async function createCost(event) {
     if (!cost_type) {
       return cors(400, { error: 'cost_type is required' })
     }
-    if (!cost) {
-      return cors(400, { error: 'cost description is required' })
-    }
-    if (!amount || isNaN(amount)) {
+    // cost is optional — no validation here
+    if (amount == null || isNaN(Number(amount))) {
       return cors(400, { error: 'valid amount is required' })
     }
 
     const sql = neon(DATABASE_URL)
 
-    // Determine if this is a recurring cost
-    const isRecurring = cost_category.toLowerCase().includes('recurring')
+    // Correct recurring detection (exclude "non-recurring")
+    const cat = String(cost_category).toLowerCase()
+    const isRecurring = cat.includes('recurring') && !cat.includes('non-recurring')
 
     if (isRecurring) {
       // Validate recurring-specific fields
@@ -154,7 +152,6 @@ async function createCost(event) {
         return cors(400, { error: 'recur_interval must be at least 1' })
       }
 
-      // Insert into costs_recurring table
       const result = await sql`
         INSERT INTO costs_recurring (
           tenant_id,
@@ -170,9 +167,9 @@ async function createCost(event) {
         ) VALUES (
           ${TENANT_ID},
           ${business_private},
-          ${cost_category},
+          ${cost ?? null},
           ${cost_type},
-          ${cost},
+          ${cost ?? null},
           ${start_date},
           ${end_date || null},
           ${recur_kind},
@@ -189,12 +186,11 @@ async function createCost(event) {
       })
 
     } else {
-      // Non-recurring cost
+      // Non-recurring branch
       if (!cost_date) {
         return cors(400, { error: 'cost_date is required for non-recurring costs' })
       }
 
-      // Insert into costs table
       const result = await sql`
         INSERT INTO costs (
           tenant_id,
@@ -209,7 +205,7 @@ async function createCost(event) {
           ${business_private},
           ${cost_category},
           ${cost_type},
-          ${cost},
+          ${cost ?? null},
           ${cost_date},
           ${amount}
         )

@@ -187,10 +187,6 @@ const NewCost = () => {
       setError('Please select a cost type');
       return false;
     }
-    if (!cost.trim()) {
-      setError('Please enter a cost description');
-      return false;
-    }
     if (!costDate) {
       setError('Please select a date');
       return false;
@@ -395,12 +391,12 @@ const NewCost = () => {
       {/* Cost Description - Show when category is selected */}
       {costCategory && (
         <div style={{ marginTop: 12 }}>
-          <label>Cost</label>
+          <label>Cost description (optional)</label>
           <input
             type="text"
             value={cost}
             onChange={(e) => setCost(e.target.value)}
-            placeholder="Enter cost description"
+            placeholder="Enter cost description (optional)"
             disabled={loading}
             style={{ height: CONTROL_H }}
           />
