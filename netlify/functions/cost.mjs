@@ -15,22 +15,22 @@ const COST_CATEGORIES = {
 // Cost type mappings by category
 const COST_TYPES = {
   'Business recurring cost': [
-    'Software subscriptions',
-    'Office rent',
-    'Insurance premiums',
+    'Warehouse rent',
+    'Warehouse and Utilities',
     'Utilities',
-    'Payroll services',
-    'Professional memberships',
-    'Cloud hosting',
+    'Car payments',
+    'Insurance premiums',
+    'Professional services',
+    'Software subscriptions',
     'Other recurring'
   ],
   'Business non-recurring cost': [
     'Equipment purchases',
+    'Repairs and maintenance',
     'Legal fees',
     'Marketing campaigns',
     'Training courses',
-    'Consulting services',
-    'Repairs and maintenance',
+    'Professional services',
     'Travel expenses',
     'Other non-recurring'
   ],
