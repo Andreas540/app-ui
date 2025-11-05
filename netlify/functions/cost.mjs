@@ -167,7 +167,7 @@ async function createCost(event) {
         ) VALUES (
           ${TENANT_ID},
           ${business_private},
-          ${cost ?? null},
+          ${cost_category},
           ${cost_type},
           ${cost ?? null},
           ${start_date},
