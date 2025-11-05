@@ -41,10 +41,12 @@ type MonthlyPoint = {
 }
 
 type RpsPoint = {
-  month: string
-  revenue_amount: number
+  month: string            // "YYYY-MM"
+  revenue: number          // from revenue_amount in the view
   operating_profit: number
+  operatingPct: number     // operating_profit / revenue
   surplus: number
+  surplusPct: number       // surplus / revenue
 }
 
 // ---- FETCH & NORMALIZE: existing graph (kept as-is) ----
@@ -68,22 +70,30 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   }) as MonthlyPoint[]
 }
 
-// ---- FETCH & NORMALIZE: new graphs (from DB view revenue_profit_surplus_by_month) ----
+// --- NEW: RPS monthly fetch (for Operating profit & Surplus slides) ---
 async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/metrics/rps-monthly?months=${months}`, { cache: 'no-store' })
+  const res = await fetch(`${base}/api/rps/monthly?months=${months}`, { cache: 'no-store' })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load RPS monthly (status ${res.status}) ${text?.slice(0,140)}`)
   }
-  const data = await res.json()
-  const rows = Array.isArray(data?.rows) ? data.rows : []
-  return rows.map((r: any) => ({
-    month: String(r.month ?? ''),
-    revenue_amount: Number(r.revenue_amount ?? 0),
-    operating_profit: Number(r.operating_profit ?? 0),
-    surplus: Number(r.surplus ?? 0),
-  }))
+  const { rows } = await res.json()
+  const safe = Array.isArray(rows) ? rows : []
+
+  return safe.map((r: any) => {
+    const revenue = Number(r.revenue ?? r.revenue_amount ?? 0)
+    const operating_profit = Number(r.operating_profit ?? 0)
+    const surplus = Number(r.surplus ?? 0)
+    const operatingPct = Number.isFinite(Number(r.operatingPct))
+      ? Number(r.operatingPct)
+      : (revenue > 0 ? operating_profit / revenue : 0)
+    const surplusPct = Number.isFinite(Number(r.surplusPct))
+      ? Number(r.surplusPct)
+      : (revenue > 0 ? surplus / revenue : 0)
+
+    return { month: String(r.month ?? ''), revenue, operating_profit, operatingPct, surplus, surplusPct }
+  })
 }
 
 // --- Reusable chart slide ---
@@ -228,8 +238,9 @@ export default function Dashboard() {
   const [monthlyLoading, setMonthlyLoading] = useState(true)
   const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
 
-  // Data for slides #2 and #3 (from revenue_profit_surplus_by_month)
-  const [rps, setRps] = useState<RpsPoint[]>([])
+  // RPS data for slides #2 and #3
+  const [rpsMonthly, setRpsMonthly] = useState<RpsPoint[]>([])
+  const [rpsLoading, setRpsLoading] = useState(true)
   const [rpsErr, setRpsErr] = useState<string | null>(null)
 
   // Load customers data for totals
@@ -305,23 +316,25 @@ export default function Dashboard() {
       } catch (e: any) {
         if (!stop) setMonthlyErr(e?.message || String(e))
       } finally {
-        if (!stop) { setMonthlyLoading(false) }
+        if (!stop) setMonthlyLoading(false)
       }
     }
     initial()
     return () => { stop = true }
   }, [])
 
-  // Load RPS (slides #2, #3)
+  // Initial RPS load (slides #2, #3)
   useEffect(() => {
     let stop = false
     const load = async () => {
       try {
-        setRpsErr(null)
+        setRpsLoading(true); setRpsErr(null)
         const rows = await fetchRpsMonthly(3)
-        if (!stop) setRps(rows)
+        if (!stop) setRpsMonthly(rows)
       } catch (e: any) {
         if (!stop) setRpsErr(e?.message || String(e))
+      } finally {
+        if (!stop) setRpsLoading(false)
       }
     }
     load()
@@ -337,7 +350,7 @@ export default function Dashboard() {
         const rows = await fetchMonthly3()
         if (!stop) setMonthly(rows)
         const rpsRows = await fetchRpsMonthly(3)
-        if (!stop) setRps(rpsRows)
+        if (!stop) setRpsMonthly(rpsRows)
       } catch {
         // swallow silent errors
       }
@@ -355,7 +368,7 @@ export default function Dashboard() {
         const rows = await fetchMonthly3()
         setMonthly(rows)
         const rpsRows = await fetchRpsMonthly(3)
-        setRps(rpsRows)
+        setRpsMonthly(rpsRows)
       } catch {}
     })()
   }, [recentOrders.length])
@@ -449,57 +462,29 @@ export default function Dashboard() {
     }
   }
 
-  // Build slide data
+  // Build slide specs
   const slide1: SlideSpec = {
-    title: 'Revenue & Gross profit', // renamed
+    title: 'Revenue & Gross profit',
     data: monthly,
     bar1Key: 'revenue',
     bar2Key: 'profit',
     lineKey: 'profitPct',
   }
 
-  // Map RPS rows to slide shape for Operating Profit
-  const slide2Data = useMemo(() => {
-    return rps.map(r => ({
-      month: r.month,
-      revenue: r.revenue_amount,
-      op: r.operating_profit,
-    }))
-  }, [rps])
-
   const slide2: SlideSpec = {
     title: 'Revenue & Operating profit',
-    data: slide2Data,
+    data: rpsMonthly,
     bar1Key: 'revenue',
-    bar2Key: 'op',
-    lineKey: 'opPct',
-    computePct: (row) => {
-      const rev = Number(row.revenue || 0)
-      const op  = Number(row.op || 0)
-      return rev > 0 ? op / rev : 0
-    }
+    bar2Key: 'operating_profit',
+    lineKey: 'operatingPct',
   }
-
-  // Map RPS rows to slide shape for Surplus
-  const slide3Data = useMemo(() => {
-    return rps.map(r => ({
-      month: r.month,
-      revenue: r.revenue_amount,
-      surp: r.surplus,
-    }))
-  }, [rps])
 
   const slide3: SlideSpec = {
     title: 'Revenue & Surplus',
-    data: slide3Data,
+    data: rpsMonthly,
     bar1Key: 'revenue',
-    bar2Key: 'surp',
-    lineKey: 'surpPct',
-    computePct: (row) => {
-      const rev = Number(row.revenue || 0)
-      const sp  = Number(row.surp || 0)
-      return rev > 0 ? sp / rev : 0
-    }
+    bar2Key: 'surplus',
+    lineKey: 'surplusPct',
   }
 
   const slides = [slide1, slide2, slide3]
@@ -579,10 +564,11 @@ export default function Dashboard() {
           </h3>
 
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            {/* Loading badges only on first load of slide 1 */}
+            {/* Loading badges */}
             {slide === 0 && monthlyLoading && <span className="helper">Loading…</span>}
-            {(slide === 0 && monthlyErr) && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
-            {(slide > 0 && rpsErr) && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+            {slide === 0 && monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
+            {slide > 0 && rpsLoading && <span className="helper">Loading…</span>}
+            {slide > 0 && rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
 
             {/* Prev / Next buttons (desktop) */}
             <div style={{ display:'flex', gap:4 }}>
@@ -818,6 +804,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
