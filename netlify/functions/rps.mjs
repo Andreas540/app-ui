@@ -13,13 +13,14 @@ export const handler = async (event) => {
 
     const sql = neon(DATABASE_URL)
 
-    // Use the MONTHLY view with its actual column name: month_start (DATE)
+    // Get the last N months that have actual revenue (non-zero revenue_amount)
     const rows = await sql/* sql */`
       with mset as (
         select month_start
         from public.revenue_profit_surplus_by_month
         where tenant_id = ${TENANT_ID}
-        group by 1
+          and revenue_amount is not null
+          and revenue_amount != 0
         order by month_start desc
         limit ${months}
       )

@@ -602,19 +602,22 @@ export default function Dashboard() {
         {/* Dots */}
         <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
           {[0,1,2].map(i => (
-            <button
-              key={i}
-              onClick={() => setSlide(i as 0|1|2)}
-              aria-pressed={slide===i}
-              style={{
-                width: 8, height: 8, borderRadius: 8,
-                border: 'none',
-                background: slide===i ? 'var(--primary)' : '#d1d5db',
-                cursor: 'pointer'
-              }}
-              title={`Go to slide ${i+1}`}
-            />
-          ))}
+  <button
+    key={i}
+    onClick={() => setSlide(i as 0|1|2)}
+    aria-pressed={slide===i}
+    style={{
+      width: 6, 
+      height: 6, 
+      borderRadius: '50%',
+      border: 'none',
+      background: slide===i ? 'var(--primary)' : '#d1d5db',
+      cursor: 'pointer',
+      padding: 0
+    }}
+    title={`Go to slide ${i+1}`}
+  />
+))}
         </div>
       </div>
 
