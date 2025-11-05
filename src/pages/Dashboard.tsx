@@ -579,25 +579,25 @@ export default function Dashboard() {
         </div>
 
         {/* Slides strip */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            width: '300%',
-            transform: `translateX(-${slide * 33.3333}%)`,
-            transition: 'transform 220ms ease',
-          }}
-        >
-          <div style={{ width:'100%', paddingRight: 8 }}>
-            <ChartSlide {...slides[0]} />
-          </div>
-          <div style={{ width:'100%', paddingRight: 8 }}>
-            <ChartSlide {...slides[1]} />
-          </div>
-          <div style={{ width:'100%' }}>
-            <ChartSlide {...slides[2]} />
-          </div>
-        </div>
+<div
+  style={{
+    flex: 1,
+    display: 'flex',
+    width: '300%',
+    transform: `translateX(-${slide * 33.3333}%)`,
+    transition: 'transform 220ms ease',
+  }}
+>
+  <div style={{ width:'33.3333%', paddingRight: 16, overflow: 'hidden' }}>
+    <ChartSlide {...slides[0]} />
+  </div>
+  <div style={{ width:'33.3333%', paddingLeft: 16, paddingRight: 16, overflow: 'hidden' }}>
+    <ChartSlide {...slides[1]} />
+  </div>
+  <div style={{ width:'33.3333%', paddingLeft: 16, overflow: 'hidden' }}>
+    <ChartSlide {...slides[2]} />
+  </div>
+</div>
 
         {/* Dots */}
         <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
