@@ -131,7 +131,7 @@ function ChartSlide({
       {/* pointerEvents: 'none' = no hover/click/focus interactions */}
       <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={enriched} margin={{ top: 12, right: 16, bottom: 8, left: 0 }}>
+          <ComposedChart data={enriched} margin={{ top: 12, right: 0, bottom: 8, left: 0 }}>
             {/* No grid/legend/tooltip */}
             <XAxis
               dataKey="month"
