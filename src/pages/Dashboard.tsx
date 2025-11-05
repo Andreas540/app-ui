@@ -82,21 +82,24 @@ async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
   const safe = Array.isArray(rows) ? rows : []
 
   return safe.map((r: any) => {
-    const revenue = Number(r.revenue ?? r.revenue_amount ?? 0)
+    const revenue = Number(r.revenue ?? 0)
     const operating_profit = Number(r.operating_profit ?? 0)
     const surplus = Number(r.surplus ?? 0)
-    const operatingPct = Number.isFinite(Number(r.operatingPct))
-      ? Number(r.operatingPct)
-      : (revenue > 0 ? operating_profit / revenue : 0)
-    const surplusPct = Number.isFinite(Number(r.surplusPct))
-      ? Number(r.surplusPct)
-      : (revenue > 0 ? surplus / revenue : 0)
+    const operatingPct = revenue > 0 ? operating_profit / revenue : 0
+    const surplusPct = revenue > 0 ? surplus / revenue : 0
 
-    return { month: String(r.month ?? ''), revenue, operating_profit, operatingPct, surplus, surplusPct }
+    return { 
+      month: String(r.month ?? ''), 
+      revenue, 
+      operating_profit, 
+      operatingPct, 
+      surplus, 
+      surplusPct 
+    }
   })
 }
 
-// --- Reusable chart slide ---
+// --- Reusable chart slide (FIXED: no duplicate title) ---
 type SlideSpec = {
   title: string
   data: any[]
@@ -106,14 +109,15 @@ type SlideSpec = {
   computePct?: (row: any) => number
 }
 
+type ChartSlideProps = Omit<SlideSpec, 'title'>
+
 function ChartSlide({
-  title,
   data,
   bar1Key,
   bar2Key,
   lineKey,
   computePct,
-}: SlideSpec) {
+}: ChartSlideProps) {
   const enriched = useMemo(() => {
     if (!computePct) return data
     return (data || []).map((r: any) => ({
@@ -123,11 +127,7 @@ function ChartSlide({
   }, [data, computePct, lineKey])
 
   return (
-    <div className="card" style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3>
-      </div>
-
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* pointerEvents: 'none' = no hover/click/focus interactions */}
       <div style={{ flex: 1, minHeight: 180, outline: 'none', pointerEvents: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
