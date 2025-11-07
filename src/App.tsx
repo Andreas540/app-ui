@@ -28,6 +28,7 @@ import NewOrderSupplier from './pages/NewOrderSupplier'
 import SupplierDetail from './pages/SupplierDetail'
 import EditOrderSupplier from './pages/EditOrderSupplier'
 import NewCost from './pages/NewCost'
+import Warehouse from './pages/Warehouse'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -202,6 +203,7 @@ export default function App() {
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
               <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
 <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
+<NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
               
               {/* Other Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
@@ -266,6 +268,7 @@ export default function App() {
 <Route path="/suppliers/:id" element={<SupplierDetail />} />
 <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
 <Route path="/costs/new" element={<NewCost />} />
+<Route path="/warehouse" element={<Warehouse />} />
               </>
             )}
           </Routes>
