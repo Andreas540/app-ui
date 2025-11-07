@@ -119,7 +119,7 @@ export default function Warehouse() {
 
   return (
     <div className="card" style={{maxWidth: 720}}>
-      <h3 style={{ margin:0 }}>Warehouse Inventory</h3>
+      <h3 style={{ margin:0 }}>Adjust Warehouse Inventory</h3>
 
       {/* Row 1: Product */}
       <div style={{ marginTop: 12 }}>
@@ -138,7 +138,7 @@ export default function Warehouse() {
       {/* Row 2: Quantity | Date (50/50) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Qty (- sign for reducing inventory)</label>
+          <label>Qty (- sign if reducing inv.)</label>
           <input
             type="text"
             inputMode="numeric"

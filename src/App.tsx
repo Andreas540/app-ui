@@ -29,6 +29,7 @@ import SupplierDetail from './pages/SupplierDetail'
 import EditOrderSupplier from './pages/EditOrderSupplier'
 import NewCost from './pages/NewCost'
 import Warehouse from './pages/Warehouse'
+import SupplyChainOverview from './pages/SupplyChainOverview'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -201,6 +202,7 @@ export default function App() {
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply Chain</NavLink>
               <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
 <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
 <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
@@ -269,6 +271,7 @@ export default function App() {
 <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
 <Route path="/costs/new" element={<NewCost />} />
 <Route path="/warehouse" element={<Warehouse />} />
+<Route path="/supply-chain" element={<SupplyChainOverview />} />
               </>
             )}
           </Routes>
