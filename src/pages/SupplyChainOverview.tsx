@@ -267,17 +267,15 @@ export default function SupplyChainOverview() {
           <LabelList
             dataKey="qty"
             content={(props: any) => {
-              const { x, y, width, height, value, viewBox } = props
-              if (!value) return null
+              const { x, y, width, height, value } = props
+              if (!value || height <= 0) return null
               
               const formattedValue = intFmt.format(Number(value))
               
-              // Center the text horizontally in the bar
+              // Center horizontally in the bar
               const textX = x + width / 2
-              // Use viewBox.height to find the actual bottom of the chart area
-              // Position 15px above the bottom (where X-axis labels start)
-              const chartBottom = viewBox?.height || (y + height)
-              const textY = chartBottom - 15
+              // Start from the BOTTOM of the bar (y + height), then go UP by 20px
+              const textY = y + height - 20
               
               return (
                 <text
