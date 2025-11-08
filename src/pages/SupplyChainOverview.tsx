@@ -266,14 +266,27 @@ export default function SupplyChainOverview() {
           ))}
           <LabelList
             dataKey="qty"
-            position="inside"
-            angle={-90}
-            offset={0}
-            fill="#fff"
-            style={{ 
-              fontSize: 12, 
-              fontWeight: 700,
-              textAnchor: 'end',
+            content={(props: any) => {
+              const { x, y, width, height, value } = props
+              if (!value) return null
+              
+              // Position at bottom of bar (y + height is the bottom, minus small offset)
+              const textX = x + width / 2
+              const textY = y + height - 10 // 10px from bottom
+              
+              return (
+                <text
+                  x={textX}
+                  y={textY}
+                  fill="#fff"
+                  fontSize={12}
+                  fontWeight={700}
+                  textAnchor="middle"
+                  transform={`rotate(-90 ${textX} ${textY})`}
+                >
+                  {intFmt.format(Number(value))}
+                </text>
+              )
             }}
           />
         </Bar>
