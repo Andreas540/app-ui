@@ -1,6 +1,15 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { formatUSAny } from '../lib/time'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  LabelList,
+  Cell,
+} from 'recharts'
 
 interface RecentDelivery {
   date: string
@@ -32,6 +41,11 @@ interface OrderedFromSuppliers {
   qty: number
 }
 
+interface DemandData {
+  product: string
+  qty: number
+}
+
 interface SupplyChainData {
   recent_deliveries: RecentDelivery[]
   not_delivered: NotDelivered[]
@@ -50,13 +64,44 @@ async function fetchSupplyChainData(): Promise<SupplyChainData> {
   return res.json()
 }
 
+async function fetchDemandData(days: number): Promise<DemandData[]> {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const res = await fetch(`${base}/api/demand-by-product?days=${days}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to fetch demand data (status ${res.status}) ${text?.slice(0, 140)}`)
+  }
+  return res.json()
+}
+
+// Color palette for bars (aligned with app colors)
+const CHART_COLORS = [
+  '#f59e0b', // orange
+  '#60a5fa', // light blue
+  '#10b981', // green
+  '#8b5cf6', // purple
+  '#ef4444', // red
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // dark orange
+  '#3b82f6', // blue
+  '#06b6d4', // cyan
+]
+
 export default function SupplyChainOverview() {
   const [data, setData] = useState<SupplyChainData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  const [demandData, setDemandData] = useState<DemandData[]>([])
+  const [demandLoading, setDemandLoading] = useState(true)
+  const [demandErr, setDemandErr] = useState<string | null>(null)
+  const [demandFilter, setDemandFilter] = useState<30 | 90>(30)
+
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
+    demand: false,
+    payAttention: false,
     recentDeliveries: false,
     notDelivered: false,
     warehouse: false,
@@ -78,6 +123,22 @@ export default function SupplyChainOverview() {
       }
     })()
   }, [])
+
+  // Load demand data when filter changes
+  useEffect(() => {
+    (async () => {
+      try {
+        setDemandLoading(true)
+        setDemandErr(null)
+        const d = await fetchDemandData(demandFilter)
+        setDemandData(d)
+      } catch (e: any) {
+        setDemandErr(e?.message || String(e))
+      } finally {
+        setDemandLoading(false)
+      }
+    })()
+  }, [demandFilter])
 
   // Create warehouse inventory lookup for color coding
   const warehouseInventoryMap = useMemo(() => {
@@ -133,6 +194,106 @@ export default function SupplyChainOverview() {
   return (
     <div className="card" style={{ maxWidth: 960 }}>
       <h3 style={{ margin: 0 }}>Supply Chain Overview</h3>
+
+      {/* Section: Demand */}
+      <div style={{ marginTop: 20 }}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('demand')}>
+          <span>Demand</span>
+          <span style={expandIconStyle}>{expandedSections.demand ? '−' : '+'}</span>
+        </div>
+
+        {expandedSections.demand && (
+          <div style={{ marginTop: 12 }}>
+            {/* Filter buttons */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              <button
+                className="primary"
+                onClick={() => setDemandFilter(30)}
+                aria-pressed={demandFilter === 30}
+                style={{ height: 'calc(var(--control-h) * 0.67)' }}
+              >
+                Last 30 days
+              </button>
+              <button
+                className="primary"
+                onClick={() => setDemandFilter(90)}
+                aria-pressed={demandFilter === 90}
+                style={{ height: 'calc(var(--control-h) * 0.67)' }}
+              >
+                Last 90 days
+              </button>
+            </div>
+
+            {/* Chart */}
+            {demandLoading ? (
+              <p className="helper">Loading demand data...</p>
+            ) : demandErr ? (
+              <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
+            ) : demandData.length === 0 ? (
+              <p className="helper">No demand data for this period.</p>
+            ) : (
+              <div style={{ height: 300, marginTop: 12 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={demandData}
+                    margin={{ top: 20, right: 0, bottom: 80, left: 0 }}
+                  >
+                    <XAxis
+                      dataKey="product"
+                      interval={0}
+                      angle={-90}
+                      textAnchor="end"
+                      tick={{ fontSize: 11, fill: '#fff' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={false}
+                      axisLine={false}
+                      width={0}
+                      domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                    />
+                    <Bar dataKey="qty" isAnimationActive={false}>
+  {demandData.map((_, index) => (
+    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+  ))}
+  <LabelList
+    dataKey="qty"
+    position="top"
+    offset={8}
+    formatter={(v: any) => intFmt.format(Number(v))}
+    fill="#fff"
+    style={{ fontSize: 12, fontWeight: 700 }}
+  />
+</Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Section: Pay attention to */}
+      <div style={{ marginTop: 20 }}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('payAttention')}>
+          <span>Pay attention to</span>
+          <span style={expandIconStyle}>{expandedSections.payAttention ? '−' : '+'}</span>
+        </div>
+
+        {expandedSections.payAttention && (
+          <div style={{ marginTop: 12 }}>
+            <p className="helper">Content coming soon...</p>
+          </div>
+        )}
+      </div>
 
       {/* Section 1: Recently delivered */}
       <div style={{ marginTop: 20 }}>
