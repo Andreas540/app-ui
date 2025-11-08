@@ -253,7 +253,6 @@ export default function SupplyChainOverview() {
           tick={{ fontSize: 11, fill: '#fff' }}
           axisLine={false}
           tickLine={false}
-          dx={0}
         />
         <YAxis
           tick={false}
@@ -268,17 +267,17 @@ export default function SupplyChainOverview() {
           <LabelList
             dataKey="qty"
             content={(props: any) => {
-              const { x, y, width, height, value } = props
+              const { x, y, width, height, value, viewBox } = props
               if (!value) return null
               
               const formattedValue = intFmt.format(Number(value))
-              // Estimate text width: ~7px per character for fontSize 12
-              const textWidth = formattedValue.length * 7
               
               // Center the text horizontally in the bar
               const textX = x + width / 2
-              // Position from bottom, with dynamic offset based on text length
-              const textY = y + height - textWidth - 5
+              // Use viewBox.height to find the actual bottom of the chart area
+              // Position 15px above the bottom (where X-axis labels start)
+              const chartBottom = viewBox?.height || (y + height)
+              const textY = chartBottom - 15
               
               return (
                 <text
