@@ -1,5 +1,5 @@
 // src/pages/SupplyChainOverview.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatUSAny } from '../lib/time'
 
 interface RecentDelivery {
@@ -79,6 +79,16 @@ export default function SupplyChainOverview() {
     })()
   }, [])
 
+  // Create warehouse inventory lookup for color coding
+  const warehouseInventoryMap = useMemo(() => {
+    if (!data) return new Map<string, number>()
+    const map = new Map<string, number>()
+    data.warehouse_inventory.forEach(item => {
+      map.set(item.product, item.qty)
+    })
+    return map
+  }, [data])
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
@@ -141,8 +151,8 @@ export default function SupplyChainOverview() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '100px 1fr 1fr 80px',
-                    gap: 12,
+                    gridTemplateColumns: '70px 1fr 1fr 70px',
+                    gap: 8,
                     ...tableHeaderStyle,
                   }}
                 >
@@ -158,15 +168,15 @@ export default function SupplyChainOverview() {
                     key={idx}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '100px 1fr 1fr 80px',
-                      gap: 12,
+                      gridTemplateColumns: '70px 1fr 1fr 70px',
+                      gap: 8,
                       ...tableRowStyle,
                     }}
                   >
-                    <div className="helper">{formatUSAny(item.date)}</div>
-                    <div>{item.customer}</div>
-                    <div>{item.product}</div>
-                    <div style={{ textAlign: 'right' }}>{intFmt.format(Math.abs(item.qty))}</div>
+                    <div className="helper" style={{ fontSize: 12 }}>{formatUSAny(item.date)}</div>
+                    <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
+                    <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
+                    <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
                   </div>
                 ))}
               </div>
@@ -202,20 +212,30 @@ export default function SupplyChainOverview() {
                 </div>
 
                 {/* Data rows */}
-                {data.not_delivered.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 100px',
-                      gap: 12,
-                      ...tableRowStyle,
-                    }}
-                  >
-                    <div>{item.product}</div>
-                    <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
-                  </div>
-                ))}
+                {data.not_delivered.map((item, idx) => {
+                  const warehouseQty = warehouseInventoryMap.get(item.product) ?? 0
+                  const notDeliveredQty = item.qty
+                  
+                  // Green if warehouse has more than not delivered, red if less
+                  const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 100px',
+                        gap: 12,
+                        ...tableRowStyle,
+                        color: rowColor,
+                        fontWeight: 500,
+                      }}
+                    >
+                      <div>{item.product}</div>
+                      <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -341,8 +361,8 @@ export default function SupplyChainOverview() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 180px 100px',
-                    gap: 12,
+                    gridTemplateColumns: '1fr auto 80px',
+                    gap: 8,
                     ...tableHeaderStyle,
                   }}
                 >
@@ -363,8 +383,9 @@ export default function SupplyChainOverview() {
                           color: 'white',
                           padding: '2px 6px',
                           borderRadius: '4px',
-                          fontSize: '12px',
+                          fontSize: '11px',
                           whiteSpace: 'nowrap',
+                          display: 'inline-block',
                         }}
                       >
                         Delivered: {formatUSAny(item.delivery_date)}
@@ -372,7 +393,14 @@ export default function SupplyChainOverview() {
                     )
                   } else if (item.est_delivery_date) {
                     dateBadge = (
-                      <span className="helper" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      <span 
+                        className="helper" 
+                        style={{ 
+                          fontSize: '11px', 
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block',
+                        }}
+                      >
                         Est. delivery: {formatUSAny(item.est_delivery_date)}
                       </span>
                     )
@@ -383,12 +411,13 @@ export default function SupplyChainOverview() {
                       key={idx}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '1fr 180px 100px',
-                        gap: 12,
+                        gridTemplateColumns: '1fr auto 80px',
+                        gap: 8,
                         ...tableRowStyle,
+                        alignItems: 'center',
                       }}
                     >
-                      <div>{item.product}</div>
+                      <div style={{ wordBreak: 'break-word' }}>{item.product}</div>
                       <div>{dateBadge}</div>
                       <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                     </div>
