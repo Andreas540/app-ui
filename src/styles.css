@@ -372,3 +372,17 @@ button.primary:focus-visible,
     grid-template-columns: 1fr 1fr;
   }
 }
+/* ===================== Recharts Customization ===================== */
+/* Remove recharts focus outline */
+.recharts-surface:focus {
+  outline: none !important;
+}
+
+.recharts-wrapper:focus {
+  outline: none !important;
+}
+
+.recharts-bar-rectangle:focus,
+.recharts-rectangle:focus {
+  outline: none !important;
+}

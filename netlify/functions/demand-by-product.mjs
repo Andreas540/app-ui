@@ -37,6 +37,7 @@ async function getDemandByProduct(event) {
       JOIN products p ON p.id = oi.product_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.order_date >= ${cutoffDateStr}
+        AND LOWER(TRIM(p.name)) != 'refund/discount'
       GROUP BY p.name
       ORDER BY SUM(oi.qty) DESC
     `
