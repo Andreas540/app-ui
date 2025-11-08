@@ -22,6 +22,11 @@ async function getDemandByProduct(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // Calculate the cutoff date in JavaScript
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    const cutoffDateStr = cutoffDate.toISOString().split('T')[0] // YYYY-MM-DD
+
     // Get demand by product for the specified period
     const demand = await sql`
       SELECT 
@@ -31,7 +36,7 @@ async function getDemandByProduct(event) {
       JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
       WHERE o.tenant_id = ${TENANT_ID}
-        AND o.order_date >= CURRENT_DATE - INTERVAL '${days} days'
+        AND o.order_date >= ${cutoffDateStr}
       GROUP BY p.name
       ORDER BY SUM(oi.qty) DESC
     `
