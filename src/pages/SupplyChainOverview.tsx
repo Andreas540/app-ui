@@ -232,60 +232,55 @@ export default function SupplyChainOverview() {
             </div>
 
             {/* Chart */}
-            {demandLoading ? (
-              <p className="helper">Loading demand data...</p>
-            ) : demandErr ? (
-              <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
-            ) : demandData.length === 0 ? (
-              <p className="helper">No demand data for this period.</p>
-            ) : (
-              <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={demandData}
-                    margin={{ top: 20, right: 0, bottom: 10, left: 0 }}
-                  >
-                    <XAxis
-                      dataKey="product"
-                      tick={false}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={false}
-                      axisLine={false}
-                      width={0}
-                      domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
-                    />
-                    <Bar dataKey="qty" isAnimationActive={false}>
-                      {demandData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                      <LabelList
-                        dataKey="qty"
-                        position="top"
-                        offset={8}
-                        formatter={(v: any) => intFmt.format(Number(v))}
-                        fill="#fff"
-                        style={{ fontSize: 12, fontWeight: 700 }}
-                      />
-                      <LabelList
-                        dataKey="product"
-                        position="inside"
-                        angle={-90}
-                        offset={0}
-                        fill="#fff"
-                        style={{ 
-                          fontSize: 10, 
-                          fontWeight: 600,
-                          textAnchor: 'end',
-                        }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+{demandLoading ? (
+  <p className="helper">Loading demand data...</p>
+) : demandErr ? (
+  <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
+) : demandData.length === 0 ? (
+  <p className="helper">No demand data for this period.</p>
+) : (
+  <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={demandData}
+        margin={{ top: 20, right: 0, bottom: 80, left: 0 }}
+      >
+        <XAxis
+          dataKey="product"
+          interval={0}
+          angle={-90}
+          textAnchor="end"
+          tick={{ fontSize: 11, fill: '#fff' }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          tick={false}
+          axisLine={false}
+          width={0}
+          domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+        />
+        <Bar dataKey="qty" isAnimationActive={false}>
+          {demandData.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+          ))}
+          <LabelList
+            dataKey="qty"
+            position="inside"
+            angle={-90}
+            offset={0}
+            fill="#fff"
+            style={{ 
+              fontSize: 12, 
+              fontWeight: 700,
+              textAnchor: 'end',
+            }}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+)}
           </div>
         )}
       </div>
