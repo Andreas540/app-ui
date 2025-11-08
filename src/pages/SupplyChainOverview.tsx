@@ -253,6 +253,7 @@ export default function SupplyChainOverview() {
           tick={{ fontSize: 11, fill: '#fff' }}
           axisLine={false}
           tickLine={false}
+          dx={0}
         />
         <YAxis
           tick={false}
@@ -270,9 +271,14 @@ export default function SupplyChainOverview() {
               const { x, y, width, height, value } = props
               if (!value) return null
               
-              // Position at bottom of bar (y + height is the bottom, minus small offset)
+              const formattedValue = intFmt.format(Number(value))
+              // Estimate text width: ~7px per character for fontSize 12
+              const textWidth = formattedValue.length * 7
+              
+              // Center the text horizontally in the bar
               const textX = x + width / 2
-              const textY = y + height - 10 // 10px from bottom
+              // Position from bottom, with dynamic offset based on text length
+              const textY = y + height - textWidth - 5
               
               return (
                 <text
@@ -281,10 +287,11 @@ export default function SupplyChainOverview() {
                   fill="#fff"
                   fontSize={12}
                   fontWeight={700}
-                  textAnchor="middle"
+                  textAnchor="start"
+                  dominantBaseline="middle"
                   transform={`rotate(-90 ${textX} ${textY})`}
                 >
-                  {intFmt.format(Number(value))}
+                  {formattedValue}
                 </text>
               )
             }}
