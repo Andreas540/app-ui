@@ -15,19 +15,30 @@ async function getSupplyChainOverview(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // 1. Recently delivered (last 30 days)
-    const recent_deliveries = await sql`
+    // 1. Recently delivered (last 30 days) - GROUP BY order_id to get net quantities per order
+    const recent_deliveries_raw = await sql`
       SELECT 
-        date,
+        MAX(date) as date,
         customer,
         product,
-        qty
+        order_id,
+        SUM(qty) as qty
       FROM warehouse_deliveries
       WHERE tenant_id = ${TENANT_ID}
         AND supplier_manual_delivered = 'D'
         AND date >= CURRENT_DATE - INTERVAL '30 days'
-      ORDER BY date DESC, customer ASC
+      GROUP BY customer, product, order_id
+      HAVING SUM(qty) != 0
+      ORDER BY MAX(date) DESC, customer ASC
     `
+
+    // Convert to the expected format with absolute values for display
+    const recent_deliveries = recent_deliveries_raw.map(item => ({
+      date: item.date,
+      customer: item.customer,
+      product: item.product,
+      qty: Math.abs(Number(item.qty))
+    }))
 
     // 2. Not delivered
     const not_delivered = await sql`
