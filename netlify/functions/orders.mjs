@@ -132,7 +132,7 @@ if (delivered) {
     )
     SELECT 
       ${TENANT_ID},
-      (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York')::date,
+      (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date,
       'D',
       p.name,
       c.name,
