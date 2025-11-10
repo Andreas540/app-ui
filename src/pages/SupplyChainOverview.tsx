@@ -150,6 +150,22 @@ export default function SupplyChainOverview() {
     return map
   }, [data])
 
+  // DEBUG: Log the data
+useEffect(() => {
+  if (data) {
+    console.log('=== WAREHOUSE INVENTORY MAP ===')
+    console.log(Array.from(warehouseInventoryMap.entries()))
+    console.log('=== NOT DELIVERED ===')
+    console.log(data.not_delivered)
+    
+    // Check each not_delivered item
+    data.not_delivered.forEach(item => {
+      const whQty = warehouseInventoryMap.get(item.product) ?? 0
+      console.log(`Product: "${item.product}" | Not delivered: ${item.qty} | Warehouse: ${whQty} | Color: ${whQty >= item.qty ? 'GREEN' : 'RED'}`)
+    })
+  }
+}, [data, warehouseInventoryMap])
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
