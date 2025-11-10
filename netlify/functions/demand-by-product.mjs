@@ -14,18 +14,31 @@ async function getDemandByProduct(event) {
     if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' })
 
     const params = event.queryStringParameters || {}
-    const days = parseInt(params.days || '30', 10)
+    
+    let fromDate, toDate
 
-    if (days <= 0 || days > 365) {
-      return cors(400, { error: 'days must be between 1 and 365' })
+    // Check if custom date range is provided
+    if (params.from && params.to) {
+      fromDate = params.from
+      toDate = params.to
+    } else {
+      // Use days parameter (default 30)
+      const days = parseInt(params.days || '30', 10)
+      
+      if (days <= 0 || days > 365) {
+        return cors(400, { error: 'days must be between 1 and 365' })
+      }
+
+      // Calculate dates
+      const to = new Date()
+      const from = new Date()
+      from.setDate(from.getDate() - days)
+      
+      fromDate = from.toISOString().split('T')[0]
+      toDate = to.toISOString().split('T')[0]
     }
 
     const sql = neon(DATABASE_URL)
-
-    // Calculate the cutoff date in JavaScript
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - days)
-    const cutoffDateStr = cutoffDate.toISOString().split('T')[0] // YYYY-MM-DD
 
     // Get demand by product for the specified period
     const demand = await sql`
@@ -36,7 +49,8 @@ async function getDemandByProduct(event) {
       JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
       WHERE o.tenant_id = ${TENANT_ID}
-        AND o.order_date >= ${cutoffDateStr}
+        AND o.order_date >= ${fromDate}
+        AND o.order_date <= ${toDate}
         AND LOWER(TRIM(p.name)) != 'refund/discount'
       GROUP BY p.name
       ORDER BY SUM(oi.qty) DESC
