@@ -121,27 +121,29 @@ async function createOrder(event) {
     }
 
     // NEW: If order is created with delivered = true, manually add to warehouse_deliveries
-    // (The INSERT trigger won't work because order_items didn't exist when order was inserted)
-    if (delivered) {
-      await sql`
-        INSERT INTO warehouse_deliveries (
-          tenant_id, date, supplier_manual_delivered, product, customer,
-          qty, order_id, product_id
-        )
-        SELECT 
-          ${TENANT_ID},
-          (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York')::date,
-          'D',
-          p.name,
-          c.name,
-          -${qtyInt},
-          ${orderId},
-          ${product_id}
-        FROM products p
-        JOIN customers c ON c.id = ${customer_id}
-        WHERE p.id = ${product_id}
-      `;
-    }
+// (The INSERT trigger won't work because order_items didn't exist when order was inserted)
+if (delivered) {
+  const negativeQty = -qtyInt;  // Calculate negative value here
+  
+  await sql`
+    INSERT INTO warehouse_deliveries (
+      tenant_id, date, supplier_manual_delivered, product, customer,
+      qty, order_id, product_id
+    )
+    SELECT 
+      ${TENANT_ID},
+      (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York')::date,
+      'D',
+      p.name,
+      c.name,
+      ${negativeQty},
+      ${orderId},
+      ${product_id}
+    FROM products p
+    JOIN customers c ON c.id = ${customer_id}
+    WHERE p.id = ${product_id}
+  `;
+}
 
     return cors(201, { ok: true, order_no: orderNo, order_id: orderId });
   } catch (e) {
