@@ -1,7 +1,7 @@
 // src/pages/NewProduct.tsx
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createProduct, listProducts, type ProductWithCost } from '../lib/api'  // ⬅️ import type
+import { createProduct, listProducts, type ProductWithCost } from '../lib/api'
 
 export default function NewProduct() {
   const [name, setName] = useState('')
@@ -12,9 +12,7 @@ export default function NewProduct() {
   const [loadingList, setLoadingList] = useState(false)
 
   function parseCostInput(s: string) {
-    // allow digits, one dot or comma
     const cleaned = s.replace(/[^\d.,]/g, '')
-    // normalize comma to dot
     const normalized = cleaned.replace(',', '.')
     return normalized
   }
@@ -32,8 +30,7 @@ export default function NewProduct() {
   async function loadProducts() {
     try {
       setLoadingList(true)
-      const raw = await listProducts() // ProductWithCost[]
-      // sort by name ASC; if you prefer created_at DESC, change here
+      const { products: raw } = await listProducts()       // <- unpack old shape
       const rows = raw.slice().sort((a, b) => a.name.localeCompare(b.name))
       setProducts(rows)
     } finally {
@@ -114,10 +111,7 @@ export default function NewProduct() {
       <div
         role="list"
         aria-busy={loadingList}
-        style={{
-          display: 'grid',
-          gap: 6
-        }}
+        style={{ display: 'grid', gap: 6 }}
       >
         {loadingList && <div>Loading…</div>}
         {!loadingList && products.length === 0 && (
@@ -136,13 +130,7 @@ export default function NewProduct() {
             }}
             title={p.name}
           >
-            <div
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {p.name}
             </div>
             <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -154,5 +142,6 @@ export default function NewProduct() {
     </div>
   )
 }
+
 
 
