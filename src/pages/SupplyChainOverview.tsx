@@ -142,29 +142,13 @@ export default function SupplyChainOverview() {
 
   // Create warehouse inventory lookup for color coding
   const warehouseInventoryMap = useMemo(() => {
-    if (!data) return new Map<string, number>()
-    const map = new Map<string, number>()
-    data.warehouse_inventory.forEach(item => {
-      map.set(item.product, item.qty)
-    })
-    return map
-  }, [data])
-
-  // DEBUG: Log the data
-useEffect(() => {
-  if (data) {
-    console.log('=== WAREHOUSE INVENTORY MAP ===')
-    console.log(Array.from(warehouseInventoryMap.entries()))
-    console.log('=== NOT DELIVERED ===')
-    console.log(data.not_delivered)
-    
-    // Check each not_delivered item
-    data.not_delivered.forEach(item => {
-      const whQty = warehouseInventoryMap.get(item.product) ?? 0
-      console.log(`Product: "${item.product}" | Not delivered: ${item.qty} | Warehouse: ${whQty} | Color: ${whQty >= item.qty ? 'GREEN' : 'RED'}`)
-    })
-  }
-}, [data, warehouseInventoryMap])
+  if (!data) return new Map<string, number>()
+  const map = new Map<string, number>()
+  data.warehouse_inventory.forEach(item => {
+    map.set(item.product, Number(item.qty))
+  })
+  return map
+}, [data])
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -411,11 +395,11 @@ useEffect(() => {
 
                 {/* Data rows */}
                 {data.not_delivered.map((item, idx) => {
-                  const warehouseQty = warehouseInventoryMap.get(item.product) ?? 0
-                  const notDeliveredQty = item.qty
-                  
-                  // Green if warehouse has more than not delivered, red if less
-                  const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
+  const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
+  const notDeliveredQty = Number(item.qty)
+  
+  // Green if warehouse has more than not delivered, red if less
+  const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
 
                   return (
                     <div
