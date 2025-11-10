@@ -200,8 +200,7 @@ export default function App() {
               
               {/* Inventory Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />            
               <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply Chain</NavLink>
               <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
 <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
