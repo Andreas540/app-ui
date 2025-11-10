@@ -1,11 +1,15 @@
-import { useState } from 'react'
+// src/pages/NewProduct.tsx
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createProduct } from '../lib/api'
+import { createProduct, listProducts, type ProductWithCost } from '../lib/api'  // ⬅️ import type
 
 export default function NewProduct() {
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
   const [saving, setSaving] = useState(false)
+
+  const [products, setProducts] = useState<ProductWithCost[]>([])
+  const [loadingList, setLoadingList] = useState(false)
 
   function parseCostInput(s: string) {
     // allow digits, one dot or comma
@@ -14,6 +18,32 @@ export default function NewProduct() {
     const normalized = cleaned.replace(',', '.')
     return normalized
   }
+
+  function fmtMoney(n: number) {
+    const v = Number(n) || 0
+    return v.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  }
+
+  async function loadProducts() {
+    try {
+      setLoadingList(true)
+      const raw = await listProducts() // ProductWithCost[]
+      // sort by name ASC; if you prefer created_at DESC, change here
+      const rows = raw.slice().sort((a, b) => a.name.localeCompare(b.name))
+      setProducts(rows)
+    } finally {
+      setLoadingList(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
   async function save() {
     const nm = name.trim()
@@ -27,7 +57,8 @@ export default function NewProduct() {
       alert('Product created!')
       setName('')
       setCostStr('')
-    } catch (e:any) {
+      await loadProducts() // refresh the list
+    } catch (e: any) {
       alert(e?.message || 'Save failed')
     } finally {
       setSaving(false)
@@ -75,6 +106,53 @@ export default function NewProduct() {
           Clear
         </button>
       </div>
+
+      {/* ---- Product costs list ---- */}
+      <hr style={{ margin: '20px 0' }} />
+      <h4 style={{ margin: '0 0 8px 0' }}>Product costs</h4>
+
+      <div
+        role="list"
+        aria-busy={loadingList}
+        style={{
+          display: 'grid',
+          gap: 6
+        }}
+      >
+        {loadingList && <div>Loading…</div>}
+        {!loadingList && products.length === 0 && (
+          <div style={{ opacity: 0.7 }}>No products yet.</div>
+        )}
+        {!loadingList && products.map(p => (
+          <div
+            key={p.id}
+            role="listitem"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              alignItems: 'center',
+              padding: '6px 0',
+              borderBottom: '1px solid var(--border, #e6e6e6)'
+            }}
+            title={p.name}
+          >
+            <div
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {p.name}
+            </div>
+            <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+              {fmtMoney(p.cost ?? 0)}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
+
+

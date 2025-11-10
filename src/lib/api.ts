@@ -244,10 +244,17 @@ export async function createProduct(input: { name: string; cost: number }) {
 
 export type ProductWithCost = { id: string; name: string; cost: number | null };
 
-export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
-  const r = await fetch('/api/product', { method: 'GET' });
+export async function listProducts(): Promise<ProductWithCost[]> {
+  const r = await fetch(`${base}/api/product`, { method: 'GET', cache: 'no-store' });
   if (!r.ok) throw new Error(`Failed to load products (${r.status})`);
-  return r.json();
+  const payload = await r.json() as {
+    products: Array<{ id: string; name: string; cost: number | string | null }>
+  };
+
+  return (payload.products || []).map(p => ({
+    ...p,
+    cost: p.cost === null || p.cost === undefined ? null : Number(p.cost)
+  }));
 }
 
 export async function updateProduct(input: {
