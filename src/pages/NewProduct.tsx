@@ -22,8 +22,8 @@ export default function NewProduct() {
     return v.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
     })
   }
 
