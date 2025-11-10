@@ -195,13 +195,13 @@ export default function App() {
               <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>Price Checker</NavLink>
               <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
               <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
-              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>New Product</NavLink>
+              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>Products</NavLink>
               <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>Create Invoice</NavLink>
               
               {/* Inventory Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />            
-              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply Chain</NavLink>
+              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply & Demandn</NavLink>
               <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
 <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
 <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
