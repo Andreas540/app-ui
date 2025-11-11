@@ -23,20 +23,24 @@ function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
 }
 
-export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetailModalProps) {
+export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
+  const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
 
   useEffect(() => {
-    if (!order?.id || !isOpen) return
+    if (!initialOrder?.id || !isOpen) return
 
-    const fetchPartners = async () => {
+    const fetchOrderDetails = async () => {
       try {
         setLoadingPartners(true)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/order?id=${order.id}`)
+        const res = await fetch(`${base}/api/order?id=${initialOrder.id}`)
         if (!res.ok) throw new Error('Failed to fetch order details')
         const data = await res.json()
+        
+        // Update order with profit data
+        setOrder({ ...initialOrder, ...data.order })
         
         // Fetch partner names
         if (data.partner_splits && data.partner_splits.length > 0) {
@@ -57,19 +61,24 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
           }
         }
       } catch (e) {
-        console.error('Failed to load partner info:', e)
+        console.error('Failed to load order details:', e)
       } finally {
         setLoadingPartners(false)
       }
     }
 
-    fetchPartners()
-  }, [order?.id, isOpen])
+    fetchOrderDetails()
+  }, [initialOrder?.id, isOpen])
 
   if (!order) return null
 
   // Consistent spacing between label and value
   const fieldStyle = { marginBottom: 4 }
+
+  const orderValue = (order.qty || 0) * (order.unit_price || 0)
+  const showProfit = Number.isFinite(orderValue) && orderValue > 0
+  const profit = Number(order.profit) || 0
+  const profitPercent = Number(order.profitPercent) || 0
 
   return (
     <Modal 
@@ -79,22 +88,47 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
     >
       <div style={{ display: 'grid', gap: 16 }}>
 
-        {/* Delivered Status - right after title */}
+        {/* Top row: Delivered status and Profit */}
         <div style={{ 
           display: 'flex', 
-          alignItems: 'center', 
-          gap: 8,
-          fontSize: 14,
-          fontWeight: 600,
-          color: order.delivered ? '#10b981' : '#d1d5db',
-          marginTop: -8
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginTop: -8,
+          marginBottom: 8
         }}>
-          <span>{order.delivered ? '✓' : '○'}</span>
-          <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
+          {/* Delivered Status */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            color: order.delivered ? '#10b981' : '#d1d5db'
+          }}>
+            <span>{order.delivered ? '✓' : '○'}</span>
+            <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
+          </div>
+
+          {/* Profit display (only for positive orders) */}
+          {showProfit && (
+            <div style={{ textAlign: 'right', fontSize: 14 }}>
+              <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
+              <div style={{ 
+                fontWeight: 600, 
+                fontSize: 16, 
+                color: profit >= 0 ? 'var(--primary)' : 'salmon' 
+              }}>
+                ${profit.toFixed(2)}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+                {profitPercent.toFixed(1)}%
+              </div>
+            </div>
+          )}
         </div>
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div>
             <div className="helper" style={fieldStyle}>Order Date</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>

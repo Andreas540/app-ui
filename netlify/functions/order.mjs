@@ -47,6 +47,7 @@ async function getOrder(event) {
         oi.product_id,
         oi.qty,
         oi.unit_price,
+        oi.cost as historical_product_cost,
         p.name AS product_name
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id
@@ -66,7 +67,57 @@ async function getOrder(event) {
       ORDER BY amount DESC
     `
 
-    return cors(200, { order, partner_splits: partnerSplits })
+    // Get historical shipping cost
+    const shippingHistory = await sql`
+      SELECT shipping_cost
+      FROM shipping_cost_history
+      WHERE tenant_id = ${TENANT_ID}
+        AND customer_id = ${order.customer_id}
+        AND effective_from <= ${order.order_date}::date + INTERVAL '1 day'
+      ORDER BY effective_from DESC
+      LIMIT 1
+    `
+
+    const historicalShippingCost = shippingHistory.length > 0 
+      ? Number(shippingHistory[0].shipping_cost) 
+      : 0
+
+    // Calculate profit (only for positive order values)
+    const qty = Number(order.qty) || 0
+    const unitPrice = Number(order.unit_price) || 0
+    const orderValue = qty * unitPrice
+
+    let profit = 0
+    let profitPercent = 0
+
+    if (orderValue > 0) {
+      // Partner amounts
+      const totalPartners = partnerSplits.reduce((sum, split) => sum + Number(split.amount), 0)
+
+      // Effective costs
+      const effectiveProductCost = order.product_cost !== null 
+        ? Number(order.product_cost) 
+        : (Number(order.historical_product_cost) || 0)
+
+      const effectiveShippingCost = order.shipping_cost !== null 
+        ? Number(order.shipping_cost) 
+        : historicalShippingCost
+
+      const totalProductCost = effectiveProductCost * qty
+      const totalShippingCost = effectiveShippingCost * qty
+
+      profit = orderValue - totalPartners - totalProductCost - totalShippingCost
+      profitPercent = (profit / orderValue) * 100
+    }
+
+    return cors(200, { 
+      order: {
+        ...order,
+        profit,
+        profitPercent
+      }, 
+      partner_splits: partnerSplits 
+    })
   } catch (e) {
     console.error('getOrder error:', e)
     return cors(500, { error: String(e?.message || e) })
