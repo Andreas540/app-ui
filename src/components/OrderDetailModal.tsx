@@ -80,55 +80,55 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
   const profit = Number(order.profit) || 0
   const profitPercent = Number(order.profitPercent) || 0
 
+  const intFmt = new Intl.NumberFormat('en-US')
+
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
       title={`Order #${order.order_no || order.id}`}
     >
-      <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ display: 'grid', gap: 16, position: 'relative' }}>
 
-        {/* Top row: Delivered status and Profit */}
+        {/* Profit display - positioned absolutely in top right of modal */}
+        {showProfit && (
+          <div style={{ 
+            position: 'absolute',
+            top: -60,
+            right: 40,
+            textAlign: 'right', 
+            fontSize: 14 
+          }}>
+            <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
+            <div style={{ 
+              fontWeight: 600, 
+              fontSize: 16, 
+              color: profit >= 0 ? 'var(--primary)' : 'salmon' 
+            }}>
+              ${profit.toFixed(2)}
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+              {profitPercent.toFixed(1)}%
+            </div>
+          </div>
+        )}
+
+        {/* Delivered Status */}
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginTop: -8,
-          marginBottom: 8
+          alignItems: 'center', 
+          gap: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          color: order.delivered ? '#10b981' : '#d1d5db',
+          marginTop: -8
         }}>
-          {/* Delivered Status */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            color: order.delivered ? '#10b981' : '#d1d5db'
-          }}>
-            <span>{order.delivered ? '✓' : '○'}</span>
-            <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
-          </div>
-
-          {/* Profit display (only for positive orders) */}
-          {showProfit && (
-            <div style={{ textAlign: 'right', fontSize: 14 }}>
-              <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
-              <div style={{ 
-                fontWeight: 600, 
-                fontSize: 16, 
-                color: profit >= 0 ? 'var(--primary)' : 'salmon' 
-              }}>
-                ${profit.toFixed(2)}
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-                {profitPercent.toFixed(1)}%
-              </div>
-            </div>
-          )}
+          <span>{order.delivered ? '✓' : '○'}</span>
+          <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
         </div>
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
           <div>
             <div className="helper" style={fieldStyle}>Order Date</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
@@ -162,7 +162,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
           {order.qty && (
             <div style={{ textAlign: 'right' }}>
               <div className="helper" style={fieldStyle}>Quantity</div>
-              <div style={{ fontWeight: 600 }}>{order.qty}</div>
+              <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
             </div>
           )}
 
@@ -173,14 +173,6 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
             </div>
           )}
         </div>
-
-        {/* Customer Info (if needed separately) */}
-        {order.customer_name && (
-          <div>
-            <div className="helper" style={fieldStyle}>Customer</div>
-            <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
-          </div>
-        )}
 
         {/* Partner Information */}
         {partnerSplits.length > 0 && (
