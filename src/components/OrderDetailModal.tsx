@@ -126,7 +126,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 8,
+          gap: 6,
           fontSize: 14,
           fontWeight: 600,
           color: order.delivered ? '#10b981' : '#d1d5db',
