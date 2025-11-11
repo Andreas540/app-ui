@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Modal from './Modal'
 
 interface OrderDetailModalProps {
   isOpen: boolean
   onClose: () => void
   order: any
+}
+
+interface PartnerSplit {
+  partner_id: string
+  partner_name: string
+  amount: number
 }
 
 function fmtMoney(n: number) {
@@ -16,6 +23,48 @@ function fmtIntMoney(n: number) {
 }
 
 export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetailModalProps) {
+  const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
+  const [loadingPartners, setLoadingPartners] = useState(false)
+
+  useEffect(() => {
+    if (!order?.id || !isOpen) return
+
+    const fetchPartners = async () => {
+      try {
+        setLoadingPartners(true)
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/order?id=${order.id}`)
+        if (!res.ok) throw new Error('Failed to fetch order details')
+        const data = await res.json()
+        
+        // Fetch partner names
+        if (data.partner_splits && data.partner_splits.length > 0) {
+          const bootRes = await fetch(`${base}/api/bootstrap`)
+          if (bootRes.ok) {
+            const boot = await bootRes.json()
+            const partners = boot.partners || []
+            
+            const enrichedSplits = data.partner_splits.map((split: any) => {
+              const partner = partners.find((p: any) => p.id === split.partner_id)
+              return {
+                partner_id: split.partner_id,
+                partner_name: partner?.name || 'Unknown Partner',
+                amount: Number(split.amount)
+              }
+            })
+            setPartnerSplits(enrichedSplits)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load partner info:', e)
+      } finally {
+        setLoadingPartners(false)
+      }
+    }
+
+    fetchPartners()
+  }, [order?.id, isOpen])
+
   if (!order) return null
 
   const formatDate = (dateStr: string) => {
@@ -76,7 +125,7 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
             </div>
 
             {order.lines && (
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
                 <div className="helper">Order Lines</div>
                 <div style={{ fontWeight: 600 }}>{order.lines} item(s)</div>
               </div>
@@ -100,20 +149,57 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
             )}
 
             {order.unit_price && (
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
                 <div className="helper">Unit Price</div>
                 <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
               </div>
             )}
-
-            {order.partner_amount && Number(order.partner_amount) > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">Partner Amount</div>
-                <div style={{ fontWeight: 600 }}>{fmtIntMoney(order.partner_amount)}</div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Partner Information */}
+        {partnerSplits.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            {/* Header Row */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 100px 120px',
+              gap: 12,
+              paddingBottom: 8,
+              borderBottom: '1px solid var(--line)',
+              marginBottom: 8
+            }}>
+              <div className="helper" style={{ fontWeight: 600 }}>Partner</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Per item</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Partner Amount</div>
+            </div>
+
+            {/* Partner Rows */}
+            {loadingPartners ? (
+              <div className="helper">Loading partner info...</div>
+            ) : (
+              partnerSplits.map((split, idx) => {
+                const perItem = order.qty > 0 ? split.amount / order.qty : 0
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 100px 120px',
+                      gap: 12,
+                      paddingBottom: 8,
+                      marginBottom: 8
+                    }}
+                  >
+                    <div style={{ fontWeight: 500 }}>{split.partner_name}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtMoney(perItem)}</div>
+                    <div style={{ textAlign: 'right', fontWeight: 600 }}>{fmtIntMoney(split.amount)}</div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
 
         {/* Additional Information */}
         {(order.discount || order.notes) && (
