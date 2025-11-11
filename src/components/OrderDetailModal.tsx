@@ -69,32 +69,29 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
   if (!order) return null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Order #${order.order_no || order.id}`}>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={`Order #${order.order_no || order.id}`}
+    >
       <div style={{ display: 'grid', gap: 16 }}>
-        
-        {/* Order Status */}
+
+        {/* Delivered Status - right after title */}
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 12,
-          padding: 12,
-          backgroundColor: order.delivered ? '#10b98120' : '#f3f4f620',
-          borderRadius: 8,
-          border: `1px solid ${order.delivered ? '#10b981' : '#d1d5db'}`
+          gap: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          color: order.delivered ? '#10b981' : '#d1d5db',
+          marginTop: -8
         }}>
-          <span style={{ 
-            fontSize: 18,
-            color: order.delivered ? '#10b981' : '#d1d5db'
-          }}>
-            {order.delivered ? '✓' : '○'}
-          </span>
-          <span style={{ fontWeight: 600 }}>
-            {order.delivered ? 'Delivered' : 'Not Delivered'}
-          </span>
+          <span>{order.delivered ? '✓' : '○'}</span>
+          <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
         </div>
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
           <div>
             <div className="helper">Order Date</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
@@ -112,6 +109,9 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
             </div>
           )}
         </div>
+
+        {/* Separator line */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
 
         {/* Second Row: Product, Quantity, Unit Price */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -148,20 +148,20 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
         {/* Partner Information */}
         {partnerSplits.length > 0 && (
           <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-            {/* Header Row */}
+            {/* Header Row - aligned with 3-column grid */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 100px 120px',
-              gap: 12,
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 16,
               paddingBottom: 8,
               marginBottom: 8
             }}>
               <div className="helper" style={{ fontWeight: 600 }}>Partner</div>
-              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Per item</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'center' }}>Per item</div>
               <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Partner Amount</div>
             </div>
 
-            {/* Partner Rows */}
+            {/* Partner Rows - aligned with 3-column grid */}
             {loadingPartners ? (
               <div className="helper">Loading partner info...</div>
             ) : (
@@ -172,14 +172,14 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
                     key={idx}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 100px 120px',
-                      gap: 12,
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: 16,
                       paddingBottom: 8,
                       marginBottom: 8
                     }}
                   >
                     <div style={{ fontWeight: 500 }}>{split.partner_name}</div>
-                    <div style={{ textAlign: 'right' }}>{fmtMoney(perItem)}</div>
+                    <div style={{ textAlign: 'center' }}>{fmtMoney(perItem)}</div>
                     <div style={{ textAlign: 'right', fontWeight: 600 }}>{fmtIntMoney(split.amount)}</div>
                   </div>
                 )
