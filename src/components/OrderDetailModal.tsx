@@ -68,6 +68,9 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
 
   if (!order) return null
 
+  // Consistent spacing between label and value
+  const fieldStyle = { marginBottom: 4 }
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -93,18 +96,18 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
         {/* First Row: Order Date, Total Amount, Order Lines */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
           <div>
-            <div className="helper">Order Date</div>
+            <div className="helper" style={fieldStyle}>Order Date</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
           </div>
 
-          <div>
-            <div className="helper">Total Amount</div>
+          <div style={{ textAlign: 'right' }}>
+            <div className="helper" style={fieldStyle}>Total Amount</div>
             <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
           </div>
 
           {order.lines && (
-            <div>
-              <div className="helper">Order Lines</div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="helper" style={fieldStyle}>Order Lines</div>
               <div style={{ fontWeight: 600 }}>{order.lines} item(s)</div>
             </div>
           )}
@@ -117,21 +120,21 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           {order.product_name && (
             <div>
-              <div className="helper">Product</div>
+              <div className="helper" style={fieldStyle}>Product</div>
               <div style={{ fontWeight: 600 }}>{order.product_name}</div>
             </div>
           )}
 
           {order.qty && (
-            <div>
-              <div className="helper">Quantity</div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="helper" style={fieldStyle}>Quantity</div>
               <div style={{ fontWeight: 600 }}>{order.qty}</div>
             </div>
           )}
 
           {order.unit_price && (
-            <div>
-              <div className="helper">Unit Price</div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="helper" style={fieldStyle}>Unit Price</div>
               <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
             </div>
           )}
@@ -140,7 +143,7 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
         {/* Customer Info (if needed separately) */}
         {order.customer_name && (
           <div>
-            <div className="helper">Customer</div>
+            <div className="helper" style={fieldStyle}>Customer</div>
             <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
           </div>
         )}
@@ -153,11 +156,10 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
               display: 'grid',
               gridTemplateColumns: '1fr 1fr 1fr',
               gap: 16,
-              paddingBottom: 8,
-              marginBottom: 8
+              marginBottom: 4
             }}>
               <div className="helper" style={{ fontWeight: 600 }}>Partner</div>
-              <div className="helper" style={{ fontWeight: 600, textAlign: 'center' }}>Per item</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Per item</div>
               <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Partner Amount</div>
             </div>
 
@@ -175,11 +177,11 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
                       gridTemplateColumns: '1fr 1fr 1fr',
                       gap: 16,
                       paddingBottom: 8,
-                      marginBottom: 8
+                      marginBottom: idx === partnerSplits.length - 1 ? 0 : 8
                     }}
                   >
                     <div style={{ fontWeight: 500 }}>{split.partner_name}</div>
-                    <div style={{ textAlign: 'center' }}>{fmtMoney(perItem)}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtMoney(perItem)}</div>
                     <div style={{ textAlign: 'right', fontWeight: 600 }}>{fmtIntMoney(split.amount)}</div>
                   </div>
                 )
@@ -197,14 +199,14 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
           }}>
             {order.discount && (
               <div style={{ marginBottom: 8 }}>
-                <div className="helper">Discount</div>
+                <div className="helper" style={fieldStyle}>Discount</div>
                 <div>{fmtMoney(order.discount)}</div>
               </div>
             )}
             
             {order.notes && (
               <div>
-                <div className="helper">Notes</div>
+                <div className="helper" style={fieldStyle}>Notes</div>
                 <div>{order.notes}</div>
               </div>
             )}
