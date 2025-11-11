@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
+import { formatUSAny } from '../lib/time'
 
 interface OrderDetailModalProps {
   isOpen: boolean
@@ -67,16 +68,6 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
 
   if (!order) return null
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
-  }
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Order #${order.order_no || order.id}`}>
       <div style={{ display: 'grid', gap: 16 }}>
@@ -102,71 +93,67 @@ export default function OrderDetailModal({ isOpen, onClose, order }: OrderDetail
           </span>
         </div>
 
-        {/* Order Details Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          
-          {/* Left Column */}
+        {/* First Row: Order Date, Total Amount, Order Lines */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div>
-            <div style={{ marginBottom: 12 }}>
-              <div className="helper">Order Date</div>
-              <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
-            </div>
-
-            {order.customer_name && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">Customer</div>
-                <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 12 }}>
-              <div className="helper">Total Amount</div>
-              <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
-            </div>
-
-            {order.lines && (
-              <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="helper">Order Lines</div>
-                <div style={{ fontWeight: 600 }}>{order.lines} item(s)</div>
-              </div>
-            )}
+            <div className="helper">Order Date</div>
+            <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
           </div>
 
-          {/* Right Column */}
           <div>
-            {order.product_name && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">Product</div>
-                <div style={{ fontWeight: 600 }}>{order.product_name}</div>
-              </div>
-            )}
-
-            {order.qty && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">Quantity</div>
-                <div style={{ fontWeight: 600 }}>{order.qty}</div>
-              </div>
-            )}
-
-            {order.unit_price && (
-              <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="helper">Unit Price</div>
-                <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
-              </div>
-            )}
+            <div className="helper">Total Amount</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
           </div>
+
+          {order.lines && (
+            <div>
+              <div className="helper">Order Lines</div>
+              <div style={{ fontWeight: 600 }}>{order.lines} item(s)</div>
+            </div>
+          )}
         </div>
+
+        {/* Second Row: Product, Quantity, Unit Price */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          {order.product_name && (
+            <div>
+              <div className="helper">Product</div>
+              <div style={{ fontWeight: 600 }}>{order.product_name}</div>
+            </div>
+          )}
+
+          {order.qty && (
+            <div>
+              <div className="helper">Quantity</div>
+              <div style={{ fontWeight: 600 }}>{order.qty}</div>
+            </div>
+          )}
+
+          {order.unit_price && (
+            <div>
+              <div className="helper">Unit Price</div>
+              <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Info (if needed separately) */}
+        {order.customer_name && (
+          <div>
+            <div className="helper">Customer</div>
+            <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
+          </div>
+        )}
 
         {/* Partner Information */}
         {partnerSplits.length > 0 && (
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
             {/* Header Row */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 100px 120px',
               gap: 12,
               paddingBottom: 8,
-              borderBottom: '1px solid var(--line)',
               marginBottom: 8
             }}>
               <div className="helper" style={{ fontWeight: 600 }}>Partner</div>
