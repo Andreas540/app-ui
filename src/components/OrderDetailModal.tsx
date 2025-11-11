@@ -23,6 +23,15 @@ function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
 }
 
+function fmtMoneyWithThousands(n: number) {
+  return (Number(n) || 0).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
 export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
@@ -94,7 +103,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         {showProfit && (
           <div style={{ 
             position: 'absolute',
-            top: -60,
+            top: -56,
             right: 40,
             textAlign: 'right', 
             fontSize: 14 
@@ -105,7 +114,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
               fontSize: 16, 
               color: profit >= 0 ? 'var(--primary)' : 'salmon' 
             }}>
-              ${profit.toFixed(2)}
+              {fmtMoneyWithThousands(profit)}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
               {profitPercent.toFixed(1)}%
@@ -121,7 +130,8 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
           fontSize: 14,
           fontWeight: 600,
           color: order.delivered ? '#10b981' : '#d1d5db',
-          marginTop: -8
+          marginTop: -4,
+          paddingBottom: 0
         }}>
           <span>{order.delivered ? '✓' : '○'}</span>
           <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
