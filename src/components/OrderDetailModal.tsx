@@ -126,11 +126,11 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 6,
+          gap: 8,
           fontSize: 14,
           fontWeight: 600,
           color: order.delivered ? '#10b981' : '#d1d5db',
-          marginTop: 8
+          marginTop: 5
         }}>
           <span>{order.delivered ? '✓' : '○'}</span>
           <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
