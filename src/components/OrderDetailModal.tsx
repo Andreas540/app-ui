@@ -97,13 +97,13 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
       onClose={onClose} 
       title={`Order #${order.order_no || order.id}`}
     >
-      <div style={{ display: 'grid', gap: 16, position: 'relative' }}>
+      <div style={{ display: 'grid', gap: 16, position: 'relative', marginTop: -16 }}>
 
         {/* Profit display - positioned absolutely in top right of modal */}
         {showProfit && (
           <div style={{ 
             position: 'absolute',
-            top: -56,
+            top: -40,
             right: 40,
             textAlign: 'right', 
             fontSize: 14 
@@ -130,8 +130,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
           fontSize: 14,
           fontWeight: 600,
           color: order.delivered ? '#10b981' : '#d1d5db',
-          marginTop: -4,
-          paddingBottom: 0
+          marginTop: 8
         }}>
           <span>{order.delivered ? '✓' : '○'}</span>
           <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
