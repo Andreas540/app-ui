@@ -10,22 +10,32 @@ export async function handler(event) {
 
 async function handleLogin(event) {
   try {
+    console.log('=== AUTH LOGIN START ===')
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL, JWT_SECRET } = process.env
+    
+    console.log('DATABASE_URL exists:', !!DATABASE_URL)
+    console.log('JWT_SECRET exists:', !!JWT_SECRET)
     
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
 
     const body = JSON.parse(event.body || '{}')
     const { email, password } = body
+    
+    console.log('Login attempt for email:', email)
 
     if (!email || !password) {
+      console.log('Missing email or password')
       return cors(400, { error: 'Email and password required' })
     }
 
     const sql = neon(DATABASE_URL)
 
     // Find user by email
+    const emailSearch = email.toLowerCase().trim()
+    console.log('Searching for email:', emailSearch)
+    
     const users = await sql`
       SELECT 
         u.id,
@@ -39,27 +49,38 @@ async function handleLogin(event) {
         t.name as tenant_name
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
-      WHERE u.email = ${email.toLowerCase().trim()}
+      WHERE u.email = ${emailSearch}
       LIMIT 1
     `
+    
+    console.log('Users found:', users.length)
 
     if (users.length === 0) {
+      console.log('No user found for email:', emailSearch)
       return cors(401, { error: 'Invalid email or password' })
     }
 
     const user = users[0]
+    console.log('User found:', user.email, 'Active:', user.active)
 
     // Check if user is active
     if (!user.active) {
+      console.log('User account is disabled')
       return cors(403, { error: 'Account is disabled' })
     }
 
     // Verify password
+    console.log('Verifying password...')
+    console.log('Password hash from DB:', user.password_hash.substring(0, 20) + '...')
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
+    console.log('Password match:', passwordMatch)
     
     if (!passwordMatch) {
+      console.log('Password verification failed')
       return cors(401, { error: 'Invalid email or password' })
     }
+    
+    console.log('Password verified successfully')
 
     // Update last login
     await sql`
