@@ -30,6 +30,7 @@ import EditOrderSupplier from './pages/EditOrderSupplier'
 import NewCost from './pages/NewCost'
 import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
+import TenantAdmin from './pages/TenantAdmin'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -211,6 +212,7 @@ export default function App() {
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>New Cost</NavLink>
               <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+              <NavLink to="/admin" onClick={() => setNavOpen(false)}>Tenant Admin</NavLink>
               
               <button 
                 onClick={handleLogout}
@@ -271,6 +273,7 @@ export default function App() {
 <Route path="/costs/new" element={<NewCost />} />
 <Route path="/warehouse" element={<Warehouse />} />
 <Route path="/supply-chain" element={<SupplyChainOverview />} />
+<Route path="/admin" element={<TenantAdmin />} />
               </>
             )}
           </Routes>
