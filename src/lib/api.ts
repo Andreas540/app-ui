@@ -7,9 +7,22 @@ export type Product = { id: string; name: string } // no unit_price anymore
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
+// ---- Helper: Get auth headers ----
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('authToken')
+  return {
+    'content-type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  }
+}
+
 // ---- Bootstrap (customers + products without price) ----
 export async function fetchBootstrap() {
-  const res = await fetch(`${base}/api/bootstrap`, { method: 'GET', cache: 'no-store' })
+  const res = await fetch(`${base}/api/bootstrap`, { 
+    method: 'GET', 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load bootstrap data (status ${res.status}) ${text?.slice(0,140)}`)
@@ -34,7 +47,7 @@ export type NewOrderInput = {
 export async function createOrder(input: NewOrderInput) {
   const res = await fetch(`${base}/api/orders`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   })
   if (!res.ok) {
@@ -63,7 +76,7 @@ export type NewPaymentInput = {
 export async function createPayment(input: NewPaymentInput) {
   const res = await fetch(`${base}/api/payments`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   })
   if (!res.ok) {
@@ -73,7 +86,10 @@ export async function createPayment(input: NewPaymentInput) {
   return (await res.json()) as { ok: true; id: string }
 }
 export async function listPayments(limit = 20) {
-  const res = await fetch(`${base}/api/payments?limit=${encodeURIComponent(String(limit))}`, { cache: 'no-store' })
+  const res = await fetch(`${base}/api/payments?limit=${encodeURIComponent(String(limit))}`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  })
   if (!res.ok) throw new Error(`Failed to load payments (status ${res.status})`)
   return (await res.json()) as { payments: Array<{
     id: string; payment_date: string; payment_type: PaymentType; amount: number;
@@ -98,7 +114,7 @@ export type NewPartnerPaymentInput = {
 export async function createPartnerPayment(input: NewPartnerPaymentInput) {
   const res = await fetch(`${base}/api/partner-payment`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   })
   if (!res.ok) {
@@ -120,7 +136,10 @@ export type CustomerWithOwed = {
 }
 export async function listCustomersWithOwed(q?: string) {
   const url = `${base}/api/customers` + (q ? `?q=${encodeURIComponent(q)}` : '')
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load customers (status ${res.status}) ${text?.slice(0,140)}`)
@@ -136,7 +155,10 @@ export type PartnerWithOwed = {
 }
 export async function listPartnersWithOwed(q?: string) {
   const url = `${base}/api/partners` + (q ? `?q=${encodeURIComponent(q)}` : '')
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load partners (status ${res.status}) ${text?.slice(0,140)}`)
@@ -151,7 +173,7 @@ export type NewCustomerInput = {
   customer_type: CustomerType
   shipping_cost?: number | null
   apply_to_history?: boolean
-  company_name?: string | null   // <-- add this
+  company_name?: string | null
   phone?: string | null
   address1?: string | null
   address2?: string | null
@@ -162,7 +184,7 @@ export type NewCustomerInput = {
 export async function createCustomer(input: NewCustomerInput) {
   const res = await fetch(`${base}/api/customers`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   })
   if (!res.ok) {
@@ -205,7 +227,10 @@ export type CustomerDetail = {
   payments: PaymentSummary[]
 }
 export async function fetchCustomerDetail(id: string) {
-  const res = await fetch(`${base}/api/customer?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+  const res = await fetch(`${base}/api/customer?id=${encodeURIComponent(id)}`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load customer (status ${res.status}) ${text?.slice(0,140)}`)
@@ -217,7 +242,7 @@ export type UpdateCustomerInput = NewCustomerInput & { id: string; effective_dat
 export async function updateCustomer(input: UpdateCustomerInput) {
   const res = await fetch(`${base}/api/customer`, {
     method: 'PUT',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   })
   if (!res.ok) {
@@ -231,7 +256,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 export async function createProduct(input: { name: string; cost: number }) {
   const res = await fetch('/api/product', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   });
   if (!res.ok) {
@@ -245,7 +270,10 @@ export async function createProduct(input: { name: string; cost: number }) {
 export type ProductWithCost = { id: string; name: string; cost: number | null };
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
-  const r = await fetch('/api/product', { method: 'GET' })
+  const r = await fetch('/api/product', { 
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
   if (!r.ok) throw new Error(`Failed to load products (${r.status})`)
   return r.json()
 }
@@ -259,7 +287,7 @@ export async function updateProduct(input: {
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
   const r = await fetch('/api/product', {
     method: 'PUT',
-    headers: { 'content-type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   });
   if (!r.ok) {
@@ -272,14 +300,18 @@ export async function updateProduct(input: {
 
 export async function getCostCategories(type: 'B' | 'P') {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/cost/categories?type=${type}`)  // changed costs → cost
+  const res = await fetch(`${base}/api/cost/categories?type=${type}`, {
+    headers: getAuthHeaders()
+  })
   if (!res.ok) throw new Error('Failed to fetch cost categories')
   return res.json()
 }
 
 export async function getCostTypes(category: string) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/cost/types?category=${encodeURIComponent(category)}`)  // changed costs → cost
+  const res = await fetch(`${base}/api/cost/types?category=${encodeURIComponent(category)}`, {
+    headers: getAuthHeaders()
+  })
   if (!res.ok) throw new Error('Failed to fetch cost types')
   return res.json()
 }
@@ -297,9 +329,9 @@ export async function createCost(costData: {
   recur_interval?: number
 }) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/cost`, {  // changed costs → cost
+  const res = await fetch(`${base}/api/cost`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(costData)
   })
   if (!res.ok) {
