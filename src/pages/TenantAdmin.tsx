@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import './TenantAdmin.css';
+import '../TenantAdmin.css';
 
 interface NavItem {
   visible: boolean;
