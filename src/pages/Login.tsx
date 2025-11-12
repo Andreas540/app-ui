@@ -75,10 +75,10 @@ export default function Login() {
     if (password === 'admin123') {
       // For legacy login, store in old format for backward compatibility
       localStorage.setItem('userLevel', 'admin')
-      navigate('/')
+      window.location.href = '/' // Force full page reload
     } else if (password === 'inventory123') {
       localStorage.setItem('userLevel', 'inventory')
-      navigate('/inventory')
+      window.location.href = '/inventory' // Force full page reload
     } else {
       setError('Invalid password')
       setPassword('')
