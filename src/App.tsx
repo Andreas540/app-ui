@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { NavLink, Route, Routes } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
 import EditOrder from './pages/EditOrder'
@@ -37,46 +38,37 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
-  const [userLevel, setUserLevel] = useState<'admin' | 'inventory' | null>(
+  
+  // New auth system
+  const { isAuthenticated, user, logout: authLogout } = useAuth()
+  
+  // Legacy auth system (for BLV)
+  const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     localStorage.getItem('userLevel') as 'admin' | 'inventory' || null
   )
-  const navigate = useNavigate()
 
-  // Handle login
-  const handleLogin = (level: 'admin' | 'inventory') => {
-    setUserLevel(level)
-    localStorage.setItem('userLevel', level)
-    setNavOpen(false)
-    
-    // Use React Router navigation (safer than window.location)
-    setTimeout(() => {
-      if (level === 'inventory') {
-        navigate('/inventory', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
-    }, 0)
-  }
+  // Determine if user is authenticated (either new or legacy)
+  const isLoggedIn = isAuthenticated || legacyUserLevel !== null
+  
+  // Determine user level (for access control)
+  const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
   // Handle logout
   const handleLogout = () => {
-    setUserLevel(null)
+    authLogout() // Clear new auth
+    setLegacyUserLevel(null) // Clear legacy auth
     localStorage.removeItem('userLevel')
   }
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('userSettings')
-      console.log('Raw saved data:', saved)
       if (saved) {
         const settings = JSON.parse(saved)
-        console.log('Parsed settings:', settings)
         const loadedName = settings.userName || 'User'
-        console.log('Setting userName to:', loadedName)
         setUserName(loadedName)
         setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C'])
       } else {
-        console.log('No saved settings, using default')
         setUserName('User')
       }
     } catch (error) {
@@ -86,24 +78,21 @@ export default function App() {
 
     // Timer for animation
     const timer = setTimeout(() => {
-      console.log('Timer fired, hiding welcome')
       setShowWelcome(false)
     }, 5000)
 
     return () => clearTimeout(timer)
   }, [])
 
-  // Add this separate useEffect to log userName changes
-  useEffect(() => {
-    console.log('userName state updated to:', userName)
-  }, [userName])
-
-  console.log('About to render - showWelcome:', showWelcome, 'userName:', userName)
-
   // Show login screen if not authenticated
-  if (!userLevel) {
-    return <Login onLogin={handleLogin} />
+  if (!isLoggedIn) {
+    return <Login />
   }
+
+  // Show tenant name in header for authenticated users
+  const displayName = user?.tenantName 
+    ? `${userName} (${user.tenantName})` 
+    : userName
 
   return (
     <div className="app">
@@ -125,7 +114,7 @@ export default function App() {
                 width: '100%'
               }}
             >
-              Welcome {userName}!
+              Welcome {displayName}!
             </div>
             <div 
               style={{
@@ -135,7 +124,7 @@ export default function App() {
                 width: '100%'
               }}
             >
-              BLV App
+              {user?.tenantName || 'BLV App'}
             </div>
           </div>
         </div>
@@ -204,15 +193,20 @@ export default function App() {
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />            
               <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply & Demand</NavLink>
               <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
-<NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
-<NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
+              <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
+              <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
               
               {/* Other Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>New Cost</NavLink>
+              
+              {/* Show admin link only for super admins */}
+              {user?.role === 'super_admin' && (
+                <NavLink to="/admin" onClick={() => setNavOpen(false)}>Tenant Admin</NavLink>
+              )}
+              
               <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
-              <NavLink to="/admin" onClick={() => setNavOpen(false)}>Tenant Admin</NavLink>
               
               <button 
                 onClick={handleLogout}
@@ -266,14 +260,14 @@ export default function App() {
                 <Route path="/invoices/preview" element={<InvoicePreview />} />
                 <Route path="/price-checker" element={<PriceChecker />} />
                 <Route path="/suppliers" element={<Suppliers />} />
-<Route path="/suppliers/new" element={<CreateSupplier />} />
-<Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
-<Route path="/suppliers/:id" element={<SupplierDetail />} />
-<Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
-<Route path="/costs/new" element={<NewCost />} />
-<Route path="/warehouse" element={<Warehouse />} />
-<Route path="/supply-chain" element={<SupplyChainOverview />} />
-<Route path="/admin" element={<TenantAdmin />} />
+                <Route path="/suppliers/new" element={<CreateSupplier />} />
+                <Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
+                <Route path="/suppliers/:id" element={<SupplierDetail />} />
+                <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
+                <Route path="/costs/new" element={<NewCost />} />
+                <Route path="/warehouse" element={<Warehouse />} />
+                <Route path="/supply-chain" element={<SupplyChainOverview />} />
+                <Route path="/admin" element={<TenantAdmin />} />
               </>
             )}
           </Routes>

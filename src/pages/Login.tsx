@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
-interface LoginProps {
-  onLogin: (userLevel: 'admin' | 'inventory', token?: string, userData?: any) => void
-}
-
-export default function Login({ onLogin }: LoginProps) {
+export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [useEmailLogin, setUseEmailLogin] = useState(false)
+  
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,12 +53,17 @@ export default function Login({ onLogin }: LoginProps) {
         return
       }
 
-      // Store token and user data
-      localStorage.setItem('authToken', data.token)
-      localStorage.setItem('userData', JSON.stringify(data.user))
+      // Use auth context to store token and user data
+      login(data.token, data.user)
 
-      // Call onLogin with user's access level
-      onLogin(data.user.accessLevel || 'admin', data.token, data.user)
+      // Navigate based on role
+      if (data.user.role === 'super_admin') {
+        navigate('/control-panel') // Will create this page later
+      } else if (data.user.accessLevel === 'inventory') {
+        navigate('/inventory')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       console.error('Database login error:', err)
       setError('Login failed. Please try again.')
@@ -67,9 +73,12 @@ export default function Login({ onLogin }: LoginProps) {
   const handleLegacyLogin = () => {
     // Legacy BLV tenant hardcoded password authentication
     if (password === 'admin123') {
-      onLogin('admin')
+      // For legacy login, store in old format for backward compatibility
+      localStorage.setItem('userLevel', 'admin')
+      navigate('/')
     } else if (password === 'inventory123') {
-      onLogin('inventory')
+      localStorage.setItem('userLevel', 'inventory')
+      navigate('/inventory')
     } else {
       setError('Invalid password')
       setPassword('')

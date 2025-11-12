@@ -1,4 +1,6 @@
 // netlify/functions/customers.mjs
+import { getTenantId } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')     return listCustomers(event);
@@ -9,9 +11,16 @@ export async function handler(event) {
 async function listCustomers(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+
+    // Get tenant ID from JWT token or environment variable (legacy)
+    const tenantId = getTenantId(event);
+    if (!tenantId) {
+      return cors(401, { error: 'Tenant context not found. Please log in.' });
+    }
+
+    console.log('Loading customers for tenant:', tenantId);
 
     const sql = neon(DATABASE_URL);
     const q = (event.queryStringParameters?.q || '').trim();
@@ -32,14 +41,14 @@ async function listCustomers(event) {
           (SELECT COALESCE(SUM(oi.qty * oi.unit_price), 0)
              FROM orders o
              JOIN order_items oi ON oi.order_id = o.id
-            WHERE o.tenant_id = ${TENANT_ID}
+            WHERE o.tenant_id = ${tenantId}
               AND o.customer_id = c.id) AS total_orders,
           (SELECT COALESCE(SUM(p.amount), 0)
              FROM payments p
-            WHERE p.tenant_id = ${TENANT_ID}
+            WHERE p.tenant_id = ${tenantId}
               AND p.customer_id = c.id) AS total_payments
       ) t ON TRUE
-      WHERE c.tenant_id = ${TENANT_ID}
+      WHERE c.tenant_id = ${tenantId}
         ${like ? sql`AND LOWER(c.name) LIKE ${like}` : sql``}
       ORDER BY c.name
     `;
@@ -50,10 +59,10 @@ async function listCustomers(event) {
         (SELECT COALESCE(SUM(op.amount), 0)
            FROM order_partners op
            JOIN orders o ON o.id = op.order_id
-          WHERE o.tenant_id = ${TENANT_ID}) AS total_owed_to_partners,
+          WHERE o.tenant_id = ${tenantId}) AS total_owed_to_partners,
         (SELECT COALESCE(SUM(pp.amount), 0)
            FROM partner_payments pp
-          WHERE pp.tenant_id = ${TENANT_ID}) AS total_partner_payments
+          WHERE pp.tenant_id = ${tenantId}) AS total_partner_payments
     `;
 
     const owedToPartners = Number(partnerTotals[0].total_owed_to_partners);
@@ -76,9 +85,16 @@ async function listCustomers(event) {
 async function createCustomer(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+
+    // Get tenant ID from JWT token or environment variable (legacy)
+    const tenantId = getTenantId(event);
+    if (!tenantId) {
+      return cors(401, { error: 'Tenant context not found. Please log in.' });
+    }
+
+    console.log('Creating customer for tenant:', tenantId);
 
     const body = JSON.parse(event.body || '{}');
 
@@ -118,7 +134,7 @@ async function createCustomer(event) {
         tenant_id, name, customer_type, shipping_cost, company_name,
         phone, address1, address2, city, state, postal_code
       ) VALUES (
-        ${TENANT_ID}, ${name.trim()}, ${customer_type}, ${ship}, ${company_name ?? null},
+        ${tenantId}, ${name.trim()}, ${customer_type}, ${ship}, ${company_name ?? null},
         ${phone ?? null}, ${address1 ?? null}, ${address2 ?? null},
         ${city ?? null}, ${state ?? null}, ${postal_code ?? null}
       )
@@ -131,7 +147,7 @@ async function createCustomer(event) {
     if (ship !== null) {
       await sql`
         INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from)
-        VALUES (${TENANT_ID}, ${customerId}, ${ship}, NOW())
+        VALUES (${tenantId}, ${customerId}, ${ship}, NOW())
       `;
     }
 
@@ -149,7 +165,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization',
     },
     body: JSON.stringify(body),
   };
