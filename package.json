@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "bcryptjs": "^3.0.3",
     "html-to-image": "^1.11.13",
+    "jsonwebtoken": "^9.0.2",
     "pdf-lib": "^1.17.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
