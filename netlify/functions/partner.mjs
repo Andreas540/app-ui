@@ -43,18 +43,70 @@ async function getPartner(event) {
     const totalPaid = Number(totals[0].total_paid);
     const netOwed = totalOwed - totalPaid;
 
-    // Calculate Blanco's debt to Tony (only for Tony's partner page)
-const TONY_PARTNER_ID = '1e77e4ee-5745-4de6-be8f-b7a75b86df95';
-let blancoOwesTony = 0;
+    // Calculate partner-to-partner debt
+    // 1. For current partner's page: who owes them money (e.g., Tony sees "Owed by Blanco")
+    // 2. For current partner: who do they owe money to (e.g., Blanco owes Tony)
 
-if (id === TONY_PARTNER_ID) {
-  const blancoDebt = await sql`
-    SELECT COALESCE(SUM(from_customer_amount), 0) as debt
-    FROM order_partners
-    WHERE partner_id = ${TONY_PARTNER_ID}
-  `;
-  blancoOwesTony = Number(blancoDebt[0].debt);
-}
+    // Who owes money TO this partner (for display on their page)
+    const debtorsToThisPartner = await sql`
+      SELECT 
+        c.partner_id,
+        p.name as partner_name,
+        COALESCE(SUM(op.from_customer_amount), 0) as total_owed,
+        COALESCE(
+          (SELECT SUM(amount) 
+           FROM partner_to_partner_debt_payments 
+           WHERE tenant_id = ${TENANT_ID}
+             AND from_partner_id = c.partner_id 
+             AND to_partner_id = ${id}), 
+          0
+        ) as total_paid
+      FROM order_partners op
+      JOIN orders o ON o.id = op.order_id
+      JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN partners p ON p.id = c.partner_id
+      WHERE op.partner_id = ${id}
+        AND o.tenant_id = ${TENANT_ID}
+        AND c.partner_id IS NOT NULL
+      GROUP BY c.partner_id, p.name
+      HAVING SUM(op.from_customer_amount) > 0
+    `;
+
+    const debtorsBalances = debtorsToThisPartner.map(d => ({
+      partner_id: d.partner_id,
+      partner_name: d.partner_name,
+      net_owed: Number(d.total_owed) - Number(d.total_paid)
+    })).filter(d => d.net_owed > 0);
+
+    // Who does THIS partner owe money to (for enabling payment button)
+    const creditorsOfThisPartner = await sql`
+      SELECT 
+        op.partner_id,
+        p.name as partner_name,
+        COALESCE(SUM(op.from_customer_amount), 0) as total_owed,
+        COALESCE(
+          (SELECT SUM(amount) 
+           FROM partner_to_partner_debt_payments 
+           WHERE tenant_id = ${TENANT_ID}
+             AND from_partner_id = ${id}
+             AND to_partner_id = op.partner_id), 
+          0
+        ) as total_paid
+      FROM order_partners op
+      JOIN orders o ON o.id = op.order_id
+      JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN partners p ON p.id = op.partner_id
+      WHERE c.partner_id = ${id}
+        AND c.tenant_id = ${TENANT_ID}
+      GROUP BY op.partner_id, p.name
+      HAVING SUM(op.from_customer_amount) > 0
+    `;
+
+    const creditorsBalances = creditorsOfThisPartner.map(d => ({
+      partner_id: d.partner_id,
+      partner_name: d.partner_name,
+      net_owed: Number(d.total_owed) - Number(d.total_paid)
+    })).filter(d => d.net_owed > 0);
 
     /* Orders where this partner has a stake. */
     const orders = await sql`
@@ -81,11 +133,11 @@ if (id === TONY_PARTNER_ID) {
         LIMIT 1
       ) fl ON TRUE
       LEFT JOIN LATERAL (
-  SELECT COALESCE(SUM(op2.amount + COALESCE(op2.from_customer_amount, 0)), 0)::numeric(12,2) AS partner_amount
-  FROM order_partners op2
-  WHERE op2.order_id = o.id
-    AND op2.partner_id = ${id}
-) pa ON TRUE
+        SELECT COALESCE(SUM(op2.amount + COALESCE(op2.from_customer_amount, 0)), 0)::numeric(12,2) AS partner_amount
+        FROM order_partners op2
+        WHERE op2.order_id = o.id
+          AND op2.partner_id = ${id}
+      ) pa ON TRUE
       WHERE op.partner_id = ${id}
         AND o.tenant_id = ${TENANT_ID}
       GROUP BY
@@ -96,7 +148,7 @@ if (id === TONY_PARTNER_ID) {
       LIMIT 100
     `;
 
-    // Payments to this partner (⬅️ now includes notes)
+    // Payments to this partner
     const payments = await sql`
       SELECT id, payment_date, payment_type, amount, notes
       FROM partner_payments
@@ -112,7 +164,8 @@ if (id === TONY_PARTNER_ID) {
         total_owed: totalOwed,
         total_paid: totalPaid,
         net_owed: netOwed,
-        blanco_owes_tony: blancoOwesTony
+        debtors: debtorsBalances,      // who owes money to this partner
+        creditors: creditorsBalances    // who this partner owes money to
       },
       orders,
       payments

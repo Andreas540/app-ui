@@ -23,7 +23,16 @@ type PartnerDetail = {
     total_owed: number
     total_paid: number
     net_owed: number
-    blanco_owes_tony?: number
+    debtors?: Array<{
+      partner_id: string
+      partner_name: string
+      net_owed: number
+    }>
+    creditors?: Array<{
+      partner_id: string
+      partner_name: string
+      net_owed: number
+    }>
   }
   orders: Array<{
     id: string
@@ -70,6 +79,13 @@ export default function PartnerDetailPage() {
   const [transferNotes, setTransferNotes] = useState('')
   const [allPartners, setAllPartners] = useState<Partner[]>([])
   const [transferring, setTransferring] = useState(false)
+
+  // Debt payment state
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentToPartnerId, setPaymentToPartnerId] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+  const [paying, setPaying] = useState(false)
 
   // Print dialog state
   const [showPrintDialog, setShowPrintDialog] = useState(false)
@@ -244,8 +260,71 @@ export default function PartnerDetailPage() {
     }
   }
 
+  const handleDebtPaymentSubmit = async () => {
+    // Validation
+    const amount = parseFloat(paymentAmount.replace(/,/g, ''))
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount')
+      return
+    }
+    if (!paymentToPartnerId) {
+      alert('Please select a creditor partner')
+      return
+    }
+
+    setPaying(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const paymentDate = getCurrentDateEST()
+      
+      // Get partner names
+      const creditors = data?.totals.creditors || []
+      const toPartner = creditors.find(c => c.partner_id === paymentToPartnerId)
+      const toPartnerName = toPartner?.partner_name || 'Unknown'
+
+      // Submit payment
+      const res = await fetch(`${base}/api/partner-debt-payment`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          from_partner_id: id,
+          to_partner_id: paymentToPartnerId,
+          amount: amount,
+          payment_date: paymentDate,
+          notes: paymentNotes.trim() || null
+        })
+      })
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Failed to create payment (status ${res.status}) ${text?.slice(0,140)}`)
+      }
+
+      // Show confirmation
+      alert(`Payment of ${fmtMoney(amount)} to ${toPartnerName} completed successfully!`)
+
+      // Reset form and hide
+      setPaymentAmount('')
+      setPaymentToPartnerId('')
+      setPaymentNotes('')
+      setShowPaymentForm(false)
+
+      // Reload partner data
+      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { cache: 'no-store' })
+      if (reloadRes.ok) {
+        const d = await reloadRes.json()
+        setData(d)
+      }
+    } catch (e: any) {
+      console.error('Payment failed:', e)
+      alert(`Payment failed: ${e.message}`)
+    } finally {
+      setPaying(false)
+    }
+  }
+
   // Format amount input with thousand separator and decimals
-  const handleAmountChange = (value: string) => {
+  const handleAmountChange = (value: string, setter: (v: string) => void) => {
     // Remove all non-digits and non-decimal points
     const cleaned = value.replace(/[^\d.]/g, '')
     
@@ -262,10 +341,10 @@ export default function PartnerDetailPage() {
     // Construct the formatted value
     if (parts.length > 1) {
       // User has typed a decimal point
-      setTransferAmount(`${integerPart}.${decimalPart}`)
+      setter(`${integerPart}.${decimalPart}`)
     } else {
       // No decimal point yet
-      setTransferAmount(integerPart)
+      setter(integerPart)
     }
   }
 
@@ -278,6 +357,13 @@ export default function PartnerDetailPage() {
   // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
+
+  // Get creditors for this partner (who they owe money to)
+  const creditors = totals.creditors || []
+  const hasCreditors = creditors.length > 0
+
+  // Get debtors (who owes this partner money)
+  const debtors = totals.debtors || []
 
   // Compact layout constants (match CustomerDetail)
   const DATE_COL = 55
@@ -314,13 +400,16 @@ export default function PartnerDetailPage() {
         </div>
       </div>
 
-      {/* New Transfer button */}
+      {/* P to P Transfer and P to P Payment buttons */}
       <div style={{ display:'flex', gap:8, marginTop: 8 }}>
         <button
           className="primary"
-          onClick={() => setShowTransferForm(v => !v)}
+          onClick={() => {
+            setShowTransferForm(v => !v)
+            if (showPaymentForm) setShowPaymentForm(false)
+          }}
           style={{
-            width: 100,
+            width: 110,
             height: 28,
             fontSize: 12,
             padding: '0 10px',
@@ -328,7 +417,28 @@ export default function PartnerDetailPage() {
             whiteSpace: 'nowrap'
           }}
         >
-          New transfer
+          P to P Transfer
+        </button>
+        <button
+          className="primary"
+          onClick={() => {
+            setShowPaymentForm(v => !v)
+            if (showTransferForm) setShowTransferForm(false)
+          }}
+          disabled={!hasCreditors}
+          style={{
+            width: 110,
+            height: 28,
+            fontSize: 12,
+            padding: '0 10px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap',
+            opacity: hasCreditors ? 1 : 0.4,
+            cursor: hasCreditors ? 'pointer' : 'not-allowed'
+          }}
+          title={hasCreditors ? 'Make a debt payment to another partner' : 'No debt to other partners'}
+        >
+          P to P Payment
         </button>
       </div>
 
@@ -342,7 +452,7 @@ export default function PartnerDetailPage() {
               <input
                 type="text"
                 value={transferAmount}
-                onChange={(e) => handleAmountChange(e.target.value)}
+                onChange={(e) => handleAmountChange(e.target.value, setTransferAmount)}
                 placeholder="0.00"
               />
             </div>
@@ -382,6 +492,63 @@ export default function PartnerDetailPage() {
               }}
             >
               {transferring ? 'Processing...' : 'Make transfer'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Form (collapsible) */}
+      {showPaymentForm && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--panel)', borderRadius: 10, border: '1px solid var(--line)' }}>
+          {/* First row: Amount and To Partner */}
+          <div className="row row-2col-mobile" style={{ marginBottom: 12 }}>
+            <div>
+              <label>Amount (USD)</label>
+              <input
+                type="text"
+                value={paymentAmount}
+                onChange={(e) => handleAmountChange(e.target.value, setPaymentAmount)}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label>To Partner</label>
+              <select
+                value={paymentToPartnerId}
+                onChange={(e) => setPaymentToPartnerId(e.target.value)}
+              >
+                <option value="">Select creditor...</option>
+                {creditors.map(c => (
+                  <option key={c.partner_id} value={c.partner_id}>
+                    {c.partner_name} (owed: {fmtMoney(c.net_owed)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Second row: Notes and Make payment button */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label>Notes</label>
+              <input
+                type="text"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Optional notes..."
+              />
+            </div>
+            <button
+              className="primary"
+              onClick={handleDebtPaymentSubmit}
+              disabled={paying}
+              style={{
+                height: 'var(--control-h)',
+                padding: '0 16px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {paying ? 'Processing...' : 'Make payment'}
             </button>
           </div>
         </div>
@@ -438,18 +605,23 @@ export default function PartnerDetailPage() {
         </div>
       </div>
 
-      {/* Owed by Blanco (only for Tony) */}
-      {totals.blanco_owes_tony !== undefined && totals.blanco_owes_tony > 0 && (
+      {/* Owed by [Partner] (only if there are debtors) */}
+      {debtors.length > 0 && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div></div>
-          <div
-            data-printable
-            data-printable-id="blanco-debt"
-            data-printable-title="Owed by Blanco"
-            style={{ textAlign:'right' }}
-          >
-            <div className="helper">Owed by Blanco</div>
-            <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.blanco_owes_tony)}</div>
+          <div style={{ textAlign:'right' }}>
+            {debtors.map(debtor => (
+              <div
+                key={debtor.partner_id}
+                data-printable
+                data-printable-id={`debtor-${debtor.partner_id}`}
+                data-printable-title={`Owed by ${debtor.partner_name}`}
+                style={{ marginBottom: 8 }}
+              >
+                <div className="helper">Owed by {debtor.partner_name}</div>
+                <div style={{ fontWeight: 700 }}>{fmtIntMoney(debtor.net_owed)}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
