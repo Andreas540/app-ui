@@ -536,9 +536,7 @@ export default function NewOrder() {
         />
       </div>
 
-      Add this code right after the Notes field (after line 621) and before the "More fields" section:
-
-      {/* SPECIAL: Blanco ups owes Tony $0.50 per item */}
+            {/* SPECIAL: Blanco ups owes Tony $0.50 per item */}
       {entityId === 'f4bfabe7-62cb-4e08-b98a-b3faed93278f' && qtyInt > 0 && (
         <div style={{ 
           marginTop: 12, 
