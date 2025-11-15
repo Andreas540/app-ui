@@ -81,11 +81,11 @@ if (id === TONY_PARTNER_ID) {
         LIMIT 1
       ) fl ON TRUE
       LEFT JOIN LATERAL (
-        SELECT COALESCE(SUM(op2.amount), 0)::numeric(12,2) AS partner_amount
-        FROM order_partners op2
-        WHERE op2.order_id = o.id
-          AND op2.partner_id = ${id}
-      ) pa ON TRUE
+  SELECT COALESCE(SUM(op2.amount + COALESCE(op2.from_customer_amount, 0)), 0)::numeric(12,2) AS partner_amount
+  FROM order_partners op2
+  WHERE op2.order_id = o.id
+    AND op2.partner_id = ${id}
+) pa ON TRUE
       WHERE op.partner_id = ${id}
         AND o.tenant_id = ${TENANT_ID}
       GROUP BY
