@@ -54,7 +54,7 @@ async function createDebtPayment(event) {
 
     // 1. Insert into partner_payments (for paying partner only)
     // Positive amount reduces their "Owed to partner" balance
-    await sql`
+    const paymentRecord = await sql`
       INSERT INTO partner_payments (
         tenant_id, partner_id, payment_date, payment_type, amount, notes
       ) VALUES (
@@ -65,19 +65,23 @@ async function createDebtPayment(event) {
         ${amountNum},
         ${fullNotes}
       )
+      RETURNING id
     `;
 
-    // 2. Insert into partner_to_partner_debt_payments
+    const partnerPaymentId = paymentRecord[0].id;
+
+    // 2. Insert into partner_to_partner_debt_payments with link to partner_payments
     await sql`
       INSERT INTO partner_to_partner_debt_payments (
-        tenant_id, from_partner_id, to_partner_id, amount, payment_date, notes
+        tenant_id, from_partner_id, to_partner_id, amount, payment_date, notes, partner_payment_id
       ) VALUES (
         ${TENANT_ID},
         ${from_partner_id},
         ${to_partner_id},
         ${amountNum},
         ${payment_date},
-        ${notes ?? null}
+        ${notes ?? null},
+        ${partnerPaymentId}
       )
     `;
 

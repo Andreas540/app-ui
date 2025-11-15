@@ -111,6 +111,7 @@ async function updatePartnerPayment(event) {
 
     const sql = neon(DATABASE_URL);
 
+    // Update partner_payments
     await sql`
       UPDATE partner_payments
       SET partner_id = ${partner_id},
@@ -120,6 +121,16 @@ async function updatePartnerPayment(event) {
           notes = ${notes || null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `;
+
+    // If this is a "Partner debt payment", also update the linked debt payment record
+    if (payment_type === 'Partner debt payment') {
+      await sql`
+        UPDATE partner_to_partner_debt_payments
+        SET amount = ${amountNum},
+            payment_date = ${payment_date}
+        WHERE partner_payment_id = ${id}
+      `;
+    }
 
     return cors(200, { ok: true });
   } catch (e) {
@@ -142,6 +153,8 @@ async function deletePartnerPayment(event) {
 
     const sql = neon(DATABASE_URL);
 
+    // Delete from partner_payments
+    // The CASCADE on partner_payment_id will automatically delete from partner_to_partner_debt_payments
     await sql`
       DELETE FROM partner_payments
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
