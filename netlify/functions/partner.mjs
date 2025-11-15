@@ -43,6 +43,19 @@ async function getPartner(event) {
     const totalPaid = Number(totals[0].total_paid);
     const netOwed = totalOwed - totalPaid;
 
+    // Calculate Blanco's debt to Tony (only for Tony's partner page)
+const TONY_PARTNER_ID = '1e77e4ee-5745-4de6-be8f-b7a75b86df95';
+let blancoOwesTony = 0;
+
+if (id === TONY_PARTNER_ID) {
+  const blancoDebt = await sql`
+    SELECT COALESCE(SUM(from_customer_amount), 0) as debt
+    FROM order_partners
+    WHERE partner_id = ${TONY_PARTNER_ID}
+  `;
+  blancoOwesTony = Number(blancoDebt[0].debt);
+}
+
     /* Orders where this partner has a stake. */
     const orders = await sql`
       SELECT
@@ -98,7 +111,8 @@ async function getPartner(event) {
       totals: {
         total_owed: totalOwed,
         total_paid: totalPaid,
-        net_owed: netOwed
+        net_owed: netOwed,
+        blanco_owes_tony: blancoOwesTony
       },
       orders,
       payments

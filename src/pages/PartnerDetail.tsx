@@ -23,6 +23,7 @@ type PartnerDetail = {
     total_owed: number
     total_paid: number
     net_owed: number
+    blanco_owes_tony?: number
   }
   orders: Array<{
     id: string
@@ -436,6 +437,22 @@ export default function PartnerDetailPage() {
           <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
         </div>
       </div>
+
+      {/* Owed by Blanco (only for Tony) */}
+      {totals.blanco_owes_tony !== undefined && totals.blanco_owes_tony > 0 && (
+        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          <div></div>
+          <div
+            data-printable
+            data-printable-id="blanco-debt"
+            data-printable-title="Owed by Blanco"
+            style={{ textAlign:'right' }}
+          >
+            <div className="helper">Owed by Blanco</div>
+            <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.blanco_owes_tony)}</div>
+          </div>
+        </div>
+      )}
 
       {/* === Orders (CustomerDetail-like layout) === */}
       <section 
