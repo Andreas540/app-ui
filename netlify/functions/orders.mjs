@@ -120,6 +120,36 @@ async function createOrder(event) {
       }
     }
 
+    // SPECIAL CASE: Blanco ups (customer) owes Tony $0.50 per item
+    const BLANCO_CUSTOMER_ID = 'f4bfabe7-62cb-4e08-b98a-b3faed93278f';
+    const TONY_PARTNER_ID = '1e77e4ee-5745-4de6-be8f-b7a75b86df95';
+    
+    if (customer_id === BLANCO_CUSTOMER_ID) {
+      const blancoDebtToTony = qtyInt * 0.50;
+      
+      // Check if Tony partner record already exists for this order
+      const existingTony = await sql`
+        SELECT id, amount FROM order_partners
+        WHERE order_id = ${orderId} AND partner_id = ${TONY_PARTNER_ID}
+        LIMIT 1
+      `;
+      
+      if (existingTony.length > 0) {
+        // Update existing record (in case Tony is also in partner_splits)
+        await sql`
+          UPDATE order_partners
+          SET from_customer_amount = ${blancoDebtToTony}
+          WHERE order_id = ${orderId} AND partner_id = ${TONY_PARTNER_ID}
+        `;
+      } else {
+        // Insert new record (tenant owes 0, customer owes 0.50/item)
+        await sql`
+          INSERT INTO order_partners (order_id, partner_id, amount, from_customer_amount)
+          VALUES (${orderId}, ${TONY_PARTNER_ID}, 0, ${blancoDebtToTony})
+        `;
+      }
+    }
+
     // NEW: If order is created with delivered = true, manually add to warehouse_deliveries
 // (The INSERT trigger won't work because order_items didn't exist when order was inserted)
 if (delivered) {

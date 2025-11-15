@@ -536,6 +536,40 @@ export default function NewOrder() {
         />
       </div>
 
+      Add this code right after the Notes field (after line 621) and before the "More fields" section:
+
+      {/* SPECIAL: Blanco ups owes Tony $0.50 per item */}
+      {entityId === 'f4bfabe7-62cb-4e08-b98a-b3faed93278f' && qtyInt > 0 && (
+        <div style={{ 
+          marginTop: 12, 
+          padding: '12px 16px', 
+          backgroundColor: 'rgba(255, 193, 7, 0.1)',
+          border: '1px solid rgba(255, 193, 7, 0.3)',
+          borderRadius: 8,
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            fontSize: 14
+          }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+              Owed to Tony:
+            </span>
+            <span style={{ fontWeight: 600, color: '#f57c00' }}>
+              {qtyInt} × $0.50 = ${(qtyInt * 0.50).toFixed(2)}
+            </span>
+          </div>
+          <div style={{ 
+            fontSize: 12, 
+            color: 'var(--text-secondary)', 
+            marginTop: 4 
+          }}>
+            This amount will be recorded as partner-to-partner debt
+          </div>
+        </div>
+      )}
+
       {/* More fields - Product cost and Shipping cost */}
       {showMoreFields && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
