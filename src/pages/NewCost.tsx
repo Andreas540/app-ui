@@ -1,10 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCostCategories, getCostTypes, createCost } from '../lib/api';
+import { getCostCategories, getCostTypes, createCost, getExistingCosts } from '../lib/api';
 
 interface RecurringDetails {
   recur_kind: 'monthly' | 'weekly' | 'yearly';
   recur_interval: number;
+}
+
+interface RecurringCostSummary {
+  cost_type: string;
+  start_month: string;
+  total_amount: number;
+  details: Array<{
+    id: number;
+    cost: string;
+    amount: number;
+  }>;
+}
+
+interface NonRecurringCostSummary {
+  cost_type: string;
+  month: string;
+  total_amount: number;
+  details: Array<{
+    id: number;
+    cost: string;
+    amount: number;
+  }>;
 }
 
 const NewCost = () => {
@@ -31,6 +53,14 @@ const NewCost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
+  // Cost viewing state
+  const [viewMode, setViewMode] = useState<'B' | 'P'>('B');
+  const [recurringCosts, setRecurringCosts] = useState<RecurringCostSummary[]>([]);
+  const [nonRecurringCosts, setNonRecurringCosts] = useState<NonRecurringCostSummary[]>([]);
+  const [expandedRecurring, setExpandedRecurring] = useState<Set<string>>(new Set());
+  const [expandedNonRecurring, setExpandedNonRecurring] = useState<Set<string>>(new Set());
+  const [loadingCosts, setLoadingCosts] = useState(false);
+
   // Derived state - check if it's recurring (but NOT non-recurring)
   const isRecurring = costCategory.toLowerCase().includes('recurring') && !costCategory.toLowerCase().includes('non-recurring');
 
@@ -48,6 +78,11 @@ const NewCost = () => {
       setCostType('');
     }
   }, [costCategory]);
+
+  // Load costs when viewMode changes
+  useEffect(() => {
+    loadExistingCosts();
+  }, [viewMode]);
 
   const loadCostCategoryOptions = async () => {
     try {
@@ -70,6 +105,39 @@ const NewCost = () => {
       console.error('Error loading cost types:', err);
       setError('Failed to load cost types');
     }
+  };
+
+  const loadExistingCosts = async () => {
+    setLoadingCosts(true);
+    try {
+      const response = await getExistingCosts(viewMode);
+      setRecurringCosts(response.recurring || []);
+      setNonRecurringCosts(response.non_recurring || []);
+    } catch (err) {
+      console.error('Error loading existing costs:', err);
+    } finally {
+      setLoadingCosts(false);
+    }
+  };
+
+  const toggleRecurringExpanded = (key: string) => {
+    const newExpanded = new Set(expandedRecurring);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedRecurring(newExpanded);
+  };
+
+  const toggleNonRecurringExpanded = (key: string) => {
+    const newExpanded = new Set(expandedNonRecurring);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedNonRecurring(newExpanded);
   };
 
   // ---------- AMOUNT INPUT ----------
@@ -178,6 +246,13 @@ const NewCost = () => {
   };
   // ---------- END AMOUNT INPUT ----------
 
+  const formatCurrency = (amount: number): string => {
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   const validateForm = (): boolean => {
     if (!costCategory) {
       setError('Please select a cost category');
@@ -231,6 +306,8 @@ const NewCost = () => {
       await createCost(costData);
       alert('Cost saved successfully!');
       handleClear();
+      // Reload costs to show the new entry
+      loadExistingCosts();
     } catch (err: any) {
       console.error('Error saving cost:', err);
       setError(err.message || 'Failed to save cost');
@@ -489,6 +566,294 @@ const NewCost = () => {
         >
           Cancel
         </button>
+      </div>
+
+      {/* Filter Buttons for Viewing Costs */}
+      <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
+        <button
+          onClick={() => setViewMode('B')}
+          style={{
+            height: CONTROL_H,
+            backgroundColor: viewMode === 'B' ? '#007bff' : '#f0f0f0',
+            color: viewMode === 'B' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: 8,
+            padding: '0 16px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'B' ? 600 : 400
+          }}
+        >
+          See Business Costs
+        </button>
+        <button
+          onClick={() => setViewMode('P')}
+          style={{
+            height: CONTROL_H,
+            backgroundColor: viewMode === 'P' ? '#007bff' : '#f0f0f0',
+            color: viewMode === 'P' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: 8,
+            padding: '0 16px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'P' ? 600 : 400
+          }}
+        >
+          See Private Costs
+        </button>
+      </div>
+
+      {/* Existing Costs Display */}
+      <div style={{ marginTop: 24 }}>
+        {loadingCosts ? (
+          <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
+            Loading costs...
+          </div>
+        ) : (
+          <>
+            {/* Recurring Costs Section */}
+            {recurringCosts.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h4 style={{ margin: 0, marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
+                  Recurring Costs
+                </h4>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1.5fr 1fr',
+                  gap: 1,
+                  backgroundColor: '#ddd',
+                  borderRadius: 8,
+                  overflow: 'hidden'
+                }}>
+                  {/* Header */}
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    Start Month
+                  </div>
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    Cost Type
+                  </div>
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14,
+                    textAlign: 'right'
+                  }}>
+                    Amount
+                  </div>
+
+                  {/* Data Rows */}
+                  {recurringCosts.map((item, idx) => {
+                    const key = `${item.cost_type}-${item.start_month}`;
+                    const isExpanded = expandedRecurring.has(key);
+                    
+                    return (
+                      <div key={idx} style={{ display: 'contents' }}>
+                        {/* Summary Row */}
+                        <div
+                          onClick={() => toggleRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            borderLeft: isExpanded ? '3px solid #007bff' : 'none',
+                            paddingLeft: isExpanded ? '9px' : '12px'
+                          }}
+                        >
+                          {item.start_month}
+                        </div>
+                        <div
+                          onClick={() => toggleRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            fontWeight: 500
+                          }}
+                        >
+                          {item.cost_type}
+                        </div>
+                        <div
+                          onClick={() => toggleRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            textAlign: 'right',
+                            fontWeight: 500
+                          }}
+                        >
+                          ${formatCurrency(item.total_amount)}
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && item.details.map((detail, detailIdx) => (
+                          <div key={detailIdx} style={{ display: 'contents' }}>
+                            <div style={{ 
+                              padding: '8px 12px 8px 24px', 
+                              backgroundColor: '#f9f9f9',
+                              fontSize: 13,
+                              color: '#666',
+                              gridColumn: '1 / 3'
+                            }}>
+                              {detail.cost || '(No description)'}
+                            </div>
+                            <div style={{ 
+                              padding: '8px 12px', 
+                              backgroundColor: '#f9f9f9',
+                              fontSize: 13,
+                              textAlign: 'right',
+                              color: '#666'
+                            }}>
+                              ${formatCurrency(detail.amount)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Non-Recurring Costs Section */}
+            {nonRecurringCosts.length > 0 && (
+              <div>
+                <h4 style={{ margin: 0, marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
+                  Non-Recurring Costs
+                </h4>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1.5fr 1fr',
+                  gap: 1,
+                  backgroundColor: '#ddd',
+                  borderRadius: 8,
+                  overflow: 'hidden'
+                }}>
+                  {/* Header */}
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    Month
+                  </div>
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    Cost Type
+                  </div>
+                  <div style={{ 
+                    padding: '10px 12px', 
+                    backgroundColor: '#f8f8f8', 
+                    fontWeight: 600,
+                    fontSize: 14,
+                    textAlign: 'right'
+                  }}>
+                    Amount
+                  </div>
+
+                  {/* Data Rows */}
+                  {nonRecurringCosts.map((item, idx) => {
+                    const key = `${item.cost_type}-${item.month}`;
+                    const isExpanded = expandedNonRecurring.has(key);
+                    
+                    return (
+                      <div key={idx} style={{ display: 'contents' }}>
+                        {/* Summary Row */}
+                        <div
+                          onClick={() => toggleNonRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            borderLeft: isExpanded ? '3px solid #007bff' : 'none',
+                            paddingLeft: isExpanded ? '9px' : '12px'
+                          }}
+                        >
+                          {item.month}
+                        </div>
+                        <div
+                          onClick={() => toggleNonRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            fontWeight: 500
+                          }}
+                        >
+                          {item.cost_type}
+                        </div>
+                        <div
+                          onClick={() => toggleNonRecurringExpanded(key)}
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            textAlign: 'right',
+                            fontWeight: 500
+                          }}
+                        >
+                          ${formatCurrency(item.total_amount)}
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && item.details.map((detail, detailIdx) => (
+                          <div key={detailIdx} style={{ display: 'contents' }}>
+                            <div style={{ 
+                              padding: '8px 12px 8px 24px', 
+                              backgroundColor: '#f9f9f9',
+                              fontSize: 13,
+                              color: '#666',
+                              gridColumn: '1 / 3'
+                            }}>
+                              {detail.cost || '(No description)'}
+                            </div>
+                            <div style={{ 
+                              padding: '8px 12px', 
+                              backgroundColor: '#f9f9f9',
+                              fontSize: 13,
+                              textAlign: 'right',
+                              color: '#666'
+                            }}>
+                              ${formatCurrency(detail.amount)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* No costs message */}
+            {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: 40, 
+                color: '#999',
+                backgroundColor: '#f8f8f8',
+                borderRadius: 8
+              }}>
+                No costs found for the last 3 months
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

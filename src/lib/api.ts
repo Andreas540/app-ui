@@ -340,3 +340,12 @@ export async function createCost(costData: {
   }
   return res.json()
 }
+
+export async function getExistingCosts(businessPrivate: 'B' | 'P') {
+  const response = await fetch(`/api/costs/existing?type=${businessPrivate}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch existing costs');
+  }
+  return response.json();
+}

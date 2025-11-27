@@ -91,11 +91,140 @@ async function getCosts(event) {
       })
     }
 
+    // GET /api/costs/existing?type=B or P
+    if (path.includes('/existing')) {
+      return getExistingCosts(params)
+    }
+
     return cors(404, { error: 'Not found' })
   } catch (e) {
     console.error('getCosts error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
+}
+
+async function getExistingCosts(params) {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL, TENANT_ID } = process.env
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+
+    const type = params.type || 'B'
+    
+    if (type !== 'B' && type !== 'P') {
+      return cors(400, { error: 'Invalid type. Must be B or P' })
+    }
+
+    const sql = neon(DATABASE_URL)
+
+    // Calculate date 3 months ago
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const cutoffDate = threeMonthsAgo.toISOString().split('T')[0]
+
+    // Get recurring costs from last 3 months
+    const recurringRaw = await sql`
+      SELECT 
+        id,
+        cost_type,
+        cost,
+        start_date,
+        amount
+      FROM costs_recurring
+      WHERE tenant_id = ${TENANT_ID}
+        AND business_private = ${type}
+        AND start_date >= ${cutoffDate}
+      ORDER BY start_date DESC, cost_type
+    `
+
+    // Get non-recurring costs from last 3 months
+    const nonRecurringRaw = await sql`
+      SELECT 
+        id,
+        cost_type,
+        cost,
+        cost_date,
+        amount
+      FROM costs
+      WHERE tenant_id = ${TENANT_ID}
+        AND business_private = ${type}
+        AND cost_date >= ${cutoffDate}
+      ORDER BY cost_date DESC, cost_type
+    `
+
+    // Process recurring costs - aggregate by cost_type and start_month
+    const recurringMap = new Map()
+    
+    for (const row of recurringRaw) {
+      const startMonth = formatMonthYear(row.start_date)
+      const key = `${row.cost_type}|${startMonth}`
+      
+      if (!recurringMap.has(key)) {
+        recurringMap.set(key, {
+          cost_type: row.cost_type,
+          start_month: startMonth,
+          total_amount: 0,
+          details: []
+        })
+      }
+      
+      const group = recurringMap.get(key)
+      group.total_amount += Number(row.amount)
+      group.details.push({
+        id: row.id,
+        cost: row.cost,
+        amount: Number(row.amount)
+      })
+    }
+
+    // Process non-recurring costs - aggregate by cost_type and month
+    const nonRecurringMap = new Map()
+    
+    for (const row of nonRecurringRaw) {
+      const month = formatMonthYear(row.cost_date)
+      const key = `${row.cost_type}|${month}`
+      
+      if (!nonRecurringMap.has(key)) {
+        nonRecurringMap.set(key, {
+          cost_type: row.cost_type,
+          month: month,
+          total_amount: 0,
+          details: []
+        })
+      }
+      
+      const group = nonRecurringMap.get(key)
+      group.total_amount += Number(row.amount)
+      group.details.push({
+        id: row.id,
+        cost: row.cost,
+        amount: Number(row.amount)
+      })
+    }
+
+    // Convert maps to arrays
+    const recurring = Array.from(recurringMap.values())
+    const non_recurring = Array.from(nonRecurringMap.values())
+
+    return cors(200, {
+      recurring,
+      non_recurring
+    })
+
+  } catch (e) {
+    console.error('getExistingCosts error:', e)
+    return cors(500, { error: String(e?.message || e) })
+  }
+}
+
+// Helper function to format date as MM/YYYY
+function formatMonthYear(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString + 'T00:00:00') // Treat as local date
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${month}/${year}`
 }
 
 async function createCost(event) {
