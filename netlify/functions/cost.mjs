@@ -137,9 +137,18 @@ async function getExistingCosts(params) {
 
     const sql = neon(DATABASE_URL)
 
-    console.log('Fetching ALL costs for type:', type, 'tenant:', TENANT_ID)
+    // Calculate cutoff date: first day of 2 months ago
+    // Current month + 2 previous = 3 months total
+    const now = new Date()
+    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+    const year = twoMonthsAgo.getFullYear()
+    const month = String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')
+    const cutoffDate = `${year}-${month}-01`
 
-    // Get ALL recurring costs (no date filter for now)
+    console.log('Fetching costs from', cutoffDate, 'onwards (current month + 2 previous months)')
+    console.log('Type:', type, 'Tenant:', TENANT_ID)
+
+    // Get recurring costs from last 3 months
     const recurringRaw = await sql`
       SELECT 
         id,
@@ -150,6 +159,7 @@ async function getExistingCosts(params) {
       FROM costs_recurring
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
+        AND start_date >= ${cutoffDate}
       ORDER BY start_date DESC, cost_type
     `
 
@@ -158,7 +168,7 @@ async function getExistingCosts(params) {
       console.log('Sample:', JSON.stringify(recurringRaw[0]))
     }
 
-    // Get ALL non-recurring costs (no date filter for now)
+    // Get non-recurring costs from last 3 months
     const nonRecurringRaw = await sql`
       SELECT 
         id,
@@ -169,6 +179,7 @@ async function getExistingCosts(params) {
       FROM costs
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
+        AND cost_date >= ${cutoffDate}
       ORDER BY cost_date DESC, cost_type
     `
 
@@ -250,9 +261,17 @@ async function getExistingCosts(params) {
 function formatMonthYear(dateString) {
   if (!dateString) return ''
   
-  // Handle if it's a Date object or string
-  const dateStr = dateString.toString().split('T')[0] // Get just YYYY-MM-DD part
+  // Convert to string and get just the date part (YYYY-MM-DD)
+  const dateStr = String(dateString).split('T')[0]
+  
+  // Split by dash to get year, month, day
   const parts = dateStr.split('-')
+  
+  if (parts.length < 2) {
+    console.error('Invalid date format:', dateString)
+    return ''
+  }
+  
   const year = parts[0]
   const month = parts[1]
   
