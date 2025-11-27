@@ -118,12 +118,17 @@ async function getExistingCosts(params) {
 
     const sql = neon(DATABASE_URL)
 
-    // Calculate date 3 months ago
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    const cutoffDate = threeMonthsAgo.toISOString().split('T')[0]
+    // Calculate cutoff date: first day of the month 3 months ago
+    // Simple date math - no timezone issues since we're working with YYYY-MM-DD
+    const now = new Date()
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    const year = threeMonthsAgo.getFullYear()
+    const month = String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')
+    const cutoffDate = `${year}-${month}-01`
 
-    // Get recurring costs from last 3 months
+    console.log('Fetching costs from', cutoffDate, 'onwards for type:', type, 'tenant:', TENANT_ID)
+
+    // Get recurring costs
     const recurringRaw = await sql`
       SELECT 
         id,
@@ -138,7 +143,12 @@ async function getExistingCosts(params) {
       ORDER BY start_date DESC, cost_type
     `
 
-    // Get non-recurring costs from last 3 months
+    console.log('Recurring costs found:', recurringRaw.length)
+    if (recurringRaw.length > 0) {
+      console.log('Sample:', recurringRaw[0])
+    }
+
+    // Get non-recurring costs
     const nonRecurringRaw = await sql`
       SELECT 
         id,
@@ -152,6 +162,11 @@ async function getExistingCosts(params) {
         AND cost_date >= ${cutoffDate}
       ORDER BY cost_date DESC, cost_type
     `
+
+    console.log('Non-recurring costs found:', nonRecurringRaw.length)
+    if (nonRecurringRaw.length > 0) {
+      console.log('Sample:', nonRecurringRaw[0])
+    }
 
     // Process recurring costs - aggregate by cost_type and start_month
     const recurringMap = new Map()
@@ -173,7 +188,7 @@ async function getExistingCosts(params) {
       group.total_amount += Number(row.amount)
       group.details.push({
         id: row.id,
-        cost: row.cost,
+        cost: row.cost || '',
         amount: Number(row.amount)
       })
     }
@@ -198,7 +213,7 @@ async function getExistingCosts(params) {
       group.total_amount += Number(row.amount)
       group.details.push({
         id: row.id,
-        cost: row.cost,
+        cost: row.cost || '',
         amount: Number(row.amount)
       })
     }
@@ -206,6 +221,8 @@ async function getExistingCosts(params) {
     // Convert maps to arrays
     const recurring = Array.from(recurringMap.values())
     const non_recurring = Array.from(nonRecurringMap.values())
+
+    console.log('Returning', recurring.length, 'recurring groups,', non_recurring.length, 'non-recurring groups')
 
     return cors(200, {
       recurring,
@@ -219,11 +236,17 @@ async function getExistingCosts(params) {
 }
 
 // Helper function to format date as MM/YYYY
+// Input: YYYY-MM-DD (or YYYY-MM-DD from database DATE column)
+// Output: MM/YYYY for display
 function formatMonthYear(dateString) {
   if (!dateString) return ''
-  const date = new Date(dateString + 'T00:00:00') // Treat as local date
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
+  
+  // Handle if it's a Date object or string
+  const dateStr = dateString.toString().split('T')[0] // Get just YYYY-MM-DD part
+  const parts = dateStr.split('-')
+  const year = parts[0]
+  const month = parts[1]
+  
   return `${month}/${year}`
 }
 
