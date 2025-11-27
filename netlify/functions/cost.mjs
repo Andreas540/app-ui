@@ -52,6 +52,11 @@ const COST_TYPES = {
 }
 
 export async function handler(event) {
+  console.log('=== COST FUNCTION CALLED ===')
+  console.log('Path:', event.path)
+  console.log('HTTP Method:', event.httpMethod)
+  console.log('Query params:', event.queryStringParameters)
+  
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getCosts(event)
   if (event.httpMethod === 'POST')   return createCost(event)
@@ -63,8 +68,12 @@ async function getCosts(event) {
     const path = event.path || ''
     const params = event.queryStringParameters || {}
 
+    console.log('getCosts - path:', path)
+    console.log('getCosts - params:', JSON.stringify(params))
+
     // GET /api/costs/categories?type=B or P
     if (path.includes('/categories')) {
+      console.log('Route: categories')
       const type = params.type || 'B'
       
       if (type !== 'B' && type !== 'P') {
@@ -78,6 +87,7 @@ async function getCosts(event) {
 
     // GET /api/costs/types?category=<category>
     if (path.includes('/types')) {
+      console.log('Route: types')
       const category = params.category
       
       if (!category) {
@@ -92,11 +102,20 @@ async function getCosts(event) {
     }
 
     // GET /api/costs/existing?type=B or P
-    if (path.includes('/existing')) {
+    // Check if path includes 'existing' OR if there's a 'type' param without category
+    if (path.includes('/existing') || (params.type && !params.category)) {
+      console.log('Route: existing costs')
       return getExistingCosts(params)
     }
 
-    return cors(404, { error: 'Not found' })
+    console.log('No route matched - returning 404')
+    return cors(404, { 
+      error: 'Not found',
+      debug: {
+        path: path,
+        params: params
+      }
+    })
   } catch (e) {
     console.error('getCosts error:', e)
     return cors(500, { error: String(e?.message || e) })
@@ -118,17 +137,9 @@ async function getExistingCosts(params) {
 
     const sql = neon(DATABASE_URL)
 
-    // Calculate cutoff date: first day of the month 3 months ago
-    // Simple date math - no timezone issues since we're working with YYYY-MM-DD
-    const now = new Date()
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
-    const year = threeMonthsAgo.getFullYear()
-    const month = String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')
-    const cutoffDate = `${year}-${month}-01`
+    console.log('Fetching ALL costs for type:', type, 'tenant:', TENANT_ID)
 
-    console.log('Fetching costs from', cutoffDate, 'onwards for type:', type, 'tenant:', TENANT_ID)
-
-    // Get recurring costs
+    // Get ALL recurring costs (no date filter for now)
     const recurringRaw = await sql`
       SELECT 
         id,
@@ -139,16 +150,15 @@ async function getExistingCosts(params) {
       FROM costs_recurring
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
-        AND start_date >= ${cutoffDate}
       ORDER BY start_date DESC, cost_type
     `
 
     console.log('Recurring costs found:', recurringRaw.length)
     if (recurringRaw.length > 0) {
-      console.log('Sample:', recurringRaw[0])
+      console.log('Sample:', JSON.stringify(recurringRaw[0]))
     }
 
-    // Get non-recurring costs
+    // Get ALL non-recurring costs (no date filter for now)
     const nonRecurringRaw = await sql`
       SELECT 
         id,
@@ -159,13 +169,12 @@ async function getExistingCosts(params) {
       FROM costs
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
-        AND cost_date >= ${cutoffDate}
       ORDER BY cost_date DESC, cost_type
     `
 
     console.log('Non-recurring costs found:', nonRecurringRaw.length)
     if (nonRecurringRaw.length > 0) {
-      console.log('Sample:', nonRecurringRaw[0])
+      console.log('Sample:', JSON.stringify(nonRecurringRaw[0]))
     }
 
     // Process recurring costs - aggregate by cost_type and start_month
