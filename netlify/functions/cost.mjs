@@ -185,14 +185,18 @@ async function getExistingCosts(params) {
 
     console.log('Non-recurring costs found:', nonRecurringRaw.length)
     if (nonRecurringRaw.length > 0) {
-      console.log('Sample:', JSON.stringify(nonRecurringRaw[0]))
+      console.log('Sample non-recurring:', JSON.stringify(nonRecurringRaw[0]))
+      console.log('Sample cost_date type:', typeof nonRecurringRaw[0].cost_date)
+      console.log('Sample cost_date value:', nonRecurringRaw[0].cost_date)
     }
 
     // Process recurring costs - aggregate by cost_type and start_month
     const recurringMap = new Map()
     
     for (const row of recurringRaw) {
+      console.log('Processing recurring row:', JSON.stringify(row))
       const startMonth = formatMonthYear(row.start_date)
+      console.log('Formatted start_month:', startMonth)
       const key = `${row.cost_type}|${startMonth}`
       
       if (!recurringMap.has(key)) {
@@ -256,26 +260,44 @@ async function getExistingCosts(params) {
 }
 
 // Helper function to format date as MM/YYYY
-// Input: YYYY-MM-DD (or YYYY-MM-DD from database DATE column)
+// Input: YYYY-MM-DD string or Date object from database
 // Output: MM/YYYY for display
-function formatMonthYear(dateString) {
-  if (!dateString) return ''
-  
-  // Convert to string and get just the date part (YYYY-MM-DD)
-  const dateStr = String(dateString).split('T')[0]
-  
-  // Split by dash to get year, month, day
-  const parts = dateStr.split('-')
-  
-  if (parts.length < 2) {
-    console.error('Invalid date format:', dateString)
+function formatMonthYear(dateInput) {
+  if (!dateInput) {
+    console.log('formatMonthYear: empty input')
     return ''
   }
   
-  const year = parts[0]
-  const month = parts[1]
-  
-  return `${month}/${year}`
+  try {
+    // Handle if it's already a Date object
+    let dateStr
+    if (dateInput instanceof Date) {
+      const year = dateInput.getFullYear()
+      const month = String(dateInput.getMonth() + 1).padStart(2, '0')
+      return `${month}/${year}`
+    }
+    
+    // Convert to string and get just the date part (YYYY-MM-DD)
+    dateStr = String(dateInput).split('T')[0]
+    
+    // Split by dash to get year, month, day
+    const parts = dateStr.split('-')
+    
+    if (parts.length < 2) {
+      console.error('Invalid date format:', dateInput, 'parts:', parts)
+      return ''
+    }
+    
+    const year = parts[0]
+    const month = parts[1]
+    
+    const result = `${month}/${year}`
+    console.log('formatMonthYear:', dateInput, '->', result)
+    return result
+  } catch (e) {
+    console.error('formatMonthYear error:', e, 'input:', dateInput)
+    return ''
+  }
 }
 
 async function createCost(event) {
