@@ -318,37 +318,46 @@ export default function Warehouse() {
           <p className="helper">No inventory data yet</p>
         ) : (
           <div style={{ display: 'grid' }}>
-            {inventory.map(item => (
-              <div
-                key={item.product_id}
-                style={{
-                  borderBottom: '1px solid #eee',
-                  paddingTop: 12,
-                  paddingBottom: 12
-                }}
-              >
+            {inventory
+              .filter(item => {
+                const name = item.product.trim().toLowerCase()
+                return !name.includes('refund') 
+                  && !name.includes('discount')
+                  && !name.includes('other product') 
+                  && !name.includes('other service')
+              })
+              .map(item => (
                 <div
+                  key={item.product_id}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gap: 8,
-                    alignItems: 'center'
+                    borderBottom: '1px solid #eee',
+                    paddingTop: 12,
+                    paddingBottom: 12
                   }}
                 >
-                  <div className="helper">{item.product}</div>
-                  <div 
-                    className="helper"
-                    style={{ 
-                      textAlign: 'right',
-                      fontWeight: 600,
-                      color: item.qty < 0 ? 'salmon' : item.qty === 0 ? undefined : 'var(--primary)'
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      gap: 8,
+                      alignItems: 'center'
                     }}
                   >
-                    {intFmt.format(item.qty)}
+                    <div className="helper">{item.product}</div>
+                    <div 
+                      className="helper"
+                      style={{ 
+                        textAlign: 'right',
+                        fontWeight: 600,
+                        color: item.qty < 0 ? 'salmon' : item.qty === 0 ? undefined : 'var(--primary)'
+                      }}
+                    >
+                      {intFmt.format(item.qty)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            }
           </div>
         )}
       </div>
