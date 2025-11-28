@@ -37,13 +37,25 @@ export default function Warehouse() {
       setErr(null)
       const { products: bootProducts } = await fetchBootstrap()
       
+      console.log('All products before filtering:', bootProducts.map(p => p.name))
+      
       // Filter out Refund/Discount, Other Products, and Other Services
       const filtered = bootProducts.filter(p => {
         const name = p.name.trim().toLowerCase()
-        return name !== 'refund/discount' 
-          && name !== 'other products' 
-          && name !== 'other services'
+        const shouldKeep = !name.includes('refund') 
+          && !name.includes('discount')
+          && !name.includes('other product') 
+          && !name.includes('other service')
+        
+        if (!shouldKeep) {
+          console.log('Filtering out:', p.name)
+        }
+        
+        return shouldKeep
       })
+      
+      console.log('Products after filtering:', filtered.map(p => p.name))
+      
       setProducts(filtered)
       if (filtered[0]) setProductId(filtered[0].id)
 
@@ -143,7 +155,7 @@ export default function Warehouse() {
         {/* Row 2: Quantity | Date (50/50) */}
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
-            <label>Qty (- if reducing inv.)</label>
+            <label>Qty (- sign if reducing inv.)</label>
             <input
               type="text"
               inputMode="numeric"
