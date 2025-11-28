@@ -613,107 +613,51 @@ const NewCost = () => {
             {/* Recurring Costs Section */}
             {recurringCosts.length > 0 && (
               <div style={{ marginBottom: 32 }}>
-                <h4 style={{ margin: 0, marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
-                  Recurring Costs
-                </h4>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 1.5fr 1fr',
-                  gap: 1,
-                  backgroundColor: '#ddd',
-                  borderRadius: 8,
-                  overflow: 'hidden'
-                }}>
-                  {/* Header */}
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    Start Month
-                  </div>
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    Cost Type
-                  </div>
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textAlign: 'right'
-                  }}>
-                    Amount
-                  </div>
-
-                  {/* Data Rows */}
+                <h4 style={{ margin: 0, marginBottom: 12 }}>Recurring Costs</h4>
+                <div style={{ display: 'grid' }}>
                   {recurringCosts.map((item, idx) => {
                     const key = `${item.cost_type}-${item.start_month}`;
                     const isExpanded = expandedRecurring.has(key);
+                    const hasDetails = item.details && item.details.length > 0;
                     
                     return (
-                      <div key={idx} style={{ display: 'contents' }}>
-                        {/* Summary Row */}
+                      <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                        {/* Main row */}
                         <div
-                          onClick={() => toggleRecurringExpanded(key)}
+                          onClick={() => hasDetails && toggleRecurringExpanded(key)}
                           style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            borderLeft: isExpanded ? '3px solid #007bff' : 'none',
-                            paddingLeft: isExpanded ? '9px' : '12px'
+                            display: 'grid',
+                            gridTemplateColumns: '80px 1fr auto',
+                            gap: 8,
+                            cursor: hasDetails ? 'pointer' : 'default'
                           }}
+                          onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
+                          onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          {item.start_month}
-                        </div>
-                        <div
-                          onClick={() => toggleRecurringExpanded(key)}
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            fontWeight: 500
-                          }}
-                        >
-                          {item.cost_type}
-                        </div>
-                        <div
-                          onClick={() => toggleRecurringExpanded(key)}
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            textAlign: 'right',
-                            fontWeight: 500
-                          }}
-                        >
-                          ${formatCurrency(item.total_amount)}
+                          <div className="helper">{item.start_month}</div>
+                          <div className="helper">{item.cost_type}</div>
+                          <div className="helper" style={{ textAlign: 'right' }}>
+                            ${formatCurrency(item.total_amount)}
+                          </div>
                         </div>
 
-                        {/* Expanded Details */}
+                        {/* Expanded details */}
                         {isExpanded && item.details.map((detail, detailIdx) => (
-                          <div key={detailIdx} style={{ display: 'contents' }}>
-                            <div style={{ 
-                              padding: '8px 12px 8px 24px', 
-                              backgroundColor: '#f9f9f9',
-                              fontSize: 13,
-                              color: '#666',
-                              gridColumn: '1 / 3'
-                            }}>
+                          <div
+                            key={detailIdx}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '80px 1fr auto',
+                              gap: 8,
+                              marginTop: 8,
+                              paddingLeft: 12
+                            }}
+                          >
+                            <div></div>
+                            <div className="helper" style={{ lineHeight: '1.4' }}>
                               {detail.cost || '(No description)'}
                             </div>
-                            <div style={{ 
-                              padding: '8px 12px', 
-                              backgroundColor: '#f9f9f9',
-                              fontSize: 13,
-                              textAlign: 'right',
-                              color: '#666'
-                            }}>
+                            <div className="helper" style={{ textAlign: 'right' }}>
                               ${formatCurrency(detail.amount)}
                             </div>
                           </div>
@@ -728,107 +672,51 @@ const NewCost = () => {
             {/* Non-Recurring Costs Section */}
             {nonRecurringCosts.length > 0 && (
               <div>
-                <h4 style={{ margin: 0, marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
-                  Non-Recurring Costs
-                </h4>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 1.5fr 1fr',
-                  gap: 1,
-                  backgroundColor: '#ddd',
-                  borderRadius: 8,
-                  overflow: 'hidden'
-                }}>
-                  {/* Header */}
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    Month
-                  </div>
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    Cost Type
-                  </div>
-                  <div style={{ 
-                    padding: '10px 12px', 
-                    backgroundColor: '#f8f8f8', 
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textAlign: 'right'
-                  }}>
-                    Amount
-                  </div>
-
-                  {/* Data Rows */}
+                <h4 style={{ margin: 0, marginBottom: 12 }}>Non-Recurring Costs</h4>
+                <div style={{ display: 'grid' }}>
                   {nonRecurringCosts.map((item, idx) => {
                     const key = `${item.cost_type}-${item.month}`;
                     const isExpanded = expandedNonRecurring.has(key);
+                    const hasDetails = item.details && item.details.length > 0;
                     
                     return (
-                      <div key={idx} style={{ display: 'contents' }}>
-                        {/* Summary Row */}
+                      <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                        {/* Main row */}
                         <div
-                          onClick={() => toggleNonRecurringExpanded(key)}
+                          onClick={() => hasDetails && toggleNonRecurringExpanded(key)}
                           style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            borderLeft: isExpanded ? '3px solid #007bff' : 'none',
-                            paddingLeft: isExpanded ? '9px' : '12px'
+                            display: 'grid',
+                            gridTemplateColumns: '80px 1fr auto',
+                            gap: 8,
+                            cursor: hasDetails ? 'pointer' : 'default'
                           }}
+                          onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
+                          onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          {item.month}
-                        </div>
-                        <div
-                          onClick={() => toggleNonRecurringExpanded(key)}
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            fontWeight: 500
-                          }}
-                        >
-                          {item.cost_type}
-                        </div>
-                        <div
-                          onClick={() => toggleNonRecurringExpanded(key)}
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            textAlign: 'right',
-                            fontWeight: 500
-                          }}
-                        >
-                          ${formatCurrency(item.total_amount)}
+                          <div className="helper">{item.month}</div>
+                          <div className="helper">{item.cost_type}</div>
+                          <div className="helper" style={{ textAlign: 'right' }}>
+                            ${formatCurrency(item.total_amount)}
+                          </div>
                         </div>
 
-                        {/* Expanded Details */}
+                        {/* Expanded details */}
                         {isExpanded && item.details.map((detail, detailIdx) => (
-                          <div key={detailIdx} style={{ display: 'contents' }}>
-                            <div style={{ 
-                              padding: '8px 12px 8px 24px', 
-                              backgroundColor: '#f9f9f9',
-                              fontSize: 13,
-                              color: '#666',
-                              gridColumn: '1 / 3'
-                            }}>
+                          <div
+                            key={detailIdx}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '80px 1fr auto',
+                              gap: 8,
+                              marginTop: 8,
+                              paddingLeft: 12
+                            }}
+                          >
+                            <div></div>
+                            <div className="helper" style={{ lineHeight: '1.4' }}>
                               {detail.cost || '(No description)'}
                             </div>
-                            <div style={{ 
-                              padding: '8px 12px', 
-                              backgroundColor: '#f9f9f9',
-                              fontSize: 13,
-                              textAlign: 'right',
-                              color: '#666'
-                            }}>
+                            <div className="helper" style={{ textAlign: 'right' }}>
                               ${formatCurrency(detail.amount)}
                             </div>
                           </div>
@@ -842,15 +730,7 @@ const NewCost = () => {
 
             {/* No costs message */}
             {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: 40, 
-                color: '#999',
-                backgroundColor: '#f8f8f8',
-                borderRadius: 8
-              }}>
-                No costs found for the last 3 months
-              </div>
+              <p className="helper">No costs found for the last 3 months</p>
             )}
           </>
         )}
@@ -860,5 +740,6 @@ const NewCost = () => {
 };
 
 export default NewCost;
+
 
 
