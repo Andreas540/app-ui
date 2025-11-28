@@ -155,7 +155,7 @@ export default function Warehouse() {
         {/* Row 2: Quantity | Date (50/50) */}
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
-            <label>Qty (- sign if reducing inv.)</label>
+            <label>Qty (- if reducing inv.)</label>
             <input
               type="text"
               inputMode="numeric"
