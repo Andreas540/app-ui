@@ -37,10 +37,13 @@ export default function Warehouse() {
       setErr(null)
       const { products: bootProducts } = await fetchBootstrap()
       
-      // Filter out Refund/Discount
-      const filtered = bootProducts.filter(
-        p => p.name.trim().toLowerCase() !== 'refund/discount'
-      )
+      // Filter out Refund/Discount, Other Products, and Other Services
+      const filtered = bootProducts.filter(p => {
+        const name = p.name.trim().toLowerCase()
+        return name !== 'refund/discount' 
+          && name !== 'other products' 
+          && name !== 'other services'
+      })
       setProducts(filtered)
       if (filtered[0]) setProductId(filtered[0].id)
 
@@ -140,7 +143,7 @@ export default function Warehouse() {
         {/* Row 2: Quantity | Date (50/50) */}
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
-            <label>Qty (- sign if reducing inv.)</label>
+            <label>Qty (- if reducing inv.)</label>
             <input
               type="text"
               inputMode="numeric"
