@@ -338,156 +338,182 @@ const NewCost = () => {
   const CONTROL_H = 44;
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ margin: 0, marginBottom: 16 }}>Register New Cost</h3>
+    <>
+      {/* Register New Cost Card */}
+      <div className="card" style={{ maxWidth: 720 }}>
+        <h3 style={{ margin: 0, marginBottom: 16 }}>Register New Cost</h3>
 
-      {error && (
-        <div style={{
-          background: '#fee',
-          color: '#c33',
-          padding: 12,
-          borderRadius: 10,
-          marginBottom: 16,
-          borderLeft: '4px solid #c33'
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Business/Private Selection */}
-      <div style={{ display: 'flex', gap: 24, marginBottom: 12 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={businessPrivate === 'B'}
-            onChange={(e) => { if (e.target.checked) setBusinessPrivate('B') }}
-            style={{ width: 18, height: 18 }}
-          />
-          <span>Business</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={businessPrivate === 'P'}
-            onChange={(e) => { if (e.target.checked) setBusinessPrivate('P') }}
-            style={{ width: 18, height: 18 }}
-          />
-          <span>Private</span>
-        </label>
-      </div>
-
-      {/* Cost Category Dropdown */}
-      <div style={{ marginTop: 12 }}>
-        <label>Cost Category</label>
-        <select
-          value={costCategory}
-          onChange={(e) => setCostCategory(e.target.value)}
-          disabled={loading}
-          style={{ height: CONTROL_H }}
-        >
-          <option value="">Select category...</option>
-          {costCategoryOptions.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Recurring Details - Only show if recurring category selected */}
-      {isRecurring && (
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-          <div>
-            <label>Recurrence</label>
-            <select
-              value={recurringDetails.recur_kind}
-              onChange={(e) => setRecurringDetails({
-                ...recurringDetails,
-                recur_kind: e.target.value as 'monthly' | 'weekly' | 'yearly'
-              })}
-              style={{ height: CONTROL_H }}
-            >
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-              <option value="yearly">Yearly</option>
-            </select>
+        {error && (
+          <div style={{
+            background: '#fee',
+            color: '#c33',
+            padding: 12,
+            borderRadius: 10,
+            marginBottom: 16,
+            borderLeft: '4px solid #c33'
+          }}>
+            {error}
           </div>
-          <div>
-            <label>Every (interval)</label>
+        )}
+
+        {/* Business/Private Selection */}
+        <div style={{ display: 'flex', gap: 24, marginBottom: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
-              type="text"
-              inputMode="numeric"
-              value={recurringDetails.recur_interval === 0 ? '' : recurringDetails.recur_interval}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, ''); // Only digits
-                setRecurringDetails({
-                  ...recurringDetails,
-                  recur_interval: val === '' ? 0 : parseInt(val, 10)
-                });
-              }}
-              onBlur={(e) => {
-                // Set to 1 if empty on blur
-                if (e.target.value === '' || parseInt(e.target.value) < 1) {
-                  setRecurringDetails({
-                    ...recurringDetails,
-                    recur_interval: 1
-                  });
-                }
-              }}
-              style={{ height: CONTROL_H }}
+              type="checkbox"
+              checked={businessPrivate === 'B'}
+              onChange={(e) => { if (e.target.checked) setBusinessPrivate('B') }}
+              style={{ width: 18, height: 18 }}
             />
-            <p className="helper" style={{ marginTop: 4 }}>
-              {recurringDetails.recur_kind === 'monthly' ? 'month(s)' :
-               recurringDetails.recur_kind === 'weekly' ? 'week(s)' :
-               'year(s)'}
-            </p>
-          </div>
+            <span>Business</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={businessPrivate === 'P'}
+              onChange={(e) => { if (e.target.checked) setBusinessPrivate('P') }}
+              style={{ width: 18, height: 18 }}
+            />
+            <span>Private</span>
+          </label>
         </div>
-      )}
 
-      {/* Cost Type Dropdown - Show when category is selected */}
-      {costCategory && (
+        {/* Cost Category Dropdown */}
         <div style={{ marginTop: 12 }}>
-          <label>Cost Type</label>
+          <label>Cost Category</label>
           <select
-            value={costType}
-            onChange={(e) => setCostType(e.target.value)}
-            disabled={loading || !costTypeOptions.length}
+            value={costCategory}
+            onChange={(e) => setCostCategory(e.target.value)}
+            disabled={loading}
             style={{ height: CONTROL_H }}
           >
-            <option value="">Select type...</option>
-            {costTypeOptions.map((type) => (
-              <option key={type} value={type}>
-                {type}
+            <option value="">Select category...</option>
+            {costCategoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
               </option>
             ))}
           </select>
         </div>
-      )}
 
-      {/* Cost Description - Show when category is selected */}
-      {costCategory && (
-        <div style={{ marginTop: 12 }}>
-          <label>Cost description (optional)</label>
-          <input
-            type="text"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="Enter cost description (optional)"
-            disabled={loading}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-      )}
+        {/* Recurring Details - Only show if recurring category selected */}
+        {isRecurring && (
+          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+            <div>
+              <label>Recurrence</label>
+              <select
+                value={recurringDetails.recur_kind}
+                onChange={(e) => setRecurringDetails({
+                  ...recurringDetails,
+                  recur_kind: e.target.value as 'monthly' | 'weekly' | 'yearly'
+                })}
+                style={{ height: CONTROL_H }}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div>
+              <label>Every (interval)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={recurringDetails.recur_interval === 0 ? '' : recurringDetails.recur_interval}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, ''); // Only digits
+                  setRecurringDetails({
+                    ...recurringDetails,
+                    recur_interval: val === '' ? 0 : parseInt(val, 10)
+                  });
+                }}
+                onBlur={(e) => {
+                  // Set to 1 if empty on blur
+                  if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                    setRecurringDetails({
+                      ...recurringDetails,
+                      recur_interval: 1
+                    });
+                  }
+                }}
+                style={{ height: CONTROL_H }}
+              />
+              <p className="helper" style={{ marginTop: 4 }}>
+                {recurringDetails.recur_kind === 'monthly' ? 'month(s)' :
+                 recurringDetails.recur_kind === 'weekly' ? 'week(s)' :
+                 'year(s)'}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Date Fields - Show when category is selected */}
-      {costCategory && (
-        <>
-          {isRecurring ? (
-            // Recurring: Show Start Date and End Date in two columns
-            <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-              <div>
-                <label>Start Date</label>
+        {/* Cost Type Dropdown - Show when category is selected */}
+        {costCategory && (
+          <div style={{ marginTop: 12 }}>
+            <label>Cost Type</label>
+            <select
+              value={costType}
+              onChange={(e) => setCostType(e.target.value)}
+              disabled={loading || !costTypeOptions.length}
+              style={{ height: CONTROL_H }}
+            >
+              <option value="">Select type...</option>
+              {costTypeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Cost Description - Show when category is selected */}
+        {costCategory && (
+          <div style={{ marginTop: 12 }}>
+            <label>Cost description (optional)</label>
+            <input
+              type="text"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              placeholder="Enter cost description (optional)"
+              disabled={loading}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+        )}
+
+        {/* Date Fields - Show when category is selected */}
+        {costCategory && (
+          <>
+            {isRecurring ? (
+              // Recurring: Show Start Date and End Date in two columns
+              <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+                <div>
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    value={costDate}
+                    onChange={(e) => setCostDate(e.target.value)}
+                    disabled={loading}
+                    style={{ height: CONTROL_H }}
+                  />
+                </div>
+                <div>
+                  <label>End Date (optional)</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    disabled={loading}
+                    min={costDate}
+                    style={{ height: CONTROL_H }}
+                  />
+                </div>
+              </div>
+            ) : (
+              // Non-recurring: Show single Date field
+              <div style={{ marginTop: 12 }}>
+                <label>Date</label>
                 <input
                   type="date"
                   value={costDate}
@@ -496,284 +522,260 @@ const NewCost = () => {
                   style={{ height: CONTROL_H }}
                 />
               </div>
-              <div>
-                <label>End Date (optional)</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  disabled={loading}
-                  min={costDate}
-                  style={{ height: CONTROL_H }}
-                />
-              </div>
-            </div>
-          ) : (
-            // Non-recurring: Show single Date field
-            <div style={{ marginTop: 12 }}>
-              <label>Date</label>
-              <input
-                type="date"
-                value={costDate}
-                onChange={(e) => setCostDate(e.target.value)}
-                disabled={loading}
-                style={{ height: CONTROL_H }}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Amount Field - Show when category is selected */}
-      {costCategory && (
-        <div style={{ marginTop: 12 }}>
-          <label>Cost Amount</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={amount}
-            onChange={handleAmountChange}
-            onFocus={handleAmountFocus}
-            onBlur={handleAmountBlur}
-            placeholder="0.00"
-            disabled={loading}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button
-          className="primary"
-          onClick={handleSave}
-          disabled={loading}
-          style={{ height: CONTROL_H }}
-        >
-          {loading ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          onClick={handleClear}
-          disabled={loading}
-          style={{ height: CONTROL_H }}
-        >
-          Clear
-        </button>
-        <button
-          onClick={handleCancel}
-          disabled={loading}
-          style={{ height: CONTROL_H }}
-        >
-          Cancel
-        </button>
-      </div>
-
-      {/* Filter Buttons for Viewing Costs */}
-      <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
-        <button
-          onClick={() => setViewMode('B')}
-          style={{
-            height: CONTROL_H,
-            backgroundColor: viewMode === 'B' ? '#007bff' : '#f0f0f0',
-            color: viewMode === 'B' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: 8,
-            padding: '0 16px',
-            cursor: 'pointer',
-            fontWeight: viewMode === 'B' ? 600 : 400
-          }}
-        >
-          See Business Costs
-        </button>
-        <button
-          onClick={() => setViewMode('P')}
-          style={{
-            height: CONTROL_H,
-            backgroundColor: viewMode === 'P' ? '#007bff' : '#f0f0f0',
-            color: viewMode === 'P' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: 8,
-            padding: '0 16px',
-            cursor: 'pointer',
-            fontWeight: viewMode === 'P' ? 600 : 400
-          }}
-        >
-          See Private Costs
-        </button>
-      </div>
-
-      {/* Existing Costs Display */}
-      <div style={{ marginTop: 24 }}>
-        {loadingCosts ? (
-          <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-            Loading costs...
-          </div>
-        ) : (
-          <>
-            {/* Recurring Costs Section */}
-            {recurringCosts.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h4 style={{ margin: 0, marginBottom: 12 }}>Recurring Costs</h4>
-                
-                {/* Headers */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '80px 1fr auto',
-                  gap: 8,
-                  paddingBottom: 8,
-                  borderBottom: '2px solid #ddd',
-                  fontWeight: 600,
-                  fontSize: 14
-                }}>
-                  <div>Start Month</div>
-                  <div>Cost Type</div>
-                  <div style={{ textAlign: 'right' }}>Amount</div>
-                </div>
-
-                {/* Data rows */}
-                <div style={{ display: 'grid' }}>
-                  {recurringCosts.map((item, idx) => {
-                    const key = `${item.cost_type}-${item.start_month}`;
-                    const isExpanded = expandedRecurring.has(key);
-                    const hasDetails = item.details && item.details.length > 0;
-                    
-                    console.log('Recurring item:', item); // Debug
-                    
-                    return (
-                      <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
-                        {/* Main row */}
-                        <div
-                          onClick={() => hasDetails && toggleRecurringExpanded(key)}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '80px 1fr auto',
-                            gap: 8,
-                            cursor: hasDetails ? 'pointer' : 'default'
-                          }}
-                          onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
-                          onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
-                        >
-                          <div className="helper">{item.start_month || '—'}</div>
-                          <div className="helper">{item.cost_type}</div>
-                          <div className="helper" style={{ textAlign: 'right' }}>
-                            ${formatCurrency(item.total_amount)}
-                          </div>
-                        </div>
-
-                        {/* Expanded details */}
-                        {isExpanded && item.details.map((detail, detailIdx) => (
-                          <div
-                            key={detailIdx}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '80px 1fr auto',
-                              gap: 8,
-                              marginTop: 8,
-                              paddingLeft: 12
-                            }}
-                          >
-                            <div></div>
-                            <div className="helper" style={{ lineHeight: '1.4' }}>
-                              {detail.cost || '(No description)'}
-                            </div>
-                            <div className="helper" style={{ textAlign: 'right' }}>
-                              ${formatCurrency(detail.amount)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Non-Recurring Costs Section */}
-            {nonRecurringCosts.length > 0 && (
-              <div>
-                <h4 style={{ margin: 0, marginBottom: 12 }}>Non-Recurring Costs</h4>
-                
-                {/* Headers */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '80px 1fr auto',
-                  gap: 8,
-                  paddingBottom: 8,
-                  borderBottom: '2px solid #ddd',
-                  fontWeight: 600,
-                  fontSize: 14
-                }}>
-                  <div>Month</div>
-                  <div>Cost Type</div>
-                  <div style={{ textAlign: 'right' }}>Amount</div>
-                </div>
-
-                {/* Data rows */}
-                <div style={{ display: 'grid' }}>
-                  {nonRecurringCosts.map((item, idx) => {
-                    const key = `${item.cost_type}-${item.month}`;
-                    const isExpanded = expandedNonRecurring.has(key);
-                    const hasDetails = item.details && item.details.length > 0;
-                    
-                    console.log('Non-recurring item:', item); // Debug
-                    
-                    return (
-                      <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
-                        {/* Main row */}
-                        <div
-                          onClick={() => hasDetails && toggleNonRecurringExpanded(key)}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '80px 1fr auto',
-                            gap: 8,
-                            cursor: hasDetails ? 'pointer' : 'default'
-                          }}
-                          onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
-                          onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
-                        >
-                          <div className="helper">{item.month || '—'}</div>
-                          <div className="helper">{item.cost_type}</div>
-                          <div className="helper" style={{ textAlign: 'right' }}>
-                            ${formatCurrency(item.total_amount)}
-                          </div>
-                        </div>
-
-                        {/* Expanded details */}
-                        {isExpanded && item.details.map((detail, detailIdx) => (
-                          <div
-                            key={detailIdx}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '80px 1fr auto',
-                              gap: 8,
-                              marginTop: 8,
-                              paddingLeft: 12
-                            }}
-                          >
-                            <div></div>
-                            <div className="helper" style={{ lineHeight: '1.4' }}>
-                              {detail.cost || '(No description)'}
-                            </div>
-                            <div className="helper" style={{ textAlign: 'right' }}>
-                              ${formatCurrency(detail.amount)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* No costs message */}
-            {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
-              <p className="helper">No costs found for the last 3 months</p>
             )}
           </>
         )}
+
+        {/* Amount Field - Show when category is selected */}
+        {costCategory && (
+          <div style={{ marginTop: 12 }}>
+            <label>Cost Amount</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={handleAmountChange}
+              onFocus={handleAmountFocus}
+              onBlur={handleAmountBlur}
+              placeholder="0.00"
+              disabled={loading}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+          <button
+            className="primary"
+            onClick={handleSave}
+            disabled={loading}
+            style={{ height: CONTROL_H }}
+          >
+            {loading ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            onClick={handleClear}
+            disabled={loading}
+            style={{ height: CONTROL_H }}
+          >
+            Clear
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            style={{ height: CONTROL_H }}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* View Costs Card */}
+      <div className="card" style={{ maxWidth: 720, marginTop: 16 }}>
+        {/* Filter Buttons for Viewing Costs */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+          }}
+        >
+          <button
+            className="primary"
+            onClick={() => setViewMode('B')}
+            aria-pressed={viewMode === 'B'}
+            style={{ height: 'calc(var(--control-h) * 0.67)' }}
+          >
+            See Business Costs
+          </button>
+          <button
+            className="primary"
+            onClick={() => setViewMode('P')}
+            aria-pressed={viewMode === 'P'}
+            style={{ height: 'calc(var(--control-h) * 0.67)' }}
+          >
+            See Private Costs
+          </button>
+        </div>
+
+        {/* Existing Costs Display */}
+        <div style={{ marginTop: 24 }}>
+          {loadingCosts ? (
+            <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
+              Loading costs...
+            </div>
+          ) : (
+            <>
+              {/* Recurring Costs Section */}
+              {recurringCosts.length > 0 && (
+                <div style={{ marginBottom: 32 }}>
+                  <h4 style={{ margin: 0, marginBottom: 12 }}>
+                    {viewMode === 'B' ? 'Business recurring costs' : 'Private recurring costs'}
+                  </h4>
+                  
+                  {/* Headers */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '80px 1fr auto',
+                    gap: 8,
+                    paddingBottom: 8,
+                    borderBottom: '2px solid #ddd',
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    <div>Start Month</div>
+                    <div>Cost Type</div>
+                    <div style={{ textAlign: 'right' }}>Amount</div>
+                  </div>
+
+                  {/* Data rows */}
+                  <div style={{ display: 'grid' }}>
+                    {recurringCosts.map((item, idx) => {
+                      const key = `${item.cost_type}-${item.start_month}`;
+                      const isExpanded = expandedRecurring.has(key);
+                      const hasDetails = item.details && item.details.length > 0;
+                      
+                      console.log('Recurring item:', item); // Debug
+                      
+                      return (
+                        <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                          {/* Main row */}
+                          <div
+                            onClick={() => hasDetails && toggleRecurringExpanded(key)}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '80px 1fr auto',
+                              gap: 8,
+                              cursor: hasDetails ? 'pointer' : 'default'
+                            }}
+                            onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
+                            onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            <div className="helper">{item.start_month || '—'}</div>
+                            <div className="helper">{item.cost_type}</div>
+                            <div className="helper" style={{ textAlign: 'right' }}>
+                              ${formatCurrency(item.total_amount)}
+                            </div>
+                          </div>
+
+                          {/* Expanded details */}
+                          {isExpanded && item.details.map((detail, detailIdx) => (
+                            <div
+                              key={detailIdx}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '80px 1fr auto',
+                                gap: 8,
+                                marginTop: 8,
+                                paddingLeft: 12
+                              }}
+                            >
+                              <div></div>
+                              <div className="helper" style={{ lineHeight: '1.4' }}>
+                                {detail.cost || '(No description)'}
+                              </div>
+                              <div className="helper" style={{ textAlign: 'right' }}>
+                                ${formatCurrency(detail.amount)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Non-Recurring Costs Section */}
+              {nonRecurringCosts.length > 0 && (
+                <div>
+                  <h4 style={{ margin: 0, marginBottom: 12 }}>
+                    {viewMode === 'B' ? 'Business non-recurring costs' : 'Private non-recurring costs'}
+                  </h4>
+                  
+                  {/* Headers */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '80px 1fr auto',
+                    gap: 8,
+                    paddingBottom: 8,
+                    borderBottom: '2px solid #ddd',
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}>
+                    <div>Month</div>
+                    <div>Cost Type</div>
+                    <div style={{ textAlign: 'right' }}>Amount</div>
+                  </div>
+
+                  {/* Data rows */}
+                  <div style={{ display: 'grid' }}>
+                    {nonRecurringCosts.map((item, idx) => {
+                      const key = `${item.cost_type}-${item.month}`;
+                      const isExpanded = expandedNonRecurring.has(key);
+                      const hasDetails = item.details && item.details.length > 0;
+                      
+                      console.log('Non-recurring item:', item); // Debug
+                      
+                      return (
+                        <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                          {/* Main row */}
+                          <div
+                            onClick={() => hasDetails && toggleNonRecurringExpanded(key)}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '80px 1fr auto',
+                              gap: 8,
+                              cursor: hasDetails ? 'pointer' : 'default'
+                            }}
+                            onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
+                            onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            <div className="helper">{item.month || '—'}</div>
+                            <div className="helper">{item.cost_type}</div>
+                            <div className="helper" style={{ textAlign: 'right' }}>
+                              ${formatCurrency(item.total_amount)}
+                            </div>
+                          </div>
+
+                          {/* Expanded details */}
+                          {isExpanded && item.details.map((detail, detailIdx) => (
+                            <div
+                              key={detailIdx}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '80px 1fr auto',
+                                gap: 8,
+                                marginTop: 8,
+                                paddingLeft: 12
+                              }}
+                            >
+                              <div></div>
+                              <div className="helper" style={{ lineHeight: '1.4' }}>
+                                {detail.cost || '(No description)'}
+                              </div>
+                              <div className="helper" style={{ textAlign: 'right' }}>
+                                ${formatCurrency(detail.amount)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* No costs message */}
+              {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
+                <p className="helper">No costs found for the last 3 months</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 
