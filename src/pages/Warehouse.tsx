@@ -118,214 +118,225 @@ export default function Warehouse() {
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{maxWidth: 720}}>
-      <h3 style={{ margin:0 }}>Adjust Warehouse Inventory</h3>
+    <>
+      {/* Adjust Warehouse Inventory Card */}
+      <div className="card" style={{maxWidth: 720}}>
+        <h3 style={{ margin:0 }}>Adjust Warehouse Inventory</h3>
 
-      {/* Row 1: Product */}
-      <div style={{ marginTop: 12 }}>
-        <label>Product</label>
-        <select
-          value={productId}
-          onChange={e => setProductId(e.target.value)}
-          style={{ height: CONTROL_H }}
-        >
-          {products.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-      </div>
+        {/* Row 1: Product */}
+        <div style={{ marginTop: 12 }}>
+          <label>Product</label>
+          <select
+            value={productId}
+            onChange={e => setProductId(e.target.value)}
+            style={{ height: CONTROL_H }}
+          >
+            {products.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
 
-      {/* Row 2: Quantity | Date (50/50) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        <div>
-          <label>Qty (- sign if reducing inv.)</label>
+        {/* Row 2: Quantity | Date (50/50) */}
+        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          <div>
+            <label>Qty (- sign if reducing inv.)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={qtyStr}
+              onChange={e => setQtyStr(e.target.value)}
+              style={{ 
+                height: CONTROL_H,
+                borderColor: willGoNegative ? 'salmon' : undefined
+              }}
+            />
+            {willGoNegative && (
+              <div style={{ color: 'salmon', fontSize: 13, marginTop: 4 }}>
+                ⚠️ This will reduce {selectedProduct?.name} below zero (New qty: {newInventoryQty})
+              </div>
+            )}
+          </div>
+          <div>
+            <label>Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Product cost | Labor cost (50/50) */}
+        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          <div>
+            <label>Product cost (optional)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.000"
+              value={productCostStr}
+              onChange={e => setProductCostStr(e.target.value)}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+          <div>
+            <label>Labor cost (optional)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.000"
+              value={laborCostStr}
+              onChange={e => setLaborCostStr(e.target.value)}
+              style={{ height: CONTROL_H }}
+            />
+          </div>
+        </div>
+
+        {/* Row 4: Notes */}
+        <div style={{ marginTop: 12 }}>
+          <label>Notes (optional)</label>
           <input
             type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={qtyStr}
-            onChange={e => setQtyStr(e.target.value)}
-            style={{ 
-              height: CONTROL_H,
-              borderColor: willGoNegative ? 'salmon' : undefined
-            }}
-          />
-          {willGoNegative && (
-            <div style={{ color: 'salmon', fontSize: 13, marginTop: 4 }}>
-              ⚠️ This will reduce {selectedProduct?.name} below zero (New qty: {newInventoryQty})
-            </div>
-          )}
-        </div>
-        <div>
-          <label>Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
+            placeholder="Add notes about this entry..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
             style={{ height: CONTROL_H }}
           />
         </div>
-      </div>
 
-      {/* Row 3: Product cost | Labor cost (50/50) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        <div>
-          <label>Product cost (optional)</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="0.000"
-            value={productCostStr}
-            onChange={e => setProductCostStr(e.target.value)}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-        <div>
-          <label>Labor cost (optional)</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="0.000"
-            value={laborCostStr}
-            onChange={e => setLaborCostStr(e.target.value)}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-      </div>
-
-      {/* Row 4: Notes */}
-      <div style={{ marginTop: 12 }}>
-        <label>Notes (optional)</label>
-        <input
-          type="text"
-          placeholder="Add notes about this entry..."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          style={{ height: CONTROL_H }}
-        />
-      </div>
-
-      {/* Buttons */}
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button 
-          className="primary" 
-          onClick={async () => {
-            // Validation
-            if (!selectedProduct) {
-              alert('Select a product first')
-              return
-            }
-
-            const qty = parseQtyToNumber(qtyStr)
-            if (!Number.isInteger(qty) || qty === 0) {
-              alert('Enter a valid quantity (cannot be 0)')
-              return
-            }
-
-            if (!date) {
-              alert('Select a date')
-              return
-            }
-
-            // Optional: parse costs if provided
-            let productCostToSend: number | undefined = undefined
-            let laborCostToSend: number | undefined = undefined
-
-            if (Number.isFinite(productCost)) productCostToSend = productCost
-if (Number.isFinite(laborCost)) laborCostToSend = laborCost
-
-            try {
-              const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-              const res = await fetch(`${base}/api/warehouse-add-manual`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  product_id: productId,
-                  qty,
-                  date,
-                  product_cost: productCostToSend,
-                  labor_cost: laborCostToSend,
-                  notes: notes.trim() || undefined,
-                }),
-              })
-
-              if (!res.ok) {
-                const errData = await res.json().catch(() => ({}))
-                throw new Error(errData.error || `Save failed (${res.status})`)
+        {/* Buttons */}
+        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+          <button 
+            className="primary" 
+            onClick={async () => {
+              // Validation
+              if (!selectedProduct) {
+                alert('Select a product first')
+                return
               }
 
-              alert('Warehouse entry saved!')
+              const qty = parseQtyToNumber(qtyStr)
+              if (!Number.isInteger(qty) || qty === 0) {
+                alert('Enter a valid quantity (cannot be 0)')
+                return
+              }
 
-              // Clear form and reload inventory
+              if (!date) {
+                alert('Select a date')
+                return
+              }
+
+              // Optional: parse costs if provided
+              let productCostToSend: number | undefined = undefined
+              let laborCostToSend: number | undefined = undefined
+
+              if (Number.isFinite(productCost)) productCostToSend = productCost
+              if (Number.isFinite(laborCost)) laborCostToSend = laborCost
+
+              try {
+                const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+                const res = await fetch(`${base}/api/warehouse-add-manual`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    product_id: productId,
+                    qty,
+                    date,
+                    product_cost: productCostToSend,
+                    labor_cost: laborCostToSend,
+                    notes: notes.trim() || undefined,
+                  }),
+                })
+
+                if (!res.ok) {
+                  const errData = await res.json().catch(() => ({}))
+                  throw new Error(errData.error || `Save failed (${res.status})`)
+                }
+
+                alert('Warehouse entry saved!')
+
+                // Clear form and reload inventory
+                setQtyStr('')
+                setDate(todayYMD())
+                setProductCostStr('')
+                setLaborCostStr('')
+                setNotes('')
+                await loadInventory()
+              } catch (e: any) {
+                alert(e?.message || 'Save failed')
+              }
+            }}
+            style={{ height: CONTROL_H }}
+          >
+            Save
+          </button>
+
+          <button
+            onClick={() => {
               setQtyStr('')
               setDate(todayYMD())
               setProductCostStr('')
               setLaborCostStr('')
               setNotes('')
-              await loadInventory()
-            } catch (e: any) {
-              alert(e?.message || 'Save failed')
-            }
-          }}
-          style={{ height: CONTROL_H }}
-        >
-          Save
-        </button>
+            }}
+            style={{ height: CONTROL_H }}
+          >
+            Clear
+          </button>
 
-        <button
-          onClick={() => {
-            setQtyStr('')
-            setDate(todayYMD())
-            setProductCostStr('')
-            setLaborCostStr('')
-            setNotes('')
-          }}
-          style={{ height: CONTROL_H }}
-        >
-          Clear
-        </button>
-
-        <button
-          onClick={() => navigate(-1)}
-          style={{ height: CONTROL_H }}
-        >
-          Cancel
-        </button>
+          <button
+            onClick={() => navigate(-1)}
+            style={{ height: CONTROL_H }}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
 
-      {/* Current Inventory List */}
-      <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-        <h4 style={{ margin: '0 0 16px 0' }}>Current Inventory</h4>
+      {/* Current Inventory Card */}
+      <div className="card" style={{ maxWidth: 720, marginTop: 16 }}>
+        <h4 style={{ margin: 0, marginBottom: 12 }}>Current Inventory</h4>
         {inventory.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No inventory data yet</p>
+          <p className="helper">No inventory data yet</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'grid' }}>
             {inventory.map(item => (
               <div
                 key={item.product_id}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  background: 'var(--background-secondary)',
-                  borderRadius: 8,
+                  borderBottom: '1px solid #eee',
+                  paddingTop: 12,
+                  paddingBottom: 12
                 }}
               >
-                <span style={{ fontWeight: 500 }}>{item.product}</span>
-                <span 
-                  style={{ 
-                    fontWeight: 600,
-                    color: item.qty < 0 ? 'salmon' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)'
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: 8,
+                    alignItems: 'center'
                   }}
                 >
-                  {intFmt.format(item.qty)}
-                </span>
+                  <div className="helper">{item.product}</div>
+                  <div 
+                    className="helper"
+                    style={{ 
+                      textAlign: 'right',
+                      fontWeight: 600,
+                      color: item.qty < 0 ? 'salmon' : item.qty === 0 ? undefined : 'var(--primary)'
+                    }}
+                  >
+                    {intFmt.format(item.qty)}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }
