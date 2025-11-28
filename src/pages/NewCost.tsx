@@ -614,11 +614,30 @@ const NewCost = () => {
             {recurringCosts.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h4 style={{ margin: 0, marginBottom: 12 }}>Recurring Costs</h4>
+                
+                {/* Headers */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px 1fr auto',
+                  gap: 8,
+                  paddingBottom: 8,
+                  borderBottom: '2px solid #ddd',
+                  fontWeight: 600,
+                  fontSize: 14
+                }}>
+                  <div>Start Month</div>
+                  <div>Cost Type</div>
+                  <div style={{ textAlign: 'right' }}>Amount</div>
+                </div>
+
+                {/* Data rows */}
                 <div style={{ display: 'grid' }}>
                   {recurringCosts.map((item, idx) => {
                     const key = `${item.cost_type}-${item.start_month}`;
                     const isExpanded = expandedRecurring.has(key);
                     const hasDetails = item.details && item.details.length > 0;
+                    
+                    console.log('Recurring item:', item); // Debug
                     
                     return (
                       <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
@@ -634,7 +653,7 @@ const NewCost = () => {
                           onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
                           onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <div className="helper">{item.start_month}</div>
+                          <div className="helper">{item.start_month || '—'}</div>
                           <div className="helper">{item.cost_type}</div>
                           <div className="helper" style={{ textAlign: 'right' }}>
                             ${formatCurrency(item.total_amount)}
@@ -673,11 +692,30 @@ const NewCost = () => {
             {nonRecurringCosts.length > 0 && (
               <div>
                 <h4 style={{ margin: 0, marginBottom: 12 }}>Non-Recurring Costs</h4>
+                
+                {/* Headers */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px 1fr auto',
+                  gap: 8,
+                  paddingBottom: 8,
+                  borderBottom: '2px solid #ddd',
+                  fontWeight: 600,
+                  fontSize: 14
+                }}>
+                  <div>Month</div>
+                  <div>Cost Type</div>
+                  <div style={{ textAlign: 'right' }}>Amount</div>
+                </div>
+
+                {/* Data rows */}
                 <div style={{ display: 'grid' }}>
                   {nonRecurringCosts.map((item, idx) => {
                     const key = `${item.cost_type}-${item.month}`;
                     const isExpanded = expandedNonRecurring.has(key);
                     const hasDetails = item.details && item.details.length > 0;
+                    
+                    console.log('Non-recurring item:', item); // Debug
                     
                     return (
                       <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
@@ -693,7 +731,7 @@ const NewCost = () => {
                           onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
                           onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <div className="helper">{item.month}</div>
+                          <div className="helper">{item.month || '—'}</div>
                           <div className="helper">{item.cost_type}</div>
                           <div className="helper" style={{ textAlign: 'right' }}>
                             ${formatCurrency(item.total_amount)}
