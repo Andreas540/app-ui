@@ -536,8 +536,8 @@ export default function NewOrder() {
         />
       </div>
 
-            {/* SPECIAL: Blanco ups owes Tony $0.50 per item */}
-      {entityId === 'f4bfabe7-62cb-4e08-b98a-b3faed93278f' && qtyInt > 0 && (
+            {/* SPECIAL: Blanco owes Tony $0.50 per item */}
+      {(entityId === 'f4bfabe7-62cb-4e08-b98a-b3faed93278f' || entityId === '9f5b9939-e35f-435f-93aa-0ed5be64b2a1') && qtyInt > 0 && (
         <div style={{ 
           marginTop: 12, 
           padding: '12px 16px', 
@@ -552,7 +552,7 @@ export default function NewOrder() {
             fontSize: 14
           }}>
             <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-              Owed to Tony:
+              Owed to Tony by Blanco:
             </span>
             <span style={{ fontWeight: 600, color: '#f57c00' }}>
               {qtyInt} × $0.50 = ${(qtyInt * 0.50).toFixed(2)}
