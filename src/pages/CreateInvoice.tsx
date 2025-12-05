@@ -157,12 +157,15 @@ export default function CreateInvoicePage() {
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
   
     const formatDate = (dateStr: string) => {
-    if (!dateStr) return ''
-    // Expect "YYYY-MM-DD"
-    const [year, month, day] = dateStr.split('-')
-    if (!year || !month || !day) return dateStr
-    return `${Number(month)}/${Number(day)}/${year.slice(-2)}`
-  }
+  if (!dateStr) return ''
+
+  // Take only the date part in case it's a full ISO timestamp
+  const base = dateStr.slice(0, 10) // "YYYY-MM-DD"
+  const [year, month, day] = base.split('-')
+  if (!year || !month || !day) return dateStr
+
+  return `${Number(month)}/${Number(day)}/${year.slice(-2)}`
+}
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
