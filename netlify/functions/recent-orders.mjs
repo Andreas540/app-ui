@@ -25,6 +25,8 @@ async function getRecentOrders(event) {
         o.order_no,
         o.order_date,
         o.delivered,
+        o.delivered_quantity,
+        o.delivery_status,
         o.notes,
         c.name as customer_name,
         -- full order total
@@ -47,9 +49,20 @@ async function getRecentOrders(event) {
       ) fl ON true
       WHERE o.tenant_id = ${TENANT_ID}
         ${filter === 'not-delivered' ? sql`AND o.delivered = false` : sql``}
-      GROUP BY o.id, o.order_no, o.order_date, o.delivered, o.notes, c.name, fl.product_name, fl.qty, fl.unit_price
+      GROUP BY 
+        o.id, 
+        o.order_no, 
+        o.order_date, 
+        o.delivered,
+        o.delivered_quantity,
+        o.delivery_status,
+        o.notes, 
+        c.name, 
+        fl.product_name, 
+        fl.qty, 
+        fl.unit_price
       ORDER BY o.order_no DESC, o.id DESC
-      LIMIT 15
+      LIMIT 30
     `;
 
     return cors(200, { orders });

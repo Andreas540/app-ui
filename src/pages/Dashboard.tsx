@@ -718,7 +718,7 @@ export default function Dashboard() {
                   Collapse
                 </button>
               )}
-              {orderDisplayCount < 15 && recentOrders.length > orderDisplayCount && (
+              {orderDisplayCount < 30 && recentOrders.length > orderDisplayCount && (
                 <button
                   className="helper"
                   onClick={() => setOrderDisplayCount(prev => prev + 5)}
