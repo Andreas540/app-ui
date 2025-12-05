@@ -94,17 +94,21 @@ export default function CreateInvoicePage() {
     })()
   }, [selectedCustomerId])
 
-  useEffect(() => {
+    useEffect(() => {
     if (invoiceDate && dueDate && deliveryDate && selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId)
       if (!customer) return
-      
-      const date = new Date(invoiceDate)
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const year = String(date.getFullYear()).slice(-2)
+
+      // invoiceDate is "YYYY-MM-DD" from <input type="date">
+      const [year, month] = invoiceDate.split('-')
+      if (!year || !month) {
+        setInvoiceNo('')
+        return
+      }
+
       const customerInitials = customer.name.slice(0, 2).toUpperCase()
       const randomNum = Math.floor(Math.random() * 9000) + 1000
-      const invoiceNumber = `${month}${year}-${customerInitials}${randomNum}`
+      const invoiceNumber = `${month}${year.slice(-2)}-${customerInitials}${randomNum}`
       setInvoiceNo(invoiceNumber)
     } else {
       setInvoiceNo('')
@@ -152,9 +156,12 @@ export default function CreateInvoicePage() {
 
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
   
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(-2)}`
+    const formatDate = (dateStr: string) => {
+    if (!dateStr) return ''
+    // Expect "YYYY-MM-DD"
+    const [year, month, day] = dateStr.split('-')
+    if (!year || !month || !day) return dateStr
+    return `${Number(month)}/${Number(day)}/${year.slice(-2)}`
   }
 
   return (

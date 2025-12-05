@@ -97,9 +97,16 @@ useEffect(() => {
   }
 }, [invoiceData])
 
-  const fmtDate = (s: string) => {
-    const d = new Date(s)
-    return isNaN(d.getTime()) ? s : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
+    const fmtDate = (s: string) => {
+    if (!s) return ''
+    // If already in something like "MM/DD/YYYY", just show it
+    if (s.includes('/')) return s
+
+    // Expecting "YYYY-MM-DD" from the invoice form
+    const [year, month, day] = s.split('-')
+    if (!year || !month || !day) return s
+
+    return `${Number(month)}/${Number(day)}/${year}`
   }
   const money = (n: number) => `$${Number(n).toFixed(2)}`
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + Number(o.amount), 0), [invoiceData])
