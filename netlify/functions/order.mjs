@@ -20,12 +20,14 @@ async function getOrder(event) {
     const sql = neon(DATABASE_URL)
 
     // Get order details with cost overrides from orders table
-    const orders = await sql`
+        const orders = await sql`
       SELECT
         o.id,
         o.order_no,
         o.order_date,
         o.delivered,
+        o.delivered_quantity,
+        o.delivery_status,
         o.notes,
         o.customer_id,
         o.product_cost,
