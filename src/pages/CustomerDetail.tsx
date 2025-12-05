@@ -19,6 +19,9 @@ export default function CustomerDetailPage() {
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [deliveryOrder, setDeliveryOrder] = useState<any | null>(null)
+  const [savingDelivery, setSavingDelivery] = useState(false)
+
 
   useEffect(() => {
     (async () => {
@@ -63,37 +66,52 @@ export default function CustomerDetailPage() {
     setShowPaymentModal(true)
   }
 
-  const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
+    const handleDeliveryIconClick = (order: any) => {
+    setDeliveryOrder(order)
+  }
+
+  const handleDeliverySave = async (orderId: string, newDeliveredQuantity: number) => {
     try {
+      setSavingDelivery(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/orders-delivery`, {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ 
           order_id: orderId, 
-          delivered: newDeliveredStatus 
+          delivered_quantity: newDeliveredQuantity
         }),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
       }
-      
-      // Update the local state to reflect the change immediately
+
+      const updated = await res.json()
+
       setData(prev => {
         if (!prev) return prev
         return {
           ...prev,
           orders: prev.orders.map(order => 
-            order.id === orderId 
-              ? { ...order, delivered: newDeliveredStatus }
+            order.id === orderId
+              ? {
+                  ...order,
+                  delivered: updated.delivered,
+                  delivered_quantity: updated.delivered_quantity,
+                  delivery_status: updated.delivery_status,
+                }
               : order
           )
         }
       })
+
+      setDeliveryOrder(null)
     } catch (e: any) {
-      console.error('Failed to toggle delivery status:', e)
+      console.error('Failed to update delivery status:', e)
       alert(`Failed to update delivery status: ${e.message}`)
+    } finally {
+      setSavingDelivery(false)
     }
   }
 
@@ -289,28 +307,46 @@ export default function CustomerDetailPage() {
                     {/* DATE (MM/DD/YY) */}
                     <div className="helper">{formatUSAny((o as any).order_date)}</div>
 
-                    {/* DELIVERY CHECKMARK - moved to column 2 */}
+                                        {/* DELIVERY STATUS ICON (tri-state) */}
                     <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeliveryToggle(o.id, !(o as any).delivered)
-                        }}
-                        style={{ 
-                          background: 'transparent', 
-                          border: 'none', 
-                          cursor: 'pointer',
-                          padding: 0,
-                          fontSize: 14
-                        }}
-                        title={`Mark as ${(o as any).delivered ? 'undelivered' : 'delivered'}`}
-                      >
-                        {(o as any).delivered ? (
-                          <span style={{ color: '#10b981' }}>✓</span>
-                        ) : (
-                          <span style={{ color: '#d1d5db' }}>○</span>
-                        )}
-                      </button>
+                      {(() => {
+                        const status = (o as any).delivery_status || ((o as any).delivered ? 'delivered' : 'not_delivered')
+                        const deliveredQty = (o as any).delivered_quantity ?? 0
+                        const totalQty = (o as any).total_qty ?? (o as any).qty ?? 0
+
+                        let symbol = '○'
+                        let color = '#d1d5db'
+                        let title = 'Not delivered'
+
+                        if (status === 'delivered') {
+                          symbol = '✓'
+                          color = '#10b981'
+                          title = 'Delivered in full'
+                        } else if (status === 'partial') {
+                          symbol = '◐'
+                          color = '#f59e0b'
+                          title = `Partially delivered (${deliveredQty}/${totalQty})`
+                        }
+
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeliveryIconClick(o)
+                            }}
+                            style={{ 
+                              background: 'transparent', 
+                              border: 'none', 
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontSize: 14
+                            }}
+                            title={title}
+                          >
+                            <span style={{ color }}>{symbol}</span>
+                          </button>
+                        )
+                      })()}
                     </div>
 
                     {/* MIDDLE TEXT — compact like the date */}
@@ -472,7 +508,7 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
-      <OrderDetailModal 
+            <OrderDetailModal 
         isOpen={showOrderModal}
         onClose={() => setShowOrderModal(false)}
         order={selectedOrder}
@@ -484,9 +520,135 @@ export default function CustomerDetailPage() {
         payment={selectedPayment}
         isPartnerPayment={false}
       />
+
+      {/* DELIVERY MODAL (tri-state) */}
+      {deliveryOrder && (
+        <DeliveryModal
+          order={deliveryOrder}
+          saving={savingDelivery}
+          onClose={() => setDeliveryOrder(null)}
+          onSave={handleDeliverySave}
+        />
+      )}
     </div>
   )
 }
+type DeliveryModalProps = {
+  order: any
+  saving: boolean
+  onClose: () => void
+  onSave: (orderId: string, newDeliveredQuantity: number) => void
+}
+
+function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
+  const totalQty = (order as any).total_qty ?? (order as any).qty ?? 0
+  const initialDelivered =
+    (order as any).delivered_quantity ??
+    ((order as any).delivered ? totalQty : 0)
+
+  const [value, setValue] = useState<number>(initialDelivered)
+
+  const clampedValue = Math.max(0, Math.min(value || 0, totalQty))
+  const remaining = totalQty - clampedValue
+
+  let statusLabel = 'Not delivered'
+  if (clampedValue === 0) statusLabel = 'Not delivered'
+  else if (clampedValue === totalQty) statusLabel = 'Delivered in full'
+  else statusLabel = `Partially delivered (${clampedValue}/${totalQty})`
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.25)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="card"
+        style={{ maxWidth: 360, width: '90%', padding: 16 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h4 style={{ marginTop: 0, marginBottom: 8 }}>Update delivery</h4>
+
+        <div className="helper" style={{ marginBottom: 8 }}>
+          Order #{(order as any).order_no ?? order.id}
+        </div>
+
+        <div className="helper" style={{ marginBottom: 4 }}>
+          Ordered quantity
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          {totalQty}
+        </div>
+
+        <div className="helper" style={{ marginBottom: 4 }}>
+          Delivered quantity
+        </div>
+        <input
+          type="number"
+          min={0}
+          max={totalQty}
+          value={clampedValue}
+          onChange={(e) => setValue(Number(e.target.value) || 0)}
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <button
+            type="button"
+            className="helper"
+            onClick={() => setValue(0)}
+            style={{ flex: 1 }}
+          >
+            Set to 0
+          </button>
+          <button
+            type="button"
+            className="helper"
+            onClick={() => setValue(totalQty)}
+            style={{ flex: 1 }}
+          >
+            Full delivery
+          </button>
+        </div>
+
+        <div className="helper" style={{ marginBottom: 4 }}>
+          New status
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          {statusLabel}{' '}
+          {totalQty > 0 && remaining !== 0 && `(${remaining} remaining)`}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button
+            type="button"
+            className="helper"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => onSave(order.id, clampedValue)}
+            disabled={saving}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 
 

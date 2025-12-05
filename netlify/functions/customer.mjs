@@ -1,4 +1,5 @@
 // netlify/functions/customer.mjs
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getCustomer(event)
@@ -52,8 +53,11 @@ async function getCustomer(event) {
         o.order_no,
         o.order_date,
         o.delivered,
+        o.delivered_quantity,
+        o.delivery_status,
         o.notes,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
+        COALESCE(SUM(oi.qty),0)::integer AS total_qty,
         COUNT(oi.id) AS lines,
         fl.product_name,
         fl.qty,
@@ -76,7 +80,18 @@ async function getCustomer(event) {
       ) pa ON true
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${id}
-      GROUP BY o.id, fl.product_name, fl.qty, fl.unit_price, pa.partner_amount
+      GROUP BY
+        o.id,
+        o.order_no,
+        o.order_date,
+        o.delivered,
+        o.delivered_quantity,
+        o.delivery_status,
+        o.notes,
+        fl.product_name,
+        fl.qty,
+        fl.unit_price,
+        pa.partner_amount
       ORDER BY o.order_date DESC, o.order_no DESC
       LIMIT 100
     `
@@ -95,6 +110,7 @@ async function getCustomer(event) {
     return cors(500, { error: String(e?.message || e) })
   }
 }
+
 
 async function updateCustomer(event) {
   try {
