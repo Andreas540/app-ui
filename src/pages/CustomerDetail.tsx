@@ -307,10 +307,19 @@ export default function CustomerDetailPage() {
                     {/* DATE (MM/DD/YY) */}
                     <div className="helper">{formatUSAny((o as any).order_date)}</div>
 
-                                        {/* DELIVERY STATUS ICON (tri-state) */}
-                    <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                                                            {/* DELIVERY STATUS ICON (tri-state) */}
+                    <div
+                      style={{
+                        width: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
                       {(() => {
-                        const status = (o as any).delivery_status || ((o as any).delivered ? 'delivered' : 'not_delivered')
+                        const status =
+                          (o as any).delivery_status ||
+                          ((o as any).delivered ? 'delivered' : 'not_delivered')
                         const deliveredQty = (o as any).delivered_quantity ?? 0
                         const totalQty = (o as any).total_qty ?? (o as any).qty ?? 0
 
@@ -334,16 +343,28 @@ export default function CustomerDetailPage() {
                               e.stopPropagation()
                               handleDeliveryIconClick(o)
                             }}
-                            style={{ 
-                              background: 'transparent', 
-                              border: 'none', 
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
                               cursor: 'pointer',
                               padding: 0,
-                              fontSize: 14
                             }}
                             title={title}
                           >
-                            <span style={{ color }}>{symbol}</span>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 16,
+                                height: 16,
+                                fontSize: 14,
+                                lineHeight: 1,
+                                color,
+                              }}
+                            >
+                              {symbol}
+                            </span>
                           </button>
                         )
                       })()}
@@ -533,22 +554,32 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
-type DeliveryModalProps = {
+function DeliveryModal({
+  order,
+  saving,
+  onClose,
+  onSave,
+}: {
   order: any
   saving: boolean
   onClose: () => void
   onSave: (orderId: string, newDeliveredQuantity: number) => void
-}
+}) {
 
-function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
   const totalQty = (order as any).total_qty ?? (order as any).qty ?? 0
   const initialDelivered =
     (order as any).delivered_quantity ??
     ((order as any).delivered ? totalQty : 0)
 
-  const [value, setValue] = useState<number>(initialDelivered)
+  // Keep the raw input as a string so the user can clear it
+  const [inputValue, setInputValue] = useState<string>(
+    String(initialDelivered)
+  )
 
-  const clampedValue = Math.max(0, Math.min(value || 0, totalQty))
+  // Parse and clamp for display / status / save
+  const parsed = Number(inputValue)
+  const numeric = Number.isFinite(parsed) ? parsed : 0
+  const clampedValue = Math.max(0, Math.min(numeric, totalQty))
   const remaining = totalQty - clampedValue
 
   let statusLabel = 'Not delivered'
@@ -583,9 +614,7 @@ function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
         <div className="helper" style={{ marginBottom: 4 }}>
           Ordered quantity
         </div>
-        <div style={{ marginBottom: 8 }}>
-          {totalQty}
-        </div>
+        <div style={{ marginBottom: 8 }}>{totalQty}</div>
 
         <div className="helper" style={{ marginBottom: 4 }}>
           Delivered quantity
@@ -594,8 +623,14 @@ function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
           type="number"
           min={0}
           max={totalQty}
-          value={clampedValue}
-          onChange={(e) => setValue(Number(e.target.value) || 0)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onFocus={(e) => {
+            // When starting from 0, clear the field on first focus
+            if (e.target.value === '0') {
+              setInputValue('')
+            }
+          }}
           style={{ width: '100%', marginBottom: 8 }}
         />
 
@@ -603,7 +638,7 @@ function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
           <button
             type="button"
             className="helper"
-            onClick={() => setValue(0)}
+            onClick={() => setInputValue('0')}
             style={{ flex: 1 }}
           >
             Set to 0
@@ -611,7 +646,7 @@ function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
           <button
             type="button"
             className="helper"
-            onClick={() => setValue(totalQty)}
+            onClick={() => setInputValue(String(totalQty))}
             style={{ flex: 1 }}
           >
             Full delivery
@@ -648,6 +683,7 @@ function DeliveryModal({ order, saving, onClose, onSave }: DeliveryModalProps) {
     </div>
   )
 }
+
 
 
 
