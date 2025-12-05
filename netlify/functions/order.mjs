@@ -146,6 +146,7 @@ async function updateOrder(event) {
       product_cost,
       shipping_cost,
       partner_splits,
+      item_product_cost,
     } = body
 
     if (!id) return cors(400, { error: 'id is required' })
@@ -197,6 +198,15 @@ async function updateOrder(event) {
           unit_price = ${unit_price}
       WHERE order_id = ${id}
     `
+    // If we have a per-item product cost (override or from history),
+    // persist it to order_items.product_cost only.
+    if (typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost)) {
+      await sql`
+        UPDATE order_items
+        SET product_cost = ${item_product_cost}
+        WHERE order_id = ${id}
+      `
+    }
 
     // Update partner splits - delete old ones and insert new ones
     await sql`DELETE FROM order_partners WHERE order_id = ${id}`

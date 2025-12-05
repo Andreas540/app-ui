@@ -303,6 +303,9 @@ export default function EditOrder() {
           product_cost: productCostToSend,
           shipping_cost: shippingCostToSend,
           partner_splits: splits.length ? splits : undefined,
+          item_product_cost: Number.isFinite(effectiveProductCost)
+            ? effectiveProductCost
+            : undefined,
         }),
       })
 
