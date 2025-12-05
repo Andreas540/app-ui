@@ -36,13 +36,22 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
-
+  
+  // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
+    setOrder(initialOrder)
+    setPartnerSplits([]) // clear any old partner data
+  }, [initialOrder])
+
+    useEffect(() => {
     if (!initialOrder?.id || !isOpen) return
 
     const fetchOrderDetails = async () => {
       try {
         setLoadingPartners(true)
+        // optional extra safety: clear here as well so nothing stale shows while loading
+        // setPartnerSplits([])
+
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const res = await fetch(`${base}/api/order?id=${initialOrder.id}`)
         if (!res.ok) throw new Error('Failed to fetch order details')
@@ -51,7 +60,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         // Update order with profit data
         setOrder({ ...initialOrder, ...data.order })
         
-        // Fetch partner names
+        // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
           const bootRes = await fetch(`${base}/api/bootstrap`)
           if (bootRes.ok) {
@@ -67,10 +76,18 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
               }
             })
             setPartnerSplits(enrichedSplits)
+          } else {
+            // if bootstrap fails, don't show stale data
+            setPartnerSplits([])
           }
+        } else {
+          // IMPORTANT: clear partnerSplits when this order has no splits
+          setPartnerSplits([])
         }
       } catch (e) {
         console.error('Failed to load order details:', e)
+        // also clear on error to avoid showing data from a previous order
+        setPartnerSplits([])
       } finally {
         setLoadingPartners(false)
       }
