@@ -207,6 +207,24 @@ async function updateOrder(event) {
         `
       }
     }
+    // 🔄 Keep delivered_quantity in sync with delivered flag
+if (typeof delivered === 'boolean') {
+  // Recompute total quantity from order_items
+  const totalRes = await sql`
+    SELECT COALESCE(SUM(qty), 0) AS total_qty
+    FROM order_items
+    WHERE order_id = ${id}
+  `
+
+  const totalQty = Number(totalRes[0]?.total_qty || 0)
+  const newDeliveredQty = delivered ? totalQty : 0
+
+  await sql`
+    UPDATE orders
+    SET delivered_quantity = ${newDeliveredQty}
+    WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+  `
+}
 
     return cors(200, { ok: true })
   } catch (e) {
