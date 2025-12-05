@@ -78,13 +78,25 @@ async function createOrder(event) {
       }
     }
 
-    // Header
-    const hdr = await sql`
-      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, discount, notes, product_cost, shipping_cost)
-      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, ${!!delivered}, ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum})
-      RETURNING id
-    `;
-    const orderId = hdr[0].id;
+    // Determine delivered_quantity
+const deliveredQty = delivered ? qtyInt : 0;
+
+// Header (now includes delivered_quantity)
+const hdr = await sql`
+  INSERT INTO orders (
+    tenant_id, customer_id, order_no, order_date,
+    delivered, delivered_quantity,
+    discount, notes, product_cost, shipping_cost
+  )
+  VALUES (
+    ${TENANT_ID}, ${customer_id}, ${orderNo}, ${date},
+    ${!!delivered}, ${deliveredQty},
+    ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum}
+  )
+  RETURNING id
+`;
+const orderId = hdr[0].id;
+
 
     // Line (snapshot product cost)
     await sql`
