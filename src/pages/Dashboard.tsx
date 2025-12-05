@@ -33,6 +33,48 @@ const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 // Fixed-but-responsive height: shorter on phones, taller on desktop
 const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
 
+function getDeliveryVisual(order: any) {
+  const deliveredQty = Number(order.delivered_quantity ?? 0)
+  const totalQty = Number(order.total_qty ?? order.qty ?? 0)
+
+  let status: 'not_delivered' | 'partial' | 'delivered'
+
+  if (order.delivery_status) {
+    status = order.delivery_status as any
+  } else if (totalQty > 0) {
+    if (deliveredQty <= 0) {
+      status = 'not_delivered'
+    } else if (deliveredQty >= totalQty) {
+      status = 'delivered'
+    } else {
+      status = 'partial'
+    }
+  } else {
+    // Fallback if qty missing: use boolean delivered
+    status = order.delivered ? 'delivered' : 'not_delivered'
+  }
+
+  let symbol = '○'
+  let color = '#d1d5db'
+  let label = 'Not delivered'
+
+  if (status === 'delivered') {
+    symbol = '✓'
+    color = '#10b981'
+    label = totalQty
+      ? `Delivered in full (${deliveredQty}/${totalQty})`
+      : 'Delivered in full'
+  } else if (status === 'partial') {
+    symbol = '◐'
+    color = '#f59e0b'
+    label = totalQty
+      ? `Partially delivered (${deliveredQty}/${totalQty})`
+      : 'Partially delivered'
+  }
+
+  return { symbol, color, label, status }
+}
+
 type MonthlyPoint = {
   month: string // "YYYY-MM"
   revenue: number
@@ -405,7 +447,7 @@ export default function Dashboard() {
   const LINE_GAP = 4
 
   // Handle delivery toggle for orders
-  const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
+    const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/orders-delivery`, {
@@ -422,11 +464,18 @@ export default function Dashboard() {
       }
       
       setRecentOrders(prev => 
-        prev.map(order => 
-          order.id === orderId 
-            ? { ...order, delivered: newDeliveredStatus }
-            : order
-        )
+        prev.map(order => {
+          if (order.id !== orderId) return order
+          const totalQty = Number(order.total_qty ?? order.qty ?? 0)
+          const newDeliveredQty = newDeliveredStatus ? totalQty : 0
+          const newStatus = newDeliveredStatus ? 'delivered' : 'not_delivered'
+          return {
+            ...order,
+            delivered: newDeliveredStatus,
+            delivered_quantity: newDeliveredQty,
+            delivery_status: newStatus,
+          }
+        })
       )
     } catch (e: any) {
       alert(`Failed to update delivery status: ${e.message}`)
@@ -716,28 +765,30 @@ export default function Dashboard() {
                     {/* DATE (MM/DD/YY) */}
                     <div className="helper">{formatUSAny(o.order_date)}</div>
 
-                    {/* DELIVERY CHECKMARK */}
+                                        {/* DELIVERY STATUS ICON (tri-state) */}
                     <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeliveryToggle(o.id, !o.delivered)
-                        }}
-                        style={{ 
-                          background: 'transparent', 
-                          border: 'none', 
-                          cursor: 'pointer',
-                          padding: 0,
-                          fontSize: 14
-                        }}
-                        title={`Mark as ${o.delivered ? 'undelivered' : 'delivered'}`}
-                      >
-                        {o.delivered ? (
-                          <span style={{ color: '#10b981' }}>✓</span>
-                        ) : (
-                          <span style={{ color: '#d1d5db' }}>○</span>
-                        )}
-                      </button>
+                      {(() => {
+                        const { symbol, color, label } = getDeliveryVisual(o)
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Dashboard behavior: full or none
+                              handleDeliveryToggle(o.id, !o.delivered)
+                            }}
+                            style={{ 
+                              background: 'transparent', 
+                              border: 'none', 
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontSize: 14
+                            }}
+                            title={label}
+                          >
+                            <span style={{ color }}>{symbol}</span>
+                          </button>
+                        )
+                      })()}
                     </div>
 
                     {/* MIDDLE: Customer name + details */}
