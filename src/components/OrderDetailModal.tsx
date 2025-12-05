@@ -91,6 +91,45 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
 
   const intFmt = new Intl.NumberFormat('en-US')
 
+    // Tri-state delivery status
+  const deliveredQty = Number(order.delivered_quantity ?? 0)
+  const totalQty = Number(order.total_qty ?? order.qty ?? 0)
+
+  let deliveryStatus: 'not_delivered' | 'partial' | 'delivered'
+
+  if (order.delivery_status) {
+    deliveryStatus = order.delivery_status as any
+  } else if (totalQty > 0) {
+    if (deliveredQty <= 0) {
+      deliveryStatus = 'not_delivered'
+    } else if (deliveredQty >= totalQty) {
+      deliveryStatus = 'delivered'
+    } else {
+      deliveryStatus = 'partial'
+    }
+  } else {
+    // Fallback if qty is missing: use boolean delivered
+    deliveryStatus = order.delivered ? 'delivered' : 'not_delivered'
+  }
+
+  let deliverySymbol = '○'
+  let deliveryColor = '#d1d5db'
+  let deliveryText = 'Not delivered'
+
+  if (deliveryStatus === 'delivered') {
+    deliverySymbol = '✓'
+    deliveryColor = '#10b981'
+    deliveryText = totalQty
+      ? `Delivered in full (${deliveredQty}/${totalQty})`
+      : 'Delivered in full'
+  } else if (deliveryStatus === 'partial') {
+    deliverySymbol = '◐'
+    deliveryColor = '#f59e0b'
+    deliveryText = totalQty
+      ? `Partially delivered (${deliveredQty}/${totalQty})`
+      : 'Partially delivered'
+  }
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -122,18 +161,18 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
           </div>
         )}
 
-        {/* Delivered Status */}
+                {/* Delivered Status (tri-state) */}
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: 8,
           fontSize: 14,
           fontWeight: 600,
-          color: order.delivered ? '#10b981' : '#d1d5db',
+          color: deliveryColor,
           marginTop: 2
         }}>
-          <span>{order.delivered ? '✓' : '○'}</span>
-          <span>{order.delivered ? 'Delivered' : 'Not Delivered'}</span>
+          <span>{deliverySymbol}</span>
+          <span>{deliveryText}</span>
         </div>
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
