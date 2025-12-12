@@ -3,8 +3,12 @@
 import jwt from 'jsonwebtoken'
 
 /**
- * Extract user info from JWT token in request headers
- * Returns user object or null if invalid/missing
+ * Extract user identity from JWT token in request headers
+ * Returns { userId, email } or null if invalid/missing
+ *
+ * MIGRATION RULE:
+ * - Do NOT trust tenantId/role/accessLevel from the JWT for authorization.
+ * - JWT is identity only; authorization is resolved via DB in resolveAuthz().
  */
 export function getUserFromToken(event) {
   try {
@@ -14,26 +18,19 @@ export function getUserFromToken(event) {
       return null
     }
 
-    // Get token from Authorization header
     const authHeader = event.headers.authorization || event.headers.Authorization
-    if (!authHeader) {
-      return null
-    }
+    if (!authHeader) return null
 
-    // Extract token (format: "Bearer TOKEN")
-    const token = authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
       : authHeader
 
-    // Verify and decode token
     const decoded = jwt.verify(token, JWT_SECRET)
-    
+
+    // Identity only (source of truth for authz is DB)
     return {
       userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      tenantId: decoded.tenantId,
-      accessLevel: decoded.accessLevel
+      email: decoded.email
     }
   } catch (err) {
     console.error('Token verification failed:', err.message)
@@ -42,33 +39,49 @@ export function getUserFromToken(event) {
 }
 
 /**
- * Get tenant ID for the current request
- * Priority:
- * 1. From JWT token (new auth system)
- * 2. From TENANT_ID environment variable (legacy BLV)
+ * LEGACY (migration-safe):
+ * Returns tenant id from environment only.
+ *
+ * Why:
+ * - Keeps BLV working if some endpoints aren't migrated yet.
+ * - Prevents accidental trust of JWT tenantId (which could cause leakage).
+ *
+ * New code should use:
+ *   const authz = await resolveAuthz({ sql, event })
+ *   const TENANT_ID = authz.tenantId
  */
 export function getTenantId(event) {
-  // Try to get from JWT token first
-  const user = getUserFromToken(event)
-  if (user && user.tenantId) {
-    return user.tenantId
-  }
-
-  // Fall back to environment variable (legacy BLV support)
   const { TENANT_ID } = process.env
   return TENANT_ID || null
 }
 
 /**
- * Check if user is a super admin
+ * DEPRECATED during migration:
+ * Platform/tenant roles must not be trusted from JWT.
+ * Migrate to DB-based role checks via resolveAuthz().
  */
 export function isSuperAdmin(event) {
-  const user = getUserFromToken(event)
-  return user && user.role === 'super_admin'
+  return false
+}
+
+/**
+ * DEPRECATED during migration:
+ * Do not trust roles from JWT.
+ * Migrate role checks to DB using resolveAuthz().
+ *
+ * If you currently use this in production, do NOT rely on it for security.
+ */
+export function requireRole(event, allowedRoles) {
+  return {
+    statusCode: 501,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'requireRole not migrated; use resolveAuthz() role checks' })
+  }
 }
 
 /**
  * Require authentication - returns error response if not authenticated
+ * (Identity check only)
  */
 export function requireAuth(event) {
   const user = getUserFromToken(event)
@@ -79,29 +92,67 @@ export function requireAuth(event) {
       body: JSON.stringify({ error: 'Authentication required' })
     }
   }
-  return null // No error, user is authenticated
+  return null
 }
 
 /**
- * Require specific role - returns error response if unauthorized
+ * Resolve tenant + role from DB memberships (source of truth).
+ * - JWT is used only to identify userId
+ * - tenant/role are loaded from DB
+ * - falls back to env TENANT_ID to keep BLV intact
  */
-export function requireRole(event, allowedRoles) {
+export async function resolveAuthz({ sql, event }) {
+  const { TENANT_ID } = process.env
+  if (!TENANT_ID) return { error: 'TENANT_ID missing' } // still required as BLV fallback
+
   const user = getUserFromToken(event)
-  if (!user) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Authentication required' })
-    }
+
+  // No/invalid token => preserve current BLV behavior for now
+  if (!user?.userId) {
+    return { tenantId: TENANT_ID, role: 'tenant_admin', mode: 'fallback' }
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    return {
-      statusCode: 403,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Insufficient permissions' })
-    }
+  const requestedTenantId =
+    event.headers['x-tenant-id'] ||
+    event.headers['X-Tenant-Id'] ||
+    null
+
+  // Ensure app user exists (and store email if present)
+  await sql`
+    insert into public.app_users (id, email)
+    values (${user.userId}::uuid, ${user.email ?? null})
+    on conflict (id) do update
+      set email = coalesce(public.app_users.email, excluded.email)
+  `
+
+  // If tenant explicitly requested, require membership for it
+  if (requestedTenantId) {
+    const rows = await sql`
+      select tm.tenant_id::text as tenant_id, tm.role
+      from public.tenant_memberships tm
+      join public.app_users u on u.id = tm.user_id
+      where tm.user_id = ${user.userId}::uuid
+        and tm.tenant_id = ${requestedTenantId}::uuid
+        and u.is_disabled = false
+      limit 1
+    `
+    if (!rows.length) return { error: 'Not authorized for requested tenant' }
+    return { tenantId: rows[0].tenant_id, role: rows[0].role, mode: 'membership' }
   }
 
-  return null // No error, user has required role
+  // Default tenant from memberships
+  const rows = await sql`
+    select tm.tenant_id::text as tenant_id, tm.role
+    from public.tenant_memberships tm
+    join public.app_users u on u.id = tm.user_id
+    where tm.user_id = ${user.userId}::uuid
+      and u.is_disabled = false
+    order by tm.created_at asc
+    limit 1
+  `
+  if (rows.length) return { tenantId: rows[0].tenant_id, role: rows[0].role, mode: 'membership' }
+
+  // No membership yet => BLV intact
+  return { tenantId: TENANT_ID, role: 'tenant_admin', mode: 'fallback' }
 }
+
