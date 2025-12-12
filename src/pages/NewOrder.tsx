@@ -265,8 +265,11 @@ export default function NewOrder() {
   const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
 
   if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
-  if (!people.length || !products.length) return <div className="card"><p>No data yet.</p></div>
+if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+
+const hasCustomers = people.length > 0
+const hasProducts = products.length > 0
+
 
   const CONTROL_H = 44
 
@@ -292,6 +295,11 @@ export default function NewOrder() {
       {/* Search customer (full width) */}
       <div style={{ marginTop: 12, position: 'relative' }}>
         <label>Search customer</label>
+{!hasCustomers && (
+  <div className="helper" style={{ marginTop: 4 }}>
+    No customers yet — create your first customer to place an order.
+  </div>
+)}
         <input
           ref={inputRef}
           placeholder="Start typing a name…"
@@ -352,12 +360,17 @@ export default function NewOrder() {
         <div>
           <label>Product</label>
           <select
-            value={productId}
-            onChange={e=>setProductId(e.target.value)}
-            style={{ height: CONTROL_H }}
-          >
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+  value={productId}
+  onChange={e=>setProductId(e.target.value)}
+  style={{ height: CONTROL_H }}
+  disabled={!hasProducts}
+>
+  {!hasProducts ? (
+    <option value="">No products yet — create a product first</option>
+  ) : (
+    products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+  )}
+</select>
         </div>
         <div>
           <label>Order date</label>
