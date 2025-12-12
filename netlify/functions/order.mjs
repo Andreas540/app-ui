@@ -75,10 +75,12 @@ WHERE oi.order_id = ${id}
 
     // Get partner splits for this order
     const partnerSplits = await sql`
-      SELECT partner_id, amount
-      FROM order_partners
-      WHERE order_id = ${id}
-      ORDER BY amount DESC
+  SELECT op.partner_id, op.amount
+  FROM order_partners op
+  JOIN orders o ON o.id = op.order_id
+  WHERE op.order_id = ${id}
+    AND o.tenant_id = ${TENANT_ID}
+  ORDER BY op.amount DESC
     `
 
     // Get historical shipping cost
@@ -209,19 +211,25 @@ const TENANT_ID = authz.tenantId
 
     // Update order_items
     await sql`
-      UPDATE order_items
-      SET product_id = ${product_id},
-          qty = ${qty},
-          unit_price = ${unit_price}
-      WHERE order_id = ${id}
+  UPDATE order_items oi
+  SET product_id = ${product_id},
+      qty = ${qty},
+      unit_price = ${unit_price}
+  FROM orders o
+  WHERE oi.order_id = o.id
+    AND o.id = ${id}
+    AND o.tenant_id = ${TENANT_ID}
     `
     // If we have a per-item product cost (override or from history),
     // persist it to order_items.product_cost only.
     if (typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost)) {
       await sql`
-        UPDATE order_items
-        SET product_cost = ${item_product_cost}
-        WHERE order_id = ${id}
+  UPDATE order_items oi
+  SET product_cost = ${item_product_cost}
+  FROM orders o
+  WHERE oi.order_id = o.id
+    AND o.id = ${id}
+    AND o.tenant_id = ${TENANT_ID}
       `
     }
 
@@ -240,9 +248,11 @@ const TENANT_ID = authz.tenantId
 if (typeof delivered === 'boolean') {
   // Recompute total quantity from order_items
   const totalRes = await sql`
-    SELECT COALESCE(SUM(qty), 0) AS total_qty
-    FROM order_items
-    WHERE order_id = ${id}
+  SELECT COALESCE(SUM(oi.qty), 0) AS total_qty
+  FROM order_items oi
+  JOIN orders o ON o.id = oi.order_id
+  WHERE o.id = ${id}
+    AND o.tenant_id = ${TENANT_ID}
   `
 
   const totalQty = Number(totalRes[0]?.total_qty || 0)
@@ -265,16 +275,19 @@ if (typeof delivered === 'boolean') {
 async function deleteOrder(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+const { DATABASE_URL } = process.env
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
-    const body = JSON.parse(event.body || '{}')
-    const { id } = body
+const body = JSON.parse(event.body || '{}')
+const { id } = body
+if (!id) return cors(400, { error: 'id is required' })
 
-    if (!id) return cors(400, { error: 'id is required' })
+const sql = neon(DATABASE_URL)
 
-    const sql = neon(DATABASE_URL)
+const authz = await resolveAuthz({ sql, event })
+if (authz.error) return cors(403, { error: authz.error })
+
+const TENANT_ID = authz.tenantId
 
     // Delete associated records first
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
@@ -300,7 +313,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,PUT,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   }
