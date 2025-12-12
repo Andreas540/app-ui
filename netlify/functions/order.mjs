@@ -1,4 +1,7 @@
 // netlify/functions/order.mjs
+
+import { resolveAuthz } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getOrder(event)
@@ -10,14 +13,18 @@ export async function handler(event) {
 async function getOrder(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+const { DATABASE_URL } = process.env
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
-    const id = (event.queryStringParameters?.id || '').trim()
-    if (!id) return cors(400, { error: 'id required' })
+const id = (event.queryStringParameters?.id || '').trim()
+if (!id) return cors(400, { error: 'id required' })
 
-    const sql = neon(DATABASE_URL)
+const sql = neon(DATABASE_URL)
+
+const authz = await resolveAuthz({ sql, event })
+if (authz.error) return cors(403, { error: authz.error })
+
+const TENANT_ID = authz.tenantId
 
     // Get order details with cost overrides from orders table
         const orders = await sql`
@@ -35,9 +42,12 @@ async function getOrder(event) {
         c.name AS customer_name,
         c.customer_type
       FROM orders o
-      JOIN customers c ON c.id = o.customer_id
-      WHERE o.tenant_id = ${TENANT_ID} AND o.id = ${id}
-      LIMIT 1
+JOIN customers c 
+  ON c.id = o.customer_id 
+ AND c.tenant_id = o.tenant_id
+WHERE o.tenant_id = ${TENANT_ID}
+  AND o.id = ${id}
+LIMIT 1
     `
     
     if (orders.length === 0) return cors(404, { error: 'Order not found' })
@@ -52,8 +62,10 @@ async function getOrder(event) {
         oi.cost as historical_product_cost,
         p.name AS product_name
       FROM order_items oi
-      LEFT JOIN products p ON p.id = oi.product_id
-      WHERE oi.order_id = ${id}
+JOIN orders o ON o.id = oi.order_id
+LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+WHERE oi.order_id = ${id}
+  AND o.tenant_id = ${TENANT_ID}
       LIMIT 1
     `
 
@@ -129,9 +141,9 @@ async function getOrder(event) {
 async function updateOrder(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+const { DATABASE_URL } = process.env
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+
 
     const body = JSON.parse(event.body || '{}')
     const {
@@ -157,12 +169,17 @@ async function updateOrder(event) {
 
     const sql = neon(DATABASE_URL)
 
+    const authz = await resolveAuthz({ sql, event })
+if (authz.error) return cors(403, { error: authz.error })
+
+const TENANT_ID = authz.tenantId
+
     // Look up product name to decide if negative price is allowed
     const products = await sql`
-      SELECT name
-      FROM products
-      WHERE id = ${product_id}
-      LIMIT 1
+  SELECT name
+  FROM products
+  WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
+  LIMIT 1
     `
     if (products.length === 0) return cors(400, { error: 'Invalid product_id' })
 
