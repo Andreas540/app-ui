@@ -1,5 +1,5 @@
 // netlify/functions/customers.mjs
-import { getTenantId } from './utils/auth.mjs'
+import { resolveAuthz } from './utils/auth.mjs'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
@@ -14,15 +14,17 @@ async function listCustomers(event) {
     const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
-    // Get tenant ID from JWT token or environment variable (legacy)
-    const tenantId = getTenantId(event);
-    if (!tenantId) {
-      return cors(401, { error: 'Tenant context not found. Please log in.' });
-    }
-
-    console.log('Loading customers for tenant:', tenantId);
-
     const sql = neon(DATABASE_URL);
+
+const authz = await resolveAuthz({ sql, event });
+if (authz.error) {
+  return cors(403, { error: authz.error });
+}
+
+const tenantId = authz.tenantId;
+
+console.log('Loading customers for tenant:', tenantId);
+
     const q = (event.queryStringParameters?.q || '').trim();
     const like = q ? `%${q.toLowerCase()}%` : null;
 
@@ -88,13 +90,16 @@ async function createCustomer(event) {
     const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
-    // Get tenant ID from JWT token or environment variable (legacy)
-    const tenantId = getTenantId(event);
-    if (!tenantId) {
-      return cors(401, { error: 'Tenant context not found. Please log in.' });
-    }
+    const sql = neon(DATABASE_URL);
 
-    console.log('Creating customer for tenant:', tenantId);
+const authz = await resolveAuthz({ sql, event });
+if (authz.error) {
+  return cors(403, { error: authz.error });
+}
+
+const tenantId = authz.tenantId;
+
+console.log('Creating customer for tenant:', tenantId);
 
     const body = JSON.parse(event.body || '{}');
 
@@ -126,8 +131,6 @@ async function createCustomer(event) {
       }
       ship = n;
     }
-
-    const sql = neon(DATABASE_URL);
 
     const ins = await sql`
       INSERT INTO customers (
@@ -165,7 +168,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };
