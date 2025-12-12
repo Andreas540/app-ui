@@ -1,4 +1,7 @@
 // netlify/functions/orders.mjs
+
+import { resolveAuthz } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'POST')    return createOrder(event);
@@ -8,9 +11,16 @@ export async function handler(event) {
 async function createOrder(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+const { DATABASE_URL } = process.env;
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+
+const sql = neon(DATABASE_URL);
+
+const authz = await resolveAuthz({ sql, event });
+if (authz.error) return cors(403, { error: authz.error });
+
+const TENANT_ID = authz.tenantId;
+
 
     const body = JSON.parse(event.body || '{}');
     const {
@@ -28,8 +38,6 @@ async function createOrder(event) {
       return cors(400, { error: 'Missing fields: customer_id, product_id, qty, unit_price, date' });
     }
     if (!(qtyInt > 0)) return cors(400, { error: 'qty must be > 0' });
-
-    const sql = neon(DATABASE_URL);
 
     // NEW: enforce unit_price sign based on product name (Refund/Discount => price must be negative)
     const prodRows = await sql`
@@ -204,7 +212,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'POST,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };
