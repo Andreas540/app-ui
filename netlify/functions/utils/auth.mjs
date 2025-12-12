@@ -133,7 +133,7 @@ export async function resolveAuthz({ sql, event }) {
       join public.app_users u on u.id = tm.user_id
       where tm.user_id = ${user.userId}::uuid
         and tm.tenant_id = ${requestedTenantId}::uuid
-        and u.is_disabled = false
+        and u.is_disabled is not true
       limit 1
     `
     if (!rows.length) return { error: 'Not authorized for requested tenant' }
@@ -146,7 +146,7 @@ export async function resolveAuthz({ sql, event }) {
     from public.tenant_memberships tm
     join public.app_users u on u.id = tm.user_id
     where tm.user_id = ${user.userId}::uuid
-      and u.is_disabled = false
+      and u.is_disabled is not true
     order by tm.created_at asc
     limit 1
   `
