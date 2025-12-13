@@ -4,6 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { fetchBootstrap, type Person, type Product } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('authToken')
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 type PartnerRef = { id: string; name: string }
 
 export default function EditOrder() {
@@ -50,7 +57,9 @@ export default function EditOrder() {
 
         // Fetch order details
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/order?id=${orderId}`)
+        const res = await fetch(`${base}/api/order?id=${orderId}`, {
+  headers: getAuthHeaders(),
+})
         if (!res.ok) throw new Error('Failed to load order')
         
         const orderData = await res.json()
@@ -105,7 +114,10 @@ export default function EditOrder() {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const dateOnly = orderDate.split('T')[0] // Extract YYYY-MM-DD from potential ISO string
-        const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${dateOnly}`)
+        const res = await fetch(
+  `${base}/api/historical-costs?product_id=${productId}&customer_id=${customerId}&order_date=${dateOnly}`,
+  { headers: getAuthHeaders() }
+)
         if (res.ok) {
           const data = await res.json()
           setHistoricalProductCost(data.product_cost)
@@ -290,7 +302,10 @@ export default function EditOrder() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/order`, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+    'content-type': 'application/json',
+    ...getAuthHeaders(),
+  },
         body: JSON.stringify({
           id: orderId,
           customer_id: person.id,
@@ -325,7 +340,10 @@ export default function EditOrder() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/order`, {
         method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+    'content-type': 'application/json',
+    ...getAuthHeaders(),
+  },
         body: JSON.stringify({ id: orderId }),
       })
 
