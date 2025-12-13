@@ -121,9 +121,8 @@ const TENANT_ID = authz.tenantId
 async function updateCustomer(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+    const { DATABASE_URL } = process.env
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const body = JSON.parse(event.body || '{}')
     const {
@@ -144,6 +143,10 @@ async function updateCustomer(event) {
     }
 
     const sql = neon(DATABASE_URL)
+    const authz = await resolveAuthz({ sql, event })
+if (authz.error) return cors(403, { error: authz.error })
+
+const TENANT_ID = authz.tenantId
 
     // Get current shipping cost to check if it changed
     const current = await sql`
@@ -155,7 +158,7 @@ async function updateCustomer(event) {
     if (current.length === 0) return cors(404, { error: 'Customer not found' })
 
     const currentShippingCost = current[0].shipping_cost
-    const shippingCostChanged = sc !== null && sc !== currentShippingCost
+    const shippingCostChanged = sc !== currentShippingCost
 
     // Determine if we should update customers.shipping_cost immediately
     let shouldUpdateShippingCostNow = false;
