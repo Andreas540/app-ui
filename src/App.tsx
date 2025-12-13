@@ -54,10 +54,23 @@ export default function App() {
   const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
   // Handle logout
-  const handleLogout = () => {
-    authLogout() // Clear new auth
-    setLegacyUserLevel(null) // Clear legacy auth
+    const handleLogout = () => {
+    // New auth (your AuthContext may already do this, but we make it deterministic)
+    try { authLogout() } catch {}
+
+    // Legacy auth
+    setLegacyUserLevel(null)
     localStorage.removeItem('userLevel')
+
+    // Hard guarantee: remove JWT used by resolveAuthz() identity
+    localStorage.removeItem('authToken')
+
+    // Wipe any other cached auth artifacts if you ever introduced them
+    // localStorage.removeItem('tenantId') // only if it exists in your app
+    // localStorage.removeItem('role')     // only if it exists in your app
+
+    // Hard reload to clear in-memory state
+    location.href = '/login'
   }
 
   useEffect(() => {
