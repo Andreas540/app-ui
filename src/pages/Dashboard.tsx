@@ -94,15 +94,23 @@ type RpsPoint = {
 // ---- FETCH & NORMALIZE: existing graph (kept as-is) ----
 async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/metrics/monthly?months=3`, { cache: 'no-store' })
+  const token = localStorage.getItem('authToken')
+
+  const res = await fetch(`${base}/api/metrics/monthly?months=3`, {
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
   }
+
   const data = await res.json()
   const rows = Array.isArray(data?.rows) ? data.rows : []
 
-  // Normalize and compute % client-side for truth
   return rows.map((r: any) => {
     const month = String(r.month ?? '')
     const revenue = Number(r.revenue ?? 0)
@@ -112,14 +120,24 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   }) as MonthlyPoint[]
 }
 
+
 // --- NEW: RPS monthly fetch (for Operating profit & Surplus slides) ---
 async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/rps/monthly?months=${months}`, { cache: 'no-store' })
+  const token = localStorage.getItem('authToken')
+
+  const res = await fetch(`${base}/api/rps/monthly?months=${months}`, {
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load RPS monthly (status ${res.status}) ${text?.slice(0,140)}`)
   }
+
   const { rows } = await res.json()
   const safe = Array.isArray(rows) ? rows : []
 
@@ -130,13 +148,13 @@ async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
     const operatingPct = revenue > 0 ? operating_profit / revenue : 0
     const surplusPct = revenue > 0 ? surplus / revenue : 0
 
-    return { 
-      month: String(r.month ?? ''), 
-      revenue, 
-      operating_profit, 
-      operatingPct, 
-      surplus, 
-      surplusPct 
+    return {
+      month: String(r.month ?? ''),
+      revenue,
+      operating_profit,
+      operatingPct,
+      surplus,
+      surplusPct
     }
   })
 }

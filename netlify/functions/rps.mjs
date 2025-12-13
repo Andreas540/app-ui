@@ -1,19 +1,28 @@
 // netlify/functions/rps.mjs
 import { neon } from '@neondatabase/serverless'
+import { resolveAuthz } from './utils/auth.mjs'
 
 export const handler = async (event) => {
+  // CORS preflight
+  if (event.httpMethod === 'OPTIONS') return resp(204, {})
+
   try {
-    const url = new URL(event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
+    const url = new URL(
+      event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`
+    )
     const monthsParam = parseInt(url.searchParams.get('months') || '3', 10)
     const months = Number.isFinite(monthsParam) ? Math.max(1, Math.min(12, monthsParam)) : 3
 
-    const { DATABASE_URL, TENANT_ID } = process.env
+    const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return resp(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return resp(500, { error: 'TENANT_ID missing' })
 
     const sql = neon(DATABASE_URL)
 
-    // Get the last N months that have actual revenue (non-zero revenue_amount)
+    // ✅ Multi-tenant source of truth (DB lookup via JWT -> user -> tenant)
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return resp(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
+
     const rows = await sql/* sql */`
       with mset as (
         select month_start
@@ -25,8 +34,8 @@ export const handler = async (event) => {
         limit ${months}
       )
       select
-        to_char(v.month_start, 'YYYY-MM')           as month,       -- for chart labels
-        v.month_start                               as month_start, -- raw date if you ever need it
+        to_char(v.month_start, 'YYYY-MM')           as month,
+        v.month_start                               as month_start,
         coalesce(v.revenue_amount, 0)::float8       as revenue,
         coalesce(v.operating_profit, 0)::float8     as operating_profit,
         coalesce(v.surplus, 0)::float8              as surplus
@@ -49,9 +58,10 @@ function resp(status, body) {
       'content-type': 'application/json; charset=utf-8',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   }
 }
+
 
