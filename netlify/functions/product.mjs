@@ -1,4 +1,7 @@
 // netlify/functions/product.mjs
+
+import { resolveAuthz } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')  return list(event);
@@ -10,11 +13,16 @@ export async function handler(event) {
 async function list(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+const { DATABASE_URL } = process.env;
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
-    const sql = neon(DATABASE_URL);
+const sql = neon(DATABASE_URL);
+
+const authz = await resolveAuthz({ sql, event });
+if (authz.error) return cors(403, { error: authz.error });
+
+const TENANT_ID = authz.tenantId;
+
     const rows = await sql`
       SELECT id, name, cost
       FROM products
@@ -31,9 +39,8 @@ async function list(event) {
 async function create(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+const { DATABASE_URL } = process.env;
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
     const name = (body.name || '').trim();
@@ -46,6 +53,11 @@ async function create(event) {
 
     const sql = neon(DATABASE_URL);
 
+    const authz = await resolveAuthz({ sql, event });
+if (authz.error) return cors(403, { error: authz.error });
+
+const TENANT_ID = authz.tenantId;
+
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
       INSERT INTO products (tenant_id, name, cost)
@@ -56,9 +68,9 @@ async function create(event) {
 
     // Seed history at "now"
     await sql`
-      INSERT INTO product_cost_history (product_id, cost, effective_from)
-      VALUES (${product.id}, ${costNum}, now())
-    `;
+  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+  VALUES (${TENANT_ID}, ${product.id}, ${costNum}, now())
+`;
 
     return cors(201, { product });
   } catch (e) {
@@ -70,9 +82,8 @@ async function create(event) {
 async function update(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
+const { DATABASE_URL } = process.env;
+if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
     const id = (body.id || '').trim();
@@ -91,9 +102,16 @@ async function update(event) {
       newCostNum = n;
     }
 
+    const hasNewCost = newCostNum !== undefined;
+
     if (!id) return cors(400, { error: 'id is required' });
 
     const sql = neon(DATABASE_URL);
+
+    const authz = await resolveAuthz({ sql, event });
+if (authz.error) return cors(403, { error: authz.error });
+
+const TENANT_ID = authz.tenantId;
 
     // Get current cost to check if it changed
     const current = await sql`
@@ -104,7 +122,7 @@ async function update(event) {
     `;
     if (current.length === 0) return cors(404, { error: 'Product not found' });
 
-    const currentCost = current[0].cost;
+    const currentCost = Number(current[0].cost);
     const costChanged = newCostNum !== undefined && newCostNum !== currentCost;
 
     // Determine if we should update products.cost immediately
@@ -128,15 +146,15 @@ async function update(event) {
 
     // Update product record
     const updatedRows = await sql`
-      UPDATE products
-      SET name = COALESCE(${name}, name),
-          cost = CASE 
-            WHEN ${shouldUpdateProductCostNow} THEN ${newCostNum}
-            ELSE cost
-          END
-      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-      RETURNING id, name, cost
-    `;
+  UPDATE products
+  SET name = COALESCE(${name}, name),
+      cost = CASE
+        WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum}
+        ELSE cost
+      END
+  WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+  RETURNING id, name, cost
+`;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 
     // If cost changed, add history entry
@@ -144,26 +162,37 @@ async function update(event) {
       if (applyToHistory) {
         // Delete all previous history entries for this product
         await sql`
-          DELETE FROM product_cost_history
-          WHERE product_id = ${id}
-        `
+  DELETE FROM product_cost_history
+  WHERE tenant_id = ${TENANT_ID}
+    AND product_id = ${id}
+`
         // Insert single entry backdated to beginning - applies to all orders
         await sql`
-          INSERT INTO product_cost_history (product_id, cost, effective_from)
-          VALUES (${id}, ${newCostNum}, '1970-01-01')
-        `
+  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+  VALUES (
+  ${TENANT_ID},
+  ${id},
+  ${newCostNum},
+  (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
+)
+`
       } else if (effectiveDate) {
         // Insert entry with specific date
         await sql`
-          INSERT INTO product_cost_history (product_id, cost, effective_from)
-          VALUES (${id}, ${newCostNum}, ${effectiveDate})
-        `
+  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+  VALUES (
+    ${TENANT_ID},
+    ${id},
+    ${newCostNum},
+    ((${effectiveDate}::date)::timestamp AT TIME ZONE 'America/New_York')
+  )
+`
       } else {
         // Normal case: add new entry with current timestamp (valid from next order)
         await sql`
-          INSERT INTO product_cost_history (product_id, cost, effective_from)
-          VALUES (${id}, ${newCostNum}, NOW())
-        `
+  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+  VALUES (${TENANT_ID}, ${id}, ${newCostNum}, NOW())
+`
       }
     }
 
@@ -185,7 +214,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,PUT,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };

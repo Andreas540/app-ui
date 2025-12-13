@@ -50,14 +50,22 @@ export default function NewProduct() {
     }
   }
 
-  async function loadHistoricalCosts() {
+    async function loadHistoricalCosts() {
     try {
       setLoadingHistorical(true)
+
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/product-cost-history`)
+      const token = localStorage.getItem('authToken')
+
+      const res = await fetch(`${base}/api/product-cost-history`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
       if (!res.ok) throw new Error('Failed to load historical costs')
       const data = await res.json()
-      setHistoricalCosts(data)
+      setHistoricalCosts(Array.isArray(data) ? data : [])
     } catch (e: any) {
       alert(e?.message || 'Failed to load historical costs')
     } finally {
@@ -77,7 +85,7 @@ export default function NewProduct() {
 
   async function save() {
     const nm = name.trim()
-    const costNum = Number((costStr || '').replace(',', '.'))
+    const costNum = Number(parseCostInput(costStr || ''))
     if (!nm) { alert('Enter product name'); return }
     if (!Number.isFinite(costNum) || costNum < 0) { alert('Enter a valid cost ≥ 0'); return }
 

@@ -254,7 +254,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 
 // --- Products ---
 export async function createProduct(input: { name: string; cost: number }) {
-  const res = await fetch('/api/product', {
+  const res = await fetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(input),
@@ -270,7 +270,7 @@ export async function createProduct(input: { name: string; cost: number }) {
 export type ProductWithCost = { id: string; name: string; cost: number | null };
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
-  const r = await fetch('/api/product', { 
+  const r = await fetch(`${base}/api/product`, { 
     method: 'GET',
     headers: getAuthHeaders()
   })
@@ -285,7 +285,7 @@ export async function updateProduct(input: {
   apply_to_history?: boolean;
   effective_date?: string;
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
-  const r = await fetch('/api/product', {
+  const r = await fetch(`${base}/api/product`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(input),
