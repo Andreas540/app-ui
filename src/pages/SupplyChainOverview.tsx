@@ -205,6 +205,7 @@ useEffect(() => {
       <html>
         <head>
           <title>Not Delivered - ${now}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
             * {
               margin: 0;
@@ -213,9 +214,34 @@ useEffect(() => {
             }
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              padding: 40px;
+              padding: 20px;
               color: #000;
               background: #fff;
+            }
+            .controls {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 20px;
+            }
+            .btn {
+              padding: 10px 20px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              background: #f5f5f5;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+            }
+            .btn:hover {
+              background: #e5e5e5;
+            }
+            .btn-primary {
+              background: #2f6df6;
+              color: white;
+              border-color: #2f6df6;
+            }
+            .btn-primary:hover {
+              background: #1e5ce6;
             }
             h1 {
               font-size: 24px;
@@ -258,10 +284,18 @@ useEffect(() => {
               body {
                 padding: 20px;
               }
+              .controls {
+                display: none;
+              }
             }
           </style>
         </head>
         <body>
+          <div class="controls">
+            <button class="btn btn-primary" onclick="window.print()">Print</button>
+            <button class="btn" onclick="window.close()">Close</button>
+          </div>
+
           <h1>Not Delivered</h1>
           <div class="subtitle">Generated: ${now}</div>
           
@@ -292,12 +326,16 @@ useEffect(() => {
     printWindow.document.write(html)
     printWindow.document.close()
     
-    // Wait for content to load, then print
+    // Auto-print only on desktop (when window.matchMedia is available and not mobile)
     printWindow.onload = () => {
       printWindow.focus()
-      setTimeout(() => {
-        printWindow.print()
-      }, 250)
+      // Check if device is likely desktop
+      const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
+      if (isDesktop) {
+        setTimeout(() => {
+          printWindow.print()
+        }, 250)
+      }
     }
   }
 
