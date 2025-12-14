@@ -179,6 +179,128 @@ useEffect(() => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  // Print function for Not Delivered section
+  const printNotDelivered = () => {
+    if (!data || data.not_delivered.length === 0) {
+      alert('No data to print')
+      return
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Please allow popups to print')
+      return
+    }
+
+    const now = new Date().toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Not Delivered - ${now}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+              padding: 40px;
+              color: #000;
+              background: #fff;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 8px;
+            }
+            .subtitle {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 24px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th {
+              text-align: left;
+              padding: 12px 8px;
+              border-bottom: 2px solid #000;
+              font-weight: 600;
+              font-size: 14px;
+            }
+            td {
+              padding: 10px 8px;
+              border-bottom: 1px solid #ddd;
+              font-size: 14px;
+            }
+            .qty-col {
+              text-align: right;
+              font-variant-numeric: tabular-nums;
+            }
+            .total-row td {
+              border-top: 2px solid #000;
+              border-bottom: 2px solid #000;
+              font-weight: 600;
+              padding-top: 16px;
+              padding-bottom: 16px;
+            }
+            @media print {
+              body {
+                padding: 20px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Not Delivered</h1>
+          <div class="subtitle">Generated: ${now}</div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="qty-col">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.not_delivered.map(item => `
+                <tr>
+                  <td>${item.product}</td>
+                  <td class="qty-col">${intFmt.format(item.qty)}</td>
+                </tr>
+              `).join('')}
+              <tr class="total-row">
+                <td>Total</td>
+                <td class="qty-col">${intFmt.format(data.not_delivered.reduce((sum, item) => sum + Number(item.qty), 0))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `
+
+    printWindow.document.write(html)
+    printWindow.document.close()
+    
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      printWindow.focus()
+      setTimeout(() => {
+        printWindow.print()
+      }, 250)
+    }
+  }
+
   const intFmt = new Intl.NumberFormat('en-US')
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -448,9 +570,32 @@ useEffect(() => {
 
       {/* Section 2: Not delivered */}
       <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('notDelivered')}>
-          <span>Not delivered</span>
-          <span style={expandIconStyle}>{expandedSections.notDelivered ? '−' : '+'}</span>
+        <div style={sectionHeaderStyle}>
+          <span onClick={() => toggleSection('notDelivered')} style={{ cursor: 'pointer', flex: 1 }}>
+            Not delivered
+          </span>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                printNotDelivered()
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 20,
+                padding: '4px 8px',
+                color: 'white',
+              }}
+              title="Print not delivered list"
+            >
+              🖨️
+            </button>
+            <span style={expandIconStyle} onClick={() => toggleSection('notDelivered')}>
+              {expandedSections.notDelivered ? '−' : '+'}
+            </span>
+          </div>
         </div>
 
         {expandedSections.notDelivered && (
