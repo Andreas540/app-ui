@@ -113,6 +113,12 @@ export default function NewOrder() {
   const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
+  // Filter out specific products from dropdown
+  const filteredProducts = useMemo(() => {
+    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys']
+    return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
+  }, [products])
+
   // Is this the Refund/Discount product? (name match, case-insensitive)
   const isRefundProduct = useMemo(
     () => (product?.name || '').trim().toLowerCase() === 'refund/discount',
@@ -268,7 +274,7 @@ export default function NewOrder() {
 if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
 
 const hasCustomers = people.length > 0
-const hasProducts = products.length > 0
+const hasProducts = filteredProducts.length > 0
 
 
   const CONTROL_H = 44
@@ -368,7 +374,7 @@ const hasProducts = products.length > 0
   {!hasProducts ? (
     <option value="">No products yet — create a product first</option>
   ) : (
-    products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+    filteredProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
   )}
 </select>
         </div>
