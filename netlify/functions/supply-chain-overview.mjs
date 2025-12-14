@@ -40,17 +40,28 @@ async function getSupplyChainOverview(event) {
       qty: Math.abs(Number(item.qty))
     }))
 
-    // 2. Not delivered
+    // 2. Not delivered - UPDATED to support partial deliveries
+    // Calculate remaining quantity: (total qty per order) - (delivered quantity)
     const not_delivered = await sql`
+      WITH order_remaining AS (
+        SELECT 
+          o.id,
+          oi.product_id,
+          oi.qty as item_qty,
+          COALESCE(o.delivered_quantity, 0) as delivered_qty,
+          GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0) as remaining_qty
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.tenant_id = ${TENANT_ID}
+          AND oi.qty > COALESCE(o.delivered_quantity, 0)
+      )
       SELECT 
         p.name as product,
-        SUM(oi.qty) as qty
-      FROM orders o
-      JOIN order_items oi ON oi.order_id = o.id
-      JOIN products p ON p.id = oi.product_id
-      WHERE o.tenant_id = ${TENANT_ID}
-        AND o.delivered = FALSE
+        SUM(remaining_qty) as qty
+      FROM order_remaining
+      JOIN products p ON p.id = order_remaining.product_id
       GROUP BY p.name
+      HAVING SUM(remaining_qty) > 0
       ORDER BY p.name ASC
     `
 
