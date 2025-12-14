@@ -1,5 +1,5 @@
 // src/pages/NewProduct.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { createProduct, listProducts, type ProductWithCost } from '../lib/api'
 import { formatUSAny } from '../lib/time'
@@ -22,6 +22,12 @@ export default function NewProduct() {
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
+
+  // Filter out specific products from current costs view
+  const filteredProducts = useMemo(() => {
+    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys']
+    return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
+  }, [products])
 
   function parseCostInput(s: string) {
     const cleaned = s.replace(/[^\d.,]/g, '')
@@ -171,17 +177,17 @@ export default function NewProduct() {
         </div>
 
         {!showHistorical ? (
-          // Current costs view
+          // Current costs view - using filtered products
           <div
             role="list"
             aria-busy={loadingList}
             style={{ display: 'grid', gap: 6 }}
           >
             {loadingList && <div>Loading…</div>}
-            {!loadingList && products.length === 0 && (
+            {!loadingList && filteredProducts.length === 0 && (
               <div style={{ opacity: 0.7 }}>No products yet.</div>
             )}
-            {!loadingList && products.map(p => (
+            {!loadingList && filteredProducts.map(p => (
               <div
                 key={p.id}
                 role="listitem"
@@ -204,7 +210,7 @@ export default function NewProduct() {
             ))}
           </div>
         ) : (
-          // Historical costs view
+          // Historical costs view - showing all products (no filter)
           <div
             role="list"
             aria-busy={loadingHistorical}
