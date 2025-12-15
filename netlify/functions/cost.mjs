@@ -1,5 +1,7 @@
 // netlify/functions/cost.mjs
 
+import { resolveAuthz } from './utils/auth.mjs'
+
 // Cost category mappings
 const COST_CATEGORIES = {
   B: [
@@ -105,7 +107,7 @@ async function getCosts(event) {
     // Check if path includes 'existing' OR if there's a 'type' param without category
     if (path.includes('/existing') || (params.type && !params.category)) {
       console.log('Route: existing costs')
-      return getExistingCosts(params)
+      return getExistingCosts({ ...params, event })
     }
 
     console.log('No route matched - returning 404')
@@ -125,17 +127,21 @@ async function getCosts(event) {
 async function getExistingCosts(params) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
+    const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+
+    const sql = neon(DATABASE_URL)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event: params.event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
 
     const type = params.type || 'B'
     
     if (type !== 'B' && type !== 'P') {
       return cors(400, { error: 'Invalid type. Must be B or P' })
     }
-
-    const sql = neon(DATABASE_URL)
 
     // Calculate cutoff date: first day of 2 months ago
     // Current month + 2 previous = 3 months total
@@ -303,9 +309,15 @@ function formatMonthYear(dateInput) {
 async function createCost(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, TENANT_ID } = process.env
+    const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' })
+
+    const sql = neon(DATABASE_URL)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
 
     const body = JSON.parse(event.body || '{}')
     const {
@@ -335,8 +347,6 @@ async function createCost(event) {
     if (amount == null || isNaN(Number(amount))) {
       return cors(400, { error: 'valid amount is required' })
     }
-
-    const sql = neon(DATABASE_URL)
 
     // Correct recurring detection (exclude "non-recurring")
     const cat = String(cost_category).toLowerCase()
@@ -433,7 +443,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   }
