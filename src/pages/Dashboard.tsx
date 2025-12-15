@@ -326,13 +326,24 @@ export default function Dashboard() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const bootRes = await fetch(`${base}/api/bootstrap`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const bootRes = await fetch(`${base}/api/bootstrap`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!bootRes.ok) throw new Error('Failed to load partners')
         const boot = await bootRes.json()
         const partners: Array<{ id: string; name: string }> = boot.partners ?? []
         const jj = partners.find(p => (p.name || '').trim().toLowerCase() === 'jj boston')
         if (!jj) { setJjNet(0); return }
-        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { cache: 'no-store' })
+        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) throw new Error('Failed to load JJ Boston totals')
         const data = await res.json()
         const net = Number(data?.totals?.net_owed ?? 0)
@@ -350,7 +361,13 @@ export default function Dashboard() {
         setOrdersLoading(true); setOrdersErr(null)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const filterParam = orderFilter === 'Not delivered' ? '?filter=not-delivered' : ''
-        const res = await fetch(`${base}/api/recent-orders${filterParam}`, { cache: 'no-store' })
+        const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/recent-orders${filterParam}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(`Failed to load recent orders (status ${res.status}) ${text?.slice(0,140)}`)
@@ -468,14 +485,18 @@ export default function Dashboard() {
     const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/orders-delivery`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ 
-          order_id: orderId, 
-          delivered: newDeliveredStatus 
-        }),
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/orders-delivery`, {
+  method: 'PUT',
+  headers: { 
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({ 
+    order_id: orderId, 
+    delivered: newDeliveredStatus 
+  }),
+})
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
