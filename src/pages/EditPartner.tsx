@@ -25,7 +25,13 @@ export default function EditPartner() {
         setLoading(true); setErr(null)
         
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         
         if (!res.ok) {
           const text = await res.text().catch(() => '')
@@ -55,20 +61,24 @@ export default function EditPartner() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/partner`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          name: name.trim(),
-          phone: phone.trim() || null,
-          address1: address1.trim() || null,
-          address2: address2.trim() || null,
-          city: city.trim() || null,
-          state: state.trim() || null,
-          postal_code: postal.trim() || null,
-        }),
-      })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partner`, {
+  method: 'PUT',
+  headers: { 
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
+    id,
+    name: name.trim(),
+    phone: phone.trim() || null,
+    address1: address1.trim() || null,
+    address2: address2.trim() || null,
+    city: city.trim() || null,
+    state: state.trim() || null,
+    postal_code: postal.trim() || null,
+  }),
+})
       
       if (!res.ok) {
         const text = await res.text().catch(() => '')
