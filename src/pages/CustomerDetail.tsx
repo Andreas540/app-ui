@@ -71,17 +71,21 @@ export default function CustomerDetailPage() {
   }
 
   const handleDeliverySave = async (orderId: string, newDeliveredQuantity: number) => {
-    try {
-      setSavingDelivery(true)
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/orders-delivery`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ 
-          order_id: orderId, 
-          delivered_quantity: newDeliveredQuantity
-        }),
-      })
+  try {
+    setSavingDelivery(true)
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const token = localStorage.getItem('authToken')
+    const res = await fetch(`${base}/api/orders-delivery`, {
+      method: 'PUT',
+      headers: { 
+        'content-type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ 
+        order_id: orderId, 
+        delivered_quantity: newDeliveredQuantity
+      }),
+    })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Failed to update delivery status (status ${res.status}) ${text?.slice(0,140)}`)
