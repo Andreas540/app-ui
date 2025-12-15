@@ -1,5 +1,6 @@
 // netlify/functions/metrics-monthly.mjs
 import { neon } from '@neondatabase/serverless'
+import { resolveAuthz } from './lib/authz.mjs'
 
 export const handler = async (event) => {
   try {
@@ -8,6 +9,12 @@ export const handler = async (event) => {
     const months = Number.isFinite(monthsParam) ? Math.max(1, Math.min(12, monthsParam)) : 3
 
     const sql = neon(process.env.DATABASE_URL)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    const TENANT_ID = authz.tenantId
+
+    // New logic:
 
     // New logic:
     // - Pick the last N DISTINCT order months present in the data (by orders.order_date),
@@ -21,6 +28,7 @@ export const handler = async (event) => {
           from orders o
           where o.order_date is not null
             and (o.notes is distinct from 'Old tab')
+            and o.tenant_id = ${TENANT_ID}
           group by 1
           order by 1 desc
           limit ${months}
@@ -33,6 +41,7 @@ export const handler = async (event) => {
         join picked_months p
           on date_trunc('month', o.order_date)::date = p.m
         where (o.notes is distinct from 'Old tab')
+          and o.tenant_id = ${TENANT_ID}
       ),
       monthly_items as (
         select
