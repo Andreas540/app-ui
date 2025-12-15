@@ -343,7 +343,9 @@ export async function createCost(costData: {
 
 export async function getExistingCosts(businessPrivate: 'B' | 'P') {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const response = await fetch(`${base}/api/cost/existing?type=${businessPrivate}`);
+  const response = await fetch(`${base}/api/cost/existing?type=${businessPrivate}`, {
+    headers: getAuthHeaders()
+  });
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to fetch existing costs');
