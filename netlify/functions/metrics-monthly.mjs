@@ -1,6 +1,6 @@
 // netlify/functions/metrics-monthly.mjs
 import { neon } from '@neondatabase/serverless'
-import { resolveAuthz } from './lib/authz.mjs'
+import { resolveAuthz } from './utils/auth.mjs'
 
 export const handler = async (event) => {
   try {
