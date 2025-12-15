@@ -104,7 +104,13 @@ export default function PartnerDetailPage() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/partners`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partners`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) throw new Error('Failed to load partners')
         const data = await res.json()
         // The API returns { partners: [...] }
@@ -124,7 +130,13 @@ export default function PartnerDetailPage() {
         setLoading(true); setErr(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
 
         if (!res.ok) {
           const text = await res.text().catch(() => '')
@@ -226,11 +238,15 @@ export default function PartnerDetailPage() {
       ]
 
       // Submit both payments
-      const res = await fetch(`${base}/api/partner-transfer`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ payments })
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partner-transfer`, {
+  method: 'POST',
+  headers: { 
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({ payments })
+})
 
       if (!res.ok) {
         const text = await res.text().catch(() => '')
@@ -247,7 +263,12 @@ export default function PartnerDetailPage() {
       setShowTransferForm(false)
 
       // Reload partner data to show new payment
-      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { cache: 'no-store' })
+      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
       if (reloadRes.ok) {
         const d = await reloadRes.json()
         setData(d)
@@ -283,17 +304,21 @@ export default function PartnerDetailPage() {
       const toPartnerName = toPartner?.partner_name || 'Unknown'
 
       // Submit payment
-      const res = await fetch(`${base}/api/partner-debt-payment`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          from_partner_id: id,
-          to_partner_id: paymentToPartnerId,
-          amount: amount,
-          payment_date: paymentDate,
-          notes: paymentNotes.trim() || null
-        })
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/partner-debt-payment`, {
+  method: 'POST',
+  headers: { 
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
+    from_partner_id: id,
+    to_partner_id: paymentToPartnerId,
+    amount: amount,
+    payment_date: paymentDate,
+    notes: paymentNotes.trim() || null
+  })
+})
 
       if (!res.ok) {
         const text = await res.text().catch(() => '')
@@ -310,7 +335,12 @@ export default function PartnerDetailPage() {
       setShowPaymentForm(false)
 
       // Reload partner data
-      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { cache: 'no-store' })
+      const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
       if (reloadRes.ok) {
         const d = await reloadRes.json()
         setData(d)
