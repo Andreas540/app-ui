@@ -56,7 +56,12 @@ interface SupplyChainData {
 
 async function fetchSupplyChainData(): Promise<SupplyChainData> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/supply-chain-overview`)
+  const token = localStorage.getItem('authToken')
+  const res = await fetch(`${base}/api/supply-chain-overview`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to fetch supply chain data (status ${res.status}) ${text?.slice(0, 140)}`)
@@ -150,7 +155,12 @@ useEffect(() => {
         url = `${base}/api/demand-by-product?days=${days}`
       }
       
-      const res = await fetch(url)
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Failed to fetch demand data (status ${res.status}) ${text?.slice(0, 140)}`)
