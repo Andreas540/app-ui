@@ -46,7 +46,13 @@ export default function CreateInvoicePage() {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/create-invoice`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/create-invoice`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
 
         if (!res.ok) {
           const text = await res.text().catch(() => '')
@@ -76,7 +82,13 @@ export default function CreateInvoicePage() {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, { 
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
 
         if (!res.ok) {
           const text = await res.text().catch(() => '')
