@@ -42,6 +42,12 @@ export default function App() {
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
   
+  // Multi-tenant state
+  const [availableTenants, setAvailableTenants] = useState<Array<{id: string, name: string, role: string}>>([])
+  const [activeTenantId, setActiveTenantId] = useState<string | null>(
+    localStorage.getItem('activeTenantId')
+  )
+  
   // New auth system
   const { isAuthenticated, user, logout: authLogout } = useAuth()
   
@@ -57,7 +63,7 @@ export default function App() {
   const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
   // Handle logout
-    const handleLogout = () => {
+  const handleLogout = () => {
     // New auth (your AuthContext may already do this, but we make it deterministic)
     try { authLogout() } catch {}
 
@@ -67,15 +73,13 @@ export default function App() {
 
     // Hard guarantee: remove JWT used by resolveAuthz() identity
     localStorage.removeItem('authToken')
-
-    // Wipe any other cached auth artifacts if you ever introduced them
-    // localStorage.removeItem('tenantId') // only if it exists in your app
-    // localStorage.removeItem('role')     // only if it exists in your app
+    localStorage.removeItem('activeTenantId')
 
     // Hard reload to clear in-memory state
     location.href = '/login'
   }
 
+  // Load user settings
   useEffect(() => {
     try {
       const saved = localStorage.getItem('userSettings')
@@ -100,12 +104,63 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Load user's available tenants
+  useEffect(() => {
+    if (!isAuthenticated || !user) return
+
+    const loadTenants = async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const token = localStorage.getItem('authToken')
+        
+        const res = await fetch(`${base}/api/user-tenants`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setAvailableTenants(data.tenants || [])
+          
+          // If no active tenant set, use first one
+          if (!activeTenantId && data.tenants.length > 0) {
+            setActiveTenantId(data.tenants[0].id)
+            localStorage.setItem('activeTenantId', data.tenants[0].id)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load tenants:', e)
+      }
+    }
+
+    loadTenants()
+  }, [isAuthenticated, user])
+
   // Show login screen if not authenticated
   if (!isLoggedIn) {
     return <Login />
   }
 
+  // Tenant switching handler
+  const handleTenantSwitch = () => {
+    if (availableTenants.length <= 1) return // Nothing to switch
 
+    // Find current tenant index
+    const currentIndex = availableTenants.findIndex(t => t.id === activeTenantId)
+    
+    // Get next tenant (cycle back to 0 if at end)
+    const nextIndex = (currentIndex + 1) % availableTenants.length
+    const nextTenant = availableTenants[nextIndex]
+
+    // Save and reload
+    localStorage.setItem('activeTenantId', nextTenant.id)
+    window.location.reload()
+  }
+
+  // Get current tenant name for display
+  const currentTenant = availableTenants.find(t => t.id === activeTenantId)
+  const currentTenantName = currentTenant?.name || user?.tenantName || 'BLV App'
 
   return (
     <div className="app">
@@ -118,7 +173,15 @@ export default function App() {
           >
             <span></span><span></span><span></span>
           </button>
-          <div className="brand-title">
+          <div 
+            className="brand-title"
+            onClick={handleTenantSwitch}
+            style={{
+              cursor: availableTenants.length > 1 ? 'pointer' : 'default',
+              userSelect: 'none'
+            }}
+            title={availableTenants.length > 1 ? 'Click to switch tenant' : ''}
+          >
             <div 
               style={{
                 transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
@@ -137,7 +200,12 @@ export default function App() {
                 width: '100%'
               }}
             >
-              {user?.tenantName || 'BLV App'}
+              {currentTenantName}
+              {availableTenants.length > 1 && (
+                <span style={{ marginLeft: 8, opacity: 0.6, fontSize: 12 }}>
+                  ({availableTenants.length} tenants)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -214,9 +282,9 @@ export default function App() {
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>New Cost</NavLink>
               
-              {/* Show admin link only for super admins */}
+              {/* Show super-admin link only for super admins */}
               {user?.role === 'super_admin' && (
-                <NavLink to="/admin" onClick={() => setNavOpen(false)}>Tenant Admin</NavLink>
+                <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>Super Admin</NavLink>
               )}
               
               <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>

@@ -125,20 +125,41 @@ export async function resolveAuthz({ sql, event }) {
       set email = coalesce(public.app_users.email, excluded.email)
   `
 
-  // If tenant explicitly requested, require membership for it
-  if (requestedTenantId) {
-    const rows = await sql`
-      select tm.tenant_id::text as tenant_id, tm.role
-      from public.tenant_memberships tm
-      join public.app_users u on u.id = tm.user_id
-      where tm.user_id = ${user.userId}::uuid
-        and tm.tenant_id = ${requestedTenantId}::uuid
-        and u.is_disabled is not true
-      limit 1
-    `
-    if (!rows.length) return { error: 'Not authorized for requested tenant' }
-    return { tenantId: rows[0].tenant_id, role: rows[0].role, mode: 'membership' }
-  }
+  // Check for active tenant (multi-tenant switching)
+const activeTenantId =
+  event.headers['x-active-tenant'] ||
+  event.headers['X-Active-Tenant'] ||
+  null
+
+// If active tenant specified, validate membership for it
+if (activeTenantId) {
+  const rows = await sql`
+    select tm.tenant_id::text as tenant_id, tm.role
+    from public.tenant_memberships tm
+    join public.app_users u on u.id = tm.user_id
+    where tm.user_id = ${user.userId}::uuid
+      and tm.tenant_id = ${activeTenantId}::uuid
+      and u.is_disabled is not true
+    limit 1
+  `
+  if (!rows.length) return { error: 'Not authorized for selected tenant' }
+  return { tenantId: rows[0].tenant_id, role: rows[0].role, mode: 'membership' }
+}
+
+// If tenant explicitly requested (legacy x-tenant-id header), require membership for it
+if (requestedTenantId) {
+  const rows = await sql`
+    select tm.tenant_id::text as tenant_id, tm.role
+    from public.tenant_memberships tm
+    join public.app_users u on u.id = tm.user_id
+    where tm.user_id = ${user.userId}::uuid
+      and tm.tenant_id = ${requestedTenantId}::uuid
+      and u.is_disabled is not true
+    limit 1
+  `
+  if (!rows.length) return { error: 'Not authorized for requested tenant' }
+  return { tenantId: rows[0].tenant_id, role: rows[0].role, mode: 'membership' }
+}
 
   // Default tenant from memberships
   const rows = await sql`
