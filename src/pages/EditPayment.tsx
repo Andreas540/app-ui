@@ -37,9 +37,15 @@ export default function EditPayment() {
         setPartners(bootPartners ?? [])
 
         // Fetch payment details
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
-        const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`)
+        // Fetch payment details
+const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) throw new Error('Failed to load payment')
         
         const data = await res.json()
@@ -154,11 +160,15 @@ export default function EditPayment() {
         notes: notes.trim() || null
       }
 
-      const res = await fetch(`${base}/api/${endpoint}`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body)
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/${endpoint}`, {
+  method: 'PUT',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify(body)
+})
 
       if (!res.ok) throw new Error('Failed to update payment')
       
@@ -176,11 +186,15 @@ export default function EditPayment() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
       
-      const res = await fetch(`${base}/api/${endpoint}`, {
-        method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: paymentId })
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/${endpoint}`, {
+  method: 'DELETE',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({ id: paymentId })
+})
 
       if (!res.ok) throw new Error('Failed to delete payment')
       
