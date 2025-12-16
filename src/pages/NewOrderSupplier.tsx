@@ -47,10 +47,21 @@ export default function NewOrderSupplier() {
         setLoading(true); setErr(null)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-        const [sRes, pRes] = await Promise.allSettled([
-          fetch(`${base}/api/suppliers`, { cache: 'no-store' }),
-          fetch(`${base}/api/product`, { cache: 'no-store' }),
-        ])
+        const token = localStorage.getItem('authToken')
+const [sRes, pRes] = await Promise.allSettled([
+  fetch(`${base}/api/suppliers`, {
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }),
+  fetch(`${base}/api/product`, {
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }),
+])
 
         if (sRes.status === 'fulfilled' && sRes.value.ok) {
           const data = await sRes.value.json()
@@ -93,7 +104,13 @@ export default function NewOrderSupplier() {
       url.searchParams.set('fn', 'last-cost')
       url.searchParams.set('supplier_id', supplier_id)
       url.searchParams.set('product_id', product_id)
-      const res = await fetch(url.toString(), { cache: 'no-store' })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(url.toString(), {
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
       if (!res.ok) throw new Error('last-cost fetch failed')
       const data = await res.json()
       const last = Number(data?.last_cost ?? 0)
@@ -156,11 +173,15 @@ export default function NewOrderSupplier() {
         lines: cleanLines,
       }
 
-      const res = await fetch(`${base}/api/order-supplier`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/order-supplier`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify(body),
+})
       if (!res.ok) {
         const t = await res.text().catch(()=> '')
         throw new Error(`Save failed (${res.status}) ${t?.slice(0,140)}`)

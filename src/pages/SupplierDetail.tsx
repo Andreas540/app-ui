@@ -57,7 +57,12 @@ interface SupplierDetail {
 
 async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/supplier?id=${id}`)
+  const token = localStorage.getItem('authToken')
+  const res = await fetch(`${base}/api/supplier?id=${id}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to fetch supplier (status ${res.status}) ${text?.slice(0,140)}`)

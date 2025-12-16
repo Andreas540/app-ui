@@ -31,7 +31,13 @@ export default function Suppliers() {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const url = new URL(`${base}/api/suppliers`, window.location.origin)
         if (query.trim()) url.searchParams.set('q', query.trim())
-        const res = await fetch(url.toString(), { cache: 'no-store' })
+        const token = localStorage.getItem('authToken')
+const res = await fetch(url.toString(), {
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(`Failed to load suppliers (status ${res.status}) ${text?.slice(0,140)}`)
