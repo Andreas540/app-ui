@@ -1,4 +1,7 @@
 // netlify/functions/payment.mjs
+
+import { resolveAuthz } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')    return getPayment(event);
@@ -10,14 +13,18 @@ export async function handler(event) {
 async function getPayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const id = (event.queryStringParameters?.id || '').trim();
     if (!id) return cors(400, { error: 'id required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     const payments = await sql`
       SELECT p.id, p.customer_id, p.payment_type, p.amount, p.payment_date, p.notes,
@@ -39,9 +46,8 @@ async function getPayment(event) {
 async function updatePayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
     const { id, customer_id, payment_type, amount, payment_date, notes } = body;
@@ -58,6 +64,11 @@ async function updatePayment(event) {
     if (!payment_date) return cors(400, { error: 'payment_date is required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     await sql`
       UPDATE payments
@@ -79,15 +90,19 @@ async function updatePayment(event) {
 async function deletePayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
     const { id } = body;
     if (!id) return cors(400, { error: 'id is required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     await sql`
       DELETE FROM payments
@@ -108,7 +123,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,PUT,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };

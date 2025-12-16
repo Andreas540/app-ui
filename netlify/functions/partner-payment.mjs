@@ -1,4 +1,7 @@
 // netlify/functions/partner-payment.mjs
+
+import { resolveAuthz } from './utils/auth.mjs'
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')    return getPartnerPayment(event);
@@ -11,14 +14,18 @@ export async function handler(event) {
 async function getPartnerPayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const id = (event.queryStringParameters?.id || '').trim();
     if (!id) return cors(400, { error: 'id required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     const payments = await sql`
       SELECT pp.id, pp.partner_id, pp.payment_type, pp.amount, pp.payment_date, pp.notes,
@@ -41,9 +48,8 @@ async function getPartnerPayment(event) {
 async function createPartnerPayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
     const { partner_id, payment_type, amount, payment_date, notes } = body || {};
@@ -63,6 +69,11 @@ async function createPartnerPayment(event) {
     }
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     // Verify partner exists and belongs to tenant
     const partnerCheck = await sql`
@@ -91,9 +102,8 @@ async function createPartnerPayment(event) {
 async function updatePartnerPayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
     const { id, partner_id, payment_type, amount, payment_date, notes } = body;
@@ -110,6 +120,11 @@ async function updatePartnerPayment(event) {
     if (!payment_date) return cors(400, { error: 'payment_date is required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     // Update partner_payments
     await sql`
@@ -142,9 +157,8 @@ async function updatePartnerPayment(event) {
 async function deletePartnerPayment(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID)    return cors(500, { error: 'TENANT_ID missing' });
 
     const body = JSON.parse(event.body || '{}');
     const { id } = body;
@@ -152,6 +166,11 @@ async function deletePartnerPayment(event) {
     if (!id) return cors(400, { error: 'id is required' });
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     // Delete from partner_payments
     // The CASCADE on partner_payment_id will automatically delete from partner_to_partner_debt_payments
@@ -174,7 +193,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };
