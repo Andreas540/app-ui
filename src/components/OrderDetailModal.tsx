@@ -53,7 +53,12 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         // setPartnerSplits([])
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/order?id=${initialOrder.id}`)
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!res.ok) throw new Error('Failed to fetch order details')
         const data = await res.json()
         
@@ -62,7 +67,11 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         
         // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
-          const bootRes = await fetch(`${base}/api/bootstrap`)
+          const bootRes = await fetch(`${base}/api/bootstrap`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
           if (bootRes.ok) {
             const boot = await bootRes.json()
             const partners = boot.partners || []
