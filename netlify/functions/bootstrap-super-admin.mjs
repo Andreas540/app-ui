@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 export async function handler(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, SUPER_ADMIN_EMAILS } = process.env
+    const { DATABASE_URL, SUPER_ADMIN_EMAILS, TENANT_ID } = process.env
     
     if (!DATABASE_URL) return json(500, { error: 'DATABASE_URL missing' })
     if (!SUPER_ADMIN_EMAILS) return json(500, { error: 'SUPER_ADMIN_EMAILS not configured' })
@@ -26,7 +26,7 @@ export async function handler(event) {
       return json(400, { 
         error: 'User already exists', 
         email: firstEmail,
-        message: 'You can now log in with this email and password you set'
+        message: 'You can now log in with this email and the password you set'
       })
     }
 
@@ -44,24 +44,34 @@ export async function handler(event) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user
+    // Create user with BLV tenant as default (or null if you prefer)
     const result = await sql`
-      INSERT INTO users (email, password, name)
-      VALUES (${firstEmail}, ${hashedPassword}, 'Super Admin')
+      INSERT INTO users (
+        email, 
+        password_hash, 
+        name, 
+        role, 
+        access_level, 
+        tenant_id,
+        active
+      )
+      VALUES (
+        ${firstEmail}, 
+        ${hashedPassword}, 
+        'Super Admin',
+        'admin',
+        100,
+        ${TENANT_ID || null},
+        true
+      )
       RETURNING id, email, name
-    `
-
-    // Also create in app_users
-    await sql`
-      INSERT INTO app_users (id, email, name)
-      VALUES (${result[0].id}, ${firstEmail}, 'Super Admin')
-      ON CONFLICT (id) DO NOTHING
     `
 
     return json(200, { 
       success: true,
       message: 'Super admin user created! You can now log in.',
       email: firstEmail,
+      userId: result[0].id,
       warning: 'DELETE netlify/functions/bootstrap-super-admin.mjs NOW for security!'
     })
 
