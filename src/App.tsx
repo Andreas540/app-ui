@@ -32,6 +32,7 @@ import NewCost from './pages/NewCost'
 import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
+import CreateUser from './pages/CreateUser'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -281,6 +282,7 @@ export default function App() {
                 <Route path="/warehouse" element={<Warehouse />} />
                 <Route path="/supply-chain" element={<SupplyChainOverview />} />
                 <Route path="/admin" element={<TenantAdmin />} />
+                <Route path="/admin/create-user" element={<CreateUser />} />
               </>
             )}
           </Routes>
