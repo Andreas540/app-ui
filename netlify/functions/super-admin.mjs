@@ -113,35 +113,50 @@ async function handlePost(event) {
         return cors(400, { error: 'At least one tenant membership is required' })
       }
 
-      // Check if email already exists
-      const existing = await sql`
-        SELECT id FROM users WHERE email = ${email.trim().toLowerCase()}
+      const normalizedEmail = email.trim().toLowerCase()
+
+      // Check if email already exists in users table
+      const existingUser = await sql`
+        SELECT id FROM users WHERE email = ${normalizedEmail}
       `
-      if (existing.length > 0) {
+      if (existingUser.length > 0) {
         return cors(400, { error: 'Email already exists' })
+      }
+
+      // Check if email already exists in app_users table
+      const existingAppUser = await sql`
+        SELECT id FROM app_users WHERE email = ${normalizedEmail}
+      `
+      if (existingAppUser.length > 0) {
+        return cors(400, { error: 'Email already exists in app_users' })
       }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
 
-      // Create user in users table
       // Use first tenant as default tenant_id (for backwards compatibility)
-const defaultTenantId = tenantMemberships[0].tenant_id
+      const defaultTenantId = tenantMemberships[0].tenant_id
 
-// Map tenant_memberships role to users.role
-// tenant_memberships uses: 'user' or 'tenant_admin'
-// users table requires: 'tenant_user' or 'tenant_admin'
-const defaultRole = tenantMemberships[0].role === 'tenant_admin' ? 'tenant_admin' : 'tenant_user'
+      // Map tenant_memberships role to users.role
+      // tenant_memberships uses: 'tenant_user' or 'tenant_admin'
+      // users table requires: 'tenant_user' or 'tenant_admin'
+      const defaultRole = tenantMemberships[0].role === 'tenant_admin' ? 'tenant_admin' : 'tenant_user'
 
-// Create user in users table
-const userResult = await sql`
-  INSERT INTO users (email, password_hash, name, role, active, tenant_id)
-  VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, ${defaultRole}, true, ${defaultTenantId})
-  RETURNING id, email, name
+      // Create user in users table
+      const userResult = await sql`
+        INSERT INTO users (email, password_hash, name, role, active, tenant_id)
+        VALUES (${normalizedEmail}, ${hashedPassword}, ${name?.trim() || null}, ${defaultRole}, true, ${defaultTenantId})
+        RETURNING id, email, name
       `
       const newUserId = userResult[0].id
 
-      // Create tenant memberships
+      // Create user in app_users table (NO name column!)
+      await sql`
+        INSERT INTO app_users (id, email, is_disabled)
+        VALUES (${newUserId}, ${normalizedEmail}, false)
+      `
+
+      // Create tenant memberships (now references app_users.id which exists)
       for (const membership of tenantMemberships) {
         const { tenant_id, role } = membership
         if (!tenant_id || !role) continue
