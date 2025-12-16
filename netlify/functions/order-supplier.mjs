@@ -1,24 +1,15 @@
 // netlify/functions/order-supplier.mjs
 import { neon } from '@neondatabase/serverless'
+import { resolveAuthz } from './utils/auth.mjs'
 
-const DEFAULT_TENANT = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
-const getTenantId = (event) => {
-  const h = (k) => event.headers?.[k] || event.headers?.[k?.toLowerCase?.()]
-  const fromHeader = h('x-tenant-id')
-  if (fromHeader) return String(fromHeader)
-  try {
-    const url = new URL(event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
-    const q = url.searchParams.get('tenant_id')
-    if (q) return String(q)
-  } catch {}
-  return DEFAULT_TENANT
-}
 const json = (code, obj) => ({
   statusCode: code,
   headers: {
     'content-type': 'application/json; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
+    'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     'cache-control': 'no-store',
-    'vary': 'X-Tenant-Id',
   },
   body: JSON.stringify(obj),
 })
@@ -26,8 +17,18 @@ const json = (code, obj) => ({
 export const handler = async (event) => {
   try {
     const method = event.httpMethod || 'GET'
+    
+    // Handle CORS preflight
+    if (method === 'OPTIONS') {
+      return json(204, {})
+    }
+    
     const sql = neon(process.env.DATABASE_URL)
-    const tenantId = getTenantId(event)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return json(403, { error: authz.error })
+    const tenantId = authz.tenantId
 
     // -------- GET ----------
     if (method === 'GET') {
