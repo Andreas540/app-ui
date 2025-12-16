@@ -105,10 +105,7 @@ export default function App() {
     return <Login />
   }
 
-  // Show tenant name in header for authenticated users
-  const displayName = user?.tenantName 
-    ? `${userName} (${user.tenantName})` 
-    : userName
+
 
   return (
     <div className="app">
@@ -130,7 +127,7 @@ export default function App() {
                 width: '100%'
               }}
             >
-              Welcome {displayName}!
+              Welcome {userName}!
             </div>
             <div 
               style={{
