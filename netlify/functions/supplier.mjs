@@ -126,29 +126,34 @@ async function updateSupplier(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const body = JSON.parse(event.body || '{}')
-const {
-  id, name, phone, email, address1, address2, city, state, postal_code, country
-} = body || {}
+    const {
+      id, name, phone, email, address1, address2, city, state, postal_code, country
+    } = body || {}
 
-if (!id)   return cors(400, { error: 'id is required' })
-if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
+    if (!id)   return cors(400, { error: 'id is required' })
+    if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
 
-const sql = neon(DATABASE_URL)
+    const sql = neon(DATABASE_URL)
 
-// Update supplier record
-const res = await sql`
-  UPDATE suppliers SET
-    name = ${name},
-    phone = ${phone ?? null},
-    email = ${email ?? null},
-    address1 = ${address1 ?? null},
-    address2 = ${address2 ?? null},
-    city = ${city ?? null},
-    state = ${state ?? null},
-    postal_code = ${postal_code ?? null},
-    country = ${country ?? null}
-  WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-  RETURNING id
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
+
+    // Update supplier record
+    const res = await sql`
+      UPDATE suppliers SET
+        name = ${name},
+        phone = ${phone ?? null},
+        email = ${email ?? null},
+        address1 = ${address1 ?? null},
+        address2 = ${address2 ?? null},
+        city = ${city ?? null},
+        state = ${state ?? null},
+        postal_code = ${postal_code ?? null},
+        country = ${country ?? null}
+      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      RETURNING id
     `
     if (res.length === 0) return cors(404, { error: 'Not found' })
 
