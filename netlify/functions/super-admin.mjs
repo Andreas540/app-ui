@@ -125,10 +125,14 @@ async function handlePost(event) {
       const hashedPassword = await bcrypt.hash(password, 10)
 
       // Create user in users table
-      const userResult = await sql`
-        INSERT INTO users (email, password_hash, name, role, active)
-        VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, 'user', true)
-        RETURNING id, email, name
+      // Use first tenant as default tenant_id (for backwards compatibility)
+const defaultTenantId = tenantMemberships[0].tenant_id
+
+// Create user in users table
+const userResult = await sql`
+  INSERT INTO users (email, password_hash, name, role, active, tenant_id)
+  VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, 'user', true, ${defaultTenantId})
+  RETURNING id, email, name
       `
       const newUserId = userResult[0].id
 
