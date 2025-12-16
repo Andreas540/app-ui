@@ -21,7 +21,7 @@ interface User {
 
 interface TenantMembership {
   tenant_id: string
-  role: 'user' | 'tenant_admin'
+  role: 'tenant_user' | 'tenant_admin'
 }
 
 export default function SuperAdmin() {
@@ -41,8 +41,8 @@ export default function SuperAdmin() {
   const [newUserPassword, setNewUserPassword] = useState('')
   const [newUserName, setNewUserName] = useState('')
   const [newUserMemberships, setNewUserMemberships] = useState<TenantMembership[]>([
-    { tenant_id: '', role: 'user' }
-  ])
+  { tenant_id: '', role: 'tenant_user' }
+])
   const [creatingUser, setCreatingUser] = useState(false)
 
   // UI state
@@ -177,11 +177,11 @@ export default function SuperAdmin() {
       }
 
       alert('User created successfully!')
-      setNewUserEmail('')
-      setNewUserPassword('')
-      setNewUserName('')
-      setNewUserMemberships([{ tenant_id: '', role: 'user' }])
-      await loadData()
+setNewUserEmail('')
+setNewUserPassword('')
+setNewUserName('')
+setNewUserMemberships([{ tenant_id: '', role: 'tenant_user' }])  // ← FIXED
+await loadData()
     } catch (e: any) {
       alert(e?.message || 'Failed to create user')
     } finally {
@@ -190,8 +190,8 @@ export default function SuperAdmin() {
   }
 
   function addMembership() {
-    setNewUserMemberships([...newUserMemberships, { tenant_id: '', role: 'user' }])
-  }
+  setNewUserMemberships([...newUserMemberships, { tenant_id: '', role: 'tenant_user' }])  // ← FIXED
+}
 
   function removeMembership(index: number) {
     if (newUserMemberships.length === 1) return
@@ -375,13 +375,13 @@ export default function SuperAdmin() {
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select
-                      value={membership.role}
-                      onChange={(e) => updateMembership(index, 'role', e.target.value)}
-                      style={{ height: CONTROL_H, flex: 1 }}
-                    >
-                      <option value="user">User</option>
-                      <option value="tenant_admin">Tenant Admin</option>
-                    </select>
+  value={membership.role}
+  onChange={(e) => updateMembership(index, 'role', e.target.value)}
+  style={{ height: CONTROL_H, flex: 1 }}
+>
+  <option value="tenant_user">User</option>
+  <option value="tenant_admin">Tenant Admin</option>
+</select>
                     {newUserMemberships.length > 1 && (
                       <button
                         onClick={() => removeMembership(index)}

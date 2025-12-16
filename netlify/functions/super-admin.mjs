@@ -128,10 +128,15 @@ async function handlePost(event) {
       // Use first tenant as default tenant_id (for backwards compatibility)
 const defaultTenantId = tenantMemberships[0].tenant_id
 
+// Map tenant_memberships role to users.role
+// tenant_memberships uses: 'user' or 'tenant_admin'
+// users table requires: 'tenant_user' or 'tenant_admin'
+const defaultRole = tenantMemberships[0].role === 'tenant_admin' ? 'tenant_admin' : 'tenant_user'
+
 // Create user in users table
 const userResult = await sql`
   INSERT INTO users (email, password_hash, name, role, active, tenant_id)
-  VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, 'user', true, ${defaultTenantId})
+  VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, ${defaultRole}, true, ${defaultTenantId})
   RETURNING id, email, name
       `
       const newUserId = userResult[0].id
