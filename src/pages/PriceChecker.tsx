@@ -46,10 +46,16 @@ export default function PriceChecker() {
       try {
         setDataLoading(true)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(
-          `${base}/api/price-checker?customer_id=${selectedCustomerId}&product_id=${selectedProductId}`,
-          { cache: 'no-store' }
-        )
+const token = localStorage.getItem('authToken')
+const res = await fetch(
+  `${base}/api/price-checker?customer_id=${selectedCustomerId}&product_id=${selectedProductId}`,
+  { 
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }
+)
         
         if (!res.ok) {
           const text = await res.text().catch(() => '')
