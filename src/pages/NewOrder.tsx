@@ -81,7 +81,12 @@ export default function NewOrder() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`)
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (res.ok) {
           const data = await res.json()
           setHistoricalProductCost(data.product_cost)
@@ -99,7 +104,12 @@ export default function NewOrder() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`)
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (res.ok) {
           const data = await res.json()
           setHistoricalPrice(data.unit_price)
