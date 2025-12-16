@@ -1,6 +1,6 @@
 // netlify/functions/super-admin.mjs
-import { resolveAuthz } from './utils/auth.mjs'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -17,12 +17,12 @@ async function handleGet(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // Get userId from JWT token
+    const userId = getUserIdFromToken(event)
+    if (!userId) return cors(403, { error: 'Authentication required' })
+
     // Check super-admin authorization
-    const authz = await resolveAuthz({ sql, event })
-    if (authz.error) return cors(403, { error: authz.error })
-    
-    // Check if user is super-admin (you'll need to define this - maybe a special role or specific user)
-    const isSuperAdmin = await checkSuperAdmin(sql, authz.userId)
+    const isSuperAdmin = await checkSuperAdmin(sql, userId)
     if (!isSuperAdmin) return cors(403, { error: 'Super admin access required' })
 
     const action = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('action')
@@ -48,7 +48,7 @@ async function handleGet(event) {
               'tenant_name', t.name,
               'role', tm.role
             )
-          ) as tenants
+          ) FILTER (WHERE tm.tenant_id IS NOT NULL) as tenants
         FROM users u
         LEFT JOIN tenant_memberships tm ON tm.user_id = u.id
         LEFT JOIN tenants t ON t.id = tm.tenant_id
@@ -73,11 +73,12 @@ async function handlePost(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // Get userId from JWT token
+    const userId = getUserIdFromToken(event)
+    if (!userId) return cors(403, { error: 'Authentication required' })
+
     // Check super-admin authorization
-    const authz = await resolveAuthz({ sql, event })
-    if (authz.error) return cors(403, { error: authz.error })
-    
-    const isSuperAdmin = await checkSuperAdmin(sql, authz.userId)
+    const isSuperAdmin = await checkSuperAdmin(sql, userId)
     if (!isSuperAdmin) return cors(403, { error: 'Super admin access required' })
 
     const body = JSON.parse(event.body || '{}')
@@ -125,18 +126,11 @@ async function handlePost(event) {
 
       // Create user in users table
       const userResult = await sql`
-        INSERT INTO users (email, password, name)
-        VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null})
+        INSERT INTO users (email, password_hash, name, role, active)
+        VALUES (${email.trim().toLowerCase()}, ${hashedPassword}, ${name?.trim() || null}, 'user', true)
         RETURNING id, email, name
       `
-      const userId = userResult[0].id
-
-      // Create user in app_users table
-      await sql`
-        INSERT INTO app_users (id, email, name)
-        VALUES (${userId}, ${email.trim().toLowerCase()}, ${name?.trim() || null})
-        ON CONFLICT (id) DO NOTHING
-      `
+      const newUserId = userResult[0].id
 
       // Create tenant memberships
       for (const membership of tenantMemberships) {
@@ -145,7 +139,7 @@ async function handlePost(event) {
 
         await sql`
           INSERT INTO tenant_memberships (user_id, tenant_id, role)
-          VALUES (${userId}, ${tenant_id}, ${role})
+          VALUES (${newUserId}, ${tenant_id}, ${role})
           ON CONFLICT (user_id, tenant_id) DO NOTHING
         `
       }
@@ -160,27 +154,47 @@ async function handlePost(event) {
   }
 }
 
-// Check if user is super-admin
-// TODO: Implement your super-admin check logic
-// Option 1: Specific user email(s)
-// Option 2: Special role in tenant_memberships
-// Option 3: Separate super_admins table
+// Extract userId from JWT token
+function getUserIdFromToken(event) {
+  try {
+    const authHeader = event.headers?.authorization || event.headers?.Authorization
+    if (!authHeader) return null
+    
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    if (!token) return null
+    
+    const { JWT_SECRET } = process.env
+    if (!JWT_SECRET) return null
+    
+    const decoded = jwt.verify(token, JWT_SECRET)
+    return decoded.userId
+  } catch (e) {
+    console.error('Token decode error:', e)
+    return null
+  }
+}
+
+// Check if user is super-admin by email
 async function checkSuperAdmin(sql, userId) {
-  // For now, check if user has email matching super-admin list
-  const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim())
-  
-  if (SUPER_ADMIN_EMAILS.length === 0) {
-    console.warn('No SUPER_ADMIN_EMAILS configured')
+  try {
+    const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+    
+    if (SUPER_ADMIN_EMAILS.length === 0) {
+      console.warn('No SUPER_ADMIN_EMAILS configured')
+      return false
+    }
+
+    const user = await sql`
+      SELECT email FROM users WHERE id = ${userId}
+    `
+    
+    if (user.length === 0) return false
+    
+    return SUPER_ADMIN_EMAILS.includes(user[0].email.toLowerCase())
+  } catch (e) {
+    console.error('checkSuperAdmin error:', e)
     return false
   }
-
-  const user = await sql`
-    SELECT email FROM users WHERE id = ${userId}
-  `
-  
-  if (user.length === 0) return false
-  
-  return SUPER_ADMIN_EMAILS.includes(user[0].email)
 }
 
 function cors(status, body) {
