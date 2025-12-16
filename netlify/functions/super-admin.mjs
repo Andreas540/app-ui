@@ -134,29 +134,48 @@ async function handlePost(event) {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
 
-      // Use first tenant as default tenant_id (for backwards compatibility)
+      // Use first tenant as default tenant_id (required for non-super_admin roles)
       const defaultTenantId = tenantMemberships[0].tenant_id
 
-      // Map tenant_memberships role to users.role
-      // tenant_memberships uses: 'tenant_user' or 'tenant_admin'
-      // users table requires: 'tenant_user' or 'tenant_admin'
-      const defaultRole = tenantMemberships[0].role === 'tenant_admin' ? 'tenant_admin' : 'tenant_user'
+      // Determine role for users table
+      // If user is tenant_admin in any tenant, make them tenant_admin overall
+      const hasTenantAdminRole = tenantMemberships.some(m => m.role === 'tenant_admin')
+      const userRole = hasTenantAdminRole ? 'tenant_admin' : 'tenant_user'
+      
+      // Set access_level based on role (admin users get 'admin', regular users get 'inventory')
+      const accessLevel = hasTenantAdminRole ? 'admin' : 'inventory'
 
       // Create user in users table
       const userResult = await sql`
-        INSERT INTO users (email, password_hash, name, role, active, tenant_id)
-        VALUES (${normalizedEmail}, ${hashedPassword}, ${name?.trim() || null}, ${defaultRole}, true, ${defaultTenantId})
+        INSERT INTO users (
+          email, 
+          password_hash, 
+          name, 
+          role, 
+          access_level,
+          active, 
+          tenant_id
+        )
+        VALUES (
+          ${normalizedEmail}, 
+          ${hashedPassword}, 
+          ${name?.trim() || null}, 
+          ${userRole},
+          ${accessLevel},
+          true, 
+          ${defaultTenantId}
+        )
         RETURNING id, email, name
       `
       const newUserId = userResult[0].id
 
-      // Create user in app_users table (NO name column!)
+      // Create user in app_users table (required for tenant_memberships foreign key)
       await sql`
         INSERT INTO app_users (id, email, is_disabled)
         VALUES (${newUserId}, ${normalizedEmail}, false)
       `
 
-      // Create tenant memberships (now references app_users.id which exists)
+      // Create tenant memberships
       for (const membership of tenantMemberships) {
         const { tenant_id, role } = membership
         if (!tenant_id || !role) continue
