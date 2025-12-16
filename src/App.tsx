@@ -34,6 +34,7 @@ import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
 import CreateUser from './pages/CreateUser'
 import EditSupplier from './pages/EditSupplier'
+import SuperAdmin from './pages/SuperAdmin'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -285,6 +286,7 @@ export default function App() {
                 <Route path="/admin" element={<TenantAdmin />} />
                 <Route path="/admin/create-user" element={<CreateUser />} />
                 <Route path="/suppliers/:id/edit" element={<EditSupplier />} />
+                <Route path="/super-admin" element={<SuperAdmin />} />
               </>
             )}
           </Routes>
