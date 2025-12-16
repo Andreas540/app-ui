@@ -157,42 +157,45 @@ const TENANT_ID = authz.tenantId;
 `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 
-    // If cost changed, add history entry
-    if (costChanged) {
-      if (applyToHistory) {
-        // Delete all previous history entries for this product
-        await sql`
-  DELETE FROM product_cost_history
-  WHERE tenant_id = ${TENANT_ID}
-    AND product_id = ${id}
-`
-        // Insert single entry backdated to beginning - applies to all orders
-        await sql`
-  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
-  VALUES (
-  ${TENANT_ID},
-  ${id},
-  ${newCostNum},
-  (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
-)
-`
-      } else if (effectiveDate) {
+    // Handle history updates
+    // IMPORTANT: applyToHistory should work even if cost didn't change
+    // (user wants to apply CURRENT cost to all historical orders)
+    if (applyToHistory && hasNewCost) {
+      // Delete all previous history entries for this product
+      await sql`
+        DELETE FROM product_cost_history
+        WHERE tenant_id = ${TENANT_ID}
+          AND product_id = ${id}
+      `
+      // Insert single entry backdated to beginning - applies to all orders
+      await sql`
+        INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+        VALUES (
+          ${TENANT_ID},
+          ${id},
+          ${newCostNum},
+          (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
+        )
+      `
+    } else if (costChanged) {
+      // Cost changed but NOT applying to history
+      if (effectiveDate) {
         // Insert entry with specific date
         await sql`
-  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
-  VALUES (
-    ${TENANT_ID},
-    ${id},
-    ${newCostNum},
-    ((${effectiveDate}::date)::timestamp AT TIME ZONE 'America/New_York')
-  )
-`
+          INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+          VALUES (
+            ${TENANT_ID},
+            ${id},
+            ${newCostNum},
+            ((${effectiveDate}::date)::timestamp AT TIME ZONE 'America/New_York')
+          )
+        `
       } else {
         // Normal case: add new entry with current timestamp (valid from next order)
         await sql`
-  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
-  VALUES (${TENANT_ID}, ${id}, ${newCostNum}, NOW())
-`
+          INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
+          VALUES (${TENANT_ID}, ${id}, ${newCostNum}, NOW())
+        `
       }
     }
 
