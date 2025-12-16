@@ -76,7 +76,13 @@ export default function EditOrderSupplier() {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
         // Load products
-        const pRes = await fetch(`${base}/api/product`, { cache: 'no-store' })
+const token = localStorage.getItem('authToken')
+const pRes = await fetch(`${base}/api/product`, {
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (pRes.ok) {
           const data = await pRes.json()
           setProducts((data.products || []).map((p: any) => ({ id: p.id, name: p.name })))
@@ -87,7 +93,12 @@ export default function EditOrderSupplier() {
         // Load order data
         if (!id) throw new Error('Order ID missing')
         
-        const orderRes = await fetch(`${base}/api/order-supplier?id=${id}`, { cache: 'no-store' })
+        const orderRes = await fetch(`${base}/api/order-supplier?id=${id}`, {
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
         if (!orderRes.ok) throw new Error('Failed to load order')
         
         const orderData = await orderRes.json()
@@ -139,7 +150,13 @@ export default function EditOrderSupplier() {
       url.searchParams.set('fn', 'last-cost')
       url.searchParams.set('supplier_id', supplier_id)
       url.searchParams.set('product_id', product_id)
-      const res = await fetch(url.toString(), { cache: 'no-store' })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(url.toString(), {
+  cache: 'no-store',
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
       if (!res.ok) throw new Error('last-cost fetch failed')
       const data = await res.json()
       const last = Number(data?.last_cost ?? 0)
@@ -240,11 +257,15 @@ export default function EditOrderSupplier() {
         lines: cleanLines,
       }
 
-      const res = await fetch(`${base}/api/order-supplier`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/order-supplier`, {
+  method: 'PUT',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify(body),
+})
       if (!res.ok) {
         const t = await res.text().catch(() => '')
         throw new Error(`Save failed (${res.status}) ${t?.slice(0, 200)}`)
@@ -263,11 +284,15 @@ export default function EditOrderSupplier() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/order-supplier`, {
-        method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id }),
-      })
+      const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/order-supplier`, {
+  method: 'DELETE',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({ id }),
+})
       if (!res.ok) throw new Error('Failed to delete order')
 
       alert('Order deleted')

@@ -22,10 +22,14 @@ export default function CreateSupplier() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/suppliers`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/suppliers`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim() || null,
           email: email.trim() || null,            // NEW
