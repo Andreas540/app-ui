@@ -1,53 +1,46 @@
-// Create this file: netlify/functions/tenant.mjs
+// netlify/functions/tenant.mjs
+import { resolveAuthz } from './utils/auth.mjs'
 
 export async function handler(event) {
-  if (event.httpMethod === 'OPTIONS') return cors(204, {});
-  if (event.httpMethod === 'GET') return getTenant(event);
-  return cors(405, { error: 'Method not allowed' });
+  if (event.httpMethod === 'OPTIONS') return cors(204, {})
+  if (event.httpMethod === 'GET') return getTenant(event)
+  return cors(405, { error: 'Method not allowed' })
 }
 
 async function getTenant(event) {
   try {
-    const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
-    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL } = process.env
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
-    const sql = neon(DATABASE_URL);
+    const sql = neon(DATABASE_URL)
 
-    // Query the tenants table (plural)
-    try {
-      const tenant = await sql`
-        SELECT id, name 
-        FROM tenants 
-        WHERE id = ${TENANT_ID}
-        LIMIT 1
-      `;
-      
-      if (tenant.length > 0) {
-        return cors(200, { 
-          tenant: {
-            id: tenant[0].id,
-            name: tenant[0].name || 'BLV'
-          }
-        });
-      }
-    } catch (tableError) {
-      // If tenants table doesn't exist, fall back to default
-      console.log('Tenants table not found, using default name');
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const tenantId = authz.tenantId
+
+    // Get tenant info
+    const tenants = await sql`
+      SELECT id, name, created_at
+      FROM tenants
+      WHERE id = ${tenantId}
+      LIMIT 1
+    `
+
+    if (tenants.length === 0) {
+      return cors(404, { error: 'Tenant not found' })
     }
 
-    // Fallback: return TENANT_ID as both id and name
     return cors(200, { 
       tenant: {
-        id: TENANT_ID,
-        name: 'BLV' // Default name since we know this is BLV
+        id: tenants[0].id,
+        name: tenants[0].name
       }
-    });
-
+    })
   } catch (e) {
-    console.error(e);
-    return cors(500, { error: String(e?.message || e) });
+    console.error('getTenant error:', e)
+    return cors(500, { error: String(e?.message || e) })
   }
 }
 
@@ -58,8 +51,8 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
-  };
+  }
 }

@@ -36,25 +36,33 @@ export default function Settings() {
   const availableShortcuts = getAvailableShortcuts()
 
   // Load tenant information from database
-  useEffect(() => {
-    (async () => {
-      try {
-        setTenantLoading(true)
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(`${base}/api/tenant`, { cache: 'no-store' })
-        if (!res.ok) {
-          throw new Error(`Failed to load tenant info (status ${res.status})`)
-        }
-        const data = await res.json()
-        setTenantName(data.tenant.name)
-      } catch (error) {
-        console.error('Failed to load tenant info:', error)
-        setTenantName('BLV') // Fallback
-      } finally {
-        setTenantLoading(false)
+useEffect(() => {
+  (async () => {
+    try {
+      setTenantLoading(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      
+      const res = await fetch(`${base}/api/tenant`, { 
+        cache: 'no-store',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      
+      if (!res.ok) {
+        throw new Error(`Failed to load tenant info (status ${res.status})`)
       }
-    })()
-  }, [])
+      const data = await res.json()
+      setTenantName(data.tenant.name)
+    } catch (error) {
+      console.error('Failed to load tenant info:', error)
+      setTenantName('Unknown') // Fallback
+    } finally {
+      setTenantLoading(false)
+    }
+  })()
+}, [])
 
   // Track changes to enable/disable save button
   useEffect(() => {
