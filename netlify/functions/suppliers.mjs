@@ -1,38 +1,16 @@
 // netlify/functions/suppliers.mjs
 import { neon } from '@neondatabase/serverless'
-
-/** Default single-tenant UUID for now (replace/remove when you add switching) */
-const DEFAULT_TENANT = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
-
-/**
- * Derive tenant_id for multi-tenant setups.
- * For now, if none is provided, we fall back to DEFAULT_TENANT.
- * Later, remove the fallback and require an explicit tenant (header/JWT).
- */
-function getTenantIdFromEvent(event) {
-  const h = (k) => event.headers?.[k] || event.headers?.[k?.toLowerCase?.()]
-  // Preferred: custom header
-  const fromHeader = h('x-tenant-id')
-  if (fromHeader) return String(fromHeader)
-
-  // Fallback: query param (handy for local testing)
-  try {
-    const url = new URL(event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
-    const q = url.searchParams.get('tenant_id')
-    if (q) return String(q)
-  } catch {}
-
-  // Current single-tenant default
-  return DEFAULT_TENANT
-}
+import { resolveAuthz } from './utils/auth.mjs'
 
 function json(statusCode, bodyObj) {
   return {
     statusCode,
     headers: {
       'content-type': 'application/json; charset=utf-8',
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
       'cache-control': 'no-store',
-      'vary': 'X-Tenant-Id',
     },
     body: JSON.stringify(bodyObj),
   }
@@ -50,9 +28,8 @@ export const handler = async (event) => {
         headers: {
           'access-control-allow-origin': '*',
           'access-control-allow-methods': 'GET,POST,OPTIONS',
-          'access-control-allow-headers': 'Content-Type, X-Tenant-Id',
+          'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
           'cache-control': 'no-store',
-          'vary': 'X-Tenant-Id',
         },
         body: '',
       }
@@ -60,7 +37,10 @@ export const handler = async (event) => {
 
     // ----- LIST SUPPLIERS (GET) -----
     if (method === 'GET') {
-      const tenantId = getTenantIdFromEvent(event)
+      // Resolve tenant from JWT
+      const authz = await resolveAuthz({ sql, event })
+      if (authz.error) return json(403, { error: authz.error })
+      const tenantId = authz.tenantId
 
       const url = new URL(event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
       const q = (url.searchParams.get('q') || '').trim().toLowerCase()
@@ -83,7 +63,10 @@ export const handler = async (event) => {
 
     // ----- CREATE SUPPLIER (POST) -----
     if (method === 'POST') {
-      const tenantId = getTenantIdFromEvent(event)
+      // Resolve tenant from JWT
+      const authz = await resolveAuthz({ sql, event })
+      if (authz.error) return json(403, { error: authz.error })
+      const tenantId = authz.tenantId
 
       const body = JSON.parse(event.body || '{}')
       const {
