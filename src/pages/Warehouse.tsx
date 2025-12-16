@@ -71,7 +71,12 @@ export default function Warehouse() {
   async function loadInventory() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/warehouse-inventory`)
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/warehouse-inventory`, {
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+})
       if (res.ok) {
         const data = await res.json()
         setInventory(data.inventory || [])
@@ -253,10 +258,14 @@ export default function Warehouse() {
 
               try {
                 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-                const res = await fetch(`${base}/api/warehouse-add-manual`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
+const token = localStorage.getItem('authToken')
+const res = await fetch(`${base}/api/warehouse-add-manual`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
                     product_id: productId,
                     qty,
                     date,
