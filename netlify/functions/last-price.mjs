@@ -1,5 +1,7 @@
 // netlify/functions/last-price.mjs
 
+import { resolveAuthz } from './utils/auth.mjs'
+
 function cors(status, body) {
   return {
     statusCode: status,
@@ -7,7 +9,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),
   };
@@ -22,9 +24,8 @@ export async function handler(event) {
 async function getData(event) {
   try {
     const { neon } = await import('@neondatabase/serverless');
-    const { DATABASE_URL, TENANT_ID } = process.env;
+    const { DATABASE_URL } = process.env;
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
-    if (!TENANT_ID) return cors(500, { error: 'TENANT_ID missing' });
 
     const productId = event.queryStringParameters?.product_id;
     const customerId = event.queryStringParameters?.customer_id;
@@ -35,6 +36,11 @@ async function getData(event) {
     }
 
     const sql = neon(DATABASE_URL);
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
+    const TENANT_ID = authz.tenantId;
 
     // Get the most recent order for this customer/product combination
     // that was placed BEFORE the current order date
