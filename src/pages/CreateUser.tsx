@@ -98,23 +98,25 @@ export default function CreateUser() {
         <div>
           <label>Email *</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="user@example.com"
-            disabled={creating}
-          />
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  placeholder="user@example.com"
+  disabled={creating}
+  autoComplete="off"
+/>
         </div>
 
         <div>
           <label>Password *</label>
           <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minimum 8 characters"
-            disabled={creating}
-          />
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  placeholder="Minimum 8 characters"
+  disabled={creating}
+  autoComplete="new-password"
+/>
           <div className="helper" style={{ marginTop: 4 }}>
             Must be at least 8 characters
           </div>
