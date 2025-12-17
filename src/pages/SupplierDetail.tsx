@@ -1,6 +1,7 @@
 // src/pages/SupplierDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 
@@ -57,11 +58,8 @@ interface SupplierDetail {
 
 async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const token = localStorage.getItem('authToken')
   const res = await fetch(`${base}/api/supplier?id=${id}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
