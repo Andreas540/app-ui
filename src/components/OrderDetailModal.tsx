@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { formatUSAny } from '../lib/time'
+import { getAuthHeaders } from '../lib/api'
 
 interface OrderDetailModalProps {
   isOpen: boolean
@@ -53,11 +54,8 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
         // setPartnerSplits([])
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!res.ok) throw new Error('Failed to fetch order details')
         const data = await res.json()
@@ -68,9 +66,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
           const bootRes = await fetch(`${base}/api/bootstrap`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
           if (bootRes.ok) {
             const boot = await bootRes.json()
