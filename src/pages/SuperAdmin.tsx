@@ -1,6 +1,7 @@
 // src/pages/SuperAdmin.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 interface Tenant {
   id: string
@@ -58,16 +59,8 @@ export default function SuperAdmin() {
       setError(null)
       
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
-      
-      if (!token) {
-        navigate('/login')
-        return
-      }
 
-      const headers = {
-        'Authorization': `Bearer ${token}`
-      }
+      const headers = getAuthHeaders()
 
       // Load tenants
       const tenantsRes = await fetch(`${base}/api/super-admin?action=listTenants`, { headers })
@@ -105,14 +98,10 @@ export default function SuperAdmin() {
     try {
       setCreatingTenant(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
 
       const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'createTenant',
           name: newTenantName.trim()
@@ -154,14 +143,10 @@ export default function SuperAdmin() {
     try {
       setCreatingUser(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
 
       const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'createUser',
           email: newUserEmail.trim(),
