@@ -1,7 +1,7 @@
 // src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { fetchBootstrap, createOrder, type Person, type Product } from '../lib/api'
+import { fetchBootstrap, createOrder, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type PartnerRef = { id: string; name: string }
@@ -81,11 +81,8 @@ export default function NewOrder() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (res.ok) {
           const data = await res.json()
@@ -104,11 +101,8 @@ const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&cu
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (res.ok) {
           const data = await res.json()
