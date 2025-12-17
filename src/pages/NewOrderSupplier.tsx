@@ -1,6 +1,7 @@
 // src/pages/NewOrderSupplier.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 type Supplier = { id: string; name: string }
 type Product  = { id: string; name: string }
@@ -47,19 +48,14 @@ export default function NewOrderSupplier() {
         setLoading(true); setErr(null)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-        const token = localStorage.getItem('authToken')
-const [sRes, pRes] = await Promise.allSettled([
+        const [sRes, pRes] = await Promise.allSettled([
   fetch(`${base}/api/suppliers`, {
     cache: 'no-store',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   }),
   fetch(`${base}/api/product`, {
     cache: 'no-store',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   }),
 ])
 
@@ -104,12 +100,9 @@ const [sRes, pRes] = await Promise.allSettled([
       url.searchParams.set('fn', 'last-cost')
       url.searchParams.set('supplier_id', supplier_id)
       url.searchParams.set('product_id', product_id)
-      const token = localStorage.getItem('authToken')
-const res = await fetch(url.toString(), {
+      const res = await fetch(url.toString(), {
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
       if (!res.ok) throw new Error('last-cost fetch failed')
       const data = await res.json()
@@ -173,13 +166,9 @@ const res = await fetch(url.toString(), {
         lines: cleanLines,
       }
 
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/order-supplier`, {
+      const res = await fetch(`${base}/api/order-supplier`, {
   method: 'POST',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify(body),
 })
       if (!res.ok) {
