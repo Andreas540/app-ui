@@ -1,7 +1,7 @@
 // src/pages/CustomerDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { fetchCustomerDetail, type CustomerDetail } from '../lib/api'
+import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
@@ -74,13 +74,9 @@ export default function CustomerDetailPage() {
   try {
     setSavingDelivery(true)
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    const token = localStorage.getItem('authToken')
     const res = await fetch(`${base}/api/orders-delivery`, {
       method: 'PUT',
-      headers: { 
-        'content-type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         order_id: orderId, 
         delivered_quantity: newDeliveredQuantity
