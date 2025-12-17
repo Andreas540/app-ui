@@ -1,6 +1,6 @@
 // src/pages/PriceChecker.tsx
 import { useEffect, useState } from 'react'
-import { fetchBootstrap, type Person, type Product } from '../lib/api'
+import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 
 type PriceData = {
   price_last_time: number | null
@@ -46,14 +46,11 @@ export default function PriceChecker() {
       try {
         setDataLoading(true)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(
   `${base}/api/price-checker?customer_id=${selectedCustomerId}&product_id=${selectedProductId}`,
   { 
     cache: 'no-store',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   }
 )
         
