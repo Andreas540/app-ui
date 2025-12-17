@@ -1,6 +1,7 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { formatUSAny } from '../lib/time'
+import { getAuthHeaders } from '../lib/api'
 import {
   ResponsiveContainer,
   BarChart,
@@ -56,11 +57,8 @@ interface SupplyChainData {
 
 async function fetchSupplyChainData(): Promise<SupplyChainData> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const token = localStorage.getItem('authToken')
   const res = await fetch(`${base}/api/supply-chain-overview`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -155,11 +153,8 @@ useEffect(() => {
         url = `${base}/api/demand-by-product?days=${days}`
       }
       
-      const token = localStorage.getItem('authToken')
       const res = await fetch(url, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getAuthHeaders(),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
