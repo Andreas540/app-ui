@@ -1,6 +1,7 @@
 // src/pages/EditPartner.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 export default function EditPartner() {
   const { id } = useParams<{ id: string }>()
@@ -25,12 +26,9 @@ export default function EditPartner() {
         setLoading(true); setErr(null)
         
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         
         if (!res.ok) {
@@ -61,13 +59,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/partner`, {
   method: 'PUT',
-  headers: { 
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({
     id,
     name: name.trim(),
