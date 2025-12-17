@@ -201,11 +201,6 @@ export default function App() {
               }}
             >
               {currentTenantName}
-              {availableTenants.length > 1 && (
-                <span style={{ marginLeft: 8, opacity: 0.6, fontSize: 12 }}>
-                  ({availableTenants.length} tenants)
-                </span>
-              )}
             </div>
           </div>
         </div>
