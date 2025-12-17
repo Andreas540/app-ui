@@ -1,7 +1,7 @@
 // src/pages/Warehouse.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchBootstrap, type Product } from '../lib/api'
+import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type InventoryItem = {
@@ -71,11 +71,8 @@ export default function Warehouse() {
   async function loadInventory() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/warehouse-inventory`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
       if (res.ok) {
         const data = await res.json()
@@ -258,13 +255,9 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
 
               try {
                 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/warehouse-add-manual`, {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({
                     product_id: productId,
                     qty,
