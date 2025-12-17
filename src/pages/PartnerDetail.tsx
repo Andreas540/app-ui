@@ -7,6 +7,7 @@ import PaymentDetailModal from '../components/PaymentDetailModal'
 import PrintDialog from '../components/PrintDialog'
 import { PrintManager } from '../lib/printManager'
 import type { PrintOptions } from '../lib/printManager'
+import { getAuthHeaders } from '../lib/api'
 
 type PartnerDetail = {
   partner: {
@@ -104,12 +105,9 @@ export default function PartnerDetailPage() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/partners`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!res.ok) throw new Error('Failed to load partners')
         const data = await res.json()
@@ -130,12 +128,9 @@ const res = await fetch(`${base}/api/partners`, {
         setLoading(true); setErr(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
 
         if (!res.ok) {
@@ -238,13 +233,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       ]
 
       // Submit both payments
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/partner-transfer`, {
+      const res = await fetch(`${base}/api/partner-transfer`, {
   method: 'POST',
-  headers: { 
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({ payments })
 })
 
@@ -265,9 +256,7 @@ const res = await fetch(`${base}/api/partner-transfer`, {
       // Reload partner data to show new payment
       const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
       if (reloadRes.ok) {
         const d = await reloadRes.json()
@@ -304,13 +293,9 @@ const res = await fetch(`${base}/api/partner-transfer`, {
       const toPartnerName = toPartner?.partner_name || 'Unknown'
 
       // Submit payment
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/partner-debt-payment`, {
+      const res = await fetch(`${base}/api/partner-debt-payment`, {
   method: 'POST',
-  headers: { 
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({
     from_partner_id: id,
     to_partner_id: paymentToPartnerId,
@@ -337,9 +322,7 @@ const res = await fetch(`${base}/api/partner-debt-payment`, {
       // Reload partner data
       const reloadRes = await fetch(`${base}/api/partner?id=${encodeURIComponent(id!)}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
       if (reloadRes.ok) {
         const d = await reloadRes.json()
