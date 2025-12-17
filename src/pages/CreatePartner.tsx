@@ -1,6 +1,7 @@
 // src/pages/CreatePartner.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 export default function CreatePartner() {
   const navigate = useNavigate()
@@ -20,13 +21,9 @@ export default function CreatePartner() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/partners`, {
   method: 'POST',
-  headers: { 
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({
     name: name.trim(),
     phone: phone.trim() || null,
