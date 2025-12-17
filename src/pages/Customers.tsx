@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
+import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 
 function fmtIntMoney(n: number) {
   const v = Number(n) || 0
@@ -45,13 +45,19 @@ export default function Customers() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const bootRes = await fetch(`${base}/api/bootstrap`, { cache: 'no-store' })
+        const bootRes = await fetch(`${base}/api/bootstrap`, { 
+  cache: 'no-store',
+  headers: getAuthHeaders()
+})
         if (!bootRes.ok) throw new Error('bootstrap failed')
         const boot = await bootRes.json()
         const partners: Array<{ id: string; name: string }> = boot.partners ?? []
         const jj = partners.find(p => (p.name || '').trim().toLowerCase() === 'jj boston')
         if (!jj) { setJjNet(0); return }
-        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { cache: 'no-store' })
+        const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { 
+  cache: 'no-store',
+  headers: getAuthHeaders()
+})
         if (!res.ok) throw new Error('partner fetch failed')
         const data = await res.json()
         const net = Number(data?.totals?.net_owed ?? 0)
