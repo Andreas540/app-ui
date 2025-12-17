@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 type Customer = {
   id: string
@@ -46,12 +47,9 @@ export default function CreateInvoicePage() {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/create-invoice`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
 
         if (!res.ok) {
@@ -82,12 +80,9 @@ const res = await fetch(`${base}/api/create-invoice`, {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
 
         if (!res.ok) {
