@@ -1,7 +1,7 @@
 // src/pages/EditPayment.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType } from '../lib/api'
+import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type CustomerLite = { id: string; name: string }
@@ -40,11 +40,8 @@ export default function EditPayment() {
         // Fetch payment details
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!res.ok) throw new Error('Failed to load payment')
         
@@ -160,13 +157,9 @@ const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
         notes: notes.trim() || null
       }
 
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/${endpoint}`, {
+      const res = await fetch(`${base}/api/${endpoint}`, {
   method: 'PUT',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify(body)
 })
 
@@ -186,13 +179,9 @@ const res = await fetch(`${base}/api/${endpoint}`, {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
       
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/${endpoint}`, {
+      const res = await fetch(`${base}/api/${endpoint}`, {
   method: 'DELETE',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({ id: paymentId })
 })
 
