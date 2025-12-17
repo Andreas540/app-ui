@@ -1,6 +1,7 @@
 // src/pages/CreateUser.tsx
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 export default function CreateUser() {
   const navigate = useNavigate()
@@ -33,14 +34,10 @@ export default function CreateUser() {
       setError(null)
 
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
       
       const res = await fetch(`${base}/api/user-create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           email: email.trim(),
           password,
