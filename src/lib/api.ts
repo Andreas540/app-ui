@@ -8,7 +8,7 @@ export type Product = { id: string; name: string } // no unit_price anymore
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
 // ---- Helper: Get auth headers ----
-function getAuthHeaders(): HeadersInit {
+export function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('authToken')
   const activeTenant = localStorage.getItem('activeTenantId')
   

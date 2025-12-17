@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { listCustomersWithOwed, type CustomerWithOwed } from '../lib/api'
+import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import {
@@ -94,14 +94,11 @@ type RpsPoint = {
 // ---- FETCH & NORMALIZE: existing graph (kept as-is) ----
 async function fetchMonthly3(): Promise<MonthlyPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const token = localStorage.getItem('authToken')
 
   const res = await fetch(`${base}/api/metrics/monthly?months=3`, {
-    cache: 'no-store',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
+  cache: 'no-store',
+  headers: getAuthHeaders(),
+})
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -124,14 +121,11 @@ async function fetchMonthly3(): Promise<MonthlyPoint[]> {
 // --- NEW: RPS monthly fetch (for Operating profit & Surplus slides) ---
 async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const token = localStorage.getItem('authToken')
 
   const res = await fetch(`${base}/api/rps/monthly?months=${months}`, {
-    cache: 'no-store',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
+  cache: 'no-store',
+  headers: getAuthHeaders(),
+})
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -326,12 +320,9 @@ export default function Dashboard() {
     (async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const bootRes = await fetch(`${base}/api/bootstrap`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!bootRes.ok) throw new Error('Failed to load partners')
         const boot = await bootRes.json()
@@ -340,9 +331,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         if (!jj) { setJjNet(0); return }
         const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!res.ok) throw new Error('Failed to load JJ Boston totals')
         const data = await res.json()
@@ -361,12 +350,9 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         setOrdersLoading(true); setOrdersErr(null)
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const filterParam = orderFilter === 'Not delivered' ? '?filter=not-delivered' : ''
-        const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/recent-orders${filterParam}`, { 
+        const res = await fetch(`${base}/api/recent-orders${filterParam}`, { 
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!res.ok) {
           const text = await res.text().catch(() => '')
@@ -485,13 +471,9 @@ const res = await fetch(`${base}/api/recent-orders${filterParam}`, {
     const handleDeliveryToggle = async (orderId: string, newDeliveredStatus: boolean) => {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/orders-delivery`, {
+      const res = await fetch(`${base}/api/orders-delivery`, {
   method: 'PUT',
-  headers: { 
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({ 
     order_id: orderId, 
     delivered: newDeliveredStatus 
