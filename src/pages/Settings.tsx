@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getAuthHeaders } from '../lib/api'
 
 // Define available shortcuts with their properties
 const AVAILABLE_SHORTCUTS = [
@@ -41,13 +42,10 @@ useEffect(() => {
     try {
       setTenantLoading(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
       
       const res = await fetch(`${base}/api/tenant`, { 
         cache: 'no-store',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getAuthHeaders(),
       })
       
       if (!res.ok) {
@@ -63,7 +61,41 @@ useEffect(() => {
     }
   })()
 }, [])
+// Reload tenant info when active tenant changes
+  useEffect(() => {
+    const handleTenantChange = () => {
+      // Reload tenant information when tenant switches
+      (async () => {
+        try {
+          setTenantLoading(true)
+          const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+          
+          const res = await fetch(`${base}/api/tenant`, { 
+            cache: 'no-store',
+            headers: getAuthHeaders(),
+          })
+          
+          if (!res.ok) {
+            throw new Error(`Failed to load tenant info (status ${res.status})`)
+          }
+          const data = await res.json()
+          setTenantName(data.tenant.name)
+        } catch (error) {
+          console.error('Failed to load tenant info:', error)
+          setTenantName('Unknown')
+        } finally {
+          setTenantLoading(false)
+        }
+      })()
+    }
 
+    // Listen for storage changes (tenant switching)
+    window.addEventListener('storage', handleTenantChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleTenantChange)
+    }
+  }, [])
   // Track changes to enable/disable save button
   useEffect(() => {
     // Check if userName or shortcuts have changed from defaults
