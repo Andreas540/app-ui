@@ -1,6 +1,7 @@
 // src/pages/CreateSupplier.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 export default function CreateSupplier() {
   const navigate = useNavigate()
@@ -22,13 +23,9 @@ export default function CreateSupplier() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const token = localStorage.getItem('authToken')
 const res = await fetch(`${base}/api/suppliers`, {
   method: 'POST',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim() || null,
