@@ -75,50 +75,19 @@ function getDeliveryVisual(order: any) {
   return { symbol, color, label, status }
 }
 
-type MonthlyPoint = {
-  month: string // "YYYY-MM"
-  revenue: number
-  profit: number
-  profitPct: number // 0..1
-}
 
 type RpsPoint = {
   month: string            // "YYYY-MM"
   revenue: number          // from revenue_amount in the view
+  gross_profit: number     // NEW: from gross_profit in the view
+  grossPct: number         // NEW: gross_profit / revenue
   operating_profit: number
   operatingPct: number     // operating_profit / revenue
   surplus: number
   surplusPct: number       // surplus / revenue
 }
 
-// ---- FETCH & NORMALIZE: existing graph (kept as-is) ----
-async function fetchMonthly3(): Promise<MonthlyPoint[]> {
-  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
-  const res = await fetch(`${base}/api/metrics/monthly?months=3`, {
-  cache: 'no-store',
-  headers: getAuthHeaders(),
-})
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Failed to load monthly metrics (status ${res.status}) ${text?.slice(0,140)}`)
-  }
-
-  const data = await res.json()
-  const rows = Array.isArray(data?.rows) ? data.rows : []
-
-  return rows.map((r: any) => {
-    const month = String(r.month ?? '')
-    const revenue = Number(r.revenue ?? 0)
-    const profit = Number(r.profit ?? 0)
-    const profitPct = revenue > 0 ? profit / revenue : 0
-    return { month, revenue, profit, profitPct }
-  }) as MonthlyPoint[]
-}
-
-
-// --- NEW: RPS monthly fetch (for Operating profit & Surplus slides) ---
+// --- RPS monthly fetch (for Gross Profic, Operating profit & Surplus slides) ---
 async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -137,14 +106,18 @@ async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
 
   return safe.map((r: any) => {
     const revenue = Number(r.revenue ?? 0)
+    const gross_profit = Number(r.gross_profit ?? 0)
     const operating_profit = Number(r.operating_profit ?? 0)
     const surplus = Number(r.surplus ?? 0)
+    const grossPct = revenue > 0 ? gross_profit / revenue : 0
     const operatingPct = revenue > 0 ? operating_profit / revenue : 0
     const surplusPct = revenue > 0 ? surplus / revenue : 0
 
     return {
       month: String(r.month ?? ''),
       revenue,
+      gross_profit,
+      grossPct,
       operating_profit,
       operatingPct,
       surplus,
@@ -287,11 +260,6 @@ export default function Dashboard() {
   const [slide, setSlide] = useState<0 | 1 | 2>(0)
   const touchStartX = useRef<number | null>(null)
 
-  // Monthly metrics for slide #1 (existing source)
-  const [monthly, setMonthly] = useState<MonthlyPoint[]>([])
-  const [monthlyLoading, setMonthlyLoading] = useState(true)
-  const [monthlyErr, setMonthlyErr] = useState<string | null>(null)
-
   // RPS data for slides #2 and #3
   const [rpsMonthly, setRpsMonthly] = useState<RpsPoint[]>([])
   const [rpsLoading, setRpsLoading] = useState(true)
@@ -368,24 +336,6 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     })()
   }, [orderFilter])
 
-  // Initial monthly load (slide #1)
-  useEffect(() => {
-    let stop = false
-    const initial = async () => {
-      try {
-        setMonthlyLoading(true); setMonthlyErr(null)
-        const rows = await fetchMonthly3()
-        if (!stop) setMonthly(rows)
-      } catch (e: any) {
-        if (!stop) setMonthlyErr(e?.message || String(e))
-      } finally {
-        if (!stop) setMonthlyLoading(false)
-      }
-    }
-    initial()
-    return () => { stop = true }
-  }, [])
-
   // Initial RPS load (slides #2, #3)
   useEffect(() => {
     let stop = false
@@ -410,8 +360,6 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     const loadSilent = async () => {
       try {
         if (document.visibilityState !== 'visible') return
-        const rows = await fetchMonthly3()
-        if (!stop) setMonthly(rows)
         const rpsRows = await fetchRpsMonthly(3)
         if (!stop) setRpsMonthly(rpsRows)
       } catch {
@@ -424,12 +372,9 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     return () => { stop = true; clearInterval(id); window.removeEventListener('visibilitychange', onVis) }
   }, [])
 
-  // Also refresh charts when the orders list length changes (new orders registered)
   useEffect(() => {
     (async () => {
       try {
-        const rows = await fetchMonthly3()
-        setMonthly(rows)
         const rpsRows = await fetchRpsMonthly(3)
         setRpsMonthly(rpsRows)
       } catch {}
@@ -535,10 +480,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   // Build slide specs
   const slide1: SlideSpec = {
     title: 'Revenue & Gross profit',
-    data: monthly,
+    data: rpsMonthly,
     bar1Key: 'revenue',
-    bar2Key: 'profit',
-    lineKey: 'profitPct',
+    bar2Key: 'gross_profit',
+    lineKey: 'grossPct',
   }
 
   const slide2: SlideSpec = {
@@ -635,10 +580,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
             {/* Loading badges */}
-            {slide === 0 && monthlyLoading && <span className="helper">Loading…</span>}
-            {slide === 0 && monthlyErr && <span style={{ color: 'salmon' }}>{monthlyErr}</span>}
-            {slide > 0 && rpsLoading && <span className="helper">Loading…</span>}
-            {slide > 0 && rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+            {rpsLoading && <span className="helper">Loading…</span>}
+            {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
 
             {/* Prev / Next buttons (desktop) */}
             <div style={{ display:'flex', gap:4 }}>

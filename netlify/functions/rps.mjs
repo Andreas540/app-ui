@@ -34,11 +34,12 @@ export const handler = async (event) => {
         limit ${months}
       )
       select
-        to_char(v.month_start, 'YYYY-MM')           as month,
-        v.month_start                               as month_start,
-        coalesce(v.revenue_amount, 0)::float8       as revenue,
-        coalesce(v.operating_profit, 0)::float8     as operating_profit,
-        coalesce(v.surplus, 0)::float8              as surplus
+    to_char(v.month_start, 'YYYY-MM')           as month,
+    v.month_start                               as month_start,
+    coalesce(v.revenue_amount, 0)::float8       as revenue,
+    coalesce(v.gross_profit, 0)::float8         as gross_profit,
+    coalesce(v.operating_profit, 0)::float8     as operating_profit,
+    coalesce(v.surplus, 0)::float8              as surplus
       from public.revenue_profit_surplus_by_month v
       join mset on mset.month_start = v.month_start
       where v.tenant_id = ${TENANT_ID}
