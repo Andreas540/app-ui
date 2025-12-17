@@ -1,7 +1,7 @@
 // src/pages/NewProduct.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createProduct, listProducts, type ProductWithCost } from '../lib/api'
+import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 
 interface HistoricalCost {
@@ -61,12 +61,9 @@ export default function NewProduct() {
       setLoadingHistorical(true)
 
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
 
       const res = await fetch(`${base}/api/product-cost-history`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!res.ok) throw new Error('Failed to load historical costs')
