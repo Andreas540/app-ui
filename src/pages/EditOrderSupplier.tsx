@@ -1,6 +1,7 @@
 // src/pages/EditOrderSupplier.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { getAuthHeaders } from '../lib/api'
 
 type Product = { id: string; name: string }
 
@@ -76,12 +77,9 @@ export default function EditOrderSupplier() {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
         // Load products
-const token = localStorage.getItem('authToken')
 const pRes = await fetch(`${base}/api/product`, {
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (pRes.ok) {
           const data = await pRes.json()
@@ -95,9 +93,7 @@ const pRes = await fetch(`${base}/api/product`, {
         
         const orderRes = await fetch(`${base}/api/order-supplier?id=${id}`, {
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
         if (!orderRes.ok) throw new Error('Failed to load order')
         
@@ -150,12 +146,9 @@ const pRes = await fetch(`${base}/api/product`, {
       url.searchParams.set('fn', 'last-cost')
       url.searchParams.set('supplier_id', supplier_id)
       url.searchParams.set('product_id', product_id)
-      const token = localStorage.getItem('authToken')
-const res = await fetch(url.toString(), {
+      const res = await fetch(url.toString(), {
   cache: 'no-store',
-  headers: {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
 })
       if (!res.ok) throw new Error('last-cost fetch failed')
       const data = await res.json()
@@ -257,13 +250,9 @@ const res = await fetch(url.toString(), {
         lines: cleanLines,
       }
 
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/order-supplier`, {
+      const res = await fetch(`${base}/api/order-supplier`, {
   method: 'PUT',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify(body),
 })
       if (!res.ok) {
@@ -284,13 +273,9 @@ const res = await fetch(`${base}/api/order-supplier`, {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
-const res = await fetch(`${base}/api/order-supplier`, {
+      const res = await fetch(`${base}/api/order-supplier`, {
   method: 'DELETE',
-  headers: {
-    'content-type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
+  headers: getAuthHeaders(),
   body: JSON.stringify({ id }),
 })
       if (!res.ok) throw new Error('Failed to delete order')
