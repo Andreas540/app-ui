@@ -1,15 +1,8 @@
 // src/pages/EditOrder.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fetchBootstrap, type Person, type Product } from '../lib/api'
+import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
-
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('authToken')
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
-}
 
 type PartnerRef = { id: string; name: string }
 
