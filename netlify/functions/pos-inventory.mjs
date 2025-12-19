@@ -24,7 +24,7 @@ export async function handler(event) {
       query = sql`
         SELECT 
           item_name,
-          item_variation,
+          variation_name,
           location_id,
           location_name,
           quantity,
@@ -38,7 +38,7 @@ export async function handler(event) {
       query = sql`
         SELECT 
           item_name,
-          item_variation,
+          variation_name,
           location_id,
           location_name,
           quantity,

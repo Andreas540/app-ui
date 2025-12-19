@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 interface InventoryItem {
   item_name: string
-  item_variation: string | null
+  variation_name: string | null
   location_id: string
   location_name: string | null
   quantity: number
@@ -310,7 +310,7 @@ export default function DashboardStore() {
                   }}
                 >
                   <div>{item.item_name || '-'}</div>
-                  <div className="helper">{item.item_variation || '-'}</div>
+                  <div className="helper">{item.variation_name || '-'}</div>
                   <div style={{ textAlign: 'right' }}>{item.quantity?.toLocaleString('en-US') || 0}</div>
                   <div style={{ textAlign: 'right' }} className="helper">
                     {item.days_of_inventory_remaining != null 
