@@ -85,19 +85,22 @@ async function handlePost(event) {
     const { action } = body
 
     if (action === 'createTenant') {
-      const { name } = body
-      if (!name || typeof name !== 'string' || !name.trim()) {
-        return cors(400, { error: 'Tenant name is required' })
-      }
+  const { name } = body
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return cors(400, { error: 'Tenant name is required' })
+  }
 
-      const result = await sql`
-        INSERT INTO tenants (name)
-        VALUES (${name.trim()})
-        RETURNING id, name
-      `
+  // Generate slug from name: "Soltiva Inc" -> "soltiva-inc"
+  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-      return cors(201, { tenant: result[0] })
-    }
+  const result = await sql`
+    INSERT INTO tenants (name, slug)
+    VALUES (${name.trim()}, ${slug})
+    RETURNING id, name, slug
+  `
+
+  return cors(201, { tenant: result[0] })
+}
 
     if (action === 'createUser') {
       const { email, password, name, tenantMemberships } = body
