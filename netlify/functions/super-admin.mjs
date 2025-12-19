@@ -58,6 +58,37 @@ async function handleGet(event) {
       return cors(200, { users })
     }
 
+    // NEW: Get user details with memberships
+    if (action === 'getUserDetails') {
+      const userId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('userId')
+      if (!userId) return cors(400, { error: 'userId required' })
+
+      // Get user info
+      const user = await sql`
+        SELECT id, email, name
+        FROM users
+        WHERE id = ${userId}
+      `
+      if (user.length === 0) return cors(404, { error: 'User not found' })
+
+      // Get user's tenant memberships
+      const memberships = await sql`
+        SELECT 
+          tm.tenant_id,
+          t.name as tenant_name,
+          tm.role
+        FROM tenant_memberships tm
+        JOIN tenants t ON t.id = tm.tenant_id
+        WHERE tm.user_id = ${userId}
+        ORDER BY t.name ASC
+      `
+
+      return cors(200, { 
+        user: user[0],
+        memberships: memberships 
+      })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -85,22 +116,22 @@ async function handlePost(event) {
     const { action } = body
 
     if (action === 'createTenant') {
-  const { name } = body
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return cors(400, { error: 'Tenant name is required' })
-  }
+      const { name } = body
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return cors(400, { error: 'Tenant name is required' })
+      }
 
-  // Generate slug from name: "Soltiva Inc" -> "soltiva-inc"
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      // Generate slug from name: "Soltiva Inc" -> "soltiva-inc"
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-  const result = await sql`
-    INSERT INTO tenants (name, slug)
-    VALUES (${name.trim()}, ${slug})
-    RETURNING id, name, slug
-  `
+      const result = await sql`
+        INSERT INTO tenants (name, slug)
+        VALUES (${name.trim()}, ${slug})
+        RETURNING id, name, slug
+      `
 
-  return cors(201, { tenant: result[0] })
-}
+      return cors(201, { tenant: result[0] })
+    }
 
     if (action === 'createUser') {
       const { email, password, name, tenantMemberships } = body
@@ -191,6 +222,44 @@ async function handlePost(event) {
       }
 
       return cors(201, { user: userResult[0] })
+    }
+
+    // NEW: Add user to tenant
+    if (action === 'addUserToTenant') {
+      const { userId, tenantId, role } = body
+
+      if (!userId || !tenantId || !role) {
+        return cors(400, { error: 'userId, tenantId, and role are required' })
+      }
+
+      if (!['tenant_admin', 'tenant_user'].includes(role)) {
+        return cors(400, { error: 'Role must be tenant_admin or tenant_user' })
+      }
+
+      await sql`
+        INSERT INTO tenant_memberships (user_id, tenant_id, role)
+        VALUES (${userId}, ${tenantId}, ${role})
+        ON CONFLICT (user_id, tenant_id) 
+        DO UPDATE SET role = EXCLUDED.role
+      `
+
+      return cors(200, { success: true })
+    }
+
+    // NEW: Remove user from tenant
+    if (action === 'removeUserFromTenant') {
+      const { userId, tenantId } = body
+
+      if (!userId || !tenantId) {
+        return cors(400, { error: 'userId and tenantId are required' })
+      }
+
+      await sql`
+        DELETE FROM tenant_memberships
+        WHERE user_id = ${userId} AND tenant_id = ${tenantId}
+      `
+
+      return cors(200, { success: true })
     }
 
     return cors(400, { error: 'Invalid action' })

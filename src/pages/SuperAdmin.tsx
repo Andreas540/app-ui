@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
+import ManageUserModal from '../components/ManageUserModal'
 
 interface Tenant {
   id: string
@@ -42,12 +43,13 @@ export default function SuperAdmin() {
   const [newUserPassword, setNewUserPassword] = useState('')
   const [newUserName, setNewUserName] = useState('')
   const [newUserMemberships, setNewUserMemberships] = useState<TenantMembership[]>([
-  { tenant_id: '', role: 'tenant_user' }
-])
+    { tenant_id: '', role: 'tenant_user' }
+  ])
   const [creatingUser, setCreatingUser] = useState(false)
 
   // UI state
   const [activeTab, setActiveTab] = useState<'tenants' | 'users'>('tenants')
+  const [managingUserId, setManagingUserId] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -162,11 +164,11 @@ export default function SuperAdmin() {
       }
 
       alert('User created successfully!')
-setNewUserEmail('')
-setNewUserPassword('')
-setNewUserName('')
-setNewUserMemberships([{ tenant_id: '', role: 'tenant_user' }])  // ← FIXED
-await loadData()
+      setNewUserEmail('')
+      setNewUserPassword('')
+      setNewUserName('')
+      setNewUserMemberships([{ tenant_id: '', role: 'tenant_user' }])
+      await loadData()
     } catch (e: any) {
       alert(e?.message || 'Failed to create user')
     } finally {
@@ -175,8 +177,8 @@ await loadData()
   }
 
   function addMembership() {
-  setNewUserMemberships([...newUserMemberships, { tenant_id: '', role: 'tenant_user' }])  // ← FIXED
-}
+    setNewUserMemberships([...newUserMemberships, { tenant_id: '', role: 'tenant_user' }])
+  }
 
   function removeMembership(index: number) {
     if (newUserMemberships.length === 1) return
@@ -360,13 +362,13 @@ await loadData()
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select
-  value={membership.role}
-  onChange={(e) => updateMembership(index, 'role', e.target.value)}
-  style={{ height: CONTROL_H, flex: 1 }}
->
-  <option value="tenant_user">User</option>
-  <option value="tenant_admin">Tenant Admin</option>
-</select>
+                      value={membership.role}
+                      onChange={(e) => updateMembership(index, 'role', e.target.value)}
+                      style={{ height: CONTROL_H, flex: 1 }}
+                    >
+                      <option value="tenant_user">User</option>
+                      <option value="tenant_admin">Tenant Admin</option>
+                    </select>
                     {newUserMemberships.length > 1 && (
                       <button
                         onClick={() => removeMembership(index)}
@@ -412,31 +414,58 @@ await loadData()
                     style={{
                       padding: '12px 0',
                       borderBottom: '1px solid var(--border)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 16,
                     }}
                   >
-                    <div style={{ fontWeight: 600 }}>{user.email}</div>
-                    {user.name && (
-                      <div style={{ marginTop: 4 }}>{user.name}</div>
-                    )}
-                    <div style={{ marginTop: 8 }}>
-                      {user.tenants && user.tenants.length > 0 ? (
-                        user.tenants.map((tm, idx) => (
-                          <div key={idx} className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                            • {tm.tenant_name} ({tm.role})
-                          </div>
-                        ))
-                      ) : (
-                        <div className="helper" style={{ fontSize: 12, color: 'salmon' }}>
-                          No tenant access
-                        </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>{user.email}</div>
+                      {user.name && (
+                        <div style={{ marginTop: 4 }}>{user.name}</div>
                       )}
+                      <div style={{ marginTop: 8 }}>
+                        {user.tenants && user.tenants.length > 0 ? (
+                          user.tenants.map((tm, idx) => (
+                            <div key={idx} className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                              • {tm.tenant_name} ({tm.role})
+                            </div>
+                          ))
+                        ) : (
+                          <div className="helper" style={{ fontSize: 12, color: 'salmon' }}>
+                            No tenant access
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    <button
+                      onClick={() => setManagingUserId(user.id)}
+                      style={{
+                        height: 36,
+                        padding: '0 16px',
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Manage
+                    </button>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </>
+      )}
+
+      {/* Manage User Modal */}
+      {managingUserId && (
+        <ManageUserModal
+          userId={managingUserId}
+          onClose={() => setManagingUserId(null)}
+          onUpdate={loadData}
+        />
       )}
     </div>
   )
