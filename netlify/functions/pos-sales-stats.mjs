@@ -14,14 +14,43 @@ export async function handler(event) {
     const authz = await resolveAuthz({ sql, event })
     if (authz.error) return cors(403, { error: authz.error })
 
-    // Get sales stats from Square payments (placeholder for now)
-    // TODO: Add actual sales data from pos.pos_payments table when available
-    
+    // Get sales aggregated by time periods
+    // Week starts Sunday (US convention)
+    const results = await sql`
+      WITH sales_data AS (
+        SELECT 
+          sales_date_local::date as sale_date,
+          SUM(unit_price_ex_tax) as daily_sales
+        FROM pos.vw_sales_with_cost
+        WHERE tenant_id = ${authz.tenantId}::uuid
+        GROUP BY sales_date_local::date
+      )
+      SELECT
+        -- Today
+        COALESCE(SUM(daily_sales) FILTER (WHERE sale_date = CURRENT_DATE), 0) as today,
+        
+        -- Yesterday
+        COALESCE(SUM(daily_sales) FILTER (WHERE sale_date = CURRENT_DATE - INTERVAL '1 day'), 0) as yesterday,
+        
+        -- This Week (Sunday to today)
+        COALESCE(SUM(daily_sales) FILTER (WHERE 
+          sale_date >= DATE_TRUNC('week', CURRENT_DATE) 
+          AND sale_date <= CURRENT_DATE
+        ), 0) as this_week,
+        
+        -- Last Week (previous Sunday to Saturday)
+        COALESCE(SUM(daily_sales) FILTER (WHERE 
+          sale_date >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '7 days'
+          AND sale_date < DATE_TRUNC('week', CURRENT_DATE)
+        ), 0) as last_week
+      FROM sales_data
+    `
+
     const stats = {
-      today: 0,
-      yesterday: 0,
-      thisWeek: 0,
-      lastWeek: 0,
+      today: Number(results[0]?.today || 0),
+      yesterday: Number(results[0]?.yesterday || 0),
+      thisWeek: Number(results[0]?.this_week || 0),
+      lastWeek: Number(results[0]?.last_week || 0),
       lastUpdate: new Date().toISOString()
     }
 

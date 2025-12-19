@@ -35,7 +35,7 @@ export default function DashboardStore() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocation, setSelectedLocation] = useState<string>('')
-  const [sortBy, setSortBy] = useState<'item_name' | 'quantity' | 'days'>('item_name')
+  const [sortBy, setSortBy] = useState<'item_name' | 'quantity_desc' | 'quantity_asc' | 'days'>('item_name')
   const [loading, setLoading] = useState(false)
   const [salesStats, setSalesStats] = useState<SalesStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
@@ -112,18 +112,20 @@ export default function DashboardStore() {
   }, [selectedLocation])
 
   // Sort inventory
-  const sortedInventory = [...inventory].sort((a, b) => {
-    if (sortBy === 'item_name') {
-      return (a.item_name || '').localeCompare(b.item_name || '')
-    } else if (sortBy === 'quantity') {
-      return (b.quantity || 0) - (a.quantity || 0)
-    } else {
-      // days_of_inventory_remaining
-      const aDays = a.days_of_inventory_remaining ?? 999999
-      const bDays = b.days_of_inventory_remaining ?? 999999
-      return aDays - bDays
-    }
-  })
+const sortedInventory = [...inventory].sort((a, b) => {
+  if (sortBy === 'item_name') {
+    return (a.item_name || '').localeCompare(b.item_name || '')
+  } else if (sortBy === 'quantity_desc') {
+    return (b.quantity || 0) - (a.quantity || 0)
+  } else if (sortBy === 'quantity_asc') {
+    return (a.quantity || 0) - (b.quantity || 0)
+  } else {
+    // days_of_inventory_remaining
+    const aDays = a.days_of_inventory_remaining ?? 999999
+    const bDays = b.days_of_inventory_remaining ?? 999999
+    return aDays - bDays
+  }
+})
 
   // Format last update time
   const lastUpdateFormatted = salesStats?.lastUpdate 
@@ -257,17 +259,18 @@ export default function DashboardStore() {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Sort by</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                style={{ height: 44, width: '100%' }}
-              >
-                <option value="item_name">Item Name</option>
-                <option value="quantity">Quantity</option>
-                <option value="days">Days Remaining</option>
-              </select>
-            </div>
+  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Sort by</label>
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value as any)}
+    style={{ height: 44, width: '100%' }}
+  >
+    <option value="item_name">Item Name</option>
+    <option value="quantity_desc">Qty (High to Low)</option>
+    <option value="quantity_asc">Qty (Low to High)</option>
+    <option value="days">Days Remaining</option>
+  </select>
+</div>
           </div>
 
           {loading ? (
