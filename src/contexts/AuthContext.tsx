@@ -51,12 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const verifyToken = async (tokenToVerify: string) => {
-    try {
-      const response = await fetch('/.netlify/functions/auth-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tokenToVerify })
-      })
+  try {
+    // Get active tenant if set
+    const activeTenantId = localStorage.getItem('activeTenantId')
+    
+    const response = await fetch('/.netlify/functions/auth-verify', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+      },
+      body: JSON.stringify({ token: tokenToVerify })
+    })
 
       if (!response.ok) {
         logout()
