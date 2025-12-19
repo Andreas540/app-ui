@@ -29,7 +29,7 @@ async function handleGet(event) {
 
     if (action === 'listTenants') {
       const tenants = await sql`
-        SELECT id, name, created_at
+        SELECT id, name, business_type, created_at
         FROM tenants
         ORDER BY name ASC
       `
@@ -116,22 +116,26 @@ async function handlePost(event) {
     const { action } = body
 
     if (action === 'createTenant') {
-      const { name } = body
-      if (!name || typeof name !== 'string' || !name.trim()) {
-        return cors(400, { error: 'Tenant name is required' })
-      }
+  const { name, businessType } = body
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return cors(400, { error: 'Tenant name is required' })
+  }
 
-      // Generate slug from name: "Soltiva Inc" -> "soltiva-inc"
-      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  // Validate business_type
+  const validTypes = ['general', 'physical_store']
+  const type = businessType && validTypes.includes(businessType) ? businessType : 'general'
 
-      const result = await sql`
-        INSERT INTO tenants (name, slug)
-        VALUES (${name.trim()}, ${slug})
-        RETURNING id, name, slug
-      `
+  // Generate slug from name
+  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-      return cors(201, { tenant: result[0] })
-    }
+  const result = await sql`
+    INSERT INTO tenants (name, slug, business_type)
+    VALUES (${name.trim()}, ${slug}, ${type})
+    RETURNING id, name, slug, business_type
+  `
+
+  return cors(201, { tenant: result[0] })
+}
 
     if (action === 'createUser') {
       const { email, password, name, tenantMemberships } = body

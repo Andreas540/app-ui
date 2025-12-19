@@ -35,6 +35,7 @@ import TenantAdmin from './pages/TenantAdmin'
 import CreateUser from './pages/CreateUser'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
+import DashboardStore from './pages/DashboardStore'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -211,8 +212,11 @@ export default function App() {
             selectedShortcuts.includes('I') && (
               <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
             )
+          ) : user?.businessType === 'physical_store' ? (
+            // Physical store users see no quick buttons (only Store Dashboard + Settings in nav)
+            null
           ) : (
-            // Admin sees their selected shortcuts
+            // General business type sees their selected shortcuts
             <>
               {selectedShortcuts.includes('D') && <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>}
               {selectedShortcuts.includes('O') && <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>}
@@ -249,8 +253,29 @@ export default function App() {
                 Logout
               </button>
             </>
+          ) : user?.businessType === 'physical_store' ? (
+            /* Physical store users see store dashboard + settings + logout */
+            <>
+              <NavLink to="/" onClick={() => setNavOpen(false)}>Store Dashboard</NavLink>
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
+              <button 
+                onClick={handleLogout}
+                style={{ 
+                  background: 'transparent', 
+                  border: '1px solid var(--muted)', 
+                  color: 'var(--muted)',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  marginTop: '8px',
+                  width: '75%'
+                }}
+              >
+                Logout
+              </button>
+            </>
           ) : (
-            /* Admin sees everything with sections */
+            /* General business type sees everything with sections */
             <>
               {/* Sales Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
@@ -312,8 +337,14 @@ export default function App() {
                 <Route path="/inventory" element={<InventoryDashboard />} />
                 <Route path="/settings" element={<Settings />} />
               </>
+            ) : user?.businessType === 'physical_store' ? (
+              /* Physical store users see ONLY store dashboard + settings */
+              <>
+                <Route path="/" element={<DashboardStore />} />
+                <Route path="/settings" element={<Settings />} />
+              </>
             ) : (
-              /* Admin sees all routes */
+              /* General business type sees all admin routes */
               <>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/orders/new" element={<NewOrder />} />

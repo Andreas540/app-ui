@@ -10,6 +10,7 @@ interface User {
   accessLevel: 'admin' | 'inventory'
   tenantId: string | null
   tenantName: string | null
+  businessType: string
 }
 
 interface AuthContextType {

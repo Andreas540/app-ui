@@ -7,6 +7,7 @@ import ManageUserModal from '../components/ManageUserModal'
 interface Tenant {
   id: string
   name: string
+  business_type: string
   created_at: string
 }
 
@@ -36,6 +37,7 @@ export default function SuperAdmin() {
   
   // Create tenant form
   const [newTenantName, setNewTenantName] = useState('')
+  const [newTenantBusinessType, setNewTenantBusinessType] = useState('general')
   const [creatingTenant, setCreatingTenant] = useState(false)
   
   // Create user form
@@ -106,7 +108,8 @@ export default function SuperAdmin() {
         headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'createTenant',
-          name: newTenantName.trim()
+          name: newTenantName.trim(),
+          businessType: newTenantBusinessType
         })
       })
 
@@ -117,6 +120,7 @@ export default function SuperAdmin() {
 
       alert('Tenant created successfully!')
       setNewTenantName('')
+      setNewTenantBusinessType('general')
       await loadData()
     } catch (e: any) {
       alert(e?.message || 'Failed to create tenant')
@@ -244,16 +248,27 @@ export default function SuperAdmin() {
                   style={{ height: CONTROL_H }}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button
-                  className="primary"
-                  onClick={handleCreateTenant}
-                  disabled={creatingTenant || !newTenantName.trim()}
-                  style={{ height: CONTROL_H, width: '100%' }}
+              <div>
+                <label>Business Type</label>
+                <select
+                  value={newTenantBusinessType}
+                  onChange={(e) => setNewTenantBusinessType(e.target.value)}
+                  style={{ height: CONTROL_H }}
                 >
-                  {creatingTenant ? 'Creating...' : 'Create Tenant'}
-                </button>
+                  <option value="general">General</option>
+                  <option value="physical_store">Physical Store</option>
+                </select>
               </div>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button
+                className="primary"
+                onClick={handleCreateTenant}
+                disabled={creatingTenant || !newTenantName.trim()}
+                style={{ height: CONTROL_H, width: '100%' }}
+              >
+                {creatingTenant ? 'Creating...' : 'Create Tenant'}
+              </button>
             </div>
           </div>
 
@@ -274,6 +289,9 @@ export default function SuperAdmin() {
                   >
                     <div style={{ fontWeight: 600 }}>{tenant.name}</div>
                     <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                      Type: {tenant.business_type === 'physical_store' ? 'Physical Store' : 'General'}
+                    </div>
+                    <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
                       ID: {tenant.id}
                     </div>
                   </div>
