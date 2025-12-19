@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import '../styles/Modal.css';
 
 interface User {
   id: string;
@@ -42,7 +41,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${base}/.netlify/functions/super-admin?action=getUserDetails&userId=${userId}`, {
+      const res = await fetch(`${base}/api/super-admin?action=getUserDetails&userId=${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -61,7 +60,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${base}/.netlify/functions/super-admin?action=listTenants`, {
+      const res = await fetch(`${base}/api/super-admin?action=listTenants`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -80,7 +79,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${base}/.netlify/functions/super-admin`, {
+      const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +116,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${base}/.netlify/functions/super-admin`, {
+      const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,142 +142,162 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     }
   }
 
-  if (loading) {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Loading...</h2>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>User not found</h2>
-            <button className="close-btn" onClick={onClose}>×</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Filter out tenants user is already a member of
   const unassignedTenants = availableTenants.filter(
     t => !memberships.some(m => m.tenant_id === t.id)
   );
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
-        <div className="modal-header">
-          <h2>Manage User: {user.email}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
+  const CONTROL_H = 44;
 
-        <div className="modal-body">
-          {/* Current Memberships */}
-          <div style={{ marginBottom: 24 }}>
-            <h3>Current Tenant Memberships</h3>
-            {memberships.length === 0 ? (
-              <p style={{ color: '#666' }}>No tenant memberships yet</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {memberships.map(m => (
-                  <div
-                    key={m.tenant_id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 12px',
-                      background: '#f5f5f5',
-                      borderRadius: 4
-                    }}
-                  >
-                    <div>
-                      <strong>{m.tenant_name}</strong>
-                      <span style={{ marginLeft: 12, color: '#666' }}>
-                        ({m.role === 'tenant_admin' ? 'Admin' : 'User'})
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveMembership(m.tenant_id)}
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="card"
+        style={{
+          maxWidth: 600,
+          width: '90%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+          margin: 0
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {loading ? (
+          <p>Loading...</p>
+        ) : !user ? (
+          <>
+            <h3>User not found</h3>
+            <button onClick={onClose}>Close</button>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Manage User: {user.email}</h3>
+              <button
+                onClick={onClose}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: 28,
+                  cursor: 'pointer',
+                  padding: 0,
+                  width: 32,
+                  height: 32,
+                  lineHeight: 1
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Current Memberships */}
+            <div style={{ marginBottom: 24 }}>
+              <h4>Current Tenant Memberships</h4>
+              {memberships.length === 0 ? (
+                <p className="helper">No tenant memberships yet</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {memberships.map(m => (
+                    <div
+                      key={m.tenant_id}
                       style={{
-                        padding: '4px 12px',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px',
+                        background: 'var(--bg-secondary, #f5f5f5)',
                         borderRadius: 4,
-                        cursor: 'pointer'
+                        border: '1px solid var(--border)'
                       }}
                     >
-                      Remove
-                    </button>
+                      <div>
+                        <strong>{m.tenant_name}</strong>
+                        <span className="helper" style={{ marginLeft: 12 }}>
+                          ({m.role === 'tenant_admin' ? 'Admin' : 'User'})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveMembership(m.tenant_id)}
+                        style={{
+                          padding: '6px 12px',
+                          background: 'salmon',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          fontSize: 13
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add New Membership */}
+            <div>
+              <h4>Add to Tenant</h4>
+              {unassignedTenants.length === 0 ? (
+                <p className="helper">User is already a member of all tenants</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <label>Tenant</label>
+                    <select
+                      value={selectedTenant}
+                      onChange={e => setSelectedTenant(e.target.value)}
+                      disabled={adding}
+                      style={{ height: CONTROL_H }}
+                    >
+                      <option value="">Select tenant...</option>
+                      {unassignedTenants.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Add New Membership */}
-          <div>
-            <h3>Add to Tenant</h3>
-            {unassignedTenants.length === 0 ? (
-              <p style={{ color: '#666' }}>User is already a member of all tenants</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 4 }}>Tenant</label>
-                  <select
-                    value={selectedTenant}
-                    onChange={e => setSelectedTenant(e.target.value)}
-                    disabled={adding}
-                    style={{ width: '100%', padding: 8 }}
+                  <div>
+                    <label>Role</label>
+                    <select
+                      value={selectedRole}
+                      onChange={e => setSelectedRole(e.target.value)}
+                      disabled={adding}
+                      style={{ height: CONTROL_H }}
+                    >
+                      <option value="tenant_user">User</option>
+                      <option value="tenant_admin">Admin</option>
+                    </select>
+                  </div>
+
+                  <button
+                    className="primary"
+                    onClick={handleAddMembership}
+                    disabled={!selectedTenant || adding}
+                    style={{ height: CONTROL_H }}
                   >
-                    <option value="">Select tenant...</option>
-                    {unassignedTenants.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    {adding ? 'Adding...' : 'Add Membership'}
+                  </button>
                 </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: 4 }}>Role</label>
-                  <select
-                    value={selectedRole}
-                    onChange={e => setSelectedRole(e.target.value)}
-                    disabled={adding}
-                    style={{ width: '100%', padding: 8 }}
-                  >
-                    <option value="tenant_user">User</option>
-                    <option value="tenant_admin">Admin</option>
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleAddMembership}
-                  disabled={!selectedTenant || adding}
-                  style={{
-                    padding: '8px 16px',
-                    background: selectedTenant ? '#28a745' : '#ccc',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 4,
-                    cursor: selectedTenant ? 'pointer' : 'not-allowed'
-                  }}
-                >
-                  {adding ? 'Adding...' : 'Add Membership'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
