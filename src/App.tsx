@@ -144,20 +144,45 @@ export default function App() {
   }
 
   // Tenant switching handler
-  const handleTenantSwitch = () => {
-    if (availableTenants.length <= 1) return // Nothing to switch
+  const handleTenantSwitch = async () => {
+  if (availableTenants.length <= 1) return
 
-    // Find current tenant index
-    const currentIndex = availableTenants.findIndex(t => t.id === activeTenantId)
+  const currentIndex = availableTenants.findIndex(t => t.id === activeTenantId)
+  const nextIndex = (currentIndex + 1) % availableTenants.length
+  const nextTenant = availableTenants[nextIndex]
+
+  // Save new active tenant
+  localStorage.setItem('activeTenantId', nextTenant.id)
+  
+  // Re-fetch user data with new tenant context
+  try {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const token = localStorage.getItem('authToken')
     
-    // Get next tenant (cycle back to 0 if at end)
-    const nextIndex = (currentIndex + 1) % availableTenants.length
-    const nextTenant = availableTenants[nextIndex]
+    const res = await fetch(`${base}/api/auth-verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-Active-Tenant': nextTenant.id
+      },
+      body: JSON.stringify({ token })
+    })
 
-    // Save and reload
-    localStorage.setItem('activeTenantId', nextTenant.id)
-    window.location.reload()
+    if (res.ok) {
+      const data = await res.json()
+      if (data.user) {
+        // Update localStorage with fresh user data
+        localStorage.setItem('userData', JSON.stringify(data.user))
+      }
+    }
+  } catch (e) {
+    console.error('Failed to refresh user data:', e)
   }
+  
+  // Reload to apply changes
+  window.location.reload()
+}
 
   // Get current tenant name for display
   const currentTenant = availableTenants.find(t => t.id === activeTenantId)

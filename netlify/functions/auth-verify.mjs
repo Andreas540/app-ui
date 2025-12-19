@@ -35,7 +35,72 @@ async function handleVerify(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Get fresh user data from database
+    // Check for active tenant from header (for tenant switching)
+    const activeTenantId = 
+      event.headers['x-active-tenant'] || 
+      event.headers['X-Active-Tenant'] ||
+      null
+
+    // If active tenant specified, get user data for that tenant
+    if (activeTenantId) {
+      // Verify user has access to this tenant
+      const membership = await sql`
+        SELECT 
+          tm.tenant_id,
+          tm.role,
+          t.name as tenant_name,
+          t.business_type
+        FROM tenant_memberships tm
+        JOIN tenants t ON t.id = tm.tenant_id
+        WHERE tm.user_id = ${decoded.userId}::uuid
+          AND tm.tenant_id = ${activeTenantId}::uuid
+        LIMIT 1
+      `
+
+      if (membership.length === 0) {
+        return cors(403, { error: 'No access to specified tenant' })
+      }
+
+      // Get basic user info
+      const users = await sql`
+        SELECT 
+          u.id,
+          u.email,
+          u.name,
+          u.access_level,
+          u.active
+        FROM users u
+        WHERE u.id = ${decoded.userId}
+        LIMIT 1
+      `
+
+      if (users.length === 0) {
+        return cors(401, { error: 'User not found' })
+      }
+
+      const user = users[0]
+
+      if (!user.active) {
+        return cors(403, { error: 'Account is disabled' })
+      }
+
+      // Return user info with active tenant context
+      return cors(200, {
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: membership[0].role,
+          accessLevel: user.access_level,
+          tenantId: membership[0].tenant_id,
+          tenantName: membership[0].tenant_name,
+          businessType: membership[0].business_type
+        }
+      })
+    }
+
+    // No active tenant specified - get user's default tenant
     const users = await sql`
       SELECT 
         u.id,
@@ -45,7 +110,8 @@ async function handleVerify(event) {
         u.access_level,
         u.tenant_id,
         u.active,
-        t.name as tenant_name
+        t.name as tenant_name,
+        t.business_type
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ${decoded.userId}
@@ -73,7 +139,8 @@ async function handleVerify(event) {
         role: user.role,
         accessLevel: user.access_level,
         tenantId: user.tenant_id,
-        tenantName: user.tenant_name
+        tenantName: user.tenant_name,
+        businessType: user.business_type
       }
     })
 
@@ -90,7 +157,7 @@ function cors(status, body) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Active-Tenant',
     },
     body: JSON.stringify(body),
   }

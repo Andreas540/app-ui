@@ -169,7 +169,7 @@ if (requestedTenantId) {
     from public.tenant_memberships tm
     join public.app_users u on u.id = tm.user_id
     join public.tenants t on t.id = tm.tenant_id
-    where tm.user_userId}::uuid
+    where tm.user_id = ${user.userId}::uuid
       and u.is_disabled is not true
     order by tm.created_at asc
     limit 1
