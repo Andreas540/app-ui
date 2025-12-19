@@ -313,11 +313,11 @@ export default function DashboardStore() {
                   <div className="helper">{item.variation_name || '-'}</div>
                   <div style={{ textAlign: 'right' }}>{item.quantity?.toLocaleString('en-US') || 0}</div>
                   <div style={{ textAlign: 'right' }} className="helper">
-                    {item.days_of_inventory_remaining != null 
-                      ? `${item.days_of_inventory_remaining.toFixed(2)} days`
-                      : '-'
-                    }
-                  </div>
+  {item.days_of_inventory_remaining != null 
+    ? `${Number(item.days_of_inventory_remaining).toFixed(2)} days`
+    : '-'
+  }
+</div>
                 </div>
               ))}
             </>
