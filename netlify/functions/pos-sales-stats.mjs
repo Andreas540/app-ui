@@ -20,7 +20,7 @@ export async function handler(event) {
       WITH sales_data AS (
         SELECT 
           sale_date_local::date as sale_date,
-          SUM(unit_price_ex_tax) as daily_sales
+          SUM(quantity * unit_price_ex_tax) as daily_sales
         FROM pos.vw_sales_with_cost
         WHERE tenant_id = ${authz.tenantId}::uuid
         GROUP BY sale_date_local::date
