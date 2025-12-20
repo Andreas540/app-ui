@@ -19,11 +19,11 @@ export async function handler(event) {
     const results = await sql`
       WITH sales_data AS (
         SELECT 
-          sales_date_local::date as sale_date,
+          sale_date_local::date as sale_date,
           SUM(unit_price_ex_tax) as daily_sales
         FROM pos.vw_sales_with_cost
         WHERE tenant_id = ${authz.tenantId}::uuid
-        GROUP BY sales_date_local::date
+        GROUP BY sale_date_local::date
       )
       SELECT
         -- Today
