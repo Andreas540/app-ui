@@ -30,7 +30,9 @@ export async function handler(event) {
         SELECT 
           (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date as today_est,
           (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York' - INTERVAL '1 day')::date as yesterday_est,
-          DATE_TRUNC('week', (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date) as week_start_est
+          -- Calculate Sunday as week start (US convention)
+          ((CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date - 
+           EXTRACT(DOW FROM (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date)::int * INTERVAL '1 day') as week_start_est
       )
       SELECT
         -- Today (EST)
