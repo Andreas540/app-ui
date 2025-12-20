@@ -15,6 +15,7 @@ export async function handler(event) {
     if (authz.error) return cors(403, { error: authz.error })
 
     // Get sales aggregated by time periods
+    // Use America/New_York timezone (EST/EDT)
     // Week starts Sunday (US convention)
     const results = await sql`
       WITH sales_data AS (
@@ -24,24 +25,34 @@ export async function handler(event) {
         FROM pos.vw_sales_with_cost
         WHERE tenant_id = ${authz.tenantId}::uuid
         GROUP BY sale_date_local::date
+      ),
+      current_dates AS (
+        SELECT 
+          (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date as today_est,
+          (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York' - INTERVAL '1 day')::date as yesterday_est,
+          DATE_TRUNC('week', (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date) as week_start_est
       )
       SELECT
-        -- Today
-        COALESCE(SUM(daily_sales) FILTER (WHERE sale_date = CURRENT_DATE), 0) as today,
+        -- Today (EST)
+        COALESCE(SUM(daily_sales) FILTER (
+          WHERE sale_date = (SELECT today_est FROM current_dates)
+        ), 0) as today,
         
-        -- Yesterday
-        COALESCE(SUM(daily_sales) FILTER (WHERE sale_date = CURRENT_DATE - INTERVAL '1 day'), 0) as yesterday,
+        -- Yesterday (EST)
+        COALESCE(SUM(daily_sales) FILTER (
+          WHERE sale_date = (SELECT yesterday_est FROM current_dates)
+        ), 0) as yesterday,
         
-        -- This Week (Sunday to today)
-        COALESCE(SUM(daily_sales) FILTER (WHERE 
-          sale_date >= DATE_TRUNC('week', CURRENT_DATE) 
-          AND sale_date <= CURRENT_DATE
+        -- This Week (Sunday to today, EST)
+        COALESCE(SUM(daily_sales) FILTER (
+          WHERE sale_date >= (SELECT week_start_est FROM current_dates)
+            AND sale_date <= (SELECT today_est FROM current_dates)
         ), 0) as this_week,
         
-        -- Last Week (previous Sunday to Saturday)
-        COALESCE(SUM(daily_sales) FILTER (WHERE 
-          sale_date >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '7 days'
-          AND sale_date < DATE_TRUNC('week', CURRENT_DATE)
+        -- Last Week (previous Sunday to Saturday, EST)
+        COALESCE(SUM(daily_sales) FILTER (
+          WHERE sale_date >= (SELECT week_start_est - INTERVAL '7 days' FROM current_dates)
+            AND sale_date < (SELECT week_start_est FROM current_dates)
         ), 0) as last_week
       FROM sales_data
     `
