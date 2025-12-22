@@ -213,13 +213,23 @@ useEffect(() => {
     const productMap = new Map<string, number>()
     weekDeliveries.forEach(item => {
       const current = productMap.get(item.product) || 0
-      productMap.set(item.product, current + Math.abs(item.qty))
+      productMap.set(item.product, current + Math.abs(Number(item.qty)))
     })
     
     // Convert to array and sort by quantity descending
-    return Array.from(productMap.entries())
-      .map(([product, qty]) => ({ product, qty }))
+    const result = Array.from(productMap.entries())
+      .map(([product, qty]) => ({ 
+        product, 
+        qty: Number(qty) // Ensure it's a number
+      }))
       .sort((a, b) => b.qty - a.qty)
+    
+    // Debug: log the data to console
+    if (result.length > 0) {
+      console.log('Weekly delivery data:', result)
+    }
+    
+    return result
   }, [data, weekOffset])
 
   // Format week header
@@ -700,64 +710,84 @@ useEffect(() => {
               {weeklyDeliveryData.length === 0 ? (
                 <p className="helper">No deliveries in this week.</p>
               ) : (
-                <div style={{ height: Math.max(250, weeklyDeliveryData.length * 45), marginTop: 12 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={weeklyDeliveryData}
-                      layout="horizontal"
-                      margin={{ top: 10, right: 80, bottom: 10, left: 10 }}
-                    >
-                      <XAxis
-                        type="number"
-                        tick={false}
-                        axisLine={false}
-                        tickLine={false}
-                        domain={[0, 'dataMax']}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="product"
-                        tick={{ fontSize: 13, fill: '#fff' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={130}
-                      />
-                      <Bar 
-                        dataKey="qty" 
-                        isAnimationActive={false}
-                        barSize={28}
+                <>
+                  {/* Debug info */}
+                  <details style={{ marginBottom: 12, fontSize: 11, opacity: 0.7 }}>
+                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                      Debug: Show data structure
+                    </summary>
+                    <pre style={{ 
+                      marginTop: 8, 
+                      padding: 8, 
+                      background: 'rgba(0,0,0,0.3)', 
+                      borderRadius: 4,
+                      overflow: 'auto',
+                      maxHeight: 200,
+                    }}>
+                      {JSON.stringify(weeklyDeliveryData, null, 2)}
+                    </pre>
+                  </details>
+
+                  <div style={{ 
+                    width: '100%', 
+                    height: Math.max(250, weeklyDeliveryData.length * 50), 
+                    marginTop: 12,
+                    background: 'rgba(255,255,255,0.02)',
+                    borderRadius: '8px',
+                    padding: '10px',
+                  }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={weeklyDeliveryData}
+                        layout="horizontal"
+                        margin={{ top: 5, right: 100, bottom: 5, left: 5 }}
                       >
-                        {weeklyDeliveryData.map((entry, index) => {
-                          const color = getProductColor(entry.product)
-                          return <Cell key={`cell-${index}`} fill={color} />
-                        })}
-                        <LabelList
-                          dataKey="qty"
-                          position="right"
-                          content={(props: any) => {
-                            const { x, y, width, value } = props
-                            if (!value) return null
-                            
-                            const formattedValue = intFmt.format(Number(value))
-                            
-                            return (
-                              <text
-                                x={x + width + 8}
-                                y={y + 14}
-                                fill="#fff"
-                                fontSize={13}
-                                fontWeight={700}
-                                textAnchor="start"
-                              >
-                                {formattedValue}
-                              </text>
-                            )
-                          }}
+                        <XAxis 
+                          type="number"
+                          stroke="#666"
+                          tick={{ fill: '#999', fontSize: 11 }}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                        <YAxis
+                          type="category"
+                          dataKey="product"
+                          stroke="#666"
+                          tick={{ fill: '#fff', fontSize: 12 }}
+                          width={120}
+                        />
+                        <Bar 
+                          dataKey="qty"
+                          fill="#60a5fa"
+                        >
+                          {weeklyDeliveryData.map((entry, index) => {
+                            const color = getProductColor(entry.product)
+                            return <Cell key={`cell-${index}`} fill={color} />
+                          })}
+                          <LabelList
+                            dataKey="qty"
+                            position="right"
+                            content={(props: any) => {
+                              const { x, y, width, value, height } = props
+                              if (!value) return null
+                              
+                              return (
+                                <text
+                                  x={x + width + 10}
+                                  y={y + height / 2}
+                                  fill="#fff"
+                                  fontSize={12}
+                                  fontWeight={600}
+                                  dominantBaseline="middle"
+                                >
+                                  {intFmt.format(Number(value))}
+                                </text>
+                              )
+                            }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
               )}
             </div>
 
