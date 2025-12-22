@@ -736,7 +736,7 @@ useEffect(() => {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={weeklyDeliveryData}
-                        layout="horizontal"
+                        layout="vertical"
                         margin={{ top: 5, right: 80, bottom: 5, left: 5 }}
                       >
                         <XAxis
