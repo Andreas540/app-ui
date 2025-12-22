@@ -746,6 +746,8 @@ useEffect(() => {
                           type="number"
                           stroke="#666"
                           tick={{ fill: '#999', fontSize: 11 }}
+                          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+                          allowDataOverflow={false}
                         />
                         <YAxis
                           type="category"
