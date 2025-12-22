@@ -105,6 +105,9 @@ const getProductColor = (productName: string): string => {
   return productColorMap.get(productName)!
 }
 
+  // Track week offset for recently delivered chart (0 = current week, -1 = last week, etc.)
+  const [weekOffset, setWeekOffset] = useState(0)
+
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
     demand: false,
@@ -169,6 +172,62 @@ useEffect(() => {
     }
   })()
 }, [demandFilter, demandCustomFrom, demandCustomTo])
+
+  // Calculate Monday-Sunday week range based on offset
+  const getWeekRange = (offset: number): { start: Date; end: Date } => {
+    const now = new Date()
+    const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Distance from Monday
+    
+    // Get this week's Monday
+    const thisMonday = new Date(now)
+    thisMonday.setDate(now.getDate() - daysFromMonday + (offset * 7))
+    thisMonday.setHours(0, 0, 0, 0)
+    
+    // Get this week's Sunday
+    const thisSunday = new Date(thisMonday)
+    thisSunday.setDate(thisMonday.getDate() + 6)
+    thisSunday.setHours(23, 59, 59, 999)
+    
+    return { start: thisMonday, end: thisSunday }
+  }
+
+  // Calculate weekly delivery data
+  const weeklyDeliveryData = useMemo(() => {
+    if (!data) return []
+    
+    const { start, end } = getWeekRange(weekOffset)
+    
+    // Filter deliveries for this week
+    const weekDeliveries = data.recent_deliveries.filter(item => {
+      const deliveryDate = new Date(item.date)
+      return deliveryDate >= start && deliveryDate <= end
+    })
+    
+    // Aggregate by product
+    const productMap = new Map<string, number>()
+    weekDeliveries.forEach(item => {
+      const current = productMap.get(item.product) || 0
+      productMap.set(item.product, current + Math.abs(item.qty))
+    })
+    
+    // Convert to array and sort by quantity descending
+    return Array.from(productMap.entries())
+      .map(([product, qty]) => ({ product, qty }))
+      .sort((a, b) => b.qty - a.qty)
+  }, [data, weekOffset])
+
+  // Format week header
+  const formatWeekHeader = () => {
+    const { start, end } = getWeekRange(weekOffset)
+    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const totalQty = weeklyDeliveryData.reduce((sum, item) => sum + item.qty, 0)
+    return {
+      dateRange: `${startStr} - ${endStr}`,
+      totalQty: intFmt.format(totalQty)
+    }
+  }
 
   // Create warehouse inventory lookup for color coding
   const warehouseInventoryMap = useMemo(() => {
@@ -381,6 +440,8 @@ useEffect(() => {
     paddingBottom: 8,
   }
 
+  const weekHeader = formatWeekHeader()
+
   return (
     <div className="card" style={{ maxWidth: 960 }}>
       <h3 style={{ margin: 0 }}>Supply Chain Overview</h3>
@@ -569,6 +630,123 @@ useEffect(() => {
 
         {expandedSections.recentDeliveries && (
           <div style={{ marginTop: 12 }}>
+            {/* Weekly delivery chart */}
+            <div style={{ marginBottom: 24 }}>
+              {/* Week navigation header */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: 12,
+                gap: 12,
+              }}>
+                <button
+                  onClick={() => setWeekOffset(offset => offset - 1)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    color: 'white',
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                  }}
+                  title="Previous week"
+                >
+                  ←
+                </button>
+                
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>
+                    {weekHeader.dateRange}
+                  </div>
+                  <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                    Total qty delivered: {weekHeader.totalQty}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setWeekOffset(offset => offset + 1)}
+                  disabled={weekOffset >= 0}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    cursor: weekOffset >= 0 ? 'not-allowed' : 'pointer',
+                    color: weekOffset >= 0 ? 'var(--text-secondary)' : 'white',
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    opacity: weekOffset >= 0 ? 0.4 : 1,
+                  }}
+                  title="Next week"
+                >
+                  →
+                </button>
+              </div>
+
+              {/* Horizontal bar chart */}
+              {weeklyDeliveryData.length === 0 ? (
+                <p className="helper">No deliveries in this week.</p>
+              ) : (
+                <div style={{ height: Math.max(200, weeklyDeliveryData.length * 40), marginTop: 12 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={weeklyDeliveryData}
+                      layout="horizontal"
+                      margin={{ top: 5, right: 30, bottom: 5, left: 120 }}
+                    >
+                      <XAxis
+                        type="number"
+                        tick={false}
+                        axisLine={false}
+                        domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="product"
+                        tick={{ fontSize: 12, fill: '#fff' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={110}
+                      />
+                      <Bar dataKey="qty" isAnimationActive={false}>
+                        {weeklyDeliveryData.map((entry, index) => {
+                          const color = getProductColor(entry.product)
+                          return <Cell key={`cell-${index}`} fill={color} />
+                        })}
+                        <LabelList
+                          dataKey="qty"
+                          position="right"
+                          content={(props: any) => {
+                            const { x, y, width, value } = props
+                            if (!value) return null
+                            
+                            const formattedValue = intFmt.format(Number(value))
+                            
+                            return (
+                              <text
+                                x={x + width + 8}
+                                y={y + 10}
+                                fill="#fff"
+                                fontSize={12}
+                                fontWeight={700}
+                                textAnchor="start"
+                              >
+                                {formattedValue}
+                              </text>
+                            )
+                          }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            {/* Original delivery list */}
             {data.recent_deliveries.length === 0 ? (
               <p className="helper">No deliveries in the last 30 days.</p>
             ) : (
