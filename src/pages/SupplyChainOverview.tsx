@@ -174,34 +174,39 @@ useEffect(() => {
 }, [demandFilter, demandCustomFrom, demandCustomTo])
 
   // Calculate Monday-Sunday week range based on offset
-  const getWeekRange = (offset: number): { start: Date; end: Date } => {
+  const getWeekRange = (offset: number): { start: Date; end: Date; startStr: string; endStr: string } => {
     const now = new Date()
     const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
     const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Distance from Monday
     
-    // Get this week's Monday
+    // Get this week's Monday at start of day
     const thisMonday = new Date(now)
     thisMonday.setDate(now.getDate() - daysFromMonday + (offset * 7))
     thisMonday.setHours(0, 0, 0, 0)
     
-    // Get this week's Sunday
+    // Get this week's Sunday at end of day
     const thisSunday = new Date(thisMonday)
     thisSunday.setDate(thisMonday.getDate() + 6)
     thisSunday.setHours(23, 59, 59, 999)
     
-    return { start: thisMonday, end: thisSunday }
+    // Create YYYY-MM-DD strings for comparison (works with ISO date strings)
+    const startStr = thisMonday.toISOString().split('T')[0]
+    const endStr = thisSunday.toISOString().split('T')[0]
+    
+    return { start: thisMonday, end: thisSunday, startStr, endStr }
   }
 
   // Calculate weekly delivery data
   const weeklyDeliveryData = useMemo(() => {
     if (!data) return []
     
-    const { start, end } = getWeekRange(weekOffset)
+    const { startStr, endStr } = getWeekRange(weekOffset)
     
-    // Filter deliveries for this week
+    // Filter deliveries for this week using string comparison
     const weekDeliveries = data.recent_deliveries.filter(item => {
-      const deliveryDate = new Date(item.date)
-      return deliveryDate >= start && deliveryDate <= end
+      // Extract YYYY-MM-DD from the date string (handles various formats)
+      const dateStr = item.date.split('T')[0]
+      return dateStr >= startStr && dateStr <= endStr
     })
     
     // Aggregate by product
@@ -664,6 +669,11 @@ useEffect(() => {
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
                     Total qty delivered: {weekHeader.totalQty}
                   </div>
+                  {weeklyDeliveryData.length > 0 && (
+                    <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
+                      {weeklyDeliveryData.length} {weeklyDeliveryData.length === 1 ? 'product' : 'products'}
+                    </div>
+                  )}
                 </div>
                 
                 <button
@@ -690,28 +700,33 @@ useEffect(() => {
               {weeklyDeliveryData.length === 0 ? (
                 <p className="helper">No deliveries in this week.</p>
               ) : (
-                <div style={{ height: Math.max(200, weeklyDeliveryData.length * 40), marginTop: 12 }}>
+                <div style={{ height: Math.max(250, weeklyDeliveryData.length * 45), marginTop: 12 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={weeklyDeliveryData}
                       layout="horizontal"
-                      margin={{ top: 5, right: 30, bottom: 5, left: 120 }}
+                      margin={{ top: 10, right: 80, bottom: 10, left: 10 }}
                     >
                       <XAxis
                         type="number"
                         tick={false}
                         axisLine={false}
-                        domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                        tickLine={false}
+                        domain={[0, 'dataMax']}
                       />
                       <YAxis
                         type="category"
                         dataKey="product"
-                        tick={{ fontSize: 12, fill: '#fff' }}
+                        tick={{ fontSize: 13, fill: '#fff' }}
                         axisLine={false}
                         tickLine={false}
-                        width={110}
+                        width={130}
                       />
-                      <Bar dataKey="qty" isAnimationActive={false}>
+                      <Bar 
+                        dataKey="qty" 
+                        isAnimationActive={false}
+                        barSize={28}
+                      >
                         {weeklyDeliveryData.map((entry, index) => {
                           const color = getProductColor(entry.product)
                           return <Cell key={`cell-${index}`} fill={color} />
@@ -728,9 +743,9 @@ useEffect(() => {
                             return (
                               <text
                                 x={x + width + 8}
-                                y={y + 10}
+                                y={y + 14}
                                 fill="#fff"
-                                fontSize={12}
+                                fontSize={13}
                                 fontWeight={700}
                                 textAnchor="start"
                               >
