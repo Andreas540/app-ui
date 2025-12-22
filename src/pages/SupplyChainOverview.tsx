@@ -90,20 +90,20 @@ export default function SupplyChainOverview() {
   const [demandLoading, setDemandLoading] = useState(true)
   const [demandErr, setDemandErr] = useState<string | null>(null)
   const [demandFilter, setDemandFilter] = useState<'30d' | '3m' | '6m' | 'custom'>('30d')
-const [demandCustomFrom, setDemandCustomFrom] = useState('')
-const [demandCustomTo, setDemandCustomTo] = useState('')
+  const [demandCustomFrom, setDemandCustomFrom] = useState('')
+  const [demandCustomTo, setDemandCustomTo] = useState('')
 
-// Persistent color mapping for products
-const [productColorMap] = useState(new Map<string, string>())
-let colorIndex = 0
+  // Persistent color mapping for products
+  const [productColorMap] = useState(new Map<string, string>())
+  let colorIndex = 0
 
-const getProductColor = (productName: string): string => {
-  if (!productColorMap.has(productName)) {
-    productColorMap.set(productName, CHART_COLORS[colorIndex % CHART_COLORS.length])
-    colorIndex++
+  const getProductColor = (productName: string): string => {
+    if (!productColorMap.has(productName)) {
+      productColorMap.set(productName, CHART_COLORS[colorIndex % CHART_COLORS.length])
+      colorIndex++
+    }
+    return productColorMap.get(productName)!
   }
-  return productColorMap.get(productName)!
-}
 
   // Track week offset for recently delivered chart (0 = current week, -1 = last week, etc.)
   const [weekOffset, setWeekOffset] = useState(0)
@@ -135,100 +135,108 @@ const getProductColor = (productName: string): string => {
   }, [])
 
   // Load demand data when filter changes
-useEffect(() => {
-  (async () => {
-    try {
-      setDemandLoading(true)
-      setDemandErr(null)
-      
-      let url = ''
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      if (demandFilter === 'custom') {
-        if (!demandCustomFrom || !demandCustomTo) {
-          setDemandData([])
-          setDemandLoading(false)
-          return
+  useEffect(() => {
+    (async () => {
+      try {
+        setDemandLoading(true)
+        setDemandErr(null)
+
+        let url = ''
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+        if (demandFilter === 'custom') {
+          if (!demandCustomFrom || !demandCustomTo) {
+            setDemandData([])
+            setDemandLoading(false)
+            return
+          }
+          url = `${base}/api/demand-by-product?from=${demandCustomFrom}&to=${demandCustomTo}`
+        } else {
+          const days = demandFilter === '30d' ? 30 : demandFilter === '3m' ? 90 : 180
+          url = `${base}/api/demand-by-product?days=${days}`
         }
-        url = `${base}/api/demand-by-product?from=${demandCustomFrom}&to=${demandCustomTo}`
-      } else {
-        const days = demandFilter === '30d' ? 30 : demandFilter === '3m' ? 90 : 180
-        url = `${base}/api/demand-by-product?days=${days}`
+
+        const res = await fetch(url, {
+          headers: getAuthHeaders(),
+        })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(`Failed to fetch demand data (status ${res.status}) ${text?.slice(0, 140)}`)
+        }
+        const d = await res.json()
+        setDemandData(d)
+      } catch (e: any) {
+        setDemandErr(e?.message || String(e))
+      } finally {
+        setDemandLoading(false)
       }
-      
-      const res = await fetch(url, {
-        headers: getAuthHeaders(),
-      })
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        throw new Error(`Failed to fetch demand data (status ${res.status}) ${text?.slice(0, 140)}`)
-      }
-      const d = await res.json()
-      setDemandData(d)
-    } catch (e: any) {
-      setDemandErr(e?.message || String(e))
-    } finally {
-      setDemandLoading(false)
-    }
-  })()
-}, [demandFilter, demandCustomFrom, demandCustomTo])
+    })()
+  }, [demandFilter, demandCustomFrom, demandCustomTo])
+
+  const toLocalYMD = (d: Date) => {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
 
   // Calculate Monday-Sunday week range based on offset
   const getWeekRange = (offset: number): { start: Date; end: Date; startStr: string; endStr: string } => {
     const now = new Date()
     const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
     const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Distance from Monday
-    
+
     // Get this week's Monday at start of day
     const thisMonday = new Date(now)
     thisMonday.setDate(now.getDate() - daysFromMonday + (offset * 7))
     thisMonday.setHours(0, 0, 0, 0)
-    
+
     // Get this week's Sunday at end of day
     const thisSunday = new Date(thisMonday)
     thisSunday.setDate(thisMonday.getDate() + 6)
     thisSunday.setHours(23, 59, 59, 999)
-    
-    // Create YYYY-MM-DD strings for comparison (works with ISO date strings)
-    const startStr = thisMonday.toISOString().split('T')[0]
-    const endStr = thisSunday.toISOString().split('T')[0]
-    
+
+    // Create YYYY-MM-DD strings for comparison using LOCAL dates (avoid UTC rollover overlap)
+    const startStr = toLocalYMD(thisMonday)
+    const endStr = toLocalYMD(thisSunday)
+
     return { start: thisMonday, end: thisSunday, startStr, endStr }
   }
 
   // Calculate weekly delivery data
   const weeklyDeliveryData = useMemo(() => {
     if (!data) return []
-    
+
     const { startStr, endStr } = getWeekRange(weekOffset)
-    
+
     // Filter deliveries for this week using string comparison
     const weekDeliveries = data.recent_deliveries.filter(item => {
+      if (item.product === 'Refund/Discount') return false
       // Extract YYYY-MM-DD from the date string (handles various formats)
       const dateStr = item.date.split('T')[0]
       return dateStr >= startStr && dateStr <= endStr
     })
-    
+
     // Aggregate by product
     const productMap = new Map<string, number>()
     weekDeliveries.forEach(item => {
       const current = productMap.get(item.product) || 0
       productMap.set(item.product, current + Math.abs(Number(item.qty)))
     })
-    
+
     // Convert to array and sort by quantity descending
     const result = Array.from(productMap.entries())
-      .map(([product, qty]) => ({ 
-        product, 
+      .map(([product, qty]) => ({
+        product,
         qty: Number(qty) // Ensure it's a number
       }))
       .sort((a, b) => b.qty - a.qty)
-    
+
     // Debug: log the data to console
     if (result.length > 0) {
       console.log('Weekly delivery data:', result)
     }
-    
+
     return result
   }, [data, weekOffset])
 
@@ -246,13 +254,13 @@ useEffect(() => {
 
   // Create warehouse inventory lookup for color coding
   const warehouseInventoryMap = useMemo(() => {
-  if (!data) return new Map<string, number>()
-  const map = new Map<string, number>()
-  data.warehouse_inventory.forEach(item => {
-    map.set(item.product, Number(item.qty))
-  })
-  return map
-}, [data])
+    if (!data) return new Map<string, number>()
+    const map = new Map<string, number>()
+    data.warehouse_inventory.forEach(item => {
+      map.set(item.product, Number(item.qty))
+    })
+    return map
+  }, [data])
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -404,7 +412,7 @@ useEffect(() => {
 
     printWindow.document.write(html)
     printWindow.document.close()
-    
+
     // Auto-print only on desktop (when window.matchMedia is available and not mobile)
     printWindow.onload = () => {
       printWindow.focus()
@@ -462,165 +470,165 @@ useEffect(() => {
       <h3 style={{ margin: 0 }}>Supply Chain Overview</h3>
 
       {/* Section: Demand */}
-<div style={{ marginTop: 20 }}>
-  <div style={sectionHeaderStyle} onClick={() => toggleSection('demand')}>
-    <span>Demand</span>
-    <span style={expandIconStyle}>{expandedSections.demand ? '−' : '+'}</span>
-  </div>
-
-  {expandedSections.demand && (
-    <div style={{ marginTop: 12 }}>
-      {/* Filter buttons - First row: Quick filters */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
-        <button
-          className="primary"
-          onClick={() => {
-            setDemandFilter('30d')
-            setDemandCustomFrom('')
-            setDemandCustomTo('')
-          }}
-          aria-pressed={demandFilter === '30d'}
-          style={{ height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          Last 30 d
-        </button>
-        <button
-          className="primary"
-          onClick={() => {
-            setDemandFilter('3m')
-            setDemandCustomFrom('')
-            setDemandCustomTo('')
-          }}
-          aria-pressed={demandFilter === '3m'}
-          style={{ height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          Last 3 m
-        </button>
-        <button
-          className="primary"
-          onClick={() => {
-            setDemandFilter('6m')
-            setDemandCustomFrom('')
-            setDemandCustomTo('')
-          }}
-          aria-pressed={demandFilter === '6m'}
-          style={{ height: 'calc(var(--control-h) * 0.67)' }}
-        >
-          Last 6 m
-        </button>
-      </div>
-
-      {/* Filter row - Second row: Custom date range */}
-      <div className="row row-2col-mobile" style={{ marginBottom: 16 }}>
-        <div>
-          <label>From</label>
-          <input
-            type="date"
-            value={demandCustomFrom}
-            onChange={(e) => {
-              setDemandCustomFrom(e.target.value)
-              if (e.target.value && demandCustomTo) {
-                setDemandFilter('custom')
-              }
-            }}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
-          />
+      <div style={{ marginTop: 20 }}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('demand')}>
+          <span>Demand</span>
+          <span style={expandIconStyle}>{expandedSections.demand ? '−' : '+'}</span>
         </div>
-        <div>
-          <label>To</label>
-          <input
-            type="date"
-            value={demandCustomTo}
-            onChange={(e) => {
-              setDemandCustomTo(e.target.value)
-              if (demandCustomFrom && e.target.value) {
-                setDemandFilter('custom')
-              }
-            }}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
-          />
-        </div>
-      </div>
 
-      {/* Chart */}
-      {demandLoading ? (
-        <p className="helper">Loading demand data...</p>
-      ) : demandErr ? (
-        <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
-      ) : demandData.length === 0 ? (
-        <p className="helper">No demand data for this period.</p>
-      ) : (
-        <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={demandData}
-              margin={{ top: 20, right: 0, bottom: 80, left: 0 }}
+        {expandedSections.demand && (
+          <div style={{ marginTop: 12 }}>
+            {/* Filter buttons - First row: Quick filters */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 8,
+                marginBottom: 8,
+              }}
             >
-              <XAxis
-                dataKey="product"
-                interval={0}
-                angle={-90}
-                textAnchor="end"
-                tick={{ fontSize: 11, fill: '#fff' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={false}
-                axisLine={false}
-                width={0}
-                domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
-              />
-              <Bar dataKey="qty" isAnimationActive={false}>
-                {demandData.map((entry, index) => {
-                  // Get persistent color for this product
-                  const color = getProductColor(entry.product)
-                  return <Cell key={`cell-${index}`} fill={color} />
-                })}
-                <LabelList
-                  dataKey="qty"
-                  content={(props: any) => {
-                    const { x, y, width, height, value } = props
-                    if (!value || height <= 0) return null
-                    
-                    const formattedValue = intFmt.format(Number(value))
-                    
-                    // Center horizontally in the bar
-                    const textX = x + width / 2
-                    // Start from the BOTTOM of the bar (y + height), then go UP by 20px
-                    const textY = y + height - 20
-                    
-                    return (
-                      <text
-                        x={textX}
-                        y={textY}
-                        fill="#fff"
-                        fontSize={12}
-                        fontWeight={700}
-                        textAnchor="start"
-                        dominantBaseline="middle"
-                        transform={`rotate(-90 ${textX} ${textY})`}
-                      >
-                        {formattedValue}
-                      </text>
-                    )
+              <button
+                className="primary"
+                onClick={() => {
+                  setDemandFilter('30d')
+                  setDemandCustomFrom('')
+                  setDemandCustomTo('')
+                }}
+                aria-pressed={demandFilter === '30d'}
+                style={{ height: 'calc(var(--control-h) * 0.67)' }}
+              >
+                Last 30 d
+              </button>
+              <button
+                className="primary"
+                onClick={() => {
+                  setDemandFilter('3m')
+                  setDemandCustomFrom('')
+                  setDemandCustomTo('')
+                }}
+                aria-pressed={demandFilter === '3m'}
+                style={{ height: 'calc(var(--control-h) * 0.67)' }}
+              >
+                Last 3 m
+              </button>
+              <button
+                className="primary"
+                onClick={() => {
+                  setDemandFilter('6m')
+                  setDemandCustomFrom('')
+                  setDemandCustomTo('')
+                }}
+                aria-pressed={demandFilter === '6m'}
+                style={{ height: 'calc(var(--control-h) * 0.67)' }}
+              >
+                Last 6 m
+              </button>
+            </div>
+
+            {/* Filter row - Second row: Custom date range */}
+            <div className="row row-2col-mobile" style={{ marginBottom: 16 }}>
+              <div>
+                <label>From</label>
+                <input
+                  type="date"
+                  value={demandCustomFrom}
+                  onChange={(e) => {
+                    setDemandCustomFrom(e.target.value)
+                    if (e.target.value && demandCustomTo) {
+                      setDemandFilter('custom')
+                    }
                   }}
+                  style={{ height: 'calc(var(--control-h) * 0.67)' }}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
-  )}
-</div>
+              </div>
+              <div>
+                <label>To</label>
+                <input
+                  type="date"
+                  value={demandCustomTo}
+                  onChange={(e) => {
+                    setDemandCustomTo(e.target.value)
+                    if (demandCustomFrom && e.target.value) {
+                      setDemandFilter('custom')
+                    }
+                  }}
+                  style={{ height: 'calc(var(--control-h) * 0.67)' }}
+                />
+              </div>
+            </div>
+
+            {/* Chart */}
+            {demandLoading ? (
+              <p className="helper">Loading demand data...</p>
+            ) : demandErr ? (
+              <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
+            ) : demandData.length === 0 ? (
+              <p className="helper">No demand data for this period.</p>
+            ) : (
+              <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={demandData}
+                    margin={{ top: 20, right: 0, bottom: 80, left: 0 }}
+                  >
+                    <XAxis
+                      dataKey="product"
+                      interval={0}
+                      angle={-90}
+                      textAnchor="end"
+                      tick={{ fontSize: 11, fill: '#fff' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={false}
+                      axisLine={false}
+                      width={0}
+                      domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                    />
+                    <Bar dataKey="qty" isAnimationActive={false}>
+                      {demandData.map((entry, index) => {
+                        // Get persistent color for this product
+                        const color = getProductColor(entry.product)
+                        return <Cell key={`cell-${index}`} fill={color} />
+                      })}
+                      <LabelList
+                        dataKey="qty"
+                        content={(props: any) => {
+                          const { x, y, width, height, value } = props
+                          if (!value || height <= 0) return null
+
+                          const formattedValue = intFmt.format(Number(value))
+
+                          // Center horizontally in the bar
+                          const textX = x + width / 2
+                          // Start from the BOTTOM of the bar (y + height), then go UP by 20px
+                          const textY = y + height - 20
+
+                          return (
+                            <text
+                              x={textX}
+                              y={textY}
+                              fill="#fff"
+                              fontSize={12}
+                              fontWeight={700}
+                              textAnchor="start"
+                              dominantBaseline="middle"
+                              transform={`rotate(-90 ${textX} ${textY})`}
+                            >
+                              {formattedValue}
+                            </text>
+                          )
+                        }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Section: Pay attention to */}
       <div style={{ marginTop: 20 }}>
@@ -648,9 +656,9 @@ useEffect(() => {
             {/* Weekly delivery chart */}
             <div style={{ marginBottom: 24 }}>
               {/* Week navigation header */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: 12,
                 gap: 12,
@@ -671,7 +679,7 @@ useEffect(() => {
                 >
                   ←
                 </button>
-                
+
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>
                     {weekHeader.dateRange}
@@ -685,7 +693,7 @@ useEffect(() => {
                     </div>
                   )}
                 </div>
-                
+
                 <button
                   onClick={() => setWeekOffset(offset => offset + 1)}
                   disabled={weekOffset >= 0}
@@ -710,88 +718,69 @@ useEffect(() => {
               {weeklyDeliveryData.length === 0 ? (
                 <p className="helper">No deliveries in this week.</p>
               ) : (
-                <>
-                  {/* Debug info */}
-                  <details style={{ marginBottom: 12, fontSize: 11, opacity: 0.7 }}>
-                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                      Debug: Show data structure
-                    </summary>
-                    <pre style={{ 
-                      marginTop: 8, 
-                      padding: 8, 
-                      background: 'rgba(0,0,0,0.3)', 
-                      borderRadius: 4,
-                      overflow: 'auto',
-                      maxHeight: 200,
-                    }}>
-                      {JSON.stringify(weeklyDeliveryData, null, 2)}
-                    </pre>
-                  </details>
+                <div style={{
+                  width: '100%',
+                  height: Math.max(220, weeklyDeliveryData.length * 40),
+                  marginTop: 12,
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={weeklyDeliveryData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 40, bottom: 5, left: 0 }}
+                    >
+                      <XAxis
+                        type="number"
+                        tick={false}
+                        axisLine={false}
+                        width={0}
+                        domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="product"
+                        tick={{ fontSize: 12, fill: '#fff' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={120}
+                      />
+                      <Bar dataKey="qty" isAnimationActive={false} barSize={18}>
+                        {weeklyDeliveryData.map((entry, index) => {
+                          const color = getProductColor(entry.product)
+                          return <Cell key={`cell-${index}`} fill={color} />
+                        })}
+                        <LabelList
+                          dataKey="qty"
+                          position="right"
+                          content={(props: any) => {
+                            const { x, y, width, value, height } = props
+                            if (!value) return null
 
-                  <div style={{ 
-                    width: '100%', 
-                    height: Math.max(250, weeklyDeliveryData.length * 50), 
-                    marginTop: 12,
-                  }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={weeklyDeliveryData}
-                        layout="vertical"
-                        margin={{ top: 5, right: 80, bottom: 5, left: 5 }}
-                      >
-                        <XAxis
-                          type="number"
-                          tick={false}
-                          axisLine={false}
-                          width={0}
-                          domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                            const formattedValue = intFmt.format(Number(value))
+
+                            return (
+                              <text
+                                x={x + width + 10}
+                                y={y + height / 2}
+                                fill="#fff"
+                                fontSize={12}
+                                fontWeight={700}
+                                dominantBaseline="middle"
+                              >
+                                {formattedValue}
+                              </text>
+                            )
+                          }}
                         />
-                        <YAxis
-                          type="category"
-                          dataKey="product"
-                          tick={{ fontSize: 12, fill: '#fff' }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={120}
-                        />
-                        <Bar dataKey="qty" isAnimationActive={false}>
-                          {weeklyDeliveryData.map((entry, index) => {
-                            const color = getProductColor(entry.product)
-                            return <Cell key={`cell-${index}`} fill={color} />
-                          })}
-                          <LabelList
-                            dataKey="qty"
-                            position="right"
-                            content={(props: any) => {
-                              const { x, y, width, value, height } = props
-                              if (!value) return null
-                              
-                              const formattedValue = intFmt.format(Number(value))
-                              
-                              return (
-                                <text
-                                  x={x + width + 10}
-                                  y={y + height / 2}
-                                  fill="#fff"
-                                  fontSize={12}
-                                  fontWeight={700}
-                                  dominantBaseline="middle"
-                                >
-                                  {formattedValue}
-                                </text>
-                              )
-                            }}
-                          />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </div>
 
             {/* Original delivery list */}
-            {data.recent_deliveries.length === 0 ? (
+            {data.recent_deliveries.filter(item => item.product !== 'Refund/Discount').length === 0 ? (
               <p className="helper">No deliveries in the last 30 days.</p>
             ) : (
               <div>
@@ -811,22 +800,24 @@ useEffect(() => {
                 </div>
 
                 {/* Data rows */}
-                {data.recent_deliveries.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '70px 1fr 1fr 70px',
-                      gap: 8,
-                      ...tableRowStyle,
-                    }}
-                  >
-                    <div className="helper" style={{ fontSize: 12 }}>{formatUSAny(item.date)}</div>
-                    <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
-                    <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
-                    <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
-                  </div>
-                ))}
+                {data.recent_deliveries
+                  .filter(item => item.product !== 'Refund/Discount')
+                  .map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '70px 1fr 1fr 70px',
+                        gap: 8,
+                        ...tableRowStyle,
+                      }}
+                    >
+                      <div className="helper" style={{ fontSize: 12 }}>{formatUSAny(item.date)}</div>
+                      <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
+                      <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
+                      <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
+                    </div>
+                  ))}
               </div>
             )}
           </div>
@@ -884,11 +875,11 @@ useEffect(() => {
 
                 {/* Data rows */}
                 {data.not_delivered.map((item, idx) => {
-  const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
-  const notDeliveredQty = Number(item.qty)
-  
-  // Green if warehouse has more than not delivered, red if less
-  const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
+                  const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
+                  const notDeliveredQty = Number(item.qty)
+
+                  // Green if warehouse has more than not delivered, red if less
+                  const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
 
                   return (
                     <div
@@ -1064,10 +1055,10 @@ useEffect(() => {
                     )
                   } else if (item.est_delivery_date) {
                     dateBadge = (
-                      <span 
-                        className="helper" 
-                        style={{ 
-                          fontSize: '11px', 
+                      <span
+                        className="helper"
+                        style={{
+                          fontSize: '11px',
                           whiteSpace: 'nowrap',
                           display: 'inline-block',
                         }}
