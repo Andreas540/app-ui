@@ -732,34 +732,29 @@ useEffect(() => {
                     width: '100%', 
                     height: Math.max(250, weeklyDeliveryData.length * 50), 
                     marginTop: 12,
-                    background: 'rgba(255,255,255,0.02)',
-                    borderRadius: '8px',
-                    padding: '10px',
                   }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={weeklyDeliveryData}
                         layout="horizontal"
-                        margin={{ top: 5, right: 100, bottom: 5, left: 5 }}
+                        margin={{ top: 5, right: 80, bottom: 5, left: 5 }}
                       >
-                        <XAxis 
+                        <XAxis
                           type="number"
-                          stroke="#666"
-                          tick={{ fill: '#999', fontSize: 11 }}
-                          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
-                          allowDataOverflow={false}
+                          tick={false}
+                          axisLine={false}
+                          width={0}
+                          domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
                         />
                         <YAxis
                           type="category"
                           dataKey="product"
-                          stroke="#666"
-                          tick={{ fill: '#fff', fontSize: 12 }}
+                          tick={{ fontSize: 12, fill: '#fff' }}
+                          axisLine={false}
+                          tickLine={false}
                           width={120}
                         />
-                        <Bar 
-                          dataKey="qty"
-                          fill="#60a5fa"
-                        >
+                        <Bar dataKey="qty" isAnimationActive={false}>
                           {weeklyDeliveryData.map((entry, index) => {
                             const color = getProductColor(entry.product)
                             return <Cell key={`cell-${index}`} fill={color} />
@@ -771,16 +766,18 @@ useEffect(() => {
                               const { x, y, width, value, height } = props
                               if (!value) return null
                               
+                              const formattedValue = intFmt.format(Number(value))
+                              
                               return (
                                 <text
                                   x={x + width + 10}
                                   y={y + height / 2}
                                   fill="#fff"
                                   fontSize={12}
-                                  fontWeight={600}
+                                  fontWeight={700}
                                   dominantBaseline="middle"
                                 >
-                                  {intFmt.format(Number(value))}
+                                  {formattedValue}
                                 </text>
                               )
                             }}
