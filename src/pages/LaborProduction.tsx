@@ -23,13 +23,6 @@ type LaborProductionRecord = {
   notes: string | null
 }
 
-type CalendarSummary = {
-  date: string
-  has_employees: number | null
-  has_hours: number | null
-  product_count: number
-}
-
 export default function LaborProduction() {
   const navigate = useNavigate()
 
@@ -46,10 +39,7 @@ export default function LaborProduction() {
   ])
   const [notes, setNotes] = useState('')
 
-  // Calendar color coding data
-  const [calendarSummary, setCalendarSummary] = useState<CalendarSummary[]>([])
-
-  // Load products and calendar summary on mount
+  // Load products on mount
   useEffect(() => {
     (async () => {
       try {
@@ -57,9 +47,6 @@ export default function LaborProduction() {
         setErr(null)
         const { products: bootProducts } = await fetchBootstrap()
         setProducts(bootProducts ?? [])
-        
-        // Load calendar summary
-        await loadCalendarSummary()
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -73,20 +60,6 @@ export default function LaborProduction() {
     if (!selectedDate) return
     loadDataForDate(selectedDate)
   }, [selectedDate])
-
-  async function loadCalendarSummary() {
-    try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/labor-production`, {
-        headers: getAuthHeaders(),
-      })
-      if (!res.ok) throw new Error('Failed to load calendar summary')
-      const data = await res.json()
-      setCalendarSummary(data)
-    } catch (e: any) {
-      console.error('Calendar summary load error:', e)
-    }
-  }
 
   async function loadDataForDate(date: string) {
     try {
@@ -215,7 +188,6 @@ export default function LaborProduction() {
       }
 
       alert('Data saved successfully!')
-      await loadCalendarSummary() // Refresh calendar colors
       await loadDataForDate(selectedDate) // Reload to show saved data
     } catch (e: any) {
       alert(e?.message || 'Save failed')
@@ -237,23 +209,6 @@ export default function LaborProduction() {
     }
   }
 
-  // Get calendar color for a date
-  function getDateColor(date: string): string {
-    const summary = calendarSummary.find(s => s.date === date)
-    if (!summary) return 'transparent'
-    
-    const hasEmployees = summary.has_employees != null && summary.has_employees > 0
-    const hasHours = summary.has_hours != null && summary.has_hours > 0
-    const hasProducts = summary.product_count > 0
-
-    // Green if all three
-    if (hasEmployees && hasHours && hasProducts) return '#22c55e'
-    // Yellow if at least one
-    if (hasEmployees || hasHours || hasProducts) return '#fbbf24'
-    // Transparent otherwise
-    return 'transparent'
-  }
-
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
 
@@ -267,11 +222,46 @@ export default function LaborProduction() {
     recentDates.push(d.toISOString().split('T')[0])
   }
 
+  // Format selected date for display
+  const formattedSelectedDate = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
   return (
     <div className="card" style={{ maxWidth: 800 }}>
-      <h3>Labor & Production</h3>
+      {/* Statistics at top */}
+      <div style={{ 
+        padding: 16, 
+        background: 'rgba(255,255,255,0.05)', 
+        borderRadius: 8,
+        marginBottom: 24
+      }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600 }}>
+          Statistics for {formattedSelectedDate}
+        </h4>
+        <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">Total qty produced:</span>
+            <span style={{ fontWeight: 600 }}>{stats.totalQty.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">Avg. qty per employee:</span>
+            <span style={{ fontWeight: 600 }}>
+              {noOfEmployees ? stats.avgQtyPerEmployee : '—'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">Avg. hours per employee:</span>
+            <span style={{ fontWeight: 600 }}>
+              {noOfEmployees ? stats.avgHoursPerEmployee : '—'}
+            </span>
+          </div>
+        </div>
+      </div>
 
-      {/* Date selector with color coding hints */}
+      {/* Date selector */}
       <div style={{ marginTop: 16 }}>
         <input
           type="date"
@@ -279,36 +269,8 @@ export default function LaborProduction() {
           onChange={e => setSelectedDate(e.target.value)}
           style={{ height: CONTROL_H, width: '100%' }}
         />
-        
-        {/* Color coding legend */}
-        <div style={{ 
-          marginTop: 8, 
-          display: 'flex', 
-          gap: 16, 
-          fontSize: 12,
-          color: 'var(--text-secondary)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ 
-              width: 12, 
-              height: 12, 
-              background: '#22c55e', 
-              borderRadius: 2 
-            }} />
-            <span>Complete data</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ 
-              width: 12, 
-              height: 12, 
-              background: '#fbbf24', 
-              borderRadius: 2 
-            }} />
-            <span>Partial data</span>
-          </div>
-        </div>
 
-        {/* Recent dates with color coding - only last 4 days */}
+        {/* Recent dates - simple buttons without color coding */}
         <div style={{ 
           marginTop: 12, 
           display: 'flex', 
@@ -316,7 +278,6 @@ export default function LaborProduction() {
           gap: 4 
         }}>
           {recentDates.map(date => {
-            const color = getDateColor(date)
             const isSelected = date === selectedDate
             return (
               <button
@@ -327,8 +288,8 @@ export default function LaborProduction() {
                   fontSize: 12,
                   border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
                   borderRadius: 4,
-                  background: color === 'transparent' ? 'transparent' : color,
-                  color: color === 'transparent' ? 'white' : '#000',
+                  background: 'transparent',
+                  color: 'white',
                   cursor: 'pointer',
                   fontWeight: isSelected ? 600 : 400
                 }}
@@ -477,36 +438,6 @@ export default function LaborProduction() {
         >
           Cancel
         </button>
-      </div>
-
-      {/* Real-time stats */}
-      <div style={{ 
-        marginTop: 24, 
-        padding: 16, 
-        background: 'rgba(255,255,255,0.05)', 
-        borderRadius: 8 
-      }}>
-        <h4 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
-          Statistics
-        </h4>
-        <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">Total qty produced:</span>
-            <span style={{ fontWeight: 600 }}>{stats.totalQty.toLocaleString()}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">Avg. qty per employee:</span>
-            <span style={{ fontWeight: 600 }}>
-              {noOfEmployees ? stats.avgQtyPerEmployee : '—'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">Avg. hours per employee:</span>
-            <span style={{ fontWeight: 600 }}>
-              {noOfEmployees ? stats.avgHoursPerEmployee : '—'}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -124,7 +124,17 @@ async function saveLaborProduction(event) {
     if (authz.error) return cors(403, { error: authz.error })
 
     const TENANT_ID = authz.tenantId
-    const userName = authz.userName || 'Unknown'
+    
+    // Get actual user name from database
+    let userName = 'Unknown'
+    if (authz.userId) {
+      const userRows = await sql`
+        SELECT name FROM users WHERE id = ${authz.userId} LIMIT 1
+      `
+      if (userRows.length > 0 && userRows[0].name) {
+        userName = userRows[0].name
+      }
+    }
 
     const body = JSON.parse(event.body || '{}')
     const { date, no_of_employees, total_hours, products, notes } = body
