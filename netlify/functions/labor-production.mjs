@@ -151,8 +151,18 @@ async function saveLaborProduction(event) {
       return cors(400, { error: 'total_hours must be a non-negative number' })
     }
 
+    // Get existing records to preserve created_at and registered_by
+    const existingRecords = await sql`
+      SELECT product_id, created_at, registered_by
+      FROM labor_production
+      WHERE tenant_id = ${TENANT_ID} AND date = ${date}
+    `
+    
+    const existingMap = new Map(
+      existingRecords.map(r => [r.product_id, { created_at: r.created_at, registered_by: r.registered_by }])
+    )
+
     // Strategy: Delete existing records for this date, then insert new ones
-    // This handles updates cleanly
     await sql`
       DELETE FROM labor_production
       WHERE tenant_id = ${TENANT_ID} AND date = ${date}
@@ -168,10 +178,16 @@ async function saveLaborProduction(event) {
         const qty = qty_produced != null ? parseInt(qty_produced, 10) : null
         if (qty != null && (!Number.isInteger(qty) || qty < 0)) continue // Skip invalid quantities
 
+        // Check if this product existed before (preserve created_at and registered_by)
+        const existing = existingMap.get(product_id)
+        const createdAt = existing?.created_at || null
+        const registeredBy = existing?.registered_by || userName
+
         await sql`
           INSERT INTO labor_production (
             tenant_id, date, no_of_employees, total_hours,
-            product_id, qty_produced, registered_by, notes
+            product_id, qty_produced, registered_by, notes,
+            created_at
           )
           VALUES (
             ${TENANT_ID},
@@ -180,17 +196,24 @@ async function saveLaborProduction(event) {
             ${numHours},
             ${product_id},
             ${qty},
-            ${userName},
-            ${notes || null}
+            ${registeredBy},
+            ${notes || null},
+            ${createdAt}
           )
         `
       }
     } else if (numEmployees != null || numHours != null) {
       // No products, but has employee/hours data - insert one record with null product
+      // Check if a null-product record existed before
+      const existing = existingMap.get(null)
+      const createdAt = existing?.created_at || null
+      const registeredBy = existing?.registered_by || userName
+
       await sql`
         INSERT INTO labor_production (
           tenant_id, date, no_of_employees, total_hours,
-          product_id, qty_produced, registered_by, notes
+          product_id, qty_produced, registered_by, notes,
+          created_at
         )
         VALUES (
           ${TENANT_ID},
@@ -199,8 +222,9 @@ async function saveLaborProduction(event) {
           ${numHours},
           NULL,
           NULL,
-          ${userName},
-          ${notes || null}
+          ${registeredBy},
+          ${notes || null},
+          ${createdAt}
         )
       `
     }

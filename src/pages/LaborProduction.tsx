@@ -240,18 +240,18 @@ export default function LaborProduction() {
   // Get calendar color for a date
   function getDateColor(date: string): string {
     const summary = calendarSummary.find(s => s.date === date)
-    if (!summary) return 'white'
+    if (!summary) return 'transparent'
     
-    const hasEmployees = summary.has_employees != null
-    const hasHours = summary.has_hours != null
+    const hasEmployees = summary.has_employees != null && summary.has_employees > 0
+    const hasHours = summary.has_hours != null && summary.has_hours > 0
     const hasProducts = summary.product_count > 0
 
     // Green if all three
     if (hasEmployees && hasHours && hasProducts) return '#22c55e'
     // Yellow if at least one
     if (hasEmployees || hasHours || hasProducts) return '#fbbf24'
-    // White otherwise
-    return 'white'
+    // Transparent otherwise
+    return 'transparent'
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -259,12 +259,12 @@ export default function LaborProduction() {
 
   const CONTROL_H = 44
 
-  // Get available dates for color coding (last 30 days)
-  const dates: string[] = []
-  for (let i = 0; i < 30; i++) {
+  // Get last 4 days including today for quick access
+  const recentDates: string[] = []
+  for (let i = 0; i < 4; i++) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    dates.push(d.toISOString().split('T')[0])
+    recentDates.push(d.toISOString().split('T')[0])
   }
 
   return (
@@ -273,7 +273,6 @@ export default function LaborProduction() {
 
       {/* Date selector with color coding hints */}
       <div style={{ marginTop: 16 }}>
-        <label>Date</label>
         <input
           type="date"
           value={selectedDate}
@@ -309,14 +308,14 @@ export default function LaborProduction() {
           </div>
         </div>
 
-        {/* Recent dates with color coding */}
+        {/* Recent dates with color coding - only last 4 days */}
         <div style={{ 
           marginTop: 12, 
           display: 'flex', 
           flexWrap: 'wrap',
           gap: 4 
         }}>
-          {dates.slice(0, 10).map(date => {
+          {recentDates.map(date => {
             const color = getDateColor(date)
             const isSelected = date === selectedDate
             return (
@@ -328,8 +327,8 @@ export default function LaborProduction() {
                   fontSize: 12,
                   border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
                   borderRadius: 4,
-                  background: color === 'white' ? 'transparent' : color,
-                  color: color === 'white' ? 'white' : '#000',
+                  background: color === 'transparent' ? 'transparent' : color,
+                  color: color === 'transparent' ? 'white' : '#000',
                   cursor: 'pointer',
                   fontWeight: isSelected ? 600 : 400
                 }}
@@ -374,28 +373,6 @@ export default function LaborProduction() {
 
       {/* Product entries */}
       <div style={{ marginTop: 16 }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: 8
-        }}>
-          <label style={{ margin: 0 }}>Products Produced</label>
-          <button
-            onClick={addProductRow}
-            style={{
-              padding: '4px 12px',
-              fontSize: 20,
-              fontWeight: 'bold',
-              height: 32,
-              minWidth: 32
-            }}
-            title="Add product"
-          >
-            +
-          </button>
-        </div>
-
         {productEntries.map((entry, index) => (
           <div 
             key={entry.tempId} 
@@ -448,6 +425,23 @@ export default function LaborProduction() {
             </div>
           </div>
         ))}
+
+        {/* Add product button - below the dropdowns */}
+        <div style={{ marginTop: 8 }}>
+          <button
+            onClick={addProductRow}
+            style={{
+              padding: '4px 12px',
+              fontSize: 20,
+              fontWeight: 'bold',
+              height: 32,
+              minWidth: 32
+            }}
+            title="Add product"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       {/* Notes */}
