@@ -36,57 +36,102 @@ async function getTimeEntries(event) {
     const to = params.get('to')
     const approved = params.get('approved')
 
-    // Build query dynamically
-    let query = `
-      SELECT 
-        te.id,
-        te.employee_id,
-        e.name as employee_name,
-        te.work_date,
-        te.start_time,
-        te.end_time,
-        te.total_hours,
-        te.approved,
-        te.approved_by,
-        te.approved_at,
-        te.notes,
-        te.created_at,
-        te.updated_at
-      FROM time_entries te
-      JOIN employees e ON e.id = te.employee_id
-      WHERE te.tenant_id = $1
-    `
+    // Build query with tagged template - handle filters conditionally
+    let rows
     
-    const queryParams = [TENANT_ID]
-    let paramIndex = 2
-
-    if (employeeId) {
-      query += ` AND te.employee_id = $${paramIndex}`
-      queryParams.push(employeeId)
-      paramIndex++
+    if (employeeId && from && to && approved !== null) {
+      // All filters
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+          AND te.employee_id = ${employeeId}
+          AND te.work_date >= ${from}
+          AND te.work_date <= ${to}
+          AND te.approved = ${approved === 'true'}
+        ORDER BY te.work_date DESC, e.name
+      `
+    } else if (from && to && approved !== null) {
+      // Date range + approved
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+          AND te.work_date >= ${from}
+          AND te.work_date <= ${to}
+          AND te.approved = ${approved === 'true'}
+        ORDER BY te.work_date DESC, e.name
+      `
+    } else if (employeeId && from && to) {
+      // Employee + date range
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+          AND te.employee_id = ${employeeId}
+          AND te.work_date >= ${from}
+          AND te.work_date <= ${to}
+        ORDER BY te.work_date DESC, e.name
+      `
+    } else if (from && to) {
+      // Just date range
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+          AND te.work_date >= ${from}
+          AND te.work_date <= ${to}
+        ORDER BY te.work_date DESC, e.name
+      `
+    } else if (employeeId) {
+      // Just employee
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+          AND te.employee_id = ${employeeId}
+        ORDER BY te.work_date DESC, e.name
+      `
+    } else {
+      // No filters
+      rows = await sql`
+        SELECT 
+          te.id, te.employee_id, e.name as employee_name,
+          te.work_date, te.start_time, te.end_time, te.total_hours,
+          te.approved, te.approved_by, te.approved_at, te.notes,
+          te.created_at, te.updated_at
+        FROM time_entries te
+        JOIN employees e ON e.id = te.employee_id
+        WHERE te.tenant_id = ${TENANT_ID}
+        ORDER BY te.work_date DESC, e.name
+      `
     }
 
-    if (from) {
-      query += ` AND te.work_date >= $${paramIndex}`
-      queryParams.push(from)
-      paramIndex++
-    }
-
-    if (to) {
-      query += ` AND te.work_date <= $${paramIndex}`
-      queryParams.push(to)
-      paramIndex++
-    }
-
-    if (approved !== null && approved !== undefined) {
-      query += ` AND te.approved = $${paramIndex}`
-      queryParams.push(approved === 'true')
-      paramIndex++
-    }
-
-    query += ' ORDER BY te.work_date DESC, e.name'
-
-    const rows = await sql(query, queryParams)
     return cors(200, rows)
   } catch (e) {
     console.error(e)

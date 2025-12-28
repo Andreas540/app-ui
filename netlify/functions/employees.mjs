@@ -86,31 +86,41 @@ async function saveEmployee(event) {
     const body = JSON.parse(event.body || '{}')
     const { id, name, email, employee_code, active, notes } = body
 
-    // Validation
-    // For updates, name is only required if it's being changed
+    // Validation - name only required for new employees
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })
     }
 
     if (id) {
       // Update existing employee
-      // Build update object dynamically to support partial updates
-      const updates = {}
+      // For partial updates, only update provided fields
+      const employee = await sql`
+        SELECT * FROM employees WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+      `
       
-      if (name !== undefined) updates.name = name.trim()
-      if (email !== undefined) updates.email = email?.trim() || null
-      if (employee_code !== undefined) updates.employee_code = employee_code?.trim() || null
-      if (active !== undefined) updates.active = active
-      if (notes !== undefined) updates.notes = notes?.trim() || null
+      if (employee.length === 0) {
+        return cors(404, { error: 'Employee not found' })
+      }
       
-      // Build SET clause dynamically
-      const setters = Object.keys(updates).map((key, idx) => `${key} = $${idx + 2}`).join(', ')
-      const values = [id, TENANT_ID, ...Object.values(updates)]
+      const current = employee[0]
       
-      await sql(
-        `UPDATE employees SET ${setters} WHERE id = $1 AND tenant_id = $2`,
-        values
-      )
+      // Use provided values or keep existing
+      const updatedName = name !== undefined ? name.trim() : current.name
+      const updatedEmail = email !== undefined ? (email?.trim() || null) : current.email
+      const updatedCode = employee_code !== undefined ? (employee_code?.trim() || null) : current.employee_code
+      const updatedActive = active !== undefined ? active : current.active
+      const updatedNotes = notes !== undefined ? (notes?.trim() || null) : current.notes
+      
+      await sql`
+        UPDATE employees
+        SET 
+          name = ${updatedName},
+          email = ${updatedEmail},
+          employee_code = ${updatedCode},
+          active = ${updatedActive},
+          notes = ${updatedNotes}
+        WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+      `
 
       return cors(200, { ok: true, updated: true, id })
     } else {
