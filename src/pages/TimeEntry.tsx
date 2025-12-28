@@ -104,12 +104,17 @@ export default function TimeEntry() {
         { headers: getAuthHeaders() }
       )
       
-      if (!res.ok) throw new Error('Failed to load time entries')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
+      }
       
       const data = await res.json()
       setTimeEntries(data)
+      setErr(null) // Clear any previous errors
     } catch (e: any) {
       console.error('Failed to load time entries:', e)
+      setErr(e?.message || 'Failed to load time entries')
     }
   }
 

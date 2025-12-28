@@ -34,107 +34,45 @@ async function getTimeEntries(event) {
     const employeeId = params.get('employee_id')
     const from = params.get('from')
     const to = params.get('to')
-    const approved = params.get('approved')
+    const approvedParam = params.get('approved')
 
-    // Build query with tagged template - handle filters conditionally
-    let rows
-    
-    if (employeeId && from && to && approved !== null) {
-      // All filters
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-          AND te.employee_id = ${employeeId}
-          AND te.work_date >= ${from}
-          AND te.work_date <= ${to}
-          AND te.approved = ${approved === 'true'}
-        ORDER BY te.work_date DESC, e.name
-      `
-    } else if (from && to && approved !== null) {
-      // Date range + approved
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-          AND te.work_date >= ${from}
-          AND te.work_date <= ${to}
-          AND te.approved = ${approved === 'true'}
-        ORDER BY te.work_date DESC, e.name
-      `
-    } else if (employeeId && from && to) {
-      // Employee + date range
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-          AND te.employee_id = ${employeeId}
-          AND te.work_date >= ${from}
-          AND te.work_date <= ${to}
-        ORDER BY te.work_date DESC, e.name
-      `
-    } else if (from && to) {
-      // Just date range
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-          AND te.work_date >= ${from}
-          AND te.work_date <= ${to}
-        ORDER BY te.work_date DESC, e.name
-      `
-    } else if (employeeId) {
-      // Just employee
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-          AND te.employee_id = ${employeeId}
-        ORDER BY te.work_date DESC, e.name
-      `
-    } else {
-      // No filters
-      rows = await sql`
-        SELECT 
-          te.id, te.employee_id, e.name as employee_name,
-          te.work_date, te.start_time, te.end_time, te.total_hours,
-          te.approved, te.approved_by, te.approved_at, te.notes,
-          te.created_at, te.updated_at
-        FROM time_entries te
-        JOIN employees e ON e.id = te.employee_id
-        WHERE te.tenant_id = ${TENANT_ID}
-        ORDER BY te.work_date DESC, e.name
-      `
+    // Simple approach: Get all entries for tenant, then filter in JavaScript if needed
+    // This is less efficient but more reliable with Neon's tagged templates
+    let allRows = await sql`
+      SELECT 
+        te.id, te.employee_id, e.name as employee_name,
+        te.work_date, te.start_time, te.end_time, te.total_hours,
+        te.approved, te.approved_by, te.approved_at, te.notes,
+        te.created_at, te.updated_at
+      FROM time_entries te
+      JOIN employees e ON e.id = te.employee_id
+      WHERE te.tenant_id = ${TENANT_ID}
+      ORDER BY te.work_date DESC, e.name
+    `
+
+    // Apply filters in JavaScript
+    let rows = allRows
+
+    if (employeeId) {
+      rows = rows.filter(row => row.employee_id === employeeId)
+    }
+
+    if (from) {
+      rows = rows.filter(row => row.work_date >= from)
+    }
+
+    if (to) {
+      rows = rows.filter(row => row.work_date <= to)
+    }
+
+    if (approvedParam !== null && approvedParam !== undefined) {
+      const approvedValue = approvedParam === 'true'
+      rows = rows.filter(row => row.approved === approvedValue)
     }
 
     return cors(200, rows)
   } catch (e) {
-    console.error(e)
+    console.error('getTimeEntries error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
@@ -224,7 +162,7 @@ async function saveTimeEntry(event) {
       return cors(200, { ok: true, created: true, id: result[0].id })
     }
   } catch (e) {
-    console.error(e)
+    console.error('saveTimeEntry error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
@@ -273,7 +211,7 @@ async function deleteTimeEntry(event) {
 
     return cors(200, { ok: true, deleted: id })
   } catch (e) {
-    console.error(e)
+    console.error('deleteTimeEntry error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
