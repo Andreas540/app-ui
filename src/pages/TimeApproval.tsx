@@ -118,7 +118,7 @@ export default function TimeApproval() {
   async function handleApprove(entryId: string) {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/time-entries/approve`, {
+      const res = await fetch(`${base}/api/time-entries-approve`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -149,7 +149,7 @@ export default function TimeApproval() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/time-entries/approve`, {
+      const res = await fetch(`${base}/api/time-entries-approve`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -188,7 +188,7 @@ export default function TimeApproval() {
       
       // Approve each selected entry
       for (const id of selectedIds) {
-        await fetch(`${base}/api/time-entries/approve`, {
+        await fetch(`${base}/api/time-entries-approve`, {
           method: 'POST',
           headers: {
             ...getAuthHeaders(),

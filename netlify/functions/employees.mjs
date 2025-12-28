@@ -87,22 +87,30 @@ async function saveEmployee(event) {
     const { id, name, email, employee_code, active, notes } = body
 
     // Validation
-    if (!name || !name.trim()) {
-      return cors(400, { error: 'name is required' })
+    // For updates, name is only required if it's being changed
+    if (!id && (!name || !name.trim())) {
+      return cors(400, { error: 'name is required for new employees' })
     }
 
     if (id) {
       // Update existing employee
-      await sql`
-        UPDATE employees
-        SET 
-          name = ${name.trim()},
-          email = ${email?.trim() || null},
-          employee_code = ${employee_code?.trim() || null},
-          active = ${active !== false},
-          notes = ${notes?.trim() || null}
-        WHERE id = ${id} AND tenant_id = ${TENANT_ID}
-      `
+      // Build update object dynamically to support partial updates
+      const updates = {}
+      
+      if (name !== undefined) updates.name = name.trim()
+      if (email !== undefined) updates.email = email?.trim() || null
+      if (employee_code !== undefined) updates.employee_code = employee_code?.trim() || null
+      if (active !== undefined) updates.active = active
+      if (notes !== undefined) updates.notes = notes?.trim() || null
+      
+      // Build SET clause dynamically
+      const setters = Object.keys(updates).map((key, idx) => `${key} = $${idx + 2}`).join(', ')
+      const values = [id, TENANT_ID, ...Object.values(updates)]
+      
+      await sql(
+        `UPDATE employees SET ${setters} WHERE id = $1 AND tenant_id = $2`,
+        values
+      )
 
       return cors(200, { ok: true, updated: true, id })
     } else {

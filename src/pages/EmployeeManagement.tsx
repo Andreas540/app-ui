@@ -141,9 +141,18 @@ export default function EmployeeManagement() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/employees?id=${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+      
+      // Update employee to set active = false
+      const res = await fetch(`${base}/api/employees`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: id,
+          active: false,
+        }),
       })
 
       if (!res.ok) {
@@ -155,6 +164,39 @@ export default function EmployeeManagement() {
       await loadEmployees()
     } catch (e: any) {
       alert(e?.message || 'Deactivate failed')
+    }
+  }
+
+  async function handleReactivate(id: string, employeeName: string) {
+    if (!confirm(`Reactivate ${employeeName}?`)) {
+      return
+    }
+
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      // Update employee to set active = true
+      const res = await fetch(`${base}/api/employees`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: id,
+          active: true,
+        }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Reactivate failed')
+      }
+
+      alert('Employee reactivated')
+      await loadEmployees()
+    } catch (e: any) {
+      alert(e?.message || 'Reactivate failed')
     }
   }
 
@@ -416,7 +458,7 @@ export default function EmployeeManagement() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleEdit(emp)}
+                  onClick={() => handleReactivate(emp.id, emp.name)}
                   style={{
                     padding: '6px 16px',
                     fontSize: 13,
