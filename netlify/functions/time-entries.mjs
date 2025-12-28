@@ -11,6 +11,18 @@ export async function handler(event) {
 }
 
 /**
+ * Normalize a DATE-like value (Date | string) into YYYY-MM-DD.
+ * - If it's a Date, use toISOString().
+ * - If it's a string, take the first 10 chars (handles "YYYY-MM-DD" or ISO timestamps).
+ */
+function ymd(value) {
+  if (!value) return null
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  // Neon sometimes returns a string already; could also be "YYYY-MM-DDT..."
+  return String(value).slice(0, 10)
+}
+
+/**
  * GET time entries
  * Query params:
  *   - employee_id: filter by specific employee
@@ -30,16 +42,15 @@ async function getTimeEntries(event) {
 
     const TENANT_ID = authz.tenantId
     const params = new URLSearchParams(event.queryStringParameters || {})
-    
+
     const employeeId = params.get('employee_id')
-    const from = params.get('from')
-    const to = params.get('to')
+    const from = params.get('from') // "YYYY-MM-DD"
+    const to = params.get('to')     // "YYYY-MM-DD"
     const approvedParam = params.get('approved')
 
-    // Simple approach: Get all entries for tenant, then filter in JavaScript if needed
-    // This is less efficient but more reliable with Neon's tagged templates
-    let allRows = await sql`
-      SELECT 
+    // Get all entries for tenant, then filter in JavaScript
+    const allRows = await sql`
+      SELECT
         te.id, te.employee_id, e.name as employee_name,
         te.work_date, te.start_time, te.end_time, te.total_hours,
         te.approved, te.approved_by, te.approved_at, te.notes,
@@ -50,19 +61,23 @@ async function getTimeEntries(event) {
       ORDER BY te.work_date DESC, e.name
     `
 
-    // Apply filters in JavaScript
-    let rows = allRows
+    // Normalize work_date so comparisons work reliably
+    let rows = allRows.map(r => ({
+      ...r,
+      work_date: ymd(r.work_date),
+    }))
 
     if (employeeId) {
       rows = rows.filter(row => row.employee_id === employeeId)
     }
 
+    // Now safe: comparing "YYYY-MM-DD" strings lexicographically works
     if (from) {
-      rows = rows.filter(row => row.work_date >= from)
+      rows = rows.filter(row => row.work_date && row.work_date >= from)
     }
 
     if (to) {
-      rows = rows.filter(row => row.work_date <= to)
+      rows = rows.filter(row => row.work_date && row.work_date <= to)
     }
 
     if (approvedParam !== null && approvedParam !== undefined) {
@@ -103,15 +118,9 @@ async function saveTimeEntry(event) {
     const { employee_id, work_date, start_time, end_time, notes } = body
 
     // Validation
-    if (!employee_id) {
-      return cors(400, { error: 'employee_id is required' })
-    }
-    if (!work_date) {
-      return cors(400, { error: 'work_date is required' })
-    }
-    if (!start_time || !end_time) {
-      return cors(400, { error: 'Both start_time and end_time are required' })
-    }
+    if (!employee_id) return cors(400, { error: 'employee_id is required' })
+    if (!work_date) return cors(400, { error: 'work_date is required' })
+    if (!start_time || !end_time) return cors(400, { error: 'Both start_time and end_time are required' })
 
     // Check if entry already exists for this employee/date
     const existing = await sql`
@@ -123,17 +132,15 @@ async function saveTimeEntry(event) {
     `
 
     if (existing.length > 0) {
-      // Update existing entry
       const entry = existing[0]
-      
-      // Don't allow editing approved entries (manager must unapprove first)
+
       if (entry.approved) {
         return cors(400, { error: 'Cannot edit approved time entry' })
       }
 
       await sql`
         UPDATE time_entries
-        SET 
+        SET
           start_time = ${start_time},
           end_time = ${end_time},
           notes = ${notes || null}
@@ -142,7 +149,6 @@ async function saveTimeEntry(event) {
 
       return cors(200, { ok: true, updated: true, id: entry.id })
     } else {
-      // Insert new entry
       const result = await sql`
         INSERT INTO time_entries (
           tenant_id, employee_id, work_date,
@@ -185,24 +191,16 @@ async function deleteTimeEntry(event) {
     const params = new URLSearchParams(event.queryStringParameters || {})
     const id = params.get('id')
 
-    if (!id) {
-      return cors(400, { error: 'id parameter is required' })
-    }
+    if (!id) return cors(400, { error: 'id parameter is required' })
 
-    // Check if entry is approved (can't delete approved entries)
     const entry = await sql`
       SELECT approved
       FROM time_entries
       WHERE id = ${id} AND tenant_id = ${TENANT_ID}
     `
 
-    if (entry.length === 0) {
-      return cors(404, { error: 'Time entry not found' })
-    }
-
-    if (entry[0].approved) {
-      return cors(400, { error: 'Cannot delete approved time entry' })
-    }
+    if (entry.length === 0) return cors(404, { error: 'Time entry not found' })
+    if (entry[0].approved) return cors(400, { error: 'Cannot delete approved time entry' })
 
     await sql`
       DELETE FROM time_entries
@@ -223,7 +221,8 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
+      // include what your frontend actually sends (X-Active-Tenant)
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   }
