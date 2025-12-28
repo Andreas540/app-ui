@@ -1,5 +1,4 @@
 // netlify/functions/time-entries.mjs
-
 import { resolveAuthz } from './utils/auth.mjs'
 
 export async function handler(event) {
@@ -8,18 +7,6 @@ export async function handler(event) {
   if (event.httpMethod === 'POST') return saveTimeEntry(event)
   if (event.httpMethod === 'DELETE') return deleteTimeEntry(event)
   return cors(405, { error: 'Method not allowed' })
-}
-
-/**
- * Normalize a DATE-like value (Date | string) into YYYY-MM-DD.
- * - If it's a Date, use toISOString().
- * - If it's a string, take the first 10 chars (handles "YYYY-MM-DD" or ISO timestamps).
- */
-function ymd(value) {
-  if (!value) return null
-  if (value instanceof Date) return value.toISOString().slice(0, 10)
-  // Neon sometimes returns a string already; could also be "YYYY-MM-DDT..."
-  return String(value).slice(0, 10)
 }
 
 /**
@@ -43,47 +30,43 @@ async function getTimeEntries(event) {
     const TENANT_ID = authz.tenantId
     const params = new URLSearchParams(event.queryStringParameters || {})
 
-    const employeeId = params.get('employee_id')
-    const from = params.get('from') // "YYYY-MM-DD"
-    const to = params.get('to')     // "YYYY-MM-DD"
+    const employeeId = params.get('employee_id') || null
+    const from = params.get('from') || null
+    const to = params.get('to') || null
     const approvedParam = params.get('approved')
 
-    // Get all entries for tenant, then filter in JavaScript
-    const allRows = await sql`
+    // approved can be null (no filter) OR boolean
+    const approved =
+      approvedParam === null || approvedParam === undefined
+        ? null
+        : approvedParam === 'true'
+
+    // Do all filtering in SQL to avoid JS type issues (Date vs string).
+    // Also cast total_hours to float8 so frontend gets a real number.
+    const rows = await sql`
       SELECT
-        te.id, te.employee_id, e.name as employee_name,
-        te.work_date, te.start_time, te.end_time, te.total_hours,
-        te.approved, te.approved_by, te.approved_at, te.notes,
-        te.created_at, te.updated_at
+        te.id,
+        te.employee_id,
+        e.name as employee_name,
+        te.work_date,
+        te.start_time,
+        te.end_time,
+        te.total_hours::float8 as total_hours,
+        te.approved,
+        te.approved_by,
+        te.approved_at,
+        te.notes,
+        te.created_at,
+        te.updated_at
       FROM time_entries te
       JOIN employees e ON e.id = te.employee_id
       WHERE te.tenant_id = ${TENANT_ID}
+        AND (${employeeId}::uuid IS NULL OR te.employee_id = ${employeeId}::uuid)
+        AND (${from}::date IS NULL OR te.work_date >= ${from}::date)
+        AND (${to}::date IS NULL OR te.work_date <= ${to}::date)
+        AND (${approved}::boolean IS NULL OR te.approved = ${approved}::boolean)
       ORDER BY te.work_date DESC, e.name
     `
-
-    // Normalize work_date so comparisons work reliably
-    let rows = allRows.map(r => ({
-      ...r,
-      work_date: ymd(r.work_date),
-    }))
-
-    if (employeeId) {
-      rows = rows.filter(row => row.employee_id === employeeId)
-    }
-
-    // Now safe: comparing "YYYY-MM-DD" strings lexicographically works
-    if (from) {
-      rows = rows.filter(row => row.work_date && row.work_date >= from)
-    }
-
-    if (to) {
-      rows = rows.filter(row => row.work_date && row.work_date <= to)
-    }
-
-    if (approvedParam !== null && approvedParam !== undefined) {
-      const approvedValue = approvedParam === 'true'
-      rows = rows.filter(row => row.approved === approvedValue)
-    }
 
     return cors(200, rows)
   } catch (e) {
@@ -120,9 +103,10 @@ async function saveTimeEntry(event) {
     // Validation
     if (!employee_id) return cors(400, { error: 'employee_id is required' })
     if (!work_date) return cors(400, { error: 'work_date is required' })
-    if (!start_time || !end_time) return cors(400, { error: 'Both start_time and end_time are required' })
+    if (!start_time || !end_time) {
+      return cors(400, { error: 'Both start_time and end_time are required' })
+    }
 
-    // Check if entry already exists for this employee/date
     const existing = await sql`
       SELECT id, approved
       FROM time_entries
@@ -133,40 +117,36 @@ async function saveTimeEntry(event) {
 
     if (existing.length > 0) {
       const entry = existing[0]
-
-      if (entry.approved) {
-        return cors(400, { error: 'Cannot edit approved time entry' })
-      }
+      if (entry.approved) return cors(400, { error: 'Cannot edit approved time entry' })
 
       await sql`
         UPDATE time_entries
         SET
           start_time = ${start_time},
           end_time = ${end_time},
-          notes = ${notes || null}
+          notes = ${notes || null},
+          updated_at = NOW()
         WHERE id = ${entry.id}
       `
-
       return cors(200, { ok: true, updated: true, id: entry.id })
-    } else {
-      const result = await sql`
-        INSERT INTO time_entries (
-          tenant_id, employee_id, work_date,
-          start_time, end_time, notes
-        )
-        VALUES (
-          ${TENANT_ID},
-          ${employee_id},
-          ${work_date},
-          ${start_time},
-          ${end_time},
-          ${notes || null}
-        )
-        RETURNING id
-      `
-
-      return cors(200, { ok: true, created: true, id: result[0].id })
     }
+
+    const result = await sql`
+      INSERT INTO time_entries (
+        tenant_id, employee_id, work_date,
+        start_time, end_time, notes
+      )
+      VALUES (
+        ${TENANT_ID},
+        ${employee_id},
+        ${work_date},
+        ${start_time},
+        ${end_time},
+        ${notes || null}
+      )
+      RETURNING id
+    `
+    return cors(200, { ok: true, created: true, id: result[0].id })
   } catch (e) {
     console.error('saveTimeEntry error:', e)
     return cors(500, { error: String(e?.message || e) })
@@ -198,7 +178,6 @@ async function deleteTimeEntry(event) {
       FROM time_entries
       WHERE id = ${id} AND tenant_id = ${TENANT_ID}
     `
-
     if (entry.length === 0) return cors(404, { error: 'Time entry not found' })
     if (entry[0].approved) return cors(400, { error: 'Cannot delete approved time entry' })
 
@@ -206,7 +185,6 @@ async function deleteTimeEntry(event) {
       DELETE FROM time_entries
       WHERE id = ${id} AND tenant_id = ${TENANT_ID}
     `
-
     return cors(200, { ok: true, deleted: id })
   } catch (e) {
     console.error('deleteTimeEntry error:', e)
@@ -221,9 +199,10 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      // include what your frontend actually sends (X-Active-Tenant)
+      // include your app’s header name too (you use X-Active-Tenant)
       'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   }
 }
+

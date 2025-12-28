@@ -17,12 +17,18 @@ type TimeEntry = {
   work_date: string
   start_time: string
   end_time: string
-  total_hours: number | null
+  total_hours: number | string | null
   approved: boolean
   approved_by: string | null
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+function toNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
 }
 
 export default function TimeEntry() {
@@ -41,12 +47,10 @@ export default function TimeEntry() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'week' | 'month'>('week')
 
-  // Load employees on mount
   useEffect(() => {
     loadEmployees()
   }, [])
 
-  // Load time entries when employee or period changes
   useEffect(() => {
     if (selectedEmployeeId) {
       loadTimeEntries()
@@ -61,13 +65,12 @@ export default function TimeEntry() {
       const res = await fetch(`${base}/api/employees?active=true`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!res.ok) throw new Error('Failed to load employees')
-      
+
       const data = await res.json()
       setEmployees(data)
-      
-      // Pre-select first employee
+
       if (data.length > 0) {
         setSelectedEmployeeId(data[0].id)
       }
@@ -81,37 +84,34 @@ export default function TimeEntry() {
   async function loadTimeEntries() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      // Calculate date range based on view period
+
       const today = new Date()
       let fromDate: string
-      
+
       if (viewPeriod === 'week') {
-        // Last 7 days
         const weekAgo = new Date(today)
         weekAgo.setDate(today.getDate() - 7)
         fromDate = weekAgo.toISOString().split('T')[0]
       } else {
-        // Current month
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
         fromDate = firstDay.toISOString().split('T')[0]
       }
-      
+
       const toDate = today.toISOString().split('T')[0]
-      
+
       const res = await fetch(
         `${base}/api/time-entries?employee_id=${selectedEmployeeId}&from=${fromDate}&to=${toDate}`,
         { headers: getAuthHeaders() }
       )
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
         throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
       }
-      
+
       const data = await res.json()
       setTimeEntries(data)
-      setErr(null) // Clear any previous errors
+      setErr(null)
     } catch (e: any) {
       console.error('Failed to load time entries:', e)
       setErr(e?.message || 'Failed to load time entries')
@@ -155,17 +155,13 @@ export default function TimeEntry() {
       }
 
       const result = await res.json()
-      
-      if (result.created) {
-        alert('Time entry saved successfully!')
-      } else if (result.updated) {
-        alert('Time entry updated successfully!')
-      }
 
-      // Reload entries and clear form
+      if (result.created) alert('Time entry saved successfully!')
+      else if (result.updated) alert('Time entry updated successfully!')
+
       await loadTimeEntries()
       setNotes('')
-      // Move to next day
+
       const nextDay = new Date(workDate)
       nextDay.setDate(nextDay.getDate() + 1)
       setWorkDate(nextDay.toISOString().split('T')[0])
@@ -203,40 +199,41 @@ export default function TimeEntry() {
     setNotes('')
   }
 
-  // Calculate total hours for display
   const calculatedHours = useMemo(() => {
     if (!startTime || !endTime) return null
-    
+
     const [startH, startM] = startTime.split(':').map(Number)
     const [endH, endM] = endTime.split(':').map(Number)
-    
+
     let hours = endH - startH
     let minutes = endM - startM
-    
-    // Handle overnight shift
-    if (hours < 0) {
-      hours += 24
-    }
-    
-    const totalHours = hours + (minutes / 60)
+
+    if (hours < 0) hours += 24
+
+    const totalHours = hours + minutes / 60
     return totalHours.toFixed(2)
   }, [startTime, endTime])
 
-  // Calculate summary stats
   const stats = useMemo(() => {
-    const totalHours = timeEntries.reduce((sum, entry) => 
-      sum + (entry.total_hours || 0), 0
-    )
-    const approvedHours = timeEntries
+    const totalHoursNum = timeEntries.reduce((sum, entry) => {
+      const h = toNumberOrNull(entry.total_hours) || 0
+      return sum + h
+    }, 0)
+
+    const approvedHoursNum = timeEntries
       .filter(e => e.approved)
-      .reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
-    const pendingHours = totalHours - approvedHours
-    
+      .reduce((sum, entry) => {
+        const h = toNumberOrNull(entry.total_hours) || 0
+        return sum + h
+      }, 0)
+
+    const pendingHoursNum = totalHoursNum - approvedHoursNum
+
     return {
-      totalHours: totalHours.toFixed(1),
-      approvedHours: approvedHours.toFixed(1),
-      pendingHours: pendingHours.toFixed(1),
-      daysWorked: timeEntries.length
+      totalHours: totalHoursNum.toFixed(1),
+      approvedHours: approvedHoursNum.toFixed(1),
+      pendingHours: pendingHoursNum.toFixed(1),
+      daysWorked: timeEntries.length,
     }
   }, [timeEntries])
 
@@ -251,7 +248,6 @@ export default function TimeEntry() {
     <div className="card" style={{ maxWidth: 900 }}>
       <h3>Time Entry</h3>
 
-      {/* Employee selector */}
       <div style={{ marginTop: 16 }}>
         <label>Employee</label>
         <select
@@ -267,7 +263,6 @@ export default function TimeEntry() {
         </select>
       </div>
 
-      {/* Time entry form */}
       <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
         <div>
           <label>Date</label>
@@ -280,9 +275,9 @@ export default function TimeEntry() {
         </div>
         <div>
           <label>Total Hours: {calculatedHours || '—'}</label>
-          <div style={{ 
-            height: CONTROL_H, 
-            display: 'flex', 
+          <div style={{
+            height: CONTROL_H,
+            display: 'flex',
             alignItems: 'center',
             padding: '0 12px',
             background: 'rgba(255,255,255,0.05)',
@@ -327,36 +322,27 @@ export default function TimeEntry() {
         />
       </div>
 
-      {/* Buttons */}
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button
-          className="primary"
-          onClick={handleSave}
-          style={{ height: CONTROL_H }}
-        >
+        <button className="primary" onClick={handleSave} style={{ height: CONTROL_H }}>
           Save Time Entry
         </button>
-        <button
-          onClick={handleClear}
-          style={{ height: CONTROL_H }}
-        >
+        <button onClick={handleClear} style={{ height: CONTROL_H }}>
           Clear
         </button>
       </div>
 
-      {/* Summary Stats */}
       {selectedEmployee && (
-        <div style={{ 
-          marginTop: 24, 
-          padding: 16, 
-          background: 'rgba(255,255,255,0.05)', 
-          borderRadius: 8 
+        <div style={{
+          marginTop: 24,
+          padding: 16,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8
         }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 12 
+            marginBottom: 12
           }}>
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
               {selectedEmployee.name}'s Time Summary
@@ -412,87 +398,82 @@ export default function TimeEntry() {
         </div>
       )}
 
-      {/* Time entries list */}
       {timeEntries.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
             Recent Time Entries
           </h4>
-          <div style={{ 
-            display: 'grid', 
+          <div style={{
+            display: 'grid',
             gap: 8,
             maxHeight: 400,
             overflow: 'auto'
           }}>
-            {timeEntries.map(entry => (
-              <div
-                key={entry.id}
-                style={{
-                  padding: 12,
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 8,
-                  border: entry.approved ? '1px solid #22c55e33' : '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {new Date(entry.work_date).toLocaleDateString('en-US', { 
-                      weekday: 'short',
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                    {entry.start_time} - {entry.end_time} 
-                    <span style={{ margin: '0 8px' }}>•</span>
-                    {entry.total_hours?.toFixed(2)} hrs
-                  </div>
-                  {entry.notes && (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                      {entry.notes}
+            {timeEntries.map(entry => {
+              const hours = toNumberOrNull(entry.total_hours)
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    padding: 12,
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: 8,
+                    border: entry.approved ? '1px solid #22c55e33' : '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                      {new Date(entry.work_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
                     </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {entry.approved ? (
-                    <span style={{ 
-                      fontSize: 12, 
-                      color: '#22c55e',
-                      fontWeight: 600 
-                    }}>
-                      ✓ Approved
-                    </span>
-                  ) : (
-                    <>
-                      <span style={{ 
-                        fontSize: 12, 
-                        color: '#fbbf24',
-                        fontWeight: 600 
-                      }}>
-                        Pending
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {entry.start_time} - {entry.end_time}
+                      <span style={{ margin: '0 8px' }}>•</span>
+                      {hours === null ? '—' : hours.toFixed(2)} hrs
+                    </div>
+                    {entry.notes && (
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {entry.notes}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {entry.approved ? (
+                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>
+                        ✓ Approved
                       </span>
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        style={{
-                          padding: '4px 8px',
-                          fontSize: 12,
-                          background: 'transparent',
-                          border: '1px solid salmon',
-                          borderRadius: 4,
-                          color: 'salmon',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>
+                          Pending
+                        </span>
+                        <button
+                          onClick={() => handleDelete(entry.id)}
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: 12,
+                            background: 'transparent',
+                            border: '1px solid salmon',
+                            borderRadius: 4,
+                            color: 'salmon',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
