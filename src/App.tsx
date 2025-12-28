@@ -37,6 +37,7 @@ import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
+import TimeEntry from './pages/TimeEntry'
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
@@ -327,6 +328,7 @@ export default function App() {
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>Production</NavLink>
+              <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>Time Entry</NavLink>
               <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>New Cost</NavLink>
               
               {/* Show super-admin link only for super admins */}
@@ -406,6 +408,7 @@ export default function App() {
                 <Route path="/suppliers/:id/edit" element={<EditSupplier />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/labor-production" element={<LaborProduction />} />
+                <Route path="/time-entry" element={<TimeEntry />} />
               </>
             )}
           </Routes>
