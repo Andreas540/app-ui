@@ -1,6 +1,6 @@
 // netlify/functions/employees.mjs
-
 import { resolveAuthz } from './utils/auth.mjs'
+import crypto from 'crypto'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -10,11 +10,33 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' })
 }
 
+// token signing helpers (same format as time-entries.mjs)
+function base64urlEncode(bufOrStr) {
+  const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
+  return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+}
+
+function signEmployeeToken({ tenantId, employeeId, ttlDays = 365 }) {
+  const secret = process.env.EMPLOYEE_TOKEN_SECRET
+  if (!secret) throw new Error('EMPLOYEE_TOKEN_SECRET missing')
+
+  const now = Math.floor(Date.now() / 1000)
+  const exp = now + ttlDays * 24 * 60 * 60
+
+  const payload = { tenant_id: tenantId, employee_id: employeeId, exp }
+  const payloadB64 = base64urlEncode(JSON.stringify(payload))
+  const sigB64 = base64urlEncode(
+    crypto.createHmac('sha256', secret).update(payloadB64).digest()
+  )
+  return `${payloadB64}.${sigB64}`
+}
+
 /**
  * GET employees
  * Query params:
- *   - active: filter by active status (true/false)
- *   - next_code=true : return { next_code: "EMP###" } for the tenant
+ *   - active=true/false
+ *   - next_code=true : return { next_code: "EMP###" }
+ *   - share_token=true&employee_id=<uuid> : return { url, token }
  */
 async function getEmployees(event) {
   try {
@@ -31,10 +53,29 @@ async function getEmployees(event) {
     const active = params.get('active')
     const nextCode = params.get('next_code')
 
-    // Special mode: return next available employee code
+    // return next available employee code
     if (nextCode === 'true') {
       const code = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
       return cors(200, { next_code: code })
+    }
+
+    // share token/link for one employee
+    if (params.get('share_token') === 'true') {
+      const employeeId = params.get('employee_id')
+      if (!employeeId) return cors(400, { error: 'employee_id is required' })
+
+      const emp = await sql`
+        SELECT id, active
+        FROM employees
+        WHERE tenant_id = ${TENANT_ID} AND id = ${employeeId}::uuid
+        LIMIT 1
+      `
+      if (emp.length === 0) return cors(404, { error: 'Employee not found' })
+      if (!emp[0].active) return cors(400, { error: 'Employee is inactive' })
+
+      const token = signEmployeeToken({ tenantId: TENANT_ID, employeeId })
+      const url = `https://data-entry-beta.netlify.app/time-entry?t=${encodeURIComponent(token)}`
+      return cors(200, { url, token })
     }
 
     let rows
@@ -69,7 +110,6 @@ async function getEmployees(event) {
 }
 
 async function computeNextEmployeeCode({ sql, tenantId }) {
-  // Pull only codes that look like EMP###
   const rows = await sql`
     SELECT employee_code
     FROM employees
@@ -77,7 +117,6 @@ async function computeNextEmployeeCode({ sql, tenantId }) {
       AND employee_code IS NOT NULL
       AND employee_code ILIKE 'EMP%'
   `
-
   let maxN = 0
   for (const r of rows) {
     const code = String(r.employee_code || '')
@@ -86,22 +125,10 @@ async function computeNextEmployeeCode({ sql, tenantId }) {
     const n = Number(m[1])
     if (Number.isFinite(n) && n > maxN) maxN = n
   }
-
   const next = maxN + 1
   return `EMP${String(next).padStart(3, '0')}`
 }
 
-/**
- * POST: Save employee
- * Body: {
- *   id?: "uuid" (for updates),
- *   name?: "John Doe",
- *   email?: "john@example.com",
- *   employee_code?: (ignored for create; optional for update if you want to keep it editable)
- *   active?: true,
- *   notes?: "Optional notes"
- * }
- */
 async function saveEmployee(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -117,22 +144,17 @@ async function saveEmployee(event) {
     const body = JSON.parse(event.body || '{}')
     const { id, name, email, active, notes } = body
 
-    // Validation - name only required for new employees
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })
     }
 
     if (id) {
-      // Update existing employee (do NOT change employee_code here, since it’s auto-generated on create)
       const employee = await sql`
         SELECT * FROM employees WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
-      if (employee.length === 0) {
-        return cors(404, { error: 'Employee not found' })
-      }
+      if (employee.length === 0) return cors(404, { error: 'Employee not found' })
 
       const current = employee[0]
-
       const updatedName = name !== undefined ? String(name).trim() : current.name
       const updatedEmail = email !== undefined ? (String(email).trim() || null) : current.email
       const updatedActive = active !== undefined ? active : current.active
@@ -147,10 +169,8 @@ async function saveEmployee(event) {
           notes = ${updatedNotes}
         WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
-
       return cors(200, { ok: true, updated: true, id })
     } else {
-      // Insert new employee with auto-generated code
       const generatedCode = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
 
       const result = await sql`
@@ -167,7 +187,6 @@ async function saveEmployee(event) {
         )
         RETURNING id, employee_code
       `
-
       return cors(200, {
         ok: true,
         created: true,
@@ -177,22 +196,10 @@ async function saveEmployee(event) {
     }
   } catch (e) {
     console.error(e)
-
-    // If you have a unique constraint like uq_employees_tenant_code,
-    // a rare race could happen if two creates occur simultaneously.
-    // In that case, re-try once with a recomputed code.
-    if (String(e?.message || '').includes('uq_employees_tenant_code')) {
-      return cors(409, { error: 'Employee code conflict. Please try again.' })
-    }
-
     return cors(500, { error: String(e?.message || e) })
   }
 }
 
-/**
- * DELETE: Remove employee (soft delete - set active=false)
- * Query params: id (employee ID)
- */
 async function deleteEmployee(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -206,17 +213,13 @@ async function deleteEmployee(event) {
     const TENANT_ID = authz.tenantId
     const params = new URLSearchParams(event.queryStringParameters || {})
     const id = params.get('id')
-
-    if (!id) {
-      return cors(400, { error: 'id parameter is required' })
-    }
+    if (!id) return cors(400, { error: 'id parameter is required' })
 
     await sql`
       UPDATE employees
       SET active = FALSE
       WHERE id = ${id} AND tenant_id = ${TENANT_ID}
     `
-
     return cors(200, { ok: true, deactivated: id })
   } catch (e) {
     console.error(e)
@@ -231,8 +234,12 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
+      // ✅ Point 4 solved here (x-employee-token is allowed)
+      'access-control-allow-headers':
+        'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
     },
     body: JSON.stringify(body),
   }
 }
+
+

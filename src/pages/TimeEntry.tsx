@@ -1,5 +1,5 @@
 // src/pages/TimeEntry.tsx
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -36,6 +36,8 @@ export default function TimeEntry() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  const [employeeToken, setEmployeeToken] = useState<string | null>(null)
+
   // Form state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [workDate, setWorkDate] = useState(todayYMD())
@@ -47,15 +49,71 @@ export default function TimeEntry() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'week' | 'month'>('week')
 
+  const isEmployeeMode = !!employeeToken
+
+  function headersWithEmployeeToken(): HeadersInit {
+    const base = getAuthHeaders()
+    if (!employeeToken) return base
+    return { ...base, 'x-employee-token': employeeToken }
+  }
+
   useEffect(() => {
-    loadEmployees()
+    // Capture ?t=... token if present
+    const url = new URL(window.location.href)
+    const t = url.searchParams.get('t')
+    if (t) {
+      localStorage.setItem('employeeToken', t)
+      setEmployeeToken(t)
+      // Clean URL (optional)
+      url.searchParams.delete('t')
+      window.history.replaceState({}, '', url.toString())
+      return
+    }
+
+    const stored = localStorage.getItem('employeeToken')
+    if (stored) setEmployeeToken(stored)
   }, [])
 
   useEffect(() => {
-    if (selectedEmployeeId) {
-      loadTimeEntries()
+    // Load employee identity + initial data depending on mode
+    if (isEmployeeMode) {
+      loadEmployeeMe()
+    } else {
+      loadEmployees()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployeeMode])
+
+  useEffect(() => {
+    if (selectedEmployeeId) loadTimeEntries()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployeeId, viewPeriod])
+
+  async function loadEmployeeMe() {
+    try {
+      setLoading(true)
+      setErr(null)
+
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/time-entries?me=true`, {
+        headers: headersWithEmployeeToken(),
+      })
+
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to load employee')
+      }
+
+      const j = await res.json()
+      const emp: Employee = j.employee
+      setEmployees([emp])
+      setSelectedEmployeeId(emp.id)
+    } catch (e: any) {
+      setErr(e?.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function loadEmployees() {
     try {
@@ -99,9 +157,10 @@ export default function TimeEntry() {
 
       const toDate = today.toISOString().split('T')[0]
 
+      // In employee-mode, backend ignores employee_id anyway, but sending it doesn’t hurt.
       const res = await fetch(
         `${base}/api/time-entries?employee_id=${selectedEmployeeId}&from=${fromDate}&to=${toDate}`,
-        { headers: getAuthHeaders() }
+        { headers: headersWithEmployeeToken() }
       )
 
       if (!res.ok) {
@@ -137,10 +196,11 @@ export default function TimeEntry() {
       const res = await fetch(`${base}/api/time-entries`, {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
+          ...headersWithEmployeeToken(),
           'content-type': 'application/json',
         },
         body: JSON.stringify({
+          // ignored in employee-mode; required in app-mode
           employee_id: selectedEmployeeId,
           work_date: workDate,
           start_time: startTime,
@@ -155,7 +215,6 @@ export default function TimeEntry() {
       }
 
       const result = await res.json()
-
       if (result.created) alert('Time entry saved successfully!')
       else if (result.updated) alert('Time entry updated successfully!')
 
@@ -177,7 +236,7 @@ export default function TimeEntry() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/time-entries?id=${entryId}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: headersWithEmployeeToken(),
       })
 
       if (!res.ok) {
@@ -201,34 +260,21 @@ export default function TimeEntry() {
 
   const calculatedHours = useMemo(() => {
     if (!startTime || !endTime) return null
-
     const [startH, startM] = startTime.split(':').map(Number)
     const [endH, endM] = endTime.split(':').map(Number)
-
     let hours = endH - startH
     let minutes = endM - startM
-
     if (hours < 0) hours += 24
-
     const totalHours = hours + minutes / 60
     return totalHours.toFixed(2)
   }, [startTime, endTime])
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => {
-      const h = toNumberOrNull(entry.total_hours) || 0
-      return sum + h
-    }, 0)
-
+    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
     const approvedHoursNum = timeEntries
       .filter(e => e.approved)
-      .reduce((sum, entry) => {
-        const h = toNumberOrNull(entry.total_hours) || 0
-        return sum + h
-      }, 0)
-
+      .reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
     const pendingHoursNum = totalHoursNum - approvedHoursNum
-
     return {
       totalHours: totalHoursNum.toFixed(1),
       approvedHours: approvedHoursNum.toFixed(1),
@@ -248,20 +294,32 @@ export default function TimeEntry() {
     <div className="card" style={{ maxWidth: 900 }}>
       <h3>Time Entry</h3>
 
-      <div style={{ marginTop: 16 }}>
-        <label>Employee</label>
-        <select
-          value={selectedEmployeeId}
-          onChange={e => setSelectedEmployeeId(e.target.value)}
-          style={{ height: CONTROL_H }}
-        >
-          {employees.map(emp => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Employee selector: hide in employee-mode */}
+      {!isEmployeeMode && (
+        <div style={{ marginTop: 16 }}>
+          <label>Employee</label>
+          <select
+            value={selectedEmployeeId}
+            onChange={e => setSelectedEmployeeId(e.target.value)}
+            style={{ height: CONTROL_H }}
+          >
+            {employees.map(emp => (
+              <option key={emp.id} value={emp.id}>
+                {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {isEmployeeMode && selectedEmployee && (
+        <div style={{ marginTop: 16, padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+          <div style={{ fontWeight: 700 }}>
+            {selectedEmployee.name} {selectedEmployee.employee_code ? `(${selectedEmployee.employee_code})` : ''}
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.8 }}>Employee time entry</div>
+        </div>
+      )}
 
       <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
         <div>
@@ -480,3 +538,4 @@ export default function TimeEntry() {
     </div>
   )
 }
+

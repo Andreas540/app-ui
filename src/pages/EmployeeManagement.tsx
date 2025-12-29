@@ -13,6 +13,15 @@ type Employee = {
   updated_at: string
 }
 
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,14 +50,9 @@ export default function EmployeeManagement() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
       let url = `${base}/api/employees`
-      if (!showInactive) {
-        url += '?active=true'
-      }
+      if (!showInactive) url += '?active=true'
 
-      const res = await fetch(url, {
-        headers: getAuthHeaders(),
-      })
-
+      const res = await fetch(url, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error('Failed to load employees')
 
       const data = await res.json()
@@ -62,9 +66,7 @@ export default function EmployeeManagement() {
 
   async function fetchNextEmployeeCode() {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    const res = await fetch(`${base}/api/employees?next_code=true`, {
-      headers: getAuthHeaders(),
-    })
+    const res = await fetch(`${base}/api/employees?next_code=true`, { headers: getAuthHeaders() })
     if (!res.ok) {
       const j = await res.json().catch(() => ({}))
       throw new Error(j.error || 'Failed to fetch next employee code')
@@ -82,12 +84,10 @@ export default function EmployeeManagement() {
       setNotes('')
       setShowForm(true)
 
-      // Auto-generate code from backend (tenant-safe, includes inactive)
       const nextCode = await fetchNextEmployeeCode()
       setEmployeeCode(nextCode || '')
     } catch (e: any) {
       alert(e?.message || 'Failed to generate employee code')
-      // still open form, but code blank
       setEmployeeCode('')
     }
   }
@@ -122,19 +122,12 @@ export default function EmployeeManagement() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
-        headers: {
-          ...getAuthHeaders(),
-          'content-type': 'application/json',
-        },
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
         body: JSON.stringify({
           id: editingId,
           name: name.trim(),
           email: email.trim() || null,
-
-          // For create: backend ignores employee_code and generates it.
-          // For edit: we do not allow changing it from UI anyway.
           employee_code: employeeCode.trim() || null,
-
           active,
           notes: notes.trim() || null,
         }),
@@ -146,12 +139,8 @@ export default function EmployeeManagement() {
       }
 
       const result = await res.json()
-
-      if (result.created) {
-        alert('Employee created successfully!')
-      } else if (result.updated) {
-        alert('Employee updated successfully!')
-      }
+      if (result.created) alert('Employee created successfully!')
+      else if (result.updated) alert('Employee updated successfully!')
 
       handleCancel()
       await loadEmployees()
@@ -161,30 +150,19 @@ export default function EmployeeManagement() {
   }
 
   async function handleDeactivate(id: string, employeeName: string) {
-    if (!confirm(`Deactivate ${employeeName}? Their time entries will be preserved.`)) {
-      return
-    }
+    if (!confirm(`Deactivate ${employeeName}? Their time entries will be preserved.`)) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
-        headers: {
-          ...getAuthHeaders(),
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: id,
-          active: false,
-        }),
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ id, active: false }),
       })
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.error || 'Deactivate failed')
       }
-
       alert('Employee deactivated')
       await loadEmployees()
     } catch (e: any) {
@@ -193,34 +171,62 @@ export default function EmployeeManagement() {
   }
 
   async function handleReactivate(id: string, employeeName: string) {
-    if (!confirm(`Reactivate ${employeeName}?`)) {
-      return
-    }
+    if (!confirm(`Reactivate ${employeeName}?`)) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
-        headers: {
-          ...getAuthHeaders(),
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: id,
-          active: true,
-        }),
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ id, active: true }),
       })
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.error || 'Reactivate failed')
       }
-
       alert('Employee reactivated')
       await loadEmployees()
     } catch (e: any) {
       alert(e?.message || 'Reactivate failed')
+    }
+  }
+
+  async function handleShareLink(emp: Employee) {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/employee-link`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ employee_id: emp.id }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to create share link')
+      }
+
+      const j = await res.json()
+      const url = String(j.url || '')
+      if (!url) throw new Error('No url returned')
+
+      const msg = `Hi ${emp.name}, here’s your time entry link: ${url}`
+
+      // Mobile share sheet if available
+      // (Works on some desktops too, but not reliably)
+      if ((navigator as any).share) {
+        try {
+          await (navigator as any).share({ title: 'Time Entry', text: msg, url })
+          return
+        } catch {
+          // fall through to clipboard
+        }
+      }
+
+      // Desktop fallback: copy link/message
+      const ok = await copyToClipboard(url)
+      if (ok) alert('Link copied to clipboard')
+      else alert(`Copy this link:\n\n${url}`)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to share link')
     }
   }
 
@@ -240,7 +246,6 @@ export default function EmployeeManagement() {
         </button>
       </div>
 
-      {/* Filter toggle */}
       <div style={{ marginTop: 16 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input
@@ -253,7 +258,6 @@ export default function EmployeeManagement() {
         </label>
       </div>
 
-      {/* Employee form modal */}
       {showForm && (
         <div
           style={{
@@ -287,11 +291,7 @@ export default function EmployeeManagement() {
                 placeholder="Auto-generated"
                 value={employeeCode}
                 readOnly
-                style={{
-                  height: CONTROL_H,
-                  opacity: 0.8,
-                  cursor: 'not-allowed',
-                }}
+                style={{ height: CONTROL_H, opacity: 0.8, cursor: 'not-allowed' }}
               />
             </div>
           </div>
@@ -341,7 +341,6 @@ export default function EmployeeManagement() {
         </div>
       )}
 
-      {/* Active employees list */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
           Active Employees ({activeEmployees.length})
@@ -359,33 +358,26 @@ export default function EmployeeManagement() {
                   background: 'rgba(255,255,255,0.03)',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {emp.name}
-                    {emp.employee_code && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          fontSize: 12,
-                          color: 'var(--text-secondary)',
-                          fontWeight: 400,
-                        }}
-                      >
-                        {emp.employee_code}
-                      </span>
-                    )}
+                {/* Row 1: info */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                      {emp.name}
+                      {emp.employee_code && (
+                        <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
+                          {emp.employee_code}
+                        </span>
+                      )}
+                    </div>
+                    {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
+                    {emp.notes && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{emp.notes}</div>}
                   </div>
-                  {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
-                  {emp.notes && (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{emp.notes}</div>
-                  )}
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+
+                {/* Row 2: actions (mobile-friendly) */}
+                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   <button
                     onClick={() => handleEdit(emp)}
                     style={{
@@ -400,6 +392,7 @@ export default function EmployeeManagement() {
                   >
                     Edit
                   </button>
+
                   <button
                     onClick={() => handleDeactivate(emp.id, emp.name)}
                     style={{
@@ -415,6 +408,21 @@ export default function EmployeeManagement() {
                   >
                     Deactivate
                   </button>
+
+                  <button
+                    onClick={() => handleShareLink(emp)}
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 13,
+                      height: 36,
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Share link
+                  </button>
                 </div>
               </div>
             ))}
@@ -422,7 +430,6 @@ export default function EmployeeManagement() {
         )}
       </div>
 
-      {/* Inactive employees list */}
       {showInactive && inactiveEmployees.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -439,37 +446,50 @@ export default function EmployeeManagement() {
                   borderRadius: 8,
                   border: '1px solid var(--border)',
                   opacity: 0.6,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {emp.name}
-                    {emp.employee_code && (
-                      <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
-                        {emp.employee_code}
-                      </span>
-                    )}
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>(Inactive)</span>
-                  </div>
-                  {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                  {emp.name}
+                  {emp.employee_code && (
+                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
+                      {emp.employee_code}
+                    </span>
+                  )}
+                  <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>(Inactive)</span>
                 </div>
-                <button
-                  onClick={() => handleReactivate(emp.id, emp.name)}
-                  style={{
-                    padding: '6px 16px',
-                    fontSize: 13,
-                    height: 36,
-                    background: 'transparent',
-                    border: '1px solid var(--border)',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Reactivate
-                </button>
+                {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
+
+                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <button
+                    onClick={() => handleReactivate(emp.id, emp.name)}
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 13,
+                      height: 36,
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reactivate
+                  </button>
+
+                  <button
+                    onClick={() => handleShareLink(emp)}
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 13,
+                      height: 36,
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Re-share link
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -478,3 +498,4 @@ export default function EmployeeManagement() {
     </div>
   )
 }
+
