@@ -42,45 +42,62 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 
 export default function App() {
+  // ✅ Bypass login for employee token link to /time-entry?t=...
+  const isEmployeeTokenTimeEntry = (() => {
+    try {
+      const u = new URL(window.location.href)
+      return u.pathname === '/time-entry' && !!u.searchParams.get('t')
+    } catch {
+      return false
+    }
+  })()
+
+  if (isEmployeeTokenTimeEntry) {
+    // Render only the time-entry route (no nav, no login required)
+    return (
+      <main className="content" style={{ padding: 16 }}>
+        <Routes>
+          <Route path="/time-entry" element={<TimeEntry />} />
+        </Routes>
+      </main>
+    )
+  }
+
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
-  
+
   // Multi-tenant state
-  const [availableTenants, setAvailableTenants] = useState<Array<{id: string, name: string, role: string}>>([])
-  const [activeTenantId, setActiveTenantId] = useState<string | null>(
-    localStorage.getItem('activeTenantId')
-  )
-  
+  const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
+  const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
+
   // New auth system
   const { isAuthenticated, user, logout: authLogout } = useAuth()
-  
+
   // Legacy auth system (for BLV)
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
-    localStorage.getItem('userLevel') as 'admin' | 'inventory' || null
+    (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
   )
 
   // Determine if user is authenticated (either new or legacy)
   const isLoggedIn = isAuthenticated || legacyUserLevel !== null
-  
+
   // Determine user level (for access control)
   const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
   // Handle logout
   const handleLogout = () => {
-    // New auth (your AuthContext may already do this, but we make it deterministic)
-    try { authLogout() } catch {}
+    try {
+      authLogout()
+    } catch {}
 
-    // Legacy auth
     setLegacyUserLevel(null)
     localStorage.removeItem('userLevel')
 
-    // Hard guarantee: remove JWT used by resolveAuthz() identity
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
 
-    // Hard reload to clear in-memory state
     location.href = '/login'
   }
 
@@ -101,7 +118,6 @@ export default function App() {
       setUserName('User')
     }
 
-    // Timer for animation
     const timer = setTimeout(() => {
       setShowWelcome(false)
     }, 5000)
@@ -117,7 +133,7 @@ export default function App() {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const token = localStorage.getItem('authToken')
-        
+
         const res = await fetch(`${base}/api/user-tenants`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -127,8 +143,7 @@ export default function App() {
         if (res.ok) {
           const data = await res.json()
           setAvailableTenants(data.tenants || [])
-          
-          // If no active tenant set, use first one
+
           if (!activeTenantId && data.tenants.length > 0) {
             setActiveTenantId(data.tenants[0].id)
             localStorage.setItem('activeTenantId', data.tenants[0].id)
@@ -149,44 +164,40 @@ export default function App() {
 
   // Tenant switching handler
   const handleTenantSwitch = async () => {
-  if (availableTenants.length <= 1) return
+    if (availableTenants.length <= 1) return
 
-  const currentIndex = availableTenants.findIndex(t => t.id === activeTenantId)
-  const nextIndex = (currentIndex + 1) % availableTenants.length
-  const nextTenant = availableTenants[nextIndex]
+    const currentIndex = availableTenants.findIndex(t => t.id === activeTenantId)
+    const nextIndex = (currentIndex + 1) % availableTenants.length
+    const nextTenant = availableTenants[nextIndex]
 
-  // Save new active tenant
-  localStorage.setItem('activeTenantId', nextTenant.id)
-  
-  // Re-fetch user data with new tenant context
-  try {
-    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    const token = localStorage.getItem('authToken')
-    
-    const res = await fetch(`${base}/api/auth-verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-Active-Tenant': nextTenant.id
-      },
-      body: JSON.stringify({ token })
-    })
+    localStorage.setItem('activeTenantId', nextTenant.id)
 
-    if (res.ok) {
-      const data = await res.json()
-      if (data.user) {
-        // Update localStorage with fresh user data
-        localStorage.setItem('userData', JSON.stringify(data.user))
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+
+      const res = await fetch(`${base}/api/auth-verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'X-Active-Tenant': nextTenant.id,
+        },
+        body: JSON.stringify({ token }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.user) {
+          localStorage.setItem('userData', JSON.stringify(data.user))
+        }
       }
+    } catch (e) {
+      console.error('Failed to refresh user data:', e)
     }
-  } catch (e) {
-    console.error('Failed to refresh user data:', e)
+
+    window.location.reload()
   }
-  
-  // Reload to apply changes
-  window.location.reload()
-}
 
   // Get current tenant name for display
   const currentTenant = availableTenants.find(t => t.id === activeTenantId)
@@ -196,38 +207,36 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <button
-            className="hamburger"
-            aria-label="Toggle menu"
-            onClick={() => setNavOpen(v => !v)}
-          >
-            <span></span><span></span><span></span>
+          <button className="hamburger" aria-label="Toggle menu" onClick={() => setNavOpen(v => !v)}>
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
-          <div 
+          <div
             className="brand-title"
             onClick={handleTenantSwitch}
             style={{
               cursor: availableTenants.length > 1 ? 'pointer' : 'default',
-              userSelect: 'none'
+              userSelect: 'none',
             }}
             title={availableTenants.length > 1 ? 'Click to switch tenant' : ''}
           >
-            <div 
+            <div
               style={{
                 transform: showWelcome ? 'translateY(0)' : 'translateY(-100%)',
                 transition: 'transform 0.6s ease-in-out',
                 position: 'absolute',
-                width: '100%'
+                width: '100%',
               }}
             >
               Welcome {userName}!
             </div>
-            <div 
+            <div
               style={{
                 transform: showWelcome ? 'translateY(100%)' : 'translateY(0)',
                 transition: 'transform 0.6s ease-in-out',
                 position: 'absolute',
-                width: '100%'
+                width: '100%',
               }}
             >
               {currentTenantName}
@@ -237,21 +246,69 @@ export default function App() {
 
         <div className="quick-buttons" aria-label="Quick navigation">
           {userLevel === 'inventory' ? (
-            // Inventory users only see inventory button if they selected it
             selectedShortcuts.includes('I') && (
-              <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>
+              <NavLink
+                to="/inventory"
+                className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                title="Inventory"
+                onClick={() => setNavOpen(false)}
+              >
+                I
+              </NavLink>
             )
-          ) : user?.businessType === 'physical_store' ? (
-            // Physical store users see no quick buttons (only Store Dashboard + Settings in nav)
-            null
-          ) : (
-            // General business type sees their selected shortcuts
+          ) : user?.businessType === 'physical_store' ? null : (
             <>
-              {selectedShortcuts.includes('D') && <NavLink to="/" end className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Dashboard" onClick={() => setNavOpen(false)}>D</NavLink>}
-              {selectedShortcuts.includes('O') && <NavLink to="/orders/new" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="New Order" onClick={() => setNavOpen(false)}>O</NavLink>}
-              {selectedShortcuts.includes('P') && <NavLink to="/payments" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Payments" onClick={() => setNavOpen(false)}>P</NavLink>}
-              {selectedShortcuts.includes('C') && <NavLink to="/customers" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Customers" onClick={() => setNavOpen(false)}>C</NavLink>}
-              {selectedShortcuts.includes('I') && <NavLink to="/inventory" className={({isActive}) => `icon-btn ${isActive ? 'active' : ''}`} title="Inventory" onClick={() => setNavOpen(false)}>I</NavLink>}
+              {selectedShortcuts.includes('D') && (
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                  title="Dashboard"
+                  onClick={() => setNavOpen(false)}
+                >
+                  D
+                </NavLink>
+              )}
+              {selectedShortcuts.includes('O') && (
+                <NavLink
+                  to="/orders/new"
+                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                  title="New Order"
+                  onClick={() => setNavOpen(false)}
+                >
+                  O
+                </NavLink>
+              )}
+              {selectedShortcuts.includes('P') && (
+                <NavLink
+                  to="/payments"
+                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                  title="Payments"
+                  onClick={() => setNavOpen(false)}
+                >
+                  P
+                </NavLink>
+              )}
+              {selectedShortcuts.includes('C') && (
+                <NavLink
+                  to="/customers"
+                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                  title="Customers"
+                  onClick={() => setNavOpen(false)}
+                >
+                  C
+                </NavLink>
+              )}
+              {selectedShortcuts.includes('I') && (
+                <NavLink
+                  to="/inventory"
+                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+                  title="Inventory"
+                  onClick={() => setNavOpen(false)}
+                >
+                  I
+                </NavLink>
+              )}
             </>
           )}
         </div>
@@ -261,98 +318,137 @@ export default function App() {
 
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
-          {/* Inventory users see inventory navigation + settings + logout */}
           {userLevel === 'inventory' ? (
             <>
-              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>Inventory Dashboard</NavLink>
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
-              <button 
+              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>
+                Inventory Dashboard
+              </NavLink>
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                Settings
+              </NavLink>
+              <button
                 onClick={handleLogout}
-                style={{ 
-                  background: 'transparent', 
-                  border: '1px solid var(--muted)', 
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--muted)',
                   color: 'var(--muted)',
                   padding: '10px 12px',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   marginTop: '8px',
-                  width: '75%'
+                  width: '75%',
                 }}
               >
                 Logout
               </button>
             </>
           ) : user?.businessType === 'physical_store' ? (
-            /* Physical store users see store dashboard + settings + logout */
             <>
-              <NavLink to="/" onClick={() => setNavOpen(false)}>Store Dashboard</NavLink>
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
-              <button 
+              <NavLink to="/" onClick={() => setNavOpen(false)}>
+                Store Dashboard
+              </NavLink>
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                Settings
+              </NavLink>
+              <button
                 onClick={handleLogout}
-                style={{ 
-                  background: 'transparent', 
-                  border: '1px solid var(--muted)', 
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--muted)',
                   color: 'var(--muted)',
                   padding: '10px 12px',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   marginTop: '8px',
-                  width: '75%'
+                  width: '75%',
                 }}
               >
                 Logout
               </button>
             </>
           ) : (
-            /* General business type sees everything with sections */
             <>
-              {/* Sales Section */}
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/" end onClick={() => setNavOpen(false)}>Main Dashboard</NavLink>
-              <NavLink to="/customers" onClick={() => setNavOpen(false)}>Customers</NavLink>
-              <NavLink to="/partners" onClick={() => setNavOpen(false)}>Partners</NavLink>
-              <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>Price Checker</NavLink>
-              <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>New Order</NavLink>
-              <NavLink to="/payments" onClick={() => setNavOpen(false)}>New Payment</NavLink>
-              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>Products</NavLink>
-              <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>Create Invoice</NavLink>
-              
-              {/* Inventory Section */}
+              <NavLink to="/" end onClick={() => setNavOpen(false)}>
+                Main Dashboard
+              </NavLink>
+              <NavLink to="/customers" onClick={() => setNavOpen(false)}>
+                Customers
+              </NavLink>
+              <NavLink to="/partners" onClick={() => setNavOpen(false)}>
+                Partners
+              </NavLink>
+              <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
+                Price Checker
+              </NavLink>
+              <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
+                New Order
+              </NavLink>
+              <NavLink to="/payments" onClick={() => setNavOpen(false)}>
+                New Payment
+              </NavLink>
+              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
+                Products
+              </NavLink>
+              <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
+                Create Invoice
+              </NavLink>
+
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />            
-              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>Supply & Demand</NavLink>
-              <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>Suppliers</NavLink>
-              <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>New Order (S)</NavLink>
-              <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>Warehouse</NavLink>
-              
-              {/* Other Section */}
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
+                Supply & Demand
+              </NavLink>
+              <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
+                Suppliers
+              </NavLink>
+              <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
+                New Order (S)
+              </NavLink>
+              <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
+                Warehouse
+              </NavLink>
+
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>Production</NavLink>
-              <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>Time Entry</NavLink>
-              <NavLink to="/employees" onClick={() => setNavOpen(false)}>Employees</NavLink>
-              <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>Time Approval</NavLink>
-              <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>New Cost</NavLink>
-              
-              {/* Show super-admin link only for super admins */}
+              <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
+                Production
+              </NavLink>
+              <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
+                Time Entry
+              </NavLink>
+              <NavLink to="/employees" onClick={() => setNavOpen(false)}>
+                Employees
+              </NavLink>
+              <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
+                Time Approval
+              </NavLink>
+              <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
+                New Cost
+              </NavLink>
+
               {user?.role === 'super_admin' && (
-                <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>Super Admin</NavLink>
+                <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
+                  Super Admin
+                </NavLink>
               )}
-              
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>Settings</NavLink>
-              
-              <button 
+
+              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                Settings
+              </NavLink>
+
+              <button
                 onClick={handleLogout}
-                style={{ 
-                  background: 'transparent', 
-                  border: '1px solid var(--muted)', 
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--muted)',
                   color: 'var(--muted)',
                   padding: '10px 12px',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   marginTop: '16px',
-                  width: '75%'
+                  width: '75%',
                 }}
               >
                 Logout
@@ -363,7 +459,6 @@ export default function App() {
 
         <main className="content">
           <Routes>
-            {/* Inventory users see inventory routes + settings */}
             {userLevel === 'inventory' ? (
               <>
                 <Route path="/" element={<InventoryDashboard />} />
@@ -371,13 +466,11 @@ export default function App() {
                 <Route path="/settings" element={<Settings />} />
               </>
             ) : user?.businessType === 'physical_store' ? (
-              /* Physical store users see ONLY store dashboard + settings */
               <>
                 <Route path="/" element={<DashboardStore />} />
                 <Route path="/settings" element={<Settings />} />
               </>
             ) : (
-              /* General business type sees all admin routes */
               <>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/orders/new" element={<NewOrder />} />

@@ -1,4 +1,3 @@
-// src/pages/TimeEntry.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
@@ -31,12 +30,24 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+function getEmployeeTokenFromUrl(): string | null {
+  try {
+    const u = new URL(window.location.href)
+    return u.searchParams.get('t')
+  } catch {
+    return null
+  }
+}
+
 export default function TimeEntry() {
+  const employeeToken = getEmployeeTokenFromUrl()
+  const employeeMode = !!employeeToken
+
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [employeeMe, setEmployeeMe] = useState<Employee | null>(null)
+
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
-
-  const [employeeToken, setEmployeeToken] = useState<string | null>(null)
 
   // Form state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
@@ -49,43 +60,32 @@ export default function TimeEntry() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'week' | 'month'>('week')
 
-  const isEmployeeMode = !!employeeToken
+  function apiBase() {
+    return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  }
 
-  function headersWithEmployeeToken(): HeadersInit {
-    const base = getAuthHeaders()
-    if (!employeeToken) return base
-    return { ...base, 'x-employee-token': employeeToken }
+  function headersFor(mode: 'app' | 'employee') {
+    if (mode === 'employee') {
+      return {
+        'x-employee-token': employeeToken as string,
+      }
+    }
+    return getAuthHeaders()
   }
 
   useEffect(() => {
-    // Capture ?t=... token if present
-    const url = new URL(window.location.href)
-    const t = url.searchParams.get('t')
-    if (t) {
-      localStorage.setItem('employeeToken', t)
-      setEmployeeToken(t)
-      // Clean URL (optional)
-      url.searchParams.delete('t')
-      window.history.replaceState({}, '', url.toString())
-      return
-    }
-
-    const stored = localStorage.getItem('employeeToken')
-    if (stored) setEmployeeToken(stored)
-  }, [])
-
-  useEffect(() => {
-    // Load employee identity + initial data depending on mode
-    if (isEmployeeMode) {
+    if (employeeMode) {
       loadEmployeeMe()
     } else {
       loadEmployees()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEmployeeMode])
+  }, [])
 
   useEffect(() => {
-    if (selectedEmployeeId) loadTimeEntries()
+    if (selectedEmployeeId) {
+      loadTimeEntries()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployeeId, viewPeriod])
 
@@ -94,9 +94,9 @@ export default function TimeEntry() {
       setLoading(true)
       setErr(null)
 
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const base = apiBase()
       const res = await fetch(`${base}/api/time-entries?me=true`, {
-        headers: headersWithEmployeeToken(),
+        headers: headersFor('employee'),
       })
 
       if (!res.ok) {
@@ -105,8 +105,12 @@ export default function TimeEntry() {
       }
 
       const j = await res.json()
-      const emp: Employee = j.employee
-      setEmployees([emp])
+      const emp: Employee | null = j?.employee || null
+      if (!emp) throw new Error('Employee not found')
+
+      if (!emp.active) throw new Error('Employee is inactive')
+
+      setEmployeeMe(emp)
       setSelectedEmployeeId(emp.id)
     } catch (e: any) {
       setErr(e?.message || String(e))
@@ -119,9 +123,10 @@ export default function TimeEntry() {
     try {
       setLoading(true)
       setErr(null)
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+      const base = apiBase()
       const res = await fetch(`${base}/api/employees?active=true`, {
-        headers: getAuthHeaders(),
+        headers: headersFor('app'),
       })
 
       if (!res.ok) throw new Error('Failed to load employees')
@@ -141,7 +146,7 @@ export default function TimeEntry() {
 
   async function loadTimeEntries() {
     try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const base = apiBase()
 
       const today = new Date()
       let fromDate: string
@@ -157,11 +162,14 @@ export default function TimeEntry() {
 
       const toDate = today.toISOString().split('T')[0]
 
-      // In employee-mode, backend ignores employee_id anyway, but sending it doesn’t hurt.
-      const res = await fetch(
-        `${base}/api/time-entries?employee_id=${selectedEmployeeId}&from=${fromDate}&to=${toDate}`,
-        { headers: headersWithEmployeeToken() }
-      )
+      const mode = employeeMode ? 'employee' : 'app'
+      const qs = employeeMode
+        ? `from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`
+        : `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`
+
+      const res = await fetch(`${base}/api/time-entries?${qs}`, {
+        headers: headersFor(mode),
+      })
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
@@ -179,7 +187,7 @@ export default function TimeEntry() {
 
   async function handleSave() {
     if (!selectedEmployeeId) {
-      alert('Please select an employee')
+      alert('Employee missing')
       return
     }
     if (!workDate) {
@@ -192,15 +200,17 @@ export default function TimeEntry() {
     }
 
     try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const base = apiBase()
+      const mode = employeeMode ? 'employee' : 'app'
+
       const res = await fetch(`${base}/api/time-entries`, {
         method: 'POST',
         headers: {
-          ...headersWithEmployeeToken(),
+          ...headersFor(mode),
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          // ignored in employee-mode; required in app-mode
+          // app-mode uses employee_id; employee-mode ignores it server-side
           employee_id: selectedEmployeeId,
           work_date: workDate,
           start_time: startTime,
@@ -233,10 +243,12 @@ export default function TimeEntry() {
     if (!confirm('Delete this time entry?')) return
 
     try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/time-entries?id=${entryId}`, {
+      const base = apiBase()
+      const mode = employeeMode ? 'employee' : 'app'
+
+      const res = await fetch(`${base}/api/time-entries?id=${encodeURIComponent(entryId)}`, {
         method: 'DELETE',
-        headers: headersWithEmployeeToken(),
+        headers: headersFor(mode),
       })
 
       if (!res.ok) {
@@ -260,21 +272,34 @@ export default function TimeEntry() {
 
   const calculatedHours = useMemo(() => {
     if (!startTime || !endTime) return null
+
     const [startH, startM] = startTime.split(':').map(Number)
     const [endH, endM] = endTime.split(':').map(Number)
+
     let hours = endH - startH
     let minutes = endM - startM
+
     if (hours < 0) hours += 24
+
     const totalHours = hours + minutes / 60
     return totalHours.toFixed(2)
   }, [startTime, endTime])
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+    const totalHoursNum = timeEntries.reduce((sum, entry) => {
+      const h = toNumberOrNull(entry.total_hours) || 0
+      return sum + h
+    }, 0)
+
     const approvedHoursNum = timeEntries
       .filter(e => e.approved)
-      .reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+      .reduce((sum, entry) => {
+        const h = toNumberOrNull(entry.total_hours) || 0
+        return sum + h
+      }, 0)
+
     const pendingHoursNum = totalHoursNum - approvedHoursNum
+
     return {
       totalHours: totalHoursNum.toFixed(1),
       approvedHours: approvedHoursNum.toFixed(1),
@@ -285,17 +310,23 @@ export default function TimeEntry() {
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
-  if (employees.length === 0) return <div className="card"><p>No employees found. Please add employees first.</p></div>
 
   const CONTROL_H = 44
-  const selectedEmployee = employees.find(e => e.id === selectedEmployeeId)
+
+  const selectedEmployee = employeeMode
+    ? employeeMe
+    : employees.find(e => e.id === selectedEmployeeId)
+
+  if (!employeeMode && employees.length === 0) {
+    return <div className="card"><p>No employees found. Please add employees first.</p></div>
+  }
 
   return (
     <div className="card" style={{ maxWidth: 900 }}>
       <h3>Time Entry</h3>
 
-      {/* Employee selector: hide in employee-mode */}
-      {!isEmployeeMode && (
+      {/* ✅ App-mode only: employee selector */}
+      {!employeeMode && (
         <div style={{ marginTop: 16 }}>
           <label>Employee</label>
           <select
@@ -312,12 +343,11 @@ export default function TimeEntry() {
         </div>
       )}
 
-      {isEmployeeMode && selectedEmployee && (
-        <div style={{ marginTop: 16, padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
-          <div style={{ fontWeight: 700 }}>
-            {selectedEmployee.name} {selectedEmployee.employee_code ? `(${selectedEmployee.employee_code})` : ''}
-          </div>
-          <div style={{ fontSize: 12, opacity: 0.8 }}>Employee time entry</div>
+      {/* ✅ Employee-mode: show fixed identity */}
+      {employeeMode && selectedEmployee && (
+        <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
+          Reporting as <span style={{ color: 'var(--text)', fontWeight: 600 }}>{selectedEmployee.name}</span>
+          {selectedEmployee.employee_code ? ` (${selectedEmployee.employee_code})` : ''}
         </div>
       )}
 
@@ -333,16 +363,18 @@ export default function TimeEntry() {
         </div>
         <div>
           <label>Total Hours: {calculatedHours || '—'}</label>
-          <div style={{
-            height: CONTROL_H,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: 8,
-            fontSize: 18,
-            fontWeight: 600
-          }}>
+          <div
+            style={{
+              height: CONTROL_H,
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 12px',
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: 8,
+              fontSize: 18,
+              fontWeight: 600,
+            }}
+          >
             {calculatedHours || '—'} hrs
           </div>
         </div>
@@ -390,20 +422,24 @@ export default function TimeEntry() {
       </div>
 
       {selectedEmployee && (
-        <div style={{
-          marginTop: 24,
-          padding: 16,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 8
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12
-          }}>
+        <div
+          style={{
+            marginTop: 24,
+            padding: 16,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+          >
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-              {selectedEmployee.name}'s Time Summary
+              {selectedEmployee.name}&apos;s Time Summary
             </h4>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -414,7 +450,7 @@ export default function TimeEntry() {
                   background: viewPeriod === 'week' ? 'var(--primary)' : 'transparent',
                   border: '1px solid var(--border)',
                   borderRadius: 4,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Week
@@ -427,7 +463,7 @@ export default function TimeEntry() {
                   background: viewPeriod === 'month' ? 'var(--primary)' : 'transparent',
                   border: '1px solid var(--border)',
                   borderRadius: 4,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Month
@@ -458,15 +494,8 @@ export default function TimeEntry() {
 
       {timeEntries.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
-            Recent Time Entries
-          </h4>
-          <div style={{
-            display: 'grid',
-            gap: 8,
-            maxHeight: 400,
-            overflow: 'auto'
-          }}>
+          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>Recent Time Entries</h4>
+          <div style={{ display: 'grid', gap: 8, maxHeight: 400, overflow: 'auto' }}>
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
               return (
@@ -479,7 +508,7 @@ export default function TimeEntry() {
                     border: entry.approved ? '1px solid #22c55e33' : '1px solid var(--border)',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
                   }}
                 >
                   <div style={{ flex: 1 }}>
@@ -487,7 +516,7 @@ export default function TimeEntry() {
                       {new Date(entry.work_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
-                        day: 'numeric'
+                        day: 'numeric',
                       })}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -504,14 +533,10 @@ export default function TimeEntry() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {entry.approved ? (
-                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>
-                        ✓ Approved
-                      </span>
+                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✓ Approved</span>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>
-                          Pending
-                        </span>
+                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>Pending</span>
                         <button
                           onClick={() => handleDelete(entry.id)}
                           style={{
@@ -521,7 +546,7 @@ export default function TimeEntry() {
                             border: '1px solid salmon',
                             borderRadius: 4,
                             color: 'salmon',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                           }}
                         >
                           Delete
@@ -538,4 +563,6 @@ export default function TimeEntry() {
     </div>
   )
 }
+
+
 
