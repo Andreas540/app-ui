@@ -84,11 +84,19 @@ if (isEmployeeTokenTimeEntry) {
   // Render only the time-entry route (no nav, no login required)
   return (
     <div style={{ 
-      minHeight: '100vh',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       overflow: 'auto',
-      background: 'var(--bg, #1a1a2e)' 
+      background: 'var(--bg, #1a1a2e)',
+      WebkitOverflowScrolling: 'touch' // smooth scrolling on iOS
     }}>
-      <main className="content" style={{ padding: 16 }}>
+      <main className="content" style={{ 
+        padding: 16,
+        minHeight: '100%'
+      }}>
         <Routes>
           <Route path="/time-entry" element={<TimeEntry />} />
         </Routes>
