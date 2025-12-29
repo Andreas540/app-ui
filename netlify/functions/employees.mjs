@@ -14,6 +14,7 @@ export async function handler(event) {
  * GET employees
  * Query params:
  *   - active: filter by active status (true/false)
+ *   - next_code=true : return { next_code: "EMP###" } for the tenant
  */
 async function getEmployees(event) {
   try {
@@ -28,6 +29,13 @@ async function getEmployees(event) {
     const TENANT_ID = authz.tenantId
     const params = new URLSearchParams(event.queryStringParameters || {})
     const active = params.get('active')
+    const nextCode = params.get('next_code')
+
+    // Special mode: return next available employee code
+    if (nextCode === 'true') {
+      const code = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
+      return cors(200, { next_code: code })
+    }
 
     let rows
     if (active === 'true') {
@@ -60,15 +68,38 @@ async function getEmployees(event) {
   }
 }
 
+async function computeNextEmployeeCode({ sql, tenantId }) {
+  // Pull only codes that look like EMP###
+  const rows = await sql`
+    SELECT employee_code
+    FROM employees
+    WHERE tenant_id = ${tenantId}
+      AND employee_code IS NOT NULL
+      AND employee_code ILIKE 'EMP%'
+  `
+
+  let maxN = 0
+  for (const r of rows) {
+    const code = String(r.employee_code || '')
+    const m = code.match(/^EMP(\d+)$/i)
+    if (!m) continue
+    const n = Number(m[1])
+    if (Number.isFinite(n) && n > maxN) maxN = n
+  }
+
+  const next = maxN + 1
+  return `EMP${String(next).padStart(3, '0')}`
+}
+
 /**
  * POST: Save employee
  * Body: {
  *   id?: "uuid" (for updates),
- *   name: "John Doe",
- *   email: "john@example.com",
- *   employee_code: "EMP001",
- *   active: true,
- *   notes: "Optional notes"
+ *   name?: "John Doe",
+ *   email?: "john@example.com",
+ *   employee_code?: (ignored for create; optional for update if you want to keep it editable)
+ *   active?: true,
+ *   notes?: "Optional notes"
  * }
  */
 async function saveEmployee(event) {
@@ -84,7 +115,7 @@ async function saveEmployee(event) {
     const TENANT_ID = authz.tenantId
 
     const body = JSON.parse(event.body || '{}')
-    const { id, name, email, employee_code, active, notes } = body
+    const { id, name, email, active, notes } = body
 
     // Validation - name only required for new employees
     if (!id && (!name || !name.trim())) {
@@ -92,31 +123,26 @@ async function saveEmployee(event) {
     }
 
     if (id) {
-      // Update existing employee
-      // For partial updates, only update provided fields
+      // Update existing employee (do NOT change employee_code here, since it’s auto-generated on create)
       const employee = await sql`
         SELECT * FROM employees WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
-      
       if (employee.length === 0) {
         return cors(404, { error: 'Employee not found' })
       }
-      
+
       const current = employee[0]
-      
-      // Use provided values or keep existing
-      const updatedName = name !== undefined ? name.trim() : current.name
-      const updatedEmail = email !== undefined ? (email?.trim() || null) : current.email
-      const updatedCode = employee_code !== undefined ? (employee_code?.trim() || null) : current.employee_code
+
+      const updatedName = name !== undefined ? String(name).trim() : current.name
+      const updatedEmail = email !== undefined ? (String(email).trim() || null) : current.email
       const updatedActive = active !== undefined ? active : current.active
-      const updatedNotes = notes !== undefined ? (notes?.trim() || null) : current.notes
-      
+      const updatedNotes = notes !== undefined ? (String(notes).trim() || null) : current.notes
+
       await sql`
         UPDATE employees
         SET 
           name = ${updatedName},
           email = ${updatedEmail},
-          employee_code = ${updatedCode},
           active = ${updatedActive},
           notes = ${updatedNotes}
         WHERE id = ${id} AND tenant_id = ${TENANT_ID}
@@ -124,32 +150,41 @@ async function saveEmployee(event) {
 
       return cors(200, { ok: true, updated: true, id })
     } else {
-      // Insert new employee
+      // Insert new employee with auto-generated code
+      const generatedCode = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
+
       const result = await sql`
         INSERT INTO employees (
           tenant_id, name, email, employee_code, active, notes
         )
         VALUES (
           ${TENANT_ID},
-          ${name.trim()},
-          ${email?.trim() || null},
-          ${employee_code?.trim() || null},
+          ${String(name).trim()},
+          ${String(email || '').trim() || null},
+          ${generatedCode},
           ${active !== false},
-          ${notes?.trim() || null}
+          ${String(notes || '').trim() || null}
         )
-        RETURNING id
+        RETURNING id, employee_code
       `
 
-      return cors(200, { ok: true, created: true, id: result[0].id })
+      return cors(200, {
+        ok: true,
+        created: true,
+        id: result[0].id,
+        employee_code: result[0].employee_code,
+      })
     }
   } catch (e) {
     console.error(e)
-    
-    // Handle unique constraint violation for employee_code
-    if (e.message?.includes('uq_employees_tenant_code')) {
-      return cors(400, { error: 'Employee code already exists' })
+
+    // If you have a unique constraint like uq_employees_tenant_code,
+    // a rare race could happen if two creates occur simultaneously.
+    // In that case, re-try once with a recomputed code.
+    if (String(e?.message || '').includes('uq_employees_tenant_code')) {
+      return cors(409, { error: 'Employee code conflict. Please try again.' })
     }
-    
+
     return cors(500, { error: String(e?.message || e) })
   }
 }
@@ -176,7 +211,6 @@ async function deleteEmployee(event) {
       return cors(400, { error: 'id parameter is required' })
     }
 
-    // Soft delete: set active = false instead of deleting
     await sql`
       UPDATE employees
       SET active = FALSE
@@ -197,7 +231,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   }

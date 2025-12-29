@@ -17,7 +17,7 @@ export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
-  
+
   // Form state
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -26,7 +26,7 @@ export default function EmployeeManagement() {
   const [employeeCode, setEmployeeCode] = useState('')
   const [active, setActive] = useState(true)
   const [notes, setNotes] = useState('')
-  
+
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
 
@@ -39,18 +39,18 @@ export default function EmployeeManagement() {
       setLoading(true)
       setErr(null)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
+
       let url = `${base}/api/employees`
       if (!showInactive) {
         url += '?active=true'
       }
-      
+
       const res = await fetch(url, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!res.ok) throw new Error('Failed to load employees')
-      
+
       const data = await res.json()
       setEmployees(data)
     } catch (e: any) {
@@ -60,14 +60,36 @@ export default function EmployeeManagement() {
     }
   }
 
-  function handleNew() {
-    setEditingId(null)
-    setName('')
-    setEmail('')
-    setEmployeeCode('')
-    setActive(true)
-    setNotes('')
-    setShowForm(true)
+  async function fetchNextEmployeeCode() {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(`${base}/api/employees?next_code=true`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      throw new Error(j.error || 'Failed to fetch next employee code')
+    }
+    const j = await res.json()
+    return String(j.next_code || '')
+  }
+
+  async function handleNew() {
+    try {
+      setEditingId(null)
+      setName('')
+      setEmail('')
+      setActive(true)
+      setNotes('')
+      setShowForm(true)
+
+      // Auto-generate code from backend (tenant-safe, includes inactive)
+      const nextCode = await fetchNextEmployeeCode()
+      setEmployeeCode(nextCode || '')
+    } catch (e: any) {
+      alert(e?.message || 'Failed to generate employee code')
+      // still open form, but code blank
+      setEmployeeCode('')
+    }
   }
 
   function handleEdit(employee: Employee) {
@@ -108,7 +130,11 @@ export default function EmployeeManagement() {
           id: editingId,
           name: name.trim(),
           email: email.trim() || null,
+
+          // For create: backend ignores employee_code and generates it.
+          // For edit: we do not allow changing it from UI anyway.
           employee_code: employeeCode.trim() || null,
+
           active,
           notes: notes.trim() || null,
         }),
@@ -120,7 +146,7 @@ export default function EmployeeManagement() {
       }
 
       const result = await res.json()
-      
+
       if (result.created) {
         alert('Employee created successfully!')
       } else if (result.updated) {
@@ -141,8 +167,7 @@ export default function EmployeeManagement() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      // Update employee to set active = false
+
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
         headers: {
@@ -174,8 +199,7 @@ export default function EmployeeManagement() {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      // Update employee to set active = true
+
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
         headers: {
@@ -211,11 +235,7 @@ export default function EmployeeManagement() {
     <div className="card" style={{ maxWidth: 1000 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3>Employee Management</h3>
-        <button
-          className="primary"
-          onClick={handleNew}
-          style={{ height: CONTROL_H }}
-        >
+        <button className="primary" onClick={handleNew} style={{ height: CONTROL_H }}>
           + New Employee
         </button>
       </div>
@@ -235,13 +255,15 @@ export default function EmployeeManagement() {
 
       {/* Employee form modal */}
       {showForm && (
-        <div style={{
-          marginTop: 24,
-          padding: 20,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 8,
-          border: '1px solid var(--border)'
-        }}>
+        <div
+          style={{
+            marginTop: 24,
+            padding: 20,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 8,
+            border: '1px solid var(--border)',
+          }}
+        >
           <h4 style={{ margin: '0 0 16px 0', fontSize: 16 }}>
             {editingId ? 'Edit Employee' : 'New Employee'}
           </h4>
@@ -259,13 +281,17 @@ export default function EmployeeManagement() {
               />
             </div>
             <div>
-              <label>Employee Code</label>
+              <label>Employee Code (auto)</label>
               <input
                 type="text"
-                placeholder="e.g., EMP001"
+                placeholder="Auto-generated"
                 value={employeeCode}
-                onChange={e => setEmployeeCode(e.target.value)}
-                style={{ height: CONTROL_H }}
+                readOnly
+                style={{
+                  height: CONTROL_H,
+                  opacity: 0.8,
+                  cursor: 'not-allowed',
+                }}
               />
             </div>
           </div>
@@ -305,17 +331,10 @@ export default function EmployeeManagement() {
           </div>
 
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-            <button
-              className="primary"
-              onClick={handleSave}
-              style={{ height: CONTROL_H }}
-            >
+            <button className="primary" onClick={handleSave} style={{ height: CONTROL_H }}>
               {editingId ? 'Update' : 'Create'}
             </button>
-            <button
-              onClick={handleCancel}
-              style={{ height: CONTROL_H }}
-            >
+            <button onClick={handleCancel} style={{ height: CONTROL_H }}>
               Cancel
             </button>
           </div>
@@ -327,7 +346,7 @@ export default function EmployeeManagement() {
         <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
           Active Employees ({activeEmployees.length})
         </h4>
-        
+
         {activeEmployees.length === 0 ? (
           <p className="helper">No active employees. Click "New Employee" to add one.</p>
         ) : (
@@ -342,32 +361,28 @@ export default function EmployeeManagement() {
                   border: '1px solid var(--border)',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
                     {emp.name}
                     {emp.employee_code && (
-                      <span style={{ 
-                        marginLeft: 8, 
-                        fontSize: 12, 
-                        color: 'var(--text-secondary)',
-                        fontWeight: 400
-                      }}>
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 12,
+                          color: 'var(--text-secondary)',
+                          fontWeight: 400,
+                        }}
+                      >
                         {emp.employee_code}
                       </span>
                     )}
                   </div>
-                  {emp.email && (
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {emp.email}
-                    </div>
-                  )}
+                  {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
                   {emp.notes && (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                      {emp.notes}
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{emp.notes}</div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -380,7 +395,7 @@ export default function EmployeeManagement() {
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     Edit
@@ -395,7 +410,7 @@ export default function EmployeeManagement() {
                       border: '1px solid salmon',
                       borderRadius: 4,
                       color: 'salmon',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     Deactivate
@@ -413,7 +428,7 @@ export default function EmployeeManagement() {
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
             Inactive Employees ({inactiveEmployees.length})
           </h4>
-          
+
           <div style={{ display: 'grid', gap: 8 }}>
             {inactiveEmployees.map(emp => (
               <div
@@ -426,36 +441,20 @@ export default function EmployeeManagement() {
                   opacity: 0.6,
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
                     {emp.name}
                     {emp.employee_code && (
-                      <span style={{ 
-                        marginLeft: 8, 
-                        fontSize: 12, 
-                        color: 'var(--text-secondary)',
-                        fontWeight: 400
-                      }}>
+                      <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
                         {emp.employee_code}
                       </span>
                     )}
-                    <span style={{ 
-                      marginLeft: 8, 
-                      fontSize: 12, 
-                      color: 'salmon',
-                      fontWeight: 400
-                    }}>
-                      (Inactive)
-                    </span>
+                    <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>(Inactive)</span>
                   </div>
-                  {emp.email && (
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {emp.email}
-                    </div>
-                  )}
+                  {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
                 </div>
                 <button
                   onClick={() => handleReactivate(emp.id, emp.name)}
@@ -466,7 +465,7 @@ export default function EmployeeManagement() {
                     background: 'transparent',
                     border: '1px solid var(--border)',
                     borderRadius: 4,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   Reactivate
