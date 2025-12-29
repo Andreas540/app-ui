@@ -43,25 +43,40 @@ import TimeApproval from './pages/TimeApproval'
 
 export default function App() {
   // ✅ Bypass login for employee token link to /time-entry?t=...
-  const isEmployeeTokenTimeEntry = (() => {
-    try {
-      const u = new URL(window.location.href)
-      return u.pathname === '/time-entry' && !!u.searchParams.get('t')
-    } catch {
-      return false
-    }
-  })()
+const isEmployeeTokenTimeEntry = (() => {
+  try {
+    const path = window.location.pathname.replace(/\/+$/, '') // remove trailing /
+    const qsToken = new URLSearchParams(window.location.search).get('t')
 
-  if (isEmployeeTokenTimeEntry) {
-    // Render only the time-entry route (no nav, no login required)
-    return (
-      <main className="content" style={{ padding: 16 }}>
-        <Routes>
-          <Route path="/time-entry" element={<TimeEntry />} />
-        </Routes>
-      </main>
-    )
+    // HashRouter support: /#/time-entry?t=...
+    const hash = window.location.hash || ''
+    // hash looks like "#/time-entry?t=XYZ" or "#/time-entry"
+    const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
+    const hashPathOnly = hashPath.split('?')[0].replace(/\/+$/, '')
+    const hashQuery = hashPath.includes('?') ? hashPath.split('?')[1] : ''
+    const hashToken = new URLSearchParams(hashQuery).get('t')
+
+    const token = qsToken || hashToken
+
+    const isTimeEntryPath =
+      path === '/time-entry' || hashPathOnly === '/time-entry'
+
+    return isTimeEntryPath && !!token
+  } catch {
+    return false
   }
+})()
+
+if (isEmployeeTokenTimeEntry) {
+  // Render only the time-entry route (no nav, no login required)
+  return (
+    <main className="content" style={{ padding: 16 }}>
+      <Routes>
+        <Route path="/time-entry" element={<TimeEntry />} />
+      </Routes>
+    </main>
+  )
+}
 
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)

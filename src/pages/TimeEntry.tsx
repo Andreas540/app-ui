@@ -32,8 +32,16 @@ function toNumberOrNull(v: unknown): number | null {
 
 function getEmployeeTokenFromUrl(): string | null {
   try {
-    const u = new URL(window.location.href)
-    return u.searchParams.get('t')
+    // BrowserRouter: /time-entry?t=...
+    const qsToken = new URLSearchParams(window.location.search).get('t')
+    if (qsToken) return qsToken
+
+    // HashRouter: /#/time-entry?t=...
+    const hash = window.location.hash || ''
+    const hashPart = hash.startsWith('#') ? hash.slice(1) : hash
+    const hashQuery = hashPart.includes('?') ? hashPart.split('?')[1] : ''
+    const hashToken = new URLSearchParams(hashQuery).get('t')
+    return hashToken
   } catch {
     return null
   }
