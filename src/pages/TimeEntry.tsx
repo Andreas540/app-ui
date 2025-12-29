@@ -33,14 +33,14 @@ function toNumberOrNull(v: unknown): number | null {
 function getEmployeeTokenFromUrl(): string | null {
   try {
     // BrowserRouter: /time-entry?t=...
-    const qsToken = new URLSearchParams(window.location.search).get('t')
+    const qsToken = new URLSearchParams(window.location.search).get('employee_token')
     if (qsToken) return qsToken
 
     // HashRouter: /#/time-entry?t=...
     const hash = window.location.hash || ''
     const hashPart = hash.startsWith('#') ? hash.slice(1) : hash
     const hashQuery = hashPart.includes('?') ? hashPart.split('?')[1] : ''
-    const hashToken = new URLSearchParams(hashQuery).get('t')
+    const hashToken = new URLSearchParams(hashQuery).get('employee_token')
     return hashToken
   } catch {
     return null

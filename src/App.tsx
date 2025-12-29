@@ -46,13 +46,13 @@ export default function App() {
 const isEmployeeTokenTimeEntry = (() => {
   try {
     const path = window.location.pathname.replace(/\/+$/, '')
-    const qsToken = new URLSearchParams(window.location.search).get('t')
+    const qsToken = new URLSearchParams(window.location.search).get('employee_token')
     
     const hash = window.location.hash || ''
     const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
     const hashPathOnly = hashPath.split('?')[0].replace(/\/+$/, '')
     const hashQuery = hashPath.includes('?') ? hashPath.split('?')[1] : ''
-    const hashToken = new URLSearchParams(hashQuery).get('t')
+    const hashToken = new URLSearchParams(hashQuery).get('employee_token')
     
     const token = qsToken || hashToken
     
