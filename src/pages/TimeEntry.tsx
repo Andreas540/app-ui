@@ -73,13 +73,14 @@ export default function TimeEntry() {
   }
 
   function headersFor(mode: 'app' | 'employee') {
-    if (mode === 'employee') {
-      return {
-        'x-employee-token': employeeToken as string,
-      }
+  if (mode === 'employee') {
+    console.log('🔑 Sending employee token:', employeeToken)
+    return {
+      'x-employee-token': employeeToken as string,
     }
-    return getAuthHeaders()
   }
+  return getAuthHeaders()
+}
 
   useEffect(() => {
     if (employeeMode) {
@@ -98,34 +99,42 @@ export default function TimeEntry() {
   }, [selectedEmployeeId, viewPeriod])
 
   async function loadEmployeeMe() {
-    try {
-      setLoading(true)
-      setErr(null)
+  try {
+    setLoading(true)
+    setErr(null)
 
-      const base = apiBase()
-      const res = await fetch(`${base}/api/time-entries?me=true`, {
-        headers: headersFor('employee'),
-      })
+    const base = apiBase()
+    const headers = headersFor('employee')
+    
+    console.log('📡 Loading employee with headers:', headers)
+    console.log('📡 URL:', `${base}/api/time-entries?me=true`)
+    
+    const res = await fetch(`${base}/api/time-entries?me=true`, {
+      headers,
+    })
 
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to load employee')
-      }
+    console.log('📡 Response status:', res.status)
 
-      const j = await res.json()
-      const emp: Employee | null = j?.employee || null
-      if (!emp) throw new Error('Employee not found')
-
-      if (!emp.active) throw new Error('Employee is inactive')
-
-      setEmployeeMe(emp)
-      setSelectedEmployeeId(emp.id)
-    } catch (e: any) {
-      setErr(e?.message || String(e))
-    } finally {
-      setLoading(false)
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      console.log('❌ Error response:', j)
+      throw new Error(j.error || 'Failed to load employee')
     }
+
+    const j = await res.json()
+    const emp: Employee | null = j?.employee || null
+    if (!emp) throw new Error('Employee not found')
+
+    if (!emp.active) throw new Error('Employee is inactive')
+
+    setEmployeeMe(emp)
+    setSelectedEmployeeId(emp.id)
+  } catch (e: any) {
+    setErr(e?.message || String(e))
+  } finally {
+    setLoading(false)
   }
+}
 
   async function loadEmployees() {
     try {
