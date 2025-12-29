@@ -45,24 +45,37 @@ export default function App() {
   // ✅ Bypass login for employee token link to /time-entry?t=...
 const isEmployeeTokenTimeEntry = (() => {
   try {
-    const path = window.location.pathname.replace(/\/+$/, '') // remove trailing /
+    const path = window.location.pathname.replace(/\/+$/, '')
     const qsToken = new URLSearchParams(window.location.search).get('t')
-
-    // HashRouter support: /#/time-entry?t=...
+    
     const hash = window.location.hash || ''
-    // hash looks like "#/time-entry?t=XYZ" or "#/time-entry"
     const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
     const hashPathOnly = hashPath.split('?')[0].replace(/\/+$/, '')
     const hashQuery = hashPath.includes('?') ? hashPath.split('?')[1] : ''
     const hashToken = new URLSearchParams(hashQuery).get('t')
-
+    
     const token = qsToken || hashToken
-
+    
     const isTimeEntryPath =
       path === '/time-entry' || hashPathOnly === '/time-entry'
-
+    
+    // DEBUG: Log everything
+    console.log('🔍 Employee Token Check:', {
+      pathname: window.location.pathname,
+      path,
+      search: window.location.search,
+      hash: window.location.hash,
+      qsToken,
+      hashPathOnly,
+      hashToken,
+      token,
+      isTimeEntryPath,
+      result: isTimeEntryPath && !!token
+    })
+    
     return isTimeEntryPath && !!token
-  } catch {
+  } catch (e) {
+    console.error('❌ Employee token check error:', e)
     return false
   }
 })()
