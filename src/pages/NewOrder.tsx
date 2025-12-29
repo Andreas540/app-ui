@@ -119,7 +119,7 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
 
   // Filter out specific products from dropdown
   const filteredProducts = useMemo(() => {
-    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys']
+    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
   }, [products])
 
