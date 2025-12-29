@@ -1,6 +1,7 @@
 // src/pages/TimeApproval.tsx
 import { useEffect, useState, useMemo } from 'react'
 import { getAuthHeaders } from '../lib/api'
+import { formatLongDate } from '../lib/time'
 
 type TimeEntry = {
   id: string
@@ -459,13 +460,13 @@ export default function TimeApproval() {
                           
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                              {new Date(entry.work_date).toLocaleDateString('en-US', { 
-                                weekday: 'short',
-                                month: 'short', 
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </div>
+  {formatLongDate(entry.work_date)}
+  {', '}
+  {(() => {
+    const [year] = entry.work_date.split('-')
+    return year
+  })()}
+</div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                               {entry.start_time} - {entry.end_time}
                               <span style={{ margin: '0 8px' }}>•</span>
