@@ -25,7 +25,7 @@ export default function NewProduct() {
 
   // Filter out specific products from current costs view
   const filteredProducts = useMemo(() => {
-    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys']
+    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
   }, [products])
 
