@@ -83,11 +83,17 @@ const isEmployeeTokenTimeEntry = (() => {
 if (isEmployeeTokenTimeEntry) {
   // Render only the time-entry route (no nav, no login required)
   return (
-    <main className="content" style={{ padding: 16 }}>
-      <Routes>
-        <Route path="/time-entry" element={<TimeEntry />} />
-      </Routes>
-    </main>
+    <div style={{ 
+      minHeight: '100vh',
+      overflow: 'auto',
+      background: 'var(--bg, #1a1a2e)' 
+    }}>
+      <main className="content" style={{ padding: 16 }}>
+        <Routes>
+          <Route path="/time-entry" element={<TimeEntry />} />
+        </Routes>
+      </main>
+    </div>
   )
 }
 
