@@ -143,7 +143,7 @@ export default function EmployeeManagement() {
 
   // Helper to safely format salary
   function formatSalary(salary: number | string | null | undefined): string | null {
-    if (salary == null || salary === undefined) return null
+    if (salary == null || salary === undefined || salary === '') return null
     const num = typeof salary === 'number' ? salary : parseFloat(String(salary))
     return isNaN(num) ? null : num.toFixed(2)
   }
@@ -204,10 +204,10 @@ export default function EmployeeManagement() {
 
   function handleEdit(employee: Employee) {
     setEditingId(employee.id)
-    setName(employee.name)
+    setName(employee.name || '')
     setEmail(employee.email || '')
     setEmployeeCode(employee.employee_code || '')
-    setHourSalary(employee.hour_salary !== null ? String(employee.hour_salary) : '')
+    setHourSalary(employee.hour_salary != null && employee.hour_salary !== '' ? String(employee.hour_salary) : '')
     setActive(employee.active)
     setNotes(employee.notes || '')
     setShowForm(true)
@@ -523,7 +523,7 @@ export default function EmployeeManagement() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                      {emp.name}
+                      {emp.name || ''}
                       {emp.employee_code && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
                           {emp.employee_code}
@@ -540,13 +540,13 @@ export default function EmployeeManagement() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   <button
                     onClick={() => handleEdit(emp)}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 13,
-                      height: 36,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      height: 32,
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
@@ -559,11 +559,11 @@ export default function EmployeeManagement() {
                   <button
                     onClick={() => handleDeactivate(emp.id, emp.name)}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 13,
-                      height: 36,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      height: 32,
                       background: 'transparent',
-                      border: '1px solid salmon',
+                      border: 'none',
                       borderRadius: 4,
                       color: 'salmon',
                       cursor: 'pointer',
@@ -575,9 +575,9 @@ export default function EmployeeManagement() {
                   <button
                     onClick={() => handleShareLink(emp)}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 13,
-                      height: 36,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      height: 32,
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
@@ -612,7 +612,7 @@ export default function EmployeeManagement() {
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                  {emp.name}
+                  {emp.name || ''}
                   {emp.employee_code && (
                     <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
                       {emp.employee_code}
@@ -622,13 +622,13 @@ export default function EmployeeManagement() {
                 </div>
                 {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
 
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   <button
                     onClick={() => handleReactivate(emp.id, emp.name)}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 13,
-                      height: 36,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      height: 32,
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
@@ -641,9 +641,9 @@ export default function EmployeeManagement() {
                   <button
                     onClick={() => handleShareLink(emp)}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 13,
-                      height: 36,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      height: 32,
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
