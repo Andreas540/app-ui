@@ -74,28 +74,28 @@ async function getEmployees(event) {
       if (!emp[0].active) return cors(400, { error: 'Employee is inactive' })
 
       const token = signEmployeeToken({ tenantId: TENANT_ID, employeeId })
-      const url = `https://data-entry-beta.netlify.app/time-entry?t=${encodeURIComponent(token)}`
+      const url = `https://data-entry-beta.netlify.app/time-entry?employee_token=${encodeURIComponent(token)}`
       return cors(200, { url, token })
     }
 
     let rows
     if (active === 'true') {
       rows = await sql`
-        SELECT id, name, email, employee_code, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID} AND active = TRUE
         ORDER BY name
       `
     } else if (active === 'false') {
       rows = await sql`
-        SELECT id, name, email, employee_code, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID} AND active = FALSE
         ORDER BY name
       `
     } else {
       rows = await sql`
-        SELECT id, name, email, employee_code, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID}
         ORDER BY active DESC, name
@@ -142,7 +142,7 @@ async function saveEmployee(event) {
     const TENANT_ID = authz.tenantId
 
     const body = JSON.parse(event.body || '{}')
-    const { id, name, email, active, notes } = body
+    const { id, name, email, hour_salary, active, notes } = body
 
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })
@@ -157,6 +157,7 @@ async function saveEmployee(event) {
       const current = employee[0]
       const updatedName = name !== undefined ? String(name).trim() : current.name
       const updatedEmail = email !== undefined ? (String(email).trim() || null) : current.email
+      const updatedHourSalary = hour_salary !== undefined ? hour_salary : current.hour_salary
       const updatedActive = active !== undefined ? active : current.active
       const updatedNotes = notes !== undefined ? (String(notes).trim() || null) : current.notes
 
@@ -165,6 +166,7 @@ async function saveEmployee(event) {
         SET 
           name = ${updatedName},
           email = ${updatedEmail},
+          hour_salary = ${updatedHourSalary},
           active = ${updatedActive},
           notes = ${updatedNotes}
         WHERE id = ${id} AND tenant_id = ${TENANT_ID}
@@ -175,13 +177,14 @@ async function saveEmployee(event) {
 
       const result = await sql`
         INSERT INTO employees (
-          tenant_id, name, email, employee_code, active, notes
+          tenant_id, name, email, employee_code, hour_salary, active, notes
         )
         VALUES (
           ${TENANT_ID},
           ${String(name).trim()},
           ${String(email || '').trim() || null},
           ${generatedCode},
+          ${hour_salary || null},
           ${active !== false},
           ${String(notes || '').trim() || null}
         )
@@ -234,7 +237,6 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      // ✅ Point 4 solved here (x-employee-token is allowed)
       'access-control-allow-headers':
         'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
     },
