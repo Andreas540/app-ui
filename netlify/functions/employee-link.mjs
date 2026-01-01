@@ -78,7 +78,7 @@ async function createLink(event) {
       (process.env.URL && String(process.env.URL)) ||
       'https://data-entry-beta.netlify.app'
 
-    const url = `${baseUrl}/time-entry?employee_token=${encodeURIComponent(token)}`
+    const url = `${baseUrl}/time-entry-simple?employee_token=${encodeURIComponent(token)}`
 
     return cors(200, { ok: true, url, token })
   } catch (e) {

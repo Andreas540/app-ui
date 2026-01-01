@@ -12,8 +12,6 @@ export async function handler(event) {
 
 /**
  * Employee-token helpers (HMAC signed token)
- * token = base64url(JSON payload) + "." + base64url(HMAC_SHA256(payloadB64, secret))
- * payload: { tenant_id, employee_id, exp }
  */
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
@@ -70,7 +68,6 @@ function verifyEmployeeToken(token) {
 }
 
 async function getAuthContext({ sql, event }) {
-  // read employee token (case-insensitive)
   const h = event.headers || {}
   const empToken =
     h['x-employee-token'] ||
@@ -91,12 +88,6 @@ async function getAuthContext({ sql, event }) {
 
 /**
  * GET time entries
- * Query params:
- *   - employee_id: filter by specific employee (app-mode only; ignored for employee-mode)
- *   - from: start date (YYYY-MM-DD)
- *   - to: end date (YYYY-MM-DD)
- *   - approved: filter by approval status (true/false)
- *   - me=true: (employee-mode only) returns { employee: {...} }
  */
 async function getTimeEntries(event) {
   try {
@@ -140,6 +131,7 @@ async function getTimeEntries(event) {
         te.start_time,
         te.end_time,
         te.total_hours::float8 as total_hours,
+        te.salary::float8 as salary,
         te.approved,
         te.approved_by,
         te.approved_at,
@@ -167,8 +159,8 @@ async function getTimeEntries(event) {
  * Body: {
  *   employee_id: "uuid" (ignored in employee-mode),
  *   work_date: "YYYY-MM-DD",
- *   start_time: "HH:MM",
- *   end_time: "HH:MM",
+ *   start_time: "HH:MM" (optional for clock-in only),
+ *   end_time: "HH:MM" (optional for clock-out only),
  *   notes: "Optional"
  * }
  */
@@ -190,7 +182,11 @@ async function saveTimeEntry(event) {
 
     if (!effectiveEmployeeId) return cors(400, { error: 'employee_id is required' })
     if (!work_date) return cors(400, { error: 'work_date is required' })
-    if (!start_time || !end_time) return cors(400, { error: 'Both start_time and end_time are required' })
+    
+    // ✅ Allow partial time entries (only start_time OR only end_time OR both)
+    if (!start_time && !end_time) {
+      return cors(400, { error: 'At least start_time or end_time is required' })
+    }
 
     const emp = await sql`
       SELECT id, active
@@ -202,28 +198,35 @@ async function saveTimeEntry(event) {
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' })
 
     const existing = await sql`
-      SELECT id, approved
+      SELECT id, approved, start_time, end_time
       FROM time_entries
       WHERE tenant_id = ${TENANT_ID}
         AND employee_id = ${effectiveEmployeeId}::uuid
         AND work_date = ${work_date}::date
     `
+    
     if (existing.length > 0) {
       const entry = existing[0]
       if (entry.approved) return cors(400, { error: 'Cannot edit approved time entry' })
 
+      // ✅ Update: merge new times with existing times
+      const updatedStartTime = start_time !== undefined ? start_time : entry.start_time
+      const updatedEndTime = end_time !== undefined ? end_time : entry.end_time
+      const updatedNotes = notes !== undefined ? notes : entry.notes
+
       await sql`
         UPDATE time_entries
         SET
-          start_time = ${start_time},
-          end_time = ${end_time},
-          notes = ${notes || null},
+          start_time = ${updatedStartTime},
+          end_time = ${updatedEndTime},
+          notes = ${updatedNotes || null},
           updated_at = NOW()
         WHERE id = ${entry.id} AND tenant_id = ${TENANT_ID}
       `
       return cors(200, { ok: true, updated: true, id: entry.id })
     }
 
+    // ✅ Insert: create new entry with partial times allowed
     const result = await sql`
       INSERT INTO time_entries (
         tenant_id, employee_id, work_date,
@@ -233,8 +236,8 @@ async function saveTimeEntry(event) {
         ${TENANT_ID},
         ${effectiveEmployeeId}::uuid,
         ${work_date}::date,
-        ${start_time},
-        ${end_time},
+        ${start_time || null},
+        ${end_time || null},
         ${notes || null}
       )
       RETURNING id
@@ -248,8 +251,6 @@ async function saveTimeEntry(event) {
 
 /**
  * DELETE: Remove time entry
- * Query params: id (entry ID)
- * - employee-mode: allowed only if entry belongs to that employee and is not approved
  */
 async function deleteTimeEntry(event) {
   try {
@@ -299,7 +300,6 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      // ✅ Point 4 solved here too
       'access-control-allow-headers':
         'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
     },

@@ -40,6 +40,7 @@ import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
 import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
+import TimeEntrySimple from './pages/TimeEntrySimple'
 
 export default function App() {
   // ✅ Bypass login for employee token link to /time-entry?t=...
@@ -57,7 +58,10 @@ const isEmployeeTokenTimeEntry = (() => {
     const token = qsToken || hashToken
     
     const isTimeEntryPath =
-      path === '/time-entry' || hashPathOnly === '/time-entry'
+  path === '/time-entry' || 
+  path === '/time-entry-simple' ||
+  hashPathOnly === '/time-entry' ||
+  hashPathOnly === '/time-entry-simple'
     
     // DEBUG: Log everything
     console.log('🔍 Employee Token Check:', {
@@ -91,7 +95,7 @@ if (isEmployeeTokenTimeEntry) {
       bottom: 0,
       overflow: 'auto',
       background: 'var(--bg, #1a1a2e)',
-      WebkitOverflowScrolling: 'touch' // smooth scrolling on iOS
+      WebkitOverflowScrolling: 'touch'
     }}>
       <main className="content" style={{ 
         padding: 16,
@@ -99,6 +103,7 @@ if (isEmployeeTokenTimeEntry) {
       }}>
         <Routes>
           <Route path="/time-entry" element={<TimeEntry />} />
+          <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
         </Routes>
       </main>
     </div>
