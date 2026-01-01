@@ -123,29 +123,29 @@ async function getTimeEntries(event) {
       approvedParam === null || approvedParam === undefined ? null : approvedParam === 'true'
 
     const rows = await sql`
-      SELECT
-        te.id,
-        te.employee_id,
-        e.name as employee_name,
-        te.work_date,
-        te.start_time,
-        te.end_time,
-        te.total_hours::float8 as total_hours,
-        te.salary::float8 as salary,
-        te.approved,
-        te.approved_by,
-        te.approved_at,
-        te.notes,
-        te.created_at,
-        te.updated_at
-      FROM time_entries te
-      JOIN employees e ON e.id = te.employee_id
-      WHERE te.tenant_id = ${TENANT_ID}
-        AND (${employeeId}::uuid IS NULL OR te.employee_id = ${employeeId}::uuid)
-        AND (${from}::date IS NULL OR te.work_date >= ${from}::date)
-        AND (${to}::date IS NULL OR te.work_date <= ${to}::date)
-        AND (${approved}::boolean IS NULL OR te.approved = ${approved}::boolean)
-      ORDER BY te.work_date DESC, e.name
+  SELECT
+    te.id,
+    te.employee_id,
+    e.name as employee_name,
+    te.work_date,
+    to_char(te.start_time, 'HH24:MI') as start_time,
+    to_char(te.end_time, 'HH24:MI') as end_time,
+    te.total_hours::float8 as total_hours,
+    te.salary::float8 as salary,
+    te.approved,
+    te.approved_by,
+    te.approved_at,
+    te.notes,
+    te.created_at,
+    te.updated_at
+  FROM time_entries te
+  JOIN employees e ON e.id = te.employee_id
+  WHERE te.tenant_id = ${TENANT_ID}
+    AND (${employeeId}::uuid IS NULL OR te.employee_id = ${employeeId}::uuid)
+    AND (${from}::date IS NULL OR te.work_date >= ${from}::date)
+    AND (${to}::date IS NULL OR te.work_date <= ${to}::date)
+    AND (${approved}::boolean IS NULL OR te.approved = ${approved}::boolean)
+  ORDER BY te.work_date DESC, e.name
     `
     return cors(200, rows)
   } catch (e) {
