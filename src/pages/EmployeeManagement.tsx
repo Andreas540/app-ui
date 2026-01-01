@@ -7,7 +7,7 @@ type Employee = {
   name: string
   email: string | null
   employee_code: string | null
-  hour_salary: number | null
+  hour_salary: number | string | null
   active: boolean
   notes: string | null
   created_at: string
@@ -140,6 +140,13 @@ export default function EmployeeManagement() {
 
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
+
+  // Helper to safely format salary
+  function formatSalary(salary: number | string | null | undefined): string | null {
+    if (salary == null || salary === undefined) return null
+    const num = typeof salary === 'number' ? salary : parseFloat(String(salary))
+    return isNaN(num) ? null : num.toFixed(2)
+  }
 
   useEffect(() => {
     loadEmployees()
@@ -522,9 +529,9 @@ export default function EmployeeManagement() {
                           {emp.employee_code}
                         </span>
                       )}
-                      {emp.hour_salary !== null && (
+                      {formatSalary(emp.hour_salary) && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: '#22c55e', fontWeight: 400 }}>
-                          ${emp.hour_salary.toFixed(2)}/hr
+                          ${formatSalary(emp.hour_salary)}/hr
                         </span>
                       )}
                     </div>
