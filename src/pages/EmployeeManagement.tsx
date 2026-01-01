@@ -23,6 +23,16 @@ async function copyToClipboard(text: string) {
   }
 }
 
+// Helper to check if value is actually empty (null, undefined, empty string, or string "null")
+function isEmpty(value: any): boolean {
+  return value == null || value === undefined || value === '' || value === 'null'
+}
+
+// Helper to safely get string value (returns empty string if null/undefined/empty/"null")
+function safeString(value: any): string {
+  return isEmpty(value) ? '' : String(value)
+}
+
 type Language = 'es' | 'en'
 
 const translations = {
@@ -143,7 +153,7 @@ export default function EmployeeManagement() {
 
   // Helper to safely format salary
   function formatSalary(salary: number | string | null | undefined): string | null {
-    if (salary == null || salary === undefined || salary === '') return null
+    if (isEmpty(salary)) return null
     const num = typeof salary === 'number' ? salary : parseFloat(String(salary))
     return isNaN(num) ? null : num.toFixed(2)
   }
@@ -204,12 +214,12 @@ export default function EmployeeManagement() {
 
   function handleEdit(employee: Employee) {
     setEditingId(employee.id)
-    setName(employee.name || '')
-    setEmail(employee.email || '')
-    setEmployeeCode(employee.employee_code || '')
-    setHourSalary(employee.hour_salary != null && employee.hour_salary !== '' ? String(employee.hour_salary) : '')
+    setName(safeString(employee.name))
+    setEmail(safeString(employee.email))
+    setEmployeeCode(safeString(employee.employee_code))
+    setHourSalary(safeString(employee.hour_salary))
     setActive(employee.active)
-    setNotes(employee.notes || '')
+    setNotes(safeString(employee.notes))
     setShowForm(true)
   }
 
@@ -523,8 +533,8 @@ export default function EmployeeManagement() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                      {emp.name || ''}
-                      {emp.employee_code && (
+                      {safeString(emp.name)}
+                      {!isEmpty(emp.employee_code) && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
                           {emp.employee_code}
                         </span>
@@ -535,8 +545,8 @@ export default function EmployeeManagement() {
                         </span>
                       )}
                     </div>
-                    {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
-                    {emp.notes && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{emp.notes}</div>}
+                    {!isEmpty(emp.email) && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
+                    {!isEmpty(emp.notes) && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{emp.notes}</div>}
                   </div>
                 </div>
 
@@ -612,15 +622,15 @@ export default function EmployeeManagement() {
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                  {emp.name || ''}
-                  {emp.employee_code && (
+                  {safeString(emp.name)}
+                  {!isEmpty(emp.employee_code) && (
                     <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
                       {emp.employee_code}
                     </span>
                   )}
                   <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>{t.inactive}</span>
                 </div>
-                {emp.email && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
+                {!isEmpty(emp.email) && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
 
                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   <button
