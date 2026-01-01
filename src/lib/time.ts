@@ -34,12 +34,12 @@ export function parseLocalDate(dateStr: string): Date {
  * Format a YYYY-MM-DD date string (or any date) as "Mon, Jan 15" format.
  * Avoids timezone shifts by parsing as local date.
  */
-export function formatLongDate(input: string | Date | undefined | null): string {
+export function formatLongDate(input: string | Date | undefined | null, locale: string = 'en-US'): string {
   if (!input) return '';
   
   const date = typeof input === 'string' ? parseLocalDate(input) : input;
   
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

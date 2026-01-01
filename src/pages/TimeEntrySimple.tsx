@@ -415,8 +415,8 @@ export default function TimeEntrySimple() {
         }}
       >
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-          {t.today} - {formatLongDate(todayYMD())}
-        </div>
+  {t.today} - {formatLongDate(todayYMD(), lang === 'es' ? 'es-ES' : 'en-US')}
+</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
           <div>
@@ -515,27 +515,27 @@ export default function TimeEntrySimple() {
         </div>
 
         <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.daysWorked}</span>
-            <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.totalHours}</span>
-            <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.totalEarnings}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>${stats.totalEarnings}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.approvedHours}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.pendingHours}</span>
-            <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
-          </div>
-        </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.daysWorked}</span>
+    <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalHours}</span>
+    <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.approvedHours}</span>
+    <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.pendingHours}</span>
+    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalEarnings}</span>
+    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+  </div>
+</div>
       </div>
 
       {timeEntries.length > 0 && (
@@ -558,8 +558,8 @@ export default function TimeEntrySimple() {
                   }}
                 >
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {formatLongDate(entry.work_date)}
-                  </div>
+  {formatLongDate(entry.work_date, lang === 'es' ? 'es-ES' : 'en-US')}
+</div>
                   {hasCompleteTime ? (
                     <>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
