@@ -88,7 +88,7 @@ const translations = {
     showInactive: 'Mostrar empleados inactivos',
     editEmployee: 'Editar Empleado',
     name: 'Nombre',
-    employeeCode: 'Código de Empleado (auto)',
+    employeeCode: 'Código de Empleado',
     hourSalary: 'Salario/hora',
     email: 'Correo electrónico',
     notes: 'Notas',
