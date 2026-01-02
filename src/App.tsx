@@ -55,27 +55,19 @@ const isEmployeeTokenTimeEntry = (() => {
     const hashQuery = hashPath.includes('?') ? hashPath.split('?')[1] : ''
     const hashToken = new URLSearchParams(hashQuery).get('employee_token')
     
-    const token = qsToken || hashToken
+    // Check localStorage for saved token (PWA support)
+    let storageToken = null
+    try {
+      storageToken = localStorage.getItem('employee_token')
+    } catch {}
+    
+    const token = qsToken || hashToken || storageToken
     
     const isTimeEntryPath =
-  path === '/time-entry' || 
-  path === '/time-entry-simple' ||
-  hashPathOnly === '/time-entry' ||
-  hashPathOnly === '/time-entry-simple'
-    
-    // DEBUG: Log everything
-    console.log('🔍 Employee Token Check:', {
-      pathname: window.location.pathname,
-      path,
-      search: window.location.search,
-      hash: window.location.hash,
-      qsToken,
-      hashPathOnly,
-      hashToken,
-      token,
-      isTimeEntryPath,
-      result: isTimeEntryPath && !!token
-    })
+      path === '/time-entry' || 
+      path === '/time-entry-simple' ||
+      hashPathOnly === '/time-entry' ||
+      hashPathOnly === '/time-entry-simple'
     
     return isTimeEntryPath && !!token
   } catch (e) {

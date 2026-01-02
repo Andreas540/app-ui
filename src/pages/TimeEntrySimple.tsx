@@ -107,6 +107,31 @@ function getEmployeeTokenFromUrl(): string | null {
   }
 }
 
+// Save employee token to localStorage for PWA support
+function saveTokenToStorage(token: string) {
+  try {
+    localStorage.setItem('employee_token', token)
+  } catch (e) {
+    console.error('Failed to save token:', e)
+  }
+}
+
+// Get employee token from URL or localStorage
+function getEmployeeToken(): string | null {
+  // First try URL
+  const urlToken = getEmployeeTokenFromUrl()
+  if (urlToken) {
+    saveTokenToStorage(urlToken) // Save for future PWA launches
+    return urlToken
+  }
+  
+  // Then try localStorage (for PWA launches)
+  try {
+    return localStorage.getItem('employee_token')
+  } catch {
+    return null
+  }
+}
 // Get current time in HH:MM format (EST/EDT)
 function getCurrentTime(): string {
   const now = new Date()
@@ -127,7 +152,7 @@ export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
 
-  const employeeToken = getEmployeeTokenFromUrl()
+  const employeeToken = getEmployeeToken()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
