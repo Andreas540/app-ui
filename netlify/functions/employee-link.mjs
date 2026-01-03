@@ -17,22 +17,17 @@ function generateEmployeeToken({ tenantId, employeeId, expiresInDays = 365 }) {
   const secret = process.env.EMPLOYEE_TOKEN_SECRET
   if (!secret) throw new Error('EMPLOYEE_TOKEN_SECRET missing')
 
-  // Create payload with expiration
-  const exp = Math.floor(Date.now() / 1000) + (expiresInDays * 24 * 60 * 60)
+  const exp = Math.floor(Date.now() / 1000) + expiresInDays * 24 * 60 * 60
   const payload = {
     tenant_id: tenantId,
     employee_id: employeeId,
-    exp
+    exp,
   }
 
-  // Encode payload as base64url
   const payloadB64 = base64urlEncode(JSON.stringify(payload))
-
-  // Create HMAC signature
   const signature = crypto.createHmac('sha256', secret).update(payloadB64).digest()
   const sigB64 = base64urlEncode(signature)
 
-  // Return token in format: payload.signature
   return `${payloadB64}.${sigB64}`
 }
 
@@ -67,18 +62,16 @@ async function createLink(event) {
     if (emp.length === 0) return cors(404, { error: 'Employee not found' })
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' })
 
-    // ✅ Generate HMAC token (stateless, no DB storage needed)
     const token = generateEmployeeToken({
       tenantId: TENANT_ID,
       employeeId: employee_id,
-      expiresInDays: 365 // Token valid for 1 year
+      expiresInDays: 365,
     })
 
-    const baseUrl =
-      (process.env.URL && String(process.env.URL)) ||
-      'https://data-entry-beta.netlify.app'
+    const baseUrl = (process.env.URL && String(process.env.URL)) || 'https://data-entry-beta.netlify.app'
 
-    const url = `${baseUrl}/#/time-entry-simple/${encodeURIComponent(token)}`
+    // ✅ REAL PATH (BrowserRouter-friendly)
+    const url = `${baseUrl}/time-entry-simple/${encodeURIComponent(token)}`
 
     return cors(200, { ok: true, url, token })
   } catch (e) {
@@ -99,3 +92,4 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+

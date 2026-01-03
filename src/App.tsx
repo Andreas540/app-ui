@@ -43,56 +43,54 @@ import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 
 export default function App() {
-  // ✅ Bypass login for employee token link to /time-entry?t=...
-const isEmployeeTokenTimeEntry = (() => {
-  try {
-    const hash = window.location.hash || ''
-    const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
-    const pathParts = hashPath.split('/')
-    
-    // Check if path is /time-entry-simple/:token or /time-entry/:token
-    const isTimeEntrySimplePath = pathParts[1] === 'time-entry-simple' && pathParts.length >= 3
-    const isTimeEntryPath = pathParts[1] === 'time-entry' && pathParts.length >= 3
-    
-    if (isTimeEntrySimplePath || isTimeEntryPath) {
-      const token = pathParts[2] // Token is in path
-      return !!token
-    }
-    
-    return false
-  } catch (e) {
-    console.error('❌ Employee token check error:', e)
-    return false
-  }
-})()
+  // ✅ Bypass login for employee token link to:
+  //   /time-entry/:token
+  //   /time-entry-simple/:token
+  const isEmployeeTokenTimeEntry = (() => {
+    try {
+      const path = window.location.pathname.replace(/\/+$/, '')
+      const parts = path.split('/').filter(Boolean)
 
-if (isEmployeeTokenTimeEntry) {
-  // Render only the time-entry route (no nav, no login required)
-  return (
-    <div style={{ 
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflow: 'auto',
-      background: 'var(--bg, #1a1a2e)',
-      WebkitOverflowScrolling: 'touch'
-    }}>
-      <main className="content" style={{ 
-        padding: 16,
-        minHeight: '100%'
-      }}>
-        <Routes>
-  <Route path="/time-entry" element={<TimeEntry />} />
-  <Route path="/time-entry/:token" element={<TimeEntry />} />
-  <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
-  <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
-</Routes>
-      </main>
-    </div>
-  )
-}
+      const isSimple = parts[0] === 'time-entry-simple' && !!parts[1]
+      const isFull = parts[0] === 'time-entry' && !!parts[1]
+
+      return isSimple || isFull
+    } catch (e) {
+      console.error('❌ Employee token check error:', e)
+      return false
+    }
+  })()
+
+  if (isEmployeeTokenTimeEntry) {
+    // Render only the time-entry route (no nav, no login required)
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'auto',
+          background: 'var(--bg, #1a1a2e)',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <main
+          className="content"
+          style={{
+            padding: 16,
+            minHeight: '100%',
+          }}
+        >
+          <Routes>
+            <Route path="/time-entry/:token" element={<TimeEntry />} />
+            <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
+          </Routes>
+        </main>
+      </div>
+    )
+  }
 
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -539,6 +537,9 @@ if (isEmployeeTokenTimeEntry) {
                 <Route path="/time-entry" element={<TimeEntry />} />
                 <Route path="/employees" element={<EmployeeManagement />} />
                 <Route path="/time-approval" element={<TimeApproval />} />
+
+                {/* Optional: allow admin to open the page (without token) */}
+                <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>
             )}
           </Routes>

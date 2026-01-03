@@ -1,4 +1,3 @@
-// src/pages/TimeEntrySimple.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { todayYMD, formatLongDate } from '../lib/time'
@@ -56,6 +55,7 @@ const translations = {
     clockInSuccess: 'Clocked in successfully!',
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
+    missingToken: 'Missing employee token',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -84,6 +84,7 @@ const translations = {
     clockInSuccess: '¡Entrada registrada exitosamente!',
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
+    missingToken: 'Falta el token del empleado',
   },
 }
 
@@ -93,22 +94,6 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function getEmployeeToken(): string | null {
-  try {
-    const hash = window.location.hash || ''
-    const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
-    const pathParts = hashPath.split('/')
-    
-    // Token is in path: /time-entry-simple/:token
-    if (pathParts[1] === 'time-entry-simple' && pathParts[2]) {
-      return decodeURIComponent(pathParts[2])
-    }
-    
-    return null
-  } catch {
-    return null
-  }
-}
 // Get current time in HH:MM format (EST/EDT)
 function getCurrentTime(): string {
   const now = new Date()
@@ -125,12 +110,27 @@ function getMondayOfWeek(date: Date): Date {
   return new Date(d.setDate(diff))
 }
 
+function getStoredEmployeeToken(): string | null {
+  try {
+    return localStorage.getItem('employee_token')
+  } catch {
+    return null
+  }
+}
+
+function saveEmployeeToken(token: string) {
+  try {
+    localStorage.setItem('employee_token', token)
+  } catch {}
+}
+
 export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
 
-  const params = useParams<{ token?: string }>()
-const employeeToken = params.token || getEmployeeToken()
+  const { token } = useParams<{ token?: string }>()
+  const employeeToken = token || getStoredEmployeeToken()
+
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -153,20 +153,31 @@ const employeeToken = params.token || getEmployeeToken()
     }
   }
 
+  // Save token from path to storage for PWA relaunch
+  useEffect(() => {
+    if (token) saveEmployeeToken(token)
+  }, [token])
+
   useEffect(() => {
     loadEmployeeAndToday()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (employee) {
       loadTimeEntries()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee, viewPeriod])
 
   async function loadEmployeeAndToday() {
     try {
       setLoading(true)
       setErr(null)
+
+      if (!employeeToken) {
+        throw new Error(t.missingToken)
+      }
 
       const base = apiBase()
       const res = await fetch(`${base}/api/time-entries?me=true`, {
@@ -196,15 +207,14 @@ const employeeToken = params.token || getEmployeeToken()
 
   async function loadTodayEntry() {
     try {
+      if (!employeeToken) return
+
       const base = apiBase()
       const today = todayYMD()
 
-      const res = await fetch(
-        `${base}/api/time-entries?from=${today}&to=${today}`,
-        {
-          headers: headersFor(),
-        }
-      )
+      const res = await fetch(`${base}/api/time-entries?from=${today}&to=${today}`, {
+        headers: headersFor(),
+      })
 
       if (!res.ok) return
 
@@ -221,6 +231,8 @@ const employeeToken = params.token || getEmployeeToken()
 
   async function loadTimeEntries() {
     try {
+      if (!employeeToken) return
+
       const base = apiBase()
 
       // Calculate date range based on viewPeriod
@@ -244,12 +256,9 @@ const employeeToken = params.token || getEmployeeToken()
       const from = fromDate.toISOString().split('T')[0]
       const to = toDate.toISOString().split('T')[0]
 
-      const res = await fetch(
-        `${base}/api/time-entries?from=${from}&to=${to}`,
-        {
-          headers: headersFor(),
-        }
-      )
+      const res = await fetch(`${base}/api/time-entries?from=${from}&to=${to}`, {
+        headers: headersFor(),
+      })
 
       if (!res.ok) {
         throw new Error('Failed to load time entries')
@@ -263,7 +272,7 @@ const employeeToken = params.token || getEmployeeToken()
   }
 
   async function handleClockIn() {
-    if (!employee) return
+    if (!employee || !employeeToken) return
 
     try {
       const base = apiBase()
@@ -298,7 +307,7 @@ const employeeToken = params.token || getEmployeeToken()
   }
 
   async function handleClockOut() {
-    if (!employee) return
+    if (!employee || !employeeToken) return
 
     try {
       const base = apiBase()
@@ -408,18 +417,10 @@ const employeeToken = params.token || getEmployeeToken()
         {employee.employee_code ? ` (${employee.employee_code})` : ''}
       </div>
 
-      <div
-        style={{
-          marginTop: 24,
-          padding: 20,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 8,
-          textAlign: 'center',
-        }}
-      >
+      <div style={{ marginTop: 24, padding: 20, background: 'rgba(255,255,255,0.05)', borderRadius: 8, textAlign: 'center' }}>
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-  {t.today} - {formatLongDate(todayYMD(), lang === 'es' ? 'es-ES' : 'en-US')}
-</div>
+          {t.today} - {formatLongDate(todayYMD(), lang === 'es' ? 'es-ES' : 'en-US')}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
           <div>
@@ -468,25 +469,9 @@ const employeeToken = params.token || getEmployeeToken()
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: 24,
-          padding: 16,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 8,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-            {t.timeSummary}
-          </h4>
+      <div style={{ marginTop: 24, padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t.timeSummary}</h4>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setViewPeriod('thisWeek')}
@@ -518,27 +503,33 @@ const employeeToken = params.token || getEmployeeToken()
         </div>
 
         <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.daysWorked}</span>
-    <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.totalHours}</span>
-    <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.approvedHours}</span>
-    <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.pendingHours}</span>
-    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.totalEarnings}</span>
-    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
-  </div>
-</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">{t.daysWorked}</span>
+            <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">{t.totalHours}</span>
+            <span style={{ fontWeight: 600 }}>
+              {stats.totalHours} {t.hours}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">{t.approvedHours}</span>
+            <span style={{ fontWeight: 600, color: '#22c55e' }}>
+              {stats.approvedHours} {t.hours}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">{t.pendingHours}</span>
+            <span style={{ fontWeight: 600, color: '#fbbf24' }}>
+              {stats.pendingHours} {t.hours}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span className="helper">{t.totalEarnings}</span>
+            <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+          </div>
+        </div>
       </div>
 
       {timeEntries.length > 0 && (
@@ -549,7 +540,7 @@ const employeeToken = params.token || getEmployeeToken()
               const hours = toNumberOrNull(entry.total_hours)
               const salary = toNumberOrNull(entry.salary)
               const hasCompleteTime = entry.start_time && entry.end_time
-              
+
               return (
                 <div
                   key={entry.id}
@@ -561,8 +552,9 @@ const employeeToken = params.token || getEmployeeToken()
                   }}
                 >
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
-  {formatLongDate(entry.work_date, lang === 'es' ? 'es-ES' : 'en-US')}
-</div>
+                    {formatLongDate(entry.work_date, lang === 'es' ? 'es-ES' : 'en-US')}
+                  </div>
+
                   {hasCompleteTime ? (
                     <>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -581,6 +573,7 @@ const employeeToken = params.token || getEmployeeToken()
                       {entry.start_time ? `${t.clockedInAt} ${entry.start_time}` : t.pending}
                     </div>
                   )}
+
                   <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
                     {entry.approved ? (
                       <span style={{ color: '#22c55e' }}>✓ {t.approved}</span>
