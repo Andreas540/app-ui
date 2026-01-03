@@ -9,9 +9,7 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' }, event)
 }
 
-/**
- * HMAC token verify (must match generator)
- */
+// ---- token helpers (unchanged) ----
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
   return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -27,7 +25,6 @@ function safeEqual(a, b) {
   if (aa.length !== bb.length) return false
   return crypto.timingSafeEqual(aa, bb)
 }
-
 function verifyEmployeeToken(token) {
   const secret = process.env.EMPLOYEE_TOKEN_SECRET
   if (!secret) return { error: 'EMPLOYEE_TOKEN_SECRET missing' }
@@ -67,9 +64,7 @@ function verifyEmployeeToken(token) {
   return { tenantId: String(payload.tenant_id), employeeId: String(payload.employee_id) }
 }
 
-/**
- * Cookie parsing
- */
+// ---- cookies (unchanged) ----
 function parseCookies(cookieHeader) {
   const out = {}
   if (!cookieHeader) return out
@@ -81,28 +76,20 @@ function parseCookies(cookieHeader) {
   }
   return out
 }
-
 function makeSessionToken() {
   return crypto.randomBytes(32).toString('hex')
 }
-
 function cookieAttrs() {
   return `HttpOnly; Secure; SameSite=Lax; Path=/`
 }
-
 function clearCookieHeader() {
   return `employee_session=; ${cookieAttrs()}; Max-Age=0`
 }
-
 function setCookieHeader(sessionToken, maxAgeSeconds) {
   return `employee_session=${encodeURIComponent(sessionToken)}; ${cookieAttrs()}; Max-Age=${maxAgeSeconds}`
 }
 
-/**
- * POST /api/employee-session
- * Body: { token }
- * Sets HttpOnly cookie and creates DB session
- */
+// ✅ POST /api/employee-session
 async function createEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -116,7 +103,7 @@ async function createEmployeeSession(event) {
     const v = verifyEmployeeToken(token)
     if (v.error) return cors(403, { error: v.error }, event)
 
-    // ✅ IMPORTANT FIX: cast tenant_id from token to uuid in SQL
+    // The lookup that is failing for you:
     const emp = await sql`
       SELECT id, tenant_id, active, name, employee_code
       FROM employees
@@ -124,7 +111,43 @@ async function createEmployeeSession(event) {
         AND id = ${v.employeeId}::uuid
       LIMIT 1
     `
-    if (emp.length === 0) return cors(404, { error: 'Employee not found' }, event)
+
+    if (emp.length === 0) {
+      // ✅ TEMP DEBUG: prove what DB we are connected to + whether employee exists by id
+      const dbInfo = await sql`
+        SELECT
+          current_database() AS db,
+          current_schema() AS schema,
+          current_setting('search_path') AS search_path
+      `
+      const byId = await sql`
+        SELECT id, tenant_id, active, name
+        FROM employees
+        WHERE id = ${v.employeeId}::uuid
+        LIMIT 1
+      `
+      const counts = await sql`
+        SELECT
+          (SELECT COUNT(*)::int FROM employees) AS employees_total,
+          (SELECT COUNT(*)::int FROM employees WHERE tenant_id = ${v.tenantId}::uuid) AS employees_in_token_tenant
+      `
+
+      return cors(
+        404,
+        {
+          error: 'Employee not found',
+          debug: {
+            tokenTenantId: v.tenantId,
+            tokenEmployeeId: v.employeeId,
+            employeeRowById: byId[0] || null,
+            counts: counts[0] || null,
+            db: dbInfo[0] || null,
+          },
+        },
+        event
+      )
+    }
+
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' }, event)
 
     const sessionToken = makeSessionToken()
@@ -143,14 +166,11 @@ async function createEmployeeSession(event) {
     })()
 
     const maxAgeSeconds = Math.max(60, Math.min(365 * 24 * 60 * 60, tokenExpSec - nowSec))
-
-    // Calculate expires_at inside DB
     const expiresAtSql = await sql`
       SELECT NOW() + (${maxAgeSeconds}::int || ' seconds')::interval AS exp
     `
     const expiresAt = expiresAtSql?.[0]?.exp
 
-    // ✅ IMPORTANT FIX: cast tenant_id on insert too
     await sql`
       INSERT INTO employee_sessions (session_token, tenant_id, employee_id, expires_at, created_at)
       VALUES (
@@ -174,16 +194,12 @@ async function createEmployeeSession(event) {
   }
 }
 
-/**
- * GET /api/employee-session
- * Returns whether cookie session is valid
- */
+// GET /api/employee-session (unchanged)
 async function getEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' }, event)
-
     const sql = neon(DATABASE_URL)
 
     const h = event.headers || {}
@@ -222,16 +238,12 @@ async function getEmployeeSession(event) {
   }
 }
 
-/**
- * DELETE /api/employee-session
- * Clears cookie and deletes session row (best-effort)
- */
+// DELETE /api/employee-session (unchanged)
 async function deleteEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' }, event)
-
     const sql = neon(DATABASE_URL)
 
     const h = event.headers || {}
@@ -250,9 +262,6 @@ async function deleteEmployeeSession(event) {
   }
 }
 
-/**
- * CORS helper for cookie-based auth
- */
 function cors(status, body, event, extraHeaders = {}) {
   const h = event?.headers || {}
   const origin = h.origin || h.Origin || ''
@@ -271,6 +280,7 @@ function cors(status, body, event, extraHeaders = {}) {
     body: JSON.stringify(body),
   }
 }
+
 
 
 
