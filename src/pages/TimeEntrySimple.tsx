@@ -109,6 +109,10 @@ function getMondayOfWeek(date: Date): Date {
   return new Date(d.setDate(diff))
 }
 
+function sleep(ms: number) {
+  return new Promise<void>(res => setTimeout(res, ms))
+}
+
 export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
@@ -133,6 +137,12 @@ export default function TimeEntrySimple() {
 
   function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}) {
     return fetch(input, { ...init, credentials: 'include' })
+  }
+
+  async function fetchEmployeeSession(base: string) {
+    const res = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, data }
   }
 
   useEffect(() => {
@@ -171,8 +181,18 @@ export default function TimeEntrySimple() {
       }
 
       // 2) Verify cookie session + get employee identity
-      const meRes = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
-      const me = await meRes.json().catch(() => ({}))
+      // Some browsers (esp. iOS/PWA) may delay cookie availability; retry briefly.
+      let me: any = null
+      const backoff = [0, 120, 250, 500, 900]
+
+      for (let attempt = 0; attempt < backoff.length; attempt++) {
+        if (attempt > 0) await sleep(backoff[attempt])
+
+        const { data } = await fetchEmployeeSession(base)
+        me = data
+
+        if (me?.active === true && me?.employee?.id) break
+      }
 
       // employee-session.mjs returns: { active: true, employee: {...} }
       if (me?.active !== true || !me?.employee?.id) {
@@ -471,15 +491,21 @@ export default function TimeEntrySimple() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalHours}</span>
-            <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
+            <span style={{ fontWeight: 600 }}>
+              {stats.totalHours} {t.hours}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.approvedHours}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
+            <span style={{ fontWeight: 600, color: '#22c55e' }}>
+              {stats.approvedHours} {t.hours}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.pendingHours}</span>
-            <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
+            <span style={{ fontWeight: 600, color: '#fbbf24' }}>
+              {stats.pendingHours} {t.hours}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalEarnings}</span>
@@ -546,3 +572,4 @@ export default function TimeEntrySimple() {
     </div>
   )
 }
+
