@@ -9,9 +9,9 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' }, event)
 }
 
-/**
- * HMAC token verify (must match generator)
- */
+// --------------------
+// Token verify helpers
+// --------------------
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
   return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -27,7 +27,6 @@ function safeEqual(a, b) {
   if (aa.length !== bb.length) return false
   return crypto.timingSafeEqual(aa, bb)
 }
-
 function verifyEmployeeToken(token) {
   const secret = process.env.EMPLOYEE_TOKEN_SECRET
   if (!secret) return { error: 'EMPLOYEE_TOKEN_SECRET missing' }
@@ -67,9 +66,9 @@ function verifyEmployeeToken(token) {
   return { tenantId: String(payload.tenant_id), employeeId: String(payload.employee_id) }
 }
 
-/**
- * Cookie parsing
- */
+// --------------
+// Cookie helpers
+// --------------
 function parseCookies(cookieHeader) {
   const out = {}
   if (!cookieHeader) return out
@@ -87,23 +86,19 @@ function makeSessionToken() {
 }
 
 function cookieAttrs() {
-  // SameSite=Lax works for normal navigation + PWA launches.
+  // SameSite=Lax is correct for opening from home screen / normal navigation
   return `HttpOnly; Secure; SameSite=Lax; Path=/`
 }
-
 function clearCookieHeader() {
   return `employee_session=; ${cookieAttrs()}; Max-Age=0`
 }
-
 function setCookieHeader(sessionToken, maxAgeSeconds) {
   return `employee_session=${encodeURIComponent(sessionToken)}; ${cookieAttrs()}; Max-Age=${maxAgeSeconds}`
 }
 
-/**
- * POST /api/employee-session
- * Body: { token }
- * Sets HttpOnly cookie and creates DB session
- */
+// --------------------
+// POST: create session
+// --------------------
 async function createEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -117,34 +112,19 @@ async function createEmployeeSession(event) {
     const v = verifyEmployeeToken(token)
     if (v.error) return cors(403, { error: v.error }, event)
 
-    // ✅ Robust employee lookup:
-    // 1) Find employee by id
-    // 2) Enforce tenant match explicitly (avoids false "not found" due to uuid casting mismatches)
+    // ✅ IMPORTANT: schema-qualified
     const emp = await sql`
-      SELECT id, tenant_id, active
-      FROM employees
-      WHERE id = ${v.employeeId}::uuid
+      SELECT id, tenant_id, active, name, employee_code
+      FROM public.employees
+      WHERE tenant_id = ${v.tenantId} AND id = ${v.employeeId}::uuid
       LIMIT 1
     `
     if (emp.length === 0) return cors(404, { error: 'Employee not found' }, event)
-
-    const empTenant = String(emp[0].tenant_id)
-    if (empTenant !== String(v.tenantId)) {
-      console.error('Employee token tenant mismatch', {
-        tokenTenant: v.tenantId,
-        employeeTenant: empTenant,
-        employeeId: v.employeeId,
-      })
-      // keep message generic (don’t leak tenant info)
-      return cors(404, { error: 'Employee not found' }, event)
-    }
-
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' }, event)
 
-    // Create session in DB
     const sessionToken = makeSessionToken()
 
-    // Align session length with token expiry, cap at 365 days, min 60 seconds
+    // Align session TTL with token exp (cap at 365 days)
     const nowSec = Math.floor(Date.now() / 1000)
     const tokenExpSec = (() => {
       try {
@@ -159,11 +139,12 @@ async function createEmployeeSession(event) {
 
     const maxAgeSeconds = Math.max(60, Math.min(365 * 24 * 60 * 60, tokenExpSec - nowSec))
 
+    // ✅ IMPORTANT: schema-qualified
     await sql`
-      INSERT INTO employee_sessions (session_token, tenant_id, employee_id, expires_at, created_at)
+      INSERT INTO public.employee_sessions (session_token, tenant_id, employee_id, expires_at, created_at)
       VALUES (
         ${sessionToken},
-        ${v.tenantId}::uuid,
+        ${v.tenantId},
         ${v.employeeId}::uuid,
         NOW() + (${maxAgeSeconds}::int || ' seconds')::interval,
         NOW()
@@ -182,10 +163,9 @@ async function createEmployeeSession(event) {
   }
 }
 
-/**
- * GET /api/employee-session
- * Returns whether cookie session is valid
- */
+// ------------------
+// GET: read session
+// ------------------
 async function getEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -199,10 +179,11 @@ async function getEmployeeSession(event) {
     const sessionToken = cookies.employee_session
     if (!sessionToken) return cors(200, { active: false }, event)
 
+    // ✅ IMPORTANT: schema-qualified
     const rows = await sql`
       SELECT es.tenant_id, es.employee_id, e.name, e.employee_code, e.active
-      FROM employee_sessions es
-      JOIN employees e ON e.id = es.employee_id
+      FROM public.employee_sessions es
+      JOIN public.employees e ON e.id = es.employee_id
       WHERE es.session_token = ${sessionToken}
         AND es.expires_at > now()
       LIMIT 1
@@ -229,10 +210,9 @@ async function getEmployeeSession(event) {
   }
 }
 
-/**
- * DELETE /api/employee-session
- * Clears cookie and deletes session row (best-effort)
- */
+// ---------------------
+// DELETE: clear session
+// ---------------------
 async function deleteEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -246,7 +226,8 @@ async function deleteEmployeeSession(event) {
     const sessionToken = cookies.employee_session
 
     if (sessionToken) {
-      await sql`DELETE FROM employee_sessions WHERE session_token = ${sessionToken}`
+      // ✅ IMPORTANT: schema-qualified
+      await sql`DELETE FROM public.employee_sessions WHERE session_token = ${sessionToken}`
     }
 
     return cors(200, { ok: true }, event, { 'set-cookie': clearCookieHeader() })
@@ -256,12 +237,9 @@ async function deleteEmployeeSession(event) {
   }
 }
 
-/**
- * CORS helper for cookie-based auth:
- * - must NOT use '*'
- * - must set allow-credentials
- * - should echo origin when present
- */
+// ---------------------
+// CORS for cookie auth
+// ---------------------
 function cors(status, body, event, extraHeaders = {}) {
   const h = event?.headers || {}
   const origin = h.origin || h.Origin || ''
@@ -273,12 +251,14 @@ function cors(status, body, event, extraHeaders = {}) {
       'access-control-allow-origin': origin || 'https://data-entry-beta.netlify.app',
       'access-control-allow-credentials': 'true',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
+      'access-control-allow-headers':
+        'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
       'access-control-max-age': '86400',
       ...extraHeaders,
     },
     body: JSON.stringify(body),
   }
 }
+
 
 
