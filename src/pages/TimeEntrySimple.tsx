@@ -57,6 +57,7 @@ const translations = {
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
     noSession: 'Session missing. Please open your personal link again.',
+    finishingSignIn: 'Finishing sign-in…',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -86,6 +87,7 @@ const translations = {
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
     noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
+    finishingSignIn: 'Terminando el inicio de sesión…',
   },
 }
 
@@ -124,6 +126,7 @@ export default function TimeEntrySimple() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [signingIn, setSigningIn] = useState(false)
 
   const [clockInTime, setClockInTime] = useState<string | null>(null)
   const [clockOutTime, setClockOutTime] = useState<string | null>(null)
@@ -139,10 +142,27 @@ export default function TimeEntrySimple() {
     return fetch(input, { ...init, credentials: 'include' })
   }
 
-  async function fetchEmployeeSession(base: string) {
+  async function getEmployeeSession() {
+    const base = apiBase()
     const res = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
-    const data = await res.json().catch(() => ({}))
-    return { ok: res.ok, data }
+    const j = await res.json().catch(() => ({}))
+    return { ok: res.ok, data: j }
+  }
+
+  // After POST sets cookie, poll GET until cookie is actually included.
+  async function waitForActiveSession(timeoutMs = 2500) {
+    const start = Date.now()
+    const delays = [0, 80, 120, 200, 350, 500, 700] // ~2s total
+    let i = 0
+
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await getEmployeeSession()
+      if (data?.active === true && data?.employee?.id) return data
+      await sleep(delays[Math.min(i, delays.length - 1)])
+      i++
+    }
+
+    return null
   }
 
   useEffect(() => {
@@ -160,10 +180,11 @@ export default function TimeEntrySimple() {
       setLoading(true)
       setErr(null)
 
-      const base = apiBase()
-
-      // 1) If token in URL, exchange for HttpOnly cookie session
+      // 1) If token in URL: exchange -> then WAIT until session is active -> THEN navigate
       if (tokenFromUrl) {
+        setSigningIn(true)
+        const base = apiBase()
+
         const res = await fetchWithCreds(`${base}/api/employee-session`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -175,26 +196,30 @@ export default function TimeEntrySimple() {
           throw new Error(j.error || t.employeeNotFound)
         }
 
-        // Remove token from URL after exchange
+        // Critical: don’t navigate immediately. Wait until GET sees the cookie.
+        const me = await waitForActiveSession(3000)
+        if (!me) {
+          // If we can’t observe the cookie yet, still try once more via a hard refresh.
+          // (This should be rare once polling works.)
+          window.location.replace('/time-entry-simple')
+          return
+        }
+
+        // Now safe to remove token from URL
         navigate('/time-entry-simple', { replace: true })
         return
       }
 
-      // 2) Verify cookie session + get employee identity
-      // Some browsers (esp. iOS/PWA) may delay cookie availability; retry briefly.
+      // 2) Normal load: retry GET a few times (cold start/PWA)
       let me: any = null
-      const backoff = [0, 120, 250, 500, 900]
-
-      for (let attempt = 0; attempt < backoff.length; attempt++) {
-        if (attempt > 0) await sleep(backoff[attempt])
-
-        const { data } = await fetchEmployeeSession(base)
-        me = data
-
+      const attempts = [0, 120, 250, 500, 900]
+      for (let i = 0; i < attempts.length; i++) {
+        if (i > 0) await sleep(attempts[i])
+        const r = await getEmployeeSession()
+        me = r.data
         if (me?.active === true && me?.employee?.id) break
       }
 
-      // employee-session.mjs returns: { active: true, employee: {...} }
       if (me?.active !== true || !me?.employee?.id) {
         throw new Error(t.noSession)
       }
@@ -207,12 +232,11 @@ export default function TimeEntrySimple() {
       }
 
       setEmployee(emp)
-
-      // Load today's entry
       await loadTodayEntry()
     } catch (e: any) {
       setErr(e?.message || String(e))
     } finally {
+      setSigningIn(false)
       setLoading(false)
     }
   }
@@ -331,9 +355,17 @@ export default function TimeEntrySimple() {
   }
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
-    const totalEarningsNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.salary) || 0), 0)
-    const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+    const totalHoursNum = timeEntries.reduce(
+      (sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0),
+      0
+    )
+    const totalEarningsNum = timeEntries.reduce(
+      (sum, entry) => sum + (toNumberOrNull(entry.salary) || 0),
+      0
+    )
+    const approvedHoursNum = timeEntries
+      .filter(e => e.approved)
+      .reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
     const pendingHoursNum = totalHoursNum - approvedHoursNum
 
     return {
@@ -345,7 +377,14 @@ export default function TimeEntrySimple() {
     }
   }, [timeEntries])
 
-  if (loading) return <div className="card"><p>{t.loading}</p></div>
+  if (loading) {
+    return (
+      <div className="card">
+        <p>{signingIn ? t.finishingSignIn : t.loading}</p>
+      </div>
+    )
+  }
+
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
   if (!employee) return <div className="card"><p>{t.employeeNotFound}</p></div>
 
@@ -491,21 +530,15 @@ export default function TimeEntrySimple() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalHours}</span>
-            <span style={{ fontWeight: 600 }}>
-              {stats.totalHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.approvedHours}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>
-              {stats.approvedHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.pendingHours}</span>
-            <span style={{ fontWeight: 600, color: '#fbbf24' }}>
-              {stats.pendingHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalEarnings}</span>
@@ -572,4 +605,5 @@ export default function TimeEntrySimple() {
     </div>
   )
 }
+
 
