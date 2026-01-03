@@ -76,19 +76,29 @@ const isEmployeeTokenTimeEntry = (() => {
   }
 })()
 
-useEffect(() => {
+// ✅ REPLACE the useEffect with this synchronous redirect check:
+// Check for stored employee token and redirect before login check
+const shouldRedirectToTimeEntry = (() => {
   try {
     const storedToken = localStorage.getItem('employee_token')
     const currentPath = window.location.pathname.replace(/\/+$/, '')
     
-    // If we have a stored token and we're at root, redirect to time-entry-simple
+    // If we have a stored token and we're at root, do immediate redirect
     if (storedToken && (currentPath === '/' || currentPath === '')) {
       window.location.href = `/time-entry-simple?employee_token=${encodeURIComponent(storedToken)}`
+      return true // Flag that we're redirecting
     }
+    return false
   } catch (e) {
     console.error('Token redirect check failed:', e)
+    return false
   }
-}, [])
+})()
+
+// Don't render anything if we're redirecting
+if (shouldRedirectToTimeEntry) {
+  return <div style={{ padding: 20 }}>Redirecting...</div>
+}
 
 if (isEmployeeTokenTimeEntry) {
   // Render only the time-entry route (no nav, no login required)
