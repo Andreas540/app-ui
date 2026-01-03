@@ -10,7 +10,7 @@ export async function handler(event) {
 }
 
 /**
- * HMAC token verify (must match your generator)
+ * HMAC token verify (must match generator)
  */
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
@@ -87,7 +87,6 @@ function makeSessionToken() {
 }
 
 function cookieAttrs() {
-  // Netlify prod is https => Secure is correct.
   // SameSite=Lax works for normal navigation + PWA launches.
   return `HttpOnly; Secure; SameSite=Lax; Path=/`
 }
@@ -118,21 +117,34 @@ async function createEmployeeSession(event) {
     const v = verifyEmployeeToken(token)
     if (v.error) return cors(403, { error: v.error }, event)
 
-    // Confirm employee exists & is active
+    // ✅ Robust employee lookup:
+    // 1) Find employee by id
+    // 2) Enforce tenant match explicitly (avoids false "not found" due to uuid casting mismatches)
     const emp = await sql`
       SELECT id, tenant_id, active
       FROM employees
-      WHERE tenant_id = ${v.tenantId} AND id = ${v.employeeId}::uuid
+      WHERE id = ${v.employeeId}::uuid
       LIMIT 1
     `
     if (emp.length === 0) return cors(404, { error: 'Employee not found' }, event)
+
+    const empTenant = String(emp[0].tenant_id)
+    if (empTenant !== String(v.tenantId)) {
+      console.error('Employee token tenant mismatch', {
+        tokenTenant: v.tenantId,
+        employeeTenant: empTenant,
+        employeeId: v.employeeId,
+      })
+      // keep message generic (don’t leak tenant info)
+      return cors(404, { error: 'Employee not found' }, event)
+    }
+
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' }, event)
 
     // Create session in DB
     const sessionToken = makeSessionToken()
 
-    // Keep session length aligned with token expiry, but cap to e.g. 365 days
-    // Token payload exp is in seconds since epoch.
+    // Align session length with token expiry, cap at 365 days, min 60 seconds
     const nowSec = Math.floor(Date.now() / 1000)
     const tokenExpSec = (() => {
       try {
@@ -146,16 +158,14 @@ async function createEmployeeSession(event) {
     })()
 
     const maxAgeSeconds = Math.max(60, Math.min(365 * 24 * 60 * 60, tokenExpSec - nowSec))
-    const expiresAtSql = await sql`SELECT NOW() + (${maxAgeSeconds}::int || ' seconds')::interval AS exp`
-    const expiresAt = expiresAtSql?.[0]?.exp
 
     await sql`
       INSERT INTO employee_sessions (session_token, tenant_id, employee_id, expires_at, created_at)
       VALUES (
         ${sessionToken},
-        ${v.tenantId},
+        ${v.tenantId}::uuid,
         ${v.employeeId}::uuid,
-        ${expiresAt},
+        NOW() + (${maxAgeSeconds}::int || ' seconds')::interval,
         NOW()
       )
     `
@@ -164,9 +174,7 @@ async function createEmployeeSession(event) {
       200,
       { ok: true },
       event,
-      {
-        'set-cookie': setCookieHeader(sessionToken, maxAgeSeconds),
-      }
+      { 'set-cookie': setCookieHeader(sessionToken, maxAgeSeconds) }
     )
   } catch (e) {
     console.error('employee-session create error:', e)
@@ -241,12 +249,7 @@ async function deleteEmployeeSession(event) {
       await sql`DELETE FROM employee_sessions WHERE session_token = ${sessionToken}`
     }
 
-    return cors(
-      200,
-      { ok: true },
-      event,
-      { 'set-cookie': clearCookieHeader() }
-    )
+    return cors(200, { ok: true }, event, { 'set-cookie': clearCookieHeader() })
   } catch (e) {
     console.error('employee-session delete error:', e)
     return cors(500, { error: String(e?.message || e) }, event)
@@ -257,7 +260,7 @@ async function deleteEmployeeSession(event) {
  * CORS helper for cookie-based auth:
  * - must NOT use '*'
  * - must set allow-credentials
- * - must echo origin
+ * - should echo origin when present
  */
 function cors(status, body, event, extraHeaders = {}) {
   const h = event?.headers || {}
@@ -267,18 +270,15 @@ function cors(status, body, event, extraHeaders = {}) {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
-
-      // cookie-based requests:
       'access-control-allow-origin': origin || 'https://data-entry-beta.netlify.app',
       'access-control-allow-credentials': 'true',
-
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
       'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
       'access-control-max-age': '86400',
-
       ...extraHeaders,
     },
     body: JSON.stringify(body),
   }
 }
+
 
