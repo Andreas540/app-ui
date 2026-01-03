@@ -92,42 +92,18 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function getEmployeeTokenFromUrl(): string | null {
-  try {
-    const qsToken = new URLSearchParams(window.location.search).get('employee_token')
-    if (qsToken) return qsToken
-
-    const hash = window.location.hash || ''
-    const hashPart = hash.startsWith('#') ? hash.slice(1) : hash
-    const hashQuery = hashPart.includes('?') ? hashPart.split('?')[1] : ''
-    const hashToken = new URLSearchParams(hashQuery).get('employee_token')
-    return hashToken
-  } catch {
-    return null
-  }
-}
-
-// Save employee token to localStorage for PWA support
-function saveTokenToStorage(token: string) {
-  try {
-    localStorage.setItem('employee_token', token)
-  } catch (e) {
-    console.error('Failed to save token:', e)
-  }
-}
-
-// Get employee token from URL or localStorage
 function getEmployeeToken(): string | null {
-  // First try URL
-  const urlToken = getEmployeeTokenFromUrl()
-  if (urlToken) {
-    saveTokenToStorage(urlToken) // Save for future PWA launches
-    return urlToken
-  }
-  
-  // Then try localStorage (for PWA launches)
   try {
-    return localStorage.getItem('employee_token')
+    const hash = window.location.hash || ''
+    const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
+    const pathParts = hashPath.split('/')
+    
+    // Token is in path: /time-entry-simple/:token
+    if (pathParts[1] === 'time-entry-simple' && pathParts[2]) {
+      return decodeURIComponent(pathParts[2])
+    }
+    
+    return null
   } catch {
     return null
   }

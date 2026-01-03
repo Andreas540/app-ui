@@ -46,59 +46,25 @@ export default function App() {
   // ✅ Bypass login for employee token link to /time-entry?t=...
 const isEmployeeTokenTimeEntry = (() => {
   try {
-    const path = window.location.pathname.replace(/\/+$/, '')
-    const qsToken = new URLSearchParams(window.location.search).get('employee_token')
-    
     const hash = window.location.hash || ''
     const hashPath = hash.startsWith('#') ? hash.slice(1) : hash
-    const hashPathOnly = hashPath.split('?')[0].replace(/\/+$/, '')
-    const hashQuery = hashPath.includes('?') ? hashPath.split('?')[1] : ''
-    const hashToken = new URLSearchParams(hashQuery).get('employee_token')
+    const pathParts = hashPath.split('/')
     
-    // Check localStorage for saved token (PWA support)
-    let storageToken = null
-    try {
-      storageToken = localStorage.getItem('employee_token')
-    } catch {}
+    // Check if path is /time-entry-simple/:token or /time-entry/:token
+    const isTimeEntrySimplePath = pathParts[1] === 'time-entry-simple' && pathParts.length >= 3
+    const isTimeEntryPath = pathParts[1] === 'time-entry' && pathParts.length >= 3
     
-    const token = qsToken || hashToken || storageToken
+    if (isTimeEntrySimplePath || isTimeEntryPath) {
+      const token = pathParts[2] // Token is in path
+      return !!token
+    }
     
-    const isTimeEntryPath =
-      path === '/time-entry' || 
-      path === '/time-entry-simple' ||
-      hashPathOnly === '/time-entry' ||
-      hashPathOnly === '/time-entry-simple'
-    
-    return isTimeEntryPath && !!token
+    return false
   } catch (e) {
     console.error('❌ Employee token check error:', e)
     return false
   }
 })()
-
-// ✅ REPLACE the useEffect with this synchronous redirect check:
-// Check for stored employee token and redirect before login check
-const shouldRedirectToTimeEntry = (() => {
-  try {
-    const storedToken = localStorage.getItem('employee_token')
-    const currentPath = window.location.pathname.replace(/\/+$/, '')
-    
-    // If we have a stored token and we're at root, do immediate redirect
-    if (storedToken && (currentPath === '/' || currentPath === '')) {
-      window.location.href = `/#/time-entry-simple?employee_token=${encodeURIComponent(storedToken)}`
-      return true // Flag that we're redirecting
-    }
-    return false
-  } catch (e) {
-    console.error('Token redirect check failed:', e)
-    return false
-  }
-})()
-
-// Don't render anything if we're redirecting
-if (shouldRedirectToTimeEntry) {
-  return <div style={{ padding: 20 }}>Redirecting...</div>
-}
 
 if (isEmployeeTokenTimeEntry) {
   // Render only the time-entry route (no nav, no login required)
@@ -119,7 +85,7 @@ if (isEmployeeTokenTimeEntry) {
       }}>
         <Routes>
           <Route path="/time-entry" element={<TimeEntry />} />
-          <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
+          <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
         </Routes>
       </main>
     </div>
