@@ -9,7 +9,7 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' }, event)
 }
 
-// ---- token helpers (unchanged) ----
+/** HMAC token verify (must match generator) */
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
   return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -25,6 +25,7 @@ function safeEqual(a, b) {
   if (aa.length !== bb.length) return false
   return crypto.timingSafeEqual(aa, bb)
 }
+
 function verifyEmployeeToken(token) {
   const secret = process.env.EMPLOYEE_TOKEN_SECRET
   if (!secret) return { error: 'EMPLOYEE_TOKEN_SECRET missing' }
@@ -64,21 +65,22 @@ function verifyEmployeeToken(token) {
   return { tenantId: String(payload.tenant_id), employeeId: String(payload.employee_id) }
 }
 
-// ---- cookies (unchanged) ----
+/** Cookie parsing */
 function parseCookies(cookieHeader) {
   const out = {}
   if (!cookieHeader) return out
-  const parts = String(cookieHeader).split(';')
-  for (const part of parts) {
+  for (const part of String(cookieHeader).split(';')) {
     const [k, ...rest] = part.trim().split('=')
     if (!k) continue
     out[k] = decodeURIComponent(rest.join('=') || '')
   }
   return out
 }
+
 function makeSessionToken() {
   return crypto.randomBytes(32).toString('hex')
 }
+
 function cookieAttrs() {
   return `HttpOnly; Secure; SameSite=Lax; Path=/`
 }
@@ -89,7 +91,11 @@ function setCookieHeader(sessionToken, maxAgeSeconds) {
   return `employee_session=${encodeURIComponent(sessionToken)}; ${cookieAttrs()}; Max-Age=${maxAgeSeconds}`
 }
 
-// ✅ POST /api/employee-session
+/**
+ * POST /api/employee-session
+ * Body: { token }
+ * Sets HttpOnly cookie and creates DB session
+ */
 async function createEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -103,56 +109,20 @@ async function createEmployeeSession(event) {
     const v = verifyEmployeeToken(token)
     if (v.error) return cors(403, { error: v.error }, event)
 
-    // The lookup that is failing for you:
+    // Confirm employee exists & is active (IMPORTANT: cast tenant_id to uuid)
     const emp = await sql`
-      SELECT id, tenant_id, active, name, employee_code
+      SELECT id, tenant_id, active
       FROM employees
       WHERE tenant_id = ${v.tenantId}::uuid
         AND id = ${v.employeeId}::uuid
       LIMIT 1
     `
-
-    if (emp.length === 0) {
-      // ✅ TEMP DEBUG: prove what DB we are connected to + whether employee exists by id
-      const dbInfo = await sql`
-        SELECT
-          current_database() AS db,
-          current_schema() AS schema,
-          current_setting('search_path') AS search_path
-      `
-      const byId = await sql`
-        SELECT id, tenant_id, active, name
-        FROM employees
-        WHERE id = ${v.employeeId}::uuid
-        LIMIT 1
-      `
-      const counts = await sql`
-        SELECT
-          (SELECT COUNT(*)::int FROM employees) AS employees_total,
-          (SELECT COUNT(*)::int FROM employees WHERE tenant_id = ${v.tenantId}::uuid) AS employees_in_token_tenant
-      `
-
-      return cors(
-        404,
-        {
-          error: 'Employee not found',
-          debug: {
-            tokenTenantId: v.tenantId,
-            tokenEmployeeId: v.employeeId,
-            employeeRowById: byId[0] || null,
-            counts: counts[0] || null,
-            db: dbInfo[0] || null,
-          },
-        },
-        event
-      )
-    }
-
+    if (emp.length === 0) return cors(404, { error: 'Employee not found' }, event)
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' }, event)
 
     const sessionToken = makeSessionToken()
 
-    // Align session to token exp (cap 365 days)
+    // Session length aligned with token exp, capped to 365d, min 60s
     const nowSec = Math.floor(Date.now() / 1000)
     const tokenExpSec = (() => {
       try {
@@ -166,9 +136,7 @@ async function createEmployeeSession(event) {
     })()
 
     const maxAgeSeconds = Math.max(60, Math.min(365 * 24 * 60 * 60, tokenExpSec - nowSec))
-    const expiresAtSql = await sql`
-      SELECT NOW() + (${maxAgeSeconds}::int || ' seconds')::interval AS exp
-    `
+    const expiresAtSql = await sql`SELECT NOW() + (${maxAgeSeconds}::int || ' seconds')::interval AS exp`
     const expiresAt = expiresAtSql?.[0]?.exp
 
     await sql`
@@ -182,19 +150,19 @@ async function createEmployeeSession(event) {
       )
     `
 
-    return cors(
-      200,
-      { ok: true },
-      event,
-      { 'set-cookie': setCookieHeader(sessionToken, maxAgeSeconds) }
-    )
+    return cors(200, { ok: true }, event, {
+      'set-cookie': setCookieHeader(sessionToken, maxAgeSeconds),
+    })
   } catch (e) {
     console.error('employee-session create error:', e)
     return cors(500, { error: String(e?.message || e) }, event)
   }
 }
 
-// GET /api/employee-session (unchanged)
+/**
+ * GET /api/employee-session
+ * Returns whether cookie session is valid
+ */
 async function getEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -238,7 +206,10 @@ async function getEmployeeSession(event) {
   }
 }
 
-// DELETE /api/employee-session (unchanged)
+/**
+ * DELETE /api/employee-session
+ * Clears cookie and deletes session row (best-effort)
+ */
 async function deleteEmployeeSession(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
@@ -255,13 +226,16 @@ async function deleteEmployeeSession(event) {
       await sql`DELETE FROM employee_sessions WHERE session_token = ${sessionToken}`
     }
 
-    return cors(200, { ok: true }, event, { 'set-cookie': clearCookieHeader() })
+    return cors(200, { ok: true }, event, {
+      'set-cookie': clearCookieHeader(),
+    })
   } catch (e) {
     console.error('employee-session delete error:', e)
     return cors(500, { error: String(e?.message || e) }, event)
   }
 }
 
+/** CORS helper (cookie auth friendly) */
 function cors(status, body, event, extraHeaders = {}) {
   const h = event?.headers || {}
   const origin = h.origin || h.Origin || ''
@@ -273,7 +247,8 @@ function cors(status, body, event, extraHeaders = {}) {
       'access-control-allow-origin': origin || 'https://data-entry-beta.netlify.app',
       'access-control-allow-credentials': 'true',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
+      'access-control-allow-headers':
+        'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
       'access-control-max-age': '86400',
       ...extraHeaders,
     },
