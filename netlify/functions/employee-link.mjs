@@ -1,3 +1,4 @@
+// netlify/functions/employee-link.mjs
 import crypto from 'crypto'
 import { resolveAuthz } from './utils/auth.mjs'
 
@@ -7,7 +8,7 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' })
 }
 
-// ✅ HMAC token functions (matching time-entries.mjs)
+// ✅ HMAC token functions (matching employee-session.mjs)
 function base64urlEncode(bufOrStr) {
   const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
   return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -44,6 +45,7 @@ async function createLink(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
+
     const authz = await resolveAuthz({ sql, event })
     if (authz.error) return cors(403, { error: authz.error })
 
@@ -53,11 +55,13 @@ async function createLink(event) {
     const employee_id = body.employee_id
     if (!employee_id) return cors(400, { error: 'employee_id is required' })
 
-    // Ensure employee belongs to tenant
+    // ✅ Ensure employee belongs to tenant (UUID-cast tenant)
     const emp = await sql`
       SELECT id, active
       FROM employees
-      WHERE id = ${employee_id}::uuid AND tenant_id = ${TENANT_ID}
+      WHERE id = ${employee_id}::uuid
+        AND tenant_id = ${TENANT_ID}::uuid
+      LIMIT 1
     `
     if (emp.length === 0) return cors(404, { error: 'Employee not found' })
     if (!emp[0].active) return cors(400, { error: 'Employee is inactive' })
@@ -68,9 +72,13 @@ async function createLink(event) {
       expiresInDays: 365,
     })
 
-    const baseUrl = (process.env.URL && String(process.env.URL)) || 'https://data-entry-beta.netlify.app'
+    // ✅ Always generate a link for the SAME environment that served this function
+    const host = event?.headers?.host
+    const proto = (event?.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim()
+    const baseUrl = host ? `${proto}://${host}` : (process.env.URL ? String(process.env.URL) : '')
 
-    // ✅ REAL PATH (BrowserRouter-friendly)
+    if (!baseUrl) return cors(500, { error: 'Could not determine baseUrl (missing host/URL)' })
+
     const url = `${baseUrl}/time-entry-simple/${encodeURIComponent(token)}`
 
     return cors(200, { ok: true, url, token })
@@ -92,4 +100,5 @@ function cors(status, body) {
     body: JSON.stringify(body),
   }
 }
+
 
