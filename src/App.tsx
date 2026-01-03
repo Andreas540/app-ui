@@ -85,7 +85,7 @@ const shouldRedirectToTimeEntry = (() => {
     
     // If we have a stored token and we're at root, do immediate redirect
     if (storedToken && (currentPath === '/' || currentPath === '')) {
-      window.location.href = `/time-entry-simple?employee_token=${encodeURIComponent(storedToken)}`
+      window.location.href = `/#/time-entry-simple?employee_token=${encodeURIComponent(storedToken)}`
       return true // Flag that we're redirecting
     }
     return false
