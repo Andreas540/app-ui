@@ -57,7 +57,6 @@ const translations = {
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
     noSession: 'Session missing. Please open your personal link again.',
-    finishingSignIn: 'Finishing sign-in…',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -87,9 +86,8 @@ const translations = {
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
     noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
-    finishingSignIn: 'Terminando el inicio de sesión…',
   },
-}
+} as const
 
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null
@@ -111,10 +109,6 @@ function getMondayOfWeek(date: Date): Date {
   return new Date(d.setDate(diff))
 }
 
-function sleep(ms: number) {
-  return new Promise<void>(res => setTimeout(res, ms))
-}
-
 export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
@@ -126,7 +120,6 @@ export default function TimeEntrySimple() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
-  const [signingIn, setSigningIn] = useState(false)
 
   const [clockInTime, setClockInTime] = useState<string | null>(null)
   const [clockOutTime, setClockOutTime] = useState<string | null>(null)
@@ -139,30 +132,16 @@ export default function TimeEntrySimple() {
   }
 
   function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}) {
-    return fetch(input, { ...init, credentials: 'include' })
-  }
-
-  async function getEmployeeSession() {
-    const base = apiBase()
-    const res = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
-    const j = await res.json().catch(() => ({}))
-    return { ok: res.ok, data: j }
-  }
-
-  // After POST sets cookie, poll GET until cookie is actually included.
-  async function waitForActiveSession(timeoutMs = 2500) {
-    const start = Date.now()
-    const delays = [0, 80, 120, 200, 350, 500, 700] // ~2s total
-    let i = 0
-
-    while (Date.now() - start < timeoutMs) {
-      const { data } = await getEmployeeSession()
-      if (data?.active === true && data?.employee?.id) return data
-      await sleep(delays[Math.min(i, delays.length - 1)])
-      i++
-    }
-
-    return null
+    // cache:'no-store' prevents stale session GETs (especially with SW involved)
+    return fetch(input, {
+      ...init,
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        ...(init.headers || {}),
+        'cache-control': 'no-store',
+      },
+    })
   }
 
   useEffect(() => {
@@ -175,16 +154,32 @@ export default function TimeEntrySimple() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee, viewPeriod])
 
+  async function fetchMe(): Promise<Employee> {
+    const base = apiBase()
+    const meRes = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
+    const me = await meRes.json().catch(() => ({}))
+
+    if (me?.active !== true || !me?.employee?.id) {
+      throw new Error(t.noSession)
+    }
+
+    return {
+      id: String(me.employee.id),
+      name: String(me.employee.name || 'Employee'),
+      employee_code: me.employee.employee_code ? String(me.employee.employee_code) : null,
+      active: true,
+    }
+  }
+
   async function bootstrapEmployee() {
     try {
       setLoading(true)
       setErr(null)
 
-      // 1) If token in URL: exchange -> then WAIT until session is active -> THEN navigate
-      if (tokenFromUrl) {
-        setSigningIn(true)
-        const base = apiBase()
+      const base = apiBase()
 
+      // If token in URL: exchange cookie session, THEN immediately read session, THEN clean URL.
+      if (tokenFromUrl) {
         const res = await fetchWithCreds(`${base}/api/employee-session`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -196,47 +191,27 @@ export default function TimeEntrySimple() {
           throw new Error(j.error || t.employeeNotFound)
         }
 
-        // Critical: don’t navigate immediately. Wait until GET sees the cookie.
-        const me = await waitForActiveSession(3000)
-        if (!me) {
-          // If we can’t observe the cookie yet, still try once more via a hard refresh.
-          // (This should be rare once polling works.)
-          window.location.replace('/time-entry-simple')
-          return
-        }
+        // IMPORTANT: do NOT return here.
+        // Immediately fetch session identity while we are still on this load.
+        const emp = await fetchMe()
+        setEmployee(emp)
 
-        // Now safe to remove token from URL
+        // Clean URL (remove token) without needing a manual reload
         navigate('/time-entry-simple', { replace: true })
+
+        await loadTodayEntry()
+        await loadTimeEntries()
         return
       }
 
-      // 2) Normal load: retry GET a few times (cold start/PWA)
-      let me: any = null
-      const attempts = [0, 120, 250, 500, 900]
-      for (let i = 0; i < attempts.length; i++) {
-        if (i > 0) await sleep(attempts[i])
-        const r = await getEmployeeSession()
-        me = r.data
-        if (me?.active === true && me?.employee?.id) break
-      }
-
-      if (me?.active !== true || !me?.employee?.id) {
-        throw new Error(t.noSession)
-      }
-
-      const emp: Employee = {
-        id: String(me.employee.id),
-        name: String(me.employee.name || 'Employee'),
-        employee_code: me.employee.employee_code ? String(me.employee.employee_code) : null,
-        active: true,
-      }
-
+      // No token: just use existing cookie session
+      const emp = await fetchMe()
       setEmployee(emp)
+
       await loadTodayEntry()
     } catch (e: any) {
       setErr(e?.message || String(e))
     } finally {
-      setSigningIn(false)
       setLoading(false)
     }
   }
@@ -355,17 +330,9 @@ export default function TimeEntrySimple() {
   }
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce(
-      (sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0),
-      0
-    )
-    const totalEarningsNum = timeEntries.reduce(
-      (sum, entry) => sum + (toNumberOrNull(entry.salary) || 0),
-      0
-    )
-    const approvedHoursNum = timeEntries
-      .filter(e => e.approved)
-      .reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+    const totalEarningsNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.salary) || 0), 0)
+    const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
     const pendingHoursNum = totalHoursNum - approvedHoursNum
 
     return {
@@ -377,14 +344,7 @@ export default function TimeEntrySimple() {
     }
   }, [timeEntries])
 
-  if (loading) {
-    return (
-      <div className="card">
-        <p>{signingIn ? t.finishingSignIn : t.loading}</p>
-      </div>
-    )
-  }
-
+  if (loading) return <div className="card"><p>{t.loading}</p></div>
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
   if (!employee) return <div className="card"><p>{t.employeeNotFound}</p></div>
 
@@ -605,5 +565,6 @@ export default function TimeEntrySimple() {
     </div>
   )
 }
+
 
 
