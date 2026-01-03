@@ -81,8 +81,15 @@ function makeSessionToken() {
   return crypto.randomBytes(32).toString('hex')
 }
 
+/**
+ * IMPORTANT CHANGE:
+ * - SameSite=None; Secure makes cookie usable reliably in:
+ *   - iOS PWA standalone
+ *   - link-opened contexts
+ *   - immediate “POST set-cookie then GET” flows
+ */
 function cookieAttrs() {
-  return `HttpOnly; Secure; SameSite=Lax; Path=/`
+  return `HttpOnly; Secure; SameSite=None; Path=/`
 }
 function clearCookieHeader() {
   return `employee_session=; ${cookieAttrs()}; Max-Age=0`
@@ -109,7 +116,7 @@ async function createEmployeeSession(event) {
     const v = verifyEmployeeToken(token)
     if (v.error) return cors(403, { error: v.error }, event)
 
-    // Confirm employee exists & is active (IMPORTANT: cast tenant_id to uuid)
+    // Confirm employee exists & is active
     const emp = await sql`
       SELECT id, tenant_id, active
       FROM employees
@@ -150,8 +157,9 @@ async function createEmployeeSession(event) {
       )
     `
 
+    // Use exact casing for Set-Cookie (some platforms are picky)
     return cors(200, { ok: true }, event, {
-      'set-cookie': setCookieHeader(sessionToken, maxAgeSeconds),
+      'Set-Cookie': setCookieHeader(sessionToken, maxAgeSeconds),
     })
   } catch (e) {
     console.error('employee-session create error:', e)
@@ -227,7 +235,7 @@ async function deleteEmployeeSession(event) {
     }
 
     return cors(200, { ok: true }, event, {
-      'set-cookie': clearCookieHeader(),
+      'Set-Cookie': clearCookieHeader(),
     })
   } catch (e) {
     console.error('employee-session delete error:', e)
@@ -240,21 +248,32 @@ function cors(status, body, event, extraHeaders = {}) {
   const h = event?.headers || {}
   const origin = h.origin || h.Origin || ''
 
+  // Whitelist origins when using credentials (recommended)
+  const allowed = new Set([
+    'https://data-entry-beta.netlify.app',
+    // add your custom domain here if you have one, e.g.:
+    // 'https://yourdomain.com',
+  ])
+
+  const allowOrigin = allowed.has(origin) ? origin : 'https://data-entry-beta.netlify.app'
+
   return {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
-      'access-control-allow-origin': origin || 'https://data-entry-beta.netlify.app',
+      'access-control-allow-origin': allowOrigin,
       'access-control-allow-credentials': 'true',
       'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
       'access-control-allow-headers':
         'content-type,authorization,x-tenant-id,x-active-tenant,x-employee-token',
       'access-control-max-age': '86400',
+      'Vary': 'Origin',
       ...extraHeaders,
     },
     body: JSON.stringify(body),
   }
 }
+
 
 
 
