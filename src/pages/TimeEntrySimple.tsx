@@ -1,5 +1,6 @@
 // src/pages/TimeEntrySimple.tsx
 import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { todayYMD, formatLongDate } from '../lib/time'
 
 type Employee = {
@@ -128,7 +129,8 @@ export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
 
-  const employeeToken = getEmployeeToken()
+  const params = useParams<{ token?: string }>()
+const employeeToken = params.token || getEmployeeToken()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)

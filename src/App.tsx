@@ -84,9 +84,11 @@ if (isEmployeeTokenTimeEntry) {
         minHeight: '100%'
       }}>
         <Routes>
-          <Route path="/time-entry" element={<TimeEntry />} />
-          <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
-        </Routes>
+  <Route path="/time-entry" element={<TimeEntry />} />
+  <Route path="/time-entry/:token" element={<TimeEntry />} />
+  <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
+  <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
+</Routes>
       </main>
     </div>
   )
