@@ -48,10 +48,70 @@ function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
+export default function App() {
+  const location = useLocation()
+
+  const isEmployeePath = useMemo(() => {
+    const p = location.pathname || '/'
+    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
+  }, [location.pathname])
+
+  const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
+
+  useEffect(() => {
+    let alive = true
+
+    async function decideEmployeeMode() {
+      // If URL is already an employee URL, must render employee shell (so token exchange works)
+      if (isEmployeePath) {
+        if (alive) setEmployeeMode(true)
+        return
+      }
+
+      // Otherwise probe the cookie session (needed because iOS may launch at "/")
+      try {
+        const base = apiBase()
+        const res = await fetch(`${base}/api/employee-session`, {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        if (!alive) return
+
+        if (res.ok) {
+          const j = await res.json().catch(() => ({}))
+          if (j?.active === true) {
+            setEmployeeMode(true)
+            return
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (alive) setEmployeeMode(false)
+    }
+
+    decideEmployeeMode()
+    return () => {
+      alive = false
+    }
+  }, [isEmployeePath])
+
+  if (employeeMode === null) {
+    // IMPORTANT: keep this minimal so we never crash before deciding
+    return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
+  }
+
+  if (employeeMode === true) {
+    return <EmployeeShell />
+  }
+
+  return <MainApp />
+}
+
 /**
- * Employee-only shell (Solution B)
- * - Contains only time-entry routes
- * - Never renders the main app content
+ * Employee-only shell (NO app routes, NO login, NO nav)
  */
 function EmployeeShell() {
   return (
@@ -77,7 +137,7 @@ function EmployeeShell() {
           <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
           <Route path="/time-entry" element={<TimeEntry />} />
 
-          {/* Critical: if launched at "/" (or anything), never show the app */}
+          {/* If launched at "/" or anything else, never show the app */}
           <Route path="*" element={<Navigate to="/time-entry-simple" replace />} />
         </Routes>
       </main>
@@ -86,8 +146,8 @@ function EmployeeShell() {
 }
 
 /**
- * Main authenticated app (your original UI + routes)
- * IMPORTANT: This must be its own component so hooks are never conditionally skipped.
+ * Normal app shell (UNCHANGED logic from your main app)
+ * This is separated only to satisfy React hook rules.
  */
 function MainApp() {
   const [navOpen, setNavOpen] = useState(false)
@@ -95,25 +155,18 @@ function MainApp() {
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
 
-  // Multi-tenant state
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
 
-  // New auth system
   const { isAuthenticated, user, logout: authLogout } = useAuth()
 
-  // Legacy auth system (for BLV)
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
   )
 
-  // Determine if user is authenticated (either new or legacy)
   const isLoggedIn = isAuthenticated || legacyUserLevel !== null
-
-  // Determine user level (for access control)
   const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
-  // Handle logout
   const handleLogout = () => {
     try {
       authLogout()
@@ -121,15 +174,12 @@ function MainApp() {
 
     setLegacyUserLevel(null)
     localStorage.removeItem('userLevel')
-
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
 
-    // ✅ your fix
     window.location.href = '/login'
   }
 
-  // Load user settings
   useEffect(() => {
     try {
       const saved = localStorage.getItem('userSettings')
@@ -141,19 +191,14 @@ function MainApp() {
       } else {
         setUserName('User')
       }
-    } catch (error) {
-      console.log('Error loading settings:', error)
+    } catch {
       setUserName('User')
     }
 
-    const timer = setTimeout(() => {
-      setShowWelcome(false)
-    }, 5000)
-
+    const timer = setTimeout(() => setShowWelcome(false), 5000)
     return () => clearTimeout(timer)
   }, [])
 
-  // Load user's available tenants
   useEffect(() => {
     if (!isAuthenticated || !user) return
 
@@ -163,9 +208,7 @@ function MainApp() {
         const token = localStorage.getItem('authToken')
 
         const res = await fetch(`${base}/api/user-tenants`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         })
 
         if (res.ok) {
@@ -183,15 +226,10 @@ function MainApp() {
     }
 
     loadTenants()
-    // NOTE: not including activeTenantId on purpose to avoid loops
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]) // keep as you had it
 
-  // Show login screen if not authenticated
-  if (!isLoggedIn) {
-    return <Login />
-  }
+  if (!isLoggedIn) return <Login />
 
-  // Tenant switching handler
   const handleTenantSwitch = async () => {
     if (availableTenants.length <= 1) return
 
@@ -217,9 +255,7 @@ function MainApp() {
 
       if (res.ok) {
         const data = await res.json()
-        if (data.user) {
-          localStorage.setItem('userData', JSON.stringify(data.user))
-        }
+        if (data.user) localStorage.setItem('userData', JSON.stringify(data.user))
       }
     } catch (e) {
       console.error('Failed to refresh user data:', e)
@@ -228,7 +264,6 @@ function MainApp() {
     window.location.reload()
   }
 
-  // Get current tenant name for display
   const currentTenant = availableTenants.find(t => t.id === activeTenantId)
   const currentTenantName = currentTenant?.name || user?.tenantName || 'BLV App'
 
@@ -241,6 +276,7 @@ function MainApp() {
             <span></span>
             <span></span>
           </button>
+
           <div
             className="brand-title"
             onClick={handleTenantSwitch}
@@ -538,7 +574,7 @@ function MainApp() {
                 <Route path="/employees" element={<EmployeeManagement />} />
                 <Route path="/time-approval" element={<TimeApproval />} />
 
-                {/* Optional: allow admin to open the page (without token) */}
+                {/* keep this route if you want admins to access the UI */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>
             )}
@@ -549,65 +585,6 @@ function MainApp() {
   )
 }
 
-/**
- * Root wrapper that decides between EmployeeShell vs MainApp
- * WITHOUT breaking hook rules.
- */
-export default function App() {
-  const location = useLocation()
-
-  // If you're already inside the employee URLs, we must render employee shell (so token exchange works)
-  const isEmployeePath = useMemo(() => {
-    const p = location.pathname || '/'
-    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
-  }, [location.pathname])
-
-  const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
-
-  useEffect(() => {
-    let alive = true
-
-    async function decideEmployeeMode() {
-      if (isEmployeePath) {
-        if (alive) setEmployeeMode(true)
-        return
-      }
-
-      // iOS may launch at "/", so probe cookie session
-      try {
-        const base = apiBase()
-        const res = await fetch(`${base}/api/employee-session`, {
-          method: 'GET',
-          credentials: 'include',
-        })
-        if (!alive) return
-
-        if (res.ok) {
-          const j = await res.json().catch(() => ({}))
-          if (j?.active === true) {
-            setEmployeeMode(true)
-            return
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      if (alive) setEmployeeMode(false)
-    }
-
-    decideEmployeeMode()
-    return () => {
-      alive = false
-    }
-  }, [isEmployeePath])
-
-  if (employeeMode === null) {
-    return <div style={{ padding: 16 }}>Loading…</div>
-  }
-
-  return employeeMode ? <EmployeeShell /> : <MainApp />
-}
 
 
 
