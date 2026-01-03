@@ -76,6 +76,20 @@ const isEmployeeTokenTimeEntry = (() => {
   }
 })()
 
+useEffect(() => {
+  try {
+    const storedToken = localStorage.getItem('employee_token')
+    const currentPath = window.location.pathname.replace(/\/+$/, '')
+    
+    // If we have a stored token and we're at root, redirect to time-entry-simple
+    if (storedToken && (currentPath === '/' || currentPath === '')) {
+      window.location.href = `/time-entry-simple?employee_token=${encodeURIComponent(storedToken)}`
+    }
+  } catch (e) {
+    console.error('Token redirect check failed:', e)
+  }
+}, [])
+
 if (isEmployeeTokenTimeEntry) {
   // Render only the time-entry route (no nav, no login required)
   return (
