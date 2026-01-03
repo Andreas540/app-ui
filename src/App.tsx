@@ -48,103 +48,48 @@ function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
-export default function App() {
-  const location = useLocation()
+/**
+ * Employee-only shell (Solution B)
+ * - Contains only time-entry routes
+ * - Never renders the main app content
+ */
+function EmployeeShell() {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto',
+        background: 'var(--bg, #1a1a2e)',
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <main className="content" style={{ padding: 16, minHeight: '100%' }}>
+        <Routes>
+          {/* Token exchange entry points */}
+          <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
+          <Route path="/time-entry/:token" element={<TimeEntry />} />
 
-  /**
-   * Employee shell detection (Solution B):
-   * - If URL is time-entry path -> always employee shell (so token exchange works)
-   * - Else, probe /api/employee-session (cookie) to decide if this install is employee-only
-   */
-  const isEmployeePath = useMemo(() => {
-    const p = location.pathname || '/'
-    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
-  }, [location.pathname])
+          {/* Post-exchange / normal employee pages */}
+          <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
+          <Route path="/time-entry" element={<TimeEntry />} />
 
-  const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
+          {/* Critical: if launched at "/" (or anything), never show the app */}
+          <Route path="*" element={<Navigate to="/time-entry-simple" replace />} />
+        </Routes>
+      </main>
+    </div>
+  )
+}
 
-  useEffect(() => {
-    let alive = true
-
-    async function decideEmployeeMode() {
-      // If you're already inside the employee URLs, we must render employee shell
-      if (isEmployeePath) {
-        if (alive) setEmployeeMode(true)
-        return
-      }
-
-      // Otherwise, we probe cookie session (needed because iOS may launch at "/")
-      try {
-        const base = apiBase()
-        const res = await fetch(`${base}/api/employee-session`, {
-          method: 'GET',
-          credentials: 'include',
-        })
-        if (!alive) return
-
-        if (res.ok) {
-          const j = await res.json().catch(() => ({}))
-          // We consider "active employee session" as employee mode
-          if (j?.active === true) {
-            setEmployeeMode(true)
-            return
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      if (alive) setEmployeeMode(false)
-    }
-
-    decideEmployeeMode()
-    return () => {
-      alive = false
-    }
-  }, [isEmployeePath])
-
-  // While deciding, render nothing (or a minimal loading)
-  if (employeeMode === null) {
-    return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
-  }
-
-  // ✅ Employee shell: no nav, no login, no app routes.
-  if (employeeMode === true) {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'auto',
-          background: 'var(--bg, #1a1a2e)',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        <main className="content" style={{ padding: 16, minHeight: '100%' }}>
-          <Routes>
-            {/* Token exchange entry points */}
-            <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
-            <Route path="/time-entry/:token" element={<TimeEntry />} />
-
-            {/* Post-exchange / normal employee pages */}
-            <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
-            <Route path="/time-entry" element={<TimeEntry />} />
-
-            {/* Critical: if launched at "/" (or anything), never show the app */}
-            <Route path="*" element={<Navigate to="/time-entry-simple" replace />} />
-          </Routes>
-        </main>
-      </div>
-    )
-  }
-
-  // =========================
-  // Normal app (unchanged)
-  // =========================
-
+/**
+ * Main authenticated app (your original UI + routes)
+ * IMPORTANT: This must be its own component so hooks are never conditionally skipped.
+ */
+function MainApp() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
@@ -180,6 +125,7 @@ export default function App() {
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
 
+    // ✅ your fix
     window.location.href = '/login'
   }
 
@@ -195,11 +141,15 @@ export default function App() {
       } else {
         setUserName('User')
       }
-    } catch {
+    } catch (error) {
+      console.log('Error loading settings:', error)
       setUserName('User')
     }
 
-    const timer = setTimeout(() => setShowWelcome(false), 5000)
+    const timer = setTimeout(() => {
+      setShowWelcome(false)
+    }, 5000)
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -233,10 +183,13 @@ export default function App() {
     }
 
     loadTenants()
-  }, [isAuthenticated, user]) // intentionally not including activeTenantId to avoid loops
+    // NOTE: not including activeTenantId on purpose to avoid loops
+  }, [isAuthenticated, user])
 
   // Show login screen if not authenticated
-  if (!isLoggedIn) return <Login />
+  if (!isLoggedIn) {
+    return <Login />
+  }
 
   // Tenant switching handler
   const handleTenantSwitch = async () => {
@@ -264,7 +217,9 @@ export default function App() {
 
       if (res.ok) {
         const data = await res.json()
-        if (data.user) localStorage.setItem('userData', JSON.stringify(data.user))
+        if (data.user) {
+          localStorage.setItem('userData', JSON.stringify(data.user))
+        }
       }
     } catch (e) {
       console.error('Failed to refresh user data:', e)
@@ -583,7 +538,7 @@ export default function App() {
                 <Route path="/employees" element={<EmployeeManagement />} />
                 <Route path="/time-approval" element={<TimeApproval />} />
 
-                {/* keep this route if you want admins to access the UI (not required for employees) */}
+                {/* Optional: allow admin to open the page (without token) */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>
             )}
@@ -593,4 +548,66 @@ export default function App() {
     </div>
   )
 }
+
+/**
+ * Root wrapper that decides between EmployeeShell vs MainApp
+ * WITHOUT breaking hook rules.
+ */
+export default function App() {
+  const location = useLocation()
+
+  // If you're already inside the employee URLs, we must render employee shell (so token exchange works)
+  const isEmployeePath = useMemo(() => {
+    const p = location.pathname || '/'
+    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
+  }, [location.pathname])
+
+  const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
+
+  useEffect(() => {
+    let alive = true
+
+    async function decideEmployeeMode() {
+      if (isEmployeePath) {
+        if (alive) setEmployeeMode(true)
+        return
+      }
+
+      // iOS may launch at "/", so probe cookie session
+      try {
+        const base = apiBase()
+        const res = await fetch(`${base}/api/employee-session`, {
+          method: 'GET',
+          credentials: 'include',
+        })
+        if (!alive) return
+
+        if (res.ok) {
+          const j = await res.json().catch(() => ({}))
+          if (j?.active === true) {
+            setEmployeeMode(true)
+            return
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (alive) setEmployeeMode(false)
+    }
+
+    decideEmployeeMode()
+    return () => {
+      alive = false
+    }
+  }, [isEmployeePath])
+
+  if (employeeMode === null) {
+    return <div style={{ padding: 16 }}>Loading…</div>
+  }
+
+  return employeeMode ? <EmployeeShell /> : <MainApp />
+}
+
+
 
