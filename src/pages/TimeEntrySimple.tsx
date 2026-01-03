@@ -1,5 +1,6 @@
+// src/pages/TimeEntrySimple.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { todayYMD, formatLongDate } from '../lib/time'
 
 type Employee = {
@@ -55,7 +56,7 @@ const translations = {
     clockInSuccess: 'Clocked in successfully!',
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
-    missingToken: 'Missing employee token',
+    noSession: 'Session missing. Please open your personal link again.',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -84,7 +85,7 @@ const translations = {
     clockInSuccess: '¡Entrada registrada exitosamente!',
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
-    missingToken: 'Falta el token del empleado',
+    noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
   },
 }
 
@@ -94,7 +95,6 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-// Get current time in HH:MM format (EST/EDT)
 function getCurrentTime(): string {
   const now = new Date()
   const hours = String(now.getHours()).padStart(2, '0')
@@ -102,44 +102,28 @@ function getCurrentTime(): string {
   return `${hours}:${minutes}`
 }
 
-// Get Monday of current week
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   return new Date(d.setDate(diff))
-}
-
-function getStoredEmployeeToken(): string | null {
-  try {
-    return localStorage.getItem('employee_token')
-  } catch {
-    return null
-  }
-}
-
-function saveEmployeeToken(token: string) {
-  try {
-    localStorage.setItem('employee_token', token)
-  } catch {}
 }
 
 export default function TimeEntrySimple() {
   const [lang, setLang] = useState<Language>('es')
   const t = translations[lang]
 
-  const { token } = useParams<{ token?: string }>()
-  const employeeToken = token || getStoredEmployeeToken()
+  const navigate = useNavigate()
+  const params = useParams<{ token?: string }>()
+  const tokenFromUrl = params.token ? decodeURIComponent(params.token) : null
 
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  // Today's entry state
   const [clockInTime, setClockInTime] = useState<string | null>(null)
   const [clockOutTime, setClockOutTime] = useState<string | null>(null)
 
-  // Time entries list
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
 
@@ -147,56 +131,64 @@ export default function TimeEntrySimple() {
     return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
   }
 
-  function headersFor() {
-    return {
-      'x-employee-token': employeeToken as string,
-    }
+  function fetchWithCreds(input: RequestInfo | URL, init: RequestInit = {}) {
+    return fetch(input, { ...init, credentials: 'include' })
   }
 
-  // Save token from path to storage for PWA relaunch
   useEffect(() => {
-    if (token) saveEmployeeToken(token)
-  }, [token])
-
-  useEffect(() => {
-    loadEmployeeAndToday()
+    bootstrapEmployee()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    if (employee) {
-      loadTimeEntries()
-    }
+    if (employee) loadTimeEntries()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee, viewPeriod])
 
-  async function loadEmployeeAndToday() {
+  async function bootstrapEmployee() {
     try {
       setLoading(true)
       setErr(null)
 
-      if (!employeeToken) {
-        throw new Error(t.missingToken)
-      }
-
       const base = apiBase()
-      const res = await fetch(`${base}/api/time-entries?me=true`, {
-        headers: headersFor(),
-      })
 
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || t.employeeNotFound)
+      // 1) If token in URL, exchange for HttpOnly cookie session
+      if (tokenFromUrl) {
+        const res = await fetchWithCreds(`${base}/api/employee-session`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ token: tokenFromUrl }),
+        })
+
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          throw new Error(j.error || t.employeeNotFound)
+        }
+
+        // Remove token from URL after exchange
+        navigate('/time-entry-simple', { replace: true })
+        return
       }
 
-      const j = await res.json()
-      const emp: Employee | null = j?.employee || null
-      if (!emp) throw new Error(t.employeeNotFound)
-      if (!emp.active) throw new Error(t.employeeInactive)
+      // 2) Verify cookie session + get employee identity
+      const meRes = await fetchWithCreds(`${base}/api/employee-session`, { method: 'GET' })
+      const me = await meRes.json().catch(() => ({}))
+
+      // employee-session.mjs returns: { active: true, employee: {...} }
+      if (me?.active !== true || !me?.employee?.id) {
+        throw new Error(t.noSession)
+      }
+
+      const emp: Employee = {
+        id: String(me.employee.id),
+        name: String(me.employee.name || 'Employee'),
+        employee_code: me.employee.employee_code ? String(me.employee.employee_code) : null,
+        active: true,
+      }
 
       setEmployee(emp)
 
-      // Load today's entry if it exists
+      // Load today's entry
       await loadTodayEntry()
     } catch (e: any) {
       setErr(e?.message || String(e))
@@ -207,35 +199,30 @@ export default function TimeEntrySimple() {
 
   async function loadTodayEntry() {
     try {
-      if (!employeeToken) return
-
       const base = apiBase()
       const today = todayYMD()
 
-      const res = await fetch(`${base}/api/time-entries?from=${today}&to=${today}`, {
-        headers: headersFor(),
-      })
-
+      const res = await fetchWithCreds(`${base}/api/time-entries?from=${today}&to=${today}`)
       if (!res.ok) return
 
-      const data = await res.json()
-      if (data.length > 0) {
+      const data = await res.json().catch(() => [])
+      if (Array.isArray(data) && data.length > 0) {
         const entry = data[0]
         setClockInTime(entry.start_time)
         setClockOutTime(entry.end_time)
+      } else {
+        setClockInTime(null)
+        setClockOutTime(null)
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error('Failed to load today entry:', e)
     }
   }
 
   async function loadTimeEntries() {
     try {
-      if (!employeeToken) return
-
       const base = apiBase()
 
-      // Calculate date range based on viewPeriod
       const today = new Date()
       let fromDate: Date
       let toDate: Date
@@ -243,50 +230,38 @@ export default function TimeEntrySimple() {
       if (viewPeriod === 'thisWeek') {
         fromDate = getMondayOfWeek(today)
         toDate = new Date(fromDate)
-        toDate.setDate(toDate.getDate() + 6) // Sunday
+        toDate.setDate(toDate.getDate() + 6)
       } else {
-        // Last week
         const lastWeekDate = new Date(today)
         lastWeekDate.setDate(today.getDate() - 7)
         fromDate = getMondayOfWeek(lastWeekDate)
         toDate = new Date(fromDate)
-        toDate.setDate(toDate.getDate() + 6) // Sunday
+        toDate.setDate(toDate.getDate() + 6)
       }
 
       const from = fromDate.toISOString().split('T')[0]
       const to = toDate.toISOString().split('T')[0]
 
-      const res = await fetch(`${base}/api/time-entries?from=${from}&to=${to}`, {
-        headers: headersFor(),
-      })
-
-      if (!res.ok) {
-        throw new Error('Failed to load time entries')
-      }
+      const res = await fetchWithCreds(`${base}/api/time-entries?from=${from}&to=${to}`)
+      if (!res.ok) throw new Error('Failed to load time entries')
 
       const data = await res.json()
-      setTimeEntries(data)
-    } catch (e: any) {
+      setTimeEntries(Array.isArray(data) ? data : [])
+    } catch (e) {
       console.error('Failed to load time entries:', e)
     }
   }
 
   async function handleClockIn() {
-    if (!employee || !employeeToken) return
-
     try {
       const base = apiBase()
       const currentTime = getCurrentTime()
       const today = todayYMD()
 
-      const res = await fetch(`${base}/api/time-entries`, {
+      const res = await fetchWithCreds(`${base}/api/time-entries`, {
         method: 'POST',
-        headers: {
-          ...headersFor(),
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          employee_id: employee.id,
           work_date: today,
           start_time: currentTime,
         }),
@@ -307,21 +282,15 @@ export default function TimeEntrySimple() {
   }
 
   async function handleClockOut() {
-    if (!employee || !employeeToken) return
-
     try {
       const base = apiBase()
       const currentTime = getCurrentTime()
       const today = todayYMD()
 
-      const res = await fetch(`${base}/api/time-entries`, {
+      const res = await fetchWithCreds(`${base}/api/time-entries`, {
         method: 'POST',
-        headers: {
-          ...headersFor(),
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          employee_id: employee.id,
           work_date: today,
           end_time: currentTime,
         }),
@@ -342,23 +311,9 @@ export default function TimeEntrySimple() {
   }
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => {
-      const h = toNumberOrNull(entry.total_hours) || 0
-      return sum + h
-    }, 0)
-
-    const totalEarningsNum = timeEntries.reduce((sum, entry) => {
-      const s = toNumberOrNull(entry.salary) || 0
-      return sum + s
-    }, 0)
-
-    const approvedHoursNum = timeEntries
-      .filter(e => e.approved)
-      .reduce((sum, entry) => {
-        const h = toNumberOrNull(entry.total_hours) || 0
-        return sum + h
-      }, 0)
-
+    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+    const totalEarningsNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.salary) || 0), 0)
+    const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
     const pendingHoursNum = totalHoursNum - approvedHoursNum
 
     return {
@@ -414,10 +369,17 @@ export default function TimeEntrySimple() {
 
       <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
         {t.reportingAs} <span style={{ color: 'var(--text)', fontWeight: 600 }}>{employee.name}</span>
-        {employee.employee_code ? ` (${employee.employee_code})` : ''}
       </div>
 
-      <div style={{ marginTop: 24, padding: 20, background: 'rgba(255,255,255,0.05)', borderRadius: 8, textAlign: 'center' }}>
+      <div
+        style={{
+          marginTop: 24,
+          padding: 20,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8,
+          textAlign: 'center',
+        }}
+      >
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
           {t.today} - {formatLongDate(todayYMD(), lang === 'es' ? 'es-ES' : 'en-US')}
         </div>
@@ -509,21 +471,15 @@ export default function TimeEntrySimple() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalHours}</span>
-            <span style={{ fontWeight: 600 }}>
-              {stats.totalHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.approvedHours}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>
-              {stats.approvedHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.pendingHours}</span>
-            <span style={{ fontWeight: 600, color: '#fbbf24' }}>
-              {stats.pendingHours} {t.hours}
-            </span>
+            <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="helper">{t.totalEarnings}</span>

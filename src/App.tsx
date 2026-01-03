@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+// src/App.tsx
+import { useEffect, useMemo, useState } from 'react'
+import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
 import EditOrder from './pages/EditOrder'
@@ -42,27 +44,72 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 
+function apiBase() {
+  return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+}
+
 export default function App() {
-  // ✅ Bypass login for employee token link to:
-  //   /time-entry/:token
-  //   /time-entry-simple/:token
-  const isEmployeeTokenTimeEntry = (() => {
-    try {
-      const path = window.location.pathname.replace(/\/+$/, '')
-      const parts = path.split('/').filter(Boolean)
+  const location = useLocation()
 
-      const isSimple = parts[0] === 'time-entry-simple' && !!parts[1]
-      const isFull = parts[0] === 'time-entry' && !!parts[1]
+  /**
+   * Employee shell detection (Solution B):
+   * - If URL is time-entry path -> always employee shell (so token exchange works)
+   * - Else, probe /api/employee-session (cookie) to decide if this install is employee-only
+   */
+  const isEmployeePath = useMemo(() => {
+    const p = location.pathname || '/'
+    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
+  }, [location.pathname])
 
-      return isSimple || isFull
-    } catch (e) {
-      console.error('❌ Employee token check error:', e)
-      return false
+  const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
+
+  useEffect(() => {
+    let alive = true
+
+    async function decideEmployeeMode() {
+      // If you're already inside the employee URLs, we must render employee shell
+      if (isEmployeePath) {
+        if (alive) setEmployeeMode(true)
+        return
+      }
+
+      // Otherwise, we probe cookie session (needed because iOS may launch at "/")
+      try {
+        const base = apiBase()
+        const res = await fetch(`${base}/api/employee-session`, {
+          method: 'GET',
+          credentials: 'include',
+        })
+        if (!alive) return
+
+        if (res.ok) {
+          const j = await res.json().catch(() => ({}))
+          // We consider "active employee session" as employee mode
+          if (j?.active === true) {
+            setEmployeeMode(true)
+            return
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (alive) setEmployeeMode(false)
     }
-  })()
 
-  if (isEmployeeTokenTimeEntry) {
-    // Render only the time-entry route (no nav, no login required)
+    decideEmployeeMode()
+    return () => {
+      alive = false
+    }
+  }, [isEmployeePath])
+
+  // While deciding, render nothing (or a minimal loading)
+  if (employeeMode === null) {
+    return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
+  }
+
+  // ✅ Employee shell: no nav, no login, no app routes.
+  if (employeeMode === true) {
     return (
       <div
         style={{
@@ -76,21 +123,27 @@ export default function App() {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <main
-          className="content"
-          style={{
-            padding: 16,
-            minHeight: '100%',
-          }}
-        >
+        <main className="content" style={{ padding: 16, minHeight: '100%' }}>
           <Routes>
-            <Route path="/time-entry/:token" element={<TimeEntry />} />
+            {/* Token exchange entry points */}
             <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
+            <Route path="/time-entry/:token" element={<TimeEntry />} />
+
+            {/* Post-exchange / normal employee pages */}
+            <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
+            <Route path="/time-entry" element={<TimeEntry />} />
+
+            {/* Critical: if launched at "/" (or anything), never show the app */}
+            <Route path="*" element={<Navigate to="/time-entry-simple" replace />} />
           </Routes>
         </main>
       </div>
     )
   }
+
+  // =========================
+  // Normal app (unchanged)
+  // =========================
 
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -127,7 +180,7 @@ export default function App() {
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
 
-    location.href = '/login'
+    window.location.href = '/login'
   }
 
   // Load user settings
@@ -142,15 +195,11 @@ export default function App() {
       } else {
         setUserName('User')
       }
-    } catch (error) {
-      console.log('Error loading settings:', error)
+    } catch {
       setUserName('User')
     }
 
-    const timer = setTimeout(() => {
-      setShowWelcome(false)
-    }, 5000)
-
+    const timer = setTimeout(() => setShowWelcome(false), 5000)
     return () => clearTimeout(timer)
   }, [])
 
@@ -160,7 +209,7 @@ export default function App() {
 
     const loadTenants = async () => {
       try {
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const base = apiBase()
         const token = localStorage.getItem('authToken')
 
         const res = await fetch(`${base}/api/user-tenants`, {
@@ -184,12 +233,10 @@ export default function App() {
     }
 
     loadTenants()
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]) // intentionally not including activeTenantId to avoid loops
 
   // Show login screen if not authenticated
-  if (!isLoggedIn) {
-    return <Login />
-  }
+  if (!isLoggedIn) return <Login />
 
   // Tenant switching handler
   const handleTenantSwitch = async () => {
@@ -202,7 +249,7 @@ export default function App() {
     localStorage.setItem('activeTenantId', nextTenant.id)
 
     try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const base = apiBase()
       const token = localStorage.getItem('authToken')
 
       const res = await fetch(`${base}/api/auth-verify`, {
@@ -217,9 +264,7 @@ export default function App() {
 
       if (res.ok) {
         const data = await res.json()
-        if (data.user) {
-          localStorage.setItem('userData', JSON.stringify(data.user))
-        }
+        if (data.user) localStorage.setItem('userData', JSON.stringify(data.user))
       }
     } catch (e) {
       console.error('Failed to refresh user data:', e)
@@ -538,7 +583,7 @@ export default function App() {
                 <Route path="/employees" element={<EmployeeManagement />} />
                 <Route path="/time-approval" element={<TimeApproval />} />
 
-                {/* Optional: allow admin to open the page (without token) */}
+                {/* keep this route if you want admins to access the UI (not required for employees) */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>
             )}
@@ -548,3 +593,4 @@ export default function App() {
     </div>
   )
 }
+
