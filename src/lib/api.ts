@@ -309,19 +309,6 @@ export interface EmployeeSalaryUpdate {
   effective_date?: string
 }
 
-export async function updateEmployeeSalary(params: EmployeeSalaryUpdate) {
-  const res = await fetch(`${base}/api/employee-salary`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(params),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || 'Failed to update employee salary')
-  }
-  return await res.json()
-}
-
 export async function getCostCategories(type: 'B' | 'P') {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
   const res = await fetch(`${base}/api/cost/categories?type=${type}`, {

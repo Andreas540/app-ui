@@ -1,6 +1,6 @@
 // src/pages/EmployeeManagement.tsx
 import { useEffect, useState } from 'react'
-import { getAuthHeaders, updateEmployeeSalary } from '../lib/api'
+import { getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type Employee = {
@@ -283,7 +283,7 @@ export default function EmployeeManagement() {
   try {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     
-    // Save employee basic info
+    // Save employee with salary history options
     const res = await fetch(`${base}/api/employees`, {
       method: 'POST',
       headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
@@ -291,10 +291,14 @@ export default function EmployeeManagement() {
         id: editingId,
         name: name.trim(),
         email: email.trim() || null,
-        employee_code: employeeCode.trim() || null,
         hour_salary: salaryNum,
         active,
         notes: notes.trim() || null,
+        // Include salary history options only when editing and salary changed
+        ...(editingId && salaryChanged ? {
+          apply_to_history: salaryOption === 'history',
+          effective_date: salaryOption === 'specific' ? specificDate : undefined,
+        } : {})
       }),
     })
 
@@ -304,45 +308,20 @@ export default function EmployeeManagement() {
     }
 
     const result = await res.json()
-    const employeeId = result.employee?.id || editingId
 
-    // Handle salary history
-    if (employeeId && salaryNum !== null) {
-      if (!editingId) {
-        // NEW EMPLOYEE: Create initial salary history entry (effective from now)
-        await updateEmployeeSalary({
-          employee_id: employeeId,
-          salary: salaryNum,
-        })
-      } else if (salaryChanged) {
-        // EDITING EMPLOYEE: Update salary history with user's chosen option
-        await updateEmployeeSalary({
-          employee_id: employeeId,
-          salary: salaryNum,
-          apply_to_history: salaryOption === 'history',
-          effective_date: salaryOption === 'specific' ? specificDate : undefined,
-        })
-
-        let message = t.salaryUpdated(name.trim())
-        if (salaryOption === 'history') {
-          message += ` (${t.salaryAppliedToHistory})`
-        } else if (salaryOption === 'specific') {
-          message += ` (${t.salaryEffectiveFrom(specificDate)})`
-        }
-        alert(message)
-      } else {
-        // Editing but salary didn't change
-        if (result.updated) alert(t.updated)
-      }
-    } else {
-      // No salary provided
-      if (result.created) alert(t.created)
-      else if (result.updated) alert(t.updated)
-    }
-
-    // Show success message for new employee (if not already shown)
-    if (!editingId && result.created && salaryNum !== null) {
+    // Show appropriate success message
+    if (result.created) {
       alert(t.created)
+    } else if (result.updated && salaryChanged) {
+      let message = t.salaryUpdated(name.trim())
+      if (result.applied_to_history) {
+        message += ` (${t.salaryAppliedToHistory})`
+      } else if (salaryOption === 'specific') {
+        message += ` (${t.salaryEffectiveFrom(specificDate)})`
+      }
+      alert(message)
+    } else if (result.updated) {
+      alert(t.updated)
     }
 
     handleCancel()

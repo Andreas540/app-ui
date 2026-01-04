@@ -142,13 +142,21 @@ async function saveEmployee(event) {
     const TENANT_ID = authz.tenantId
 
     const body = JSON.parse(event.body || '{}')
-    const { id, name, email, hour_salary, active, notes } = body
+    const { id, name, email, hour_salary, active, notes, effective_date, apply_to_history } = body
 
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })
     }
 
+    // Strict boolean coercion for apply_to_history
+    const applyToHistory = 
+      apply_to_history === true || 
+      apply_to_history === 'true' || 
+      apply_to_history === 1 || 
+      apply_to_history === '1'
+
     if (id) {
+      // UPDATING EXISTING EMPLOYEE
       const employee = await sql`
         SELECT * FROM employees WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
@@ -157,22 +165,98 @@ async function saveEmployee(event) {
       const current = employee[0]
       const updatedName = name !== undefined ? String(name).trim() : current.name
       const updatedEmail = email !== undefined ? (String(email).trim() || null) : current.email
-      const updatedHourSalary = hour_salary !== undefined ? hour_salary : current.hour_salary
       const updatedActive = active !== undefined ? active : current.active
       const updatedNotes = notes !== undefined ? (String(notes).trim() || null) : current.notes
 
+      // Handle salary updates with history
+      let newSalaryNum = hour_salary !== undefined ? hour_salary : current.hour_salary
+      const currentSalary = Number(current.hour_salary || 0)
+      const salaryChanged = hour_salary !== undefined && Number(hour_salary) !== currentSalary
+
+      // Determine if we should update employees.hour_salary immediately
+      let shouldUpdateSalaryNow = false
+
+      if (salaryChanged) {
+        if (applyToHistory) {
+          // Applying to all history = effective immediately
+          shouldUpdateSalaryNow = true
+        } else if (effective_date) {
+          // Check if effective date is today or in the past
+          const effectiveDateObj = new Date(effective_date + 'T00:00:00Z')
+          const today = new Date()
+          today.setUTCHours(0, 0, 0, 0)
+          shouldUpdateSalaryNow = effectiveDateObj <= today
+        } else {
+          // No specific date = from next time entry = effective now
+          shouldUpdateSalaryNow = true
+        }
+      }
+
+      // Update employee record
       await sql`
         UPDATE employees
         SET 
           name = ${updatedName},
           email = ${updatedEmail},
-          hour_salary = ${updatedHourSalary},
+          hour_salary = CASE
+            WHEN ${shouldUpdateSalaryNow && salaryChanged} THEN ${newSalaryNum}
+            ELSE hour_salary
+          END,
           active = ${updatedActive},
           notes = ${updatedNotes}
         WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
-      return cors(200, { ok: true, updated: true, id })
+
+      // Handle salary history updates
+      if (salaryChanged) {
+        if (applyToHistory) {
+          // Delete all previous history entries
+          await sql`
+            DELETE FROM salary_cost_history
+            WHERE tenant_id = ${TENANT_ID}
+              AND employee_id = ${id}
+          `
+          // Insert single entry backdated to beginning
+          await sql`
+            INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+            VALUES (
+              ${TENANT_ID},
+              ${id},
+              ${newSalaryNum},
+              (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
+            )
+          `
+        } else {
+          // Normal case: add new history entry
+          if (effective_date) {
+            // Insert entry with specific date
+            await sql`
+              INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+              VALUES (
+                ${TENANT_ID},
+                ${id},
+                ${newSalaryNum},
+                ((${effective_date}::date)::timestamp AT TIME ZONE 'America/New_York')
+              )
+            `
+          } else {
+            // Add entry with current timestamp
+            await sql`
+              INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+              VALUES (${TENANT_ID}, ${id}, ${newSalaryNum}, NOW())
+            `
+          }
+        }
+      }
+
+      return cors(200, { 
+        ok: true, 
+        updated: true, 
+        employee: { id },
+        applied_to_history: applyToHistory && salaryChanged
+      })
     } else {
+      // CREATING NEW EMPLOYEE
       const generatedCode = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
 
       const result = await sql`
@@ -190,11 +274,24 @@ async function saveEmployee(event) {
         )
         RETURNING id, employee_code
       `
+
+      const employeeId = result[0].id
+
+      // Create initial salary history entry if salary provided
+      if (hour_salary != null) {
+        await sql`
+          INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+          VALUES (${TENANT_ID}, ${employeeId}, ${hour_salary}, NOW())
+        `
+      }
+
       return cors(200, {
         ok: true,
         created: true,
-        id: result[0].id,
-        employee_code: result[0].employee_code,
+        employee: {
+          id: employeeId,
+          employee_code: result[0].employee_code,
+        }
       })
     }
   } catch (e) {
