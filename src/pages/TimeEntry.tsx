@@ -520,35 +520,49 @@ export default function TimeEntry() {
       type="text"
       inputMode="numeric"
       placeholder="08:00"
+      maxLength={5}
       value={startTime}
       onChange={e => {
-        let val = e.target.value.replace(/[^\d]/g, '') // Remove everything except digits
+        const val = e.target.value
         
-        if (val.length >= 2) {
-          val = val.slice(0, 2) + ':' + val.slice(2, 4)
+        // Allow empty or partial input
+        if (val === '') {
+          setStartTime('')
+          return
         }
         
-        if (val.length <= 5) {
-          setStartTime(val)
+        // Remove all non-digits
+        const digits = val.replace(/\D/g, '')
+        
+        // Format as user types
+        if (digits.length === 0) {
+          setStartTime('')
+        } else if (digits.length <= 2) {
+          setStartTime(digits)
+        } else if (digits.length <= 4) {
+          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2))
         }
       }}
+      onFocus={e => {
+        // Select all on focus for easy replacement
+        e.target.select()
+      }}
       onBlur={e => {
-        // Ensure proper format on blur
-        const digits = e.target.value.replace(/[^\d]/g, '')
+        const digits = e.target.value.replace(/\D/g, '')
         if (digits.length === 4) {
-          const h = digits.slice(0, 2)
-          const m = digits.slice(2, 4)
-          setStartTime(`${h}:${m}`)
-        } else if (digits.length < 4 && digits.length > 0) {
-          // Pad with zeros if incomplete
+          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
+        } else if (digits.length === 3) {
+          // User entered 3 digits, assume 0 prefix for minutes
+          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
+        } else if (digits.length > 0 && digits.length < 3) {
+          // Invalid, reset to default
           setStartTime('08:00')
         }
       }}
       style={{ 
         height: CONTROL_H, 
         width: '100%', 
-        boxSizing: 'border-box',
-        letterSpacing: '0.05em'
+        boxSizing: 'border-box'
       }}
     />
   </div>
@@ -558,35 +572,49 @@ export default function TimeEntry() {
       type="text"
       inputMode="numeric"
       placeholder="17:00"
+      maxLength={5}
       value={endTime}
       onChange={e => {
-        let val = e.target.value.replace(/[^\d]/g, '') // Remove everything except digits
+        const val = e.target.value
         
-        if (val.length >= 2) {
-          val = val.slice(0, 2) + ':' + val.slice(2, 4)
+        // Allow empty or partial input
+        if (val === '') {
+          setEndTime('')
+          return
         }
         
-        if (val.length <= 5) {
-          setEndTime(val)
+        // Remove all non-digits
+        const digits = val.replace(/\D/g, '')
+        
+        // Format as user types
+        if (digits.length === 0) {
+          setEndTime('')
+        } else if (digits.length <= 2) {
+          setEndTime(digits)
+        } else if (digits.length <= 4) {
+          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2))
         }
       }}
+      onFocus={e => {
+        // Select all on focus for easy replacement
+        e.target.select()
+      }}
       onBlur={e => {
-        // Ensure proper format on blur
-        const digits = e.target.value.replace(/[^\d]/g, '')
+        const digits = e.target.value.replace(/\D/g, '')
         if (digits.length === 4) {
-          const h = digits.slice(0, 2)
-          const m = digits.slice(2, 4)
-          setEndTime(`${h}:${m}`)
-        } else if (digits.length < 4 && digits.length > 0) {
-          // Pad with zeros if incomplete
+          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
+        } else if (digits.length === 3) {
+          // User entered 3 digits, assume 0 prefix for minutes
+          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
+        } else if (digits.length > 0 && digits.length < 3) {
+          // Invalid, reset to default
           setEndTime('17:00')
         }
       }}
       style={{ 
         height: CONTROL_H, 
         width: '100%', 
-        boxSizing: 'border-box',
-        letterSpacing: '0.05em'
+        boxSizing: 'border-box'
       }}
     />
   </div>
