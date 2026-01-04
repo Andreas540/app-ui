@@ -23,9 +23,61 @@ type LaborProductionRecord = {
   notes: string | null
 }
 
+const translations = {
+  en: {
+    statisticsFor: 'Statistics for',
+    totalQtyProduced: 'Total qty produced:',
+    avgQtyPerEmployee: 'Avg. qty per employee:',
+    avgHoursPerEmployee: 'Avg. hours per employee:',
+    noOfEmployees: 'No. of Employees',
+    totalHours: 'Total Hours',
+    product: 'Product',
+    quantity: 'Quantity',
+    selectProduct: 'Select product...',
+    notes: 'Notes (optional)',
+    notesPlaceholder: 'Optional notes...',
+    save: 'Save',
+    clear: 'Clear',
+    cancel: 'Cancel',
+    loading: 'Loading…',
+    error: 'Error:',
+    remove: 'Remove',
+    addProduct: 'Add product',
+    alertSelectDate: 'Please select a date',
+    alertEnterValue: 'Please enter at least one value',
+    alertSaveSuccess: 'Data saved successfully!',
+    alertSaveFailed: 'Save failed'
+  },
+  es: {
+    statisticsFor: 'Estadísticas para',
+    totalQtyProduced: 'Cantidad total producida:',
+    avgQtyPerEmployee: 'Cantidad promedio por empleado:',
+    avgHoursPerEmployee: 'Horas promedio por empleado:',
+    noOfEmployees: 'Número de Empleados',
+    totalHours: 'Horas Totales',
+    product: 'Producto',
+    quantity: 'Cantidad',
+    selectProduct: 'Seleccionar producto...',
+    notes: 'Notas (opcional)',
+    notesPlaceholder: 'Notas opcionales...',
+    save: 'Guardar',
+    clear: 'Limpiar',
+    cancel: 'Cancelar',
+    loading: 'Cargando…',
+    error: 'Error:',
+    remove: 'Eliminar',
+    addProduct: 'Agregar producto',
+    alertSelectDate: 'Por favor seleccione una fecha',
+    alertEnterValue: 'Por favor ingrese al menos un valor',
+    alertSaveSuccess: '¡Datos guardados exitosamente!',
+    alertSaveFailed: 'Error al guardar'
+  }
+}
+
 export default function LaborProduction() {
   const navigate = useNavigate()
 
+  const [language, setLanguage] = useState<'en' | 'es'>('es') // Spanish is default
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -38,6 +90,8 @@ export default function LaborProduction() {
     { tempId: crypto.randomUUID(), product_id: '', qty_produced: '' }
   ])
   const [notes, setNotes] = useState('')
+
+  const t = translations[language]
 
   // Load products on mount
   useEffect(() => {
@@ -147,7 +201,7 @@ export default function LaborProduction() {
 
   async function handleSave() {
     if (!selectedDate) {
-      alert('Please select a date')
+      alert(t.alertSelectDate)
       return
     }
 
@@ -161,7 +215,7 @@ export default function LaborProduction() {
 
     // Validate at least some data is provided
     if (!noOfEmployees && !totalHours && productsToSave.length === 0) {
-      alert('Please enter at least one value')
+      alert(t.alertEnterValue)
       return
     }
 
@@ -184,13 +238,13 @@ export default function LaborProduction() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Save failed')
+        throw new Error(errData.error || t.alertSaveFailed)
       }
 
-      alert('Data saved successfully!')
+      alert(t.alertSaveSuccess)
       await loadDataForDate(selectedDate) // Reload to show saved data
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t.alertSaveFailed)
     }
   }
 
@@ -209,8 +263,8 @@ export default function LaborProduction() {
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t.loading}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -231,6 +285,45 @@ export default function LaborProduction() {
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
+      {/* Language toggle flags - top right */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        gap: 8,
+        marginBottom: 16
+      }}>
+        <button
+          onClick={() => setLanguage('en')}
+          style={{
+            fontSize: 24,
+            padding: '4px 8px',
+            border: language === 'en' ? '2px solid var(--primary)' : '1px solid var(--border)',
+            borderRadius: 4,
+            background: 'transparent',
+            cursor: 'pointer',
+            lineHeight: 1
+          }}
+          title="English"
+        >
+          🇺🇸
+        </button>
+        <button
+          onClick={() => setLanguage('es')}
+          style={{
+            fontSize: 24,
+            padding: '4px 8px',
+            border: language === 'es' ? '2px solid var(--primary)' : '1px solid var(--border)',
+            borderRadius: 4,
+            background: 'transparent',
+            cursor: 'pointer',
+            lineHeight: 1
+          }}
+          title="Español"
+        >
+          🇪🇸
+        </button>
+      </div>
+
       {/* Statistics at top */}
       <div style={{ 
         padding: 16, 
@@ -239,21 +332,21 @@ export default function LaborProduction() {
         marginBottom: 24
       }}>
         <h4 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600 }}>
-          Statistics for {formattedSelectedDate}
+          {t.statisticsFor} {formattedSelectedDate}
         </h4>
         <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">Total qty produced:</span>
+            <span className="helper">{t.totalQtyProduced}</span>
             <span style={{ fontWeight: 600 }}>{stats.totalQty.toLocaleString()}</span>
           </div>
           <div style={{ display: 'none' }}>
-            <span className="helper">Avg. qty per employee:</span>
+            <span className="helper">{t.avgQtyPerEmployee}</span>
             <span style={{ fontWeight: 600 }}>
               {noOfEmployees ? stats.avgQtyPerEmployee : '—'}
             </span>
           </div>
           <div style={{ display: 'none' }}>
-            <span className="helper">Avg. hours per employee:</span>
+            <span className="helper">{t.avgHoursPerEmployee}</span>
             <span style={{ fontWeight: 600 }}>
               {noOfEmployees ? stats.avgHoursPerEmployee : '—'}
             </span>
@@ -307,7 +400,7 @@ export default function LaborProduction() {
       {/* Labor inputs - HIDDEN */}
       <div className="row row-2col-mobile" style={{ marginTop: 16, display: 'none' }}>
         <div>
-          <label>No. of Employees</label>
+          <label>{t.noOfEmployees}</label>
           <input
             type="number"
             min="0"
@@ -319,7 +412,7 @@ export default function LaborProduction() {
           />
         </div>
         <div>
-          <label>Total Hours</label>
+          <label>{t.totalHours}</label>
           <input
             type="number"
             min="0"
@@ -341,13 +434,13 @@ export default function LaborProduction() {
             style={{ marginTop: index > 0 ? 8 : 0, alignItems: 'flex-end' }}
           >
             <div>
-              {index === 0 && <label>Product</label>}
+              {index === 0 && <label>{t.product}</label>}
               <select
                 value={entry.product_id}
                 onChange={e => updateProductEntry(entry.tempId, 'product_id', e.target.value)}
                 style={{ height: CONTROL_H }}
               >
-                <option value="">Select product...</option>
+                <option value="">{t.selectProduct}</option>
                 {products.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -355,7 +448,7 @@ export default function LaborProduction() {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                {index === 0 && <label>Quantity</label>}
+                {index === 0 && <label>{t.quantity}</label>}
                 <input
                   type="number"
                   min="0"
@@ -378,7 +471,7 @@ export default function LaborProduction() {
                     border: '1px solid var(--border)',
                     color: 'salmon'
                   }}
-                  title="Remove"
+                  title={t.remove}
                 >
                   −
                 </button>
@@ -398,7 +491,7 @@ export default function LaborProduction() {
               height: 32,
               minWidth: 32
             }}
-            title="Add product"
+            title={t.addProduct}
           >
             +
           </button>
@@ -407,10 +500,10 @@ export default function LaborProduction() {
 
       {/* Notes */}
       <div style={{ marginTop: 16 }}>
-        <label>Notes (optional)</label>
+        <label>{t.notes}</label>
         <input
           type="text"
-          placeholder="Optional notes..."
+          placeholder={t.notesPlaceholder}
           value={notes}
           onChange={e => setNotes(e.target.value)}
           style={{ height: CONTROL_H }}
@@ -424,19 +517,19 @@ export default function LaborProduction() {
           onClick={handleSave}
           style={{ height: CONTROL_H }}
         >
-          Save
+          {t.save}
         </button>
         <button 
           onClick={handleClear}
           style={{ height: CONTROL_H }}
         >
-          Clear
+          {t.clear}
         </button>
         <button 
           onClick={handleCancel}
           style={{ height: CONTROL_H }}
         >
-          Cancel
+          {t.cancel}
         </button>
       </div>
     </div>
