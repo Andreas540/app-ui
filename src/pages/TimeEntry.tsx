@@ -509,25 +509,25 @@ export default function TimeEntry() {
       </div>
 
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        <div>
-          <label>{t.startTime}</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={e => setStartTime(e.target.value)}
-            style={{ height: CONTROL_H, width: '100%' }}
-          />
-        </div>
-        <div>
-          <label>{t.endTime}</label>
-          <input
-            type="time"
-            value={endTime}
-            onChange={e => setEndTime(e.target.value)}
-            style={{ height: CONTROL_H, width: '100%' }}
-          />
-        </div>
-      </div>
+  <div style={{ flex: 1, minWidth: 0 }}>
+    <label>{t.startTime}</label>
+    <input
+      type="time"
+      value={startTime}
+      onChange={e => setStartTime(e.target.value)}
+      style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+    />
+  </div>
+  <div style={{ flex: 1, minWidth: 0 }}>
+    <label>{t.endTime}</label>
+    <input
+      type="time"
+      value={endTime}
+      onChange={e => setEndTime(e.target.value)}
+      style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+    />
+  </div>
+</div>
 
       <div style={{ marginTop: 12 }}>
         <label>{t.notes}</label>
