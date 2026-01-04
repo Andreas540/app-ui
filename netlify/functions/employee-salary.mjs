@@ -52,10 +52,18 @@ async function updateSalary(event) {
     const currentSalary = Number(current[0].hour_salary || 0);
     const salaryChanged = newSalaryNum !== currentSalary;
 
+    // Check if this employee has ANY salary history
+    const existingHistory = await sql`
+      SELECT COUNT(*) as count
+      FROM salary_cost_history
+      WHERE tenant_id = ${TENANT_ID} AND employee_id = ${employeeId}
+    `;
+    const hasNoHistory = Number(existingHistory[0].count) === 0;
+
     // Determine if we should update employees.hour_salary immediately
     let shouldUpdateEmployeeSalaryNow = false;
     
-    if (salaryChanged) {
+    if (salaryChanged || hasNoHistory) {
       if (applyToHistory) {
         // Applying to all history = effective immediately
         shouldUpdateEmployeeSalaryNow = true;
@@ -101,8 +109,8 @@ async function updateSalary(event) {
           (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
         )
       `;
-    } else if (salaryChanged) {
-      // Salary changed but NOT applying to history
+    } else if (salaryChanged || hasNoHistory) {
+      // Salary changed OR this is the first salary entry for this employee
       if (effectiveDate) {
         // Insert entry with specific date
         await sql`
@@ -115,7 +123,7 @@ async function updateSalary(event) {
           )
         `;
       } else {
-        // Normal case: add new entry with current timestamp (valid from next time entry)
+        // Normal case: add new entry with current timestamp (valid from now)
         await sql`
           INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
           VALUES (${TENANT_ID}, ${employeeId}, ${newSalaryNum}, NOW())
@@ -126,7 +134,7 @@ async function updateSalary(event) {
     return cors(200, {
       ok: true,
       employee: updatedRows[0],
-      applied_to_history: applyToHistory && salaryChanged
+      applied_to_history: applyToHistory && (salaryChanged || hasNoHistory)
     });
   } catch (e) {
     console.error(e);
