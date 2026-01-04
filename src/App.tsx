@@ -221,29 +221,42 @@ function MainApp() {
   }, [isAuthenticated, user])
 
   // Auto-redirect from / if user doesn't have dashboard access
-  useEffect(() => {
-    if (location.pathname === '/' && !hasFeature('dashboard') && user) {
-      // Find first available feature and redirect there
-      const availableFeatures = [
-        { id: 'customers', route: '/customers' },
-        { id: 'orders', route: '/orders/new' },
-        { id: 'payments', route: '/payments' },
-        { id: 'inventory', route: '/inventory' },
-        { id: 'partners', route: '/partners' },
-        { id: 'suppliers', route: '/suppliers' },
-        { id: 'warehouse', route: '/warehouse' },
-        { id: 'employees', route: '/employees' },
-        { id: 'production', route: '/labor-production' },
-        { id: 'tenant-admin', route: '/admin' },
-        { id: 'settings', route: '/settings' },
-      ]
+useEffect(() => {
+  if (location.pathname === '/' && !hasFeature('dashboard') && user) {
+    // Find first available feature following menu order (top to bottom)
+    const availableFeatures = [
+      // Sales section
+      { id: 'dashboard', route: '/' },
+      { id: 'customers', route: '/customers' },
+      { id: 'partners', route: '/partners' },
+      { id: 'price-checker', route: '/price-checker' },
+      { id: 'orders', route: '/orders/new' },
+      { id: 'payments', route: '/payments' },
+      { id: 'products', route: '/products/new' },
+      { id: 'invoices', route: '/invoices/create' },
       
-      const firstAvailable = availableFeatures.find(f => hasFeature(f.id as any))
-      if (firstAvailable) {
-        window.location.href = firstAvailable.route
-      }
+      // Inventory section
+      { id: 'supply-chain', route: '/supply-chain' },
+      { id: 'suppliers', route: '/suppliers' },
+      { id: 'supplier-orders', route: '/supplier-orders/new' },
+      { id: 'warehouse', route: '/warehouse' },
+      
+      // Other section
+      { id: 'production', route: '/labor-production' },
+      { id: 'time-entry', route: '/time-entry' },
+      { id: 'employees', route: '/employees' },
+      { id: 'time-approval', route: '/time-approval' },
+      { id: 'costs', route: '/costs/new' },
+      { id: 'tenant-admin', route: '/admin' },
+      { id: 'settings', route: '/settings' },
+    ]
+    
+    const firstAvailable = availableFeatures.find(f => hasFeature(f.id as any))
+    if (firstAvailable) {
+      window.location.href = firstAvailable.route
     }
-  }, [location.pathname, user, hasFeature])
+  }
+}, [location.pathname, user, hasFeature])
 
   if (!isLoggedIn) return <Login />
 
