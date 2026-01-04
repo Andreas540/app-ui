@@ -1,6 +1,7 @@
 // src/pages/EmployeeManagement.tsx
 import { useEffect, useState } from 'react'
-import { getAuthHeaders } from '../lib/api'
+import { getAuthHeaders, updateEmployeeSalary } from '../lib/api'
+import { todayYMD } from '../lib/time'
 
 type Employee = {
   id: string
@@ -81,6 +82,14 @@ const translations = {
     loadFailed: 'Failed to load employees',
     loading: 'Loading…',
     error: 'Error:',
+    salaryOptions: 'When should this salary take effect?',
+    salaryApplyToHistory: 'Apply new salary to all previous hours',
+    salaryFromToday: 'New salary valid from today',
+    salaryFromSpecificDate: 'New salary valid from specific date',
+    selectDate: 'Please select a date',
+    salaryUpdated: (name: string) => `Updated salary for ${name}`,
+    salaryAppliedToHistory: 'applied to all previous hours',
+    salaryEffectiveFrom: (date: string) => `effective from ${date}`,
   },
   es: {
     title: 'Gestión de Empleados',
@@ -127,6 +136,14 @@ const translations = {
     loadFailed: 'Error al cargar empleados',
     loading: 'Cargando…',
     error: 'Error:',
+    salaryOptions: '¿Cuándo debe aplicarse este salario?',
+    salaryApplyToHistory: 'Aplicar nuevo salario a todas las horas anteriores',
+    salaryFromToday: 'Nuevo salario válido desde hoy',
+    salaryFromSpecificDate: 'Nuevo salario válido desde fecha específica',
+    selectDate: 'Por favor selecciona una fecha',
+    salaryUpdated: (name: string) => `Salario actualizado para ${name}`,
+    salaryAppliedToHistory: 'aplicado a todas las horas anteriores',
+    salaryEffectiveFrom: (date: string) => `efectivo desde ${date}`,
   },
 }
 
@@ -147,6 +164,11 @@ export default function EmployeeManagement() {
   const [hourSalary, setHourSalary] = useState('')
   const [active, setActive] = useState(true)
   const [notes, setNotes] = useState('')
+  
+  // Salary history options
+  const [salaryOption, setSalaryOption] = useState<'history' | 'next' | 'specific'>('next')
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
+  const [originalSalary, setOriginalSalary] = useState<string>('')
 
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
@@ -202,6 +224,9 @@ export default function EmployeeManagement() {
       setHourSalary('')
       setActive(true)
       setNotes('')
+      setSalaryOption('next')
+      setSpecificDate(todayYMD())
+      setOriginalSalary('')
       setShowForm(true)
 
       const nextCode = await fetchNextEmployeeCode()
@@ -218,8 +243,11 @@ export default function EmployeeManagement() {
     setEmail(safeString(employee.email))
     setEmployeeCode(safeString(employee.employee_code))
     setHourSalary(safeString(employee.hour_salary))
+    setOriginalSalary(safeString(employee.hour_salary))
     setActive(employee.active)
     setNotes(safeString(employee.notes))
+    setSalaryOption('next')
+    setSpecificDate(todayYMD())
     setShowForm(true)
   }
 
@@ -232,6 +260,9 @@ export default function EmployeeManagement() {
     setHourSalary('')
     setActive(true)
     setNotes('')
+    setSalaryOption('next')
+    setSpecificDate(todayYMD())
+    setOriginalSalary('')
   }
 
   async function handleSave() {
@@ -240,8 +271,19 @@ export default function EmployeeManagement() {
       return
     }
 
+    const salaryNum = hourSalary.trim() ? parseFloat(hourSalary) : null
+    const originalSalaryNum = originalSalary.trim() ? parseFloat(originalSalary) : null
+    const salaryChanged = editingId && salaryNum !== null && salaryNum !== originalSalaryNum
+
+    if (salaryOption === 'specific' && !specificDate && salaryChanged) {
+      alert(t.selectDate)
+      return
+    }
+
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      // Save employee basic info
       const res = await fetch(`${base}/api/employees`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
@@ -250,7 +292,7 @@ export default function EmployeeManagement() {
           name: name.trim(),
           email: email.trim() || null,
           employee_code: employeeCode.trim() || null,
-          hour_salary: hourSalary.trim() ? parseFloat(hourSalary) : null,
+          hour_salary: salaryNum,
           active,
           notes: notes.trim() || null,
         }),
@@ -262,8 +304,28 @@ export default function EmployeeManagement() {
       }
 
       const result = await res.json()
-      if (result.created) alert(t.created)
-      else if (result.updated) alert(t.updated)
+      const employeeId = result.employee?.id || editingId
+
+      // If editing and salary changed, update salary history
+      if (salaryChanged && employeeId && salaryNum !== null) {
+        await updateEmployeeSalary({
+          employee_id: employeeId,
+          salary: salaryNum,
+          apply_to_history: salaryOption === 'history',
+          effective_date: salaryOption === 'specific' ? specificDate : undefined,
+        })
+
+        let message = t.salaryUpdated(name.trim())
+        if (salaryOption === 'history') {
+          message += ` (${t.salaryAppliedToHistory})`
+        } else if (salaryOption === 'specific') {
+          message += ` (${t.salaryEffectiveFrom(specificDate)})`
+        }
+        alert(message)
+      } else {
+        if (result.created) alert(t.created)
+        else if (result.updated) alert(t.updated)
+      }
 
       handleCancel()
       await loadEmployees()
@@ -465,6 +527,63 @@ export default function EmployeeManagement() {
               />
             </div>
           </div>
+
+          {/* Salary options - show only if editing and salary field has value */}
+          {editingId && hourSalary.trim() && (
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
+                {t.salaryOptions}
+              </label>
+              
+              <div style={{ display: 'grid', gap: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="salaryOption"
+                    checked={salaryOption === 'history'}
+                    onChange={() => setSalaryOption('history')}
+                    style={{ width: 18, height: 18 }}
+                  />
+                  <span style={{ fontSize: 14 }}>{t.salaryApplyToHistory}</span>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="salaryOption"
+                    checked={salaryOption === 'next'}
+                    onChange={() => setSalaryOption('next')}
+                    style={{ width: 18, height: 18 }}
+                  />
+                  <span style={{ fontSize: 14 }}>{t.salaryFromToday}</span>
+                </label>
+
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="salaryOption"
+                      checked={salaryOption === 'specific'}
+                      onChange={() => setSalaryOption('specific')}
+                      style={{ width: 18, height: 18 }}
+                    />
+                    <span style={{ fontSize: 14 }}>{t.salaryFromSpecificDate}</span>
+                  </label>
+                  
+                  {salaryOption === 'specific' && (
+                    <div style={{ marginTop: 8, marginLeft: 28 }}>
+                      <input
+                        type="date"
+                        value={specificDate}
+                        onChange={e => setSpecificDate(e.target.value)}
+                        style={{ width: '100%', maxWidth: 200, height: CONTROL_H }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: 12 }}>
             <label>{t.email}</label>
