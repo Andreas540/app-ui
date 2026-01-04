@@ -375,6 +375,11 @@ function MainApp() {
                   Inventory Dashboard
                 </NavLink>
               )}
+              {hasFeature('tenant-admin') && (
+  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
+    Tenant Admin
+  </NavLink>
+)}
               {hasFeature('settings') && (
                 <NavLink to="/settings" onClick={() => setNavOpen(false)}>
                   Settings
@@ -525,6 +530,12 @@ function MainApp() {
                   Super Admin
                 </NavLink>
               )}
+
+              {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
+  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
+    Tenant Admin
+  </NavLink>
+)}
 
               {hasFeature('settings') && (
                 <NavLink to="/settings" onClick={() => setNavOpen(false)}>

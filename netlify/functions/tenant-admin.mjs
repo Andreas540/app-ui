@@ -22,9 +22,13 @@ async function handleGet(event) {
 
     const { userId, tenantId } = authInfo
 
-    // Check if user is tenant_admin for this tenant
+    // Check if user is super_admin OR tenant_admin for this tenant
+    const isSuperAdmin = await checkSuperAdmin(sql, userId)
     const isTenantAdmin = await checkTenantAdmin(sql, userId, tenantId)
-    if (!isTenantAdmin) return cors(403, { error: 'Tenant admin access required' })
+    
+    if (!isSuperAdmin && !isTenantAdmin) {
+      return cors(403, { error: 'Tenant admin access required' })
+    }
 
     const action = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('action')
 
@@ -82,9 +86,13 @@ async function handlePost(event) {
 
     const { userId, tenantId } = authInfo
 
-    // Check if user is tenant_admin for this tenant
+    // Check if user is super_admin OR tenant_admin for this tenant
+    const isSuperAdmin = await checkSuperAdmin(sql, userId)
     const isTenantAdmin = await checkTenantAdmin(sql, userId, tenantId)
-    if (!isTenantAdmin) return cors(403, { error: 'Tenant admin access required' })
+    
+    if (!isSuperAdmin && !isTenantAdmin) {
+      return cors(403, { error: 'Tenant admin access required' })
+    }
 
     const body = JSON.parse(event.body || '{}')
     const { action } = body
@@ -188,7 +196,7 @@ async function handlePost(event) {
       const hashedPassword = await bcrypt.default.hash(password, 10)
 
       // Determine access_level based on role
-      const accessLevel = role === 'tenant_admin' ? 'admin' : 'inventory'
+      const accessLevel = 'admin'
 
       // Create user in users table
       const userResult = await sql`
@@ -263,6 +271,28 @@ function getUserAndTenantFromToken(event) {
   } catch (e) {
     console.error('Token decode error:', e)
     return null
+  }
+}
+
+// Check if user is super-admin by email
+async function checkSuperAdmin(sql, userId) {
+  try {
+    const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+    
+    if (SUPER_ADMIN_EMAILS.length === 0) {
+      return false
+    }
+
+    const user = await sql`
+      SELECT email FROM users WHERE id = ${userId}
+    `
+    
+    if (user.length === 0) return false
+    
+    return SUPER_ADMIN_EMAILS.includes(user[0].email.toLowerCase())
+  } catch (e) {
+    console.error('checkSuperAdmin error:', e)
+    return false
   }
 }
 
