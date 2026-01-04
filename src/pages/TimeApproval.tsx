@@ -25,7 +25,77 @@ type Employee = {
   employee_code: string | null
 }
 
+type Lang = 'es' | 'en'
+
+const translations = {
+  es: {
+    timeApproval: 'Aprobación de Tiempo',
+    employee: 'Empleado',
+    allEmployees: 'Todos los Empleados',
+    fromDate: 'Desde',
+    toDate: 'Hasta',
+    showApproved: 'Mostrar aprobados',
+    pendingApproval: 'Pendiente de Aprobación',
+    pendingHours: 'Horas Pendientes',
+    approvedHours: 'Horas Aprobadas',
+    totalHours: 'Total de Horas',
+    selectAll: 'Seleccionar todo',
+    selected: 'seleccionado(s)',
+    approveSelected: 'Aprobar Seleccionados',
+    noEntries: 'No se encontraron entradas de tiempo para los filtros seleccionados.',
+    hrs: 'hrs',
+    approved: '✓ Aprobado',
+    approve: 'Aprobar',
+    unapprove: 'Desaprobar',
+    note: 'Nota',
+    approvedBy: 'Aprobado por',
+    on: 'el',
+    confirmUnapprove: '¿Desaprobar esta entrada de tiempo? El empleado podrá editarla nuevamente.',
+    selectEntries: 'Por favor seleccione entradas de tiempo para aprobar',
+    confirmBulk: '¿Aprobar {count} entradas de tiempo?',
+    bulkSuccess: '{count} entradas de tiempo aprobadas',
+    approvalFailed: 'Error en la aprobación',
+    bulkFailed: 'Error en la aprobación masiva',
+    loading: 'Cargando…',
+    error: 'Error',
+  },
+  en: {
+    timeApproval: 'Time Approval',
+    employee: 'Employee',
+    allEmployees: 'All Employees',
+    fromDate: 'From Date',
+    toDate: 'To Date',
+    showApproved: 'Show approved',
+    pendingApproval: 'Pending Approval',
+    pendingHours: 'Pending Hours',
+    approvedHours: 'Approved Hours',
+    totalHours: 'Total Hours',
+    selectAll: 'Select all',
+    selected: 'selected',
+    approve: 'Approve',
+    approveSelected: 'Approve Selected',
+    noEntries: 'No time entries found for selected filters.',
+    hrs: 'hrs',
+    approved: '✓ Approved',
+    unapprove: 'Unapprove',
+    note: 'Note',
+    approvedBy: 'Approved by',
+    on: 'on',
+    confirmUnapprove: 'Unapprove this time entry? Employee will be able to edit it again.',
+    selectEntries: 'Please select time entries to approve',
+    confirmBulk: 'Approve {count} time entries?',
+    bulkSuccess: '{count} time entries approved',
+    approvalFailed: 'Approval failed',
+    bulkFailed: 'Bulk approval failed',
+    loading: 'Loading…',
+    error: 'Error',
+  },
+}
+
 export default function TimeApproval() {
+  const [lang, setLang] = useState<Lang>('es') // Spanish default
+  const t = translations[lang]
+
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,12 +105,10 @@ export default function TimeApproval() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
   const [showApproved, setShowApproved] = useState(false)
   const [dateFrom, setDateFrom] = useState(() => {
-    // Default to start of current month
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
   })
   const [dateTo, setDateTo] = useState(() => {
-    // Default to today
     return new Date().toISOString().split('T')[0]
   })
 
@@ -52,7 +120,6 @@ export default function TimeApproval() {
 
   useEffect(() => {
     loadEmployees()
-    // Get current user name from localStorage
     try {
       const userData = localStorage.getItem('userData')
       if (userData) {
@@ -66,7 +133,7 @@ export default function TimeApproval() {
 
   useEffect(() => {
     loadTimeEntries()
-  }, [selectedEmployeeId, showApproved, dateFrom, dateTo])
+  }, [selectedEmployeeId, dateFrom, dateTo])
 
   async function loadEmployees() {
     try {
@@ -96,9 +163,8 @@ export default function TimeApproval() {
         url += `&employee_id=${selectedEmployeeId}`
       }
       
-      if (!showApproved) {
-        url += '&approved=false'
-      }
+      // Always load ALL entries (approved and pending) for stats calculation
+      // Filter display based on showApproved checkbox
       
       const res = await fetch(url, {
         headers: getAuthHeaders(),
@@ -108,7 +174,7 @@ export default function TimeApproval() {
       
       const data = await res.json()
       setTimeEntries(data)
-      setSelectedIds(new Set()) // Clear selections when reloading
+      setSelectedIds(new Set())
     } catch (e: any) {
       setErr(e?.message || String(e))
     } finally {
@@ -134,17 +200,17 @@ export default function TimeApproval() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Approval failed')
+        throw new Error(errData.error || t.approvalFailed)
       }
 
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || 'Approval failed')
+      alert(e?.message || t.approvalFailed)
     }
   }
 
   async function handleUnapprove(entryId: string) {
-    if (!confirm('Unapprove this time entry? Employee will be able to edit it again.')) {
+    if (!confirm(t.confirmUnapprove)) {
       return
     }
 
@@ -165,29 +231,28 @@ export default function TimeApproval() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Unapprove failed')
+        throw new Error(errData.error || t.approvalFailed)
       }
 
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || 'Unapprove failed')
+      alert(e?.message || t.approvalFailed)
     }
   }
 
   async function handleBulkApprove() {
     if (selectedIds.size === 0) {
-      alert('Please select time entries to approve')
+      alert(t.selectEntries)
       return
     }
 
-    if (!confirm(`Approve ${selectedIds.size} time entries?`)) {
+    if (!confirm(t.confirmBulk.replace('{count}', String(selectedIds.size)))) {
       return
     }
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       
-      // Approve each selected entry
       for (const id of selectedIds) {
         await fetch(`${base}/api/time-entries-approve`, {
           method: 'POST',
@@ -203,10 +268,10 @@ export default function TimeApproval() {
         })
       }
 
-      alert(`${selectedIds.size} time entries approved`)
+      alert(t.bulkSuccess.replace('{count}', String(selectedIds.size)))
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || 'Bulk approval failed')
+      alert(e?.message || t.bulkFailed)
     }
   }
 
@@ -228,11 +293,19 @@ export default function TimeApproval() {
     }
   }
 
-  // Group entries by employee
+  // Filter entries to display based on showApproved checkbox
+  const displayedEntries = useMemo(() => {
+    if (showApproved) {
+      return timeEntries // Show all (approved + pending)
+    }
+    return timeEntries.filter(e => !e.approved) // Show only pending
+  }, [timeEntries, showApproved])
+
+  // Group displayed entries by employee
   const entriesByEmployee = useMemo(() => {
     const grouped = new Map<string, TimeEntry[]>()
     
-    timeEntries.forEach(entry => {
+    displayedEntries.forEach(entry => {
       const key = entry.employee_id
       if (!grouped.has(key)) {
         grouped.set(key, [])
@@ -241,9 +314,9 @@ export default function TimeApproval() {
     })
     
     return grouped
-  }, [timeEntries])
+  }, [displayedEntries])
 
-  // Calculate summary stats
+  // Calculate summary stats from ALL entries (not filtered)
   const stats = useMemo(() => {
     const totalHours = timeEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0)
     const approvedHours = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.total_hours || 0), 0)
@@ -262,44 +335,136 @@ export default function TimeApproval() {
   const pendingEntries = timeEntries.filter(e => !e.approved)
 
   if (loading && timeEntries.length === 0) {
-    return <div className="card"><p>Loading…</p></div>
+    return <div className="card"><p>{t.loading}</p></div>
   }
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error}: {err}</p></div>
 
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{ maxWidth: 1200 }}>
-      <h3>Time Approval</h3>
+    <div className="card" style={{ maxWidth: 1200, position: 'relative' }}>
+      {/* Language toggle flags - top right corner */}
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
+        <button
+          onClick={() => setLang('en')}
+          style={{
+            width: 40,
+            height: 40,
+            padding: 0,
+            border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: 'transparent',
+            fontSize: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="English"
+        >
+          🇺🇸
+        </button>
+        <button
+          onClick={() => setLang('es')}
+          style={{
+            width: 40,
+            height: 40,
+            padding: 0,
+            border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: 'transparent',
+            fontSize: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="Español"
+        >
+          🇪🇸
+        </button>
+      </div>
 
-      {/* Summary stats */}
+      <h3>{t.timeApproval}</h3>
+
+      {/* Filters - Employee full width, dates below */}
+      <div style={{ marginTop: 16 }}>
+        <div>
+          <label>{t.employee}</label>
+          <select
+            value={selectedEmployeeId}
+            onChange={e => setSelectedEmployeeId(e.target.value)}
+            style={{ height: CONTROL_H, width: '100%' }}
+          >
+            <option value="all">{t.allEmployees}</option>
+            {employees.map(emp => (
+              <option key={emp.id} value={emp.id}>
+                {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ 
+          marginTop: 12, 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: 12 
+        }}>
+          <div>
+            <label>{t.fromDate}</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              style={{ height: CONTROL_H, width: '100%' }}
+            />
+          </div>
+          <div>
+            <label>{t.toDate}</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              style={{ height: CONTROL_H, width: '100%' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Summary stats - 2x2 grid */}
       <div style={{ 
-        marginTop: 16,
+        marginTop: 24,
         padding: 16, 
         background: 'rgba(255,255,255,0.05)', 
         borderRadius: 8 
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, fontSize: 14 }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: 16, 
+          fontSize: 14 
+        }}>
           <div>
-            <div className="helper" style={{ marginBottom: 4 }}>Pending Approval</div>
+            <div className="helper" style={{ marginBottom: 4 }}>{t.pendingApproval}</div>
             <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
               {stats.pendingCount}
             </div>
           </div>
           <div>
-            <div className="helper" style={{ marginBottom: 4 }}>Pending Hours</div>
+            <div className="helper" style={{ marginBottom: 4 }}>{t.pendingHours}</div>
             <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
               {stats.pendingHours}
             </div>
           </div>
           <div>
-            <div className="helper" style={{ marginBottom: 4 }}>Approved Hours</div>
+            <div className="helper" style={{ marginBottom: 4 }}>{t.approvedHours}</div>
             <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
               {stats.approvedHours}
             </div>
           </div>
           <div>
-            <div className="helper" style={{ marginBottom: 4 }}>Total Hours</div>
+            <div className="helper" style={{ marginBottom: 4 }}>{t.totalHours}</div>
             <div style={{ fontSize: 24, fontWeight: 600 }}>
               {stats.totalHours}
             </div>
@@ -307,100 +472,74 @@ export default function TimeApproval() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ marginTop: 24 }}>
-        <div className="row row-2col-mobile">
-          <div>
-            <label>Employee</label>
-            <select
-              value={selectedEmployeeId}
-              onChange={e => setSelectedEmployeeId(e.target.value)}
-              style={{ height: CONTROL_H }}
-            >
-              <option value="all">All Employees</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', height: CONTROL_H }}>
+      {/* Select all and Show approved - 50/50 row */}
+      <div style={{ 
+        marginTop: 16, 
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 12
+      }}>
+        {/* Select all */}
+        {pendingEntries.length > 0 && (
+          <div style={{ 
+            padding: 12,
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: 8,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={showApproved}
-                onChange={e => setShowApproved(e.target.checked)}
+                checked={selectedIds.size === pendingEntries.length && pendingEntries.length > 0}
+                onChange={toggleSelectAll}
                 style={{ width: 18, height: 18 }}
               />
-              <span>Show approved entries</span>
+              <span>
+                {selectedIds.size === 0 
+                  ? t.selectAll
+                  : `${selectedIds.size} ${t.selected}`}
+              </span>
             </label>
+            {selectedIds.size > 0 && (
+              <button
+                className="primary"
+                onClick={handleBulkApprove}
+                style={{ height: 32, padding: '0 12px', fontSize: 12 }}
+              >
+                {t.approveSelected} ({selectedIds.size})
+              </button>
+            )}
           </div>
-        </div>
-
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-          <div>
-            <label>From Date</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              style={{ height: CONTROL_H }}
-            />
-          </div>
-          <div>
-            <label>To Date</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              style={{ height: CONTROL_H }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Bulk actions */}
-      {!showApproved && pendingEntries.length > 0 && (
-        <div style={{ 
-          marginTop: 16, 
+        )}
+        
+        {/* Show approved toggle */}
+        <div style={{
           padding: 12,
           background: 'rgba(255,255,255,0.03)',
           borderRadius: 8,
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          ...(pendingEntries.length === 0 ? { gridColumn: '1 / -1' } : {})
         }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
               type="checkbox"
-              checked={selectedIds.size === pendingEntries.length && pendingEntries.length > 0}
-              onChange={toggleSelectAll}
+              checked={showApproved}
+              onChange={e => setShowApproved(e.target.checked)}
               style={{ width: 18, height: 18 }}
             />
-            <span>
-              {selectedIds.size === 0 
-                ? 'Select all' 
-                : `${selectedIds.size} selected`}
-            </span>
+            <span>{t.showApproved}</span>
           </label>
-          {selectedIds.size > 0 && (
-            <button
-              className="primary"
-              onClick={handleBulkApprove}
-              style={{ height: 36, padding: '0 16px' }}
-            >
-              Approve Selected ({selectedIds.size})
-            </button>
-          )}
         </div>
-      )}
+      </div>
 
       {/* Time entries list */}
       <div style={{ marginTop: 24 }}>
-        {timeEntries.length === 0 ? (
+        {displayedEntries.length === 0 ? (
           <p className="helper">
-            No time entries found for selected filters.
+            {t.noEntries}
           </p>
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
@@ -445,10 +584,12 @@ export default function TimeApproval() {
                             : '1px solid var(--border)',
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: 12
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 200 }}>
                           {!entry.approved && (
                             <input
                               type="checkbox"
@@ -460,26 +601,26 @@ export default function TimeApproval() {
                           
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-  {formatLongDate(entry.work_date)}
-  {', '}
-  {(() => {
-    const [year] = entry.work_date.split('-')
-    return year
-  })()}
-</div>
+                              {formatLongDate(entry.work_date)}
+                              {', '}
+                              {(() => {
+                                const [year] = entry.work_date.split('-')
+                                return year
+                              })()}
+                            </div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                               {entry.start_time} - {entry.end_time}
                               <span style={{ margin: '0 8px' }}>•</span>
-                              {entry.total_hours?.toFixed(2)} hrs
+                              {entry.total_hours?.toFixed(2)} {t.hrs}
                             </div>
                             {entry.notes && (
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                                Note: {entry.notes}
+                                {t.note}: {entry.notes}
                               </div>
                             )}
                             {entry.approved && entry.approved_by && (
                               <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
-                                Approved by {entry.approved_by} on {new Date(entry.approved_at!).toLocaleDateString()}
+                                {t.approvedBy} {entry.approved_by} {t.on} {new Date(entry.approved_at!).toLocaleDateString()}
                               </div>
                             )}
                           </div>
@@ -494,7 +635,7 @@ export default function TimeApproval() {
                                 fontWeight: 600,
                                 padding: '6px 12px'
                               }}>
-                                ✓ Approved
+                                {t.approved}
                               </span>
                               <button
                                 onClick={() => handleUnapprove(entry.id)}
@@ -508,7 +649,7 @@ export default function TimeApproval() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                Unapprove
+                                {t.unapprove}
                               </button>
                             </>
                           ) : (
@@ -521,7 +662,7 @@ export default function TimeApproval() {
                                 height: 32
                               }}
                             >
-                              Approve
+                              {t.approve}
                             </button>
                           )}
                         </div>
