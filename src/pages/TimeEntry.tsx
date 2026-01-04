@@ -24,6 +24,85 @@ type TimeEntry = {
   updated_at: string
 }
 
+type Lang = 'es' | 'en'
+
+const translations = {
+  es: {
+    timeEntry: 'Entrada de Tiempo',
+    employee: 'Empleado',
+    reportingAs: 'Reportando como',
+    date: 'Fecha',
+    totalHours: 'Total de Horas',
+    startTime: 'Hora de Inicio',
+    endTime: 'Hora de Fin',
+    notes: 'Notas (opcional)',
+    notesPlaceholder: 'Notas opcionales...',
+    saveEntry: 'Guardar Entrada',
+    clear: 'Limpiar',
+    timeSummary: 'Resumen de Tiempo de',
+    week: 'Semana',
+    month: 'Mes',
+    daysWorked: 'Días trabajados:',
+    totalHoursLabel: 'Total de horas:',
+    approvedHours: 'Horas aprobadas:',
+    pendingApproval: 'Pendiente de aprobación:',
+    recentEntries: 'Entradas Recientes',
+    approved: '✓ Aprobado',
+    pending: 'Pendiente',
+    delete: 'Eliminar',
+    hrs: 'hrs',
+    loading: 'Cargando…',
+    error: 'Error',
+    noEmployees: 'No se encontraron empleados. Por favor agregue empleados primero.',
+    employeeMissing: 'Empleado faltante',
+    selectDate: 'Por favor seleccione una fecha',
+    enterTimes: 'Por favor ingrese hora de inicio y fin',
+    saveFailed: 'Error al guardar',
+    entrySaved: '¡Entrada de tiempo guardada exitosamente!',
+    entryUpdated: '¡Entrada de tiempo actualizada exitosamente!',
+    confirmDelete: '¿Eliminar esta entrada de tiempo?',
+    entryDeleted: 'Entrada de tiempo eliminada',
+    deleteFailed: 'Error al eliminar',
+  },
+  en: {
+    timeEntry: 'Time Entry',
+    employee: 'Employee',
+    reportingAs: 'Reporting as',
+    date: 'Date',
+    totalHours: 'Total Hours',
+    startTime: 'Start Time',
+    endTime: 'End Time',
+    notes: 'Notes (optional)',
+    notesPlaceholder: 'Optional notes...',
+    saveEntry: 'Save Time Entry',
+    clear: 'Clear',
+    timeSummary: 'Time Summary for',
+    week: 'Week',
+    month: 'Month',
+    daysWorked: 'Days worked:',
+    totalHoursLabel: 'Total hours:',
+    approvedHours: 'Approved hours:',
+    pendingApproval: 'Pending approval:',
+    recentEntries: 'Recent Time Entries',
+    approved: '✓ Approved',
+    pending: 'Pending',
+    delete: 'Delete',
+    hrs: 'hrs',
+    loading: 'Loading…',
+    error: 'Error',
+    noEmployees: 'No employees found. Please add employees first.',
+    employeeMissing: 'Employee missing',
+    selectDate: 'Please select a date',
+    enterTimes: 'Please enter both start and end times',
+    saveFailed: 'Save failed',
+    entrySaved: 'Time entry saved successfully!',
+    entryUpdated: 'Time entry updated successfully!',
+    confirmDelete: 'Delete this time entry?',
+    entryDeleted: 'Time entry deleted',
+    deleteFailed: 'Delete failed',
+  },
+}
+
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null
   const n = typeof v === 'number' ? v : Number(v)
@@ -32,11 +111,9 @@ function toNumberOrNull(v: unknown): number | null {
 
 function getEmployeeTokenFromUrl(): string | null {
   try {
-    // BrowserRouter: /time-entry?t=...
     const qsToken = new URLSearchParams(window.location.search).get('employee_token')
     if (qsToken) return qsToken
 
-    // HashRouter: /#/time-entry?t=...
     const hash = window.location.hash || ''
     const hashPart = hash.startsWith('#') ? hash.slice(1) : hash
     const hashQuery = hashPart.includes('?') ? hashPart.split('?')[1] : ''
@@ -51,20 +128,21 @@ export default function TimeEntry() {
   const employeeToken = getEmployeeTokenFromUrl()
   const employeeMode = !!employeeToken
 
+  const [lang, setLang] = useState<Lang>('es') // Spanish default
+  const t = translations[lang]
+
   const [employees, setEmployees] = useState<Employee[]>([])
   const [employeeMe, setEmployeeMe] = useState<Employee | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  // Form state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [workDate, setWorkDate] = useState(todayYMD())
   const [startTime, setStartTime] = useState('08:00')
   const [endTime, setEndTime] = useState('17:00')
   const [notes, setNotes] = useState('')
 
-  // Time entries list
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'week' | 'month'>('week')
 
@@ -73,14 +151,13 @@ export default function TimeEntry() {
   }
 
   function headersFor(mode: 'app' | 'employee') {
-  if (mode === 'employee') {
-    console.log('🔑 Sending employee token:', employeeToken)
-    return {
-      'x-employee-token': employeeToken as string,
+    if (mode === 'employee') {
+      return {
+        'x-employee-token': employeeToken as string,
+      }
     }
+    return getAuthHeaders()
   }
-  return getAuthHeaders()
-}
 
   useEffect(() => {
     if (employeeMode) {
@@ -99,42 +176,36 @@ export default function TimeEntry() {
   }, [selectedEmployeeId, viewPeriod])
 
   async function loadEmployeeMe() {
-  try {
-    setLoading(true)
-    setErr(null)
+    try {
+      setLoading(true)
+      setErr(null)
 
-    const base = apiBase()
-    const headers = headersFor('employee')
-    
-    console.log('📡 Loading employee with headers:', headers)
-    console.log('📡 URL:', `${base}/api/time-entries?me=true`)
-    
-    const res = await fetch(`${base}/api/time-entries?me=true`, {
-      headers,
-    })
+      const base = apiBase()
+      const headers = headersFor('employee')
 
-    console.log('📡 Response status:', res.status)
+      const res = await fetch(`${base}/api/time-entries?me=true`, {
+        headers,
+      })
 
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}))
-      console.log('❌ Error response:', j)
-      throw new Error(j.error || 'Failed to load employee')
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to load employee')
+      }
+
+      const j = await res.json()
+      const emp: Employee | null = j?.employee || null
+      if (!emp) throw new Error('Employee not found')
+
+      if (!emp.active) throw new Error('Employee is inactive')
+
+      setEmployeeMe(emp)
+      setSelectedEmployeeId(emp.id)
+    } catch (e: any) {
+      setErr(e?.message || String(e))
+    } finally {
+      setLoading(false)
     }
-
-    const j = await res.json()
-    const emp: Employee | null = j?.employee || null
-    if (!emp) throw new Error('Employee not found')
-
-    if (!emp.active) throw new Error('Employee is inactive')
-
-    setEmployeeMe(emp)
-    setSelectedEmployeeId(emp.id)
-  } catch (e: any) {
-    setErr(e?.message || String(e))
-  } finally {
-    setLoading(false)
   }
-}
 
   async function loadEmployees() {
     try {
@@ -204,15 +275,15 @@ export default function TimeEntry() {
 
   async function handleSave() {
     if (!selectedEmployeeId) {
-      alert('Employee missing')
+      alert(t.employeeMissing)
       return
     }
     if (!workDate) {
-      alert('Please select a date')
+      alert(t.selectDate)
       return
     }
     if (!startTime || !endTime) {
-      alert('Please enter both start and end times')
+      alert(t.enterTimes)
       return
     }
 
@@ -227,7 +298,6 @@ export default function TimeEntry() {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          // app-mode uses employee_id; employee-mode ignores it server-side
           employee_id: selectedEmployeeId,
           work_date: workDate,
           start_time: startTime,
@@ -238,12 +308,12 @@ export default function TimeEntry() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Save failed')
+        throw new Error(errData.error || t.saveFailed)
       }
 
       const result = await res.json()
-      if (result.created) alert('Time entry saved successfully!')
-      else if (result.updated) alert('Time entry updated successfully!')
+      if (result.created) alert(t.entrySaved)
+      else if (result.updated) alert(t.entryUpdated)
 
       await loadTimeEntries()
       setNotes('')
@@ -252,12 +322,12 @@ export default function TimeEntry() {
       nextDay.setDate(nextDay.getDate() + 1)
       setWorkDate(nextDay.toISOString().split('T')[0])
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t.saveFailed)
     }
   }
 
   async function handleDelete(entryId: string) {
-    if (!confirm('Delete this time entry?')) return
+    if (!confirm(t.confirmDelete)) return
 
     try {
       const base = apiBase()
@@ -270,13 +340,13 @@ export default function TimeEntry() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Delete failed')
+        throw new Error(errData.error || t.deleteFailed)
       }
 
-      alert('Time entry deleted')
+      alert(t.entryDeleted)
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || 'Delete failed')
+      alert(e?.message || t.deleteFailed)
     }
   }
 
@@ -325,8 +395,8 @@ export default function TimeEntry() {
     }
   }, [timeEntries])
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t.loading}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error}: {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -335,21 +405,62 @@ export default function TimeEntry() {
     : employees.find(e => e.id === selectedEmployeeId)
 
   if (!employeeMode && employees.length === 0) {
-    return <div className="card"><p>No employees found. Please add employees first.</p></div>
+    return <div className="card"><p>{t.noEmployees}</p></div>
   }
 
   return (
-    <div className="card" style={{ maxWidth: 900 }}>
-      <h3>Time Entry</h3>
+    <div className="card" style={{ maxWidth: 900, position: 'relative' }}>
+      {/* Language toggle flags - top right corner */}
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
+        <button
+          onClick={() => setLang('es')}
+          style={{
+            width: 40,
+            height: 40,
+            padding: 0,
+            border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: 'transparent',
+            fontSize: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="Español"
+        >
+          🇪🇸
+        </button>
+        <button
+          onClick={() => setLang('en')}
+          style={{
+            width: 40,
+            height: 40,
+            padding: 0,
+            border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: 'transparent',
+            fontSize: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="English"
+        >
+          🇺🇸
+        </button>
+      </div>
 
-      {/* ✅ App-mode only: employee selector */}
+      <h3>{t.timeEntry}</h3>
+
       {!employeeMode && (
         <div style={{ marginTop: 16 }}>
-          <label>Employee</label>
+          <label>{t.employee}</label>
           <select
             value={selectedEmployeeId}
             onChange={e => setSelectedEmployeeId(e.target.value)}
-            style={{ height: CONTROL_H }}
+            style={{ height: CONTROL_H, width: '100%' }}
           >
             {employees.map(emp => (
               <option key={emp.id} value={emp.id}>
@@ -360,26 +471,25 @@ export default function TimeEntry() {
         </div>
       )}
 
-      {/* ✅ Employee-mode: show fixed identity */}
       {employeeMode && selectedEmployee && (
         <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
-          Reporting as <span style={{ color: 'var(--text)', fontWeight: 600 }}>{selectedEmployee.name}</span>
+          {t.reportingAs} <span style={{ color: 'var(--text)', fontWeight: 600 }}>{selectedEmployee.name}</span>
           {selectedEmployee.employee_code ? ` (${selectedEmployee.employee_code})` : ''}
         </div>
       )}
 
       <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
         <div>
-          <label>Date</label>
+          <label>{t.date}</label>
           <input
             type="date"
             value={workDate}
             onChange={e => setWorkDate(e.target.value)}
-            style={{ height: CONTROL_H }}
+            style={{ height: CONTROL_H, width: '100%' }}
           />
         </div>
         <div>
-          <label>Total Hours: {calculatedHours || '—'}</label>
+          <label>{t.totalHours}: {calculatedHours || '—'}</label>
           <div
             style={{
               height: CONTROL_H,
@@ -390,51 +500,52 @@ export default function TimeEntry() {
               borderRadius: 8,
               fontSize: 18,
               fontWeight: 600,
+              width: '100%',
             }}
           >
-            {calculatedHours || '—'} hrs
+            {calculatedHours || '—'} {t.hrs}
           </div>
         </div>
       </div>
 
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Start Time</label>
+          <label>{t.startTime}</label>
           <input
             type="time"
             value={startTime}
             onChange={e => setStartTime(e.target.value)}
-            style={{ height: CONTROL_H }}
+            style={{ height: CONTROL_H, width: '100%' }}
           />
         </div>
         <div>
-          <label>End Time</label>
+          <label>{t.endTime}</label>
           <input
             type="time"
             value={endTime}
             onChange={e => setEndTime(e.target.value)}
-            style={{ height: CONTROL_H }}
+            style={{ height: CONTROL_H, width: '100%' }}
           />
         </div>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <label>Notes (optional)</label>
+        <label>{t.notes}</label>
         <input
           type="text"
-          placeholder="Optional notes..."
+          placeholder={t.notesPlaceholder}
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          style={{ height: CONTROL_H }}
+          style={{ height: CONTROL_H, width: '100%' }}
         />
       </div>
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button className="primary" onClick={handleSave} style={{ height: CONTROL_H }}>
-          Save Time Entry
+        <button className="primary" onClick={handleSave} style={{ height: CONTROL_H, flex: 1 }}>
+          {t.saveEntry}
         </button>
-        <button onClick={handleClear} style={{ height: CONTROL_H }}>
-          Clear
+        <button onClick={handleClear} style={{ height: CONTROL_H, flex: 1 }}>
+          {t.clear}
         </button>
       </div>
 
@@ -453,10 +564,12 @@ export default function TimeEntry() {
               justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: 12,
+              flexWrap: 'wrap',
+              gap: 8,
             }}
           >
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-              {selectedEmployee.name}&apos;s Time Summary
+              {t.timeSummary} {selectedEmployee.name}
             </h4>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -470,7 +583,7 @@ export default function TimeEntry() {
                   cursor: 'pointer',
                 }}
               >
-                Week
+                {t.week}
               </button>
               <button
                 onClick={() => setViewPeriod('month')}
@@ -483,27 +596,27 @@ export default function TimeEntry() {
                   cursor: 'pointer',
                 }}
               >
-                Month
+                {t.month}
               </button>
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">Days worked:</span>
+              <span className="helper">{t.daysWorked}</span>
               <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">Total hours:</span>
-              <span style={{ fontWeight: 600 }}>{stats.totalHours} hrs</span>
+              <span className="helper">{t.totalHoursLabel}</span>
+              <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hrs}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">Approved hours:</span>
-              <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} hrs</span>
+              <span className="helper">{t.approvedHours}</span>
+              <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hrs}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">Pending approval:</span>
-              <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} hrs</span>
+              <span className="helper">{t.pendingApproval}</span>
+              <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hrs}</span>
             </div>
           </div>
         </div>
@@ -511,7 +624,7 @@ export default function TimeEntry() {
 
       {timeEntries.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>Recent Time Entries</h4>
+          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>{t.recentEntries}</h4>
           <div style={{ display: 'grid', gap: 8, maxHeight: 400, overflow: 'auto' }}>
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
@@ -526,16 +639,18 @@ export default function TimeEntry() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 12,
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>
                       {formatLongDate(entry.work_date)}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                       {entry.start_time} - {entry.end_time}
                       <span style={{ margin: '0 8px' }}>•</span>
-                      {hours === null ? '—' : hours.toFixed(2)} hrs
+                      {hours === null ? '—' : hours.toFixed(2)} {t.hrs}
                     </div>
                     {entry.notes && (
                       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
@@ -546,10 +661,10 @@ export default function TimeEntry() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {entry.approved ? (
-                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✓ Approved</span>
+                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>{t.approved}</span>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>Pending</span>
+                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>{t.pending}</span>
                         <button
                           onClick={() => handleDelete(entry.id)}
                           style={{
@@ -562,7 +677,7 @@ export default function TimeEntry() {
                             cursor: 'pointer',
                           }}
                         >
-                          Delete
+                          {t.delete}
                         </button>
                       </>
                     )}
