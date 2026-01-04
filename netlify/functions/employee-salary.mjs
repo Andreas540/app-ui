@@ -40,7 +40,7 @@ async function updateSalary(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    // Get current salary to check if it changed
+    // Verify employee exists
     const current = await sql`
       SELECT hour_salary
       FROM employees
@@ -49,49 +49,40 @@ async function updateSalary(event) {
     `;
     if (current.length === 0) return cors(404, { error: 'Employee not found' });
 
-    const currentSalary = Number(current[0].hour_salary || 0);
-    const salaryChanged = newSalaryNum !== currentSalary;
-
-    // Check if this employee has ANY salary history
-    const existingHistory = await sql`
-      SELECT COUNT(*) as count
-      FROM salary_cost_history
-      WHERE tenant_id = ${TENANT_ID} AND employee_id = ${employeeId}
-    `;
-    const hasNoHistory = Number(existingHistory[0].count) === 0;
-
-    // Determine if we should update employees.hour_salary immediately
+    // Determine if we should update employees.hour_salary now
     let shouldUpdateEmployeeSalaryNow = false;
     
-    if (salaryChanged || hasNoHistory) {
-      if (applyToHistory) {
-        // Applying to all history = effective immediately
-        shouldUpdateEmployeeSalaryNow = true;
-      } else if (effectiveDate) {
-        // Check if effective date is today or in the past
-        const effectiveDateObj = new Date(effectiveDate + 'T00:00:00Z');
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-        shouldUpdateEmployeeSalaryNow = effectiveDateObj <= today;
-      } else {
-        // No specific date = from next time entry = effective now
-        shouldUpdateEmployeeSalaryNow = true;
-      }
+    if (applyToHistory) {
+      // Applying to all history = effective immediately
+      shouldUpdateEmployeeSalaryNow = true;
+    } else if (effectiveDate) {
+      // Check if effective date is today or in the past
+      const effectiveDateObj = new Date(effectiveDate + 'T00:00:00Z');
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      shouldUpdateEmployeeSalaryNow = effectiveDateObj <= today;
+    } else {
+      // No specific date = effective now
+      shouldUpdateEmployeeSalaryNow = true;
     }
 
-    // Update employee record
-    const updatedRows = await sql`
-      UPDATE employees
-      SET hour_salary = CASE
-        WHEN ${shouldUpdateEmployeeSalaryNow} THEN ${newSalaryNum}
-        ELSE hour_salary
-      END
-      WHERE tenant_id = ${TENANT_ID} AND id = ${employeeId}
-      RETURNING id, name, hour_salary
-    `;
-    if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
+    // Update employee record if needed
+    if (shouldUpdateEmployeeSalaryNow) {
+      await sql`
+        UPDATE employees
+        SET hour_salary = ${newSalaryNum}
+        WHERE tenant_id = ${TENANT_ID} AND id = ${employeeId}
+      `;
+    }
 
-    // Handle history updates
+    // Get updated employee data
+    const updatedRows = await sql`
+      SELECT id, name, hour_salary
+      FROM employees
+      WHERE tenant_id = ${TENANT_ID} AND id = ${employeeId}
+    `;
+
+    // Handle history updates - ALWAYS create history entry when this endpoint is called
     if (applyToHistory) {
       // Delete all previous history entries for this employee
       await sql`
@@ -109,8 +100,8 @@ async function updateSalary(event) {
           (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
         )
       `;
-    } else if (salaryChanged || hasNoHistory) {
-      // Salary changed OR this is the first salary entry for this employee
+    } else {
+      // Always create a new history entry (for both new employees and salary changes)
       if (effectiveDate) {
         // Insert entry with specific date
         await sql`
@@ -134,7 +125,7 @@ async function updateSalary(event) {
     return cors(200, {
       ok: true,
       employee: updatedRows[0],
-      applied_to_history: applyToHistory && (salaryChanged || hasNoHistory)
+      applied_to_history: applyToHistory
     });
   } catch (e) {
     console.error(e);
