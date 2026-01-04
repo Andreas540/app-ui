@@ -519,23 +519,36 @@ export default function TimeEntry() {
     <input
       type="text"
       inputMode="numeric"
-      pattern="[0-9]{2}:[0-9]{2}"
       placeholder="08:00"
       value={startTime}
-      onChange={e => setStartTime(e.target.value)}
+      onChange={e => {
+        let val = e.target.value.replace(/[^\d]/g, '') // Remove everything except digits
+        
+        if (val.length >= 2) {
+          val = val.slice(0, 2) + ':' + val.slice(2, 4)
+        }
+        
+        if (val.length <= 5) {
+          setStartTime(val)
+        }
+      }}
       onBlur={e => {
-        // Auto-format on blur
-        const val = e.target.value.replace(/[^\d:]/g, '')
-        if (val.match(/^\d{1,2}:\d{2}$/)) {
-          const [h, m] = val.split(':')
-          const formatted = `${h.padStart(2, '0')}:${m}`
-          setStartTime(formatted)
+        // Ensure proper format on blur
+        const digits = e.target.value.replace(/[^\d]/g, '')
+        if (digits.length === 4) {
+          const h = digits.slice(0, 2)
+          const m = digits.slice(2, 4)
+          setStartTime(`${h}:${m}`)
+        } else if (digits.length < 4 && digits.length > 0) {
+          // Pad with zeros if incomplete
+          setStartTime('08:00')
         }
       }}
       style={{ 
         height: CONTROL_H, 
         width: '100%', 
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        letterSpacing: '0.05em'
       }}
     />
   </div>
@@ -544,23 +557,36 @@ export default function TimeEntry() {
     <input
       type="text"
       inputMode="numeric"
-      pattern="[0-9]{2}:[0-9]{2}"
       placeholder="17:00"
       value={endTime}
-      onChange={e => setEndTime(e.target.value)}
+      onChange={e => {
+        let val = e.target.value.replace(/[^\d]/g, '') // Remove everything except digits
+        
+        if (val.length >= 2) {
+          val = val.slice(0, 2) + ':' + val.slice(2, 4)
+        }
+        
+        if (val.length <= 5) {
+          setEndTime(val)
+        }
+      }}
       onBlur={e => {
-        // Auto-format on blur
-        const val = e.target.value.replace(/[^\d:]/g, '')
-        if (val.match(/^\d{1,2}:\d{2}$/)) {
-          const [h, m] = val.split(':')
-          const formatted = `${h.padStart(2, '0')}:${m}`
-          setEndTime(formatted)
+        // Ensure proper format on blur
+        const digits = e.target.value.replace(/[^\d]/g, '')
+        if (digits.length === 4) {
+          const h = digits.slice(0, 2)
+          const m = digits.slice(2, 4)
+          setEndTime(`${h}:${m}`)
+        } else if (digits.length < 4 && digits.length > 0) {
+          // Pad with zeros if incomplete
+          setEndTime('17:00')
         }
       }}
       style={{ 
         height: CONTROL_H, 
         width: '100%', 
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        letterSpacing: '0.05em'
       }}
     />
   </div>
