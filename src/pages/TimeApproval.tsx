@@ -343,6 +343,20 @@ export default function TimeApproval() {
 
   return (
     <div className="card" style={{ maxWidth: 1200, position: 'relative' }}>
+      {/* Responsive styles for mobile */}
+      <style>{`
+        @media (max-width: 768px) {
+          .select-all-container {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          .select-all-container .approve-selected-btn {
+            width: 100% !important;
+            margin-top: 8px !important;
+          }
+        }
+      `}</style>
+
       {/* Language toggle flags - top right corner */}
       <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
         <button
@@ -481,14 +495,17 @@ export default function TimeApproval() {
       }}>
         {/* Select all */}
         {pendingEntries.length > 0 && (
-          <div style={{ 
-            padding: 12,
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 8,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
+          <div 
+            className="select-all-container"
+            style={{ 
+              padding: 12,
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 8,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -504,7 +521,7 @@ export default function TimeApproval() {
             </label>
             {selectedIds.size > 0 && (
               <button
-                className="primary"
+                className="primary approve-selected-btn"
                 onClick={handleBulkApprove}
                 style={{ height: 32, padding: '0 12px', fontSize: 12 }}
               >
