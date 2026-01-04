@@ -99,17 +99,19 @@ export function requireAuth(event) {
  * Resolve tenant + role + features from DB memberships (source of truth).
  * - JWT is used only to identify userId
  * - tenant/role/features are loaded from DB
+ * - tenantFeatures: what the tenant has enabled
+ * - userFeatures: what this specific user can access (null = all tenant features)
  * - falls back to env TENANT_ID to keep BLV intact
  */
 export async function resolveAuthz({ sql, event }) {
   const { TENANT_ID } = process.env
-  if (!TENANT_ID) return { error: 'TENANT_ID missing' } // still required as BLV fallback
+  if (!TENANT_ID) return { error: 'TENANT_ID missing' }
 
   const user = getUserFromToken(event)
 
   // No/invalid token => preserve current BLV behavior for now
   if (!user?.userId) {
-    return { tenantId: TENANT_ID, role: 'tenant_admin', features: [], mode: 'fallback' }
+    return { tenantId: TENANT_ID, role: 'tenant_admin', tenantFeatures: [], userFeatures: null, mode: 'fallback' }
   }
 
   const requestedTenantId =
@@ -134,7 +136,7 @@ export async function resolveAuthz({ sql, event }) {
   // If active tenant specified, validate membership for it
   if (activeTenantId) {
     const rows = await sql`
-      select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
+      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
       from public.tenant_memberships tm
       join public.app_users u on u.id = tm.user_id
       join public.tenants t on t.id = tm.tenant_id
@@ -148,7 +150,8 @@ export async function resolveAuthz({ sql, event }) {
       tenantId: rows[0].tenant_id, 
       role: rows[0].role, 
       businessType: rows[0].business_type,
-      features: rows[0].features || [],
+      tenantFeatures: rows[0].tenant_features || [],
+      userFeatures: rows[0].user_features,
       mode: 'membership' 
     }
   }
@@ -156,7 +159,7 @@ export async function resolveAuthz({ sql, event }) {
   // If tenant explicitly requested (legacy x-tenant-id header), require membership for it
   if (requestedTenantId) {
     const rows = await sql`
-      select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
+      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
       from public.tenant_memberships tm
       join public.app_users u on u.id = tm.user_id
       join public.tenants t on t.id = tm.tenant_id
@@ -170,14 +173,15 @@ export async function resolveAuthz({ sql, event }) {
       tenantId: rows[0].tenant_id, 
       role: rows[0].role, 
       businessType: rows[0].business_type,
-      features: rows[0].features || [],
+      tenantFeatures: rows[0].tenant_features || [],
+      userFeatures: rows[0].user_features,
       mode: 'membership' 
     }
   }
 
   // Default tenant from memberships
   const rows = await sql`
-    select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
+    select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
     from public.tenant_memberships tm
     join public.app_users u on u.id = tm.user_id
     join public.tenants t on t.id = tm.tenant_id
@@ -190,7 +194,8 @@ export async function resolveAuthz({ sql, event }) {
     tenantId: rows[0].tenant_id, 
     role: rows[0].role, 
     businessType: rows[0].business_type,
-    features: rows[0].features || [],
+    tenantFeatures: rows[0].tenant_features || [],
+    userFeatures: rows[0].user_features,
     mode: 'membership' 
   }
 
@@ -199,7 +204,8 @@ export async function resolveAuthz({ sql, event }) {
     tenantId: TENANT_ID, 
     role: 'tenant_admin', 
     businessType: 'general',
-    features: [],
+    tenantFeatures: [],
+    userFeatures: null,
     mode: 'fallback' 
   }
 }

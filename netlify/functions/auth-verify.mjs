@@ -48,9 +48,10 @@ async function handleVerify(event) {
         SELECT 
           tm.tenant_id,
           tm.role,
+          tm.features as user_features,
           t.name as tenant_name,
           t.business_type,
-          t.features
+          t.features as tenant_features
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
         WHERE tm.user_id = ${decoded.userId}::uuid
@@ -85,6 +86,13 @@ async function handleVerify(event) {
         return cors(403, { error: 'Account is disabled' })
       }
 
+      // Calculate effective features: user_features || tenant_features
+      const tenantFeatures = membership[0].tenant_features || []
+      const userFeatures = membership[0].user_features || null
+      const effectiveFeatures = userFeatures !== null 
+        ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
+        : tenantFeatures // Inherit all
+
       // Return user info with active tenant context
       return cors(200, {
         valid: true,
@@ -97,7 +105,7 @@ async function handleVerify(event) {
           tenantId: membership[0].tenant_id,
           tenantName: membership[0].tenant_name,
           businessType: membership[0].business_type,
-          features: membership[0].features || []
+          features: effectiveFeatures
         }
       })
     }
@@ -114,7 +122,7 @@ async function handleVerify(event) {
         u.active,
         t.name as tenant_name,
         t.business_type,
-        t.features
+        t.features as tenant_features
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ${decoded.userId}
@@ -132,6 +140,21 @@ async function handleVerify(event) {
       return cors(403, { error: 'Account is disabled' })
     }
 
+    // Get user's membership for this tenant to check user-specific features
+    const membership = await sql`
+      SELECT features as user_features
+      FROM tenant_memberships
+      WHERE user_id = ${user.id}::uuid
+        AND tenant_id = ${user.tenant_id}::uuid
+      LIMIT 1
+    `
+
+    const tenantFeatures = user.tenant_features || []
+    const userFeatures = membership.length > 0 ? membership[0].user_features : null
+    const effectiveFeatures = userFeatures !== null
+      ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
+      : tenantFeatures // Inherit all
+
     // Return user info
     return cors(200, {
       valid: true,
@@ -144,7 +167,7 @@ async function handleVerify(event) {
         tenantId: user.tenant_id,
         tenantName: user.tenant_name,
         businessType: user.business_type,
-        features: user.features || []
+        features: effectiveFeatures
       }
     })
 

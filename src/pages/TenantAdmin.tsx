@@ -1,269 +1,332 @@
-import { useState, useEffect } from 'react';
-import '../TenantAdmin.css';
+// src/pages/TenantAdmin.tsx
+import { useEffect, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import type { FeatureId } from '../lib/features'
+import { FEATURE_CATEGORIES, getFeaturesByCategory } from '../lib/features'
 
-interface NavItem {
-  visible: boolean;
-  order: number;
-  label: string;
-  path: string;
-  section?: boolean;
-  items?: Record<string, NavItem>;
-}
-
-interface NavigationConfig {
-  [key: string]: NavItem;
-}
-
-interface TenantConfig {
-  navigation: NavigationConfig;
-  businessType: string;
-  features: Record<string, boolean>;
-}
-
-interface Tenant {
-  id: string;
-  name: string;
+interface TenantUser {
+  id: string
+  email: string
+  name: string | null
+  role: 'tenant_admin' | 'tenant_user'
+  features: FeatureId[] | null // null = all tenant features
 }
 
 export default function TenantAdmin() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [selectedTenant, setSelectedTenant] = useState<string>('');
-  const [config, setConfig] = useState<TenantConfig | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { user } = useAuth()
+  const [users, setUsers] = useState<TenantUser[]>([])
+  const [tenantFeatures, setTenantFeatures] = useState<FeatureId[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Manage user features modal
+  const [managingUserId, setManagingUserId] = useState<string | null>(null)
+  const [managingUserName, setManagingUserName] = useState('')
+  const [managingUserFeatures, setManagingUserFeatures] = useState<FeatureId[]>([])
+  const [savingFeatures, setSavingFeatures] = useState(false)
 
-  // Load all tenants (excluding BLV)
   useEffect(() => {
-    loadTenants();
-  }, []);
+    loadData()
+  }, [])
 
-  // Load config when tenant is selected
-  useEffect(() => {
-    if (selectedTenant) {
-      loadTenantConfig(selectedTenant);
-    }
-  }, [selectedTenant]);
-
-  const loadTenants = async () => {
+  async function loadData() {
     try {
-      const response = await fetch('/.netlify/functions/tenant-admin?action=getTenants');
-      const data = await response.json();
-      setTenants(data.tenants || []);
-    } catch (error) {
-      console.error('Error loading tenants:', error);
-      showMessage('error', 'Failed to load tenants');
-    }
-  };
-
-  const loadTenantConfig = async (tenantId: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/.netlify/functions/tenant-admin?action=getConfig&tenantId=${tenantId}`);
-      const data = await response.json();
-      setConfig(data.config || null);
-    } catch (error) {
-      console.error('Error loading config:', error);
-      showMessage('error', 'Failed to load tenant configuration');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleToggleMenuItem = (path: string[], currentValue: boolean) => {
-    if (!config) return;
-
-    const newConfig = { ...config };
-    let target: any = newConfig.navigation;
-
-    // Navigate to the correct nested object
-    for (let i = 0; i < path.length - 1; i++) {
-      if (path[i] === 'items') {
-        target = target.items;
-      } else {
-        target = target[path[i]];
-      }
-    }
-
-    // Toggle the visible property
-    const finalKey = path[path.length - 1];
-    target[finalKey].visible = !currentValue;
-
-    setConfig(newConfig);
-  };
-
-  const handleSaveConfig = async () => {
-    if (!selectedTenant || !config) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch('/.netlify/functions/tenant-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'updateConfig',
-          tenantId: selectedTenant,
-          config: config
-        })
-      });
-
-      const data = await response.json();
+      setLoading(true)
+      setError(null)
       
-      if (response.ok) {
-        showMessage('success', 'Configuration saved successfully!');
-      } else {
-        showMessage('error', data.error || 'Failed to save configuration');
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
       }
-    } catch (error) {
-      console.error('Error saving config:', error);
-      showMessage('error', 'Failed to save configuration');
+
+      // Load tenant info and users
+      const res = await fetch(`${base}/api/tenant-admin?action=getTenantUsers`, { headers })
+      
+      if (!res.ok) {
+        if (res.status === 403) {
+          throw new Error('Tenant admin access required')
+        }
+        throw new Error('Failed to load tenant data')
+      }
+
+      const data = await res.json()
+      setUsers(data.users || [])
+      setTenantFeatures(data.tenantFeatures || [])
+
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load data')
     } finally {
-      setSaving(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  };
+  async function openManageUserFeatures(targetUser: TenantUser) {
+    setManagingUserId(targetUser.id)
+    setManagingUserName(targetUser.name || targetUser.email)
+    
+    // If user has specific features, use those; otherwise use all tenant features
+    setManagingUserFeatures(targetUser.features || tenantFeatures)
+  }
 
-  const renderNavItem = (key: string, item: NavItem, path: string[]) => {
-    if (item.section && item.items) {
-      return (
-        <div key={key} className="nav-section">
-          <div className="section-header">
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={item.visible}
-                onChange={() => handleToggleMenuItem([...path, key, 'visible'], item.visible)}
-              />
-              <span className="section-title">{item.label}</span>
-            </label>
-          </div>
-          <div className="section-items">
-            {Object.entries(item.items).map(([subKey, subItem]) =>
-              renderNavItem(subKey, subItem, [...path, key, 'items'])
-            )}
-          </div>
-        </div>
-      );
+  async function handleSaveUserFeatures() {
+    if (!managingUserId) return
+    
+    try {
+      setSavingFeatures(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+        },
+        body: JSON.stringify({
+          action: 'updateUserFeatures',
+          userId: managingUserId,
+          features: managingUserFeatures
+        })
+      })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to save features')
+      }
+      
+      alert('User permissions updated successfully!')
+      setManagingUserId(null)
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save features')
+    } finally {
+      setSavingFeatures(false)
     }
+  }
 
-    return (
-      <div key={key} className="nav-item">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={item.visible}
-            onChange={() => handleToggleMenuItem([...path, key, 'visible'], item.visible)}
-          />
-          <span className="item-label">{item.label}</span>
-          <span className="item-path">{item.path}</span>
-        </label>
-      </div>
-    );
-  };
+  function toggleFeature(featureId: FeatureId) {
+    if (managingUserFeatures.includes(featureId)) {
+      setManagingUserFeatures(managingUserFeatures.filter(f => f !== featureId))
+    } else {
+      setManagingUserFeatures([...managingUserFeatures, featureId])
+    }
+  }
+
+  function selectAllFeatures() {
+    setManagingUserFeatures(tenantFeatures)
+  }
+
+  function clearAllFeatures() {
+    setManagingUserFeatures([])
+  }
+
+  if (loading) return <div className="card"><p>Loading...</p></div>
+  
+  if (error) return (
+    <div className="card" style={{ maxWidth: 720 }}>
+      <h3 style={{ color: 'salmon' }}>Error</h3>
+      <p>{error}</p>
+    </div>
+  )
+
+  const CONTROL_H = 44
 
   return (
-    <div className="tenant-admin">
-      <div className="admin-header">
-        <h1>Tenant Administration</h1>
-        <p>Configure menu items and features for each tenant</p>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ margin: 0 }}>Tenant Administration</h2>
+        <p className="helper" style={{ marginTop: 8 }}>
+          Manage user permissions for {user?.tenantName || 'your organization'}
+        </p>
+        <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>
+          Your tenant has access to {tenantFeatures.length} features. 
+          You can customize which features each user can access.
+        </p>
       </div>
 
-      {message && (
-        <div className={`message ${message.type}`}>
-          {message.text}
-        </div>
-      )}
-
-      <div className="admin-content">
-        <div className="tenant-selector">
-          <label htmlFor="tenant-select">Select Tenant:</label>
-          <select
-            id="tenant-select"
-            value={selectedTenant}
-            onChange={(e) => setSelectedTenant(e.target.value)}
-            disabled={loading}
-          >
-            <option value="">-- Select a tenant --</option>
-            {tenants.map(tenant => (
-              <option key={tenant.id} value={tenant.id}>
-                {tenant.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {loading && (
-          <div className="loading">Loading configuration...</div>
-        )}
-
-        {!loading && config && (
-          <div className="config-editor">
-            <div className="config-section">
-              <h2>Navigation Menu Items</h2>
-              <div className="nav-items-list">
-                {Object.entries(config.navigation).map(([key, item]) =>
-                  renderNavItem(key, item, ['navigation'])
-                )}
-              </div>
-            </div>
-
-            <div className="config-section">
-              <h2>Business Type</h2>
-              <div className="business-type">
-                <span className="business-type-value">{config.businessType}</span>
-              </div>
-            </div>
-
-            <div className="config-section">
-              <h2>Enabled Features</h2>
-              <div className="features-list">
-                {Object.entries(config.features).map(([key, value]) => (
-                  <div key={key} className="feature-item">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={() => {
-                          setConfig({
-                            ...config,
-                            features: {
-                              ...config.features,
-                              [key]: !value
-                            }
-                          });
-                        }}
-                      />
-                      <span className="feature-label">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="save-section">
-              <button
-                className="save-button"
-                onClick={handleSaveConfig}
-                disabled={saving}
+      {/* Users List */}
+      <div className="card">
+        <h3>Team Members</h3>
+        {users.length === 0 ? (
+          <p className="helper">No users yet</p>
+        ) : (
+          <div style={{ marginTop: 16 }}>
+            {users.map((u) => (
+              <div
+                key={u.id}
+                style={{
+                  padding: '12px 0',
+                  borderBottom: '1px solid var(--border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 16,
+                }}
               >
-                {saving ? 'Saving...' : 'Save Configuration'}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{u.email}</div>
+                  {u.name && (
+                    <div style={{ marginTop: 4 }}>{u.name}</div>
+                  )}
+                  <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                    Role: {u.role === 'tenant_admin' ? 'Admin' : 'User'}
+                  </div>
+                  <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                    {u.features === null 
+                      ? `Access: All ${tenantFeatures.length} tenant features`
+                      : `Access: ${u.features.length} of ${tenantFeatures.length} features`
+                    }
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => openManageUserFeatures(u)}
+                  style={{
+                    height: 36,
+                    padding: '0 16px',
+                    fontSize: 13,
+                    flexShrink: 0,
+                  }}
+                >
+                  Manage Permissions
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Manage User Features Modal */}
+      {managingUserId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setManagingUserId(null)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: 600,
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Manage Permissions: {managingUserName}</h3>
+            <p className="helper" style={{ marginTop: 8 }}>
+              Select which features this user can access. 
+              Only features enabled for your tenant are available.
+            </p>
+
+            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+              <button
+                onClick={selectAllFeatures}
+                style={{ flex: 1, height: 36, fontSize: 13 }}
+              >
+                Select All
+              </button>
+              <button
+                onClick={clearAllFeatures}
+                style={{ flex: 1, height: 36, fontSize: 13 }}
+              >
+                Clear All
+              </button>
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
+                const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
+                // Only show categories that have at least one tenant-enabled feature
+                const availableFeatures = categoryFeatures.filter(f => 
+                  tenantFeatures.includes(f.id as FeatureId)
+                )
+                
+                if (availableFeatures.length === 0) return null
+                
+                return (
+                  <div key={categoryKey} style={{ marginBottom: 24 }}>
+                    <div style={{ 
+                      fontWeight: 600, 
+                      fontSize: 14, 
+                      marginBottom: 12,
+                      color: 'var(--primary)',
+                    }}>
+                      {categoryName}
+                    </div>
+                    
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {availableFeatures.map((feature) => (
+                        <label
+                          key={feature.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: 12,
+                            background: 'rgba(255,255,255,0.03)',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            border: '1px solid var(--border)',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={managingUserFeatures.includes(feature.id as FeatureId)}
+                            onChange={() => toggleFeature(feature.id as FeatureId)}
+                            style={{ width: 20, height: 20 }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600 }}>{feature.name}</div>
+                            <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                              {feature.route}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+              <button
+                className="primary"
+                onClick={handleSaveUserFeatures}
+                disabled={savingFeatures}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {savingFeatures ? 'Saving...' : 'Save Permissions'}
+              </button>
+              <button
+                onClick={() => setManagingUserId(null)}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                Cancel
               </button>
             </div>
           </div>
-        )}
-
-        {!loading && !config && selectedTenant && (
-          <div className="no-config">
-            No configuration found for this tenant.
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

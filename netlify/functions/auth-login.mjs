@@ -48,7 +48,7 @@ async function handleLogin(event) {
         u.active,
         t.name as tenant_name,
         t.business_type,
-        t.features
+        t.features as tenant_features
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.email = ${emailSearch}
@@ -91,6 +91,21 @@ async function handleLogin(event) {
       WHERE id = ${user.id}
     `
 
+    // Get user's membership for this tenant to check user-specific features
+    const membership = await sql`
+      SELECT features as user_features
+      FROM tenant_memberships
+      WHERE user_id = ${user.id}::uuid
+        AND tenant_id = ${user.tenant_id}::uuid
+      LIMIT 1
+    `
+
+    const tenantFeatures = user.tenant_features || []
+    const userFeatures = membership.length > 0 ? membership[0].user_features : null
+    const effectiveFeatures = userFeatures !== null
+      ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
+      : tenantFeatures // Inherit all
+
     // Generate JWT token
     const token = jwt.sign(
       {
@@ -116,7 +131,7 @@ async function handleLogin(event) {
         tenantId: user.tenant_id,
         tenantName: user.tenant_name,
         businessType: user.business_type,
-        features: user.features || []
+        features: effectiveFeatures
       }
     })
 
