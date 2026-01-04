@@ -34,7 +34,6 @@ import NewCost from './pages/NewCost'
 import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
-import CreateUser from './pages/CreateUser'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import DashboardStore from './pages/DashboardStore'
@@ -135,6 +134,7 @@ function EmployeeShell() {
 }
 
 function MainApp() {
+  const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
@@ -150,7 +150,6 @@ function MainApp() {
   )
 
   const isLoggedIn = isAuthenticated || legacyUserLevel !== null
-  const userLevel = user?.accessLevel || legacyUserLevel || 'admin'
 
   const handleLogout = () => {
     try {
@@ -212,6 +211,31 @@ function MainApp() {
 
     loadTenants()
   }, [isAuthenticated, user])
+
+  // Auto-redirect from / if user doesn't have dashboard access
+  useEffect(() => {
+    if (location.pathname === '/' && !hasFeature('dashboard') && user) {
+      // Find first available feature and redirect there
+      const availableFeatures = [
+        { id: 'customers', route: '/customers' },
+        { id: 'orders', route: '/orders/new' },
+        { id: 'payments', route: '/payments' },
+        { id: 'inventory', route: '/inventory' },
+        { id: 'partners', route: '/partners' },
+        { id: 'suppliers', route: '/suppliers' },
+        { id: 'warehouse', route: '/warehouse' },
+        { id: 'employees', route: '/employees' },
+        { id: 'production', route: '/labor-production' },
+        { id: 'tenant-admin', route: '/admin' },
+        { id: 'settings', route: '/settings' },
+      ]
+      
+      const firstAvailable = availableFeatures.find(f => hasFeature(f.id as any))
+      if (firstAvailable) {
+        window.location.href = firstAvailable.route
+      }
+    }
+  }, [location.pathname, user, hasFeature])
 
   if (!isLoggedIn) return <Login />
 
@@ -295,18 +319,7 @@ function MainApp() {
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-          {userLevel === 'inventory' ? (
-            selectedShortcuts.includes('I') && hasFeature('inventory') && (
-              <NavLink
-                to="/inventory"
-                className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                title="Inventory"
-                onClick={() => setNavOpen(false)}
-              >
-                I
-              </NavLink>
-            )
-          ) : user?.businessType === 'physical_store' ? null : (
+          {user?.businessType === 'physical_store' ? null : (
             <>
               {selectedShortcuts.includes('D') && hasFeature('dashboard') && (
                 <NavLink
@@ -368,40 +381,7 @@ function MainApp() {
 
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
-          {userLevel === 'inventory' ? (
-            <>
-              {hasFeature('inventory') && (
-                <NavLink to="/inventory" onClick={() => setNavOpen(false)}>
-                  Inventory Dashboard
-                </NavLink>
-              )}
-              {hasFeature('tenant-admin') && (
-  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-    Tenant Admin
-  </NavLink>
-)}
-              {hasFeature('settings') && (
-                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                  Settings
-                </NavLink>
-              )}
-              <button
-                onClick={handleLogout}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--muted)',
-                  color: 'var(--muted)',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  marginTop: '8px',
-                  width: '75%',
-                }}
-              >
-                Logout
-              </button>
-            </>
-          ) : user?.businessType === 'physical_store' ? (
+          {user?.businessType === 'physical_store' ? (
             <>
               {hasFeature('dashboard') && (
                 <NavLink to="/" onClick={() => setNavOpen(false)}>
@@ -532,10 +512,10 @@ function MainApp() {
               )}
 
               {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
-  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-    Tenant Admin
-  </NavLink>
-)}
+                <NavLink to="/admin" onClick={() => setNavOpen(false)}>
+                  Tenant Admin
+                </NavLink>
+              )}
 
               {hasFeature('settings') && (
                 <NavLink to="/settings" onClick={() => setNavOpen(false)}>
@@ -564,13 +544,7 @@ function MainApp() {
 
         <main className="content">
           <Routes>
-            {userLevel === 'inventory' ? (
-              <>
-                <Route path="/" element={<InventoryDashboard />} />
-                {hasFeature('inventory') && <Route path="/inventory" element={<InventoryDashboard />} />}
-                {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
-              </>
-            ) : user?.businessType === 'physical_store' ? (
+            {user?.businessType === 'physical_store' ? (
               <>
                 {hasFeature('dashboard') && <Route path="/" element={<DashboardStore />} />}
                 {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
@@ -638,11 +612,8 @@ function MainApp() {
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
-                {hasFeature('tenant-admin') && (
-                  <>
-                    <Route path="/admin" element={<TenantAdmin />} />
-                    <Route path="/admin/create-user" element={<CreateUser />} />
-                  </>
+                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
+                  <Route path="/admin" element={<TenantAdmin />} />
                 )}
                 {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
                 {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}
