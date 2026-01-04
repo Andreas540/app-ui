@@ -29,7 +29,7 @@ async function handleGet(event) {
 
     if (action === 'listTenants') {
       const tenants = await sql`
-        SELECT id, name, business_type, created_at
+        SELECT id, name, business_type, features, created_at
         FROM tenants
         ORDER BY name ASC
       `
@@ -58,7 +58,6 @@ async function handleGet(event) {
       return cors(200, { users })
     }
 
-    // NEW: Get user details with memberships
     if (action === 'getUserDetails') {
       const userId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('userId')
       if (!userId) return cors(400, { error: 'userId required' })
@@ -89,6 +88,23 @@ async function handleGet(event) {
       })
     }
 
+    if (action === 'getTenantFeatures') {
+      const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
+      if (!tenantId) return cors(400, { error: 'tenantId required' })
+
+      const tenant = await sql`
+        SELECT id, name, features
+        FROM tenants
+        WHERE id = ${tenantId}
+      `
+      if (tenant.length === 0) return cors(404, { error: 'Tenant not found' })
+
+      return cors(200, { 
+        tenant: tenant[0],
+        features: tenant[0].features || []
+      })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -116,26 +132,26 @@ async function handlePost(event) {
     const { action } = body
 
     if (action === 'createTenant') {
-  const { name, businessType } = body
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return cors(400, { error: 'Tenant name is required' })
-  }
+      const { name, businessType } = body
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return cors(400, { error: 'Tenant name is required' })
+      }
 
-  // Validate business_type
-  const validTypes = ['general', 'physical_store']
-  const type = businessType && validTypes.includes(businessType) ? businessType : 'general'
+      // Validate business_type
+      const validTypes = ['general', 'physical_store']
+      const type = businessType && validTypes.includes(businessType) ? businessType : 'general'
 
-  // Generate slug from name
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      // Generate slug from name
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-  const result = await sql`
-    INSERT INTO tenants (name, slug, business_type)
-    VALUES (${name.trim()}, ${slug}, ${type})
-    RETURNING id, name, slug, business_type
-  `
+      const result = await sql`
+        INSERT INTO tenants (name, slug, business_type)
+        VALUES (${name.trim()}, ${slug}, ${type})
+        RETURNING id, name, slug, business_type
+      `
 
-  return cors(201, { tenant: result[0] })
-}
+      return cors(201, { tenant: result[0] })
+    }
 
     if (action === 'createUser') {
       const { email, password, name, tenantMemberships } = body
@@ -176,11 +192,9 @@ async function handlePost(event) {
       const defaultTenantId = tenantMemberships[0].tenant_id
 
       // Determine role for users table
-      // If user is tenant_admin in any tenant, make them tenant_admin overall
       const hasTenantAdminRole = tenantMemberships.some(m => m.role === 'tenant_admin')
       const userRole = hasTenantAdminRole ? 'tenant_admin' : 'tenant_user'
       
-      // Set access_level based on role (admin users get 'admin', regular users get 'inventory')
       const accessLevel = hasTenantAdminRole ? 'admin' : 'inventory'
 
       // Create user in users table
@@ -207,7 +221,7 @@ async function handlePost(event) {
       `
       const newUserId = userResult[0].id
 
-      // Create user in app_users table (required for tenant_memberships foreign key)
+      // Create user in app_users table
       await sql`
         INSERT INTO app_users (id, email, is_disabled)
         VALUES (${newUserId}, ${normalizedEmail}, false)
@@ -228,7 +242,6 @@ async function handlePost(event) {
       return cors(201, { user: userResult[0] })
     }
 
-    // NEW: Add user to tenant
     if (action === 'addUserToTenant') {
       const { userId, tenantId, role } = body
 
@@ -250,7 +263,6 @@ async function handlePost(event) {
       return cors(200, { success: true })
     }
 
-    // NEW: Remove user from tenant
     if (action === 'removeUserFromTenant') {
       const { userId, tenantId } = body
 
@@ -261,6 +273,27 @@ async function handlePost(event) {
       await sql`
         DELETE FROM tenant_memberships
         WHERE user_id = ${userId} AND tenant_id = ${tenantId}
+      `
+
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateTenantFeatures') {
+      const { tenantId, features } = body
+
+      if (!tenantId) {
+        return cors(400, { error: 'tenantId is required' })
+      }
+
+      if (!Array.isArray(features)) {
+        return cors(400, { error: 'features must be an array' })
+      }
+
+      // Update tenant features
+      await sql`
+        UPDATE tenants
+        SET features = ${JSON.stringify(features)}::jsonb
+        WHERE id = ${tenantId}
       `
 
       return cors(200, { success: true })

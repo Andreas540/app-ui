@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import ManageUserModal from '../components/ManageUserModal'
+import type { FeatureId } from '../lib/features'
+import { DEFAULT_FEATURES, FEATURE_CATEGORIES, getFeaturesByCategory } from '../lib/features'
 
 interface Tenant {
   id: string
   name: string
   business_type: string
+  features?: FeatureId[]
   created_at: string
 }
 
@@ -52,6 +55,12 @@ export default function SuperAdmin() {
   // UI state
   const [activeTab, setActiveTab] = useState<'tenants' | 'users'>('tenants')
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
+  
+  // Tenant features management
+  const [managingTenantId, setManagingTenantId] = useState<string | null>(null)
+  const [managingTenantName, setManagingTenantName] = useState('')
+  const [managingTenantFeatures, setManagingTenantFeatures] = useState<FeatureId[]>([])
+  const [savingFeatures, setSavingFeatures] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -195,6 +204,67 @@ export default function SuperAdmin() {
     setNewUserMemberships(updated)
   }
 
+  async function openManageTenantFeatures(tenant: Tenant) {
+    try {
+      setManagingTenantId(tenant.id)
+      setManagingTenantName(tenant.name)
+      
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(
+        `${base}/api/super-admin?action=getTenantFeatures&tenantId=${tenant.id}`,
+        { headers: getAuthHeaders() }
+      )
+      
+      if (!res.ok) throw new Error('Failed to load tenant features')
+      
+      const data = await res.json()
+      setManagingTenantFeatures(data.features || DEFAULT_FEATURES)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to load features')
+      setManagingTenantId(null)
+    }
+  }
+
+  async function handleSaveTenantFeatures() {
+    if (!managingTenantId) return
+    
+    try {
+      setSavingFeatures(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'updateTenantFeatures',
+          tenantId: managingTenantId,
+          features: managingTenantFeatures
+        })
+      })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to save features')
+      }
+      
+      alert('Tenant features updated successfully!')
+      setManagingTenantId(null)
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save features')
+    } finally {
+      setSavingFeatures(false)
+    }
+  }
+
+  function toggleFeature(featureId: FeatureId) {
+    if (managingTenantFeatures.includes(featureId)) {
+      setManagingTenantFeatures(managingTenantFeatures.filter(f => f !== featureId))
+    } else {
+      setManagingTenantFeatures([...managingTenantFeatures, featureId])
+    }
+  }
+
   if (loading) return <div className="card"><p>Loading...</p></div>
   
   if (error) return (
@@ -285,15 +355,32 @@ export default function SuperAdmin() {
                     style={{
                       padding: '12px 0',
                       borderBottom: '1px solid var(--border)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                     }}
                   >
-                    <div style={{ fontWeight: 600 }}>{tenant.name}</div>
-                    <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
-                      Type: {tenant.business_type === 'physical_store' ? 'Physical Store' : 'General'}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>{tenant.name}</div>
+                      <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                        Type: {tenant.business_type === 'physical_store' ? 'Physical Store' : 'General'}
+                      </div>
+                      <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                        Features: {tenant.features?.length || 0} enabled
+                      </div>
                     </div>
-                    <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                      ID: {tenant.id}
-                    </div>
+                    
+                    <button
+                      onClick={() => openManageTenantFeatures(tenant)}
+                      style={{
+                        height: 36,
+                        padding: '0 16px',
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Manage Features
+                    </button>
                   </div>
                 ))}
               </div>
@@ -484,6 +571,115 @@ export default function SuperAdmin() {
           onClose={() => setManagingUserId(null)}
           onUpdate={loadData}
         />
+      )}
+
+      {/* Manage Tenant Features Modal */}
+      {managingTenantId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setManagingTenantId(null)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: 600,
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Manage Features: {managingTenantName}</h3>
+            <p className="helper" style={{ marginTop: 8 }}>
+              Select which features this tenant has access to
+            </p>
+
+            <div style={{ marginTop: 20 }}>
+              {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
+                const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
+                
+                return (
+                  <div key={categoryKey} style={{ marginBottom: 24 }}>
+                    <div style={{ 
+                      fontWeight: 600, 
+                      fontSize: 14, 
+                      marginBottom: 12,
+                      color: 'var(--primary)',
+                    }}>
+                      {categoryName}
+                    </div>
+                    
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {categoryFeatures.map((feature) => (
+                        <label
+                          key={feature.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: 12,
+                            background: 'rgba(255,255,255,0.03)',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            border: '1px solid var(--border)',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={managingTenantFeatures.includes(feature.id as FeatureId)}
+                            onChange={() => toggleFeature(feature.id as FeatureId)}
+                            style={{ width: 20, height: 20 }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600 }}>{feature.name}</div>
+                            <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                              {feature.route}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div
+              style={{
+                marginTop: 20,
+                display: 'flex',
+                gap: 8,
+              }}
+            >
+              <button
+                className="primary"
+                onClick={handleSaveTenantFeatures}
+                disabled={savingFeatures}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {savingFeatures ? 'Saving...' : 'Save Features'}
+              </button>
+              <button
+                onClick={() => setManagingTenantId(null)}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
