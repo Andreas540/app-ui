@@ -51,9 +51,17 @@ export default function App() {
   const location = useLocation()
 
   const isEmployeePath = useMemo(() => {
-    const p = location.pathname || '/'
-    return p.startsWith('/time-entry-simple') || p.startsWith('/time-entry')
-  }, [location.pathname])
+  const p = location.pathname || '/'
+  const hash = window.location.hash || ''
+  
+  // Only treat as employee path if:
+  // 1. Starts with /time-entry-simple, OR
+  // 2. Has /time-entry/ with something after it (the token)
+  return p.startsWith('/time-entry-simple') || 
+         p.match(/^\/time-entry\/.+/) !== null ||
+         hash.includes('/time-entry-simple') ||
+         hash.match(/\/time-entry\/.+/) !== null
+}, [location.pathname])
 
   const [employeeMode, setEmployeeMode] = useState<null | boolean>(null)
 
