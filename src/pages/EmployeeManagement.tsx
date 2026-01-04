@@ -335,7 +335,7 @@ export default function EmployeeManagement() {
 
       if ((navigator as any).share) {
         try {
-          await (navigator as any).share({ title: t.timeEntry, text: msg, url })
+          await (navigator as any).share({ title: t.timeEntry, text: msg })
           return
         } catch {
           // fall through to clipboard
