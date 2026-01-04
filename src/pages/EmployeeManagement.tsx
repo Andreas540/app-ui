@@ -266,48 +266,56 @@ export default function EmployeeManagement() {
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      alert(t.nameRequired)
-      return
+  if (!name.trim()) {
+    alert(t.nameRequired)
+    return
+  }
+
+  const salaryNum = hourSalary.trim() ? parseFloat(hourSalary) : null
+  const originalSalaryNum = originalSalary.trim() ? parseFloat(originalSalary) : null
+  const salaryChanged = editingId && salaryNum !== null && salaryNum !== originalSalaryNum
+
+  if (salaryOption === 'specific' && !specificDate && salaryChanged) {
+    alert(t.selectDate)
+    return
+  }
+
+  try {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    
+    // Save employee basic info
+    const res = await fetch(`${base}/api/employees`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: editingId,
+        name: name.trim(),
+        email: email.trim() || null,
+        employee_code: employeeCode.trim() || null,
+        hour_salary: salaryNum,
+        active,
+        notes: notes.trim() || null,
+      }),
+    })
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || t.saveFailed)
     }
 
-    const salaryNum = hourSalary.trim() ? parseFloat(hourSalary) : null
-    const originalSalaryNum = originalSalary.trim() ? parseFloat(originalSalary) : null
-    const salaryChanged = editingId && salaryNum !== null && salaryNum !== originalSalaryNum
+    const result = await res.json()
+    const employeeId = result.employee?.id || editingId
 
-    if (salaryOption === 'specific' && !specificDate && salaryChanged) {
-      alert(t.selectDate)
-      return
-    }
-
-    try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      // Save employee basic info
-      const res = await fetch(`${base}/api/employees`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
-        body: JSON.stringify({
-          id: editingId,
-          name: name.trim(),
-          email: email.trim() || null,
-          employee_code: employeeCode.trim() || null,
-          hour_salary: salaryNum,
-          active,
-          notes: notes.trim() || null,
-        }),
-      })
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.saveFailed)
-      }
-
-      const result = await res.json()
-      const employeeId = result.employee?.id || editingId
-
-      // If editing and salary changed, update salary history
-      if (salaryChanged && employeeId && salaryNum !== null) {
+    // Handle salary history
+    if (employeeId && salaryNum !== null) {
+      if (!editingId) {
+        // NEW EMPLOYEE: Create initial salary history entry (effective from now)
+        await updateEmployeeSalary({
+          employee_id: employeeId,
+          salary: salaryNum,
+        })
+      } else if (salaryChanged) {
+        // EDITING EMPLOYEE: Update salary history with user's chosen option
         await updateEmployeeSalary({
           employee_id: employeeId,
           salary: salaryNum,
@@ -323,16 +331,26 @@ export default function EmployeeManagement() {
         }
         alert(message)
       } else {
-        if (result.created) alert(t.created)
-        else if (result.updated) alert(t.updated)
+        // Editing but salary didn't change
+        if (result.updated) alert(t.updated)
       }
-
-      handleCancel()
-      await loadEmployees()
-    } catch (e: any) {
-      alert(e?.message || t.saveFailed)
+    } else {
+      // No salary provided
+      if (result.created) alert(t.created)
+      else if (result.updated) alert(t.updated)
     }
+
+    // Show success message for new employee (if not already shown)
+    if (!editingId && result.created && salaryNum !== null) {
+      alert(t.created)
+    }
+
+    handleCancel()
+    await loadEmployees()
+  } catch (e: any) {
+    alert(e?.message || t.saveFailed)
   }
+}
 
   async function handleDeactivate(id: string, employeeName: string) {
     if (!confirm(t.deactivateConfirm(employeeName))) return
