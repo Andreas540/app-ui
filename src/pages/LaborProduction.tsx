@@ -246,13 +246,13 @@ export default function LaborProduction() {
             <span className="helper">Total qty produced:</span>
             <span style={{ fontWeight: 600 }}>{stats.totalQty.toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'none' }}>
             <span className="helper">Avg. qty per employee:</span>
             <span style={{ fontWeight: 600 }}>
               {noOfEmployees ? stats.avgQtyPerEmployee : '—'}
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'none' }}>
             <span className="helper">Avg. hours per employee:</span>
             <span style={{ fontWeight: 600 }}>
               {noOfEmployees ? stats.avgHoursPerEmployee : '—'}
@@ -304,8 +304,8 @@ export default function LaborProduction() {
         </div>
       </div>
 
-      {/* Labor inputs */}
-      <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
+      {/* Labor inputs - HIDDEN */}
+      <div className="row row-2col-mobile" style={{ marginTop: 16, display: 'none' }}>
         <div>
           <label>No. of Employees</label>
           <input
