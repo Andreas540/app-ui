@@ -62,13 +62,11 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
-      // If URL is already an employee URL, must render employee shell (so token exchange works)
       if (isEmployeePath) {
         if (alive) setEmployeeMode(true)
         return
       }
 
-      // Otherwise probe the cookie session (needed because iOS may launch at "/")
       try {
         const base = apiBase()
         const res = await fetch(`${base}/api/employee-session`, {
@@ -99,7 +97,6 @@ export default function App() {
   }, [isEmployeePath])
 
   if (employeeMode === null) {
-    // IMPORTANT: keep this minimal so we never crash before deciding
     return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
   }
 
@@ -110,9 +107,6 @@ export default function App() {
   return <MainApp />
 }
 
-/**
- * Employee-only shell (NO app routes, NO login, NO nav)
- */
 function EmployeeShell() {
   return (
     <div
@@ -129,15 +123,10 @@ function EmployeeShell() {
     >
       <main className="content" style={{ padding: 16, minHeight: '100%' }}>
         <Routes>
-          {/* Token exchange entry points */}
           <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
           <Route path="/time-entry/:token" element={<TimeEntry />} />
-
-          {/* Post-exchange / normal employee pages */}
           <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
           <Route path="/time-entry" element={<TimeEntry />} />
-
-          {/* If launched at "/" or anything else, never show the app */}
           <Route path="*" element={<Navigate to="/time-entry-simple" replace />} />
         </Routes>
       </main>
@@ -145,10 +134,6 @@ function EmployeeShell() {
   )
 }
 
-/**
- * Normal app shell (UNCHANGED logic from your main app)
- * This is separated only to satisfy React hook rules.
- */
 function MainApp() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -158,7 +143,7 @@ function MainApp() {
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
 
-  const { isAuthenticated, user, logout: authLogout } = useAuth()
+  const { isAuthenticated, user, logout: authLogout, hasFeature } = useAuth()
 
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
@@ -226,7 +211,7 @@ function MainApp() {
     }
 
     loadTenants()
-  }, [isAuthenticated, user]) // keep as you had it
+  }, [isAuthenticated, user])
 
   if (!isLoggedIn) return <Login />
 
@@ -311,7 +296,7 @@ function MainApp() {
 
         <div className="quick-buttons" aria-label="Quick navigation">
           {userLevel === 'inventory' ? (
-            selectedShortcuts.includes('I') && (
+            selectedShortcuts.includes('I') && hasFeature('inventory') && (
               <NavLink
                 to="/inventory"
                 className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
@@ -323,7 +308,7 @@ function MainApp() {
             )
           ) : user?.businessType === 'physical_store' ? null : (
             <>
-              {selectedShortcuts.includes('D') && (
+              {selectedShortcuts.includes('D') && hasFeature('dashboard') && (
                 <NavLink
                   to="/"
                   end
@@ -334,7 +319,7 @@ function MainApp() {
                   D
                 </NavLink>
               )}
-              {selectedShortcuts.includes('O') && (
+              {selectedShortcuts.includes('O') && hasFeature('orders') && (
                 <NavLink
                   to="/orders/new"
                   className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
@@ -344,7 +329,7 @@ function MainApp() {
                   O
                 </NavLink>
               )}
-              {selectedShortcuts.includes('P') && (
+              {selectedShortcuts.includes('P') && hasFeature('payments') && (
                 <NavLink
                   to="/payments"
                   className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
@@ -354,7 +339,7 @@ function MainApp() {
                   P
                 </NavLink>
               )}
-              {selectedShortcuts.includes('C') && (
+              {selectedShortcuts.includes('C') && hasFeature('customers') && (
                 <NavLink
                   to="/customers"
                   className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
@@ -364,7 +349,7 @@ function MainApp() {
                   C
                 </NavLink>
               )}
-              {selectedShortcuts.includes('I') && (
+              {selectedShortcuts.includes('I') && hasFeature('inventory') && (
                 <NavLink
                   to="/inventory"
                   className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
@@ -385,12 +370,16 @@ function MainApp() {
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           {userLevel === 'inventory' ? (
             <>
-              <NavLink to="/inventory" onClick={() => setNavOpen(false)}>
-                Inventory Dashboard
-              </NavLink>
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                Settings
-              </NavLink>
+              {hasFeature('inventory') && (
+                <NavLink to="/inventory" onClick={() => setNavOpen(false)}>
+                  Inventory Dashboard
+                </NavLink>
+              )}
+              {hasFeature('settings') && (
+                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                  Settings
+                </NavLink>
+              )}
               <button
                 onClick={handleLogout}
                 style={{
@@ -409,12 +398,16 @@ function MainApp() {
             </>
           ) : user?.businessType === 'physical_store' ? (
             <>
-              <NavLink to="/" onClick={() => setNavOpen(false)}>
-                Store Dashboard
-              </NavLink>
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                Settings
-              </NavLink>
+              {hasFeature('dashboard') && (
+                <NavLink to="/" onClick={() => setNavOpen(false)}>
+                  Store Dashboard
+                </NavLink>
+              )}
+              {hasFeature('settings') && (
+                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                  Settings
+                </NavLink>
+              )}
               <button
                 onClick={handleLogout}
                 style={{
@@ -435,63 +428,97 @@ function MainApp() {
             <>
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/" end onClick={() => setNavOpen(false)}>
-                Main Dashboard
-              </NavLink>
-              <NavLink to="/customers" onClick={() => setNavOpen(false)}>
-                Customers
-              </NavLink>
-              <NavLink to="/partners" onClick={() => setNavOpen(false)}>
-                Partners
-              </NavLink>
-              <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
-                Price Checker
-              </NavLink>
-              <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
-                New Order
-              </NavLink>
-              <NavLink to="/payments" onClick={() => setNavOpen(false)}>
-                New Payment
-              </NavLink>
-              <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
-                Products
-              </NavLink>
-              <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
-                Create Invoice
-              </NavLink>
+              {hasFeature('dashboard') && (
+                <NavLink to="/" end onClick={() => setNavOpen(false)}>
+                  Main Dashboard
+                </NavLink>
+              )}
+              {hasFeature('customers') && (
+                <NavLink to="/customers" onClick={() => setNavOpen(false)}>
+                  Customers
+                </NavLink>
+              )}
+              {hasFeature('partners') && (
+                <NavLink to="/partners" onClick={() => setNavOpen(false)}>
+                  Partners
+                </NavLink>
+              )}
+              {hasFeature('price-checker') && (
+                <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
+                  Price Checker
+                </NavLink>
+              )}
+              {hasFeature('orders') && (
+                <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
+                  New Order
+                </NavLink>
+              )}
+              {hasFeature('payments') && (
+                <NavLink to="/payments" onClick={() => setNavOpen(false)}>
+                  New Payment
+                </NavLink>
+              )}
+              {hasFeature('products') && (
+                <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
+                  Products
+                </NavLink>
+              )}
+              {hasFeature('invoices') && (
+                <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
+                  Create Invoice
+                </NavLink>
+              )}
 
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
-                Supply & Demand
-              </NavLink>
-              <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
-                Suppliers
-              </NavLink>
-              <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
-                New Order (S)
-              </NavLink>
-              <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
-                Warehouse
-              </NavLink>
+              {hasFeature('supply-chain') && (
+                <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
+                  Supply & Demand
+                </NavLink>
+              )}
+              {hasFeature('suppliers') && (
+                <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
+                  Suppliers
+                </NavLink>
+              )}
+              {hasFeature('supplier-orders') && (
+                <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
+                  New Order (S)
+                </NavLink>
+              )}
+              {hasFeature('warehouse') && (
+                <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
+                  Warehouse
+                </NavLink>
+              )}
 
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
-                Production
-              </NavLink>
-              <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
-                Time Entry
-              </NavLink>
-              <NavLink to="/employees" onClick={() => setNavOpen(false)}>
-                Employees
-              </NavLink>
-              <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
-                Time Approval
-              </NavLink>
-              <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
-                New Cost
-              </NavLink>
+              {hasFeature('production') && (
+                <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
+                  Production
+                </NavLink>
+              )}
+              {hasFeature('time-entry') && (
+                <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
+                  Time Entry
+                </NavLink>
+              )}
+              {hasFeature('employees') && (
+                <NavLink to="/employees" onClick={() => setNavOpen(false)}>
+                  Employees
+                </NavLink>
+              )}
+              {hasFeature('time-approval') && (
+                <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
+                  Time Approval
+                </NavLink>
+              )}
+              {hasFeature('costs') && (
+                <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
+                  New Cost
+                </NavLink>
+              )}
 
               {user?.role === 'super_admin' && (
                 <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
@@ -499,9 +526,11 @@ function MainApp() {
                 </NavLink>
               )}
 
-              <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                Settings
-              </NavLink>
+              {hasFeature('settings') && (
+                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                  Settings
+                </NavLink>
+              )}
 
               <button
                 onClick={handleLogout}
@@ -527,54 +556,90 @@ function MainApp() {
             {userLevel === 'inventory' ? (
               <>
                 <Route path="/" element={<InventoryDashboard />} />
-                <Route path="/inventory" element={<InventoryDashboard />} />
-                <Route path="/settings" element={<Settings />} />
+                {hasFeature('inventory') && <Route path="/inventory" element={<InventoryDashboard />} />}
+                {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
               </>
             ) : user?.businessType === 'physical_store' ? (
               <>
-                <Route path="/" element={<DashboardStore />} />
-                <Route path="/settings" element={<Settings />} />
+                {hasFeature('dashboard') && <Route path="/" element={<DashboardStore />} />}
+                {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
               </>
             ) : (
               <>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/orders/new" element={<NewOrder />} />
-                <Route path="/orders/:orderId/edit" element={<EditOrder />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/products/new" element={<NewProduct />} />
-                <Route path="/products/edit" element={<EditProduct />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/customers/new" element={<CreateCustomer />} />
-                <Route path="/customers/:id" element={<CustomerDetail />} />
-                <Route path="/customers/:id/edit" element={<EditCustomer />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/partners" element={<Partners />} />
-                <Route path="/partners/new" element={<CreatePartner />} />
-                <Route path="/partners/:id" element={<PartnerDetail />} />
-                <Route path="/partners/:id/edit" element={<EditPartner />} />
-                <Route path="/inventory" element={<InventoryDashboard />} />
-                <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
-                <Route path="/invoices/create" element={<CreateInvoicePage />} />
-                <Route path="/invoices/preview" element={<InvoicePreview />} />
-                <Route path="/price-checker" element={<PriceChecker />} />
-                <Route path="/suppliers" element={<Suppliers />} />
-                <Route path="/suppliers/new" element={<CreateSupplier />} />
-                <Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
-                <Route path="/suppliers/:id" element={<SupplierDetail />} />
-                <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
-                <Route path="/costs/new" element={<NewCost />} />
-                <Route path="/warehouse" element={<Warehouse />} />
-                <Route path="/supply-chain" element={<SupplyChainOverview />} />
-                <Route path="/admin" element={<TenantAdmin />} />
-                <Route path="/admin/create-user" element={<CreateUser />} />
-                <Route path="/suppliers/:id/edit" element={<EditSupplier />} />
-                <Route path="/super-admin" element={<SuperAdmin />} />
-                <Route path="/labor-production" element={<LaborProduction />} />
-                <Route path="/time-entry" element={<TimeEntry />} />
-                <Route path="/employees" element={<EmployeeManagement />} />
-                <Route path="/time-approval" element={<TimeApproval />} />
-
-                {/* keep this route if you want admins to access the UI */}
+                {hasFeature('dashboard') && <Route path="/" element={<Dashboard />} />}
+                {hasFeature('orders') && (
+                  <>
+                    <Route path="/orders/new" element={<NewOrder />} />
+                    <Route path="/orders/:orderId/edit" element={<EditOrder />} />
+                  </>
+                )}
+                {hasFeature('payments') && (
+                  <>
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
+                  </>
+                )}
+                {hasFeature('products') && (
+                  <>
+                    <Route path="/products/new" element={<NewProduct />} />
+                    <Route path="/products/edit" element={<EditProduct />} />
+                  </>
+                )}
+                {hasFeature('customers') && (
+                  <>
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/customers/new" element={<CreateCustomer />} />
+                    <Route path="/customers/:id" element={<CustomerDetail />} />
+                    <Route path="/customers/:id/edit" element={<EditCustomer />} />
+                  </>
+                )}
+                {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
+                {hasFeature('partners') && (
+                  <>
+                    <Route path="/partners" element={<Partners />} />
+                    <Route path="/partners/new" element={<CreatePartner />} />
+                    <Route path="/partners/:id" element={<PartnerDetail />} />
+                    <Route path="/partners/:id/edit" element={<EditPartner />} />
+                  </>
+                )}
+                {hasFeature('inventory') && <Route path="/inventory" element={<InventoryDashboard />} />}
+                {hasFeature('invoices') && (
+                  <>
+                    <Route path="/invoices/create" element={<CreateInvoicePage />} />
+                    <Route path="/invoices/preview" element={<InvoicePreview />} />
+                  </>
+                )}
+                {hasFeature('price-checker') && <Route path="/price-checker" element={<PriceChecker />} />}
+                {hasFeature('suppliers') && (
+                  <>
+                    <Route path="/suppliers" element={<Suppliers />} />
+                    <Route path="/suppliers/new" element={<CreateSupplier />} />
+                    <Route path="/suppliers/:id" element={<SupplierDetail />} />
+                    <Route path="/suppliers/:id/edit" element={<EditSupplier />} />
+                  </>
+                )}
+                {hasFeature('supplier-orders') && (
+                  <>
+                    <Route path="/supplier-orders/new" element={<NewOrderSupplier />} />
+                    <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
+                  </>
+                )}
+                {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
+                {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
+                {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
+                {hasFeature('tenant-admin') && (
+                  <>
+                    <Route path="/admin" element={<TenantAdmin />} />
+                    <Route path="/admin/create-user" element={<CreateUser />} />
+                  </>
+                )}
+                {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
+                {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}
+                {hasFeature('time-entry') && <Route path="/time-entry" element={<TimeEntry />} />}
+                {hasFeature('employees') && <Route path="/employees" element={<EmployeeManagement />} />}
+                {hasFeature('time-approval') && <Route path="/time-approval" element={<TimeApproval />} />}
+                
+                {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>
             )}

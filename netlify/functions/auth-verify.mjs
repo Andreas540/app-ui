@@ -49,7 +49,8 @@ async function handleVerify(event) {
           tm.tenant_id,
           tm.role,
           t.name as tenant_name,
-          t.business_type
+          t.business_type,
+          t.features
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
         WHERE tm.user_id = ${decoded.userId}::uuid
@@ -95,7 +96,8 @@ async function handleVerify(event) {
           accessLevel: user.access_level,
           tenantId: membership[0].tenant_id,
           tenantName: membership[0].tenant_name,
-          businessType: membership[0].business_type
+          businessType: membership[0].business_type,
+          features: membership[0].features || []
         }
       })
     }
@@ -111,7 +113,8 @@ async function handleVerify(event) {
         u.tenant_id,
         u.active,
         t.name as tenant_name,
-        t.business_type
+        t.business_type,
+        t.features
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ${decoded.userId}
@@ -140,7 +143,8 @@ async function handleVerify(event) {
         accessLevel: user.access_level,
         tenantId: user.tenant_id,
         tenantName: user.tenant_name,
-        businessType: user.business_type
+        businessType: user.business_type,
+        features: user.features || []
       }
     })
 

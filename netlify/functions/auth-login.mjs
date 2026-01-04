@@ -46,7 +46,9 @@ async function handleLogin(event) {
         u.access_level,
         u.tenant_id,
         u.active,
-        t.name as tenant_name
+        t.name as tenant_name,
+        t.business_type,
+        t.features
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.email = ${emailSearch}
@@ -112,7 +114,9 @@ async function handleLogin(event) {
         role: user.role,
         accessLevel: user.access_level,
         tenantId: user.tenant_id,
-        tenantName: user.tenant_name
+        tenantName: user.tenant_name,
+        businessType: user.business_type,
+        features: user.features || []
       }
     })
 

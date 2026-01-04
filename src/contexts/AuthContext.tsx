@@ -1,6 +1,7 @@
 // src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
+import type { FeatureId } from '../lib/features'
 
 interface User {
   id: string
@@ -11,6 +12,7 @@ interface User {
   tenantId: string | null
   tenantName: string | null
   businessType: string
+  features: FeatureId[]
 }
 
 interface AuthContextType {
@@ -18,6 +20,7 @@ interface AuthContextType {
   token: string | null
   isAuthenticated: boolean
   isSuperAdmin: boolean
+  hasFeature: (featureId: FeatureId) => boolean
   login: (token: string, userData: User) => void
   logout: () => void
   verifyAuth: () => Promise<boolean>
@@ -51,18 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const verifyToken = async (tokenToVerify: string) => {
-  try {
-    // Get active tenant if set
-    const activeTenantId = localStorage.getItem('activeTenantId')
-    
-    const response = await fetch('/.netlify/functions/auth-verify', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
-      },
-      body: JSON.stringify({ token: tokenToVerify })
-    })
+    try {
+      // Get active tenant if set
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      
+      const response = await fetch('/.netlify/functions/auth-verify', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+        },
+        body: JSON.stringify({ token: tokenToVerify })
+      })
 
       if (!response.ok) {
         logout()
@@ -72,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       if (data.valid && data.user) {
         setUser(data.user)
+        // Update stored user data with fresh features
+        localStorage.setItem('userData', JSON.stringify(data.user))
         return true
       }
       
@@ -104,11 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return verifyToken(token)
   }
 
+  const hasFeature = (featureId: FeatureId): boolean => {
+    if (!user) return false
+    // Super admins have access to everything
+    if (user.role === 'super_admin') return true
+    // Check if feature is in user's enabled features
+    return user.features?.includes(featureId) || false
+  }
+
   const value: AuthContextType = {
     user,
     token,
     isAuthenticated: !!user && !!token,
     isSuperAdmin: user?.role === 'super_admin',
+    hasFeature,
     login,
     logout,
     verifyAuth

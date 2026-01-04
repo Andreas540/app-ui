@@ -96,9 +96,9 @@ export function requireAuth(event) {
 }
 
 /**
- * Resolve tenant + role from DB memberships (source of truth).
+ * Resolve tenant + role + features from DB memberships (source of truth).
  * - JWT is used only to identify userId
- * - tenant/role are loaded from DB
+ * - tenant/role/features are loaded from DB
  * - falls back to env TENANT_ID to keep BLV intact
  */
 export async function resolveAuthz({ sql, event }) {
@@ -109,7 +109,7 @@ export async function resolveAuthz({ sql, event }) {
 
   // No/invalid token => preserve current BLV behavior for now
   if (!user?.userId) {
-    return { tenantId: TENANT_ID, role: 'tenant_admin', mode: 'fallback' }
+    return { tenantId: TENANT_ID, role: 'tenant_admin', features: [], mode: 'fallback' }
   }
 
   const requestedTenantId =
@@ -126,46 +126,58 @@ export async function resolveAuthz({ sql, event }) {
   `
 
   // Check for active tenant (multi-tenant switching)
-const activeTenantId =
-  event.headers['x-active-tenant'] ||
-  event.headers['X-Active-Tenant'] ||
-  null
+  const activeTenantId =
+    event.headers['x-active-tenant'] ||
+    event.headers['X-Active-Tenant'] ||
+    null
 
-// If active tenant specified, validate membership for it
-if (activeTenantId) {
-  const rows = await sql`
-    select tm.tenant_id::text as tenant_id, tm.role, t.business_type
-    from public.tenant_memberships tm
-    join public.app_users u on u.id = tm.user_id
-    join public.tenants t on t.id = tm.tenant_id
-    where tm.user_id = ${user.userId}::uuid
-      and tm.tenant_id = ${activeTenantId}::uuid
-      and u.is_disabled is not true
-    limit 1
-  `
-  if (!rows.length) return { error: 'Not authorized for selected tenant' }
-  return { tenantId: rows[0].tenant_id, role: rows[0].role, businessType: rows[0].business_type, mode: 'membership' }
-}
+  // If active tenant specified, validate membership for it
+  if (activeTenantId) {
+    const rows = await sql`
+      select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
+      from public.tenant_memberships tm
+      join public.app_users u on u.id = tm.user_id
+      join public.tenants t on t.id = tm.tenant_id
+      where tm.user_id = ${user.userId}::uuid
+        and tm.tenant_id = ${activeTenantId}::uuid
+        and u.is_disabled is not true
+      limit 1
+    `
+    if (!rows.length) return { error: 'Not authorized for selected tenant' }
+    return { 
+      tenantId: rows[0].tenant_id, 
+      role: rows[0].role, 
+      businessType: rows[0].business_type,
+      features: rows[0].features || [],
+      mode: 'membership' 
+    }
+  }
 
-// If tenant explicitly requested (legacy x-tenant-id header), require membership for it
-if (requestedTenantId) {
-  const rows = await sql`
-    select tm.tenant_id::text as tenant_id, tm.role, t.business_type
-    from public.tenant_memberships tm
-    join public.app_users u on u.id = tm.user_id
-    join public.tenants t on t.id = tm.tenant_id
-    where tm.user_id = ${user.userId}::uuid
-      and tm.tenant_id = ${requestedTenantId}::uuid
-      and u.is_disabled is not true
-    limit 1
-  `
-  if (!rows.length) return { error: 'Not authorized for requested tenant' }
-  return { tenantId: rows[0].tenant_id, role: rows[0].role, businessType: rows[0].business_type, mode: 'membership' }
-}
+  // If tenant explicitly requested (legacy x-tenant-id header), require membership for it
+  if (requestedTenantId) {
+    const rows = await sql`
+      select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
+      from public.tenant_memberships tm
+      join public.app_users u on u.id = tm.user_id
+      join public.tenants t on t.id = tm.tenant_id
+      where tm.user_id = ${user.userId}::uuid
+        and tm.tenant_id = ${requestedTenantId}::uuid
+        and u.is_disabled is not true
+      limit 1
+    `
+    if (!rows.length) return { error: 'Not authorized for requested tenant' }
+    return { 
+      tenantId: rows[0].tenant_id, 
+      role: rows[0].role, 
+      businessType: rows[0].business_type,
+      features: rows[0].features || [],
+      mode: 'membership' 
+    }
+  }
 
   // Default tenant from memberships
   const rows = await sql`
-    select tm.tenant_id::text as tenant_id, tm.role, t.business_type
+    select tm.tenant_id::text as tenant_id, tm.role, t.business_type, t.features
     from public.tenant_memberships tm
     join public.app_users u on u.id = tm.user_id
     join public.tenants t on t.id = tm.tenant_id
@@ -174,9 +186,21 @@ if (requestedTenantId) {
     order by tm.created_at asc
     limit 1
   `
-  if (rows.length) return { tenantId: rows[0].tenant_id, role: rows[0].role, businessType: rows[0].business_type, mode: 'membership' }
+  if (rows.length) return { 
+    tenantId: rows[0].tenant_id, 
+    role: rows[0].role, 
+    businessType: rows[0].business_type,
+    features: rows[0].features || [],
+    mode: 'membership' 
+  }
 
   // No membership yet => BLV intact
-  return { tenantId: TENANT_ID, role: 'tenant_admin', businessType: 'general', mode: 'fallback' }
+  return { 
+    tenantId: TENANT_ID, 
+    role: 'tenant_admin', 
+    businessType: 'general',
+    features: [],
+    mode: 'fallback' 
+  }
 }
 
