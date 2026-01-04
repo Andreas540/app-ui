@@ -508,23 +508,60 @@ export default function TimeEntry() {
         </div>
       </div>
 
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-  <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ 
+  marginTop: 12, 
+  display: 'grid', 
+  gridTemplateColumns: '1fr 1fr', 
+  gap: 12 
+}}>
+  <div>
     <label>{t.startTime}</label>
     <input
-      type="time"
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]{2}:[0-9]{2}"
+      placeholder="08:00"
       value={startTime}
       onChange={e => setStartTime(e.target.value)}
-      style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+      onBlur={e => {
+        // Auto-format on blur
+        const val = e.target.value.replace(/[^\d:]/g, '')
+        if (val.match(/^\d{1,2}:\d{2}$/)) {
+          const [h, m] = val.split(':')
+          const formatted = `${h.padStart(2, '0')}:${m}`
+          setStartTime(formatted)
+        }
+      }}
+      style={{ 
+        height: CONTROL_H, 
+        width: '100%', 
+        boxSizing: 'border-box'
+      }}
     />
   </div>
-  <div style={{ flex: 1, minWidth: 0 }}>
+  <div>
     <label>{t.endTime}</label>
     <input
-      type="time"
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]{2}:[0-9]{2}"
+      placeholder="17:00"
       value={endTime}
       onChange={e => setEndTime(e.target.value)}
-      style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+      onBlur={e => {
+        // Auto-format on blur
+        const val = e.target.value.replace(/[^\d:]/g, '')
+        if (val.match(/^\d{1,2}:\d{2}$/)) {
+          const [h, m] = val.split(':')
+          const formatted = `${h.padStart(2, '0')}:${m}`
+          setEndTime(formatted)
+        }
+      }}
+      style={{ 
+        height: CONTROL_H, 
+        width: '100%', 
+        boxSizing: 'border-box'
+      }}
     />
   </div>
 </div>
