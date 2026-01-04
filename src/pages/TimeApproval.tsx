@@ -35,7 +35,7 @@ const translations = {
     fromDate: 'Desde',
     toDate: 'Hasta',
     showApproved: 'Mostrar aprobados',
-    pendingApproval: 'Pendiente de Aprobación',
+    pendingApproval: 'Por Aprobar',
     pendingHours: 'Horas Pendientes',
     approvedHours: 'Horas Aprobadas',
     totalHours: 'Total de Horas',
