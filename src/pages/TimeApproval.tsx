@@ -353,6 +353,10 @@ export default function TimeApproval() {
           .select-all-container .approve-selected-btn {
             width: 100% !important;
             margin-top: 8px !important;
+            height: auto !important;
+            min-height: 32px !important;
+            white-space: normal !important;
+            padding: 8px 12px !important;
           }
         }
       `}</style>
