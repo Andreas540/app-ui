@@ -9,7 +9,7 @@ interface TenantUser {
   email: string
   name: string | null
   role: 'tenant_admin' | 'tenant_user'
-  features: FeatureId[] | null // null = all tenant features
+  features: FeatureId[] | null
 }
 
 export default function TenantAdmin() {
@@ -24,6 +24,15 @@ export default function TenantAdmin() {
   const [managingUserName, setManagingUserName] = useState('')
   const [managingUserFeatures, setManagingUserFeatures] = useState<FeatureId[]>([])
   const [savingFeatures, setSavingFeatures] = useState(false)
+
+  // Create user modal
+  const [showCreateUser, setShowCreateUser] = useState(false)
+  const [newUserEmail, setNewUserEmail] = useState('')
+  const [newUserPassword, setNewUserPassword] = useState('')
+  const [newUserName, setNewUserName] = useState('')
+  const [newUserRole, setNewUserRole] = useState<'tenant_user' | 'tenant_admin'>('tenant_user')
+  const [newUserFeatures, setNewUserFeatures] = useState<FeatureId[]>([])
+  const [creatingUser, setCreatingUser] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -44,7 +53,6 @@ export default function TenantAdmin() {
         ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
       }
 
-      // Load tenant info and users
       const res = await fetch(`${base}/api/tenant-admin?action=getTenantUsers`, { headers })
       
       if (!res.ok) {
@@ -68,8 +76,6 @@ export default function TenantAdmin() {
   async function openManageUserFeatures(targetUser: TenantUser) {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
-    
-    // If user has specific features, use those; otherwise use all tenant features
     setManagingUserFeatures(targetUser.features || tenantFeatures)
   }
 
@@ -111,20 +117,93 @@ export default function TenantAdmin() {
     }
   }
 
-  function toggleFeature(featureId: FeatureId) {
-    if (managingUserFeatures.includes(featureId)) {
-      setManagingUserFeatures(managingUserFeatures.filter(f => f !== featureId))
-    } else {
-      setManagingUserFeatures([...managingUserFeatures, featureId])
+  function openCreateUser() {
+    setNewUserEmail('')
+    setNewUserPassword('')
+    setNewUserName('')
+    setNewUserRole('tenant_user')
+    setNewUserFeatures(tenantFeatures) // Default to all tenant features
+    setShowCreateUser(true)
+  }
+
+  async function handleCreateUser() {
+    if (!newUserEmail.trim()) {
+      alert('Please enter an email')
+      return
+    }
+    if (newUserPassword.length < 8) {
+      alert('Password must be at least 8 characters')
+      return
+    }
+
+    try {
+      setCreatingUser(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+        },
+        body: JSON.stringify({
+          action: 'createUser',
+          email: newUserEmail.trim(),
+          password: newUserPassword,
+          name: newUserName.trim() || null,
+          role: newUserRole,
+          features: newUserFeatures
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create user')
+      }
+
+      alert('User created successfully!')
+      setShowCreateUser(false)
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to create user')
+    } finally {
+      setCreatingUser(false)
     }
   }
 
-  function selectAllFeatures() {
-    setManagingUserFeatures(tenantFeatures)
+  function toggleFeature(featureId: FeatureId, isNewUser: boolean = false) {
+    if (isNewUser) {
+      if (newUserFeatures.includes(featureId)) {
+        setNewUserFeatures(newUserFeatures.filter(f => f !== featureId))
+      } else {
+        setNewUserFeatures([...newUserFeatures, featureId])
+      }
+    } else {
+      if (managingUserFeatures.includes(featureId)) {
+        setManagingUserFeatures(managingUserFeatures.filter(f => f !== featureId))
+      } else {
+        setManagingUserFeatures([...managingUserFeatures, featureId])
+      }
+    }
   }
 
-  function clearAllFeatures() {
-    setManagingUserFeatures([])
+  function selectAllFeatures(isNewUser: boolean = false) {
+    if (isNewUser) {
+      setNewUserFeatures(tenantFeatures)
+    } else {
+      setManagingUserFeatures(tenantFeatures)
+    }
+  }
+
+  function clearAllFeatures(isNewUser: boolean = false) {
+    if (isNewUser) {
+      setNewUserFeatures([])
+    } else {
+      setManagingUserFeatures([])
+    }
   }
 
   if (loading) return <div className="card"><p>Loading...</p></div>
@@ -153,7 +232,17 @@ export default function TenantAdmin() {
 
       {/* Users List */}
       <div className="card">
-        <h3>Team Members</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>Team Members</h3>
+          <button
+            className="primary"
+            onClick={openCreateUser}
+            style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+          >
+            + Create User
+          </button>
+        </div>
+
         {users.length === 0 ? (
           <p className="helper">No users yet</p>
         ) : (
@@ -203,6 +292,167 @@ export default function TenantAdmin() {
         )}
       </div>
 
+      {/* Create User Modal */}
+      {showCreateUser && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setShowCreateUser(false)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: 600,
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Create New User</h3>
+            
+            <div style={{ marginTop: 16 }}>
+              <label>Email *</label>
+              <input
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="user@example.com"
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label>Name (optional)</label>
+              <input
+                type="text"
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder="John Doe"
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label>Password *</label>
+              <input
+                type="password"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                autoComplete="new-password"
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label>Role *</label>
+              <select
+                value={newUserRole}
+                onChange={(e) => setNewUserRole(e.target.value as 'tenant_user' | 'tenant_admin')}
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              >
+                <option value="tenant_user">User</option>
+                <option value="tenant_admin">Admin</option>
+              </select>
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <label style={{ margin: 0, fontWeight: 600 }}>Permissions</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => selectAllFeatures(true)}
+                    style={{ height: 32, fontSize: 12, padding: '0 12px' }}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={() => clearAllFeatures(true)}
+                    style={{ height: 32, fontSize: 12, padding: '0 12px' }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+                {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
+                  const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
+                  const availableFeatures = categoryFeatures.filter(f => 
+                    tenantFeatures.includes(f.id as FeatureId)
+                  )
+                  
+                  if (availableFeatures.length === 0) return null
+                  
+                  return (
+                    <div key={categoryKey} style={{ marginBottom: 16 }}>
+                      <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 8, color: 'var(--primary)' }}>
+                        {categoryName}
+                      </div>
+                      
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {availableFeatures.map((feature) => (
+                          <label
+                            key={feature.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              padding: 8,
+                              background: 'rgba(255,255,255,0.03)',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={newUserFeatures.includes(feature.id as FeatureId)}
+                              onChange={() => toggleFeature(feature.id as FeatureId, true)}
+                              style={{ width: 16, height: 16 }}
+                            />
+                            <span>{feature.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+              <button
+                className="primary"
+                onClick={handleCreateUser}
+                disabled={creatingUser}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {creatingUser ? 'Creating...' : 'Create User'}
+              </button>
+              <button
+                onClick={() => setShowCreateUser(false)}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Manage User Features Modal */}
       {managingUserId && (
         <div
@@ -239,13 +489,13 @@ export default function TenantAdmin() {
 
             <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
               <button
-                onClick={selectAllFeatures}
+                onClick={() => selectAllFeatures(false)}
                 style={{ flex: 1, height: 36, fontSize: 13 }}
               >
                 Select All
               </button>
               <button
-                onClick={clearAllFeatures}
+                onClick={() => clearAllFeatures(false)}
                 style={{ flex: 1, height: 36, fontSize: 13 }}
               >
                 Clear All
@@ -255,7 +505,6 @@ export default function TenantAdmin() {
             <div style={{ marginTop: 20 }}>
               {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
                 const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
-                // Only show categories that have at least one tenant-enabled feature
                 const availableFeatures = categoryFeatures.filter(f => 
                   tenantFeatures.includes(f.id as FeatureId)
                 )
@@ -291,7 +540,7 @@ export default function TenantAdmin() {
                           <input
                             type="checkbox"
                             checked={managingUserFeatures.includes(feature.id as FeatureId)}
-                            onChange={() => toggleFeature(feature.id as FeatureId)}
+                            onChange={() => toggleFeature(feature.id as FeatureId, false)}
                             style={{ width: 20, height: 20 }}
                           />
                           <div style={{ flex: 1 }}>

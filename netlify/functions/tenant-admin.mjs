@@ -138,6 +138,97 @@ async function handlePost(event) {
       return cors(200, { success: true })
     }
 
+    // Create new user in tenant
+    if (action === 'createUser') {
+      const { email, password, name, role, features } = body
+
+      if (!email || typeof email !== 'string' || !email.trim()) {
+        return cors(400, { error: 'Email is required' })
+      }
+      if (!password || typeof password !== 'string' || password.length < 8) {
+        return cors(400, { error: 'Password must be at least 8 characters' })
+      }
+      if (!['tenant_admin', 'tenant_user'].includes(role)) {
+        return cors(400, { error: 'Invalid role' })
+      }
+
+      const normalizedEmail = email.trim().toLowerCase()
+
+      // Check if email already exists in users table
+      const existingUser = await sql`
+        SELECT id FROM users WHERE email = ${normalizedEmail}
+      `
+      if (existingUser.length > 0) {
+        return cors(400, { error: 'Email already exists' })
+      }
+
+      // Check if email already exists in app_users table
+      const existingAppUser = await sql`
+        SELECT id FROM app_users WHERE email = ${normalizedEmail}
+      `
+      if (existingAppUser.length > 0) {
+        return cors(400, { error: 'Email already exists in app_users' })
+      }
+
+      // Get tenant's available features to validate
+      const tenant = await sql`
+        SELECT features
+        FROM tenants
+        WHERE id = ${tenantId}
+        LIMIT 1
+      `
+
+      const tenantFeatures = tenant[0]?.features || []
+      const validFeatures = Array.isArray(features) 
+        ? features.filter(f => tenantFeatures.includes(f))
+        : tenantFeatures
+
+      // Hash password
+      const bcrypt = await import('bcryptjs')
+      const hashedPassword = await bcrypt.default.hash(password, 10)
+
+      // Determine access_level based on role
+      const accessLevel = role === 'tenant_admin' ? 'admin' : 'inventory'
+
+      // Create user in users table
+      const userResult = await sql`
+        INSERT INTO users (
+          email, 
+          password_hash, 
+          name, 
+          role, 
+          access_level,
+          active, 
+          tenant_id
+        )
+        VALUES (
+          ${normalizedEmail}, 
+          ${hashedPassword}, 
+          ${name || null}, 
+          ${role},
+          ${accessLevel},
+          true, 
+          ${tenantId}
+        )
+        RETURNING id, email, name
+      `
+      const newUserId = userResult[0].id
+
+      // Create user in app_users table
+      await sql`
+        INSERT INTO app_users (id, email, is_disabled)
+        VALUES (${newUserId}, ${normalizedEmail}, false)
+      `
+
+      // Create tenant membership with features
+      await sql`
+        INSERT INTO tenant_memberships (user_id, tenant_id, role, features)
+        VALUES (${newUserId}, ${tenantId}, ${role}, ${JSON.stringify(validFeatures)}::jsonb)
+      `
+
+      return cors(201, { user: userResult[0] })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handlePost error:', e)
