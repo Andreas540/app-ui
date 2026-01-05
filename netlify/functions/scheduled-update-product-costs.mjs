@@ -12,11 +12,10 @@ export async function handler(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Tenant-safe: for each product, pick latest effective cost from the SAME tenant
+    // Tenant-safe: for each product, update with latest effective cost
     await sql`
       UPDATE public.products p
-      SET cost = x.cost
-      FROM LATERAL (
+      SET cost = (
         SELECT pch.cost
         FROM public.product_cost_history pch
         WHERE pch.tenant_id = p.tenant_id
@@ -24,8 +23,14 @@ export async function handler(event) {
           AND pch.effective_from <= NOW()
         ORDER BY pch.effective_from DESC
         LIMIT 1
-      ) x
-      WHERE x.cost IS NOT NULL
+      )
+      WHERE EXISTS (
+        SELECT 1
+        FROM public.product_cost_history pch
+        WHERE pch.tenant_id = p.tenant_id
+          AND pch.product_id = p.id
+          AND pch.effective_from <= NOW()
+      )
     `
 
     console.log('Product costs updated successfully (tenant-safe)')
