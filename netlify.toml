@@ -33,6 +33,6 @@
 [functions."scheduled-update-shipping-costs"]
   schedule = "0 * * * *"
 
-  [[functions]]
-  path = "netlify/functions/scheduled-update-employee-salaries.mjs"
-  schedule = "0 * * * *"  # Runs every hour at the top of the hour
+  # Scheduled function to update employee salaries hourly
+[functions."scheduled-update-employee-salaries"]
+  schedule = "0 * * * *"
