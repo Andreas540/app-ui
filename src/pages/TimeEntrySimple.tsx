@@ -351,40 +351,58 @@ export default function TimeEntrySimple() {
   return (
     <div className="card" style={{ maxWidth: 600 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>{t.timeEntry}</h3>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            onClick={() => setLang('en')}
-            style={{
-              fontSize: 20,
-              padding: '4px 8px',
-              background: lang === 'en' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              cursor: 'pointer',
-              opacity: lang === 'en' ? 1 : 0.5,
-            }}
-            title="English"
-          >
-            🇺🇸
-          </button>
-          <button
-            onClick={() => setLang('es')}
-            style={{
-              fontSize: 20,
-              padding: '4px 8px',
-              background: lang === 'es' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              cursor: 'pointer',
-              opacity: lang === 'es' ? 1 : 0.5,
-            }}
-            title="Español"
-          >
-            🇪🇸
-          </button>
-        </div>
-      </div>
+  <h3 style={{ margin: 0 }}>{t.timeEntry}</h3>
+  <div style={{ display: 'flex', gap: 6 }}>
+    {/* Refresh button */}
+    <button
+      onClick={() => {
+        loadTodayEntry()
+        loadTimeEntries()
+      }}
+      style={{
+        fontSize: 18,
+        padding: '4px 8px',
+        background: 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+      }}
+      title={lang === 'es' ? 'Actualizar' : 'Refresh'}
+    >
+      🔄
+    </button>
+    <button
+      onClick={() => setLang('en')}
+      style={{
+        fontSize: 20,
+        padding: '4px 8px',
+        background: lang === 'en' ? 'rgba(255,255,255,0.1)' : 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        opacity: lang === 'en' ? 1 : 0.5,
+      }}
+      title="English"
+    >
+      🇺🇸
+    </button>
+    <button
+      onClick={() => setLang('es')}
+      style={{
+        fontSize: 20,
+        padding: '4px 8px',
+        background: lang === 'es' ? 'rgba(255,255,255,0.1)' : 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        opacity: lang === 'es' ? 1 : 0.5,
+      }}
+      title="Español"
+    >
+      🇪🇸
+    </button>
+  </div>
+</div>
 
       <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
         {t.reportingAs} <span style={{ color: 'var(--text)', fontWeight: 600 }}>{employee.name}</span>

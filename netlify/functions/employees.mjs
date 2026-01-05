@@ -171,12 +171,11 @@ async function saveEmployee(event) {
       // Handle salary updates with history
 let newSalaryNum = hour_salary !== undefined ? hour_salary : current.hour_salary
 const salaryProvided = hour_salary !== undefined && hour_salary !== null
-const hasHistoryOptions = applyToHistory || effective_date
 
 // Determine if we should update employees.hour_salary immediately
 let shouldUpdateSalaryNow = false
 
-if (salaryProvided && hasHistoryOptions) {
+if (salaryProvided) {
   if (applyToHistory) {
     // Applying to all history = effective immediately
     shouldUpdateSalaryNow = true
@@ -187,12 +186,9 @@ if (salaryProvided && hasHistoryOptions) {
     today.setUTCHours(0, 0, 0, 0)
     shouldUpdateSalaryNow = effectiveDateObj <= today
   } else {
-    // No specific date = from next time entry = effective now
+    // No specific date = from today = effective now
     shouldUpdateSalaryNow = true
   }
-} else if (salaryProvided && !hasHistoryOptions) {
-  // Salary changed but no history options = update immediately
-  shouldUpdateSalaryNow = true
 }
 
 // Update employee record
@@ -210,8 +206,8 @@ await sql`
   WHERE id = ${id} AND tenant_id = ${TENANT_ID}
 `
 
-// Handle salary history updates - process whenever salary is provided with history options
-if (salaryProvided && hasHistoryOptions) {
+// Handle salary history updates - ALWAYS create history entry when salary is provided during edit
+if (salaryProvided) {
   if (applyToHistory) {
     // Delete all previous history entries
     await sql`
@@ -230,7 +226,7 @@ if (salaryProvided && hasHistoryOptions) {
       )
     `
   } else {
-    // Normal case: add new history entry
+    // Normal case: add new history entry (for both "from today" and "specific date")
     if (effective_date) {
       // Insert entry with specific date
       await sql`
@@ -243,7 +239,7 @@ if (salaryProvided && hasHistoryOptions) {
         )
       `
     } else {
-      // Add entry with current timestamp
+      // From today: add entry with current timestamp
       await sql`
         INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
         VALUES (${TENANT_ID}, ${id}, ${newSalaryNum}, NOW())
@@ -252,11 +248,11 @@ if (salaryProvided && hasHistoryOptions) {
   }
 }
 
-      return cors(200, { 
+return cors(200, { 
   ok: true, 
   updated: true, 
   employee: { id },
-  applied_to_history: applyToHistory && salaryProvided && hasHistoryOptions
+  applied_to_history: applyToHistory && salaryProvided
 })
     } else {
       // CREATING NEW EMPLOYEE
