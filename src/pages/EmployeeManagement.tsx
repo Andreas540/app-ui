@@ -168,7 +168,6 @@ export default function EmployeeManagement() {
   // Salary history options
   const [salaryOption, setSalaryOption] = useState<'history' | 'next' | 'specific'>('next')
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
-  const [originalSalary, setOriginalSalary] = useState<string>('')
 
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
@@ -226,7 +225,6 @@ export default function EmployeeManagement() {
       setNotes('')
       setSalaryOption('next')
       setSpecificDate(todayYMD())
-      setOriginalSalary('')
       setShowForm(true)
 
       const nextCode = await fetchNextEmployeeCode()
@@ -243,7 +241,6 @@ export default function EmployeeManagement() {
     setEmail(safeString(employee.email))
     setEmployeeCode(safeString(employee.employee_code))
     setHourSalary(safeString(employee.hour_salary))
-    setOriginalSalary(safeString(employee.hour_salary))
     setActive(employee.active)
     setNotes(safeString(employee.notes))
     setSalaryOption('next')
@@ -262,7 +259,6 @@ export default function EmployeeManagement() {
     setNotes('')
     setSalaryOption('next')
     setSpecificDate(todayYMD())
-    setOriginalSalary('')
   }
 
   async function handleSave() {
@@ -272,10 +268,8 @@ export default function EmployeeManagement() {
   }
 
   const salaryNum = hourSalary.trim() ? parseFloat(hourSalary) : null
-  const originalSalaryNum = originalSalary.trim() ? parseFloat(originalSalary) : null
-  const salaryChanged = editingId && salaryNum !== null && salaryNum !== originalSalaryNum
 
-  if (salaryOption === 'specific' && !specificDate && salaryChanged) {
+  if (salaryOption === 'specific' && !specificDate && editingId && salaryNum !== null) {
     alert(t.selectDate)
     return
   }
@@ -294,8 +288,8 @@ export default function EmployeeManagement() {
         hour_salary: salaryNum,
         active,
         notes: notes.trim() || null,
-        // Include salary history options only when editing and salary changed
-        ...(editingId && salaryChanged ? {
+        // Include salary history options when editing and salary exists
+        ...(editingId && salaryNum !== null ? {
           apply_to_history: salaryOption === 'history',
           effective_date: salaryOption === 'specific' ? specificDate : undefined,
         } : {})
@@ -312,7 +306,7 @@ export default function EmployeeManagement() {
     // Show appropriate success message
     if (result.created) {
       alert(t.created)
-    } else if (result.updated && salaryChanged) {
+    } else if (result.updated && salaryNum !== null) {
       let message = t.salaryUpdated(name.trim())
       if (result.applied_to_history) {
         message += ` (${t.salaryAppliedToHistory})`

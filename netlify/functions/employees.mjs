@@ -169,92 +169,95 @@ async function saveEmployee(event) {
       const updatedNotes = notes !== undefined ? (String(notes).trim() || null) : current.notes
 
       // Handle salary updates with history
-      let newSalaryNum = hour_salary !== undefined ? hour_salary : current.hour_salary
-      const currentSalary = Number(current.hour_salary || 0)
-      const salaryChanged = hour_salary !== undefined && Number(hour_salary) !== currentSalary
+let newSalaryNum = hour_salary !== undefined ? hour_salary : current.hour_salary
+const salaryProvided = hour_salary !== undefined && hour_salary !== null
+const hasHistoryOptions = applyToHistory || effective_date
 
-      // Determine if we should update employees.hour_salary immediately
-      let shouldUpdateSalaryNow = false
+// Determine if we should update employees.hour_salary immediately
+let shouldUpdateSalaryNow = false
 
-      if (salaryChanged) {
-        if (applyToHistory) {
-          // Applying to all history = effective immediately
-          shouldUpdateSalaryNow = true
-        } else if (effective_date) {
-          // Check if effective date is today or in the past
-          const effectiveDateObj = new Date(effective_date + 'T00:00:00Z')
-          const today = new Date()
-          today.setUTCHours(0, 0, 0, 0)
-          shouldUpdateSalaryNow = effectiveDateObj <= today
-        } else {
-          // No specific date = from next time entry = effective now
-          shouldUpdateSalaryNow = true
-        }
-      }
+if (salaryProvided && hasHistoryOptions) {
+  if (applyToHistory) {
+    // Applying to all history = effective immediately
+    shouldUpdateSalaryNow = true
+  } else if (effective_date) {
+    // Check if effective date is today or in the past
+    const effectiveDateObj = new Date(effective_date + 'T00:00:00Z')
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    shouldUpdateSalaryNow = effectiveDateObj <= today
+  } else {
+    // No specific date = from next time entry = effective now
+    shouldUpdateSalaryNow = true
+  }
+} else if (salaryProvided && !hasHistoryOptions) {
+  // Salary changed but no history options = update immediately
+  shouldUpdateSalaryNow = true
+}
 
-      // Update employee record
+// Update employee record
+await sql`
+  UPDATE employees
+  SET 
+    name = ${updatedName},
+    email = ${updatedEmail},
+    hour_salary = CASE
+      WHEN ${shouldUpdateSalaryNow && salaryProvided} THEN ${newSalaryNum}
+      ELSE hour_salary
+    END,
+    active = ${updatedActive},
+    notes = ${updatedNotes}
+  WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+`
+
+// Handle salary history updates - process whenever salary is provided with history options
+if (salaryProvided && hasHistoryOptions) {
+  if (applyToHistory) {
+    // Delete all previous history entries
+    await sql`
+      DELETE FROM salary_cost_history
+      WHERE tenant_id = ${TENANT_ID}
+        AND employee_id = ${id}
+    `
+    // Insert single entry backdated to beginning
+    await sql`
+      INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+      VALUES (
+        ${TENANT_ID},
+        ${id},
+        ${newSalaryNum},
+        (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
+      )
+    `
+  } else {
+    // Normal case: add new history entry
+    if (effective_date) {
+      // Insert entry with specific date
       await sql`
-        UPDATE employees
-        SET 
-          name = ${updatedName},
-          email = ${updatedEmail},
-          hour_salary = CASE
-            WHEN ${shouldUpdateSalaryNow && salaryChanged} THEN ${newSalaryNum}
-            ELSE hour_salary
-          END,
-          active = ${updatedActive},
-          notes = ${updatedNotes}
-        WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+        INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+        VALUES (
+          ${TENANT_ID},
+          ${id},
+          ${newSalaryNum},
+          ((${effective_date}::date)::timestamp AT TIME ZONE 'America/New_York')
+        )
       `
-
-      // Handle salary history updates
-      if (salaryChanged) {
-        if (applyToHistory) {
-          // Delete all previous history entries
-          await sql`
-            DELETE FROM salary_cost_history
-            WHERE tenant_id = ${TENANT_ID}
-              AND employee_id = ${id}
-          `
-          // Insert single entry backdated to beginning
-          await sql`
-            INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
-            VALUES (
-              ${TENANT_ID},
-              ${id},
-              ${newSalaryNum},
-              (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
-            )
-          `
-        } else {
-          // Normal case: add new history entry
-          if (effective_date) {
-            // Insert entry with specific date
-            await sql`
-              INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
-              VALUES (
-                ${TENANT_ID},
-                ${id},
-                ${newSalaryNum},
-                ((${effective_date}::date)::timestamp AT TIME ZONE 'America/New_York')
-              )
-            `
-          } else {
-            // Add entry with current timestamp
-            await sql`
-              INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
-              VALUES (${TENANT_ID}, ${id}, ${newSalaryNum}, NOW())
-            `
-          }
-        }
-      }
+    } else {
+      // Add entry with current timestamp
+      await sql`
+        INSERT INTO salary_cost_history (tenant_id, employee_id, salary, effective_from)
+        VALUES (${TENANT_ID}, ${id}, ${newSalaryNum}, NOW())
+      `
+    }
+  }
+}
 
       return cors(200, { 
-        ok: true, 
-        updated: true, 
-        employee: { id },
-        applied_to_history: applyToHistory && salaryChanged
-      })
+  ok: true, 
+  updated: true, 
+  employee: { id },
+  applied_to_history: applyToHistory && salaryProvided && hasHistoryOptions
+})
     } else {
       // CREATING NEW EMPLOYEE
       const generatedCode = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
