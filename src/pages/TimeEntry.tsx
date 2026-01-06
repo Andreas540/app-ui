@@ -126,6 +126,20 @@ function getEmployeeTokenFromUrl(): string | null {
     return null
   }
 }
+function formatHoursMinutes(decimalHours: number, lang: Lang): string {
+  const hours = Math.floor(decimalHours)
+  const minutes = Math.round((decimalHours - hours) * 60)
+  
+  if (lang === 'es') {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  } else {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  }
+}
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
@@ -718,19 +732,19 @@ export default function TimeEntry() {
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalHoursLabel}</span>
-    <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hrs}</span>
+    <span style={{ fontWeight: 600 }}>{formatHoursMinutes(parseFloat(stats.totalHours), lang)}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.approvedHours}</span>
+    <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(parseFloat(stats.approvedHours), lang)}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.pendingApproval}</span>
+    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(parseFloat(stats.pendingHours), lang)}</span>
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalEarnings}</span>
     <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.approvedHours}</span>
-    <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hrs}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.pendingApproval}</span>
-    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hrs}</span>
   </div>
 </div>
         </div>
@@ -764,7 +778,7 @@ export default function TimeEntry() {
   <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
     {entry.start_time} - {entry.end_time}
     <span style={{ margin: '0 8px' }}>•</span>
-    {hours === null ? '—' : hours.toFixed(2)} {t.hrs}
+    {hours === null ? '—' : formatHoursMinutes(hours, lang)}
   </div>
   {toNumberOrNull(entry.salary) !== null && (
     <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
