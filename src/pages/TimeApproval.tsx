@@ -11,6 +11,7 @@ type TimeEntry = {
   start_time: string
   end_time: string
   total_hours: number | null
+  salary: number | null
   approved: boolean
   approved_by: string | null
   approved_at: string | null
@@ -58,6 +59,11 @@ const translations = {
     bulkFailed: 'Error en la aprobación masiva',
     loading: 'Cargando…',
     error: 'Error',
+    thisWeek: 'Esta semana',
+lastWeek: 'Semana pasada',
+totalEarnings: 'Ganancias totales',
+approvedEarnings: 'Ganancias aprobadas',
+noEndTime: 'Sin hora de salida',
   },
   en: {
     timeApproval: 'Time Approval',
@@ -89,9 +95,35 @@ const translations = {
     bulkFailed: 'Bulk approval failed',
     loading: 'Loading…',
     error: 'Error',
+    thisWeek: 'This week',
+lastWeek: 'Last week',
+totalEarnings: 'Total earnings',
+approvedEarnings: 'Approved earnings',
+noEndTime: 'No end time',
   },
 }
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(d.setDate(diff))
+}
 
+function formatHoursMinutes(decimalHours: number, lang: Lang): string {
+  const totalMinutes = Math.round(decimalHours * 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  
+  if (lang === 'es') {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  } else {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  }
+}
 export default function TimeApproval() {
   const [lang, setLang] = useState<Lang>('es') // Spanish default
   const t = translations[lang]
@@ -102,15 +134,9 @@ export default function TimeApproval() {
   const [err, setErr] = useState<string | null>(null)
 
   // Filter state
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
-  const [showApproved, setShowApproved] = useState(false)
-  const [dateFrom, setDateFrom] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-  })
-  const [dateTo, setDateTo] = useState(() => {
-    return new Date().toISOString().split('T')[0]
-  })
+const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
+const [showApproved, setShowApproved] = useState(false)
+const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
 
   // Selected entries for bulk approval
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -132,8 +158,8 @@ export default function TimeApproval() {
   }, [])
 
   useEffect(() => {
-    loadTimeEntries()
-  }, [selectedEmployeeId, dateFrom, dateTo])
+  loadTimeEntries()
+}, [selectedEmployeeId, viewPeriod])
 
   async function loadEmployees() {
     try {
@@ -152,16 +178,36 @@ export default function TimeApproval() {
   }
 
   async function loadTimeEntries() {
-    try {
-      setLoading(true)
-      setErr(null)
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      let url = `${base}/api/time-entries?from=${dateFrom}&to=${dateTo}`
-      
-      if (selectedEmployeeId !== 'all') {
-        url += `&employee_id=${selectedEmployeeId}`
-      }
+  try {
+    setLoading(true)
+    setErr(null)
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    
+    // Calculate date range based on viewPeriod
+    const today = new Date()
+    let fromDate: Date
+    let toDate: Date
+
+    if (viewPeriod === 'thisWeek') {
+      fromDate = getMondayOfWeek(today)
+      toDate = new Date(fromDate)
+      toDate.setDate(toDate.getDate() + 6)
+    } else {
+      const lastWeekDate = new Date(today)
+      lastWeekDate.setDate(today.getDate() - 7)
+      fromDate = getMondayOfWeek(lastWeekDate)
+      toDate = new Date(fromDate)
+      toDate.setDate(toDate.getDate() + 6)
+    }
+
+    const from = fromDate.toISOString().split('T')[0]
+    const to = toDate.toISOString().split('T')[0]
+    
+    let url = `${base}/api/time-entries?from=${from}&to=${to}`
+    
+    if (selectedEmployeeId !== 'all') {
+      url += `&employee_id=${selectedEmployeeId}`
+    }
       
       // Always load ALL entries (approved and pending) for stats calculation
       // Filter display based on showApproved checkbox
@@ -317,20 +363,24 @@ export default function TimeApproval() {
   }, [displayedEntries])
 
   // Calculate summary stats from ALL entries (not filtered)
-  const stats = useMemo(() => {
-    const totalHours = timeEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0)
-    const approvedHours = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.total_hours || 0), 0)
-    const pendingHours = totalHours - approvedHours
-    const pendingCount = timeEntries.filter(e => !e.approved).length
-    
-    return {
-      totalHours: totalHours.toFixed(1),
-      approvedHours: approvedHours.toFixed(1),
-      pendingHours: pendingHours.toFixed(1),
-      pendingCount,
-      totalCount: timeEntries.length
-    }
-  }, [timeEntries])
+const stats = useMemo(() => {
+  const totalHours = timeEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0)
+  const totalEarnings = timeEntries.reduce((sum, e) => sum + (e.salary || 0), 0)
+  const approvedHours = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.total_hours || 0), 0)
+  const approvedEarnings = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.salary || 0), 0)
+  const pendingHours = totalHours - approvedHours
+  const pendingCount = timeEntries.filter(e => !e.approved).length
+  
+  return {
+    totalHours: totalHours,
+    totalEarnings: totalEarnings.toFixed(2),
+    approvedHours: approvedHours,
+    approvedEarnings: approvedEarnings.toFixed(2),
+    pendingHours: pendingHours,
+    pendingCount,
+    totalCount: timeEntries.length
+  }
+}, [timeEntries])
 
   const pendingEntries = timeEntries.filter(e => !e.approved)
 
@@ -405,50 +455,55 @@ export default function TimeApproval() {
 
       <h3>{t.timeApproval}</h3>
 
-      {/* Filters - Employee full width, dates below */}
-      <div style={{ marginTop: 16 }}>
-        <div>
-          <label>{t.employee}</label>
-          <select
-            value={selectedEmployeeId}
-            onChange={e => setSelectedEmployeeId(e.target.value)}
-            style={{ height: CONTROL_H, width: '100%' }}
-          >
-            <option value="all">{t.allEmployees}</option>
-            {employees.map(emp => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Filters - Employee and week selector */}
+<div style={{ marginTop: 16 }}>
+  <div>
+    <label>{t.employee}</label>
+    <select
+      value={selectedEmployeeId}
+      onChange={e => setSelectedEmployeeId(e.target.value)}
+      style={{ height: CONTROL_H, width: '100%' }}
+    >
+      <option value="all">{t.allEmployees}</option>
+      {employees.map(emp => (
+        <option key={emp.id} value={emp.id}>
+          {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
+        </option>
+      ))}
+    </select>
+  </div>
 
-        <div style={{ 
-          marginTop: 12, 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: 12 
-        }}>
-          <div>
-            <label>{t.fromDate}</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              style={{ height: CONTROL_H, width: '100%' }}
-            />
-          </div>
-          <div>
-            <label>{t.toDate}</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              style={{ height: CONTROL_H, width: '100%' }}
-            />
-          </div>
-        </div>
-      </div>
+  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+    <button
+      onClick={() => setViewPeriod('thisWeek')}
+      style={{
+        flex: 1,
+        height: CONTROL_H,
+        background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        fontSize: 14,
+      }}
+    >
+      {t.thisWeek}
+    </button>
+    <button
+      onClick={() => setViewPeriod('lastWeek')}
+      style={{
+        flex: 1,
+        height: CONTROL_H,
+        background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        fontSize: 14,
+      }}
+    >
+      {t.lastWeek}
+    </button>
+  </div>
+</div>
 
       {/* Summary stats - 2x2 grid */}
       <div style={{ 
@@ -458,36 +513,48 @@ export default function TimeApproval() {
         borderRadius: 8 
       }}>
         <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: 16, 
-          fontSize: 14 
-        }}>
-          <div>
-            <div className="helper" style={{ marginBottom: 4 }}>{t.pendingApproval}</div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
-              {stats.pendingCount}
-            </div>
-          </div>
-          <div>
-            <div className="helper" style={{ marginBottom: 4 }}>{t.pendingHours}</div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
-              {stats.pendingHours}
-            </div>
-          </div>
-          <div>
-            <div className="helper" style={{ marginBottom: 4 }}>{t.approvedHours}</div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
-              {stats.approvedHours}
-            </div>
-          </div>
-          <div>
-            <div className="helper" style={{ marginBottom: 4 }}>{t.totalHours}</div>
-            <div style={{ fontSize: 24, fontWeight: 600 }}>
-              {stats.totalHours}
-            </div>
-          </div>
-        </div>
+  display: 'grid', 
+  gridTemplateColumns: '1fr 1fr', 
+  gap: 16, 
+  fontSize: 14 
+}}>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.pendingApproval}</div>
+    <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
+      {stats.pendingCount}
+    </div>
+  </div>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.pendingHours}</div>
+    <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
+      {formatHoursMinutes(stats.pendingHours, lang)}
+    </div>
+  </div>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.approvedHours}</div>
+    <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
+      {formatHoursMinutes(stats.approvedHours, lang)}
+    </div>
+  </div>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.approvedEarnings}</div>
+    <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
+      ${stats.approvedEarnings}
+    </div>
+  </div>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.totalHours}</div>
+    <div style={{ fontSize: 24, fontWeight: 600 }}>
+      {formatHoursMinutes(stats.totalHours, lang)}
+    </div>
+  </div>
+  <div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t.totalEarnings}</div>
+    <div style={{ fontSize: 24, fontWeight: 600 }}>
+      ${stats.totalEarnings}
+    </div>
+  </div>
+</div>
       </div>
 
       {/* Select all and Show approved - 50/50 row */}
@@ -630,10 +697,14 @@ export default function TimeApproval() {
                               })()}
                             </div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                              {entry.start_time} - {entry.end_time}
-                              <span style={{ margin: '0 8px' }}>•</span>
-                              {entry.total_hours?.toFixed(2)} {t.hrs}
-                            </div>
+  {entry.start_time} - {entry.end_time || t.noEndTime}
+  {entry.total_hours && (
+    <>
+      <span style={{ margin: '0 8px' }}>•</span>
+      {formatHoursMinutes(entry.total_hours, lang)}
+    </>
+  )}
+</div>
                             {entry.notes && (
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                                 {t.note}: {entry.notes}
@@ -649,43 +720,47 @@ export default function TimeApproval() {
                         
                         <div style={{ display: 'flex', gap: 8 }}>
                           {entry.approved ? (
-                            <>
-                              <span style={{ 
-                                fontSize: 13, 
-                                color: '#22c55e',
-                                fontWeight: 600,
-                                padding: '6px 12px'
-                              }}>
-                                {t.approved}
-                              </span>
-                              <button
-                                onClick={() => handleUnapprove(entry.id)}
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: 12,
-                                  height: 32,
-                                  background: 'transparent',
-                                  border: '1px solid var(--border)',
-                                  borderRadius: 4,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                {t.unapprove}
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => handleApprove(entry.id)}
-                              className="primary"
-                              style={{
-                                padding: '6px 16px',
-                                fontSize: 13,
-                                height: 32
-                              }}
-                            >
-                              {t.approve}
-                            </button>
-                          )}
+  <>
+    <span style={{ 
+      fontSize: 13, 
+      color: '#22c55e',
+      fontWeight: 600,
+      padding: '6px 12px'
+    }}>
+      {t.approved}
+    </span>
+    <button
+      onClick={() => handleUnapprove(entry.id)}
+      style={{
+        padding: '6px 12px',
+        fontSize: 12,
+        height: 32,
+        background: 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer'
+      }}
+    >
+      {t.unapprove}
+    </button>
+  </>
+) : (
+  <button
+    onClick={() => handleApprove(entry.id)}
+    disabled={!entry.end_time}
+    className="primary"
+    style={{
+      padding: '6px 16px',
+      fontSize: 13,
+      height: 32,
+      opacity: entry.end_time ? 1 : 0.4,
+      cursor: entry.end_time ? 'pointer' : 'not-allowed'
+    }}
+    title={entry.end_time ? '' : t.noEndTime}
+  >
+    {t.approve}
+  </button>
+)}
                         </div>
                       </div>
                     ))}
