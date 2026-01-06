@@ -127,8 +127,9 @@ function getEmployeeTokenFromUrl(): string | null {
   }
 }
 function formatHoursMinutes(decimalHours: number, lang: Lang): string {
-  const hours = Math.floor(decimalHours)
-  const minutes = Math.round((decimalHours - hours) * 60)
+  const totalMinutes = Math.round(decimalHours * 60) // Round to nearest minute first
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
   
   if (lang === 'es') {
     if (hours === 0) return `${minutes} min`
