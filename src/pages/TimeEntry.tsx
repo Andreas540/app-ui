@@ -421,10 +421,10 @@ export default function TimeEntry() {
   const pendingHoursNum = totalHoursNum - approvedHoursNum
 
   return {
-    totalHours: totalHoursNum.toFixed(1),
+    totalHours: totalHoursNum,
     totalEarnings: totalEarningsNum.toFixed(2),
-    approvedHours: approvedHoursNum.toFixed(1),
-    pendingHours: pendingHoursNum.toFixed(1),
+    approvedHours: approvedHoursNum,
+    pendingHours: pendingHoursNum,
     daysWorked: timeEntries.length,
   }
 }, [timeEntries])
@@ -733,15 +733,15 @@ export default function TimeEntry() {
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalHoursLabel}</span>
-    <span style={{ fontWeight: 600 }}>{formatHoursMinutes(parseFloat(stats.totalHours), lang)}</span>
+    <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours, lang)}</span>
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.approvedHours}</span>
-    <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(parseFloat(stats.approvedHours), lang)}</span>
+    <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(stats.approvedHours, lang)}</span>
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.pendingApproval}</span>
-    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(parseFloat(stats.pendingHours), lang)}</span>
+    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours, lang)}</span>
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalEarnings}</span>
