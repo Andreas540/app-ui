@@ -17,6 +17,7 @@ type TimeEntry = {
   start_time: string
   end_time: string
   total_hours: number | string | null
+  salary: number | string | null
   approved: boolean
   approved_by: string | null
   notes: string | null
@@ -40,10 +41,11 @@ const translations = {
     saveEntry: 'Guardar Entrada',
     clear: 'Limpiar',
     timeSummary: 'Resumen de Tiempo de',
-    week: 'Semana',
-    month: 'Mes',
+    thisWeek: 'Esta semana',
+lastWeek: 'Semana pasada',
     daysWorked: 'Días trabajados:',
     totalHoursLabel: 'Total de horas:',
+    totalEarnings: 'Ganancias totales:',
     approvedHours: 'Horas aprobadas:',
     pendingApproval: 'Pendiente de aprobación:',
     recentEntries: 'Entradas Recientes',
@@ -77,10 +79,11 @@ const translations = {
     saveEntry: 'Save Time Entry',
     clear: 'Clear',
     timeSummary: 'Time Summary for',
-    week: 'Week',
-    month: 'Month',
+    thisWeek: 'This week',
+    lastWeek: 'Last week',
     daysWorked: 'Days worked:',
     totalHoursLabel: 'Total hours:',
+    totalEarnings: 'Total earnings:',
     approvedHours: 'Approved hours:',
     pendingApproval: 'Pending approval:',
     recentEntries: 'Recent Time Entries',
@@ -123,7 +126,12 @@ function getEmployeeTokenFromUrl(): string | null {
     return null
   }
 }
-
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(d.setDate(diff))
+}
 export default function TimeEntry() {
   const employeeToken = getEmployeeTokenFromUrl()
   const employeeMode = !!employeeToken
@@ -144,7 +152,7 @@ export default function TimeEntry() {
   const [notes, setNotes] = useState('')
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
-  const [viewPeriod, setViewPeriod] = useState<'week' | 'month'>('week')
+  const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
 
   function apiBase() {
     return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -233,45 +241,50 @@ export default function TimeEntry() {
   }
 
   async function loadTimeEntries() {
-    try {
-      const base = apiBase()
+  try {
+    const base = apiBase()
 
-      const today = new Date()
-      let fromDate: string
+    const today = new Date()
+    let fromDate: Date
+    let toDate: Date
 
-      if (viewPeriod === 'week') {
-        const weekAgo = new Date(today)
-        weekAgo.setDate(today.getDate() - 7)
-        fromDate = weekAgo.toISOString().split('T')[0]
-      } else {
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-        fromDate = firstDay.toISOString().split('T')[0]
-      }
-
-      const toDate = today.toISOString().split('T')[0]
-
-      const mode = employeeMode ? 'employee' : 'app'
-      const qs = employeeMode
-        ? `from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`
-        : `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`
-
-      const res = await fetch(`${base}/api/time-entries?${qs}`, {
-        headers: headersFor(mode),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
-      }
-
-      const data = await res.json()
-      setTimeEntries(data)
-      setErr(null)
-    } catch (e: any) {
-      console.error('Failed to load time entries:', e)
-      setErr(e?.message || 'Failed to load time entries')
+    if (viewPeriod === 'thisWeek') {
+      fromDate = getMondayOfWeek(today)
+      toDate = new Date(fromDate)
+      toDate.setDate(toDate.getDate() + 6)
+    } else {
+      const lastWeekDate = new Date(today)
+      lastWeekDate.setDate(today.getDate() - 7)
+      fromDate = getMondayOfWeek(lastWeekDate)
+      toDate = new Date(fromDate)
+      toDate.setDate(toDate.getDate() + 6)
     }
+
+    const from = fromDate.toISOString().split('T')[0]
+    const to = toDate.toISOString().split('T')[0]
+
+    const mode = employeeMode ? 'employee' : 'app'
+    const qs = employeeMode
+      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+      : `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+
+    const res = await fetch(`${base}/api/time-entries?${qs}`, {
+      headers: headersFor(mode),
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
+    }
+
+    const data = await res.json()
+    setTimeEntries(data)
+    setErr(null)
+  } catch (e: any) {
+    console.error('Failed to load time entries:', e)
+    setErr(e?.message || 'Failed to load time entries')
   }
+}
 
   async function handleSave() {
     if (!selectedEmployeeId) {
@@ -373,27 +386,33 @@ export default function TimeEntry() {
   }, [startTime, endTime])
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => {
+  const totalHoursNum = timeEntries.reduce((sum, entry) => {
+    const h = toNumberOrNull(entry.total_hours) || 0
+    return sum + h
+  }, 0)
+
+  const totalEarningsNum = timeEntries.reduce((sum, entry) => {
+    const s = toNumberOrNull(entry.salary) || 0
+    return sum + s
+  }, 0)
+
+  const approvedHoursNum = timeEntries
+    .filter(e => e.approved)
+    .reduce((sum, entry) => {
       const h = toNumberOrNull(entry.total_hours) || 0
       return sum + h
     }, 0)
 
-    const approvedHoursNum = timeEntries
-      .filter(e => e.approved)
-      .reduce((sum, entry) => {
-        const h = toNumberOrNull(entry.total_hours) || 0
-        return sum + h
-      }, 0)
+  const pendingHoursNum = totalHoursNum - approvedHoursNum
 
-    const pendingHoursNum = totalHoursNum - approvedHoursNum
-
-    return {
-      totalHours: totalHoursNum.toFixed(1),
-      approvedHours: approvedHoursNum.toFixed(1),
-      pendingHours: pendingHoursNum.toFixed(1),
-      daysWorked: timeEntries.length,
-    }
-  }, [timeEntries])
+  return {
+    totalHours: totalHoursNum.toFixed(1),
+    totalEarnings: totalEarningsNum.toFixed(2),
+    approvedHours: approvedHoursNum.toFixed(1),
+    pendingHours: pendingHoursNum.toFixed(1),
+    daysWorked: timeEntries.length,
+  }
+}, [timeEntries])
 
   if (loading) return <div className="card"><p>{t.loading}</p></div>
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error}: {err}</p></div>
@@ -412,45 +431,45 @@ export default function TimeEntry() {
     <div className="card" style={{ maxWidth: 900, position: 'relative' }}>
       {/* Language toggle flags - top right corner */}
       <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
-        <button
-          onClick={() => setLang('es')}
-          style={{
-            width: 40,
-            height: 40,
-            padding: 0,
-            border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
-            borderRadius: 8,
-            cursor: 'pointer',
-            background: 'transparent',
-            fontSize: 24,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="Español"
-        >
-          🇪🇸
-        </button>
-        <button
-          onClick={() => setLang('en')}
-          style={{
-            width: 40,
-            height: 40,
-            padding: 0,
-            border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
-            borderRadius: 8,
-            cursor: 'pointer',
-            background: 'transparent',
-            fontSize: 24,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="English"
-        >
-          🇺🇸
-        </button>
-      </div>
+  <button
+    onClick={() => setLang('en')}
+    style={{
+      width: 40,
+      height: 40,
+      padding: 0,
+      border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
+      borderRadius: 8,
+      cursor: 'pointer',
+      background: 'transparent',
+      fontSize: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    title="English"
+  >
+    🇺🇸
+  </button>
+  <button
+    onClick={() => setLang('es')}
+    style={{
+      width: 40,
+      height: 40,
+      padding: 0,
+      border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
+      borderRadius: 8,
+      cursor: 'pointer',
+      background: 'transparent',
+      fontSize: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    title="Español"
+  >
+    🇪🇸
+  </button>
+</div>
 
       <h3>{t.timeEntry}</h3>
 
@@ -663,53 +682,57 @@ export default function TimeEntry() {
               {t.timeSummary} {selectedEmployee.name}
             </h4>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setViewPeriod('week')}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  background: viewPeriod === 'week' ? 'var(--primary)' : 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                {t.week}
-              </button>
-              <button
-                onClick={() => setViewPeriod('month')}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  background: viewPeriod === 'month' ? 'var(--primary)' : 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                {t.month}
-              </button>
-            </div>
+  <button
+    onClick={() => setViewPeriod('thisWeek')}
+    style={{
+      padding: '4px 12px',
+      fontSize: 12,
+      background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
+      border: '1px solid var(--border)',
+      borderRadius: 4,
+      cursor: 'pointer',
+    }}
+  >
+    {t.thisWeek}
+  </button>
+  <button
+    onClick={() => setViewPeriod('lastWeek')}
+    style={{
+      padding: '4px 12px',
+      fontSize: 12,
+      background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
+      border: '1px solid var(--border)',
+      borderRadius: 4,
+      cursor: 'pointer',
+    }}
+  >
+    {t.lastWeek}
+  </button>
+</div>
           </div>
 
           <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">{t.daysWorked}</span>
-              <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">{t.totalHoursLabel}</span>
-              <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hrs}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">{t.approvedHours}</span>
-              <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hrs}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">{t.pendingApproval}</span>
-              <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hrs}</span>
-            </div>
-          </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.daysWorked}</span>
+    <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalHoursLabel}</span>
+    <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hrs}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalEarnings}</span>
+    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.approvedHours}</span>
+    <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hrs}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.pendingApproval}</span>
+    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hrs}</span>
+  </div>
+</div>
         </div>
       )}
 
@@ -735,20 +758,25 @@ export default function TimeEntry() {
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                      {formatLongDate(entry.work_date)}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {entry.start_time} - {entry.end_time}
-                      <span style={{ margin: '0 8px' }}>•</span>
-                      {hours === null ? '—' : hours.toFixed(2)} {t.hrs}
-                    </div>
-                    {entry.notes && (
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                        {entry.notes}
-                      </div>
-                    )}
-                  </div>
+  <div style={{ fontWeight: 600, marginBottom: 4 }}>
+    {formatLongDate(entry.work_date)}
+  </div>
+  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+    {entry.start_time} - {entry.end_time}
+    <span style={{ margin: '0 8px' }}>•</span>
+    {hours === null ? '—' : hours.toFixed(2)} {t.hrs}
+  </div>
+  {toNumberOrNull(entry.salary) !== null && (
+    <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
+      ${toNumberOrNull(entry.salary)!.toFixed(2)}
+    </div>
+  )}
+  {entry.notes && (
+    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+      {entry.notes}
+    </div>
+  )}
+</div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {entry.approved ? (
