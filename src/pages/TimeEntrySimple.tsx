@@ -369,10 +369,9 @@ export default function TimeEntrySimple() {
   <div style={{ display: 'flex', gap: 6 }}>
     {/* Refresh button */}
     <button
-      onClick={() => {
-        loadTodayEntry()
-        loadTimeEntries()
-      }}
+  onClick={() => {
+    window.location.reload()
+  }}
       style={{
         fontSize: 18,
         padding: '4px 8px',
