@@ -101,7 +101,21 @@ function getCurrentTime(): string {
   const minutes = String(now.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
 }
-
+function formatHoursMinutes(decimalHours: number, lang: Language): string {
+  const totalMinutes = Math.round(decimalHours * 60) // Round to nearest minute first
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  
+  if (lang === 'es') {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  } else {
+    if (hours === 0) return `${minutes} min`
+    if (minutes === 0) return `${hours} hrs`
+    return `${hours} hrs ${minutes} min`
+  }
+}
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
@@ -330,19 +344,19 @@ export default function TimeEntrySimple() {
   }
 
   const stats = useMemo(() => {
-    const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
-    const totalEarningsNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.salary) || 0), 0)
-    const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
-    const pendingHoursNum = totalHoursNum - approvedHoursNum
+  const totalHoursNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+  const totalEarningsNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.salary) || 0), 0)
+  const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
+  const pendingHoursNum = totalHoursNum - approvedHoursNum
 
-    return {
-      totalHours: totalHoursNum.toFixed(1),
-      totalEarnings: totalEarningsNum.toFixed(2),
-      approvedHours: approvedHoursNum.toFixed(1),
-      pendingHours: pendingHoursNum.toFixed(1),
-      daysWorked: timeEntries.filter(e => e.end_time !== null).length,
-    }
-  }, [timeEntries])
+  return {
+    totalHours: totalHoursNum,
+    totalEarnings: totalEarningsNum.toFixed(2),
+    approvedHours: approvedHoursNum,
+    pendingHours: pendingHoursNum,
+    daysWorked: timeEntries.filter(e => e.end_time !== null).length,
+  }
+}, [timeEntries])
 
   if (loading) return <div className="card"><p>{t.loading}</p></div>
   if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
@@ -502,29 +516,28 @@ export default function TimeEntrySimple() {
         </div>
 
         <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.daysWorked}</span>
-            <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.totalHours}</span>
-            <span style={{ fontWeight: 600 }}>{stats.totalHours} {t.hours}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.approvedHours}</span>
-            <span style={{ fontWeight: 600, color: '#22c55e' }}>{stats.approvedHours} {t.hours}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.pendingHours}</span>
-            <span style={{ fontWeight: 600, color: '#fbbf24' }}>{stats.pendingHours} {t.hours}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="helper">{t.totalEarnings}</span>
-            <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
-          </div>
-        </div>
-      </div>
-
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.daysWorked}</span>
+    <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalHours}</span>
+    <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours, lang)}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.approvedHours}</span>
+    <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(stats.approvedHours, lang)}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.pendingHours}</span>
+    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours, lang)}</span>
+  </div>
+  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <span className="helper">{t.totalEarnings}</span>
+    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+  </div>
+</div>
+</div>
       {timeEntries.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>{t.recentEntries}</h4>
@@ -551,10 +564,10 @@ export default function TimeEntrySimple() {
                   {hasCompleteTime ? (
                     <>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                        {entry.start_time} - {entry.end_time}
-                        <span style={{ margin: '0 8px' }}>•</span>
-                        {hours === null ? '—' : hours.toFixed(2)} {t.hours}
-                      </div>
+  {entry.start_time} - {entry.end_time}
+  <span style={{ margin: '0 8px' }}>•</span>
+  {hours === null ? '—' : formatHoursMinutes(hours, lang)}
+</div>
                       {salary !== null && (
                         <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
                           ${salary.toFixed(2)}
