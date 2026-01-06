@@ -505,11 +505,6 @@ useEffect(() => {
                   Production
                 </NavLink>
               )}
-              {hasFeature('time-entry') && (
-                <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
-                  Time Entry
-                </NavLink>
-              )}
               {hasFeature('employees') && (
                 <NavLink to="/employees" onClick={() => setNavOpen(false)}>
                   Employees
@@ -518,6 +513,11 @@ useEffect(() => {
               {hasFeature('time-approval') && (
                 <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
                   Time Approval
+                </NavLink>
+              )}
+              {hasFeature('time-entry') && (
+                <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
+                  Time Entry
                 </NavLink>
               )}
               {hasFeature('costs') && (
