@@ -520,37 +520,37 @@ const stats = useMemo(() => {
 }}>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.pendingApproval}</div>
-    <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
+    <div style={{ fontSize: 16, fontWeight: 600, color: '#fbbf24' }}>
       {stats.pendingCount}
     </div>
   </div>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.pendingHours}</div>
-    <div style={{ fontSize: 24, fontWeight: 600, color: '#fbbf24' }}>
+    <div style={{ fontSize: 16, fontWeight: 600, color: '#fbbf24' }}>
       {formatHoursMinutes(stats.pendingHours, lang)}
     </div>
   </div>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.approvedHours}</div>
-    <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
+    <div style={{ fontSize: 16, fontWeight: 600, color: '#22c55e' }}>
       {formatHoursMinutes(stats.approvedHours, lang)}
     </div>
   </div>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.approvedEarnings}</div>
-    <div style={{ fontSize: 24, fontWeight: 600, color: '#22c55e' }}>
+    <div style={{ fontSize: 16, fontWeight: 600, color: '#22c55e' }}>
       ${stats.approvedEarnings}
     </div>
   </div>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.totalHours}</div>
-    <div style={{ fontSize: 24, fontWeight: 600 }}>
+    <div style={{ fontSize: 16, fontWeight: 600 }}>
       {formatHoursMinutes(stats.totalHours, lang)}
     </div>
   </div>
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t.totalEarnings}</div>
-    <div style={{ fontSize: 24, fontWeight: 600 }}>
+    <div style={{ fontSize: 16, fontWeight: 600 }}>
       ${stats.totalEarnings}
     </div>
   </div>
@@ -705,11 +705,16 @@ const stats = useMemo(() => {
     </>
   )}
 </div>
-                            {entry.notes && (
-                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                                {t.note}: {entry.notes}
-                              </div>
-                            )}
+{entry.salary !== null && (
+  <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
+    ${entry.salary.toFixed(2)}
+  </div>
+)}
+{entry.notes && (
+  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+    {t.note}: {entry.notes}
+  </div>
+)}
                             {entry.approved && entry.approved_by && (
                               <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
                                 {t.approvedBy} {entry.approved_by} {t.on} {new Date(entry.approved_at!).toLocaleDateString()}
