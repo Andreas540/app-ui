@@ -1,15 +1,66 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link rel="manifest" href="/manifest.webmanifest" />
-<meta name="theme-color" content="#6aa1ff" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite + React + TS</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLV App</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
+    <meta name="theme-color" content="#6aa1ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    
+    <!-- Dynamic Manifest Script -->
+    <script>
+      (function() {
+        try {
+          const tenantId = localStorage.getItem('activeTenantId')
+          if (tenantId) {
+            const manifestLink = document.getElementById('app-manifest')
+            if (manifestLink) {
+              manifestLink.href = `/api/manifest?tenant_id=${tenantId}`
+            }
+          }
+        } catch (e) {
+          console.log('Using static manifest')
+        }
+      })()
+    </script>
+    
+    <!-- Dynamic Favicon and iOS Icon Script -->
+    <script>
+      (function() {
+        try {
+          const tenantId = localStorage.getItem('activeTenantId')
+          if (tenantId) {
+            fetch(`/api/tenant-icons?tenant_id=${tenantId}`)
+              .then(r => r.json())
+              .then(data => {
+                // Update favicon
+                if (data.favicon) {
+                  const link = document.querySelector("link[rel*='icon']") || document.createElement('link')
+                  link.type = 'image/x-icon'
+                  link.rel = 'shortcut icon'
+                  link.href = `/tenant-icons/${data.favicon}`
+                  document.getElementsByTagName('head')[0].appendChild(link)
+                }
+                
+                // Update iOS home screen icon
+                if (data.app_icon_192) {
+                  const appleLink = document.querySelector("link[rel='apple-touch-icon']") || document.createElement('link')
+                  appleLink.rel = 'apple-touch-icon'
+                  appleLink.href = `/tenant-icons/${data.app_icon_192}`
+                  document.getElementsByTagName('head')[0].appendChild(appleLink)
+                }
+              })
+              .catch(() => {})
+          }
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -14,6 +14,14 @@ interface Tenant {
   created_at: string
 }
 
+interface TenantIcon {
+  id: string
+  name: string
+  app_icon_192: string | null
+  app_icon_512: string | null
+  favicon: string | null
+}
+
 interface User {
   id: string
   email: string
@@ -42,6 +50,11 @@ export default function SuperAdmin() {
   const [newTenantName, setNewTenantName] = useState('')
   const [newTenantBusinessType, setNewTenantBusinessType] = useState('general')
   const [creatingTenant, setCreatingTenant] = useState(false)
+
+  // Icon management state
+  const [managingIconsTenantId, setManagingIconsTenantId] = useState<string | null>(null)
+  const [managingIconsTenant, setManagingIconsTenant] = useState<TenantIcon | null>(null)
+  const [uploadingIcon, setUploadingIcon] = useState(false)
   
   // Create user form
   const [newUserEmail, setNewUserEmail] = useState('')
@@ -265,6 +278,100 @@ export default function SuperAdmin() {
     }
   }
 
+  async function openManageIcons(tenant: Tenant) {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(
+        `${base}/api/tenant-icons?tenant_id=${tenant.id}`,
+        { headers: getAuthHeaders() }
+      )
+      
+      if (!res.ok) throw new Error('Failed to load tenant icons')
+      
+      const data = await res.json()
+      setManagingIconsTenant(data)
+      setManagingIconsTenantId(tenant.id)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to load icons')
+    }
+  }
+
+  async function handleIconUpload(iconType: '192' | '512' | 'favicon', file: File) {
+    if (!managingIconsTenantId) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB')
+      return
+    }
+
+    setUploadingIcon(true)
+    try {
+      // Read file as base64
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = reader.result as string
+        
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/tenant-icons`, {
+          method: 'POST',
+          headers: {
+            ...getAuthHeaders(),
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            tenant_id: managingIconsTenantId,
+            icon_type: iconType,
+            icon_data: base64,
+          }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Upload failed')
+        }
+
+        alert(`Icon uploaded successfully!`)
+        await openManageIcons({ id: managingIconsTenantId } as Tenant)
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (e: any) {
+      alert(e?.message || 'Upload failed')
+    } finally {
+      setUploadingIcon(false)
+    }
+  }
+
+  async function handleDeleteIcon(iconType: string) {
+    if (!managingIconsTenantId) return
+    if (!confirm(`Delete ${iconType} icon?`)) return
+
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(
+        `${base}/api/tenant-icons?tenant_id=${managingIconsTenantId}&icon_type=${iconType}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        }
+      )
+
+      if (!res.ok) throw new Error('Delete failed')
+
+      alert('Icon deleted')
+      await openManageIcons({ id: managingIconsTenantId } as Tenant)
+    } catch (e: any) {
+      alert(e?.message || 'Delete failed')
+    }
+  }
+
   if (loading) return <div className="card"><p>Loading...</p></div>
   
   if (error) return (
@@ -370,17 +477,28 @@ export default function SuperAdmin() {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={() => openManageTenantFeatures(tenant)}
-                      style={{
-                        height: 36,
-                        padding: '0 16px',
-                        fontSize: 13,
-                        flexShrink: 0,
-                      }}
-                    >
-                      Manage Features
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button
+                        onClick={() => openManageTenantFeatures(tenant)}
+                        style={{
+                          height: 36,
+                          padding: '0 16px',
+                          fontSize: 13,
+                        }}
+                      >
+                        Features
+                      </button>
+                      <button
+                        onClick={() => openManageIcons(tenant)}
+                        style={{
+                          height: 36,
+                          padding: '0 16px',
+                          fontSize: 13,
+                        }}
+                      >
+                        Icons
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -676,6 +794,178 @@ export default function SuperAdmin() {
                 style={{ height: CONTROL_H, flex: 1 }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Tenant Icons Modal */}
+      {managingIconsTenantId && managingIconsTenant && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setManagingIconsTenantId(null)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: 600,
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Manage Icons: {managingIconsTenant.name}</h3>
+            <p className="helper" style={{ marginTop: 8 }}>
+              Upload custom icons for this tenant's app
+            </p>
+
+            <div style={{ marginTop: 24, display: 'grid', gap: 20 }}>
+              {[
+                { type: '192', label: 'Small Icon (192x192)', key: 'app_icon_192' as const },
+                { type: '512', label: 'Large Icon (512x512)', key: 'app_icon_512' as const },
+                { type: 'favicon', label: 'Favicon (Browser Tab)', key: 'favicon' as const },
+              ].map(({ type, label, key }) => (
+                <div
+                  key={type}
+                  style={{
+                    padding: 16,
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 12 }}>{label}</div>
+                  
+                  {managingIconsTenant[key] ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <img
+                        src={`/tenant-icons/${managingIconsTenant[key]}`}
+                        alt={label}
+                        style={{ 
+                          width: 80, 
+                          height: 80, 
+                          objectFit: 'contain',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: 8,
+                          background: 'rgba(255,255,255,0.05)'
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/icons/icon-192.png'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
+                          Current icon set
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <label style={{ flex: 1 }}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleIconUpload(type as any, file)
+                              }}
+                              disabled={uploadingIcon}
+                              style={{ display: 'none' }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                ;(e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement)?.click()
+                              }}
+                              disabled={uploadingIcon}
+                              style={{
+                                width: '100%',
+                                height: 32,
+                                padding: '0 12px',
+                                fontSize: 12,
+                              }}
+                            >
+                              Replace
+                            </button>
+                          </label>
+                          <button
+                            onClick={() => handleDeleteIcon(type)}
+                            style={{
+                              height: 32,
+                              padding: '0 12px',
+                              fontSize: 12,
+                              background: 'transparent',
+                              border: '1px solid salmon',
+                              borderRadius: 4,
+                              color: 'salmon',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
+                        No icon set - using default
+                      </div>
+                      <label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleIconUpload(type as any, file)
+                          }}
+                          disabled={uploadingIcon}
+                          style={{ display: 'none' }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            ;(e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement)?.click()
+                          }}
+                          disabled={uploadingIcon}
+                          className="primary"
+                          style={{
+                            width: '100%',
+                            height: 36,
+                            padding: '0 16px',
+                            fontSize: 13,
+                          }}
+                        >
+                          Upload Icon
+                        </button>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="helper" style={{ marginTop: 20, fontSize: 12, padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+              <strong>Tip:</strong> PNG format recommended. Small icon: 192x192px, Large icon: 512x512px, Favicon: any size. Max 2MB per file.
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <button
+                onClick={() => setManagingIconsTenantId(null)}
+                style={{ height: CONTROL_H, width: '100%' }}
+              >
+                Close
               </button>
             </div>
           </div>
