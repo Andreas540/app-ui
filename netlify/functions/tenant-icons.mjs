@@ -18,11 +18,30 @@ async function getTenantIcons(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
-    const authz = await resolveAuthz({ sql, event })
-    if (authz.error) return cors(403, { error: authz.error })
+    
+    // For super admin endpoints, we need to check auth differently
+    // Get the JWT token
+    const authHeader = event.headers.authorization || event.headers.Authorization
+    if (!authHeader) {
+      return cors(401, { error: 'No authorization header' })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Verify JWT and check if super admin
+    const { verify } = await import('jsonwebtoken')
+    const { JWT_SECRET } = process.env
+    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
+
+    let decoded
+    try {
+      decoded = verify(token, JWT_SECRET)
+    } catch (e) {
+      return cors(401, { error: 'Invalid token' })
+    }
 
     // Check if user is super admin
-    if (!authz.isSuperAdmin) {
+    if (decoded.role !== 'super_admin') {
       return cors(403, { error: 'Super admin access required' })
     }
 
@@ -60,11 +79,26 @@ async function uploadTenantIcon(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
-    const authz = await resolveAuthz({ sql, event })
-    if (authz.error) return cors(403, { error: authz.error })
+    
+    // Check super admin auth
+    const authHeader = event.headers.authorization || event.headers.Authorization
+    if (!authHeader) {
+      return cors(401, { error: 'No authorization header' })
+    }
 
-    // Check if user is super admin
-    if (!authz.isSuperAdmin) {
+    const token = authHeader.replace('Bearer ', '')
+    const { verify } = await import('jsonwebtoken')
+    const { JWT_SECRET } = process.env
+    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
+
+    let decoded
+    try {
+      decoded = verify(token, JWT_SECRET)
+    } catch (e) {
+      return cors(401, { error: 'Invalid token' })
+    }
+
+    if (decoded.role !== 'super_admin') {
       return cors(403, { error: 'Super admin access required' })
     }
 
@@ -107,11 +141,26 @@ async function deleteTenantIcon(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
-    const authz = await resolveAuthz({ sql, event })
-    if (authz.error) return cors(403, { error: authz.error })
+    
+    // Check super admin auth
+    const authHeader = event.headers.authorization || event.headers.Authorization
+    if (!authHeader) {
+      return cors(401, { error: 'No authorization header' })
+    }
 
-    // Check if user is super admin
-    if (!authz.isSuperAdmin) {
+    const token = authHeader.replace('Bearer ', '')
+    const { verify } = await import('jsonwebtoken')
+    const { JWT_SECRET } = process.env
+    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
+
+    let decoded
+    try {
+      decoded = verify(token, JWT_SECRET)
+    } catch (e) {
+      return cors(401, { error: 'Invalid token' })
+    }
+
+    if (decoded.role !== 'super_admin') {
       return cors(403, { error: 'Super admin access required' })
     }
 
