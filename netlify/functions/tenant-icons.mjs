@@ -1,8 +1,4 @@
 // netlify/functions/tenant-icons.mjs
-import { resolveAuthz } from './utils/auth.mjs'
-import path from 'path'
-import fs from 'fs'
-
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET') return getTenantIcons(event)
@@ -19,7 +15,6 @@ async function getTenantIcons(event) {
 
     const sql = neon(DATABASE_URL)
     
-    // For super admin endpoints, we need to check auth differently
     // Get the JWT token
     const authHeader = event.headers.authorization || event.headers.Authorization
     if (!authHeader) {
@@ -49,9 +44,14 @@ async function getTenantIcons(event) {
     const tenantId = params.get('tenant_id')
 
     if (tenantId) {
-      // Get icons for specific tenant
+      // Get icons for specific tenant (return metadata only, not full base64)
       const tenant = await sql`
-        SELECT id, name, app_icon_192, app_icon_512, favicon
+        SELECT 
+          id, 
+          name, 
+          CASE WHEN app_icon_192 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_192,
+          CASE WHEN app_icon_512 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_512,
+          CASE WHEN favicon IS NOT NULL THEN 'set' ELSE NULL END as favicon
         FROM tenants
         WHERE id = ${tenantId}
       `
@@ -60,7 +60,12 @@ async function getTenantIcons(event) {
     } else {
       // Get all tenants with their icons
       const tenants = await sql`
-        SELECT id, name, app_icon_192, app_icon_512, favicon
+        SELECT 
+          id, 
+          name, 
+          CASE WHEN app_icon_192 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_192,
+          CASE WHEN app_icon_512 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_512,
+          CASE WHEN favicon IS NOT NULL THEN 'set' ELSE NULL END as favicon
         FROM tenants
         ORDER BY name
       `
@@ -75,8 +80,8 @@ async function getTenantIcons(event) {
 async function uploadTenantIcon(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { getStore } = await import('@netlify/blobs')
     const { DATABASE_URL } = process.env
+    
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
@@ -110,40 +115,20 @@ async function uploadTenantIcon(event) {
       return cors(400, { error: 'tenant_id, icon_type, and icon_data required' })
     }
 
-    // Extract base64 data (remove data:image/png;base64, prefix if present)
-    const base64Data = icon_data.split(',')[1] || icon_data
-    
-    // Convert base64 to buffer
-    const imageBuffer = Buffer.from(base64Data, 'base64')
-    
-    // Generate filename
-    const filename = `${tenant_id}_${icon_type}.png`
-    
-    // Save to Netlify Blobs
-    const store = getStore('tenant-icons')
-    await store.set(filename, imageBuffer, {
-      metadata: {
-        contentType: 'image/png',
-        tenantId: tenant_id,
-        iconType: icon_type
-      }
-    })
-    
-    // Update database
+    // Store the full base64 string in database
     const column = icon_type === 'favicon' ? 'favicon' : `app_icon_${icon_type}`
     await sql`
       UPDATE tenants
-      SET ${sql(column)} = ${filename}
+      SET ${sql(column)} = ${icon_data}
       WHERE id = ${tenant_id}
     `
 
     return cors(200, { 
       ok: true, 
-      filename,
       message: `Icon ${icon_type} uploaded for tenant ${tenant_id}` 
     })
   } catch (e) {
-    console.error(e)
+    console.error('Upload error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
@@ -151,13 +136,13 @@ async function uploadTenantIcon(event) {
 async function deleteTenantIcon(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { getStore } = await import('@netlify/blobs')
     const { DATABASE_URL } = process.env
+    
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
     
-    // Check super admin auth (same as before...)
+    // Check super admin auth
     const authHeader = event.headers.authorization || event.headers.Authorization
     if (!authHeader) {
       return cors(401, { error: 'No authorization header' })
@@ -187,23 +172,8 @@ async function deleteTenantIcon(event) {
       return cors(400, { error: 'tenant_id and icon_type required' })
     }
 
-    // Get current filename from database
+    // Reset to null in database
     const column = iconType === 'favicon' ? 'favicon' : `app_icon_${iconType}`
-    const result = await sql`
-      SELECT ${sql(column)} as filename
-      FROM tenants
-      WHERE id = ${tenantId}
-    `
-    
-    const filename = result[0]?.filename
-    
-    // Delete from Netlify Blobs if exists
-    if (filename) {
-      const store = getStore('tenant-icons')
-      await store.delete(filename)
-    }
-
-    // Reset database to null
     await sql`
       UPDATE tenants
       SET ${sql(column)} = NULL
@@ -212,7 +182,7 @@ async function deleteTenantIcon(event) {
 
     return cors(200, { ok: true, message: 'Icon deleted' })
   } catch (e) {
-    console.error(e)
+    console.error('Delete error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }

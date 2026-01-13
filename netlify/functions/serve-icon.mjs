@@ -1,29 +1,48 @@
 // netlify/functions/serve-icon.mjs
 export async function handler(event) {
   try {
-    const { getStore } = await import('@netlify/blobs')
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL } = process.env
     
-    // Get filename from path
-    const path = event.path.replace('/.netlify/functions/serve-icon/', '')
-    const filename = path || event.queryStringParameters?.file
-    
-    if (!filename) {
+    if (!DATABASE_URL) {
       return {
-        statusCode: 400,
-        body: 'Filename required'
+        statusCode: 500,
+        body: 'DATABASE_URL not configured'
       }
     }
 
-    // Get from Netlify Blobs
-    const store = getStore('tenant-icons')
-    const imageBuffer = await store.get(filename, { type: 'arrayBuffer' })
+    const sql = neon(DATABASE_URL)
     
-    if (!imageBuffer) {
+    // Get parameters
+    const params = new URLSearchParams(event.queryStringParameters || {})
+    const tenantId = params.get('tenant_id')
+    const iconType = params.get('type') || '192' // Default to 192
+    
+    if (!tenantId) {
+      return {
+        statusCode: 400,
+        body: 'tenant_id required'
+      }
+    }
+
+    // Get icon from database
+    const column = iconType === 'favicon' ? 'favicon' : `app_icon_${iconType}`
+    const result = await sql`
+      SELECT ${sql(column)} as icon_data
+      FROM tenants
+      WHERE id = ${tenantId}
+      LIMIT 1
+    `
+    
+    if (result.length === 0 || !result[0].icon_data) {
       return {
         statusCode: 404,
         body: 'Icon not found'
       }
     }
+
+    // Extract base64 data (remove data:image/png;base64, prefix if present)
+    const base64Data = result[0].icon_data.split(',')[1] || result[0].icon_data
 
     // Return image
     return {
@@ -32,11 +51,11 @@ export async function handler(event) {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000'
       },
-      body: Buffer.from(imageBuffer).toString('base64'),
+      body: base64Data,
       isBase64Encoded: true
     }
   } catch (e) {
-    console.error(e)
+    console.error('Serve icon error:', e)
     return {
       statusCode: 500,
       body: String(e?.message || e)
