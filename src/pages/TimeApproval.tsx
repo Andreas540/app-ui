@@ -412,7 +412,7 @@ const stats = useMemo(() => {
       `}</style>
 
       {/* Reload button and Language toggle flags - top right corner */}
-<div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
+<div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 4, zIndex: 10 }}>
   <button
     onClick={() => loadTimeEntries()}
     style={{
