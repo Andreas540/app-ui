@@ -63,15 +63,21 @@ export async function handler(event) {
 
     const base64Data = result[0].icon_data.split(',')[1] || result[0].icon_data
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000'
-      },
-      body: base64Data,
-      isBase64Encoded: true
-    }
+    // netlify/functions/serve-icon.mjs (only the return part)
+
+return {
+  statusCode: 200,
+  headers: {
+    'Content-Type': 'image/png',
+    // ✅ biggest impact: do NOT let Safari/iOS cache this aggressively
+    'Cache-Control': 'no-store, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  },
+  body: base64Data,
+  isBase64Encoded: true
+}
+
   } catch (e) {
     console.error('Serve icon error:', e)
     return {

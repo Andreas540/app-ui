@@ -1,11 +1,12 @@
 // public/sw.js
-const CACHE = 'app-ui-v2'; // bump to force SW update
+
+// ✅ Bump cache name to force SW update
+const CACHE = 'app-ui-v3';
+
+// ✅ Cache only core shell (NOT manifest/icons/favicon)
 const ASSETS = [
   '/',
   '/index.html',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
 ];
 
 // Install: cache core assets
@@ -24,16 +25,26 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: DO NOT cache API. For employee routes, do not cache navigation HTML.
-// Everything else: your original network-first UI caching.
+// Fetch: DO NOT cache API. Do not cache manifest/icons/favicon. For employee routes, do not cache navigation HTML.
+// Everything else: network-first UI caching with cache fallback.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // only same-origin
   if (url.origin !== self.location.origin) return;
 
-  // Never cache backend/API calls
+  // ✅ Never cache backend/API calls
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/functions/')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  // ✅ Never cache PWA/icon assets that can change (tenant-specific / frequently updated)
+  if (
+    url.pathname === '/manifest.webmanifest' ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname.startsWith('/icons/')
+  ) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
@@ -52,7 +63,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Otherwise: network-first with cache fallback (your original behavior)
+  // Otherwise: network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((res) => {
@@ -63,4 +74,5 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(event.request))
   );
 });
+
 
