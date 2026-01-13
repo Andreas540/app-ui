@@ -11,56 +11,59 @@
     <meta name="theme-color" content="#6aa1ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     
     <!-- Dynamic Manifest Script -->
-    <script>
-      (function() {
-        try {
-          const tenantId = localStorage.getItem('activeTenantId')
-          if (tenantId) {
-            const manifestLink = document.getElementById('app-manifest')
-            if (manifestLink) {
-              manifestLink.href = `/api/manifest?tenant_id=${tenantId}`
-            }
-          }
-        } catch (e) {
-          console.log('Using static manifest')
+<script>
+  (function() {
+    try {
+      const tenantId = localStorage.getItem('activeTenantId')
+      if (tenantId) {
+        const manifestLink = document.getElementById('app-manifest')
+        if (manifestLink) {
+          const v = Date.now()
+          manifestLink.href = `/api/manifest?tenant_id=${tenantId}&v=${v}`
         }
-      })()
-    </script>
+      }
+    } catch (e) {
+      console.log('Using static manifest')
+    }
+  })()
+</script>
     
-    <!-- Dynamic Favicon and iOS Icon Script -->
-    <script>
-      (function() {
-        try {
-          const tenantId = localStorage.getItem('activeTenantId')
-          if (tenantId) {
-            fetch(`/api/tenant-icons?tenant_id=${tenantId}`)
-              .then(r => r.json())
-              .then(data => {
-                // Update favicon
-                if (data.favicon) {
-                  const link = document.querySelector("link[rel*='icon']") || document.createElement('link')
-                  link.type = 'image/x-icon'
-                  link.rel = 'shortcut icon'
-                  link.href = `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=favicon`
-                  document.getElementsByTagName('head')[0].appendChild(link)
-                }
-                
-                // Update iOS home screen icon
-                if (data.app_icon_192) {
-                  const appleLink = document.querySelector("link[rel='apple-touch-icon']") || document.createElement('link')
-                  appleLink.rel = 'apple-touch-icon'
-                  appleLink.href = `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192`
-                  document.getElementsByTagName('head')[0].appendChild(appleLink)
-                }
-              })
-              .catch(() => {})
-          }
-        } catch (e) {}
-      })()
-    </script>
+    <!-- Dynamic Favicon and iOS Icon Script (NO admin endpoint call) -->
+<script>
+  (function () {
+    try {
+      const tenantId = localStorage.getItem('activeTenantId')
+      if (!tenantId) return
+
+      const v = Date.now()
+
+      // Favicon
+      const iconLink =
+        document.querySelector("link[rel*='icon']") || document.createElement('link')
+      iconLink.type = 'image/x-icon'
+      iconLink.rel = 'shortcut icon'
+      iconLink.href = `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=favicon&v=${v}`
+      document.head.appendChild(iconLink)
+
+      // Apple touch icon (iOS Add to Home Screen)
+      const appleLink =
+        document.querySelector("link[rel='apple-touch-icon']") || document.createElement('link')
+      appleLink.rel = 'apple-touch-icon'
+      appleLink.href = `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192&v=${v}`
+      document.head.appendChild(appleLink)
+
+      // Optional 512
+      const appleLink512 = document.createElement('link')
+      appleLink512.rel = 'apple-touch-icon'
+      appleLink512.sizes = '512x512'
+      appleLink512.href = `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512&v=${v}`
+      document.head.appendChild(appleLink512)
+    } catch (e) {}
+  })()
+</script>
+
   </head>
   <body>
     <div id="root"></div>

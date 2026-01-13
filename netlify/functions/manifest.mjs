@@ -14,6 +14,7 @@ export async function handler(event) {
     // Get tenant from query parameter
     const params = new URLSearchParams(event.queryStringParameters || {})
     const tenantId = params.get('tenant_id')
+    const v = params.get('v') || Date.now()
 
     // No tenant = return default
     if (!tenantId) {
@@ -36,8 +37,13 @@ export async function handler(event) {
     const t = tenant[0]
     
     // Use custom icons if available, otherwise use defaults
-    const icon192 = t.app_icon_192 ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192` : '/icons/icon-192.png'
-const icon512 = t.app_icon_512 ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512` : '/icons/icon-512.png'
+    const icon192 = t.app_icon_192
+  ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192&v=${v}`
+  : `/icons/icon-192.png?v=${v}`
+
+const icon512 = t.app_icon_512
+  ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512&v=${v}`
+  : `/icons/icon-512.png?v=${v}`
 
     const manifest = {
       name: t.name || 'BLV App',
@@ -67,7 +73,7 @@ const icon512 = t.app_icon_512 ? `/.netlify/functions/serve-icon?tenant_id=${ten
       statusCode: 200,
       headers: {
         'content-type': 'application/json',
-        'cache-control': 'public, max-age=3600',
+        'cache-control': 'no-store',
         'access-control-allow-origin': '*'
       },
       body: JSON.stringify(manifest)
@@ -109,7 +115,7 @@ function defaultManifest() {
     statusCode: 200,
     headers: {
       'content-type': 'application/json',
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'no-store',
       'access-control-allow-origin': '*'
     },
     body: JSON.stringify(manifest)

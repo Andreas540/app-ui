@@ -208,9 +208,18 @@ function MainApp() {
           setAvailableTenants(data.tenants || [])
 
           if (!activeTenantId && data.tenants.length > 0) {
-            setActiveTenantId(data.tenants[0].id)
-            localStorage.setItem('activeTenantId', data.tenants[0].id)
-          }
+  const firstTenantId = data.tenants[0].id
+
+  setActiveTenantId(firstTenantId)
+  localStorage.setItem('activeTenantId', firstTenantId)
+
+  // Reload the page ONCE right after the tenant is set (prevents iOS using the default icon)
+  if (!sessionStorage.getItem('didPostLoginReload')) {
+    sessionStorage.setItem('didPostLoginReload', '1')
+    window.location.reload()
+  }
+}
+
         }
       } catch (e) {
         console.error('Failed to load tenants:', e)
