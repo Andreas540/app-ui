@@ -86,7 +86,6 @@ async function uploadTenantIcon(event) {
 
     const sql = neon(DATABASE_URL)
     
-    // Check super admin auth
     const authHeader = event.headers.authorization || event.headers.Authorization
     if (!authHeader) {
       return cors(401, { error: 'No authorization header' })
@@ -115,13 +114,28 @@ async function uploadTenantIcon(event) {
       return cors(400, { error: 'tenant_id, icon_type, and icon_data required' })
     }
 
-    // Store the full base64 string in database
-    const column = icon_type === 'favicon' ? 'favicon' : `app_icon_${icon_type}`
-    await sql`
-      UPDATE tenants
-      SET ${sql(column)} = ${icon_data}
-      WHERE id = ${tenant_id}
-    `
+    // Update based on icon type
+    if (icon_type === 'favicon') {
+      await sql`
+        UPDATE tenants
+        SET favicon = ${icon_data}
+        WHERE id = ${tenant_id}
+      `
+    } else if (icon_type === '192') {
+      await sql`
+        UPDATE tenants
+        SET app_icon_192 = ${icon_data}
+        WHERE id = ${tenant_id}
+      `
+    } else if (icon_type === '512') {
+      await sql`
+        UPDATE tenants
+        SET app_icon_512 = ${icon_data}
+        WHERE id = ${tenant_id}
+      `
+    } else {
+      return cors(400, { error: 'Invalid icon_type' })
+    }
 
     return cors(200, { 
       ok: true, 
@@ -142,7 +156,6 @@ async function deleteTenantIcon(event) {
 
     const sql = neon(DATABASE_URL)
     
-    // Check super admin auth
     const authHeader = event.headers.authorization || event.headers.Authorization
     if (!authHeader) {
       return cors(401, { error: 'No authorization header' })
@@ -172,13 +185,28 @@ async function deleteTenantIcon(event) {
       return cors(400, { error: 'tenant_id and icon_type required' })
     }
 
-    // Reset to null in database
-    const column = iconType === 'favicon' ? 'favicon' : `app_icon_${iconType}`
-    await sql`
-      UPDATE tenants
-      SET ${sql(column)} = NULL
-      WHERE id = ${tenantId}
-    `
+    // Delete based on icon type
+    if (iconType === 'favicon') {
+      await sql`
+        UPDATE tenants
+        SET favicon = NULL
+        WHERE id = ${tenantId}
+      `
+    } else if (iconType === '192') {
+      await sql`
+        UPDATE tenants
+        SET app_icon_192 = NULL
+        WHERE id = ${tenantId}
+      `
+    } else if (iconType === '512') {
+      await sql`
+        UPDATE tenants
+        SET app_icon_512 = NULL
+        WHERE id = ${tenantId}
+      `
+    } else {
+      return cors(400, { error: 'Invalid icon_type' })
+    }
 
     return cors(200, { ok: true, message: 'Icon deleted' })
   } catch (e) {

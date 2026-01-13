@@ -13,10 +13,9 @@ export async function handler(event) {
 
     const sql = neon(DATABASE_URL)
     
-    // Get parameters
     const params = new URLSearchParams(event.queryStringParameters || {})
     const tenantId = params.get('tenant_id')
-    const iconType = params.get('type') || '192' // Default to 192
+    const iconType = params.get('type') || '192'
     
     if (!tenantId) {
       return {
@@ -25,14 +24,35 @@ export async function handler(event) {
       }
     }
 
-    // Get icon from database
-    const column = iconType === 'favicon' ? 'favicon' : `app_icon_${iconType}`
-    const result = await sql`
-      SELECT ${sql(column)} as icon_data
-      FROM tenants
-      WHERE id = ${tenantId}
-      LIMIT 1
-    `
+    // Query based on icon type
+    let result
+    if (iconType === 'favicon') {
+      result = await sql`
+        SELECT favicon as icon_data
+        FROM tenants
+        WHERE id = ${tenantId}
+        LIMIT 1
+      `
+    } else if (iconType === '192') {
+      result = await sql`
+        SELECT app_icon_192 as icon_data
+        FROM tenants
+        WHERE id = ${tenantId}
+        LIMIT 1
+      `
+    } else if (iconType === '512') {
+      result = await sql`
+        SELECT app_icon_512 as icon_data
+        FROM tenants
+        WHERE id = ${tenantId}
+        LIMIT 1
+      `
+    } else {
+      return {
+        statusCode: 400,
+        body: 'Invalid type parameter'
+      }
+    }
     
     if (result.length === 0 || !result[0].icon_data) {
       return {
@@ -41,10 +61,8 @@ export async function handler(event) {
       }
     }
 
-    // Extract base64 data (remove data:image/png;base64, prefix if present)
     const base64Data = result[0].icon_data.split(',')[1] || result[0].icon_data
 
-    // Return image
     return {
       statusCode: 200,
       headers: {

@@ -36,8 +36,8 @@ export async function handler(event) {
     const t = tenant[0]
     
     // Use custom icons if available, otherwise use defaults
-    const icon192 = t.app_icon_192 ? `/.netlify/functions/serve-icon?file=${t.app_icon_192}` : '/icons/icon-192.png'
-const icon512 = t.app_icon_512 ? `/.netlify/functions/serve-icon?file=${t.app_icon_512}` : '/icons/icon-512.png'
+    const icon192 = t.app_icon_192 ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192` : '/icons/icon-192.png'
+const icon512 = t.app_icon_512 ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512` : '/icons/icon-512.png'
 
     const manifest = {
       name: t.name || 'BLV App',
