@@ -75,6 +75,7 @@ async function getTenantIcons(event) {
 async function uploadTenantIcon(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
+    const { getStore } = await import('@netlify/blobs')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
@@ -109,11 +110,24 @@ async function uploadTenantIcon(event) {
       return cors(400, { error: 'tenant_id, icon_type, and icon_data required' })
     }
 
-    // icon_type should be: '192', '512', or 'favicon'
-    // icon_data should be base64 encoded image data
-
+    // Extract base64 data (remove data:image/png;base64, prefix if present)
+    const base64Data = icon_data.split(',')[1] || icon_data
+    
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64')
+    
     // Generate filename
     const filename = `${tenant_id}_${icon_type}.png`
+    
+    // Save to Netlify Blobs
+    const store = getStore('tenant-icons')
+    await store.set(filename, imageBuffer, {
+      metadata: {
+        contentType: 'image/png',
+        tenantId: tenant_id,
+        iconType: icon_type
+      }
+    })
     
     // Update database
     const column = icon_type === 'favicon' ? 'favicon' : `app_icon_${icon_type}`
@@ -137,12 +151,13 @@ async function uploadTenantIcon(event) {
 async function deleteTenantIcon(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
+    const { getStore } = await import('@netlify/blobs')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
     
-    // Check super admin auth
+    // Check super admin auth (same as before...)
     const authHeader = event.headers.authorization || event.headers.Authorization
     if (!authHeader) {
       return cors(401, { error: 'No authorization header' })
@@ -172,8 +187,23 @@ async function deleteTenantIcon(event) {
       return cors(400, { error: 'tenant_id and icon_type required' })
     }
 
-    // Reset to null in database
+    // Get current filename from database
     const column = iconType === 'favicon' ? 'favicon' : `app_icon_${iconType}`
+    const result = await sql`
+      SELECT ${sql(column)} as filename
+      FROM tenants
+      WHERE id = ${tenantId}
+    `
+    
+    const filename = result[0]?.filename
+    
+    // Delete from Netlify Blobs if exists
+    if (filename) {
+      const store = getStore('tenant-icons')
+      await store.delete(filename)
+    }
+
+    // Reset database to null
     await sql`
       UPDATE tenants
       SET ${sql(column)} = NULL

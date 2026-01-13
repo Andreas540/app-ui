@@ -852,7 +852,7 @@ export default function SuperAdmin() {
                   {managingIconsTenant[key] ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       <img
-                        src={`/tenant-icons/${managingIconsTenant[key]}`}
+                        src={`/.netlify/functions/serve-icon?file=${managingIconsTenant[key]}`}
                         alt={label}
                         style={{ 
                           width: 80, 
