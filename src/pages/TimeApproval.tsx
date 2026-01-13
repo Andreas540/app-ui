@@ -411,47 +411,66 @@ const stats = useMemo(() => {
         }
       `}</style>
 
-      {/* Language toggle flags - top right corner */}
-      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
-        <button
-          onClick={() => setLang('en')}
-          style={{
-            width: 40,
-            height: 40,
-            padding: 0,
-            border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
-            borderRadius: 8,
-            cursor: 'pointer',
-            background: 'transparent',
-            fontSize: 24,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="English"
-        >
-          🇺🇸
-        </button>
-        <button
-          onClick={() => setLang('es')}
-          style={{
-            width: 40,
-            height: 40,
-            padding: 0,
-            border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
-            borderRadius: 8,
-            cursor: 'pointer',
-            background: 'transparent',
-            fontSize: 24,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="Español"
-        >
-          🇪🇸
-        </button>
-      </div>
+      {/* Reload button and Language toggle flags - top right corner */}
+<div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
+  <button
+    onClick={() => loadTimeEntries()}
+    style={{
+      width: 40,
+      height: 40,
+      padding: 0,
+      border: '2px solid transparent',
+      borderRadius: 8,
+      cursor: 'pointer',
+      background: 'transparent',
+      fontSize: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    title={lang === 'es' ? 'Actualizar' : 'Refresh'}
+  >
+    🔄
+  </button>
+  <button
+    onClick={() => setLang('en')}
+    style={{
+      width: 40,
+      height: 40,
+      padding: 0,
+      border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
+      borderRadius: 8,
+      cursor: 'pointer',
+      background: 'transparent',
+      fontSize: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    title="English"
+  >
+    🇺🇸
+  </button>
+  <button
+    onClick={() => setLang('es')}
+    style={{
+      width: 40,
+      height: 40,
+      padding: 0,
+      border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
+      borderRadius: 8,
+      cursor: 'pointer',
+      background: 'transparent',
+      fontSize: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    title="Español"
+  >
+    🇪🇸
+  </button>
+</div>
 
       <h3>{t.timeApproval}</h3>
 
