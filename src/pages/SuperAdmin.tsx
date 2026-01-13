@@ -872,33 +872,38 @@ export default function SuperAdmin() {
                           Current icon set
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <label style={{ flex: 1 }}>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleIconUpload(type as any, file)
-                              }}
-                              disabled={uploadingIcon}
-                              style={{ display: 'none' }}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                ;(e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement)?.click()
-                              }}
-                              disabled={uploadingIcon}
-                              style={{
-                                width: '100%',
-                                height: 32,
-                                padding: '0 12px',
-                                fontSize: 12,
-                              }}
-                            >
-                              Replace
-                            </button>
-                          </label>
+                          <div style={{ flex: 1 }}>
+  <input
+    id={`replace-${type}`}
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files?.[0]
+      if (file) {
+        console.log('File selected for replace:', file.name)
+        handleIconUpload(type as any, file)
+      }
+      e.target.value = '' // Reset input
+    }}
+    disabled={uploadingIcon}
+    style={{ display: 'none' }}
+  />
+  <button
+    onClick={() => {
+      console.log('Replace button clicked')
+      document.getElementById(`replace-${type}`)?.click()
+    }}
+    disabled={uploadingIcon}
+    style={{
+      width: '100%',
+      height: 32,
+      padding: '0 12px',
+      fontSize: 12,
+    }}
+  >
+    {uploadingIcon ? 'Uploading...' : 'Replace'}
+  </button>
+</div>
                           <button
                             onClick={() => handleDeleteIcon(type)}
                             style={{
@@ -919,39 +924,42 @@ export default function SuperAdmin() {
                     </div>
                   ) : (
                     <div>
-                      <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
-                        No icon set - using default
-                      </div>
-                      <label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleIconUpload(type as any, file)
-                          }}
-                          disabled={uploadingIcon}
-                          style={{ display: 'none' }}
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            ;(e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement)?.click()
-                          }}
-                          disabled={uploadingIcon}
-                          className="primary"
-                          style={{
-                            width: '100%',
-                            height: 36,
-                            padding: '0 16px',
-                            fontSize: 13,
-                          }}
-                        >
-                          Upload Icon
-                        </button>
-                      </label>
-                    </div>
-                  )}
+    <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
+      No icon set - using default
+    </div>
+    <input
+      id={`upload-${type}`}
+      type="file"
+      accept="image/*"
+      onChange={(e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+          console.log('File selected:', file.name)
+          handleIconUpload(type as any, file)
+        }
+        e.target.value = '' // Reset input after upload
+      }}
+      disabled={uploadingIcon}
+      style={{ display: 'none' }}
+    />
+    <button
+      onClick={() => {
+        console.log('Upload button clicked')
+        document.getElementById(`upload-${type}`)?.click()
+      }}
+      disabled={uploadingIcon}
+      className="primary"
+      style={{
+        width: '100%',
+        height: 36,
+        padding: '0 16px',
+        fontSize: 13,
+      }}
+    >
+      {uploadingIcon ? 'Uploading...' : 'Upload Icon'}
+    </button>
+  </div>
+)}
                 </div>
               ))}
             </div>
