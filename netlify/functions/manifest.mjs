@@ -46,8 +46,8 @@ const icon512 = t.app_icon_512
   : `/icons/icon-512.png?v=${v}`
 
     const manifest = {
-      name: t.name || 'BLV App',
-      short_name: t.name || 'BLV App',
+      name: t.name || 'Soltiva',
+      short_name: t.name || 'Soltiva',
       start_url: '/',
       scope: '/',
       display: 'standalone',
@@ -88,8 +88,8 @@ const icon512 = t.app_icon_512
 function defaultManifest() {
   // Exact copy of your current manifest.webmanifest
   const manifest = {
-    name: 'BLV App',
-    short_name: 'BLV App',
+    name: 'Soltiva',
+    short_name: 'Soltiva',
     start_url: '/',
     scope: '/',
     display: 'standalone',
