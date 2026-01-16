@@ -17,6 +17,7 @@ interface Tenant {
 interface TenantIcon {
   id: string
   name: string
+  app_name: string | null
   app_icon_192: string | null
   app_icon_512: string | null
   favicon: string | null
@@ -55,6 +56,8 @@ export default function SuperAdmin() {
   const [managingIconsTenantId, setManagingIconsTenantId] = useState<string | null>(null)
   const [managingIconsTenant, setManagingIconsTenant] = useState<TenantIcon | null>(null)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [editingAppName, setEditingAppName] = useState('')
+  const [savingAppName, setSavingAppName] = useState(false)
   
   // Create user form
   const [newUserEmail, setNewUserEmail] = useState('')
@@ -279,22 +282,56 @@ export default function SuperAdmin() {
   }
 
   async function openManageIcons(tenant: Tenant) {
-    try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(
-        `${base}/api/tenant-icons?tenant_id=${tenant.id}`,
-        { headers: getAuthHeaders() }
-      )
-      
-      if (!res.ok) throw new Error('Failed to load tenant icons')
-      
-      const data = await res.json()
-      setManagingIconsTenant(data)
-      setManagingIconsTenantId(tenant.id)
-    } catch (e: any) {
-      alert(e?.message || 'Failed to load icons')
-    }
+  try {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(
+      `${base}/api/tenant-icons?tenant_id=${tenant.id}`,
+      { headers: getAuthHeaders() }
+    )
+    
+    if (!res.ok) throw new Error('Failed to load tenant icons')
+    
+    const data = await res.json()
+    setManagingIconsTenant(data)
+    setManagingIconsTenantId(tenant.id)
+    setEditingAppName(data.app_name || data.name || '')  // ⭐ ADD THIS LINE
+  } catch (e: any) {
+    alert(e?.message || 'Failed to load icons')
   }
+}
+async function handleSaveAppName() {
+  if (!managingIconsTenantId) return
+  
+  try {
+    setSavingAppName(true)
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    
+    const res = await fetch(`${base}/api/tenant-icons`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        tenant_id: managingIconsTenantId,
+        app_name: editingAppName.trim() || null,
+      }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to save app name')
+    }
+
+    alert('App name saved successfully!')
+    await loadData()
+    await openManageIcons({ id: managingIconsTenantId } as Tenant)
+  } catch (e: any) {
+    alert(e?.message || 'Failed to save app name')
+  } finally {
+    setSavingAppName(false)
+  }
+}
 
   async function handleIconUpload(iconType: '192' | '512' | 'favicon', file: File) {
     if (!managingIconsTenantId) return
@@ -828,10 +865,50 @@ export default function SuperAdmin() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Manage Icons: {managingIconsTenant.name}</h3>
+            <h3 style={{ marginTop: 0 }}>Manage Branding: {managingIconsTenant.name}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
-              Upload custom icons for this tenant's app
-            </p>
+  Customize app name and icons for this tenant
+</p>
+
+{/* ⭐ ADD THIS ENTIRE SECTION */}
+{/* App Name Section */}
+<div style={{
+  marginTop: 24,
+  padding: 16,
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+}}>
+  <div style={{ fontWeight: 600, marginBottom: 12 }}>App Name</div>
+  <div className="helper" style={{ fontSize: 12, marginBottom: 12 }}>
+    This name appears in the browser tab and when installed as a PWA
+  </div>
+  <div style={{ display: 'flex', gap: 8 }}>
+    <input
+      type="text"
+      value={editingAppName}
+      onChange={(e) => setEditingAppName(e.target.value)}
+      placeholder="Enter app name (e.g., Acme App)"
+      style={{ flex: 1, height: 44 }}
+    />
+    <button
+      onClick={handleSaveAppName}
+      disabled={savingAppName || editingAppName.trim() === (managingIconsTenant.app_name || managingIconsTenant.name || '')}
+      className="primary"
+      style={{
+        height: 44,
+        padding: '0 20px',
+        fontSize: 14,
+      }}
+    >
+      {savingAppName ? 'Saving...' : 'Save'}
+    </button>
+  </div>
+  {managingIconsTenant.app_name && (
+    <div className="helper" style={{ fontSize: 12, marginTop: 8 }}>
+      Current: {managingIconsTenant.app_name}
+    </div>
+  )}
+</div>
 
             <div style={{ marginTop: 24, display: 'grid', gap: 20 }}>
               {[

@@ -12,25 +12,39 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
-    <!-- Dynamic Manifest Script -->
+    <!-- Dynamic Manifest and Title Script -->
 <script>
   (function() {
     try {
       const tenantId = localStorage.getItem('activeTenantId')
       if (tenantId) {
+        const v = Date.now()
+        
+        // Set dynamic manifest
         const manifestLink = document.getElementById('app-manifest')
         if (manifestLink) {
-          const v = Date.now()
           manifestLink.href = `/api/manifest?tenant_id=${tenantId}&v=${v}`
         }
+        
+        // Fetch and set dynamic title from tenant data
+        fetch(`/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=name`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.app_name) {
+              document.title = data.app_name
+            }
+          })
+          .catch(() => {
+            console.log('Using static title')
+          })
       }
     } catch (e) {
-      console.log('Using static manifest')
+      console.log('Using static manifest and title')
     }
   })()
 </script>
     
-    <!-- Dynamic Favicon and iOS Icon Script (NO admin endpoint call) -->
+    <!-- Dynamic Favicon and iOS Icon Script -->
 <script>
   (function () {
     try {

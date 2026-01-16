@@ -23,6 +23,34 @@ export async function handler(event) {
         body: 'tenant_id required'
       }
     }
+    
+    // Handle app name request (for dynamic page title)
+    if (iconType === 'name') {
+      const result = await sql`
+        SELECT name, app_name 
+        FROM tenants 
+        WHERE id = ${tenantId} 
+        LIMIT 1
+      `
+      
+      if (result.length === 0) {
+        return { 
+          statusCode: 404, 
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ app_name: 'Soltiva' }) 
+        }
+      }
+      
+      const displayName = result[0].app_name || result[0].name || 'Soltiva'
+      return {
+        statusCode: 200,
+        headers: { 
+          'content-type': 'application/json',
+          'cache-control': 'no-store, max-age=0'
+        },
+        body: JSON.stringify({ app_name: displayName })
+      }
+    }
 
     // Query based on icon type
     let result

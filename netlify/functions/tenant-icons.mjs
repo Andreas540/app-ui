@@ -3,6 +3,7 @@ export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET') return getTenantIcons(event)
   if (event.httpMethod === 'POST') return uploadTenantIcon(event)
+  if (event.httpMethod === 'PUT') return updateTenantAppName(event)  // ⭐ ADD THIS LINE
   if (event.httpMethod === 'DELETE') return deleteTenantIcon(event)
   return cors(405, { error: 'Method not allowed' })
 }
@@ -48,7 +49,8 @@ async function getTenantIcons(event) {
       const tenant = await sql`
         SELECT 
           id, 
-          name, 
+          name,
+          app_name,  
           CASE WHEN app_icon_192 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_192,
           CASE WHEN app_icon_512 IS NOT NULL THEN 'set' ELSE NULL END as app_icon_512,
           CASE WHEN favicon IS NOT NULL THEN 'set' ELSE NULL END as favicon
@@ -146,7 +148,59 @@ async function uploadTenantIcon(event) {
     return cors(500, { error: String(e?.message || e) })
   }
 }
+async function updateTenantAppName(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL } = process.env
+    
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
+    const sql = neon(DATABASE_URL)
+    
+    const authHeader = event.headers.authorization || event.headers.Authorization
+    if (!authHeader) {
+      return cors(401, { error: 'No authorization header' })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { verify } = await import('jsonwebtoken')
+    const { JWT_SECRET } = process.env
+    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
+
+    let decoded
+    try {
+      decoded = verify(token, JWT_SECRET)
+    } catch (e) {
+      return cors(401, { error: 'Invalid token' })
+    }
+
+    if (decoded.role !== 'super_admin') {
+      return cors(403, { error: 'Super admin access required' })
+    }
+
+    const body = JSON.parse(event.body || '{}')
+    const { tenant_id, app_name } = body
+
+    if (!tenant_id) {
+      return cors(400, { error: 'tenant_id required' })
+    }
+
+    // Update app_name (allow null to clear it)
+    await sql`
+      UPDATE tenants
+      SET app_name = ${app_name}
+      WHERE id = ${tenant_id}
+    `
+
+    return cors(200, { 
+      ok: true, 
+      message: 'App name updated successfully' 
+    })
+  } catch (e) {
+    console.error('Update app name error:', e)
+    return cors(500, { error: String(e?.message || e) })
+  }
+}
 async function deleteTenantIcon(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')

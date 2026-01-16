@@ -4,50 +4,48 @@ export async function handler(event) {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     
-    // If no database, return default
     if (!DATABASE_URL) {
       return defaultManifest()
     }
 
     const sql = neon(DATABASE_URL)
     
-    // Get tenant from query parameter
     const params = new URLSearchParams(event.queryStringParameters || {})
     const tenantId = params.get('tenant_id')
     const v = params.get('v') || Date.now()
 
-    // No tenant = return default
     if (!tenantId) {
       return defaultManifest()
     }
 
-    // Get tenant data
+    // Get tenant data including app_name
     const tenant = await sql`
-      SELECT name, app_icon_192, app_icon_512
+      SELECT name, app_name, app_icon_192, app_icon_512
       FROM tenants
       WHERE id = ${tenantId}
       LIMIT 1
     `
 
-    // Tenant not found = return default
     if (tenant.length === 0) {
       return defaultManifest()
     }
 
     const t = tenant[0]
     
-    // Use custom icons if available, otherwise use defaults
+    // Use app_name if available, otherwise fallback to name, then to 'Soltiva'
+    const displayName = t.app_name || t.name || 'Soltiva'
+    
     const icon192 = t.app_icon_192
-  ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192&v=${v}`
-  : `/icons/icon-192.png?v=${v}`
+      ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192&v=${v}`
+      : `/icons/icon-192.png?v=${v}`
 
-const icon512 = t.app_icon_512
-  ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512&v=${v}`
-  : `/icons/icon-512.png?v=${v}`
+    const icon512 = t.app_icon_512
+      ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=512&v=${v}`
+      : `/icons/icon-512.png?v=${v}`
 
     const manifest = {
-      name: t.name || 'Soltiva',
-      short_name: t.name || 'Soltiva',
+      name: displayName,
+      short_name: displayName,
       start_url: '/',
       scope: '/',
       display: 'standalone',
@@ -80,13 +78,11 @@ const icon512 = t.app_icon_512
     }
   } catch (e) {
     console.error('Error generating manifest:', e)
-    // On any error, return default
     return defaultManifest()
   }
 }
 
 function defaultManifest() {
-  // Exact copy of your current manifest.webmanifest
   const manifest = {
     name: 'Soltiva',
     short_name: 'Soltiva',
