@@ -23,7 +23,7 @@ export async function handler(event) {
         body: 'tenant_id required'
       }
     }
-    
+
     // Handle app name request (for dynamic page title)
     if (iconType === 'name') {
       const result = await sql`
@@ -37,11 +37,11 @@ export async function handler(event) {
         return { 
           statusCode: 404, 
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ app_name: 'Soltiva' }) 
+          body: JSON.stringify({ app_name: 'My Biz' }) 
         }
       }
       
-      const displayName = result[0].app_name || result[0].name || 'Soltiva'
+      const displayName = result[0].app_name || result[0].name || 'My Biz'
       return {
         statusCode: 200,
         headers: { 

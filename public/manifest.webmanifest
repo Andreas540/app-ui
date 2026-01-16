@@ -1,6 +1,6 @@
 {
-  "name": "Soltiva",
-  "short_name": "Soltiva",
+  "name": "My Biz",
+  "short_name": "My Biz",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

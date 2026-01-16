@@ -32,8 +32,8 @@ export async function handler(event) {
 
     const t = tenant[0]
     
-    // Use app_name if available, otherwise fallback to name, then to 'Soltiva'
-    const displayName = t.app_name || t.name || 'Soltiva'
+    // Use app_name if available, otherwise fallback to name, then to 'My Biz'
+    const displayName = t.app_name || t.name || 'My Biz'
     
     const icon192 = t.app_icon_192
       ? `/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=192&v=${v}`
@@ -84,8 +84,8 @@ export async function handler(event) {
 
 function defaultManifest() {
   const manifest = {
-    name: 'Soltiva',
-    short_name: 'Soltiva',
+    name: 'My Biz',
+    short_name: 'My Biz',
     start_url: '/',
     scope: '/',
     display: 'standalone',
