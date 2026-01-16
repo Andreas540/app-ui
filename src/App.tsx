@@ -304,7 +304,7 @@ useEffect(() => {
   }
 
   const currentTenant = availableTenants.find(t => t.id === activeTenantId)
-  const currentTenantName = currentTenant?.name || user?.tenantName || 'BLV App'
+  const currentTenantName = currentTenant?.name || user?.tenantName || 'Soltiva'
 
   return (
     <div className="app">
