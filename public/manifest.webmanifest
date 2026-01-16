@@ -1,6 +1,6 @@
 {
-  "name": "BLV App",
-  "short_name": "BLV App",
+  "name": "Soltiva",
+  "short_name": "Soltiva",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
