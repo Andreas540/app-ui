@@ -42,6 +42,12 @@ interface OrderedFromSuppliers {
   qty: number
 }
 
+interface ProductionData {
+  date: string
+  product: string
+  qty: number
+}
+
 interface DemandData {
   product: string
   qty: number
@@ -51,6 +57,7 @@ interface SupplyChainData {
   recent_deliveries: RecentDelivery[]
   not_delivered: NotDelivered[]
   warehouse_inventory: WarehouseInventory[]
+  production_data: ProductionData[]
   in_customs: InCustoms[]
   ordered_from_suppliers: OrderedFromSuppliers[]
 }
@@ -107,12 +114,16 @@ export default function SupplyChainOverview() {
 
   // Track week offset for recently delivered chart (0 = current week, -1 = last week, etc.)
   const [weekOffset, setWeekOffset] = useState(0)
+  
+  // Track week offset for production chart
+  const [productionWeekOffset, setProductionWeekOffset] = useState(0)
 
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
     demand: false,
     payAttention: false,
     recentDeliveries: false,
+    production: false,
     notDelivered: false,
     warehouse: false,
     inCustoms: false,
@@ -228,28 +239,62 @@ export default function SupplyChainOverview() {
     const result = Array.from(productMap.entries())
       .map(([product, qty]) => ({
         product,
-        qty: Number(qty) // Ensure it's a number
+        qty: Number(qty)
       }))
       .sort((a, b) => b.qty - a.qty)
-
-    // Debug: log the data to console
-    if (result.length > 0) {
-      console.log('Weekly delivery data:', result)
-    }
 
     return result
   }, [data, weekOffset])
 
+  // Calculate weekly production data
+  const weeklyProductionData = useMemo(() => {
+    if (!data) return []
+
+    const { startStr, endStr } = getWeekRange(productionWeekOffset)
+
+    // Filter production for this week using string comparison
+    const weekProduction = data.production_data.filter(item => {
+      const dateStr = item.date.split('T')[0]
+      return dateStr >= startStr && dateStr <= endStr
+    })
+
+    // Aggregate by product
+    const productMap = new Map<string, number>()
+    weekProduction.forEach(item => {
+      const current = productMap.get(item.product) || 0
+      productMap.set(item.product, current + Math.abs(Number(item.qty)))
+    })
+
+    // Convert to array and sort by quantity descending
+    const result = Array.from(productMap.entries())
+      .map(([product, qty]) => ({
+        product,
+        qty: Number(qty)
+      }))
+      .sort((a, b) => b.qty - a.qty)
+
+    return result
+  }, [data, productionWeekOffset])
+
   // Format week header
-  const formatWeekHeader = () => {
-    const { start, end } = getWeekRange(weekOffset)
+  const formatWeekHeader = (offset: number) => {
+    const { start, end } = getWeekRange(offset)
     const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const totalQty = weeklyDeliveryData.reduce((sum, item) => sum + item.qty, 0)
-    return {
-      dateRange: `${startStr} - ${endStr}`,
-      totalQty: intFmt.format(totalQty)
+    return `${startStr} - ${endStr}`
+  }
+
+  // Get demand title
+  const getDemandTitle = () => {
+    if (demandFilter === '30d') return 'Demand: Last 30 days'
+    if (demandFilter === '3m') return 'Demand: Last 3 months'
+    if (demandFilter === '6m') return 'Demand: Last 6 months'
+    if (demandFilter === 'custom' && demandCustomFrom && demandCustomTo) {
+      const from = new Date(demandCustomFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      const to = new Date(demandCustomTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      return `Demand: ${from} - ${to}`
     }
+    return 'Demand'
   }
 
   // Create warehouse inventory lookup for color coding
@@ -413,10 +458,8 @@ export default function SupplyChainOverview() {
     printWindow.document.write(html)
     printWindow.document.close()
 
-    // Auto-print only on desktop (when window.matchMedia is available and not mobile)
     printWindow.onload = () => {
       printWindow.focus()
-      // Check if device is likely desktop
       const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
       if (isDesktop) {
         setTimeout(() => {
@@ -463,7 +506,11 @@ export default function SupplyChainOverview() {
     paddingBottom: 8,
   }
 
-  const weekHeader = formatWeekHeader()
+  const deliveryWeekHeader = formatWeekHeader(weekOffset)
+  const deliveryTotalQty = weeklyDeliveryData.reduce((sum, item) => sum + item.qty, 0)
+
+  const productionWeekHeader = formatWeekHeader(productionWeekOffset)
+  const productionTotalQty = weeklyProductionData.reduce((sum, item) => sum + item.qty, 0)
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
@@ -557,6 +604,16 @@ export default function SupplyChainOverview() {
               </div>
             </div>
 
+            {/* ⭐ ADD TITLE HERE */}
+            <h4 style={{ 
+              margin: '16px 0 12px 0', 
+              fontSize: 16, 
+              fontWeight: 600,
+              color: 'var(--primary)',
+            }}>
+              {getDemandTitle()}
+            </h4>
+
             {/* Chart */}
             {demandLoading ? (
               <p className="helper">Loading demand data...</p>
@@ -588,7 +645,6 @@ export default function SupplyChainOverview() {
                     />
                     <Bar dataKey="qty" isAnimationActive={false}>
                       {demandData.map((entry, index) => {
-                        // Get persistent color for this product
                         const color = getProductColor(entry.product)
                         return <Cell key={`cell-${index}`} fill={color} />
                       })}
@@ -599,10 +655,7 @@ export default function SupplyChainOverview() {
                           if (!value || height <= 0) return null
 
                           const formattedValue = intFmt.format(Number(value))
-
-                          // Center horizontally in the bar
                           const textX = x + width / 2
-                          // Start from the BOTTOM of the bar (y + height), then go UP by 20px
                           const textY = y + height - 20
 
                           return (
@@ -682,10 +735,10 @@ export default function SupplyChainOverview() {
 
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    {weekHeader.dateRange}
+                    {deliveryWeekHeader}
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                    Total qty delivered: {weekHeader.totalQty}
+                    Total qty delivered: {intFmt.format(deliveryTotalQty)}
                   </div>
                   {weeklyDeliveryData.length > 0 && (
                     <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -784,7 +837,6 @@ export default function SupplyChainOverview() {
               <p className="helper">No deliveries in the last 30 days.</p>
             ) : (
               <div>
-                {/* Header row */}
                 <div
                   style={{
                     display: 'grid',
@@ -799,7 +851,6 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Qty</div>
                 </div>
 
-                {/* Data rows */}
                 {data.recent_deliveries
                   .filter(item => item.product !== 'Refund/Discount')
                   .map((item, idx) => (
@@ -818,6 +869,141 @@ export default function SupplyChainOverview() {
                       <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
                     </div>
                   ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ⭐ NEW SECTION: Production */}
+      <div style={{ marginTop: 20 }}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
+          <span>Production</span>
+          <span style={expandIconStyle}>{expandedSections.production ? '−' : '+'}</span>
+        </div>
+
+        {expandedSections.production && (
+          <div style={{ marginTop: 12 }}>
+            {/* Week navigation header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+              gap: 12,
+            }}>
+              <button
+                onClick={() => setProductionWeekOffset(offset => offset - 1)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                }}
+                title="Previous week"
+              >
+                ←
+              </button>
+
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>
+                  {productionWeekHeader}
+                </div>
+                <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                  Total qty produced: {intFmt.format(productionTotalQty)}
+                </div>
+                {weeklyProductionData.length > 0 && (
+                  <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
+                    {weeklyProductionData.length} {weeklyProductionData.length === 1 ? 'product' : 'products'}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setProductionWeekOffset(offset => offset + 1)}
+                disabled={productionWeekOffset >= 0}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  cursor: productionWeekOffset >= 0 ? 'not-allowed' : 'pointer',
+                  color: productionWeekOffset >= 0 ? 'var(--text-secondary)' : 'white',
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  opacity: productionWeekOffset >= 0 ? 0.4 : 1,
+                }}
+                title="Next week"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Horizontal bar chart */}
+            {weeklyProductionData.length === 0 ? (
+              <p className="helper">No production in this week.</p>
+            ) : (
+              <div style={{
+                width: '100%',
+                height: Math.max(220, weeklyProductionData.length * 40),
+                marginTop: 12,
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={weeklyProductionData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 40, bottom: 5, left: 0 }}
+                  >
+                    <XAxis
+                      type="number"
+                      tick={false}
+                      axisLine={false}
+                      width={0}
+                      domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="product"
+                      tick={{ fontSize: 12, fill: '#fff' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={120}
+                    />
+                    <Bar dataKey="qty" isAnimationActive={false} barSize={18}>
+                      {weeklyProductionData.map((entry, index) => {
+                        const color = getProductColor(entry.product)
+                        return <Cell key={`cell-${index}`} fill={color} />
+                      })}
+                      <LabelList
+                        dataKey="qty"
+                        position="right"
+                        content={(props: any) => {
+                          const { x, y, width, value, height } = props
+                          if (!value) return null
+
+                          const formattedValue = intFmt.format(Number(value))
+
+                          return (
+                            <text
+                              x={x + width + 10}
+                              y={y + height / 2}
+                              fill="#fff"
+                              fontSize={12}
+                              fontWeight={700}
+                              dominantBaseline="middle"
+                            >
+                              {formattedValue}
+                            </text>
+                          )
+                        }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
           </div>
@@ -860,7 +1046,6 @@ export default function SupplyChainOverview() {
               <p className="helper">No undelivered orders.</p>
             ) : (
               <div>
-                {/* Header row */}
                 <div
                   style={{
                     display: 'grid',
@@ -873,12 +1058,9 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Qty</div>
                 </div>
 
-                {/* Data rows */}
                 {data.not_delivered.map((item, idx) => {
                   const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
                   const notDeliveredQty = Number(item.qty)
-
-                  // Green if warehouse has more than not delivered, red if less
                   const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
 
                   return (
@@ -917,7 +1099,6 @@ export default function SupplyChainOverview() {
               <p className="helper">No inventory data.</p>
             ) : (
               <div>
-                {/* Header row */}
                 <div
                   style={{
                     display: 'grid',
@@ -930,7 +1111,6 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Quantity</div>
                 </div>
 
-                {/* Data rows */}
                 {data.warehouse_inventory.map((item, idx) => (
                   <div
                     key={idx}
@@ -972,7 +1152,6 @@ export default function SupplyChainOverview() {
               <p className="helper">No orders in customs.</p>
             ) : (
               <div>
-                {/* Header row */}
                 <div
                   style={{
                     display: 'grid',
@@ -985,7 +1164,6 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Quantity</div>
                 </div>
 
-                {/* Data rows */}
                 {data.in_customs.map((item, idx) => (
                   <div
                     key={idx}
@@ -1019,7 +1197,6 @@ export default function SupplyChainOverview() {
               <p className="helper">No supplier orders.</p>
             ) : (
               <div>
-                {/* Header row */}
                 <div
                   style={{
                     display: 'grid',
@@ -1033,7 +1210,6 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Qty</div>
                 </div>
 
-                {/* Data rows */}
                 {data.ordered_from_suppliers.map((item, idx) => {
                   let dateBadge = null
 

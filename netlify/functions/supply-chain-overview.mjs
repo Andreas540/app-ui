@@ -81,6 +81,17 @@ async function getSupplyChainOverview(event) {
       GROUP BY product
       ORDER BY product ASC
     `
+    const production_data = await sql`
+      SELECT 
+        lp.date,
+        p.name as product,
+        lp.qty_produced as qty
+      FROM labor_production lp
+      JOIN products p ON p.id = lp.product_id
+      WHERE lp.tenant_id = ${TENANT_ID}
+        AND lp.date >= CURRENT_DATE - INTERVAL '90 days'
+      ORDER BY lp.date DESC
+    `
 
     // 4. In customs
     const in_customs = await sql`
