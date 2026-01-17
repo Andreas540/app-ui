@@ -108,7 +108,12 @@ function getMondayOfWeek(date: Date): Date {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   return new Date(d.setDate(diff))
 }
-
+function toLocalYMD(date: Date): string {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
 function formatHoursMinutes(decimalHours: number, lang: Lang): string {
   const totalMinutes = Math.round(decimalHours * 60)
   const hours = Math.floor(totalMinutes / 60)
@@ -200,8 +205,8 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
       toDate.setDate(toDate.getDate() + 6)
     }
 
-    const from = fromDate.toISOString().split('T')[0]
-    const to = toDate.toISOString().split('T')[0]
+    const from = toLocalYMD(fromDate)
+    const to = toLocalYMD(toDate)
     
     let url = `${base}/api/time-entries?from=${from}&to=${to}`
     
