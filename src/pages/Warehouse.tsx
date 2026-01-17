@@ -160,7 +160,8 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
             <label>Qty (- if reducing inv.)</label>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
+              pattern="-?[0-9]*"
               placeholder="0"
               value={qtyStr}
               onChange={e => setQtyStr(e.target.value)}
