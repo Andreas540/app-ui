@@ -57,7 +57,7 @@ interface SupplyChainData {
   recent_deliveries: RecentDelivery[]
   not_delivered: NotDelivered[]
   warehouse_inventory: WarehouseInventory[]
-  production_data: ProductionData[]
+  production_data?: ProductionData[]
   in_customs: InCustoms[]
   ordered_from_suppliers: OrderedFromSuppliers[]
 }
@@ -248,7 +248,7 @@ export default function SupplyChainOverview() {
 
   // Calculate weekly production data
   const weeklyProductionData = useMemo(() => {
-    if (!data) return []
+    if (!data || !data.production_data || data.production_data.length === 0) return []
 
     const { startStr, endStr } = getWeekRange(productionWeekOffset)
 
@@ -604,7 +604,7 @@ export default function SupplyChainOverview() {
               </div>
             </div>
 
-            {/* ⭐ ADD TITLE HERE */}
+            {/* Title */}
             <h4 style={{ 
               margin: '16px 0 12px 0', 
               fontSize: 16, 
@@ -875,140 +875,146 @@ export default function SupplyChainOverview() {
         )}
       </div>
 
-      {/* ⭐ NEW SECTION: Production */}
-      <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
-          <span>Production</span>
-          <span style={expandIconStyle}>{expandedSections.production ? '−' : '+'}</span>
-        </div>
+      {/* NEW SECTION: Production */}
+<div style={{ marginTop: 20 }}>
+  <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
+    <span>Production</span>
+    <span style={expandIconStyle}>{expandedSections.production ? '−' : '+'}</span>
+  </div>
 
-        {expandedSections.production && (
-          <div style={{ marginTop: 12 }}>
-            {/* Week navigation header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-              gap: 12,
-            }}>
-              <button
-                onClick={() => setProductionWeekOffset(offset => offset - 1)}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  color: 'white',
-                  fontSize: 18,
-                  fontWeight: 'bold',
-                }}
-                title="Previous week"
-              >
-                ←
-              </button>
+  {expandedSections.production && (
+    <div style={{ marginTop: 12 }}>
+      {!data.production_data || data.production_data.length === 0 ? (
+        <p className="helper">No production data available.</p>
+      ) : (
+        <>
+          {/* Week navigation header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+            gap: 12,
+          }}>
+            <button
+              onClick={() => setProductionWeekOffset(offset => offset - 1)}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 'bold',
+              }}
+              title="Previous week"
+            >
+              ←
+            </button>
 
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>
-                  {productionWeekHeader}
-                </div>
-                <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                  Total qty produced: {intFmt.format(productionTotalQty)}
-                </div>
-                {weeklyProductionData.length > 0 && (
-                  <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
-                    {weeklyProductionData.length} {weeklyProductionData.length === 1 ? 'product' : 'products'}
-                  </div>
-                )}
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>
+                {productionWeekHeader}
               </div>
-
-              <button
-                onClick={() => setProductionWeekOffset(offset => offset + 1)}
-                disabled={productionWeekOffset >= 0}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  cursor: productionWeekOffset >= 0 ? 'not-allowed' : 'pointer',
-                  color: productionWeekOffset >= 0 ? 'var(--text-secondary)' : 'white',
-                  fontSize: 18,
-                  fontWeight: 'bold',
-                  opacity: productionWeekOffset >= 0 ? 0.4 : 1,
-                }}
-                title="Next week"
-              >
-                →
-              </button>
+              <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                Total qty produced: {intFmt.format(productionTotalQty)}
+              </div>
+              {weeklyProductionData.length > 0 && (
+                <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
+                  {weeklyProductionData.length} {weeklyProductionData.length === 1 ? 'product' : 'products'}
+                </div>
+              )}
             </div>
 
-            {/* Horizontal bar chart */}
-            {weeklyProductionData.length === 0 ? (
-              <p className="helper">No production in this week.</p>
-            ) : (
-              <div style={{
-                width: '100%',
-                height: Math.max(220, weeklyProductionData.length * 40),
-                marginTop: 12,
-              }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={weeklyProductionData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 40, bottom: 5, left: 0 }}
-                  >
-                    <XAxis
-                      type="number"
-                      tick={false}
-                      axisLine={false}
-                      width={0}
-                      domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="product"
-                      tick={{ fontSize: 12, fill: '#fff' }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={120}
-                    />
-                    <Bar dataKey="qty" isAnimationActive={false} barSize={18}>
-                      {weeklyProductionData.map((entry, index) => {
-                        const color = getProductColor(entry.product)
-                        return <Cell key={`cell-${index}`} fill={color} />
-                      })}
-                      <LabelList
-                        dataKey="qty"
-                        position="right"
-                        content={(props: any) => {
-                          const { x, y, width, value, height } = props
-                          if (!value) return null
-
-                          const formattedValue = intFmt.format(Number(value))
-
-                          return (
-                            <text
-                              x={x + width + 10}
-                              y={y + height / 2}
-                              fill="#fff"
-                              fontSize={12}
-                              fontWeight={700}
-                              dominantBaseline="middle"
-                            >
-                              {formattedValue}
-                            </text>
-                          )
-                        }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <button
+              onClick={() => setProductionWeekOffset(offset => offset + 1)}
+              disabled={productionWeekOffset >= 0}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                cursor: productionWeekOffset >= 0 ? 'not-allowed' : 'pointer',
+                color: productionWeekOffset >= 0 ? 'var(--text-secondary)' : 'white',
+                fontSize: 18,
+                fontWeight: 'bold',
+                opacity: productionWeekOffset >= 0 ? 0.4 : 1,
+              }}
+              title="Next week"
+            >
+              →
+            </button>
           </div>
-        )}
-      </div>
+
+          {/* Horizontal bar chart */}
+          {weeklyProductionData.length === 0 ? (
+            <p className="helper">No production in this week.</p>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: Math.max(220, weeklyProductionData.length * 40),
+              marginTop: 12,
+            }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={weeklyProductionData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 40, bottom: 5, left: 0 }}
+                >
+                  <XAxis
+                    type="number"
+                    tick={false}
+                    axisLine={false}
+                    width={0}
+                    domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="product"
+                    tick={{ fontSize: 12, fill: '#fff' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={120}
+                  />
+                  <Bar dataKey="qty" isAnimationActive={false} barSize={18}>
+                    {weeklyProductionData.map((entry, index) => {
+                      const color = getProductColor(entry.product)
+                      return <Cell key={`cell-${index}`} fill={color} />
+                    })}
+                    <LabelList
+                      dataKey="qty"
+                      position="right"
+                      content={(props: any) => {
+                        const { x, y, width, value, height } = props
+                        if (!value) return null
+
+                        const formattedValue = intFmt.format(Number(value))
+
+                        return (
+                          <text
+                            x={x + width + 10}
+                            y={y + height / 2}
+                            fill="#fff"
+                            fontSize={12}
+                            fontWeight={700}
+                            dominantBaseline="middle"
+                          >
+                            {formattedValue}
+                          </text>
+                        )
+                      }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )}
+</div>
 
       {/* Section 2: Not delivered */}
       <div style={{ marginTop: 20 }}>
