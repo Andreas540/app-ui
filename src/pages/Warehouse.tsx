@@ -26,9 +26,12 @@ export default function Warehouse() {
   const [laborCostStr, setLaborCostStr] = useState('')
   const [notes, setNotes] = useState('')
 
+  const CONTROL_H = 44
+
   // Load products and inventory
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadData() {
@@ -36,30 +39,21 @@ export default function Warehouse() {
       setLoading(true)
       setErr(null)
       const { products: bootProducts } = await fetchBootstrap()
-      
-      console.log('All products before filtering:', bootProducts.map(p => p.name))
-      
+
       // Filter out Refund/Discount, Other Products, and Other Services
-      const filtered = bootProducts.filter(p => {
+      const filtered = bootProducts.filter((p) => {
         const name = p.name.trim().toLowerCase()
-        const shouldKeep = !name.includes('refund') 
-          && !name.includes('discount')
-          && !name.includes('other product') 
-          && !name.includes('other service')
-        
-        if (!shouldKeep) {
-          console.log('Filtering out:', p.name)
-        }
-        
-        return shouldKeep
+        return (
+          !name.includes('refund') &&
+          !name.includes('discount') &&
+          !name.includes('other product') &&
+          !name.includes('other service')
+        )
       })
-      
-      console.log('Products after filtering:', filtered.map(p => p.name))
-      
+
       setProducts(filtered)
       if (filtered[0]) setProductId(filtered[0].id)
 
-      // Fetch current inventory
       await loadInventory()
     } catch (e: any) {
       setErr(e?.message || String(e))
@@ -71,9 +65,9 @@ export default function Warehouse() {
   async function loadInventory() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/warehouse-inventory`, {
-  headers: getAuthHeaders(),
-})
+      const res = await fetch(`${base}/api/warehouse-inventory`, {
+        headers: getAuthHeaders(),
+      })
       if (res.ok) {
         const data = await res.json()
         setInventory(data.inventory || [])
@@ -102,18 +96,24 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
     return fallback ? Number(fallback[0]) : NaN
   }
 
+  // iOS numeric keypad often has no "-" key. Provide a toggle button instead.
+  function toggleNegativeQty() {
+    setQtyStr((prev) => {
+      const v = prev.trim()
+      if (!v) return '-'
+      if (v.startsWith('-')) return v.slice(1)
+      return '-' + v
+    })
+  }
+
   const qtyInt = useMemo(() => parseQtyToNumber(qtyStr), [qtyStr])
   const productCost = useMemo(() => parseDecimalToNumber(productCostStr), [productCostStr])
   const laborCost = useMemo(() => parseDecimalToNumber(laborCostStr), [laborCostStr])
 
-  // Check if reducing below zero
-  const selectedProduct = useMemo(
-    () => products.find(p => p.id === productId),
-    [products, productId]
-  )
+  const selectedProduct = useMemo(() => products.find((p) => p.id === productId), [products, productId])
 
   const currentInventoryQty = useMemo(() => {
-    const item = inventory.find(i => i.product_id === productId)
+    const item = inventory.find((i) => i.product_id === productId)
     return item ? item.qty : 0
   }, [inventory, productId])
 
@@ -129,26 +129,24 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
   const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
 
   if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
   if (!products.length) return <div className="card"><p>No products available.</p></div>
-
-  const CONTROL_H = 44
 
   return (
     <>
       {/* Adjust Warehouse Inventory Card */}
-      <div className="card" style={{maxWidth: 720}}>
-        <h3 style={{ margin:0 }}>Adjust Warehouse Inventory</h3>
+      <div className="card" style={{ maxWidth: 720 }}>
+        <h3 style={{ margin: 0 }}>Adjust Warehouse Inventory</h3>
 
         {/* Row 1: Product */}
         <div style={{ marginTop: 12 }}>
           <label>Product</label>
           <select
             value={productId}
-            onChange={e => setProductId(e.target.value)}
+            onChange={(e) => setProductId(e.target.value)}
             style={{ height: CONTROL_H }}
           >
-            {products.map(p => (
+            {products.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
@@ -156,32 +154,60 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
 
         {/* Row 2: Quantity | Date (50/50) */}
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+          {/* LEFT: Qty */}
           <div>
             <label>Qty (- if reducing inv.)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              pattern="-?[0-9]*"
-              placeholder="0"
-              value={qtyStr}
-              onChange={e => setQtyStr(e.target.value)}
-              style={{ 
-                height: CONTROL_H,
-                borderColor: willGoNegative ? 'salmon' : undefined
-              }}
-            />
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={toggleNegativeQty}
+                style={{
+                  width: 44,
+                  height: CONTROL_H,
+                  fontSize: 22,
+                  fontWeight: 700,
+                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  background: qtyStr.trim().startsWith('-') ? 'salmon' : 'transparent',
+                  color: qtyStr.trim().startsWith('-') ? 'white' : 'var(--text)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+                title="Toggle negative"
+                aria-label="Toggle negative quantity"
+              >
+                −
+              </button>
+
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={qtyStr}
+                onChange={(e) => setQtyStr(e.target.value)}
+                style={{
+                  height: CONTROL_H,
+                  flex: 1,
+                  borderColor: willGoNegative ? 'salmon' : undefined,
+                }}
+              />
+            </div>
+
             {willGoNegative && (
               <div style={{ color: 'salmon', fontSize: 13, marginTop: 4 }}>
                 ⚠️ This will reduce {selectedProduct?.name} below zero (New qty: {newInventoryQty})
               </div>
             )}
           </div>
+
+          {/* RIGHT: Date */}
           <div>
             <label>Date</label>
             <input
               type="date"
               value={date}
-              onChange={e => setDate(e.target.value)}
+              onChange={(e) => setDate(e.target.value)}
               style={{ height: CONTROL_H }}
             />
           </div>
@@ -196,7 +222,7 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
               inputMode="decimal"
               placeholder="0.000"
               value={productCostStr}
-              onChange={e => setProductCostStr(e.target.value)}
+              onChange={(e) => setProductCostStr(e.target.value)}
               style={{ height: CONTROL_H }}
             />
           </div>
@@ -207,7 +233,7 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
               inputMode="decimal"
               placeholder="0.000"
               value={laborCostStr}
-              onChange={e => setLaborCostStr(e.target.value)}
+              onChange={(e) => setLaborCostStr(e.target.value)}
               style={{ height: CONTROL_H }}
             />
           </div>
@@ -220,17 +246,16 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
             type="text"
             placeholder="Add notes about this entry..."
             value={notes}
-            onChange={e => setNotes(e.target.value)}
+            onChange={(e) => setNotes(e.target.value)}
             style={{ height: CONTROL_H }}
           />
         </div>
 
         {/* Buttons */}
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          <button 
-            className="primary" 
+          <button
+            className="primary"
             onClick={async () => {
-              // Validation
               if (!selectedProduct) {
                 alert('Select a product first')
                 return
@@ -247,7 +272,6 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
                 return
               }
 
-              // Optional: parse costs if provided
               let productCostToSend: number | undefined = undefined
               let laborCostToSend: number | undefined = undefined
 
@@ -256,10 +280,10 @@ const res = await fetch(`${base}/api/warehouse-inventory`, {
 
               try {
                 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/warehouse-add-manual`, {
-  method: 'POST',
-  headers: getAuthHeaders(),
-  body: JSON.stringify({
+                const res = await fetch(`${base}/api/warehouse-add-manual`, {
+                  method: 'POST',
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({
                     product_id: productId,
                     qty,
                     date,
@@ -276,7 +300,6 @@ const res = await fetch(`${base}/api/warehouse-add-manual`, {
 
                 alert('Warehouse entry saved!')
 
-                // Clear form and reload inventory
                 setQtyStr('')
                 setDate(todayYMD())
                 setProductCostStr('')
@@ -322,20 +345,22 @@ const res = await fetch(`${base}/api/warehouse-add-manual`, {
         ) : (
           <div style={{ display: 'grid' }}>
             {inventory
-              .filter(item => {
+              .filter((item) => {
                 const name = item.product.trim().toLowerCase()
-                return !name.includes('refund') 
-                  && !name.includes('discount')
-                  && !name.includes('other product') 
-                  && !name.includes('other service')
+                return (
+                  !name.includes('refund') &&
+                  !name.includes('discount') &&
+                  !name.includes('other product') &&
+                  !name.includes('other service')
+                )
               })
-              .map(item => (
+              .map((item) => (
                 <div
                   key={item.product_id}
                   style={{
                     borderBottom: '1px solid #eee',
                     paddingTop: 12,
-                    paddingBottom: 12
+                    paddingBottom: 12,
                   }}
                 >
                   <div
@@ -343,27 +368,32 @@ const res = await fetch(`${base}/api/warehouse-add-manual`, {
                       display: 'grid',
                       gridTemplateColumns: '1fr auto',
                       gap: 8,
-                      alignItems: 'center'
+                      alignItems: 'center',
                     }}
                   >
                     <div className="helper">{item.product}</div>
-                    <div 
+                    <div
                       className="helper"
-                      style={{ 
+                      style={{
                         textAlign: 'right',
                         fontWeight: 600,
-                        color: item.qty < 0 ? 'salmon' : item.qty === 0 ? undefined : 'var(--primary)'
+                        color:
+                          item.qty < 0
+                            ? 'salmon'
+                            : item.qty === 0
+                              ? undefined
+                              : 'var(--primary)',
                       }}
                     >
                       {intFmt.format(item.qty)}
                     </div>
                   </div>
                 </div>
-              ))
-            }
+              ))}
           </div>
         )}
       </div>
     </>
   )
 }
+
