@@ -131,6 +131,7 @@ async function getSupplyChainOverview(event) {
       recent_deliveries,
       not_delivered,
       warehouse_inventory,
+      production_data,
       in_customs,
       ordered_from_suppliers,
     })
