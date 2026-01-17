@@ -884,11 +884,9 @@ export default function SupplyChainOverview() {
 
   {expandedSections.production && (
     <div style={{ marginTop: 12 }}>
-      {!data.production_data || data.production_data.length === 0 ? (
-        <p className="helper">No production data available.</p>
-      ) : (
+      {/* Week navigation header - ALWAYS show if we have production_data array */}
+      {data.production_data ? (
         <>
-          {/* Week navigation header */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -1011,6 +1009,8 @@ export default function SupplyChainOverview() {
             </div>
           )}
         </>
+      ) : (
+        <p className="helper">No production data available.</p>
       )}
     </div>
   )}
