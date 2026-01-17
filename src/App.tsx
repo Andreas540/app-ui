@@ -484,11 +484,26 @@ useEffect(() => {
                 </NavLink>
               )}
 
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Inventory</div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Supply chain</div>
               <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               {hasFeature('supply-chain') && (
                 <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
                   Supply & Demand
+                </NavLink>                
+              )}
+              {hasFeature('production') && (
+                <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
+                  Production
+                </NavLink>
+              )}
+              {hasFeature('warehouse') && (
+                <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
+                  Warehouse
+                </NavLink>
+              )}            
+              {hasFeature('supplier-orders') && (
+                <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
+                  New Order (S)
                 </NavLink>
               )}
               {hasFeature('suppliers') && (
@@ -496,24 +511,9 @@ useEffect(() => {
                   Suppliers
                 </NavLink>
               )}
-              {hasFeature('supplier-orders') && (
-                <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
-                  New Order (S)
-                </NavLink>
-              )}
-              {hasFeature('warehouse') && (
-                <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
-                  Warehouse
-                </NavLink>
-              )}
 
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Other</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              {hasFeature('production') && (
-                <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
-                  Production
-                </NavLink>
-              )}
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Staff</div>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />              
               {hasFeature('employees') && (
                 <NavLink to="/employees" onClick={() => setNavOpen(false)}>
                   Employees
@@ -529,6 +529,9 @@ useEffect(() => {
                   Time Entry
                 </NavLink>
               )}
+
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Admin</div>
+              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
               {hasFeature('costs') && (
                 <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
                   New Cost
