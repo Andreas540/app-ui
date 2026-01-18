@@ -21,15 +21,35 @@ async function getInventory(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Sum up quantities by product
+    // Calculate inventory matching Supply Chain Overview logic
     const inventory = await sql`
-      SELECT 
-        product,
-        product_id,
-        SUM(qty) as qty
-      FROM warehouse_deliveries
-      WHERE tenant_id = ${TENANT_ID}
-      GROUP BY product, product_id
+      WITH wd AS (
+        SELECT
+          product,
+          product_id,
+          SUM(qty) AS warehouse_qty
+        FROM warehouse_deliveries
+        WHERE tenant_id = ${TENANT_ID}
+        GROUP BY product, product_id
+      ),
+      received AS (
+        SELECT
+          p.id AS product_id,
+          p.name AS product,
+          SUM(ois.qty) AS received_qty
+        FROM orders_suppliers os
+        JOIN order_items_suppliers ois ON ois.order_id = os.id
+        JOIN products p ON p.id = ois.product_id
+        WHERE os.tenant_id = ${TENANT_ID}
+          AND os.received = TRUE
+        GROUP BY p.id, p.name
+      )
+      SELECT
+        COALESCE(wd.product, received.product) AS product,
+        COALESCE(wd.product_id, received.product_id) AS product_id,
+        COALESCE(wd.warehouse_qty, 0) + COALESCE(received.received_qty, 0) AS qty
+      FROM wd
+      FULL OUTER JOIN received ON received.product_id = wd.product_id
       ORDER BY product ASC
     `
 
