@@ -144,7 +144,60 @@ export default function Warehouse() {
       <div className="card" style={{ maxWidth: 720 }}>
         <h3 style={{ margin: 0 }}>Adjust Warehouse Inventory</h3>
 
-        {/* Row 1: Product */}
+        {/* Row 1: Stage (M or P) - MOVED TO TOP */}
+        <div style={{ marginTop: 12 }}>
+          <label style={{ display: 'block', marginBottom: 8 }}>Stage</label>
+          <div style={{ 
+            display: 'flex', 
+            gap: 12, 
+            flexWrap: 'wrap',
+          }}>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              cursor: 'pointer',
+              fontSize: 14,
+            }}>
+              <input
+                type="radio"
+                name="flag"
+                value="M"
+                checked={flag === 'M'}
+                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
+                style={{ 
+                  cursor: 'pointer',
+                  width: 16,
+                  height: 16,
+                }}
+              />
+              <span>Pre-production (M)</span>
+            </label>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              cursor: 'pointer',
+              fontSize: 14,
+            }}>
+              <input
+                type="radio"
+                name="flag"
+                value="P"
+                checked={flag === 'P'}
+                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
+                style={{ 
+                  cursor: 'pointer',
+                  width: 16,
+                  height: 16,
+                }}
+              />
+              <span>Finished products (P)</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Row 2: Product */}
         <div style={{ marginTop: 12 }}>
           <label>Product</label>
           <select
@@ -156,35 +209,6 @@ export default function Warehouse() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-        </div>
-
-        {/* Row 2: Stage (M or P) */}
-        <div style={{ marginTop: 12 }}>
-          <label>Stage</label>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="flag"
-                value="M"
-                checked={flag === 'M'}
-                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>Pre-production (M)</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="flag"
-                value="P"
-                checked={flag === 'P'}
-                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>Finished products (P)</span>
-            </label>
-          </div>
         </div>
 
         {/* Row 3: Quantity | Date (50/50) */}
