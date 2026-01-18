@@ -26,7 +26,9 @@ interface NotDelivered {
 
 interface WarehouseInventory {
   product: string
-  qty: number
+  pre_prod: number
+  finished: number
+  qty: number // total
 }
 
 interface InCustoms {
@@ -87,7 +89,15 @@ const CHART_COLORS = [
   '#3b82f6', // blue
   '#06b6d4', // cyan
 ]
-
+function shouldHideProduct(name: string) {
+  const n = (name || '').trim().toLowerCase()
+  return (
+    n.includes('refund') ||
+    n.includes('discount') ||
+    n.includes('other product') ||
+    n.includes('other service')
+  )
+}
 export default function SupplyChainOverview() {
   const [data, setData] = useState<SupplyChainData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -222,7 +232,7 @@ export default function SupplyChainOverview() {
 
     // Filter deliveries for this week using string comparison
     const weekDeliveries = data.recent_deliveries.filter(item => {
-      if (item.product === 'Refund/Discount') return false
+      if (shouldHideProduct(item.product)) return false
       // Extract YYYY-MM-DD from the date string (handles various formats)
       const dateStr = item.date.split('T')[0]
       return dateStr >= startStr && dateStr <= endStr
@@ -298,14 +308,23 @@ export default function SupplyChainOverview() {
   }
 
   // Create warehouse inventory lookup for color coding
-  const warehouseInventoryMap = useMemo(() => {
+    const warehouseInventoryMap = useMemo(() => {
     if (!data) return new Map<string, number>()
     const map = new Map<string, number>()
+
     data.warehouse_inventory.forEach(item => {
-      map.set(item.product, Number(item.qty))
+      if (shouldHideProduct(item.product)) return
+      const pre = Number(item.pre_prod ?? 0)
+      const fin = Number(item.finished ?? 0)
+      map.set(item.product, pre + fin) // Total
     })
+
     return map
   }, [data])
+
+    const filteredDemandData = useMemo(() => {
+    return demandData.filter(d => !shouldHideProduct(d.product))
+  }, [demandData])
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -619,13 +638,13 @@ export default function SupplyChainOverview() {
               <p className="helper">Loading demand data...</p>
             ) : demandErr ? (
               <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
-            ) : demandData.length === 0 ? (
+            ) : filteredDemandData.length === 0 ? (
               <p className="helper">No demand data for this period.</p>
             ) : (
               <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={demandData}
+                    data={filteredDemandData}
                     margin={{ top: 20, right: 0, bottom: 80, left: 0 }}
                   >
                     <XAxis
@@ -644,7 +663,7 @@ export default function SupplyChainOverview() {
                       domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.15)]}
                     />
                     <Bar dataKey="qty" isAnimationActive={false}>
-                      {demandData.map((entry, index) => {
+                      {filteredDemandData.map((entry, index) => {
                         const color = getProductColor(entry.product)
                         return <Cell key={`cell-${index}`} fill={color} />
                       })}
@@ -833,7 +852,7 @@ export default function SupplyChainOverview() {
             </div>
 
             {/* Original delivery list */}
-            {data.recent_deliveries.filter(item => item.product !== 'Refund/Discount').length === 0 ? (
+            {data.recent_deliveries.filter(item => !shouldHideProduct(item.product)).length === 0 ? (
               <p className="helper">No deliveries in the last 30 days.</p>
             ) : (
               <div>
@@ -852,7 +871,7 @@ export default function SupplyChainOverview() {
                 </div>
 
                 {data.recent_deliveries
-                  .filter(item => item.product !== 'Refund/Discount')
+                  .filter(item => !shouldHideProduct(item.product))
                   .map((item, idx) => (
                     <div
                       key={idx}
@@ -1060,7 +1079,9 @@ export default function SupplyChainOverview() {
                   <div style={{ textAlign: 'right' }}>Qty</div>
                 </div>
 
-                {data.not_delivered.map((item, idx) => {
+                {data.not_delivered
+  .filter(item => !shouldHideProduct(item.product))
+  .map((item, idx) => {
                   const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
                   const notDeliveredQty = Number(item.qty)
                   const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
@@ -1089,57 +1110,90 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* Section 3: In the warehouse */}
-      <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
-          <span>In the warehouse</span>
-          <span style={expandIconStyle}>{expandedSections.warehouse ? '−' : '+'}</span>
-        </div>
+<div style={{ marginTop: 20 }}>
+  <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
+    <span>In the warehouse</span>
+    <span style={expandIconStyle}>{expandedSections.warehouse ? '−' : '+'}</span>
+  </div>
 
-        {expandedSections.warehouse && (
-          <div style={{ marginTop: 12 }}>
-            {data.warehouse_inventory.length === 0 ? (
-              <p className="helper">No inventory data.</p>
-            ) : (
-              <div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 100px',
-                    gap: 12,
-                    ...tableHeaderStyle,
-                  }}
-                >
-                  <div>Product</div>
-                  <div style={{ textAlign: 'right' }}>Quantity</div>
-                </div>
-
-                {data.warehouse_inventory.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 100px',
-                      gap: 12,
-                      ...tableRowStyle,
-                    }}
-                  >
-                    <div>{item.product}</div>
-                    <div
-                      style={{
-                        textAlign: 'right',
-                        color: item.qty < 0 ? 'salmon' : item.qty === 0 ? 'var(--text-secondary)' : undefined,
-                        fontWeight: item.qty < 0 ? 600 : undefined,
-                      }}
-                    >
-                      {intFmt.format(item.qty)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+  {expandedSections.warehouse && (
+    <div style={{ marginTop: 12 }}>
+      {data.warehouse_inventory.length === 0 ? (
+        <p className="helper">No inventory data.</p>
+      ) : (
+        <div>
+          {/* Header: 4 columns 25/25/25/25 */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr 1fr',
+              gap: 8,
+              ...tableHeaderStyle,
+              fontSize: 12,
+            }}
+          >
+            <div>Product</div>
+            <div style={{ textAlign: 'right' }}>Pre-prod</div>
+            <div style={{ textAlign: 'right' }}>Finished</div>
+            <div style={{ textAlign: 'right' }}>Total Qty</div>
           </div>
-        )}
-      </div>
+
+          {data.warehouse_inventory
+  .filter(item => !shouldHideProduct(item.product))
+  .map((item, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                gap: 8,
+                ...tableRowStyle,
+                fontSize: 13,
+                alignItems: 'start',
+              }}
+            >
+              {/* Product wraps to 2 lines if needed */}
+              <div style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
+                {item.product}
+              </div>
+
+              <div
+                style={{
+                  textAlign: 'right',
+                  fontVariantNumeric: 'tabular-nums',
+                  color: item.pre_prod < 0 ? 'salmon' : undefined,
+                  fontWeight: item.pre_prod < 0 ? 600 : undefined,
+                }}
+              >
+                {intFmt.format(Number(item.pre_prod))}
+              </div>
+
+              <div
+                style={{
+                  textAlign: 'right',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {intFmt.format(Number(item.finished))}
+              </div>
+
+              <div
+                style={{
+                  textAlign: 'right',
+                  fontVariantNumeric: 'tabular-nums',
+                  color: item.qty < 0 ? 'salmon' : item.qty === 0 ? 'var(--text-secondary)' : undefined,
+                  fontWeight: item.qty < 0 ? 600 : undefined,
+                }}
+              >
+                {intFmt.format(Number(item.qty))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
+</div>
 
       {/* Section 4: In Customs */}
       <div style={{ marginTop: 20 }}>
