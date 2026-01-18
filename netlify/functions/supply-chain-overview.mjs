@@ -76,7 +76,7 @@ const warehouse_inventory = await sql`
   WITH wd AS (
     SELECT
       product,
-      SUM(CASE WHEN supplier_manual_delivered = 'M' THEN qty ELSE 0 END) AS pre_from_m,
+      SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
       SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
       SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
     FROM warehouse_deliveries
