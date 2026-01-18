@@ -78,7 +78,6 @@ const warehouse_inventory = await sql`
       product,
       SUM(CASE WHEN supplier_manual_delivered = 'M' THEN qty ELSE 0 END) AS pre_from_m,
       SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
-      -- Outbound (customer deliveries). Your data shows D rows with negative qty.
       SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
     FROM warehouse_deliveries
     WHERE tenant_id = ${TENANT_ID}
@@ -94,7 +93,6 @@ const warehouse_inventory = await sql`
     GROUP BY p.name
   ),
   received AS (
-    -- Orders with suppliers marked received -> add to Pre-prod
     SELECT
       p.name AS product,
       SUM(ois.qty) AS received_qty
@@ -116,36 +114,17 @@ const warehouse_inventory = await sql`
     FROM wd
     FULL OUTER JOIN lp ON lp.product = wd.product
     FULL OUTER JOIN received ON received.product = COALESCE(wd.product, lp.product)
-  ),
-  calc AS (
-    SELECT
-      product,
-
-      -- Initial balances BEFORE outbound:
-      -- Production moves qty from Pre-prod -> Finished
-      (pre_from_m + received_qty - produced_qty) AS pre_initial,
-      (finished_from_p + produced_qty) AS finished_initial,
-      outbound_qty
-    FROM base
   )
   SELECT
     product,
-
-    -- Finished is reduced first, but cannot go below 0
-    GREATEST(finished_initial - outbound_qty, 0) AS finished,
-
-    -- Remaining outbound (if finished not enough) comes out of Pre-prod (can go negative)
-    (pre_initial - GREATEST(outbound_qty - finished_initial, 0)) AS pre_prod,
-
-    -- Total = pre_prod + finished
-    (
-      (pre_initial - GREATEST(outbound_qty - finished_initial, 0))
-      + GREATEST(finished_initial - outbound_qty, 0)
-    ) AS qty
-
-  FROM calc
+    -- Pre-prod: manual entries + received - production (can go negative)
+    (pre_from_m + received_qty - produced_qty) AS pre_prod,
+    -- Finished: manual entries + production - deliveries (can go negative)
+    (finished_from_p + produced_qty - outbound_qty) AS finished,
+    -- Total: all inbound - all outbound
+    (pre_from_m + received_qty + finished_from_p - outbound_qty) AS qty
+  FROM base
   WHERE product IS NOT NULL
-    -- Filter out products
     AND LOWER(product) NOT LIKE '%refund%'
     AND LOWER(product) NOT LIKE '%discount%'
     AND LOWER(product) NOT LIKE '%other product%'
