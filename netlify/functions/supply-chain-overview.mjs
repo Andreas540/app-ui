@@ -92,37 +92,24 @@ const warehouse_inventory = await sql`
     WHERE lp.tenant_id = ${TENANT_ID}
     GROUP BY p.name
   ),
-  received AS (
-    SELECT
-      p.name AS product,
-      SUM(ois.qty) AS received_qty
-    FROM orders_suppliers os
-    JOIN order_items_suppliers ois ON ois.order_id = os.id
-    JOIN products p ON p.id = ois.product_id
-    WHERE os.tenant_id = ${TENANT_ID}
-      AND os.received = TRUE
-    GROUP BY p.name
-  ),
   base AS (
     SELECT
-      COALESCE(wd.product, lp.product, received.product) AS product,
+      COALESCE(wd.product, lp.product) AS product,
       COALESCE(wd.pre_from_m, 0) AS pre_from_m,
       COALESCE(wd.finished_from_p, 0) AS finished_from_p,
       COALESCE(wd.outbound_qty, 0) AS outbound_qty,
-      COALESCE(lp.produced_qty, 0) AS produced_qty,
-      COALESCE(received.received_qty, 0) AS received_qty
+      COALESCE(lp.produced_qty, 0) AS produced_qty
     FROM wd
     FULL OUTER JOIN lp ON lp.product = wd.product
-    FULL OUTER JOIN received ON received.product = COALESCE(wd.product, lp.product)
   )
   SELECT
     product,
-    -- Pre-prod: manual entries + received - production (can go negative)
-    (pre_from_m + received_qty - produced_qty) AS pre_prod,
-    -- Finished: manual entries + production - deliveries (can go negative)
+    -- Pre-prod: manual + supplier received - production
+    (pre_from_m - produced_qty) AS pre_prod,
+    -- Finished: manual + production - deliveries
     (finished_from_p + produced_qty - outbound_qty) AS finished,
     -- Total: all inbound - all outbound
-    (pre_from_m + received_qty + finished_from_p - outbound_qty) AS qty
+    (pre_from_m + finished_from_p - outbound_qty) AS qty
   FROM base
   WHERE product IS NOT NULL
     AND LOWER(product) NOT LIKE '%refund%'
