@@ -19,6 +19,7 @@ async function addManualEntry(event) {
       product_id,
       qty,
       date,
+      flag = 'M', // Default to 'M' if not provided
       product_cost,
       labor_cost,
       notes
@@ -33,6 +34,9 @@ async function addManualEntry(event) {
     }
     if (!date) {
       return cors(400, { error: 'date is required' })
+    }
+    if (!['M', 'P'].includes(flag)) {
+      return cors(400, { error: 'flag must be either M or P' })
     }
 
     const sql = neon(DATABASE_URL)
@@ -74,7 +78,7 @@ async function addManualEntry(event) {
       ) VALUES (
         ${TENANT_ID},
         ${date},
-        'M',
+        ${flag},
         ${productName},
         NULL,
         ${qty},

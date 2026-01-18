@@ -7,6 +7,8 @@ import { todayYMD } from '../lib/time'
 type InventoryItem = {
   product: string
   product_id: string
+  pre_prod: number
+  finished: number
   qty: number
 }
 
@@ -22,6 +24,7 @@ export default function Warehouse() {
   const [productId, setProductId] = useState('')
   const [qtyStr, setQtyStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
+  const [flag, setFlag] = useState<'M' | 'P'>('M')
   const [productCostStr, setProductCostStr] = useState('')
   const [laborCostStr, setLaborCostStr] = useState('')
   const [notes, setNotes] = useState('')
@@ -112,10 +115,13 @@ export default function Warehouse() {
 
   const selectedProduct = useMemo(() => products.find((p) => p.id === productId), [products, productId])
 
-  const currentInventoryQty = useMemo(() => {
-    const item = inventory.find((i) => i.product_id === productId)
-    return item ? item.qty : 0
+  const currentInventoryItem = useMemo(() => {
+    return inventory.find((i) => i.product_id === productId)
   }, [inventory, productId])
+
+  const currentInventoryQty = useMemo(() => {
+    return currentInventoryItem ? currentInventoryItem.qty : 0
+  }, [currentInventoryItem])
 
   const newInventoryQty = useMemo(() => {
     if (!Number.isInteger(qtyInt)) return currentInventoryQty
@@ -152,7 +158,36 @@ export default function Warehouse() {
           </select>
         </div>
 
-        {/* Row 2: Quantity | Date (50/50) */}
+        {/* Row 2: Stage (M or P) */}
+        <div style={{ marginTop: 12 }}>
+          <label>Stage</label>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="flag"
+                value="M"
+                checked={flag === 'M'}
+                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>Pre-production (M)</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="flag"
+                value="P"
+                checked={flag === 'P'}
+                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>Finished products (P)</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Row 3: Quantity | Date (50/50) */}
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           {/* LEFT: Qty */}
           <div>
@@ -213,8 +248,8 @@ export default function Warehouse() {
           </div>
         </div>
 
-        {/* Row 3: Product cost | Labor cost (50/50) */}
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        {/* Row 4: Product cost | Labor cost (50/50) - HIDDEN */}
+        <div className="row row-2col-mobile" style={{ marginTop: 12, display: 'none' }}>
           <div>
             <label>Product cost (optional)</label>
             <input
@@ -239,7 +274,7 @@ export default function Warehouse() {
           </div>
         </div>
 
-        {/* Row 4: Notes */}
+        {/* Row 5: Notes */}
         <div style={{ marginTop: 12 }}>
           <label>Notes (optional)</label>
           <input
@@ -287,6 +322,7 @@ export default function Warehouse() {
                     product_id: productId,
                     qty,
                     date,
+                    flag,
                     product_cost: productCostToSend,
                     labor_cost: laborCostToSend,
                     notes: notes.trim() || undefined,
@@ -302,6 +338,7 @@ export default function Warehouse() {
 
                 setQtyStr('')
                 setDate(todayYMD())
+                setFlag('M')
                 setProductCostStr('')
                 setLaborCostStr('')
                 setNotes('')
@@ -319,6 +356,7 @@ export default function Warehouse() {
             onClick={() => {
               setQtyStr('')
               setDate(todayYMD())
+              setFlag('M')
               setProductCostStr('')
               setLaborCostStr('')
               setNotes('')
@@ -343,7 +381,27 @@ export default function Warehouse() {
         {inventory.length === 0 ? (
           <p className="helper">No inventory data yet</p>
         ) : (
-          <div style={{ display: 'grid' }}>
+          <div>
+            {/* Header */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                gap: 8,
+                borderBottom: '1px solid var(--border)',
+                paddingBottom: 8,
+                fontWeight: 600,
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <div>Product</div>
+              <div style={{ textAlign: 'right' }}>Pre-prod</div>
+              <div style={{ textAlign: 'right' }}>Finished</div>
+              <div style={{ textAlign: 'right' }}>Total Qty</div>
+            </div>
+
+            {/* Rows */}
             {inventory
               .filter((item) => {
                 const name = item.product.trim().toLowerCase()
@@ -358,35 +416,56 @@ export default function Warehouse() {
                 <div
                   key={item.product_id}
                   style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                    gap: 8,
                     borderBottom: '1px solid #eee',
                     paddingTop: 12,
                     paddingBottom: 12,
+                    fontSize: 13,
+                    alignItems: 'start',
                   }}
                 >
+                  <div style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
+                    {item.product}
+                  </div>
+
                   <div
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto',
-                      gap: 8,
-                      alignItems: 'center',
+                      textAlign: 'right',
+                      fontVariantNumeric: 'tabular-nums',
+                      color: item.pre_prod < 0 ? 'salmon' : undefined,
+                      fontWeight: item.pre_prod < 0 ? 600 : undefined,
                     }}
                   >
-                    <div className="helper">{item.product}</div>
-                    <div
-                      className="helper"
-                      style={{
-                        textAlign: 'right',
-                        fontWeight: 600,
-                        color:
-                          item.qty < 0
-                            ? 'salmon'
-                            : item.qty === 0
-                              ? undefined
-                              : 'var(--primary)',
-                      }}
-                    >
-                      {intFmt.format(item.qty)}
-                    </div>
+                    {intFmt.format(Number(item.pre_prod))}
+                  </div>
+
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      fontVariantNumeric: 'tabular-nums',
+                      color: item.finished < 0 ? 'salmon' : undefined,
+                      fontWeight: item.finished < 0 ? 600 : undefined,
+                    }}
+                  >
+                    {intFmt.format(Number(item.finished))}
+                  </div>
+
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 600,
+                      color:
+                        item.qty < 0
+                          ? 'salmon'
+                          : item.qty === 0
+                            ? 'var(--text-secondary)'
+                            : 'var(--primary)',
+                    }}
+                  >
+                    {intFmt.format(Number(item.qty))}
                   </div>
                 </div>
               ))}

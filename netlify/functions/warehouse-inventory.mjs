@@ -21,15 +21,47 @@ async function getInventory(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Sum up quantities by product (including S entries which represent received supplier orders)
+    // Calculate detailed inventory matching Supply Chain Overview logic
     const inventory = await sql`
-      SELECT 
+      WITH wd AS (
+        SELECT
+          product,
+          product_id,
+          SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
+          SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
+          SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
+        FROM warehouse_deliveries
+        WHERE tenant_id = ${TENANT_ID}
+        GROUP BY product, product_id
+      ),
+      lp AS (
+        SELECT
+          p.id AS product_id,
+          p.name AS product,
+          SUM(lp.qty_produced) AS produced_qty
+        FROM labor_production lp
+        JOIN products p ON p.id = lp.product_id
+        WHERE lp.tenant_id = ${TENANT_ID}
+        GROUP BY p.id, p.name
+      ),
+      base AS (
+        SELECT
+          COALESCE(wd.product, lp.product) AS product,
+          COALESCE(wd.product_id, lp.product_id) AS product_id,
+          COALESCE(wd.pre_from_m, 0) AS pre_from_m,
+          COALESCE(wd.finished_from_p, 0) AS finished_from_p,
+          COALESCE(wd.outbound_qty, 0) AS outbound_qty,
+          COALESCE(lp.produced_qty, 0) AS produced_qty
+        FROM wd
+        FULL OUTER JOIN lp ON lp.product_id = wd.product_id
+      )
+      SELECT
         product,
         product_id,
-        SUM(qty) as qty
-      FROM warehouse_deliveries
-      WHERE tenant_id = ${TENANT_ID}
-      GROUP BY product, product_id
+        (pre_from_m - produced_qty) AS pre_prod,
+        (finished_from_p + produced_qty - outbound_qty) AS finished,
+        (pre_from_m + finished_from_p - outbound_qty) AS qty
+      FROM base
       ORDER BY product ASC
     `
 
