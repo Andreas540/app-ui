@@ -21,32 +21,28 @@ async function getInventory(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Calculate detailed inventory matching Supply Chain Overview logic
+    // Calculate detailed inventory - GROUP BY product_id and JOIN with products for current name
     const inventory = await sql`
       WITH wd AS (
         SELECT
-          product,
           product_id,
           SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
           SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
           SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
         FROM warehouse_deliveries
         WHERE tenant_id = ${TENANT_ID}
-        GROUP BY product, product_id
+        GROUP BY product_id
       ),
       lp AS (
         SELECT
-          p.id AS product_id,
-          p.name AS product,
-          SUM(lp.qty_produced) AS produced_qty
-        FROM labor_production lp
-        JOIN products p ON p.id = lp.product_id
-        WHERE lp.tenant_id = ${TENANT_ID}
-        GROUP BY p.id, p.name
+          product_id,
+          SUM(qty_produced) AS produced_qty
+        FROM labor_production
+        WHERE tenant_id = ${TENANT_ID}
+        GROUP BY product_id
       ),
       base AS (
         SELECT
-          COALESCE(wd.product, lp.product) AS product,
           COALESCE(wd.product_id, lp.product_id) AS product_id,
           COALESCE(wd.pre_from_m, 0) AS pre_from_m,
           COALESCE(wd.finished_from_p, 0) AS finished_from_p,
@@ -56,13 +52,15 @@ async function getInventory(event) {
         FULL OUTER JOIN lp ON lp.product_id = wd.product_id
       )
       SELECT
-        product,
-        product_id,
-        (pre_from_m - produced_qty) AS pre_prod,
-        (finished_from_p + produced_qty - outbound_qty) AS finished,
-        (pre_from_m + finished_from_p - outbound_qty) AS qty
+        p.name AS product,
+        base.product_id,
+        (base.pre_from_m - base.produced_qty) AS pre_prod,
+        (base.finished_from_p + base.produced_qty - base.outbound_qty) AS finished,
+        (base.pre_from_m + base.finished_from_p - base.outbound_qty) AS qty
       FROM base
-      ORDER BY product ASC
+      JOIN products p ON p.id = base.product_id
+      WHERE p.tenant_id = ${TENANT_ID}
+      ORDER BY p.name ASC
     `
 
     return cors(200, { inventory })

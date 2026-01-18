@@ -75,48 +75,45 @@ async function getSupplyChainOverview(event) {
 const warehouse_inventory = await sql`
   WITH wd AS (
     SELECT
-      product,
+      product_id,
       SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
       SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
       SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
     FROM warehouse_deliveries
     WHERE tenant_id = ${TENANT_ID}
-    GROUP BY product
+    GROUP BY product_id
   ),
   lp AS (
     SELECT
-      p.name AS product,
-      SUM(lp.qty_produced) AS produced_qty
-    FROM labor_production lp
-    JOIN products p ON p.id = lp.product_id
-    WHERE lp.tenant_id = ${TENANT_ID}
-    GROUP BY p.name
+      product_id,
+      SUM(qty_produced) AS produced_qty
+    FROM labor_production
+    WHERE tenant_id = ${TENANT_ID}
+    GROUP BY product_id
   ),
   base AS (
     SELECT
-      COALESCE(wd.product, lp.product) AS product,
+      COALESCE(wd.product_id, lp.product_id) AS product_id,
       COALESCE(wd.pre_from_m, 0) AS pre_from_m,
       COALESCE(wd.finished_from_p, 0) AS finished_from_p,
       COALESCE(wd.outbound_qty, 0) AS outbound_qty,
       COALESCE(lp.produced_qty, 0) AS produced_qty
     FROM wd
-    FULL OUTER JOIN lp ON lp.product = wd.product
+    FULL OUTER JOIN lp ON lp.product_id = wd.product_id
   )
   SELECT
-    product,
-    -- Pre-prod: manual + supplier received - production
-    (pre_from_m - produced_qty) AS pre_prod,
-    -- Finished: manual + production - deliveries
-    (finished_from_p + produced_qty - outbound_qty) AS finished,
-    -- Total: all inbound - all outbound
-    (pre_from_m + finished_from_p - outbound_qty) AS qty
+    p.name AS product,
+    (base.pre_from_m - base.produced_qty) AS pre_prod,
+    (base.finished_from_p + base.produced_qty - base.outbound_qty) AS finished,
+    (base.pre_from_m + base.finished_from_p - base.outbound_qty) AS qty
   FROM base
-  WHERE product IS NOT NULL
-    AND LOWER(product) NOT LIKE '%refund%'
-    AND LOWER(product) NOT LIKE '%discount%'
-    AND LOWER(product) NOT LIKE '%other product%'
-    AND LOWER(product) NOT LIKE '%other service%'
-  ORDER BY product ASC
+  JOIN products p ON p.id = base.product_id
+  WHERE p.tenant_id = ${TENANT_ID}
+    AND LOWER(p.name) NOT LIKE '%refund%'
+    AND LOWER(p.name) NOT LIKE '%discount%'
+    AND LOWER(p.name) NOT LIKE '%other product%'
+    AND LOWER(p.name) NOT LIKE '%other service%'
+  ORDER BY p.name ASC
 `
     const production_data = await sql`
       SELECT 
