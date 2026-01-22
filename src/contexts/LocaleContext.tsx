@@ -52,6 +52,17 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
+
+    // Automatically update locale based on language
+  const languageToLocaleMap: Record<string, { locale: string; currency: string }> = {
+    'en': { locale: 'en-US', currency: 'USD' },
+    'sv': { locale: 'sv-SE', currency: 'SEK' },
+    'es': { locale: 'es-ES', currency: 'EUR' },
+  };
+  
+  const localeData = languageToLocaleMap[lang] || { locale: 'en-US', currency: 'USD' };
+  setLocaleState(localeData.locale);
+  setCurrency(localeData.currency);
   };
 
   const setLocale = (loc: string) => {
