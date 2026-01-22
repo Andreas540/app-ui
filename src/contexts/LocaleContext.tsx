@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import i18n from '../i18n/config';  // Import directly, don't use useTranslation
+import i18n from '../i18n/config';
 import { useAuth } from './AuthContext';
 
 interface LocaleContextType {
@@ -9,6 +9,7 @@ interface LocaleContextType {
   currency: string;
   setLanguage: (lang: string) => void;
   setLocale: (locale: string) => void;
+  setCurrency: (currency: string) => void;
   availableLanguages: string[];
   formatCurrency: (amount: number) => string;
   formatDate: (date: Date) => string;
@@ -21,7 +22,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   
   const [language, setLanguageState] = useState<string>('en');
   const [locale, setLocaleState] = useState<string>('en-US');
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrencyState] = useState<string>('USD');
 
   // Load tenant/user preferences on mount
   useEffect(() => {
@@ -38,6 +39,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       setLocaleState(loc);
       i18n.changeLanguage(lang);
       
+      // Derive initial currency from locale
       const currencyMap: Record<string, string> = {
         'sv-SE': 'SEK',
         'en-US': 'USD',
@@ -45,36 +47,34 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         'es-ES': 'EUR',
         'es-MX': 'MXN',
       };
-      setCurrency(currencyMap[loc] || 'USD');
+      setCurrencyState(currencyMap[loc] || 'USD');
     }
   }, [user]);
 
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
-
-    // Automatically update locale based on language
-  const languageToLocaleMap: Record<string, { locale: string; currency: string }> = {
-    'en': { locale: 'en-US', currency: 'USD' },
-    'sv': { locale: 'sv-SE', currency: 'SEK' },
-    'es': { locale: 'es-ES', currency: 'EUR' },
-  };
-  
-  const localeData = languageToLocaleMap[lang] || { locale: 'en-US', currency: 'USD' };
-  setLocaleState(localeData.locale);
-  setCurrency(localeData.currency);
+    
+    // Update locale/date formatting based on language
+    const languageToLocale: Record<string, string> = {
+      'en': 'en-US',
+      'sv': 'sv-SE',
+      'es': 'es-ES',
+    };
+    
+    setLocaleState(languageToLocale[lang] || 'en-US');
+    // Currency is independent - NOT changed here
+    // TODO: Save to user preferences via API
   };
 
   const setLocale = (loc: string) => {
     setLocaleState(loc);
-    const currencyMap: Record<string, string> = {
-      'sv-SE': 'SEK',
-      'en-US': 'USD',
-      'en-GB': 'GBP',
-      'es-ES': 'EUR',
-      'es-MX': 'MXN',
-    };
-    setCurrency(currencyMap[loc] || 'USD');
+    // TODO: Save to user preferences via API
+  };
+
+  const setCurrency = (curr: string) => {
+    setCurrencyState(curr);
+    // TODO: Save to user preferences via API
   };
 
   const formatCurrency = (amount: number) => {
@@ -102,6 +102,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         currency,
         setLanguage,
         setLocale,
+        setCurrency,
         availableLanguages,
         formatCurrency,
         formatDate,
