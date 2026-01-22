@@ -8,30 +8,37 @@ export function LanguageSwitcherTest() {
   return (
     <div style={{ 
       padding: '20px', 
-      border: '2px solid #333', 
+      border: '3px solid #ff0000', 
       margin: '20px',
-      backgroundColor: '#f0f0f0'
+      backgroundColor: '#ffffff',
+      color: '#000000'
     }}>
-      <h2>🧪 i18n Test Component</h2>
+      <h2 style={{ color: '#000000' }}>🧪 i18n Test Component</h2>
       
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '20px', color: '#000000' }}>
         <strong>Current Language:</strong> {language}
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <strong>Switch Language:</strong>
+        <strong style={{ color: '#000000' }}>Switch Language:</strong>
+        <br />
         {availableLanguages.map(lang => (
           <button
             key={lang}
-            onClick={() => setLanguage(lang)}
+            onClick={() => {
+              console.log('Switching to:', lang);
+              setLanguage(lang);
+            }}
             style={{
-              margin: '0 5px',
-              padding: '8px 16px',
-              backgroundColor: language === lang ? '#007bff' : '#ccc',
-              color: language === lang ? 'white' : 'black',
-              border: 'none',
+              margin: '5px',
+              padding: '12px 24px',
+              backgroundColor: language === lang ? '#007bff' : '#6c757d',
+              color: 'white',
+              border: '2px solid #000',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
             }}
           >
             {lang.toUpperCase()}
@@ -39,9 +46,9 @@ export function LanguageSwitcherTest() {
         ))}
       </div>
 
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ marginBottom: '10px', color: '#000000' }}>
         <strong>Translations Test:</strong>
-        <ul>
+        <ul style={{ color: '#000000' }}>
           <li>common:save = "{t('common:save')}"</li>
           <li>common:cancel = "{t('common:cancel')}"</li>
           <li>common:delete = "{t('common:delete')}"</li>
@@ -49,9 +56,9 @@ export function LanguageSwitcherTest() {
         </ul>
       </div>
 
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ marginBottom: '10px', color: '#000000' }}>
         <strong>Formatting Test:</strong>
-        <ul>
+        <ul style={{ color: '#000000' }}>
           <li>Currency: {formatCurrency(12345.67)}</li>
           <li>Date: {formatDate(new Date())}</li>
         </ul>
