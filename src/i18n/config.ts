@@ -2,20 +2,21 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
 
+console.log('🌍 i18n config loading...');
+
 i18n
   .use(HttpBackend)
   .use(initReactI18next)
   .init({
     fallbackLng: 'en',
-    lng: 'en', // Default language
-    debug: false, // Set to true if you want to see loading details in console
+    lng: 'en',
+    debug: true,
     
-    // Available namespaces
     ns: ['common', 'navigation', 'validation'],
     defaultNS: 'common',
     
     interpolation: {
-      escapeValue: false, // React already escapes by default
+      escapeValue: false,
     },
     
     backend: {
@@ -23,8 +24,13 @@ i18n
     },
     
     react: {
-      useSuspense: true,
+      useSuspense: false,
     },
+  }).then(() => {
+    console.log('✅ i18n initialized successfully');
+    console.log('Language:', i18n.language);
+  }).catch((err) => {
+    console.error('❌ i18n initialization failed:', err);
   });
 
 export default i18n;
