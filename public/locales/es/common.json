@@ -1,0 +1,21 @@
+{
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "create": "Crear",
+  "close": "Cerrar",
+  "back": "Atrás",
+  "next": "Siguiente",
+  "loading": "Cargando...",
+  "search": "Buscar",
+  "filter": "Filtrar",
+  "export": "Exportar",
+  "import": "Importar",
+  "settings": "Configuración",
+  "logout": "Cerrar sesión",
+  "yes": "Sí",
+  "no": "No",
+  "confirm": "Confirmar",
+  "actions": "Acciones"
+}

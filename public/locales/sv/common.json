@@ -1,0 +1,21 @@
+{
+  "save": "Spara",
+  "cancel": "Avbryt",
+  "delete": "Ta bort",
+  "edit": "Redigera",
+  "create": "Skapa",
+  "close": "Stäng",
+  "back": "Tillbaka",
+  "next": "Nästa",
+  "loading": "Laddar...",
+  "search": "Sök",
+  "filter": "Filtrera",
+  "export": "Exportera",
+  "import": "Importera",
+  "settings": "Inställningar",
+  "logout": "Logga ut",
+  "yes": "Ja",
+  "no": "Nej",
+  "confirm": "Bekräfta",
+  "actions": "Åtgärder"
+}

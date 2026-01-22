@@ -1,0 +1,5 @@
+{
+  "required": "Este campo es obligatorio",
+  "invalidEmail": "Dirección de correo inválida",
+  "invalidNumber": "Debe ser un número"
+}

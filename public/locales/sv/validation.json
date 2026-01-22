@@ -1,0 +1,5 @@
+{
+  "required": "Detta fält är obligatoriskt",
+  "invalidEmail": "Ogiltig e-postadress",
+  "invalidNumber": "Måste vara ett nummer"
+}

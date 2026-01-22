@@ -51,7 +51,10 @@ async function handleVerify(event) {
           tm.features as user_features,
           t.name as tenant_name,
           t.business_type,
-          t.features as tenant_features
+          t.features as tenant_features,
+          t.default_language as tenant_default_language,
+          t.default_locale as tenant_default_locale,
+          t.available_languages as tenant_available_languages
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
         WHERE tm.user_id = ${decoded.userId}::uuid
@@ -70,7 +73,9 @@ async function handleVerify(event) {
           u.email,
           u.name,
           u.access_level,
-          u.active
+          u.active,
+          u.preferred_language,
+          u.preferred_locale
         FROM users u
         WHERE u.id = ${decoded.userId}
         LIMIT 1
@@ -105,7 +110,12 @@ async function handleVerify(event) {
           tenantId: membership[0].tenant_id,
           tenantName: membership[0].tenant_name,
           businessType: membership[0].business_type,
-          features: effectiveFeatures
+          features: effectiveFeatures,
+          preferred_language: user.preferred_language,
+          preferred_locale: user.preferred_locale,
+          tenant_default_language: membership[0].tenant_default_language,
+          tenant_default_locale: membership[0].tenant_default_locale,
+          tenant_available_languages: membership[0].tenant_available_languages
         }
       })
     }
@@ -120,9 +130,14 @@ async function handleVerify(event) {
         u.access_level,
         u.tenant_id,
         u.active,
+        u.preferred_language,
+        u.preferred_locale,
         t.name as tenant_name,
         t.business_type,
-        t.features as tenant_features
+        t.features as tenant_features,
+        t.default_language as tenant_default_language,
+        t.default_locale as tenant_default_locale,
+        t.available_languages as tenant_available_languages
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ${decoded.userId}
@@ -167,7 +182,12 @@ async function handleVerify(event) {
         tenantId: user.tenant_id,
         tenantName: user.tenant_name,
         businessType: user.business_type,
-        features: effectiveFeatures
+        features: effectiveFeatures,
+        preferred_language: user.preferred_language,
+        preferred_locale: user.preferred_locale,
+        tenant_default_language: user.tenant_default_language,
+        tenant_default_locale: user.tenant_default_locale,
+        tenant_available_languages: user.tenant_available_languages
       }
     })
 
