@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import i18n from '../i18n/config';  // Import directly, don't use useTranslation
 import { useAuth } from './AuthContext';
 
 interface LocaleContextType {
@@ -17,17 +17,15 @@ interface LocaleContextType {
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const { i18n } = useTranslation();
   const { user } = useAuth();
   
   const [language, setLanguageState] = useState<string>('en');
   const [locale, setLocaleState] = useState<string>('en-US');
   const [currency, setCurrency] = useState<string>('USD');
 
-  // Load tenant/user preferences
+  // Load tenant/user preferences on mount
   useEffect(() => {
     if (user) {
-      // Priority: user preference → tenant default → 'en'
       const userLang = user.preferred_language;
       const tenantLang = user.tenant_default_language || 'en';
       const lang = userLang || tenantLang;
@@ -40,7 +38,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       setLocaleState(loc);
       i18n.changeLanguage(lang);
       
-      // Derive currency from locale
       const currencyMap: Record<string, string> = {
         'sv-SE': 'SEK',
         'en-US': 'USD',
@@ -50,17 +47,15 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       };
       setCurrency(currencyMap[loc] || 'USD');
     }
-  }, [user, i18n]);
+  }, [user]);
 
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
-    // TODO: Save to user preferences via API
   };
 
   const setLocale = (loc: string) => {
     setLocaleState(loc);
-    // Update currency based on locale
     const currencyMap: Record<string, string> = {
       'sv-SE': 'SEK',
       'en-US': 'USD',
@@ -69,7 +64,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       'es-MX': 'MXN',
     };
     setCurrency(currencyMap[loc] || 'USD');
-    // TODO: Save to user preferences via API
   };
 
   const formatCurrency = (amount: number) => {
