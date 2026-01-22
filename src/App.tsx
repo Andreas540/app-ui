@@ -42,7 +42,6 @@ import TimeEntry from './pages/TimeEntry'
 import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
-import { LanguageSwitcherTest } from './components/LanguageSwitcherTest'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -308,8 +307,7 @@ useEffect(() => {
   const currentTenantName = currentTenant?.name || user?.tenantName || 'My Biz'
 
   return (
-    <div className="app">
-      <LanguageSwitcherTest />
+    <div className="app">      
       <header className="topbar">        
         <div className="brand">
           <button className="hamburger" aria-label="Toggle menu" onClick={() => setNavOpen(v => !v)}>
