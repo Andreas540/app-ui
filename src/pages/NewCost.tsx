@@ -92,9 +92,18 @@ const NewCost = () => {
 
   // Apply pending cost type value once options are loaded
   useEffect(() => {
+    console.log('=== PENDING COST TYPE EFFECT ===');
+    console.log('pendingCostTypeValue:', pendingCostTypeValue);
+    console.log('costTypeOptions.length:', costTypeOptions.length);
+    console.log('costTypeOptions:', costTypeOptions);
+    
     if (pendingCostTypeValue && costTypeOptions.length > 0) {
+      console.log('Applying pending cost type:', pendingCostTypeValue);
       setCostType(pendingCostTypeValue);
       setPendingCostTypeValue(null);
+      console.log('Pending cost type applied and cleared');
+    } else {
+      console.log('Conditions not met for applying pending cost type');
     }
   }, [costTypeOptions, pendingCostTypeValue]);
 
@@ -167,18 +176,19 @@ const NewCost = () => {
       console.log('Cost Type:', costType);
       console.log('Detail:', detail);
       
-      // Clear any previous state first
+      // STEP 1: Clear everything first
       setCostType('');
+      setCostTypeOptions([]);
       setPendingCostTypeValue(null);
       
-      // Set edit mode
+      // STEP 2: Set edit mode
       setEditingCostId(costId);
       setEditingCostType(costType);
       
-      // Set business/private type (infer from viewMode)
+      // STEP 3: Set business/private type
       setBusinessPrivate(viewMode);
       
-      // Find the cost category based on type
+      // STEP 4: Determine category
       let category = '';
       if (costType === 'recurring') {
         category = viewMode === 'B' ? 'Business recurring cost' : 'Private recurring cost';
@@ -186,43 +196,30 @@ const NewCost = () => {
         category = viewMode === 'B' ? 'Business non-recurring cost' : 'Private non-recurring cost';
       }
       
-      // Store the cost type value to be applied after options load
       const targetCostType = detail.cost_type || '';
       console.log('Target cost type to set:', targetCostType);
       
-      // Load cost type options for this category
-      try {
-        console.log('Loading cost types for category:', category);
-        const response = await getCostTypes(category);
-        const types = response.types || [];
-        console.log('Loaded cost type options:', types);
-        
-        // Set options in state
-        setCostTypeOptions(types);
-        
-        // Set category
-        setCostCategory(category);
-        
-        // CRITICAL: Use setTimeout to ensure options are in DOM before setting value
-        // This ensures the select element has rendered with new options
-        setTimeout(() => {
-          console.log('Applying cost type after render:', targetCostType);
-          setCostType(targetCostType);
-        }, 0);
-        
-      } catch (err) {
-        console.error('Error loading cost types for edit:', err);
-        // Fallback to pending mechanism
-        setCostCategory(category);
-        setPendingCostTypeValue(targetCostType);
-      }
+      // STEP 5: Load options
+      console.log('Loading cost types for category:', category);
+      const response = await getCostTypes(category);
+      const types = response.types || [];
+      console.log('Loaded cost type options:', types);
       
-      // Set other form fields
+      // STEP 6: Set everything in the right order
+      // First set the pending value (what we want to apply)
+      setPendingCostTypeValue(targetCostType);
+      
+      // Then set the options (this will trigger the useEffect)
+      setCostTypeOptions(types);
+      
+      // Then set the category
+      setCostCategory(category);
+      
+      // STEP 7: Set other form fields
       setCost(detail.cost || '');
       setAmount(formatCurrency(detail.amount));
       
       if (costType === 'recurring' && detail.start_date) {
-        // Format date to YYYY-MM-DD (extract date part only)
         const startDate = String(detail.start_date).split('T')[0];
         setCostDate(startDate);
         
@@ -238,14 +235,13 @@ const NewCost = () => {
           recur_interval: detail.recur_interval || 1
         });
       } else if (detail.cost_date) {
-        // Format date to YYYY-MM-DD (extract date part only)
         const costDate = String(detail.cost_date).split('T')[0];
         setCostDate(costDate);
       }
       
       setError('');
       
-      console.log('Edit setup complete');
+      console.log('Edit setup complete - waiting for useEffect to apply cost type');
       
       // Scroll to form
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
