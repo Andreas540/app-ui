@@ -270,6 +270,40 @@ async function getExistingCosts(params) {
     const recurring = Array.from(recurringMap.values())
     const non_recurring = Array.from(nonRecurringMap.values())
 
+    // Sort recurring costs: 1. Date (latest first), 2. Amount (highest first)
+    recurring.sort((a, b) => {
+      const dateA = parseMonthYear(a.start_month)
+      const dateB = parseMonthYear(b.start_month)
+      
+      if (dateB.getTime() !== dateA.getTime()) {
+        return dateB.getTime() - dateA.getTime() // Latest date first
+      }
+      
+      return b.total_amount - a.total_amount // Highest amount first
+    })
+
+    // Sort details within each recurring group by amount (highest first)
+    recurring.forEach(group => {
+      group.details.sort((a, b) => b.amount - a.amount)
+    })
+
+    // Sort non-recurring costs: 1. Date (latest first), 2. Amount (highest first)
+    non_recurring.sort((a, b) => {
+      const dateA = parseMonthYear(a.month)
+      const dateB = parseMonthYear(b.month)
+      
+      if (dateB.getTime() !== dateA.getTime()) {
+        return dateB.getTime() - dateA.getTime() // Latest date first
+      }
+      
+      return b.total_amount - a.total_amount // Highest amount first
+    })
+
+    // Sort details within each non-recurring group by amount (highest first)
+    non_recurring.forEach(group => {
+      group.details.sort((a, b) => b.amount - a.amount)
+    })
+
     console.log('Returning', recurring.length, 'recurring groups,', non_recurring.length, 'non-recurring groups')
 
     return cors(200, {
@@ -356,6 +390,19 @@ function shouldOccurInMonth(startDate, targetMonth, recurKind, recurInterval) {
   } catch (e) {
     console.error('shouldOccurInMonth error:', e)
     return true
+  }
+}
+
+// Helper function to parse MM/YYYY into a Date for sorting
+// Input: MM/YYYY string
+// Output: Date object (first day of that month)
+function parseMonthYear(monthYear) {
+  try {
+    const [month, year] = monthYear.split('/')
+    return new Date(parseInt(year), parseInt(month) - 1, 1)
+  } catch (e) {
+    console.error('parseMonthYear error:', e, 'input:', monthYear)
+    return new Date(0) // Return epoch if parsing fails
   }
 }
 
