@@ -12,7 +12,7 @@ interface RecurringCostSummary {
   start_month: string;
   total_amount: number;
   details: Array<{
-    id: number;
+    id: number | string;
     cost: string;
     amount: number;
     start_date?: string;
@@ -27,7 +27,7 @@ interface NonRecurringCostSummary {
   month: string;
   total_amount: number;
   details: Array<{
-    id: number;
+    id: number | string;
     cost: string;
     amount: number;
     cost_date?: string;
@@ -39,8 +39,9 @@ const NewCost = () => {
   const formRef = useRef<HTMLDivElement>(null);
   
   // Edit state
-  const [editingCostId, setEditingCostId] = useState<number | null>(null);
+  const [editingCostId, setEditingCostId] = useState<number | string | null>(null);
   const [editingCostType, setEditingCostType] = useState<'recurring' | 'non-recurring' | null>(null);
+  const [pendingCostTypeValue, setPendingCostTypeValue] = useState<string | null>(null);
   
   // Form state
   const [businessPrivate, setBusinessPrivate] = useState<'B' | 'P'>('B');
@@ -88,6 +89,14 @@ const NewCost = () => {
       setCostType('');
     }
   }, [costCategory]);
+
+  // Apply pending cost type value once options are loaded
+  useEffect(() => {
+    if (pendingCostTypeValue && costTypeOptions.length > 0) {
+      setCostType(pendingCostTypeValue);
+      setPendingCostTypeValue(null);
+    }
+  }, [costTypeOptions, pendingCostTypeValue]);
 
   // Load costs when viewMode changes
   useEffect(() => {
@@ -151,7 +160,7 @@ const NewCost = () => {
   };
 
   // Edit a cost - populate form with existing data
-  const handleEditCost = async (costId: number, costType: 'recurring' | 'non-recurring', detail: any) => {
+  const handleEditCost = async (costId: number | string, costType: 'recurring' | 'non-recurring', detail: any) => {
     try {
       setEditingCostId(costId);
       setEditingCostType(costType);
@@ -167,18 +176,13 @@ const NewCost = () => {
         category = viewMode === 'B' ? 'Business non-recurring cost' : 'Private non-recurring cost';
       }
       
+      // Store the cost type value to be applied after options load
+      setPendingCostTypeValue(detail.cost_type || '');
+      
+      // Set category (this will trigger loadCostTypeOptions via useEffect)
       setCostCategory(category);
       
-      // Load cost type options for this category and wait for it to complete
-      try {
-        const response = await getCostTypes(category);
-        setCostTypeOptions(response.types || []);
-      } catch (err) {
-        console.error('Error loading cost types for edit:', err);
-      }
-      
-      // Now set the cost type after options are loaded
-      setCostType(detail.cost_type || '');
+      // Set other form fields
       setCost(detail.cost || '');
       setAmount(formatCurrency(detail.amount));
       
@@ -429,6 +433,7 @@ const NewCost = () => {
   const handleClear = () => {
     setEditingCostId(null);
     setEditingCostType(null);
+    setPendingCostTypeValue(null);
     setCostCategory('');
     setRecurringDetails({ recur_kind: 'monthly', recur_interval: 1 });
     setCostType('');

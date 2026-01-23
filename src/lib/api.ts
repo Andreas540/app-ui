@@ -365,7 +365,7 @@ export async function getExistingCosts(businessPrivate: 'B' | 'P') {
 }
 
 export async function updateCost(
-  costId: number,
+  costId: number | string,
   costType: 'recurring' | 'non-recurring',
   costData: {
     business_private: 'B' | 'P'
@@ -403,7 +403,7 @@ export async function updateCost(
 }
 
 export async function deleteCost(
-  costId: number,
+  costId: number | string,
   costType: 'recurring' | 'non-recurring'
 ) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''

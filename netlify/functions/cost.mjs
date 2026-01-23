@@ -634,9 +634,9 @@ async function updateCost(event) {
     console.log('Full event.queryStringParameters:', JSON.stringify(params))
     console.log('Extracted costId:', costId, 'Type:', typeof costId)
     console.log('Extracted costType:', costType)
-    console.log('isNaN(Number(costId)):', isNaN(Number(costId)))
 
-    if (!costId || isNaN(Number(costId))) {
+    // Validate costId (should be a UUID string or numeric ID)
+    if (!costId || String(costId).trim() === '') {
       console.error('Invalid costId - costId:', costId, 'typeof:', typeof costId)
       return cors(400, { 
         error: 'Valid cost ID required',
@@ -775,7 +775,8 @@ async function deleteCost(event) {
 
     console.log('Delete cost - ID:', costId, 'Type:', costType)
 
-    if (!costId || isNaN(Number(costId))) {
+    // Validate costId (should be a UUID string or numeric ID)
+    if (!costId || String(costId).trim() === '') {
       return cors(400, { error: 'Valid cost ID required' })
     }
 
