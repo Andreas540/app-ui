@@ -381,13 +381,22 @@ export async function updateCost(
   }
 ) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const response = await fetch(`${base}/api/cost?id=${costId}&type=${costType}`, {
+  const url = `${base}/api/cost?id=${costId}&type=${costType}`
+  
+  console.log('=== API UPDATE COST ===');
+  console.log('Constructed URL:', url);
+  console.log('costId:', costId, 'type:', typeof costId);
+  console.log('costType:', costType);
+  
+  const response = await fetch(url, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(costData)
   });
+  
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to update cost' }));
+    console.error('Update cost failed:', error);
     throw new Error(error.error || 'Failed to update cost');
   }
   return response.json();

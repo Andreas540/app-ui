@@ -401,6 +401,12 @@ const NewCost = () => {
 
       if (editingCostId && editingCostType) {
         // Update existing cost
+        console.log('=== FRONTEND UPDATE DEBUG ===');
+        console.log('Calling updateCost with:');
+        console.log('- costId:', editingCostId, 'type:', typeof editingCostId);
+        console.log('- costType:', editingCostType);
+        console.log('- costData:', costData);
+        
         await updateCost(editingCostId, editingCostType, costData);
         alert('Cost updated successfully!');
       } else {

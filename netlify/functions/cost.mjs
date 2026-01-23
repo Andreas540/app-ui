@@ -629,10 +629,23 @@ async function updateCost(event) {
     const costId = params.id
     const costType = params.type // 'recurring' or 'non-recurring'
 
-    console.log('Update cost - ID:', costId, 'Type:', costType)
+    console.log('=== UPDATE COST DEBUG ===')
+    console.log('Full event.path:', event.path)
+    console.log('Full event.queryStringParameters:', JSON.stringify(params))
+    console.log('Extracted costId:', costId, 'Type:', typeof costId)
+    console.log('Extracted costType:', costType)
+    console.log('isNaN(Number(costId)):', isNaN(Number(costId)))
 
     if (!costId || isNaN(Number(costId))) {
-      return cors(400, { error: 'Valid cost ID required' })
+      console.error('Invalid costId - costId:', costId, 'typeof:', typeof costId)
+      return cors(400, { 
+        error: 'Valid cost ID required',
+        debug: {
+          received_id: costId,
+          received_type: costType,
+          params: params
+        }
+      })
     }
 
     if (!costType || !['recurring', 'non-recurring'].includes(costType)) {
