@@ -143,29 +143,35 @@ async function getExistingCosts(params) {
       return cors(400, { error: 'Invalid type. Must be B or P' })
     }
 
-    // Calculate cutoff date: first day of 2 months ago
-    // Current month + 2 previous = 3 months total
+    // Calculate 3-month window: current month + 2 previous months
     const now = new Date()
     const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-    const year = twoMonthsAgo.getFullYear()
-    const month = String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')
-    const cutoffDate = `${year}-${month}-01`
+    const windowStartDate = `${twoMonthsAgo.getFullYear()}-${String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`
+    
+    // End of current month
+    const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const windowEndDate = `${endOfCurrentMonth.getFullYear()}-${String(endOfCurrentMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfCurrentMonth.getDate()).padStart(2, '0')}`
 
-    console.log('Fetching costs from', cutoffDate, 'onwards (current month + 2 previous months)')
+    console.log('Fetching costs for window:', windowStartDate, 'to', windowEndDate)
     console.log('Type:', type, 'Tenant:', TENANT_ID)
 
-    // Get recurring costs from last 3 months
+    // Get recurring costs that were active during the 3-month window
+    // A cost is active if it started before/during the window AND hasn't ended before the window
     const recurringRaw = await sql`
       SELECT 
         id,
         cost_type,
         cost,
         start_date,
-        amount
+        end_date,
+        amount,
+        recur_kind,
+        recur_interval
       FROM costs_recurring
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
-        AND start_date >= ${cutoffDate}
+        AND start_date <= ${windowEndDate}
+        AND (end_date IS NULL OR end_date >= ${windowStartDate})
       ORDER BY start_date DESC, cost_type
     `
 
@@ -185,42 +191,54 @@ async function getExistingCosts(params) {
       FROM costs
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
-        AND cost_date >= ${cutoffDate}
+        AND cost_date >= ${windowStartDate}
       ORDER BY cost_date DESC, cost_type
     `
 
     console.log('Non-recurring costs found:', nonRecurringRaw.length)
     if (nonRecurringRaw.length > 0) {
       console.log('Sample non-recurring:', JSON.stringify(nonRecurringRaw[0]))
-      console.log('Sample cost_date type:', typeof nonRecurringRaw[0].cost_date)
-      console.log('Sample cost_date value:', nonRecurringRaw[0].cost_date)
     }
 
-    // Process recurring costs - aggregate by cost_type and start_month
+    // Process recurring costs - expand to each active month in the window
     const recurringMap = new Map()
     
     for (const row of recurringRaw) {
       console.log('Processing recurring row:', JSON.stringify(row))
-      const startMonth = formatMonthYear(row.start_date)
-      console.log('Formatted start_month:', startMonth)
-      const key = `${row.cost_type}|${startMonth}`
       
-      if (!recurringMap.has(key)) {
-        recurringMap.set(key, {
-          cost_type: row.cost_type,
-          start_month: startMonth,
-          total_amount: 0,
-          details: []
+      // Get all months this cost was active in the window
+      const activeMonths = getActiveMonths(
+        row.start_date,
+        row.end_date,
+        windowStartDate,
+        windowEndDate,
+        row.recur_kind,
+        row.recur_interval
+      )
+      
+      console.log('Active months for cost', row.id, ':', activeMonths)
+      
+      // Create an entry for each active month
+      for (const month of activeMonths) {
+        const key = `${row.cost_type}|${month}`
+        
+        if (!recurringMap.has(key)) {
+          recurringMap.set(key, {
+            cost_type: row.cost_type,
+            start_month: month,
+            total_amount: 0,
+            details: []
+          })
+        }
+        
+        const group = recurringMap.get(key)
+        group.total_amount += Number(row.amount)
+        group.details.push({
+          id: row.id,
+          cost: row.cost || '',
+          amount: Number(row.amount)
         })
       }
-      
-      const group = recurringMap.get(key)
-      group.total_amount += Number(row.amount)
-      group.details.push({
-        id: row.id,
-        cost: row.cost || '',
-        amount: Number(row.amount)
-      })
     }
 
     // Process non-recurring costs - aggregate by cost_type and month
@@ -262,6 +280,82 @@ async function getExistingCosts(params) {
   } catch (e) {
     console.error('getExistingCosts error:', e)
     return cors(500, { error: String(e?.message || e) })
+  }
+}
+
+// Helper function to get all months a recurring cost was active in the window
+// Returns array of MM/YYYY strings for each month the cost occurred
+function getActiveMonths(startDate, endDate, windowStart, windowEnd, recurKind, recurInterval) {
+  const months = []
+  
+  try {
+    // Parse dates
+    const start = new Date(startDate)
+    const end = endDate ? new Date(endDate) : null
+    const winStart = new Date(windowStart)
+    const winEnd = new Date(windowEnd)
+    
+    // Get the first day of each month in the window
+    const currentMonth = new Date(winStart.getFullYear(), winStart.getMonth(), 1)
+    
+    while (currentMonth <= winEnd) {
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+      
+      // Check if this month overlaps with the recurring cost's active period
+      const isActiveInMonth = 
+        start <= monthEnd && // Cost started before or during this month
+        (!end || end >= currentMonth) // Cost hasn't ended, or ended during or after this month
+      
+      if (isActiveInMonth) {
+        // Check if this month matches the recurrence pattern
+        const shouldOccur = shouldOccurInMonth(start, currentMonth, recurKind, recurInterval)
+        
+        if (shouldOccur) {
+          months.push(formatMonthYear(currentMonth))
+        }
+      }
+      
+      // Move to next month
+      currentMonth.setMonth(currentMonth.getMonth() + 1)
+    }
+  } catch (e) {
+    console.error('getActiveMonths error:', e)
+  }
+  
+  return months
+}
+
+// Helper function to determine if a recurring cost should occur in a given month
+// based on start date, recurrence kind, and interval
+function shouldOccurInMonth(startDate, targetMonth, recurKind, recurInterval) {
+  try {
+    if (recurKind === 'monthly') {
+      // Calculate months difference
+      const monthsDiff = 
+        (targetMonth.getFullYear() - startDate.getFullYear()) * 12 + 
+        (targetMonth.getMonth() - startDate.getMonth())
+      
+      // Should occur if the month difference is divisible by the interval
+      return monthsDiff >= 0 && monthsDiff % recurInterval === 0
+      
+    } else if (recurKind === 'yearly') {
+      // Should occur if it's the same month and year difference is divisible by interval
+      const yearsDiff = targetMonth.getFullYear() - startDate.getFullYear()
+      const sameMonth = targetMonth.getMonth() === startDate.getMonth()
+      
+      return sameMonth && yearsDiff >= 0 && yearsDiff % recurInterval === 0
+      
+    } else if (recurKind === 'weekly') {
+      // For weekly recurring costs, they occur in every month they're active
+      // (More precise week calculation would be complex and may not be needed)
+      return true
+    }
+    
+    // Default to true if we can't determine
+    return true
+  } catch (e) {
+    console.error('shouldOccurInMonth error:', e)
+    return true
   }
 }
 
