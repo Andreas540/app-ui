@@ -37,6 +37,7 @@ interface NonRecurringCostSummary {
 const NewCost = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
+  const isEditingRef = useRef<boolean>(false);
   
   // Edit state
   const [editingCostId, setEditingCostId] = useState<number | string | null>(null);
@@ -77,14 +78,20 @@ const NewCost = () => {
 
   // Load cost category options when businessPrivate changes
   useEffect(() => {
+    // Skip automatic loading if we're in edit mode (manual load handles it)
+    if (isEditingRef.current) {
+      console.log('Skipping automatic category load - in edit mode (ref)');
+      return;
+    }
+    
     loadCostCategoryOptions();
   }, [businessPrivate]);
 
   // Load cost type options when cost category changes
   useEffect(() => {
     // Skip automatic loading if we're in edit mode (manual load handles it)
-    if (editingCostId !== null) {
-      console.log('Skipping automatic cost type load - in edit mode');
+    if (isEditingRef.current) {
+      console.log('Skipping automatic cost type load - in edit mode (ref)');
       return;
     }
     
@@ -94,7 +101,7 @@ const NewCost = () => {
       setCostTypeOptions([]);
       setCostType('');
     }
-  }, [costCategory, editingCostId]);
+  }, [costCategory]);
 
   // Apply pending cost type value once options are loaded
   useEffect(() => {
@@ -122,8 +129,12 @@ const NewCost = () => {
     try {
       const response = await getCostCategories(businessPrivate);
       setCostCategoryOptions(response.categories || []);
-      setCostCategory('');
-      setCostType('');
+      
+      // Only clear these if NOT in edit mode
+      if (editingCostId === null) {
+        setCostCategory('');
+        setCostType('');
+      }
     } catch (err) {
       console.error('Error loading cost categories:', err);
       setError('Failed to load cost categories');
@@ -177,6 +188,9 @@ const NewCost = () => {
   // Edit a cost - populate form with existing data
   const handleEditCost = async (costId: number | string, costType: 'recurring' | 'non-recurring', detail: any) => {
     try {
+      // CRITICAL: Set ref FIRST before any state changes
+      isEditingRef.current = true;
+      
       console.log('=== EDIT COST DEBUG ===');
       console.log('Cost ID:', costId);
       console.log('Cost Type:', costType);
@@ -186,12 +200,13 @@ const NewCost = () => {
       setCostType('');
       setPendingCostTypeValue(null);
       
-      // STEP 2: Set edit mode
+      // STEP 2: Set business/private type FIRST (before edit mode)
+      // This prevents the checkbox change from interfering with the edit flow
+      setBusinessPrivate(viewMode);
+      
+      // STEP 3: Set edit mode AFTER businessPrivate is set
       setEditingCostId(costId);
       setEditingCostType(costType);
-      
-      // STEP 3: Set business/private type
-      setBusinessPrivate(viewMode);
       
       // STEP 4: Determine category
       let category = '';
@@ -469,6 +484,7 @@ const NewCost = () => {
   };
 
   const handleClear = () => {
+    isEditingRef.current = false;
     setEditingCostId(null);
     setEditingCostType(null);
     setPendingCostTypeValue(null);
