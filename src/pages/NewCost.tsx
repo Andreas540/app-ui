@@ -167,7 +167,8 @@ const NewCost = () => {
       console.log('Cost Type:', costType);
       console.log('Detail:', detail);
       
-      // First, clear any pending values from previous edit
+      // Clear any previous state first
+      setCostType('');
       setPendingCostTypeValue(null);
       
       // Set edit mode
@@ -195,19 +196,20 @@ const NewCost = () => {
         const response = await getCostTypes(category);
         const types = response.types || [];
         console.log('Loaded cost type options:', types);
+        
+        // Set options in state
         setCostTypeOptions(types);
         
-        // Set category after loading options
+        // Set category
         setCostCategory(category);
         
-        // Immediately set cost type if options are loaded
-        if (types.includes(targetCostType)) {
-          console.log('Setting cost type immediately:', targetCostType);
+        // CRITICAL: Use setTimeout to ensure options are in DOM before setting value
+        // This ensures the select element has rendered with new options
+        setTimeout(() => {
+          console.log('Applying cost type after render:', targetCostType);
           setCostType(targetCostType);
-        } else {
-          console.log('Cost type not in options, setting pending:', targetCostType);
-          setPendingCostTypeValue(targetCostType);
-        }
+        }, 0);
+        
       } catch (err) {
         console.error('Error loading cost types for edit:', err);
         // Fallback to pending mechanism
