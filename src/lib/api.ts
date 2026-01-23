@@ -381,7 +381,7 @@ export async function updateCost(
   }
 ) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const response = await fetch(`${base}/api/cost/${costId}?type=${costType}`, {
+  const response = await fetch(`${base}/api/cost?id=${costId}&type=${costType}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(costData)
@@ -398,7 +398,7 @@ export async function deleteCost(
   costType: 'recurring' | 'non-recurring'
 ) {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const response = await fetch(`${base}/api/cost/${costId}?type=${costType}`, {
+  const response = await fetch(`${base}/api/cost?id=${costId}&type=${costType}`, {
     method: 'DELETE',
     headers: getAuthHeaders()
   });

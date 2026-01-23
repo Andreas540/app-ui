@@ -169,9 +169,15 @@ const NewCost = () => {
       
       setCostCategory(category);
       
-      // Wait for cost type options to load
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Load cost type options for this category and wait for it to complete
+      try {
+        const response = await getCostTypes(category);
+        setCostTypeOptions(response.types || []);
+      } catch (err) {
+        console.error('Error loading cost types for edit:', err);
+      }
       
+      // Now set the cost type after options are loaded
       setCostType(detail.cost_type || '');
       setCost(detail.cost || '');
       setAmount(formatCurrency(detail.amount));

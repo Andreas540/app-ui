@@ -624,11 +624,12 @@ async function updateCost(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Get cost ID and type from path (e.g., /api/costs/123?type=recurring)
-    const path = event.path || ''
+    // Get cost ID and type from query parameters
     const params = event.queryStringParameters || {}
-    const costId = path.split('/').pop()
+    const costId = params.id
     const costType = params.type // 'recurring' or 'non-recurring'
+
+    console.log('Update cost - ID:', costId, 'Type:', costType)
 
     if (!costId || isNaN(Number(costId))) {
       return cors(400, { error: 'Valid cost ID required' })
@@ -754,11 +755,12 @@ async function deleteCost(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Get cost ID and type from path (e.g., /api/costs/123?type=recurring)
-    const path = event.path || ''
+    // Get cost ID and type from query parameters
     const params = event.queryStringParameters || {}
-    const costId = path.split('/').pop()
+    const costId = params.id
     const costType = params.type // 'recurring' or 'non-recurring'
+
+    console.log('Delete cost - ID:', costId, 'Type:', costType)
 
     if (!costId || isNaN(Number(costId))) {
       return cors(400, { error: 'Valid cost ID required' })
