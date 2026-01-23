@@ -62,6 +62,8 @@ export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getCosts(event)
   if (event.httpMethod === 'POST')   return createCost(event)
+  if (event.httpMethod === 'PUT')    return updateCost(event)
+  if (event.httpMethod === 'DELETE') return deleteCost(event)
   return cors(405, { error: 'Method not allowed' })
 }
 
@@ -236,7 +238,11 @@ async function getExistingCosts(params) {
         group.details.push({
           id: row.id,
           cost: row.cost || '',
-          amount: Number(row.amount)
+          amount: Number(row.amount),
+          start_date: formatDate(row.start_date),
+          end_date: formatDate(row.end_date),
+          recur_kind: row.recur_kind,
+          recur_interval: row.recur_interval
         })
       }
     }
@@ -262,7 +268,8 @@ async function getExistingCosts(params) {
       group.details.push({
         id: row.id,
         cost: row.cost || '',
-        amount: Number(row.amount)
+        amount: Number(row.amount),
+        cost_date: formatDate(row.cost_date)
       })
     }
 
@@ -403,6 +410,33 @@ function parseMonthYear(monthYear) {
   } catch (e) {
     console.error('parseMonthYear error:', e, 'input:', monthYear)
     return new Date(0) // Return epoch if parsing fails
+  }
+}
+
+// Helper function to format date as YYYY-MM-DD
+// Input: Date object or YYYY-MM-DD string from database
+// Output: YYYY-MM-DD string
+function formatDate(dateInput) {
+  if (!dateInput) return null
+  
+  try {
+    // If it's already a string in YYYY-MM-DD format, extract date part
+    if (typeof dateInput === 'string') {
+      return dateInput.split('T')[0]
+    }
+    
+    // If it's a Date object, format it
+    if (dateInput instanceof Date) {
+      const year = dateInput.getFullYear()
+      const month = String(dateInput.getMonth() + 1).padStart(2, '0')
+      const day = String(dateInput.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    
+    return null
+  } catch (e) {
+    console.error('formatDate error:', e, 'input:', dateInput)
+    return null
   }
 }
 
@@ -577,13 +611,212 @@ async function createCost(event) {
   }
 }
 
+async function updateCost(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL } = process.env
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+
+    const sql = neon(DATABASE_URL)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
+
+    // Get cost ID and type from path (e.g., /api/costs/123?type=recurring)
+    const path = event.path || ''
+    const params = event.queryStringParameters || {}
+    const costId = path.split('/').pop()
+    const costType = params.type // 'recurring' or 'non-recurring'
+
+    if (!costId || isNaN(Number(costId))) {
+      return cors(400, { error: 'Valid cost ID required' })
+    }
+
+    if (!costType || !['recurring', 'non-recurring'].includes(costType)) {
+      return cors(400, { error: 'type parameter must be "recurring" or "non-recurring"' })
+    }
+
+    const body = JSON.parse(event.body || '{}')
+    const {
+      business_private,
+      cost_category,
+      cost_type,
+      cost,
+      amount,
+      cost_date,     // for non-recurring
+      start_date,    // for recurring
+      end_date,      // for recurring (optional)
+      recur_kind,    // for recurring
+      recur_interval // for recurring
+    } = body
+
+    // Base validation
+    if (!business_private || (business_private !== 'B' && business_private !== 'P')) {
+      return cors(400, { error: 'business_private must be B or P' })
+    }
+    if (!cost_category) {
+      return cors(400, { error: 'cost_category is required' })
+    }
+    if (!cost_type) {
+      return cors(400, { error: 'cost_type is required' })
+    }
+    if (amount == null || isNaN(Number(amount))) {
+      return cors(400, { error: 'valid amount is required' })
+    }
+
+    if (costType === 'recurring') {
+      // Validate recurring-specific fields
+      if (!start_date) {
+        return cors(400, { error: 'start_date is required for recurring costs' })
+      }
+      if (!recur_kind || !['monthly', 'weekly', 'yearly'].includes(recur_kind)) {
+        return cors(400, { error: 'recur_kind must be monthly, weekly, or yearly' })
+      }
+      if (!recur_interval || recur_interval < 1) {
+        return cors(400, { error: 'recur_interval must be at least 1' })
+      }
+
+      const result = await sql`
+        UPDATE costs_recurring
+        SET 
+          business_private = ${business_private},
+          cost_category = ${cost_category},
+          cost_type = ${cost_type},
+          cost = ${cost ?? null},
+          start_date = ${start_date},
+          end_date = ${end_date || null},
+          recur_kind = ${recur_kind},
+          recur_interval = ${recur_interval},
+          amount = ${amount}
+        WHERE id = ${costId}
+          AND tenant_id = ${TENANT_ID}
+        RETURNING id
+      `
+
+      if (result.length === 0) {
+        return cors(404, { error: 'Cost not found or unauthorized' })
+      }
+
+      return cors(200, {
+        ok: true,
+        id: result[0].id,
+        message: 'Recurring cost updated successfully'
+      })
+
+    } else {
+      // Non-recurring branch
+      if (!cost_date) {
+        return cors(400, { error: 'cost_date is required for non-recurring costs' })
+      }
+
+      const result = await sql`
+        UPDATE costs
+        SET 
+          business_private = ${business_private},
+          cost_category = ${cost_category},
+          cost_type = ${cost_type},
+          cost = ${cost ?? null},
+          cost_date = ${cost_date},
+          amount = ${amount}
+        WHERE id = ${costId}
+          AND tenant_id = ${TENANT_ID}
+        RETURNING id
+      `
+
+      if (result.length === 0) {
+        return cors(404, { error: 'Cost not found or unauthorized' })
+      }
+
+      return cors(200, {
+        ok: true,
+        id: result[0].id,
+        message: 'Cost updated successfully'
+      })
+    }
+  } catch (e) {
+    console.error('updateCost error:', e)
+    return cors(500, { error: String(e?.message || e) })
+  }
+}
+
+async function deleteCost(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const { DATABASE_URL } = process.env
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+
+    const sql = neon(DATABASE_URL)
+
+    // Resolve tenant from JWT
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
+
+    // Get cost ID and type from path (e.g., /api/costs/123?type=recurring)
+    const path = event.path || ''
+    const params = event.queryStringParameters || {}
+    const costId = path.split('/').pop()
+    const costType = params.type // 'recurring' or 'non-recurring'
+
+    if (!costId || isNaN(Number(costId))) {
+      return cors(400, { error: 'Valid cost ID required' })
+    }
+
+    if (!costType || !['recurring', 'non-recurring'].includes(costType)) {
+      return cors(400, { error: 'type parameter must be "recurring" or "non-recurring"' })
+    }
+
+    if (costType === 'recurring') {
+      const result = await sql`
+        DELETE FROM costs_recurring
+        WHERE id = ${costId}
+          AND tenant_id = ${TENANT_ID}
+        RETURNING id
+      `
+
+      if (result.length === 0) {
+        return cors(404, { error: 'Cost not found or unauthorized' })
+      }
+
+      return cors(200, {
+        ok: true,
+        id: result[0].id,
+        message: 'Recurring cost deleted successfully'
+      })
+
+    } else {
+      const result = await sql`
+        DELETE FROM costs
+        WHERE id = ${costId}
+          AND tenant_id = ${TENANT_ID}
+        RETURNING id
+      `
+
+      if (result.length === 0) {
+        return cors(404, { error: 'Cost not found or unauthorized' })
+      }
+
+      return cors(200, {
+        ok: true,
+        id: result[0].id,
+        message: 'Cost deleted successfully'
+      })
+    }
+  } catch (e) {
+    console.error('deleteCost error:', e)
+    return cors(500, { error: String(e?.message || e) })
+  }
+}
+
 function cors(status, body) {
   return {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),

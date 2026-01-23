@@ -363,3 +363,48 @@ export async function getExistingCosts(businessPrivate: 'B' | 'P') {
   }
   return response.json();
 }
+
+export async function updateCost(
+  costId: number,
+  costType: 'recurring' | 'non-recurring',
+  costData: {
+    business_private: 'B' | 'P'
+    cost_category: string
+    cost_type: string
+    cost: string
+    amount: number
+    cost_date?: string
+    start_date?: string
+    end_date?: string | null
+    recur_kind?: 'monthly' | 'weekly' | 'yearly'
+    recur_interval?: number
+  }
+) {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const response = await fetch(`${base}/api/cost/${costId}?type=${costType}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(costData)
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to update cost' }));
+    throw new Error(error.error || 'Failed to update cost');
+  }
+  return response.json();
+}
+
+export async function deleteCost(
+  costId: number,
+  costType: 'recurring' | 'non-recurring'
+) {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const response = await fetch(`${base}/api/cost/${costId}?type=${costType}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to delete cost' }));
+    throw new Error(error.error || 'Failed to delete cost');
+  }
+  return response.json();
+}

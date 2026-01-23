@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCostCategories, getCostTypes, createCost, getExistingCosts } from '../lib/api';
+import { getCostCategories, getCostTypes, createCost, getExistingCosts, updateCost, deleteCost } from '../lib/api';
 
 interface RecurringDetails {
   recur_kind: 'monthly' | 'weekly' | 'yearly';
@@ -15,6 +15,10 @@ interface RecurringCostSummary {
     id: number;
     cost: string;
     amount: number;
+    start_date?: string;
+    end_date?: string;
+    recur_kind?: 'monthly' | 'weekly' | 'yearly';
+    recur_interval?: number;
   }>;
 }
 
@@ -26,11 +30,17 @@ interface NonRecurringCostSummary {
     id: number;
     cost: string;
     amount: number;
+    cost_date?: string;
   }>;
 }
 
 const NewCost = () => {
   const navigate = useNavigate();
+  const formRef = useRef<HTMLDivElement>(null);
+  
+  // Edit state
+  const [editingCostId, setEditingCostId] = useState<number | null>(null);
+  const [editingCostType, setEditingCostType] = useState<'recurring' | 'non-recurring' | null>(null);
   
   // Form state
   const [businessPrivate, setBusinessPrivate] = useState<'B' | 'P'>('B');
@@ -138,6 +148,86 @@ const NewCost = () => {
       newExpanded.add(key);
     }
     setExpandedNonRecurring(newExpanded);
+  };
+
+  // Edit a cost - populate form with existing data
+  const handleEditCost = async (costId: number, costType: 'recurring' | 'non-recurring', detail: any) => {
+    try {
+      setEditingCostId(costId);
+      setEditingCostType(costType);
+      
+      // Set business/private type (infer from viewMode)
+      setBusinessPrivate(viewMode);
+      
+      // Find the cost category based on type
+      let category = '';
+      if (costType === 'recurring') {
+        category = viewMode === 'B' ? 'Business recurring cost' : 'Private recurring cost';
+      } else {
+        category = viewMode === 'B' ? 'Business non-recurring cost' : 'Private non-recurring cost';
+      }
+      
+      setCostCategory(category);
+      
+      // Wait for cost type options to load
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setCostType(detail.cost_type || '');
+      setCost(detail.cost || '');
+      setAmount(formatCurrency(detail.amount));
+      
+      if (costType === 'recurring' && detail.start_date) {
+        // Format date to YYYY-MM-DD (extract date part only)
+        const startDate = String(detail.start_date).split('T')[0];
+        setCostDate(startDate);
+        
+        if (detail.end_date) {
+          const endDate = String(detail.end_date).split('T')[0];
+          setEndDate(endDate);
+        } else {
+          setEndDate('');
+        }
+        
+        setRecurringDetails({
+          recur_kind: detail.recur_kind || 'monthly',
+          recur_interval: detail.recur_interval || 1
+        });
+      } else if (detail.cost_date) {
+        // Format date to YYYY-MM-DD (extract date part only)
+        const costDate = String(detail.cost_date).split('T')[0];
+        setCostDate(costDate);
+      }
+      
+      setError('');
+      
+      // Scroll to form
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error('Error setting up edit:', err);
+      setError('Failed to load cost for editing');
+    }
+  };
+
+  // Delete a cost
+  const handleDeleteCost = async () => {
+    if (!editingCostId || !editingCostType) return;
+    
+    if (!window.confirm('Are you sure you want to delete this cost?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await deleteCost(editingCostId, editingCostType);
+      alert('Cost deleted successfully!');
+      handleClear();
+      loadExistingCosts();
+    } catch (err: any) {
+      console.error('Error deleting cost:', err);
+      setError(err.message || 'Failed to delete cost');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ---------- AMOUNT INPUT ----------
@@ -303,10 +393,18 @@ const NewCost = () => {
         })
       };
 
-      await createCost(costData);
-      alert('Cost saved successfully!');
+      if (editingCostId && editingCostType) {
+        // Update existing cost
+        await updateCost(editingCostId, editingCostType, costData);
+        alert('Cost updated successfully!');
+      } else {
+        // Create new cost
+        await createCost(costData);
+        alert('Cost saved successfully!');
+      }
+      
       handleClear();
-      // Reload costs to show the new entry
+      // Reload costs to show the changes
       loadExistingCosts();
     } catch (err: any) {
       console.error('Error saving cost:', err);
@@ -317,6 +415,8 @@ const NewCost = () => {
   };
 
   const handleClear = () => {
+    setEditingCostId(null);
+    setEditingCostType(null);
     setCostCategory('');
     setRecurringDetails({ recur_kind: 'monthly', recur_interval: 1 });
     setCostType('');
@@ -328,10 +428,16 @@ const NewCost = () => {
   };
 
   const handleCancel = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
+    if (editingCostId) {
+      // If editing, just clear the form
+      handleClear();
     } else {
-      navigate('/');
+      // If new cost, navigate back
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
     }
   };
 
@@ -339,9 +445,11 @@ const NewCost = () => {
 
   return (
     <>
-      {/* Register New Cost Card */}
-      <div className="card" style={{ maxWidth: 720 }}>
-        <h3 style={{ margin: 0, marginBottom: 16 }}>Register New Cost</h3>
+      {/* Register/Edit Cost Card */}
+      <div ref={formRef} className="card" style={{ maxWidth: 720 }}>
+        <h3 style={{ margin: 0, marginBottom: 16 }}>
+          {editingCostId ? 'Edit Cost' : 'Register New Cost'}
+        </h3>
 
         {error && (
           <div style={{
@@ -363,6 +471,7 @@ const NewCost = () => {
               type="checkbox"
               checked={businessPrivate === 'B'}
               onChange={(e) => { if (e.target.checked) setBusinessPrivate('B') }}
+              disabled={editingCostId !== null}
               style={{ width: 18, height: 18 }}
             />
             <span>Business</span>
@@ -372,6 +481,7 @@ const NewCost = () => {
               type="checkbox"
               checked={businessPrivate === 'P'}
               onChange={(e) => { if (e.target.checked) setBusinessPrivate('P') }}
+              disabled={editingCostId !== null}
               style={{ width: 18, height: 18 }}
             />
             <span>Private</span>
@@ -384,7 +494,7 @@ const NewCost = () => {
           <select
             value={costCategory}
             onChange={(e) => setCostCategory(e.target.value)}
-            disabled={loading}
+            disabled={loading || editingCostId !== null}
             style={{ height: CONTROL_H }}
           >
             <option value="">Select category...</option>
@@ -545,15 +655,29 @@ const NewCost = () => {
         )}
 
         {/* Action Buttons */}
-        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+        <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             className="primary"
             onClick={handleSave}
             disabled={loading}
             style={{ height: CONTROL_H }}
           >
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? (editingCostId ? 'Updating...' : 'Saving...') : (editingCostId ? 'Update' : 'Save')}
           </button>
+          {editingCostId && (
+            <button
+              onClick={handleDeleteCost}
+              disabled={loading}
+              style={{ 
+                height: CONTROL_H,
+                backgroundColor: '#d32f2f',
+                color: 'white',
+                border: 'none'
+              }}
+            >
+              Delete
+            </button>
+          )}
           <button
             onClick={handleClear}
             disabled={loading}
@@ -624,7 +748,7 @@ const NewCost = () => {
                     fontWeight: 600,
                     fontSize: 14
                   }}>
-                    <div>Start Month</div>
+                    <div>Month</div>
                     <div>Cost Type</div>
                     <div style={{ textAlign: 'right' }}>Amount</div>
                   </div>
@@ -635,8 +759,6 @@ const NewCost = () => {
                       const key = `${item.cost_type}-${item.start_month}`;
                       const isExpanded = expandedRecurring.has(key);
                       const hasDetails = item.details && item.details.length > 0;
-                      
-                      console.log('Recurring item:', item); // Debug
                       
                       return (
                         <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
@@ -665,10 +787,11 @@ const NewCost = () => {
                               key={detailIdx}
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '80px 1fr auto',
+                                gridTemplateColumns: '80px 1fr auto 60px',
                                 gap: 8,
                                 marginTop: 8,
-                                paddingLeft: 12
+                                paddingLeft: 12,
+                                alignItems: 'center'
                               }}
                             >
                               <div></div>
@@ -678,6 +801,20 @@ const NewCost = () => {
                               <div className="helper" style={{ textAlign: 'right' }}>
                                 ${formatCurrency(detail.amount)}
                               </div>
+                              <button
+                                onClick={() => handleEditCost(detail.id, 'recurring', {
+                                  ...detail,
+                                  cost_type: item.cost_type
+                                })}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '12px',
+                                  height: 'auto',
+                                  minHeight: 'unset'
+                                }}
+                              >
+                                Edit
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -716,8 +853,6 @@ const NewCost = () => {
                       const isExpanded = expandedNonRecurring.has(key);
                       const hasDetails = item.details && item.details.length > 0;
                       
-                      console.log('Non-recurring item:', item); // Debug
-                      
                       return (
                         <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
                           {/* Main row */}
@@ -745,10 +880,11 @@ const NewCost = () => {
                               key={detailIdx}
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '80px 1fr auto',
+                                gridTemplateColumns: '80px 1fr auto 60px',
                                 gap: 8,
                                 marginTop: 8,
-                                paddingLeft: 12
+                                paddingLeft: 12,
+                                alignItems: 'center'
                               }}
                             >
                               <div></div>
@@ -758,6 +894,20 @@ const NewCost = () => {
                               <div className="helper" style={{ textAlign: 'right' }}>
                                 ${formatCurrency(detail.amount)}
                               </div>
+                              <button
+                                onClick={() => handleEditCost(detail.id, 'non-recurring', {
+                                  ...detail,
+                                  cost_type: item.cost_type
+                                })}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '12px',
+                                  height: 'auto',
+                                  minHeight: 'unset'
+                                }}
+                              >
+                                Edit
+                              </button>
                             </div>
                           ))}
                         </div>
