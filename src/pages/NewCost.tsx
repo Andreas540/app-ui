@@ -82,13 +82,19 @@ const NewCost = () => {
 
   // Load cost type options when cost category changes
   useEffect(() => {
+    // Skip automatic loading if we're in edit mode (manual load handles it)
+    if (editingCostId !== null) {
+      console.log('Skipping automatic cost type load - in edit mode');
+      return;
+    }
+    
     if (costCategory) {
       loadCostTypeOptions();
     } else {
       setCostTypeOptions([]);
       setCostType('');
     }
-  }, [costCategory]);
+  }, [costCategory, editingCostId]);
 
   // Apply pending cost type value once options are loaded
   useEffect(() => {
@@ -176,9 +182,8 @@ const NewCost = () => {
       console.log('Cost Type:', costType);
       console.log('Detail:', detail);
       
-      // STEP 1: Clear everything first
+      // STEP 1: Clear cost type only (not options yet)
       setCostType('');
-      setCostTypeOptions([]);
       setPendingCostTypeValue(null);
       
       // STEP 2: Set edit mode
@@ -199,23 +204,23 @@ const NewCost = () => {
       const targetCostType = detail.cost_type || '';
       console.log('Target cost type to set:', targetCostType);
       
-      // STEP 5: Load options
+      // STEP 5: Set category FIRST (before loading options)
+      // This prevents the category useEffect from interfering later
+      setCostCategory(category);
+      
+      // STEP 6: Load options manually (overriding the automatic load from category change)
       console.log('Loading cost types for category:', category);
       const response = await getCostTypes(category);
       const types = response.types || [];
       console.log('Loaded cost type options:', types);
       
-      // STEP 6: Set everything in the right order
-      // First set the pending value (what we want to apply)
+      // STEP 7: Set pending value FIRST, then options
       setPendingCostTypeValue(targetCostType);
-      
-      // Then set the options (this will trigger the useEffect)
       setCostTypeOptions(types);
       
-      // Then set the category
-      setCostCategory(category);
+      // The useEffect will now apply the pending value
       
-      // STEP 7: Set other form fields
+      // STEP 8: Set other form fields
       setCost(detail.cost || '');
       setAmount(formatCurrency(detail.amount));
       
