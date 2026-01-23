@@ -162,6 +162,15 @@ const NewCost = () => {
   // Edit a cost - populate form with existing data
   const handleEditCost = async (costId: number | string, costType: 'recurring' | 'non-recurring', detail: any) => {
     try {
+      console.log('=== EDIT COST DEBUG ===');
+      console.log('Cost ID:', costId);
+      console.log('Cost Type:', costType);
+      console.log('Detail:', detail);
+      
+      // First, clear any pending values from previous edit
+      setPendingCostTypeValue(null);
+      
+      // Set edit mode
       setEditingCostId(costId);
       setEditingCostType(costType);
       
@@ -177,10 +186,34 @@ const NewCost = () => {
       }
       
       // Store the cost type value to be applied after options load
-      setPendingCostTypeValue(detail.cost_type || '');
+      const targetCostType = detail.cost_type || '';
+      console.log('Target cost type to set:', targetCostType);
       
-      // Set category (this will trigger loadCostTypeOptions via useEffect)
-      setCostCategory(category);
+      // Load cost type options for this category
+      try {
+        console.log('Loading cost types for category:', category);
+        const response = await getCostTypes(category);
+        const types = response.types || [];
+        console.log('Loaded cost type options:', types);
+        setCostTypeOptions(types);
+        
+        // Set category after loading options
+        setCostCategory(category);
+        
+        // Immediately set cost type if options are loaded
+        if (types.includes(targetCostType)) {
+          console.log('Setting cost type immediately:', targetCostType);
+          setCostType(targetCostType);
+        } else {
+          console.log('Cost type not in options, setting pending:', targetCostType);
+          setPendingCostTypeValue(targetCostType);
+        }
+      } catch (err) {
+        console.error('Error loading cost types for edit:', err);
+        // Fallback to pending mechanism
+        setCostCategory(category);
+        setPendingCostTypeValue(targetCostType);
+      }
       
       // Set other form fields
       setCost(detail.cost || '');
@@ -209,6 +242,8 @@ const NewCost = () => {
       }
       
       setError('');
+      
+      console.log('Edit setup complete');
       
       // Scroll to form
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
