@@ -5,15 +5,19 @@ import {
   fetchBootstrap,
   PAYMENT_TYPES,
   PARTNER_PAYMENT_TYPES,
+  SUPPLIER_PAYMENT_TYPES,
   type PaymentType,
   type PartnerPaymentType,
+  type SupplierPaymentType,
   createPayment,
-  createPartnerPayment
+  createPartnerPayment,
+  createSupplierPayment
 } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner' }
 type PartnerLite = { id: string; name: string }
+type SupplierLite = { id: string; name: string }
 
 export default function Payments() {
   const navigate = useNavigate()
@@ -21,11 +25,12 @@ export default function Payments() {
 
   const [people, setPeople] = useState<CustomerLite[]>([])
   const [partners, setPartners] = useState<PartnerLite[]>([])
+  const [suppliers, setSuppliers] = useState<SupplierLite[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  // Payment direction
-  const [isFromCustomer, setIsFromCustomer] = useState(true)
+  // Payment direction: 'customer' | 'partner' | 'supplier'
+  const [paymentDirection, setPaymentDirection] = useState<'customer' | 'partner' | 'supplier'>('customer')
 
   // form - customer payments
   const [entityId, setEntityId] = useState('')
@@ -43,26 +48,37 @@ export default function Payments() {
   const [partnerDate, setPartnerDate] = useState<string>(todayYMD())
   const [partnerNotes, setPartnerNotes] = useState('')
 
+  // form - supplier payments
+  const [supplierId, setSupplierId] = useState('')
+  const [supplierPaymentType, setSupplierPaymentType] = useState<SupplierPaymentType>('Cash')
+  const [supplierAmountStr, setSupplierAmountStr] = useState('')
+  const [supplierDate, setSupplierDate] = useState<string>(todayYMD())
+  const [supplierNotes, setSupplierNotes] = useState('')
+
   useEffect(() => {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers, partners: bootPartners } = await fetchBootstrap()
+        const { customers, partners: bootPartners, suppliers: bootSuppliers } = await fetchBootstrap()
         setPeople(customers as unknown as CustomerLite[])
         setPartners(bootPartners ?? [])
+        setSuppliers(bootSuppliers ?? [])
         
         // Preselect customer if coming from detail page
         const params = new URLSearchParams(location.search)
         const preselectedCustomerId = params.get('customer_id')
         if (preselectedCustomerId) {
           setEntityId(preselectedCustomerId)
-          setIsFromCustomer(true)
+          setPaymentDirection('customer')
         } else {
           setEntityId((customers[0]?.id as string) ?? '')
         }
         if (bootPartners && bootPartners.length > 0) {
           setPartnerId(bootPartners[0].id)
           setPartnerForCreditId(bootPartners[0].id) // sensible default for Partner credit
+        }
+        if (bootSuppliers && bootSuppliers.length > 0) {
+          setSupplierId(bootSuppliers[0].id)
         }
       } catch (e:any) {
         setErr(e?.message || String(e))
@@ -74,6 +90,7 @@ export default function Payments() {
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
+  const supplier = useMemo(() => suppliers.find(p => p.id === supplierId), [suppliers, supplierId])
 
   // Detect Partner credit (From customer flow)
   const isPartnerCredit = useMemo(
@@ -194,6 +211,55 @@ export default function Payments() {
   }
   const isPartnerMinusOnly = isAddToDebt && partnerAmountStr.trim() === '-'
 
+  // --- Supplier side: Add to debt (same minus behavior) ---
+  const isSupplierAddToDebt = useMemo(
+    () => (supplierPaymentType || '').trim().toLowerCase() === 'add to debt',
+    [supplierPaymentType]
+  )
+
+  useEffect(() => {
+    if (isSupplierAddToDebt) {
+      setSupplierAmountStr(prev => {
+        const cleaned = (prev ?? '').replace(/^-+/, '')
+        const next = '-' + cleaned
+        return next === '-' ? '-' : next
+      })
+    } else {
+      setSupplierAmountStr(prev => (prev ?? '').replace(/^-+/, ''))
+    }
+  }, [isSupplierAddToDebt])
+
+  const onSupplierAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!isSupplierAddToDebt) return
+    const target = e.currentTarget
+    const { selectionStart, selectionEnd, value } = target
+    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
+      e.preventDefault(); return
+    }
+  }
+  const onSupplierAmountChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value
+    if (isSupplierAddToDebt) {
+      const withoutSigns = raw.replace(/^[+-]+/, '')
+      const v = '-' + withoutSigns
+      setSupplierAmountStr(v === '-' ? '-' : v)
+    } else {
+      setSupplierAmountStr(raw)
+    }
+  }
+  const onSupplierAmountSelect: React.ReactEventHandler<HTMLInputElement> = (e) => {
+    if (!isSupplierAddToDebt) return
+    keepCaretAfterMinus(e.currentTarget)
+  }
+  const onSupplierAmountFocusOrClick: React.MouseEventHandler<HTMLInputElement> & React.FocusEventHandler<HTMLInputElement> = (e: any) => {
+    if (!isSupplierAddToDebt) return
+    requestAnimationFrame(() => keepCaretAfterMinus(e.currentTarget))
+  }
+  const isSupplierMinusOnly = isSupplierAddToDebt && supplierAmountStr.trim() === '-'
+
   // --- Save handlers ---
   async function saveCustomerPayment() {
     if (!customer) { alert('Select a customer'); return }
@@ -276,6 +342,30 @@ export default function Payments() {
     }
   }
 
+  async function saveSupplierPayment() {
+    if (!supplier) { alert('Select a supplier'); return }
+    const amountNum = Number((supplierAmountStr || '').replace(',', '.'))
+    if (!Number.isFinite(amountNum) || amountNum === 0) {
+      alert('Enter a non-zero amount')
+      return
+    }
+    try {
+      await createSupplierPayment({
+        supplier_id: supplier.id,
+        payment_type: supplierPaymentType,
+        amount: amountNum,
+        payment_date: supplierDate,
+        notes: supplierNotes.trim() || null,
+      })
+      alert('Supplier payment saved!')
+      setSupplierAmountStr('')
+      setSupplierPaymentType('Cash')
+      setSupplierNotes('')
+    } catch (e:any) {
+      alert(e?.message || 'Save failed')
+    }
+  }
+
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
   if (!people.length) return <div className="card"><p>No customers found.</p></div>
@@ -292,8 +382,8 @@ export default function Payments() {
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
             type="checkbox"
-            checked={isFromCustomer}
-            onChange={e => { if (e.target.checked) setIsFromCustomer(true) }}
+            checked={paymentDirection === 'customer'}
+            onChange={e => { if (e.target.checked) setPaymentDirection('customer') }}
             style={{ width: 18, height: 18 }}
           />
           <span>From customer</span>
@@ -301,15 +391,24 @@ export default function Payments() {
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
             type="checkbox"
-            checked={!isFromCustomer}
-            onChange={e => { if (e.target.checked) setIsFromCustomer(false) }}
+            checked={paymentDirection === 'partner'}
+            onChange={e => { if (e.target.checked) setPaymentDirection('partner') }}
             style={{ width: 18, height: 18 }}
           />
           <span>To partner</span>
         </label>
+        <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+          <input
+            type="checkbox"
+            checked={paymentDirection === 'supplier'}
+            onChange={e => { if (e.target.checked) setPaymentDirection('supplier') }}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>To supplier</span>
+        </label>
       </div>
 
-      {isFromCustomer ? (
+      {paymentDirection === 'customer' ? (
         <>
           <h3>Payments</h3>
           
@@ -419,7 +518,7 @@ export default function Payments() {
             Positive = money received; negative = credit/discount/fee if you choose to represent it that way.
           </p>
         </>
-      ) : (
+      ) : paymentDirection === 'partner' ? (
         <>
           <h3>Payment to Partner</h3>
 
@@ -478,6 +577,69 @@ export default function Payments() {
               <div style={{marginTop:16, display:'flex', gap:8}}>
                 <button className="primary" onClick={savePartnerPayment} style={{ height: CONTROL_H }}>Save payment</button>
                 <button onClick={()=>{ setPartnerAmountStr(''); setPartnerPaymentType('Cash'); setPartnerNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <h3>Payment to Supplier</h3>
+
+          {suppliers.length === 0 ? (
+            <p className="helper" style={{marginTop:12}}>No suppliers found. Create suppliers first.</p>
+          ) : (
+            <>
+              <div className="row row-2col-mobile" style={{marginTop:12}}>
+                <div>
+                  <label>Supplier</label>
+                  <select value={supplierId} onChange={e=>setSupplierId(e.target.value)} style={{ height: CONTROL_H }}>
+                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label>Payment date</label>
+                  <input type="date" value={supplierDate} onChange={e=>setSupplierDate(e.target.value)} style={{ height: CONTROL_H }} />
+                </div>
+              </div>
+
+              <div className="row row-2col-mobile" style={{marginTop:12}}>
+                <div>
+                  <label>Payment Type</label>
+                  <select value={supplierPaymentType} onChange={e=>setSupplierPaymentType(e.target.value as SupplierPaymentType)} style={{ height: CONTROL_H }}>
+                    {SUPPLIER_PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label>Amount (USD)</label>
+                  <input
+                    type="text"
+                    placeholder="0.00"
+                    inputMode="decimal"
+                    value={supplierAmountStr}
+                    onChange={onSupplierAmountChange}
+                    onKeyDown={onSupplierAmountKeyDown}
+                    onSelect={onSupplierAmountSelect}
+                    onFocus={onSupplierAmountFocusOrClick}
+                    onClick={onSupplierAmountFocusOrClick}
+                    style={{
+                      height: CONTROL_H,
+                      color: isSupplierMinusOnly ? 'var(--text-secondary)' : undefined,
+                      opacity: isSupplierMinusOnly ? 0.6 : undefined,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="row" style={{marginTop:12}}>
+                <div style={{gridColumn:'1 / -1'}}>
+                  <label>Notes (optional)</label>
+                  <input type="text" value={supplierNotes} onChange={e=>setSupplierNotes(e.target.value)} style={{ height: CONTROL_H }} />
+                </div>
+              </div>
+
+              <div style={{marginTop:16, display:'flex', gap:8}}>
+                <button className="primary" onClick={saveSupplierPayment} style={{ height: CONTROL_H }}>Save payment</button>
+                <button onClick={()=>{ setSupplierAmountStr(''); setSupplierPaymentType('Cash'); setSupplierNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
               </div>
             </>
           )}

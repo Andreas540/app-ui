@@ -9,15 +9,15 @@ export async function handler(event) {
 
   try {
     const { neon } = await import('@neondatabase/serverless');
-const { DATABASE_URL } = process.env;
-if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+    const { DATABASE_URL } = process.env;
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
-const sql = neon(DATABASE_URL);
+    const sql = neon(DATABASE_URL);
 
-const authz = await resolveAuthz({ sql, event });
-if (authz.error) return cors(403, { error: authz.error });
+    const authz = await resolveAuthz({ sql, event });
+    if (authz.error) return cors(403, { error: authz.error });
 
-const TENANT_ID = authz.tenantId;
+    const TENANT_ID = authz.tenantId;
 
     // Customers: we need customer_type here (NOT the old 'type')
     const customers = await sql`
@@ -43,7 +43,15 @@ const TENANT_ID = authz.tenantId;
       ORDER BY name
     `;
 
-    return cors(200, { customers, products, partners });
+    // Suppliers come from the dedicated suppliers table
+    const suppliers = await sql`
+      SELECT id, name
+      FROM suppliers
+      WHERE tenant_id = ${TENANT_ID}
+      ORDER BY name
+    `;
+
+    return cors(200, { customers, products, partners, suppliers });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });

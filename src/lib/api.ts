@@ -30,7 +30,7 @@ export async function fetchBootstrap() {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load bootstrap data (status ${res.status}) ${text?.slice(0,140)}`)
   }
-  return (await res.json()) as { customers: Person[]; products: Product[]; partners?: Array<{id:string;name:string}> }
+  return (await res.json()) as { customers: Person[]; products: Product[]; partners?: Array<{id:string;name:string}>; suppliers?: Array<{id:string;name:string}> }
 }
 
 // ---- Orders API ----
@@ -123,6 +123,33 @@ export async function createPartnerPayment(input: NewPartnerPaymentInput) {
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to save partner payment (status ${res.status}) ${text?.slice(0,140)}`)
+  }
+  return (await res.json()) as { ok: true; id: string }
+}
+
+// ---- Supplier Payments API (to suppliers) ----
+export type SupplierPaymentType = 'Cash' | 'Bank transfer' | 'Check' | 'Credit card' | 'Add to debt' | 'Prepayment' | 'Other'
+
+export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
+  'Cash', 'Bank transfer', 'Check', 'Credit card', 'Add to debt', 'Prepayment', 'Other'
+]
+
+export type NewSupplierPaymentInput = {
+  supplier_id: string
+  payment_type: SupplierPaymentType
+  amount: number
+  payment_date: string
+  notes?: string | null
+}
+export async function createSupplierPayment(input: NewSupplierPaymentInput) {
+  const res = await fetch(`${base}/api/supplier-payment`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to save supplier payment (status ${res.status}) ${text?.slice(0,140)}`)
   }
   return (await res.json()) as { ok: true; id: string }
 }
