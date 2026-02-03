@@ -7,9 +7,7 @@ type Supplier = {
   id: string
   name: string
   country: string | null
-  // placeholders until tables exist:
-  total_amount?: number   // sum(qty*unit_price) - payments  [money]
-  total_qty?: number      // sum(qty) - delivered           [units]
+  owed_to_supplier: number
 }
 
 function fmtIntMoney(n: number) {
@@ -24,7 +22,7 @@ export default function Suppliers() {
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  // Fetch suppliers (name, country, placeholders)
+  // Fetch suppliers
   useEffect(() => {
     (async () => {
       try {
@@ -33,9 +31,9 @@ export default function Suppliers() {
         const url = new URL(`${base}/api/suppliers`, window.location.origin)
         if (query.trim()) url.searchParams.set('q', query.trim())
         const res = await fetch(url.toString(), {
-  cache: 'no-store',
-  headers: getAuthHeaders(),
-})
+          cache: 'no-store',
+          headers: getAuthHeaders(),
+        })
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(`Failed to load suppliers (status ${res.status}) ${text?.slice(0,140)}`)
@@ -74,13 +72,9 @@ export default function Suppliers() {
     return suppliers.filter(s => s.name.toLowerCase().includes(q))
   }, [suppliers, query])
 
-  // Top totals (placeholders until tables exist)
-  const totalAmount = useMemo(
-    () => visible.reduce((sum, s) => sum + Number(s.total_amount || 0), 0),
-    [visible]
-  )
-  const totalQty = useMemo(
-    () => visible.reduce((sum, s) => sum + Number(s.total_qty || 0), 0),
+  // Total owed to all suppliers
+  const totalOwed = useMemo(
+    () => visible.reduce((sum, s) => sum + Number(s.owed_to_supplier || 0), 0),
     [visible]
   )
 
@@ -148,17 +142,11 @@ export default function Suppliers() {
       {/* Spacer */}
       <div style={{ height: 20 }} />
 
-      {/* Top totals (money & qty) */}
+      {/* Total owed to suppliers */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total (qty × unit price)</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to suppliers</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {fmtIntMoney(totalAmount)} {/* placeholder sums */}
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 6 }}>
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total Qty</div>
-        <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {(Number(totalQty) || 0).toLocaleString('en-US')}
+          {fmtIntMoney(totalOwed)}
         </div>
       </div>
 
@@ -182,10 +170,8 @@ export default function Suppliers() {
                     <div style={{ fontWeight: 600 }}>{s.name}</div>
                     <div className="helper">{s.country || '—'}</div>
                   </div>
-                  <div style={{ textAlign: 'right', alignSelf: 'center', lineHeight: 1.2 }}>
-                    {/* Right side: two numbers (placeholders until tables exist) */}
-                    <div>{fmtIntMoney(s.total_amount ?? 0)}</div>
-                    <div className="helper">{(Number(s.total_qty) || 0).toLocaleString('en-US')} units</div>
+                  <div style={{ textAlign: 'right', alignSelf: 'center' }}>
+                    <div>{fmtIntMoney(s.owed_to_supplier ?? 0)}</div>
                   </div>
                 </div>
               </Link>

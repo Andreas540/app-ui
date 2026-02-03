@@ -50,8 +50,22 @@ export const handler = async (event) => {
           s.id,
           s.name,
           s.country,
-          0::numeric as total_amount,  -- placeholder: sum(qty*unit_price) - payments
-          0::numeric as total_qty      -- placeholder: sum(qty) - delivered
+          (
+            coalesce(
+              (
+                select sum(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost)
+                from orders_suppliers os
+                join order_items_suppliers ois on ois.order_id = os.id
+                where os.supplier_id = s.id and os.tenant_id = ${tenantId}
+              ), 0
+            ) - coalesce(
+              (
+                select sum(amount)
+                from supplier_payments
+                where supplier_id = s.id and tenant_id = ${tenantId}
+              ), 0
+            )
+          )::numeric(12,2) as owed_to_supplier
         from suppliers s
         where s.tenant_id = ${tenantId}
           and (${q === ''} or lower(s.name) like ${'%' + q + '%'})
