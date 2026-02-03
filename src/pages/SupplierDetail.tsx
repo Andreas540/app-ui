@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
+import PaymentDetailModal from '../components/PaymentDetailModal'
 
 interface Supplier {
   id: string
@@ -86,6 +87,8 @@ export default function SupplierDetailPage() {
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -118,6 +121,11 @@ export default function SupplierDetailPage() {
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
+  }
+
+  const handlePaymentClick = (payment: Payment) => {
+    setSelectedPayment(payment)
+    setShowPaymentModal(true)
   }
 
   if (loading) return <div className="card"><p>Loading…</p></div>
@@ -470,12 +478,24 @@ export default function SupplierDetailPage() {
                     <div></div>
 
                     {/* TYPE */}
-                    <div className="helper" style={{ lineHeight: '1.4' }}>
+                    <div 
+                      className="helper" 
+                      onClick={() => handlePaymentClick(p)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ lineHeight: '1.4', cursor: 'pointer' }}
+                    >
                       {p.payment_type}
                     </div>
 
                     {/* AMOUNT: "-$..." except Add to debt */}
-                    <div className="helper" style={{textAlign:'right'}}>
+                    <div 
+                      className="helper" 
+                      onClick={() => handlePaymentClick(p)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{textAlign:'right', cursor: 'pointer'}}
+                    >
                       {amountStr}
                     </div>
                   </div>
@@ -492,7 +512,13 @@ export default function SupplierDetailPage() {
                     >
                       <div></div>
                       <div></div>
-                      <div className="helper" style={{ lineHeight: '1.4' }}>
+                      <div 
+                        className="helper" 
+                        onClick={() => handlePaymentClick(p)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ lineHeight: '1.4', cursor: 'pointer' }}
+                      >
                         {p.notes}
                       </div>
                       <div></div>
@@ -505,12 +531,20 @@ export default function SupplierDetailPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Order Modal */}
       <SupplierOrderDetailModal
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         order={selectedOrder}
         supplierName={supplier.name}
+      />
+
+      {/* Payment Modal */}
+      <PaymentDetailModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        payment={selectedPayment}
+        isSupplierPayment={true}
       />
     </div>
   )

@@ -1,26 +1,40 @@
 // src/pages/EditPayment.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchBootstrap, PAYMENT_TYPES, PARTNER_PAYMENT_TYPES, type PaymentType, type PartnerPaymentType, getAuthHeaders } from '../lib/api'
+import { 
+  fetchBootstrap, 
+  PAYMENT_TYPES, 
+  PARTNER_PAYMENT_TYPES, 
+  SUPPLIER_PAYMENT_TYPES,
+  type PaymentType, 
+  type PartnerPaymentType,
+  type SupplierPaymentType,
+  getAuthHeaders 
+} from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type CustomerLite = { id: string; name: string }
 type PartnerLite = { id: string; name: string }
+type SupplierLite = { id: string; name: string }
 
 export default function EditPayment() {
   const { paymentId } = useParams<{ paymentId: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const isPartnerPayment = searchParams.get('type') === 'partner'
+  
+  const paymentTypeParam = searchParams.get('type')
+  const isPartnerPayment = paymentTypeParam === 'partner'
+  const isSupplierPayment = paymentTypeParam === 'supplier'
 
   const [customers, setCustomers] = useState<CustomerLite[]>([])
   const [partners, setPartners] = useState<PartnerLite[]>([])
+  const [suppliers, setSuppliers] = useState<SupplierLite[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
   // Form fields
   const [entityId, setEntityId] = useState('')
-  const [paymentType, setPaymentType] = useState<PaymentType | PartnerPaymentType>('Cash payment')
+  const [paymentType, setPaymentType] = useState<PaymentType | PartnerPaymentType | SupplierPaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
@@ -32,24 +46,34 @@ export default function EditPayment() {
         setLoading(true); setErr(null)
         
         // Load bootstrap data
-        const { customers: bootCustomers, partners: bootPartners } = await fetchBootstrap()
+        const { customers: bootCustomers, partners: bootPartners, suppliers: bootSuppliers } = await fetchBootstrap()
         setCustomers(bootCustomers as unknown as CustomerLite[])
         setPartners(bootPartners ?? [])
+        setSuppliers(bootSuppliers ?? [])
 
         // Fetch payment details
-        // Fetch payment details
-const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
-const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
-  headers: getAuthHeaders(),
-})
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        let endpoint = 'payment'
+        if (isPartnerPayment) endpoint = 'partner-payment'
+        if (isSupplierPayment) endpoint = 'supplier-payment'
+        
+        const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
+          headers: getAuthHeaders(),
+        })
         if (!res.ok) throw new Error('Failed to load payment')
         
         const data = await res.json()
         const payment = data.payment
 
         // Populate form
-        setEntityId(isPartnerPayment ? payment.partner_id : payment.customer_id)
+        if (isPartnerPayment) {
+          setEntityId(payment.partner_id)
+        } else if (isSupplierPayment) {
+          setEntityId(payment.supplier_id)
+        } else {
+          setEntityId(payment.customer_id)
+        }
+        
         setPaymentType(payment.payment_type)
         setAmountStr(String(payment.amount))
         setDate(payment.payment_date)
@@ -60,13 +84,16 @@ const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
         setLoading(false)
       }
     })()
-  }, [paymentId, isPartnerPayment])
+  }, [paymentId, isPartnerPayment, isSupplierPayment])
 
   // ---------- Minus handling (Loan/Deposit & Add to debt) ----------
   const requiresMinus = useMemo(() => {
     const t = String(paymentType || '').trim().toLowerCase()
-    return isPartnerPayment ? t === 'add to debt' : t === 'loan/deposit'
-  }, [paymentType, isPartnerPayment])
+    if (isPartnerPayment || isSupplierPayment) {
+      return t === 'add to debt'
+    }
+    return t === 'loan/deposit' || t === 'repayment'
+  }, [paymentType, isPartnerPayment, isSupplierPayment])
 
   // Ensure minus is present/removed when type toggles
   useEffect(() => {
@@ -139,29 +166,30 @@ const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
-      
-      const body = isPartnerPayment ? {
+      let endpoint = 'payment'
+      let body: any = {
         id: paymentId,
-        partner_id: entityId,
-        payment_type: paymentType,
-        amount: amountNum,
-        payment_date: date,
-        notes: notes.trim() || null
-      } : {
-        id: paymentId,
-        customer_id: entityId,
         payment_type: paymentType,
         amount: amountNum,
         payment_date: date,
         notes: notes.trim() || null
       }
 
+      if (isPartnerPayment) {
+        endpoint = 'partner-payment'
+        body.partner_id = entityId
+      } else if (isSupplierPayment) {
+        endpoint = 'supplier-payment'
+        body.supplier_id = entityId
+      } else {
+        body.customer_id = entityId
+      }
+
       const res = await fetch(`${base}/api/${endpoint}`, {
-  method: 'PUT',
-  headers: getAuthHeaders(),
-  body: JSON.stringify(body)
-})
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(body)
+      })
 
       if (!res.ok) throw new Error('Failed to update payment')
       
@@ -177,13 +205,15 @@ const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const endpoint = isPartnerPayment ? 'partner-payment' : 'payment'
+      let endpoint = 'payment'
+      if (isPartnerPayment) endpoint = 'partner-payment'
+      if (isSupplierPayment) endpoint = 'supplier-payment'
       
       const res = await fetch(`${base}/api/${endpoint}`, {
-  method: 'DELETE',
-  headers: getAuthHeaders(),
-  body: JSON.stringify({ id: paymentId })
-})
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id: paymentId })
+      })
 
       if (!res.ok) throw new Error('Failed to delete payment')
       
@@ -198,9 +228,21 @@ const res = await fetch(`${base}/api/${endpoint}?id=${paymentId}`, {
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
 
   const CONTROL_H = 44
-  const paymentTypes = isPartnerPayment ? PARTNER_PAYMENT_TYPES : PAYMENT_TYPES
-  const entityList = isPartnerPayment ? partners : customers
-  const entityLabel = isPartnerPayment ? 'Partner' : 'Customer'
+  let paymentTypes, entityList, entityLabel
+  
+  if (isPartnerPayment) {
+    paymentTypes = PARTNER_PAYMENT_TYPES
+    entityList = partners
+    entityLabel = 'Partner'
+  } else if (isSupplierPayment) {
+    paymentTypes = SUPPLIER_PAYMENT_TYPES
+    entityList = suppliers
+    entityLabel = 'Supplier'
+  } else {
+    paymentTypes = PAYMENT_TYPES
+    entityList = customers
+    entityLabel = 'Customer'
+  }
 
   return (
     <div className="card" style={{maxWidth:720}}>

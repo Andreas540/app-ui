@@ -5,14 +5,21 @@ interface PaymentDetailModalProps {
   isOpen: boolean
   onClose: () => void
   payment: any
-  isPartnerPayment?: boolean // NEW: distinguish payment type
+  isPartnerPayment?: boolean
+  isSupplierPayment?: boolean // NEW: support supplier payments
 }
 
 function fmtIntMoney(n: number) {
   return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
 }
 
-export default function PaymentDetailModal({ isOpen, onClose, payment, isPartnerPayment = false }: PaymentDetailModalProps) {
+export default function PaymentDetailModal({ 
+  isOpen, 
+  onClose, 
+  payment, 
+  isPartnerPayment = false,
+  isSupplierPayment = false 
+}: PaymentDetailModalProps) {
   if (!payment) return null
 
   const formatDate = (dateStr: string) => {
@@ -24,6 +31,11 @@ export default function PaymentDetailModal({ isOpen, onClose, payment, isPartner
       day: 'numeric' 
     })
   }
+
+  // Determine payment type for edit link
+  let paymentType = 'customer'
+  if (isPartnerPayment) paymentType = 'partner'
+  if (isSupplierPayment) paymentType = 'supplier'
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Payment Details">
@@ -98,6 +110,13 @@ export default function PaymentDetailModal({ isOpen, onClose, payment, isPartner
               </div>
             )}
 
+            {payment.supplier_name && (
+              <div style={{ marginBottom: 16 }}>
+                <div className="helper">Supplier</div>
+                <div style={{ fontWeight: 600 }}>{payment.supplier_name}</div>
+              </div>
+            )}
+
             {payment.order_id && (
               <div style={{ marginBottom: 16 }}>
                 <div className="helper">Related Order</div>
@@ -145,7 +164,7 @@ export default function PaymentDetailModal({ isOpen, onClose, payment, isPartner
           paddingTop: 16,
           borderTop: '1px solid var(--line)'
         }}>
-          <Link to={`/payments/${payment.id}/edit?type=${isPartnerPayment ? 'partner' : 'customer'}`} style={{ flex: 1 }}>
+          <Link to={`/payments/${payment.id}/edit?type=${paymentType}`} style={{ flex: 1 }}>
             <button 
               className="primary"
               style={{ width: '100%' }}
