@@ -55,38 +55,48 @@ export default function Payments() {
   const [supplierDate, setSupplierDate] = useState<string>(todayYMD())
   const [supplierNotes, setSupplierNotes] = useState('')
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true); setErr(null)
-        const { customers, partners: bootPartners, suppliers: bootSuppliers } = await fetchBootstrap()
-        setPeople(customers as unknown as CustomerLite[])
-        setPartners(bootPartners ?? [])
-        setSuppliers(bootSuppliers ?? [])
-        
-        // Preselect customer if coming from detail page
-        const params = new URLSearchParams(location.search)
-        const preselectedCustomerId = params.get('customer_id')
-        if (preselectedCustomerId) {
-          setEntityId(preselectedCustomerId)
-          setPaymentDirection('customer')
-        } else {
-          setEntityId((customers[0]?.id as string) ?? '')
-        }
-        if (bootPartners && bootPartners.length > 0) {
-          setPartnerId(bootPartners[0].id)
-          setPartnerForCreditId(bootPartners[0].id) // sensible default for Partner credit
-        }
-        if (bootSuppliers && bootSuppliers.length > 0) {
+  // In Payments.tsx, update the useEffect that handles preselection:
+
+useEffect(() => {
+  (async () => {
+    try {
+      setLoading(true); setErr(null)
+      const { customers, partners: bootPartners, suppliers: bootSuppliers } = await fetchBootstrap()
+      setPeople(customers as unknown as CustomerLite[])
+      setPartners(bootPartners ?? [])
+      setSuppliers(bootSuppliers ?? [])
+      
+      // Check URL params for preselection
+      const params = new URLSearchParams(location.search)
+      const preselectedCustomerId = params.get('customer_id')
+      const preselectedSupplierId = params.get('supplier_id')
+      
+      if (preselectedCustomerId) {
+        setEntityId(preselectedCustomerId)
+        setPaymentDirection('customer')
+      } else if (preselectedSupplierId) {
+        setSupplierId(preselectedSupplierId)
+        setPaymentDirection('supplier')
+      } else {
+        setEntityId((customers[0]?.id as string) ?? '')
+      }
+      
+      if (bootPartners && bootPartners.length > 0) {
+        setPartnerId(bootPartners[0].id)
+        setPartnerForCreditId(bootPartners[0].id)
+      }
+      if (bootSuppliers && bootSuppliers.length > 0) {
+        if (!preselectedSupplierId) {
           setSupplierId(bootSuppliers[0].id)
         }
-      } catch (e:any) {
-        setErr(e?.message || String(e))
-      } finally {
-        setLoading(false)
       }
-    })()
-  }, [location.search])
+    } catch (e:any) {
+      setErr(e?.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  })()
+}, [location.search])
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
@@ -343,28 +353,38 @@ export default function Payments() {
   }
 
   async function saveSupplierPayment() {
-    if (!supplier) { alert('Select a supplier'); return }
-    const amountNum = Number((supplierAmountStr || '').replace(',', '.'))
-    if (!Number.isFinite(amountNum) || amountNum === 0) {
-      alert('Enter a non-zero amount')
+  if (!supplier) { alert('Select a supplier'); return }
+  const amountNum = Number((supplierAmountStr || '').replace(',', '.'))
+  if (!Number.isFinite(amountNum) || amountNum === 0) {
+    alert('Enter a non-zero amount')
+    return
+  }
+  try {
+    await createSupplierPayment({
+      supplier_id: supplier.id,
+      payment_type: supplierPaymentType,
+      amount: amountNum,
+      payment_date: supplierDate,
+      notes: supplierNotes.trim() || null,
+    })
+    alert('Supplier payment saved!')
+    
+    // Check if we should return to supplier detail
+    const params = new URLSearchParams(location.search)
+    const returnTo = params.get('return_to')
+    const returnId = params.get('return_id')
+    if (returnTo === 'supplier' && returnId) {
+      navigate(`/suppliers/${returnId}`)
       return
     }
-    try {
-      await createSupplierPayment({
-        supplier_id: supplier.id,
-        payment_type: supplierPaymentType,
-        amount: amountNum,
-        payment_date: supplierDate,
-        notes: supplierNotes.trim() || null,
-      })
-      alert('Supplier payment saved!')
-      setSupplierAmountStr('')
-      setSupplierPaymentType('Cash')
-      setSupplierNotes('')
-    } catch (e:any) {
-      alert(e?.message || 'Save failed')
-    }
+    
+    setSupplierAmountStr('')
+    setSupplierPaymentType('Cash')
+    setSupplierNotes('')
+  } catch (e:any) {
+    alert(e?.message || 'Save failed')
   }
+}
 
   if (loading) return <div className="card"><p>Loading…</p></div>
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>

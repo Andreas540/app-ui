@@ -26,27 +26,32 @@ async function getSupplier(event) {
     const TENANT_ID = authz.tenantId
 
     const supp = await sql`
-  SELECT id, name, phone, email, address1, address2, city, state, postal_code, country
-  FROM suppliers
-  WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-  LIMIT 1
+      SELECT id, name, phone, email, address1, address2, city, state, postal_code, country
+      FROM suppliers
+      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      LIMIT 1
     `
     if (supp.length === 0) return cors(404, { error: 'Not found' })
     const supplier = supp[0]
 
-    // Calculate owed to supplier: sum of (qty * product_cost + qty * shipping_cost) from order_items_suppliers
-    // Payments will be subtracted later when the payments table is created
+    // Calculate totals: orders - payments = owed to supplier
     const totals = await sql`
       WITH o AS (
-        SELECT SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost)::numeric(12,2) AS total_orders
+        SELECT COALESCE(SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost),0)::numeric(12,2) AS total_orders
         FROM orders_suppliers os
         JOIN order_items_suppliers ois ON ois.order_id = os.id
         WHERE os.tenant_id = ${TENANT_ID} AND os.supplier_id = ${id}
+      ),
+      p AS (
+        SELECT COALESCE(SUM(amount),0)::numeric(12,2) AS total_payments
+        FROM supplier_payments
+        WHERE tenant_id = ${TENANT_ID} AND supplier_id = ${id}
       )
-      SELECT COALESCE(o.total_orders,0) AS total_orders,
-             0 AS total_payments,
-             COALESCE(o.total_orders,0) AS owed_to_supplier
-      FROM o
+      SELECT 
+        o.total_orders,
+        p.total_payments,
+        (o.total_orders - p.total_payments)::numeric(12,2) AS owed_to_supplier
+      FROM o, p
     `
 
     // Get orders with their items grouped
@@ -109,8 +114,20 @@ async function getSupplier(event) {
       items: itemsByOrder[o.id] || []
     }))
 
-    // Payments placeholder (empty for now)
-    const payments = []
+    // Get payments to supplier
+    const payments = await sql`
+      SELECT
+        id,
+        payment_date,
+        payment_type,
+        amount,
+        notes
+      FROM supplier_payments
+      WHERE tenant_id = ${TENANT_ID}
+        AND supplier_id = ${id}
+      ORDER BY payment_date DESC, created_at DESC
+      LIMIT 100
+    `
 
     return cors(200, { supplier, totals: totals[0], orders: ordersWithItems, payments })
   } catch (e) {

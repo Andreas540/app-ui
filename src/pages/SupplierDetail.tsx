@@ -43,6 +43,14 @@ interface Order {
   est_delivery_date?: string
 }
 
+interface Payment {
+  id: string
+  payment_date: string
+  payment_type: string
+  amount: number
+  notes?: string | null
+}
+
 interface Totals {
   total_orders: number
   total_payments: number
@@ -53,7 +61,7 @@ interface SupplierDetail {
   supplier: Supplier
   totals: Totals
   orders: Order[]
-  payments: any[]
+  payments: Payment[]
 }
 
 async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
@@ -75,6 +83,7 @@ export default function SupplierDetailPage() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
+  const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
@@ -115,12 +124,13 @@ export default function SupplierDetailPage() {
   if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
   if (!data) return null
 
-  const { supplier, totals, orders } = data
+  const { supplier, totals, orders, payments } = data
   const addrLine1 = [supplier.address1, supplier.address2].filter(Boolean).join(', ')
   const addrLine2 = [supplier.city, supplier.state, supplier.postal_code].filter(Boolean).join(' ')
 
   // Show 5 by default
   const shownOrders = showAllOrders ? orders : orders.slice(0, 5)
+  const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
   // Compact layout constants
   const DATE_COL = 55 // px (smaller; pulls middle text left)
@@ -171,22 +181,24 @@ export default function SupplierDetailPage() {
           </button>
         </Link>
 
-        <button
-          className="primary"
-          disabled
-          style={{
-            width: 100,
-            height: 28,
-            fontSize: 12,
-            padding: '0 10px',
-            borderRadius: 6,
-            whiteSpace: 'nowrap',
-            opacity: 0.5,
-            cursor: 'not-allowed'
-          }}
+        <Link
+          to={`/payments?supplier_id=${supplier.id}&supplier_name=${encodeURIComponent(supplier.name)}&return_to=supplier&return_id=${supplier.id}`}
+          style={{ textDecoration: 'none' }}
         >
-          New payment
-        </button>
+          <button
+            className="primary"
+            style={{
+              width: 100,
+              height: 28,
+              fontSize: 12,
+              padding: '0 10px',
+              borderRadius: 6,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            New payment
+          </button>
+        </Link>
       </div>
 
       {/* Two columns: LEFT = collapsible info; RIGHT = Owed to supplier (right-aligned) */}
@@ -305,15 +317,15 @@ export default function SupplierDetailPage() {
 
               return (
                 <div
-  key={o.id}
-  onClick={() => setSelectedOrder(o)}
-  style={{
-    borderBottom:'1px solid #eee',
-    paddingTop: '12px',
-    paddingBottom: '12px',
-    cursor: 'pointer'
-  }}
->
+                  key={o.id}
+                  onClick={() => setSelectedOrder(o)}
+                  style={{
+                    borderBottom:'1px solid #eee',
+                    paddingTop: '12px',
+                    paddingBottom: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
                   {/* First row: Date + Order number + Status + Total */}
                   <div
                     style={{
@@ -409,12 +421,91 @@ export default function SupplierDetailPage() {
         )}
       </div>
 
-      {/* Payments to supplier (placeholder) */}
+      {/* Payments to supplier */}
       <div style={{ marginTop: 20 }}>
-        <h4 style={{margin:0}}>Payments to supplier</h4>
-        <p className="helper">No payments yet.</p>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <h4 style={{margin:0}}>Payments to supplier</h4>
+          {payments.length > 5 && (
+            <button
+              className="helper"
+              onClick={() => setShowAllPayments(v => !v)}
+              style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+            >
+              {showAllPayments ? 'Show less' : 'Show all payments'}
+            </button>
+          )}
+        </div>
+
+        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
+          <div style={{display:'grid'}}>
+            {shownPayments.map(p => {
+              const hasNotes = p.notes && p.notes.trim()
+              const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
+
+              // Amount display: "-$..." for payments, "+$..." (no minus) for Add to debt
+              const amountStr = isAddToDebt
+                ? fmtMoney(Math.abs(p.amount))
+                : `-${fmtMoney(Math.abs(p.amount))}`
+
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    borderBottom:'1px solid #eee',
+                    paddingTop: '12px',
+                    paddingBottom: '12px'
+                  }}
+                >
+                  <div
+                    style={{
+                      display:'grid',
+                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                      gap:LINE_GAP,
+                    }}
+                  >
+                    {/* DATE */}
+                    <div className="helper">{formatUSAny(p.payment_date)}</div>
+
+                    {/* EMPTY COLUMN for alignment */}
+                    <div></div>
+
+                    {/* TYPE */}
+                    <div className="helper" style={{ lineHeight: '1.4' }}>
+                      {p.payment_type}
+                    </div>
+
+                    {/* AMOUNT: "-$..." except Add to debt */}
+                    <div className="helper" style={{textAlign:'right'}}>
+                      {amountStr}
+                    </div>
+                  </div>
+
+                  {/* NOTES ROW */}
+                  {hasNotes && (
+                    <div
+                      style={{
+                        display:'grid',
+                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
+                        gap:LINE_GAP,
+                        marginTop: 4
+                      }}
+                    >
+                      <div></div>
+                      <div></div>
+                      <div className="helper" style={{ lineHeight: '1.4' }}>
+                        {p.notes}
+                      </div>
+                      <div></div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
-    {/* Modal */}
+
+      {/* Modal */}
       <SupplierOrderDetailModal
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
