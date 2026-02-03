@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import Modal from './Modal'
+import { formatUSAny } from '../lib/time'  // ADD THIS IMPORT
 
 interface PaymentDetailModalProps {
   isOpen: boolean
   onClose: () => void
   payment: any
   isPartnerPayment?: boolean
-  isSupplierPayment?: boolean // NEW: support supplier payments
+  isSupplierPayment?: boolean
 }
 
 function fmtIntMoney(n: number) {
@@ -22,16 +23,8 @@ export default function PaymentDetailModal({
 }: PaymentDetailModalProps) {
   if (!payment) return null
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
-  }
-
+  // REMOVE the old formatDate function and use formatUSAny instead
+  
   // Determine payment type for edit link
   let paymentType = 'customer'
   if (isPartnerPayment) paymentType = 'partner'
@@ -66,7 +59,7 @@ export default function PaymentDetailModal({
           <div>
             <div style={{ marginBottom: 16 }}>
               <div className="helper">Payment Date</div>
-              <div style={{ fontWeight: 600 }}>{formatDate(payment.payment_date)}</div>
+              <div style={{ fontWeight: 600 }}>{formatUSAny(payment.payment_date)}</div>
             </div>
 
             <div style={{ marginBottom: 16 }}>
