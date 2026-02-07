@@ -129,8 +129,6 @@ function EmployeeShell() {
         WebkitOverflowScrolling: 'touch',
       }}
     >
-      <MaintenanceGate />  {/* 👈 ADD HERE */}
-
       <main className="content" style={{ padding: 16, minHeight: '100%' }}>
         <Routes>
           <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
