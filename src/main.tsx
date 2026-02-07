@@ -19,18 +19,16 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 )
 
-// 🚨 Disable PWA / Service Worker and force redirect to maintenance
+// 🚨 Disable PWA / Service Worker and immediately redirect to maintenance
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
+  ;(async () => {
     const regs = await navigator.serviceWorker.getRegistrations()
-    const hadAny = regs.length > 0
-
     await Promise.all(regs.map((r) => r.unregister()))
-
-    // Force a reload/redirect so the in-memory SPA can't keep running
-    if (hadAny) {
-      window.location.replace('/maintenance.html')
-    }
-  })
+    // Kick out this running SPA session
+    window.location.replace('/maintenance.html')
+  })()
+} else {
+  // No SW support — still kick out
+  window.location.replace('/maintenance.html')
 }
 
