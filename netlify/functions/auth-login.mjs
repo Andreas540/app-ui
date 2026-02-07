@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
+
 
 export async function handler(event) {
     if (event.httpMethod === 'OPTIONS') return cors(200, {})
