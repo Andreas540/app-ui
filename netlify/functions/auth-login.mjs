@@ -77,7 +77,7 @@ async function handleLogin(event) {
     // Check if user is active (legacy users table)
     if (!user.active) {
       console.log('User account is disabled (users.active = false)')
-      return cors(403, { error: 'ACCOUNT_DISABLED' })
+      return cors(403, { error: 'Login Failed' })
     }
 
     // ALSO block if disabled in app_users (the table used by resolveAuthz)
@@ -90,7 +90,7 @@ async function handleLogin(event) {
     `
     if (disabledRows.length > 0 && disabledRows[0]?.is_disabled) {
       console.log('User account is disabled (app_users.is_disabled = true)')
-      return cors(403, { error: 'ACCOUNT_DISABLED' })
+      return cors(403, { error: 'Login Failed' })
     }
 
     // Verify password
