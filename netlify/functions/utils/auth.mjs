@@ -2,6 +2,8 @@
 // Utility functions for authentication and authorization
 import jwt from 'jsonwebtoken'
 
+const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
+
 /**
  * Extract user identity from JWT token in request headers
  * Returns { userId, email } or null if invalid/missing
@@ -114,6 +116,12 @@ export async function resolveAuthz({ sql, event }) {
     return { tenantId: TENANT_ID, role: 'tenant_admin', tenantFeatures: [], userFeatures: null, mode: 'fallback' }
   }
 
+  // Optional immediate hard-block by email (only affects emails in BLOCKED_EMAILS)
+  const emailNorm = (user.email || '').toLowerCase().trim()
+  if (emailNorm && BLOCKED_EMAILS.has(emailNorm)) {
+    return { error: 'ACCOUNT_DISABLED' }
+  }
+
   const requestedTenantId =
     event.headers['x-tenant-id'] ||
     event.headers['X-Tenant-Id'] ||
@@ -126,6 +134,18 @@ export async function resolveAuthz({ sql, event }) {
     on conflict (id) do update
       set email = coalesce(public.app_users.email, excluded.email)
   `
+
+  // HARD BLOCK: disabled users must never fall back
+  // (This is the critical fix that prevents the "login works again" scenario.)
+  const disabledRows = await sql`
+    select is_disabled
+    from public.app_users
+    where id = ${user.userId}::uuid
+    limit 1
+  `
+  if (disabledRows[0]?.is_disabled) {
+    return { error: 'ACCOUNT_DISABLED' }
+  }
 
   // Check for active tenant (multi-tenant switching)
   const activeTenantId =
@@ -146,13 +166,13 @@ export async function resolveAuthz({ sql, event }) {
       limit 1
     `
     if (!rows.length) return { error: 'Not authorized for selected tenant' }
-    return { 
-      tenantId: rows[0].tenant_id, 
-      role: rows[0].role, 
+    return {
+      tenantId: rows[0].tenant_id,
+      role: rows[0].role,
       businessType: rows[0].business_type,
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
-      mode: 'membership' 
+      mode: 'membership'
     }
   }
 
@@ -169,13 +189,13 @@ export async function resolveAuthz({ sql, event }) {
       limit 1
     `
     if (!rows.length) return { error: 'Not authorized for requested tenant' }
-    return { 
-      tenantId: rows[0].tenant_id, 
-      role: rows[0].role, 
+    return {
+      tenantId: rows[0].tenant_id,
+      role: rows[0].role,
       businessType: rows[0].business_type,
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
-      mode: 'membership' 
+      mode: 'membership'
     }
   }
 
@@ -190,23 +210,23 @@ export async function resolveAuthz({ sql, event }) {
     order by tm.created_at asc
     limit 1
   `
-  if (rows.length) return { 
-    tenantId: rows[0].tenant_id, 
-    role: rows[0].role, 
+  if (rows.length) return {
+    tenantId: rows[0].tenant_id,
+    role: rows[0].role,
     businessType: rows[0].business_type,
     tenantFeatures: rows[0].tenant_features || [],
     userFeatures: rows[0].user_features,
-    mode: 'membership' 
+    mode: 'membership'
   }
 
   // No membership yet => BLV intact
-  return { 
-    tenantId: TENANT_ID, 
-    role: 'tenant_admin', 
+  return {
+    tenantId: TENANT_ID,
+    role: 'tenant_admin',
     businessType: 'general',
     tenantFeatures: [],
     userFeatures: null,
-    mode: 'fallback' 
+    mode: 'fallback'
   }
 }
 
