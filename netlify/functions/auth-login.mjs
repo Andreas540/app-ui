@@ -1,10 +1,14 @@
 // netlify/functions/auth-login.mjs
+import { checkMaintenance } from './utils/maintenance.mjs'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
 const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
 
 export async function handler(event) {
+  // 🔴 FIRST LINE - before any other code
+  const maintenanceCheck = checkMaintenance()
+  if (maintenanceCheck) return maintenanceCheck
   if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod === 'POST') return handleLogin(event)
   return cors(405, { error: 'Method not allowed' })
