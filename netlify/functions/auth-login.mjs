@@ -37,7 +37,7 @@ async function handleLogin(event) {
     // HARD BLOCK by email (immediate, no DB dependency)
     if (BLOCKED_EMAILS.has(emailSearch)) {
       console.log('Blocked email attempted login:', emailSearch)
-      return cors(403, { error: 'ACCOUNT_DISABLED' })
+      return cors(403, { error: 'Login Failed' })
     }
 
     const sql = neon(DATABASE_URL)
