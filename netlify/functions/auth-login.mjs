@@ -2,6 +2,8 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
+const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod === 'POST') return handleLogin(event)
@@ -13,16 +15,16 @@ async function handleLogin(event) {
     console.log('=== AUTH LOGIN START ===')
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL, JWT_SECRET } = process.env
-    
+
     console.log('DATABASE_URL exists:', !!DATABASE_URL)
     console.log('JWT_SECRET exists:', !!JWT_SECRET)
-    
+
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
 
     const body = JSON.parse(event.body || '{}')
     const { email, password } = body
-    
+
     console.log('Login attempt for email:', email)
 
     if (!email || !password) {
@@ -30,12 +32,19 @@ async function handleLogin(event) {
       return cors(400, { error: 'Email and password required' })
     }
 
+    const emailSearch = email.toLowerCase().trim()
+
+    // HARD BLOCK by email (immediate, no DB dependency)
+    if (BLOCKED_EMAILS.has(emailSearch)) {
+      console.log('Blocked email attempted login:', emailSearch)
+      return cors(403, { error: 'ACCOUNT_DISABLED' })
+    }
+
     const sql = neon(DATABASE_URL)
 
-    // Find user by email
-    const emailSearch = email.toLowerCase().trim()
+    // Find user by email (legacy users table)
     console.log('Searching for email:', emailSearch)
-    
+
     const users = await sql`
       SELECT 
         u.id,
@@ -54,7 +63,7 @@ async function handleLogin(event) {
       WHERE u.email = ${emailSearch}
       LIMIT 1
     `
-    
+
     console.log('Users found:', users.length)
 
     if (users.length === 0) {
@@ -65,10 +74,23 @@ async function handleLogin(event) {
     const user = users[0]
     console.log('User found:', user.email, 'Active:', user.active)
 
-    // Check if user is active
+    // Check if user is active (legacy users table)
     if (!user.active) {
-      console.log('User account is disabled')
-      return cors(403, { error: 'Account is disabled' })
+      console.log('User account is disabled (users.active = false)')
+      return cors(403, { error: 'ACCOUNT_DISABLED' })
+    }
+
+    // ALSO block if disabled in app_users (the table used by resolveAuthz)
+    // This prevents "login works but API 403s" mismatch.
+    const disabledRows = await sql`
+      SELECT is_disabled
+      FROM public.app_users
+      WHERE id = ${user.id}::uuid
+      LIMIT 1
+    `
+    if (disabledRows.length > 0 && disabledRows[0]?.is_disabled) {
+      console.log('User account is disabled (app_users.is_disabled = true)')
+      return cors(403, { error: 'ACCOUNT_DISABLED' })
     }
 
     // Verify password
@@ -76,12 +98,12 @@ async function handleLogin(event) {
     console.log('Password hash from DB:', user.password_hash.substring(0, 20) + '...')
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
     console.log('Password match:', passwordMatch)
-    
+
     if (!passwordMatch) {
       console.log('Password verification failed')
       return cors(401, { error: 'Invalid email or password' })
     }
-    
+
     console.log('Password verified successfully')
 
     // Update last login
@@ -102,9 +124,10 @@ async function handleLogin(event) {
 
     const tenantFeatures = user.tenant_features || []
     const userFeatures = membership.length > 0 ? membership[0].user_features : null
-    const effectiveFeatures = userFeatures !== null
-      ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
-      : tenantFeatures // Inherit all
+    const effectiveFeatures =
+      userFeatures !== null
+        ? userFeatures.filter((f) => tenantFeatures.includes(f)) // Intersection
+        : tenantFeatures // Inherit all
 
     // Generate JWT token
     const token = jwt.sign(
@@ -116,7 +139,7 @@ async function handleLogin(event) {
         accessLevel: user.access_level
       },
       JWT_SECRET,
-      { expiresIn: '7d' } // Token valid for 7 days
+      { expiresIn: '7d' }
     )
 
     // Return user info and token
@@ -134,7 +157,6 @@ async function handleLogin(event) {
         features: effectiveFeatures
       }
     })
-
   } catch (e) {
     console.error('Login error:', e)
     return cors(500, { error: 'Login failed', details: String(e?.message || e) })
@@ -148,8 +170,9 @@ function cors(status, body) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      // include Authorization to be safe for other calls in your app
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   }
 }
