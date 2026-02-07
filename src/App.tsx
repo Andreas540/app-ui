@@ -1,4 +1,5 @@
 // src/App.tsx
+import MaintenanceGate from './components/MaintenanceGate'
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
@@ -128,6 +129,8 @@ function EmployeeShell() {
         WebkitOverflowScrolling: 'touch',
       }}
     >
+      <MaintenanceGate />  {/* 👈 ADD HERE */}
+      
       <main className="content" style={{ padding: 16, minHeight: '100%' }}>
         <Routes>
           <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
