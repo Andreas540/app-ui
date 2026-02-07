@@ -1,4 +1,5 @@
 // src/lib/api.ts
+import { MAINTENANCE_MODE } from '../components/MaintenanceGate'
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
@@ -19,13 +20,14 @@ export function getAuthHeaders(): HeadersInit {
   }
 }
 
-// ---- Maintenance kick-out (401/403 => logout + redirect) ----
+// ---- Maintenance kick-out ----
 const MAINTENANCE_PATH = '/maintenance.html'
 
 function kickOutToMaintenance() {
   try {
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
+    sessionStorage.clear()
   } catch {
     // ignore storage errors
   }
@@ -33,34 +35,20 @@ function kickOutToMaintenance() {
   window.location.replace(MAINTENANCE_PATH)
 }
 
-async function readErrorPayload(res: Response): Promise<any | null> {
-  const ct = res.headers.get('content-type') || ''
-  if (ct.includes('application/json')) {
-    try {
-      return await res.clone().json()
-    } catch {
-      return null
-    }
-  }
-  return null
-}
-
 async function handleAuthFailure(res: Response) {
-  if (res.status === 401 || res.status === 403) {
-    // Optional: if you only want to kick out on a specific server code, inspect payload here.
-    // For maintenance mode, kicking out on any 401/403 is the desired behavior.
-    const payload = await readErrorPayload(res)
-    // If you later want to only kick on ACCOUNT_DISABLED or MAINTENANCE, you can gate here.
-    // Example:
-    // if (payload?.error !== 'ACCOUNT_DISABLED' && payload?.error !== 'MAINTENANCE') return;
-    void payload // keep variable for easy debugging later
-
+  if (res.status === 401 || res.status === 403 || res.status === 503) {
     kickOutToMaintenance()
     throw new Error(`Auth blocked (status ${res.status})`)
   }
 }
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  // 🔴 Check maintenance mode BEFORE making any API call
+  if (MAINTENANCE_MODE) {
+    kickOutToMaintenance()
+    throw new Error('Maintenance mode active')
+  }
+  
   const res = await fetch(input, init)
   await handleAuthFailure(res)
   return res

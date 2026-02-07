@@ -1,3 +1,4 @@
+// src/main.tsx
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -19,16 +20,22 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 )
 
-// 🚨 Disable PWA / Service Worker and immediately redirect to maintenance
+// 🧹 Clean up service worker (runs once per session)
 if ('serviceWorker' in navigator) {
-  ;(async () => {
-    const regs = await navigator.serviceWorker.getRegistrations()
-    await Promise.all(regs.map((r) => r.unregister()))
-    // Kick out this running SPA session
-    window.location.replace('/maintenance.html')
-  })()
-} else {
-  // No SW support — still kick out
-  window.location.replace('/maintenance.html')
+  // Check if we already cleaned up this session
+  const hasCleanedSW = sessionStorage.getItem('sw_cleanup_done')
+  
+  if (!hasCleanedSW) {
+    ;(async () => {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(regs.map((r) => r.unregister()))
+        sessionStorage.setItem('sw_cleanup_done', '1')
+        console.log('Service worker cleaned up')
+      } catch (err) {
+        console.error('Failed to unregister service workers:', err)
+      }
+    })()
+  }
 }
 
