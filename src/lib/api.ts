@@ -1,5 +1,5 @@
 // src/lib/api.ts
-import { MAINTENANCE_MODE } from '../components/MaintenanceGate'
+
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
@@ -36,19 +36,15 @@ function kickOutToMaintenance() {
 }
 
 async function handleAuthFailure(res: Response) {
-  if (res.status === 401 || res.status === 403 || res.status === 503) {
+  // Backend returns 503 during maintenance - kick everyone out
+  if (res.status === 503 || res.status === 401 || res.status === 403) {
     kickOutToMaintenance()
     throw new Error(`Auth blocked (status ${res.status})`)
   }
 }
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
-  // 🔴 Check maintenance mode BEFORE making any API call
-  if (MAINTENANCE_MODE) {
-    kickOutToMaintenance()
-    throw new Error('Maintenance mode active')
-  }
-  
+    
   const res = await fetch(input, init)
   await handleAuthFailure(res)
   return res

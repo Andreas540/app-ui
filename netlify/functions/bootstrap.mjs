@@ -1,8 +1,13 @@
 // netlify/functions/bootstrap.mjs
 
+import { checkMaintenance } from './utils/maintenance.mjs'
 import { resolveAuthz } from './utils/auth.mjs'
 
 export async function handler(event) {
+  // 🔴 FIRST LINE - before any other code
+  const maintenanceCheck = checkMaintenance()
+  if (maintenanceCheck) return maintenanceCheck
+
   // CORS + preflight
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod !== 'GET')    return cors(405, { error: 'Method not allowed' });

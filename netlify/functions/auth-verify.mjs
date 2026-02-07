@@ -1,7 +1,12 @@
 // netlify/functions/auth-verify.mjs
+import { checkMaintenance } from './utils/maintenance.mjs'
 import jwt from 'jsonwebtoken'
 
 export async function handler(event) {
+  // 🔴 FIRST LINE - before any other code
+  const maintenanceCheck = checkMaintenance()
+  if (maintenanceCheck) return maintenanceCheck
+
   if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod === 'POST') return handleVerify(event)
   return cors(405, { error: 'Method not allowed' })
