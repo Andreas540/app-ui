@@ -130,7 +130,7 @@ function EmployeeShell() {
       }}
     >
       <MaintenanceGate />  {/* 👈 ADD HERE */}
-      
+
       <main className="content" style={{ padding: 16, minHeight: '100%' }}>
         <Routes>
           <Route path="/time-entry-simple/:token" element={<TimeEntrySimple />} />
@@ -310,7 +310,8 @@ useEffect(() => {
   const currentTenantName = currentTenant?.name || user?.tenantName || 'My Biz'
 
   return (
-    <div className="app">      
+    <div className="app"> 
+    <MaintenanceGate />  {/* 👈 ADD HERE */}     
       <header className="topbar">        
         <div className="brand">
           <button className="hamburger" aria-label="Toggle menu" onClick={() => setNavOpen(v => !v)}>
