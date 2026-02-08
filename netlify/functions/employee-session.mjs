@@ -1,7 +1,11 @@
 // netlify/functions/employee-session.mjs
+import { checkMaintenance } from './utils/maintenance.mjs'
 import crypto from 'crypto'
 
 export async function handler(event) {
+  // 🔴 Add this check
+  const check = checkMaintenance()
+  if (check) return check
   if (event.httpMethod === 'OPTIONS') return cors(204, {}, event)
   if (event.httpMethod === 'POST') return createEmployeeSession(event)
   if (event.httpMethod === 'GET') return getEmployeeSession(event)
