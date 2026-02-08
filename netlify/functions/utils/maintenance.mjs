@@ -10,8 +10,8 @@ export function checkMaintenance() {
         'Cache-Control': 'no-store'
       },
       body: JSON.stringify({ 
-        error: 'Maintenance',
-        message: 'System is under maintenance.' 
+        error: 'Failed',
+        message: 'Error.' 
       })
     }
   }
