@@ -1,5 +1,5 @@
 // 🔴 FLIP THIS TO KILL ALL SESSIONS
-export const MAINTENANCE_MODE = false
+export const MAINTENANCE_MODE = true
 
 export function checkMaintenance() {
   if (MAINTENANCE_MODE) {
