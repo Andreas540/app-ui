@@ -1,6 +1,7 @@
 // netlify/functions/auth-verify.mjs
 import { checkMaintenance } from './utils/maintenance.mjs'
 import jwt from 'jsonwebtoken'
+import { logActivity } from './utils/activity-logger.mjs'
 
 export async function handler(event) {
   // 🔴 FIRST LINE - before any other code
@@ -103,6 +104,14 @@ async function handleVerify(event) {
         ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
         : tenantFeatures // Inherit all
 
+        // 🆕 NEW - Log successful verification (active tenant case)
+      await logActivity({ 
+        sql, 
+        event, 
+        action: 'verify_token',
+        success: true 
+      })
+
       // Return user info with active tenant context
       return cors(200, {
         valid: true,
@@ -175,6 +184,14 @@ async function handleVerify(event) {
       ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
       : tenantFeatures // Inherit all
 
+      // 🆕 NEW - Log successful verification (default tenant case)
+    await logActivity({ 
+      sql, 
+      event, 
+      action: 'verify_token',
+      success: true 
+    })
+
     // Return user info
     return cors(200, {
       valid: true,
@@ -198,6 +215,22 @@ async function handleVerify(event) {
 
   } catch (e) {
     console.error('Verify error:', e)
+
+    // 🆕 NEW - Log error activity
+    try {
+      const { neon } = await import('@neondatabase/serverless')
+      const sql = neon(process.env.DATABASE_URL)
+      await logActivity({ 
+        sql, 
+        event, 
+        action: 'verify_token',
+        success: false,
+        error: String(e?.message || e)
+      })
+    } catch (logErr) {
+      console.error('Logging failed:', logErr)
+    }
+    
     return cors(500, { error: 'Verification failed', details: String(e?.message || e) })
   }
 }
