@@ -330,20 +330,20 @@ export default function TenantAdmin() {
                 </div>
                 
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                  <button
-                    onClick={() => handleToggleUserStatus(u.id, u.active)}
-                    disabled={togglingUserId === u.id}
-                    style={{
-                      height: 36,
-                      padding: '0 12px',
-                      fontSize: 13,
-                      background: u.active ? 'transparent' : '#4CAF50',
-                      border: u.active ? '1px solid salmon' : '1px solid #4CAF50',
-                      color: u.active ? 'salmon' : 'white',
-                    }}
-                  >
-                    {togglingUserId === u.id ? '...' : (u.active ? 'Deactivate' : 'Activate')}
-                  </button>
+  <button
+    onClick={() => handleToggleUserStatus(u.id, u.active)}
+    disabled={togglingUserId === u.id}
+    style={{
+      height: 36,
+      padding: '0 12px',
+      fontSize: 13,
+      background: u.active ? '#4CAF50' : '#ff6b6b',
+      border: u.active ? '1px solid #4CAF50' : '1px solid #ff6b6b',
+      color: 'white',
+    }}
+  >
+    {togglingUserId === u.id ? '...' : (u.active ? 'Active' : 'Inactive')}
+  </button>
                   <button
                     onClick={() => openManageUserFeatures(u)}
                     disabled={!u.active}

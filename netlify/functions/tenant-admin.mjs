@@ -46,19 +46,18 @@ async function handleGet(event) {
 
       // Get all users in this tenant
       const users = await sql`
-        SELECT 
-          u.id,
-          u.email,
-          u.name,
-          tm.role,
-          tm.features
-          u.active  -- 🆕 ADD THIS LINE
-        FROM users u
-        JOIN tenant_memberships tm ON tm.user_id = u.id
-        WHERE tm.tenant_id = ${tenantId}
-          AND u.active = true
-        ORDER BY u.email ASC
-      `
+  SELECT 
+    u.id,
+    u.email,
+    u.name,
+    tm.role,
+    tm.features,
+    u.active
+  FROM users u
+  JOIN tenant_memberships tm ON tm.user_id = u.id
+  WHERE tm.tenant_id = ${tenantId}
+  ORDER BY u.email ASC
+`
 
       return cors(200, { 
         users: users,

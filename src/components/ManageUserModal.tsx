@@ -227,19 +227,19 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span className="helper" style={{ fontSize: 13 }}>Status:</span>
                   <button
-                    onClick={handleToggleUserStatus}
-                    disabled={togglingStatus}
-                    style={{
-                      height: 32,
-                      padding: '0 16px',
-                      fontSize: 12,
-                      background: userActive ? 'transparent' : '#4CAF50',
-                      border: userActive ? '1px solid salmon' : '1px solid #4CAF50',
-                      color: userActive ? 'salmon' : 'white',
-                    }}
-                  >
-                    {togglingStatus ? 'Updating...' : (userActive ? 'Active - Click to Deactivate' : 'Inactive - Click to Activate')}
-                  </button>
+  onClick={handleToggleUserStatus}
+  disabled={togglingStatus}
+  style={{
+    height: 32,
+    padding: '0 16px',
+    fontSize: 12,
+    background: userActive ? '#4CAF50' : '#ff6b6b',
+    border: userActive ? '1px solid #4CAF50' : '1px solid #ff6b6b',
+    color: 'white',
+  }}
+>
+  {togglingStatus ? 'Updating...' : (userActive ? 'Active' : 'Inactive')}
+</button>
                 </div>
               </div>
               <button
