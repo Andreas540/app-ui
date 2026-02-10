@@ -27,6 +27,7 @@ interface User {
   id: string
   email: string
   name: string | null
+  active: boolean
   tenants: Array<{
     tenant_id: string
     tenant_name: string
@@ -71,6 +72,7 @@ export default function SuperAdmin() {
   // UI state
   const [activeTab, setActiveTab] = useState<'tenants' | 'users'>('tenants')
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
   
   // Tenant features management
   const [managingTenantId, setManagingTenantId] = useState<string | null>(null)
@@ -205,6 +207,34 @@ export default function SuperAdmin() {
     }
   }
 
+  async function handleToggleUserStatus(userId: string, currentlyActive: boolean) {
+    try {
+      setTogglingUserId(userId)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'toggleUserStatus',
+          userId: userId,
+          isActive: !currentlyActive
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update user status')
+      }
+
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to update user status')
+    } finally {
+      setTogglingUserId(null)
+    }
+  }
+
   function addMembership() {
     setNewUserMemberships([...newUserMemberships, { tenant_id: '', role: 'tenant_user' }])
   }
@@ -282,67 +312,66 @@ export default function SuperAdmin() {
   }
 
   async function openManageIcons(tenant: Tenant) {
-  try {
-    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    const res = await fetch(
-      `${base}/api/tenant-icons?tenant_id=${tenant.id}`,
-      { headers: getAuthHeaders() }
-    )
-    
-    if (!res.ok) throw new Error('Failed to load tenant icons')
-    
-    const data = await res.json()
-    setManagingIconsTenant(data)
-    setManagingIconsTenantId(tenant.id)
-    setEditingAppName(data.app_name || data.name || '')  // ⭐ ADD THIS LINE
-  } catch (e: any) {
-    alert(e?.message || 'Failed to load icons')
-  }
-}
-async function handleSaveAppName() {
-  if (!managingIconsTenantId) return
-  
-  try {
-    setSavingAppName(true)
-    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-    
-    const res = await fetch(`${base}/api/tenant-icons`, {
-      method: 'PUT',
-      headers: {
-        ...getAuthHeaders(),
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        tenant_id: managingIconsTenantId,
-        app_name: editingAppName.trim() || null,
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || 'Failed to save app name')
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(
+        `${base}/api/tenant-icons?tenant_id=${tenant.id}`,
+        { headers: getAuthHeaders() }
+      )
+      
+      if (!res.ok) throw new Error('Failed to load tenant icons')
+      
+      const data = await res.json()
+      setManagingIconsTenant(data)
+      setManagingIconsTenantId(tenant.id)
+      setEditingAppName(data.app_name || data.name || '')
+    } catch (e: any) {
+      alert(e?.message || 'Failed to load icons')
     }
-
-    alert('App name saved successfully!')
-    await loadData()
-    await openManageIcons({ id: managingIconsTenantId } as Tenant)
-  } catch (e: any) {
-    alert(e?.message || 'Failed to save app name')
-  } finally {
-    setSavingAppName(false)
   }
-}
+
+  async function handleSaveAppName() {
+    if (!managingIconsTenantId) return
+    
+    try {
+      setSavingAppName(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      const res = await fetch(`${base}/api/tenant-icons`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenant_id: managingIconsTenantId,
+          app_name: editingAppName.trim() || null,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to save app name')
+      }
+
+      alert('App name saved successfully!')
+      await loadData()
+      await openManageIcons({ id: managingIconsTenantId } as Tenant)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save app name')
+    } finally {
+      setSavingAppName(false)
+    }
+  }
 
   async function handleIconUpload(iconType: '192' | '512' | 'favicon', file: File) {
     if (!managingIconsTenantId) return
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file')
       return
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert('File size must be less than 2MB')
       return
@@ -350,7 +379,6 @@ async function handleSaveAppName() {
 
     setUploadingIcon(true)
     try {
-      // Read file as base64
       const reader = new FileReader()
       reader.onload = async () => {
         const base64 = reader.result as string
@@ -678,10 +706,26 @@ async function handleSaveAppName() {
                       justifyContent: 'space-between',
                       alignItems: 'flex-start',
                       gap: 16,
+                      opacity: user.active ? 1 : 0.5,
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{user.email}</div>
+                      <div style={{ fontWeight: 600 }}>
+                        {user.email}
+                        {!user.active && (
+                          <span 
+                            className="helper" 
+                            style={{ 
+                              marginLeft: 12, 
+                              color: 'salmon',
+                              fontSize: 12,
+                              fontWeight: 400
+                            }}
+                          >
+                            (Inactive)
+                          </span>
+                        )}
+                      </div>
                       {user.name && (
                         <div style={{ marginTop: 4 }}>{user.name}</div>
                       )}
@@ -700,17 +744,32 @@ async function handleSaveAppName() {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={() => setManagingUserId(user.id)}
-                      style={{
-                        height: 36,
-                        padding: '0 16px',
-                        fontSize: 13,
-                        flexShrink: 0,
-                      }}
-                    >
-                      Manage
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button
+                        onClick={() => handleToggleUserStatus(user.id, user.active ?? true)}
+                        disabled={togglingUserId === user.id}
+                        style={{
+                          height: 36,
+                          padding: '0 12px',
+                          fontSize: 13,
+                          background: user.active ? '#4CAF50' : '#ff6b6b',
+                          border: user.active ? '1px solid #4CAF50' : '1px solid #ff6b6b',
+                          color: 'white',
+                        }}
+                      >
+                        {togglingUserId === user.id ? '...' : (user.active ? 'Active' : 'Inactive')}
+                      </button>
+                      <button
+                        onClick={() => setManagingUserId(user.id)}
+                        style={{
+                          height: 36,
+                          padding: '0 16px',
+                          fontSize: 13,
+                        }}
+                      >
+                        Manage
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -867,48 +926,47 @@ async function handleSaveAppName() {
           >
             <h3 style={{ marginTop: 0 }}>Manage Branding: {managingIconsTenant.name}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
-  Customize app name and icons for this tenant
-</p>
+              Customize app name and icons for this tenant
+            </p>
 
-{/* ⭐ ADD THIS ENTIRE SECTION */}
-{/* App Name Section */}
-<div style={{
-  marginTop: 24,
-  padding: 16,
-  border: '1px solid var(--border)',
-  borderRadius: 8,
-}}>
-  <div style={{ fontWeight: 600, marginBottom: 12 }}>App Name</div>
-  <div className="helper" style={{ fontSize: 12, marginBottom: 12 }}>
-    This name appears in the browser tab and when installed as a PWA
-  </div>
-  <div style={{ display: 'flex', gap: 8 }}>
-    <input
-      type="text"
-      value={editingAppName}
-      onChange={(e) => setEditingAppName(e.target.value)}
-      placeholder="Enter app name (e.g., Acme App)"
-      style={{ flex: 1, height: 44 }}
-    />
-    <button
-      onClick={handleSaveAppName}
-      disabled={savingAppName || editingAppName.trim() === (managingIconsTenant.app_name || managingIconsTenant.name || '')}
-      className="primary"
-      style={{
-        height: 44,
-        padding: '0 20px',
-        fontSize: 14,
-      }}
-    >
-      {savingAppName ? 'Saving...' : 'Save'}
-    </button>
-  </div>
-  {managingIconsTenant.app_name && (
-    <div className="helper" style={{ fontSize: 12, marginTop: 8 }}>
-      Current: {managingIconsTenant.app_name}
-    </div>
-  )}
-</div>
+            {/* App Name Section */}
+            <div style={{
+              marginTop: 24,
+              padding: 16,
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 12 }}>App Name</div>
+              <div className="helper" style={{ fontSize: 12, marginBottom: 12 }}>
+                This name appears in the browser tab and when installed as a PWA
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={editingAppName}
+                  onChange={(e) => setEditingAppName(e.target.value)}
+                  placeholder="Enter app name (e.g., Acme App)"
+                  style={{ flex: 1, height: 44 }}
+                />
+                <button
+                  onClick={handleSaveAppName}
+                  disabled={savingAppName || editingAppName.trim() === (managingIconsTenant.app_name || managingIconsTenant.name || '')}
+                  className="primary"
+                  style={{
+                    height: 44,
+                    padding: '0 20px',
+                    fontSize: 14,
+                  }}
+                >
+                  {savingAppName ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+              {managingIconsTenant.app_name && (
+                <div className="helper" style={{ fontSize: 12, marginTop: 8 }}>
+                  Current: {managingIconsTenant.app_name}
+                </div>
+              )}
+            </div>
 
             <div style={{ marginTop: 24, display: 'grid', gap: 20 }}>
               {[
@@ -950,37 +1008,33 @@ async function handleSaveAppName() {
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <div style={{ flex: 1 }}>
-  <input
-    id={`replace-${type}`}
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
-      const file = e.target.files?.[0]
-      if (file) {
-        console.log('File selected for replace:', file.name)
-        handleIconUpload(type as any, file)
-      }
-      e.target.value = '' // Reset input
-    }}
-    disabled={uploadingIcon}
-    style={{ display: 'none' }}
-  />
-  <button
-    onClick={() => {
-      console.log('Replace button clicked')
-      document.getElementById(`replace-${type}`)?.click()
-    }}
-    disabled={uploadingIcon}
-    style={{
-      width: '100%',
-      height: 32,
-      padding: '0 12px',
-      fontSize: 12,
-    }}
-  >
-    {uploadingIcon ? 'Uploading...' : 'Replace'}
-  </button>
-</div>
+                            <input
+                              id={`replace-${type}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  handleIconUpload(type as any, file)
+                                }
+                                e.target.value = ''
+                              }}
+                              disabled={uploadingIcon}
+                              style={{ display: 'none' }}
+                            />
+                            <button
+                              onClick={() => document.getElementById(`replace-${type}`)?.click()}
+                              disabled={uploadingIcon}
+                              style={{
+                                width: '100%',
+                                height: 32,
+                                padding: '0 12px',
+                                fontSize: 12,
+                              }}
+                            >
+                              {uploadingIcon ? 'Uploading...' : 'Replace'}
+                            </button>
+                          </div>
                           <button
                             onClick={() => handleDeleteIcon(type)}
                             style={{
@@ -1001,42 +1055,38 @@ async function handleSaveAppName() {
                     </div>
                   ) : (
                     <div>
-    <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
-      No icon set - using default
-    </div>
-    <input
-      id={`upload-${type}`}
-      type="file"
-      accept="image/*"
-      onChange={(e) => {
-        const file = e.target.files?.[0]
-        if (file) {
-          console.log('File selected:', file.name)
-          handleIconUpload(type as any, file)
-        }
-        e.target.value = '' // Reset input after upload
-      }}
-      disabled={uploadingIcon}
-      style={{ display: 'none' }}
-    />
-    <button
-      onClick={() => {
-        console.log('Upload button clicked')
-        document.getElementById(`upload-${type}`)?.click()
-      }}
-      disabled={uploadingIcon}
-      className="primary"
-      style={{
-        width: '100%',
-        height: 36,
-        padding: '0 16px',
-        fontSize: 13,
-      }}
-    >
-      {uploadingIcon ? 'Uploading...' : 'Upload Icon'}
-    </button>
-  </div>
-)}
+                      <div className="helper" style={{ fontSize: 12, marginBottom: 8 }}>
+                        No icon set - using default
+                      </div>
+                      <input
+                        id={`upload-${type}`}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            handleIconUpload(type as any, file)
+                          }
+                          e.target.value = ''
+                        }}
+                        disabled={uploadingIcon}
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        onClick={() => document.getElementById(`upload-${type}`)?.click()}
+                        disabled={uploadingIcon}
+                        className="primary"
+                        style={{
+                          width: '100%',
+                          height: 36,
+                          padding: '0 16px',
+                          fontSize: 13,
+                        }}
+                      >
+                        {uploadingIcon ? 'Uploading...' : 'Upload Icon'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

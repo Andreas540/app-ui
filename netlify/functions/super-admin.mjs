@@ -37,26 +37,27 @@ async function handleGet(event) {
     }
 
     if (action === 'listUsers') {
-      const users = await sql`
-        SELECT 
-          u.id,
-          u.email,
-          u.name,
-          array_agg(
-            json_build_object(
-              'tenant_id', tm.tenant_id,
-              'tenant_name', t.name,
-              'role', tm.role
-            )
-          ) FILTER (WHERE tm.tenant_id IS NOT NULL) as tenants
-        FROM users u
-        LEFT JOIN tenant_memberships tm ON tm.user_id = u.id
-        LEFT JOIN tenants t ON t.id = tm.tenant_id
-        GROUP BY u.id, u.email, u.name
-        ORDER BY u.email ASC
-      `
-      return cors(200, { users })
-    }
+  const users = await sql`
+    SELECT 
+      u.id,
+      u.email,
+      u.name,
+      u.active,
+      array_agg(
+        json_build_object(
+          'tenant_id', tm.tenant_id,
+          'tenant_name', t.name,
+          'role', tm.role
+        )
+      ) FILTER (WHERE tm.tenant_id IS NOT NULL) as tenants
+    FROM users u
+    LEFT JOIN tenant_memberships tm ON tm.user_id = u.id
+    LEFT JOIN tenants t ON t.id = tm.tenant_id
+    GROUP BY u.id, u.email, u.name, u.active
+    ORDER BY u.email ASC
+  `
+  return cors(200, { users })
+}
 
     if (action === 'getUserDetails') {
       const userId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('userId')
