@@ -143,7 +143,7 @@ async function handleLogin(event) {
         accessLevel: user.access_level
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '8h' }
     )
 
     // Return user info and token

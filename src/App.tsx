@@ -43,6 +43,7 @@ import TimeEntry from './pages/TimeEntry'
 import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
+import { useIdleTimeout } from './hooks/useIdleTimeout'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -159,6 +160,15 @@ function MainApp() {
   )
 
   const isLoggedIn = isAuthenticated || legacyUserLevel !== null
+
+  // 🆕 Idle timeout - auto logout after 15 minutes of inactivity
+  useIdleTimeout(
+    15 * 60 * 1000, // 15 minutes
+    () => {
+      console.log('Auto-logout due to inactivity')
+      handleLogout()
+    }
+  )
 
   const handleLogout = () => {
     try {
