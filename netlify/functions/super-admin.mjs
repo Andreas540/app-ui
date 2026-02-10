@@ -299,6 +299,34 @@ async function handlePost(event) {
       return cors(200, { success: true })
     }
 
+    // Add this BEFORE the final "return cors(400, { error: 'Invalid action' })" line
+
+if (action === 'toggleUserStatus') {
+  const { userId, isActive } = body
+
+  if (!userId) {
+    return cors(400, { error: 'userId is required' })
+  }
+
+  const isActiveBoolean = Boolean(isActive)
+
+  // Update all three columns for complete coverage
+  await sql`
+    UPDATE users
+    SET active = ${isActiveBoolean},
+        disabled = ${!isActiveBoolean}
+    WHERE id = ${userId}
+  `
+
+  await sql`
+    UPDATE app_users
+    SET is_disabled = ${!isActiveBoolean}
+    WHERE id = ${userId}
+  `
+
+  return cors(200, { success: true, isActive: isActiveBoolean })
+}
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handlePost error:', e)

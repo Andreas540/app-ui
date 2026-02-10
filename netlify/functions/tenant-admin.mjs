@@ -52,6 +52,7 @@ async function handleGet(event) {
           u.name,
           tm.role,
           tm.features
+          u.active  -- 🆕 ADD THIS LINE
         FROM users u
         JOIN tenant_memberships tm ON tm.user_id = u.id
         WHERE tm.tenant_id = ${tenantId}
@@ -236,6 +237,47 @@ async function handlePost(event) {
 
       return cors(201, { user: userResult[0] })
     }
+
+    // Add this BEFORE the final "return cors(400, { error: 'Invalid action' })" line
+
+if (action === 'toggleUserStatus') {
+  const { userId: targetUserId, isActive } = body
+
+  if (!targetUserId) {
+    return cors(400, { error: 'userId is required' })
+  }
+
+  // Verify target user is in this tenant
+  const membership = await sql`
+    SELECT user_id
+    FROM tenant_memberships
+    WHERE user_id = ${targetUserId}
+      AND tenant_id = ${tenantId}
+    LIMIT 1
+  `
+
+  if (membership.length === 0) {
+    return cors(404, { error: 'User not found in this tenant' })
+  }
+
+  const isActiveBoolean = Boolean(isActive)
+
+  // Update all three columns for complete coverage
+  await sql`
+    UPDATE users
+    SET active = ${isActiveBoolean},
+        disabled = ${!isActiveBoolean}
+    WHERE id = ${targetUserId}
+  `
+
+  await sql`
+    UPDATE app_users
+    SET is_disabled = ${!isActiveBoolean}
+    WHERE id = ${targetUserId}
+  `
+
+  return cors(200, { success: true, isActive: isActiveBoolean })
+}
 
     return cors(400, { error: 'Invalid action' })
   } catch (e) {

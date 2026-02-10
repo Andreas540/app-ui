@@ -4,6 +4,7 @@ interface User {
   id: string;
   email: string;
   name: string | null;
+  active: boolean;
 }
 
 interface Membership {
@@ -31,6 +32,8 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
   const [selectedRole, setSelectedRole] = useState('tenant_user');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [userActive, setUserActive] = useState(true);
+  const [togglingStatus, setTogglingStatus] = useState(false);
 
   useEffect(() => {
     loadUserDetails();
@@ -48,6 +51,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
         const data = await res.json();
         setUser(data.user);
         setMemberships(data.memberships || []);
+        setUserActive(data.user.active ?? true);
       }
     } catch (e) {
       console.error('Failed to load user details:', e);
@@ -69,6 +73,39 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
       }
     } catch (e) {
       console.error('Failed to load tenants:', e);
+    }
+  }
+
+  async function handleToggleUserStatus() {
+    try {
+      setTogglingStatus(true);
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
+      const token = localStorage.getItem('authToken');
+      
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'toggleUserStatus',
+          userId: userId,
+          isActive: !userActive
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update status');
+      }
+
+      await loadUserDetails();
+      onUpdate();
+    } catch (e: any) {
+      alert(e?.message || 'Failed to update status');
+    } finally {
+      setTogglingStatus(false);
     }
   }
 
@@ -142,7 +179,6 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     }
   }
 
-  // Filter out tenants user is already a member of
   const unassignedTenants = availableTenants.filter(
     t => !memberships.some(m => m.tenant_id === t.id)
   );
@@ -186,7 +222,26 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0 }}>Manage User: {user.email}</h3>
+              <div>
+                <h3 style={{ margin: 0 }}>Manage User: {user.email}</h3>
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span className="helper" style={{ fontSize: 13 }}>Status:</span>
+                  <button
+                    onClick={handleToggleUserStatus}
+                    disabled={togglingStatus}
+                    style={{
+                      height: 32,
+                      padding: '0 16px',
+                      fontSize: 12,
+                      background: userActive ? 'transparent' : '#4CAF50',
+                      border: userActive ? '1px solid salmon' : '1px solid #4CAF50',
+                      color: userActive ? 'salmon' : 'white',
+                    }}
+                  >
+                    {togglingStatus ? 'Updating...' : (userActive ? 'Active - Click to Deactivate' : 'Inactive - Click to Activate')}
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={onClose}
                 style={{

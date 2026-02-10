@@ -10,6 +10,7 @@ interface TenantUser {
   name: string | null
   role: 'tenant_admin' | 'tenant_user'
   features: FeatureId[] | null
+  active: boolean
 }
 
 export default function TenantAdmin() {
@@ -33,6 +34,9 @@ export default function TenantAdmin() {
   const [newUserRole, setNewUserRole] = useState<'tenant_user' | 'tenant_admin'>('tenant_user')
   const [newUserFeatures, setNewUserFeatures] = useState<FeatureId[]>([])
   const [creatingUser, setCreatingUser] = useState(false)
+
+  // Toggle user status
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -117,12 +121,46 @@ export default function TenantAdmin() {
     }
   }
 
+  async function handleToggleUserStatus(userId: string, currentlyActive: boolean) {
+    try {
+      setTogglingUserId(userId)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+        },
+        body: JSON.stringify({
+          action: 'toggleUserStatus',
+          userId: userId,
+          isActive: !currentlyActive
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update user status')
+      }
+
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to update user status')
+    } finally {
+      setTogglingUserId(null)
+    }
+  }
+
   function openCreateUser() {
     setNewUserEmail('')
     setNewUserPassword('')
     setNewUserName('')
     setNewUserRole('tenant_user')
-    setNewUserFeatures(tenantFeatures) // Default to all tenant features
+    setNewUserFeatures(tenantFeatures)
     setShowCreateUser(true)
   }
 
@@ -257,10 +295,26 @@ export default function TenantAdmin() {
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   gap: 16,
+                  opacity: u.active ? 1 : 0.5,
                 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{u.email}</div>
+                  <div style={{ fontWeight: 600 }}>
+                    {u.email}
+                    {!u.active && (
+                      <span 
+                        className="helper" 
+                        style={{ 
+                          marginLeft: 12, 
+                          color: 'salmon',
+                          fontSize: 12,
+                          fontWeight: 400
+                        }}
+                      >
+                        (Inactive)
+                      </span>
+                    )}
+                  </div>
                   {u.name && (
                     <div style={{ marginTop: 4 }}>{u.name}</div>
                   )}
@@ -275,17 +329,33 @@ export default function TenantAdmin() {
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => openManageUserFeatures(u)}
-                  style={{
-                    height: 36,
-                    padding: '0 16px',
-                    fontSize: 13,
-                    flexShrink: 0,
-                  }}
-                >
-                  Manage Permissions
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => handleToggleUserStatus(u.id, u.active)}
+                    disabled={togglingUserId === u.id}
+                    style={{
+                      height: 36,
+                      padding: '0 12px',
+                      fontSize: 13,
+                      background: u.active ? 'transparent' : '#4CAF50',
+                      border: u.active ? '1px solid salmon' : '1px solid #4CAF50',
+                      color: u.active ? 'salmon' : 'white',
+                    }}
+                  >
+                    {togglingUserId === u.id ? '...' : (u.active ? 'Deactivate' : 'Activate')}
+                  </button>
+                  <button
+                    onClick={() => openManageUserFeatures(u)}
+                    disabled={!u.active}
+                    style={{
+                      height: 36,
+                      padding: '0 16px',
+                      fontSize: 13,
+                    }}
+                  >
+                    Permissions
+                  </button>
+                </div>
               </div>
             ))}
           </div>
