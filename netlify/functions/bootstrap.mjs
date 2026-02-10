@@ -58,12 +58,14 @@ export async function handler(event) {
     `;
 
     // 🆕 NEW - Log successful activity
-    await logActivity({ 
-      sql, 
-      event, 
-      action: 'view_bootstrap',
-      success: true 
-    })
+    console.log('🔍 About to log activity')
+await logActivity({ 
+  sql, 
+  event, 
+  action: 'view_bootstrap',
+  success: true 
+})
+console.log('✅ Activity logged')
 
     return cors(200, { customers, products, partners, suppliers });
   } catch (e) {
