@@ -1,9 +1,9 @@
-import postgres from 'postgres'
+import { neon } from '@neondatabase/serverless'
 import bcrypt from 'bcryptjs'
 import { verifyToken } from './utils/auth.mjs'
 import { logActivity } from './utils/activity-logger.mjs'
 
-const sql = postgres(process.env.DATABASE_URL, { ssl: 'require' })
+const sql = neon(process.env.DATABASE_URL)
 
 function cors(statusCode, body) {
   return {
@@ -109,14 +109,18 @@ export async function handler(event) {
   } catch (error) {
     console.error('Change password error:', error)
     
-    // Log system error
-    await logActivity({
-      sql,
-      event,
-      action: 'password_change',
-      success: false,
-      error: error.message
-    }).catch(e => console.error('Failed to log error:', e))
+    // Log system error (catch to prevent double-failure)
+    try {
+      await logActivity({
+        sql,
+        event,
+        action: 'password_change',
+        success: false,
+        error: error.message
+      })
+    } catch (logError) {
+      console.error('Failed to log error:', logError)
+    }
     
     return cors(500, { error: 'Internal server error' })
   }
