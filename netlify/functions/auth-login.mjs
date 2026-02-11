@@ -28,6 +28,9 @@ async function handleLogin(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
 
+    // Initialize SQL connection early for logging
+    const sql = neon(DATABASE_URL)
+
     const body = JSON.parse(event.body || '{}')
     const { email, password } = body
 
@@ -43,10 +46,20 @@ async function handleLogin(event) {
     // HARD BLOCK by email (immediate, no DB dependency)
     if (BLOCKED_EMAILS.has(emailSearch)) {
       console.log('Blocked email attempted login:', emailSearch)
+      
+      // Log blocked email attempt
+      await logActivity({
+        sql,
+        event,
+        action: 'login_blocked_blacklist',
+        success: false,
+        error: `Blacklisted email: ${emailSearch}`,
+        userId: null,
+        tenantId: null
+      })
+      
       return cors(403, { error: 'Login Failed' })
     }
-
-    const sql = neon(DATABASE_URL)
 
     // Find user by email
     console.log('Searching for email:', emailSearch)
@@ -68,8 +81,16 @@ async function handleLogin(event) {
     if (users.length === 0) {
       console.log('No user found for email:', emailSearch)
       
-      // Can't log with userId since user doesn't exist
-      // Skip logging for non-existent users
+      // Log failed login attempt - user doesn't exist
+      await logActivity({
+        sql,
+        event,
+        action: 'login_failed_user_not_found',
+        success: false,
+        error: `User not found: ${emailSearch}`,
+        userId: null,
+        tenantId: null
+      })
       
       return cors(401, { error: 'Invalid email or password' })
     }
@@ -80,6 +101,17 @@ async function handleLogin(event) {
     // Check if user is active (legacy users table)
     if (!user.active) {
       console.log('User account is disabled (users.active = false)')
+      
+      await logActivity({
+        sql,
+        event,
+        action: 'login_blocked_disabled',
+        success: false,
+        error: 'Account disabled (users.active = false)',
+        userId: user.id,
+        tenantId: null
+      })
+      
       return cors(403, { error: 'Login Failed' })
     }
 
@@ -92,6 +124,17 @@ async function handleLogin(event) {
     `
     if (disabledRows.length > 0 && disabledRows[0]?.is_disabled) {
       console.log('User account is disabled (app_users.is_disabled = true)')
+      
+      await logActivity({
+        sql,
+        event,
+        action: 'login_blocked_disabled',
+        success: false,
+        error: 'Account disabled (app_users.is_disabled = true)',
+        userId: user.id,
+        tenantId: null
+      })
+      
       return cors(403, { error: 'Login Failed' })
     }
 
@@ -103,14 +146,14 @@ async function handleLogin(event) {
     if (!passwordMatch) {
       console.log('Password verification failed')
       
-      // Log failed login attempt with userId
+      // Log failed login attempt - wrong password
       await logActivity({
         sql,
         event,
         action: 'login_failed',
         success: false,
         error: 'Invalid password',
-        userId: user.id,  // 🆕 Pass userId directly
+        userId: user.id,
         tenantId: null
       })
       
@@ -120,22 +163,14 @@ async function handleLogin(event) {
     console.log('Password verified successfully')
 
     // Log successful login - pass userId directly since we don't have a token yet
-    try {
-      console.log('🔍 Starting activity log...')
-      
-      await logActivity({
-        sql,
-        event,
-        action: 'login_success',
-        success: true,
-        userId: user.id,  // 🆕 Pass userId directly
-        tenantId: null    // 🆕 Don't have tenant yet for login
-      })
-      
-      console.log('✅ Activity logging completed')
-    } catch (logErr) {
-      console.error('❌ Activity logging ERROR:', logErr)
-    }
+    await logActivity({
+      sql,
+      event,
+      action: 'login_success',
+      success: true,
+      userId: user.id,
+      tenantId: null
+    })
 
     // Update last login
     await sql`
