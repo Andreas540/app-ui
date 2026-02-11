@@ -259,7 +259,10 @@ export default function Settings() {
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             placeholder="Enter your name"
-            autoComplete="name"  // 🆕 ADD THIS - tells browser this is a display name, not login 
+            name="display-name"  // 🆕 ADD THIS - unique name attribute
+    autoComplete="off"   // 🆕 CHANGE THIS - explicitly disable
+    data-lpignore="true" // 🆕 ADD THIS - tells LastPass to ignore
+    data-form-type="other" // 🆕 ADD THIS - tells browser this isn't a login form 
           />
         </div>
       </div>
@@ -321,6 +324,22 @@ export default function Settings() {
         paddingTop: 24,
         borderTop: '1px solid var(--border)'
       }}>
+        {/* Hidden username field to help password managers understand this is password CHANGE, not login */}
+  <input
+    type="text"
+    name="username"
+    autoComplete="username"
+    value={localStorage.getItem('userEmail') || ''}
+    readOnly
+    tabIndex={-1}
+    style={{ 
+      position: 'absolute',
+      left: '-9999px',
+      width: '1px',
+      height: '1px'
+    }}
+    aria-hidden="true"
+  />
         <h4 style={{ margin: 0, marginBottom: 16 }}>Change Password</h4>
         
         <div style={{ marginTop: 12 }}>
