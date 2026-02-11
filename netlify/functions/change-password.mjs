@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless'
 import bcrypt from 'bcryptjs'
-import { verifyToken } from './utils/auth.mjs'
+import jwt from 'jsonwebtoken'
 import { logActivity } from './utils/activity-logger.mjs'
 
 const sql = neon(process.env.DATABASE_URL)
@@ -36,13 +36,19 @@ export async function handler(event) {
     }
 
     const token = authHeader.substring(7)
-    const payload = verifyToken(token)
     
-    if (!payload?.userId) {
-      return cors(401, { error: 'Invalid token' })
+    // Verify JWT token
+    let userId
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET)
+      userId = decoded.userId
+    } catch (err) {
+      return cors(401, { error: 'Invalid or expired token' })
     }
 
-    const userId = payload.userId
+    if (!userId) {
+      return cors(401, { error: 'Invalid token payload' })
+    }
 
     // Parse request body
     const { currentPassword, newPassword } = JSON.parse(event.body || '{}')
