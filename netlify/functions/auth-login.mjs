@@ -68,14 +68,8 @@ async function handleLogin(event) {
     if (users.length === 0) {
       console.log('No user found for email:', emailSearch)
       
-      // Log failed login attempt
-      await logActivity({
-        sql,
-        event,
-        action: 'login_failed',
-        success: false,
-        error: 'User not found'
-      })
+      // Can't log with userId since user doesn't exist
+      // Skip logging for non-existent users
       
       return cors(401, { error: 'Invalid email or password' })
     }
@@ -109,13 +103,15 @@ async function handleLogin(event) {
     if (!passwordMatch) {
       console.log('Password verification failed')
       
-      // Log failed login attempt
+      // Log failed login attempt with userId
       await logActivity({
         sql,
         event,
         action: 'login_failed',
         success: false,
-        error: 'Invalid password'
+        error: 'Invalid password',
+        userId: user.id,  // 🆕 Pass userId directly
+        tenantId: null
       })
       
       return cors(401, { error: 'Invalid email or password' })
@@ -123,23 +119,22 @@ async function handleLogin(event) {
 
     console.log('Password verified successfully')
 
-    // Log successful login with debugging
+    // Log successful login - pass userId directly since we don't have a token yet
     try {
       console.log('🔍 Starting activity log...')
-      console.log('sql exists:', !!sql)
-      console.log('event exists:', !!event)
       
       await logActivity({
         sql,
         event,
         action: 'login_success',
-        success: true
+        success: true,
+        userId: user.id,  // 🆕 Pass userId directly
+        tenantId: null    // 🆕 Don't have tenant yet for login
       })
       
       console.log('✅ Activity logging completed')
     } catch (logErr) {
       console.error('❌ Activity logging ERROR:', logErr)
-      console.error('Error stack:', logErr.stack)
     }
 
     // Update last login

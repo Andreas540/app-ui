@@ -2,28 +2,54 @@ import jwt from 'jsonwebtoken'
 
 /**
  * Log user activity with enhanced context
+ * @param {Object} params
+ * @param {Object} params.sql - Neon SQL instance
+ * @param {Object} params.event - Netlify event object
+ * @param {string} params.action - Action name (e.g., 'login_success')
+ * @param {boolean} params.success - Whether action succeeded
+ * @param {string} params.error - Error message if failed
+ * @param {string} params.userId - Optional: pass userId directly (for login/signup where no token exists yet)
+ * @param {string} params.tenantId - Optional: pass tenantId directly
  */
-export async function logActivity({ sql, event, action, success = true, error = null }) {
+export async function logActivity({ 
+  sql, 
+  event, 
+  action, 
+  success = true, 
+  error = null,
+  userId: directUserId = null,
+  tenantId: directTenantId = null
+}) {
   try {
     console.log('📝 logActivity called:', action)
     
-    // Extract userId from JWT
-    let userId = null
+    // Extract userId from JWT OR use directly passed userId
+    let userId = directUserId
     let email = null
-    try {
-      const authHeader = event.headers.authorization || event.headers.Authorization
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.substring(7)
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        userId = decoded.userId || null
-        email = decoded.email || null
+    
+    if (!userId) {
+      try {
+        const authHeader = event.headers.authorization || event.headers.Authorization
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7)
+          const decoded = jwt.verify(token, process.env.JWT_SECRET)
+          userId = decoded.userId || null
+          email = decoded.email || null
+        }
+      } catch (e) {
+        console.log('No valid JWT token for logging')
       }
-    } catch (e) {
-      console.log('No valid JWT token for logging')
     }
 
-    // Extract tenantId from header
-    const tenantId = event.headers['x-active-tenant'] || 
+    // If still no userId, we can't log (required field)
+    if (!userId) {
+      console.log('⚠️ No userId available, skipping activity log')
+      return
+    }
+
+    // Extract tenantId from header OR use directly passed tenantId
+    const tenantId = directTenantId || 
+                     event.headers['x-active-tenant'] || 
                      event.headers['X-Active-Tenant'] || 
                      null
 
@@ -60,7 +86,7 @@ export async function logActivity({ sql, event, action, success = true, error = 
     let name = null
     let tenant_name = null
     
-    if (userId && tenantId) {
+    if (tenantId) {
       try {
         const rows = await sql`
           SELECT u.name, t.name as tenant_name
@@ -76,13 +102,17 @@ export async function logActivity({ sql, event, action, success = true, error = 
       } catch (e) {
         console.error('Failed to fetch names:', e)
       }
-    } else if (userId) {
+    } else {
       try {
         const rows = await sql`
-          SELECT name FROM users WHERE id = ${userId}::uuid LIMIT 1
+          SELECT u.name, u.email
+          FROM users u
+          WHERE u.id = ${userId}::uuid
+          LIMIT 1
         `
         if (rows.length > 0) {
           name = rows[0].name
+          email = email || rows[0].email
         }
       } catch (e) {
         console.error('Failed to fetch user name:', e)
