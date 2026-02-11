@@ -58,12 +58,19 @@ export function getTenantId(event) {
 }
 
 /**
- * DEPRECATED during migration:
- * Platform/tenant roles must not be trusted from JWT.
- * Migrate to DB-based role checks via resolveAuthz().
+ * Check if user is SuperAdmin based on email in SUPER_ADMIN_EMAILS env var
  */
 export function isSuperAdmin(event) {
-  return false
+  const user = getUserFromToken(event)
+  if (!user?.email) return false
+
+  const { SUPER_ADMIN_EMAILS } = process.env
+  if (!SUPER_ADMIN_EMAILS) return false
+
+  const adminEmails = SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+  const userEmailLower = user.email.toLowerCase().trim()
+  
+  return adminEmails.includes(userEmailLower)
 }
 
 /**
@@ -103,7 +110,7 @@ export function requireAuth(event) {
  * - tenant/role/features are loaded from DB
  * - tenantFeatures: what the tenant has enabled
  * - userFeatures: what this specific user can access (null = all tenant features)
- * - falls back to env TENANT_ID to keep BLV intact
+ * - SuperAdmins have access without tenant membership
  */
 export async function resolveAuthz({ sql, event }) {
   const { TENANT_ID } = process.env
@@ -219,14 +226,27 @@ export async function resolveAuthz({ sql, event }) {
     mode: 'membership'
   }
 
-  // No membership yet => BLV intact
+  // Check if user is SuperAdmin (no tenant membership required)
+  const { SUPER_ADMIN_EMAILS } = process.env
+  const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
+  const userEmailLower = (user.email || '').toLowerCase().trim()
+  
+  if (adminEmails.includes(userEmailLower)) {
+    return {
+      tenantId: null, // SuperAdmin has no specific tenant
+      role: 'super_admin',
+      businessType: null,
+      tenantFeatures: [],
+      userFeatures: null,
+      mode: 'super_admin'
+    }
+  }
+
+  // SECURITY FIX: No membership and not SuperAdmin => access denied
+  // Do NOT fall back to TENANT_ID as it causes data leakage between users
   return {
-    tenantId: TENANT_ID,
-    role: 'tenant_admin',
-    businessType: 'general',
-    tenantFeatures: [],
-    userFeatures: null,
-    mode: 'fallback'
+    error: 'NO_TENANT_ACCESS',
+    message: 'User has no tenant memberships. Contact administrator to assign tenant access.'
   }
 }
 
