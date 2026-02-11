@@ -123,13 +123,24 @@ async function handleLogin(event) {
 
     console.log('Password verified successfully')
 
-    // Log successful login
-await logActivity({
-  sql,
-  event,
-  action: 'login_success',
-  success: true
-})
+    // Log successful login with debugging
+    try {
+      console.log('🔍 Starting activity log...')
+      console.log('sql exists:', !!sql)
+      console.log('event exists:', !!event)
+      
+      await logActivity({
+        sql,
+        event,
+        action: 'login_success',
+        success: true
+      })
+      
+      console.log('✅ Activity logging completed')
+    } catch (logErr) {
+      console.error('❌ Activity logging ERROR:', logErr)
+      console.error('Error stack:', logErr.stack)
+    }
 
     // Update last login
     await sql`
