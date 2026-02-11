@@ -21,6 +21,12 @@ export default function Settings() {
   const [hasChanges, setHasChanges] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+
   // Get available shortcuts based on user role
   const getAvailableShortcuts = () => {
     const userLevel = localStorage.getItem('userLevel')
@@ -37,31 +43,32 @@ export default function Settings() {
   const availableShortcuts = getAvailableShortcuts()
 
   // Load tenant information from database
-useEffect(() => {
-  (async () => {
-    try {
-      setTenantLoading(true)
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
-      const res = await fetch(`${base}/api/tenant`, { 
-        cache: 'no-store',
-        headers: getAuthHeaders(),
-      })
-      
-      if (!res.ok) {
-        throw new Error(`Failed to load tenant info (status ${res.status})`)
+  useEffect(() => {
+    (async () => {
+      try {
+        setTenantLoading(true)
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        
+        const res = await fetch(`${base}/api/tenant`, { 
+          cache: 'no-store',
+          headers: getAuthHeaders(),
+        })
+        
+        if (!res.ok) {
+          throw new Error(`Failed to load tenant info (status ${res.status})`)
+        }
+        const data = await res.json()
+        setTenantName(data.tenant.name)
+      } catch (error) {
+        console.error('Failed to load tenant info:', error)
+        setTenantName('Unknown') // Fallback
+      } finally {
+        setTenantLoading(false)
       }
-      const data = await res.json()
-      setTenantName(data.tenant.name)
-    } catch (error) {
-      console.error('Failed to load tenant info:', error)
-      setTenantName('Unknown') // Fallback
-    } finally {
-      setTenantLoading(false)
-    }
-  })()
-}, [])
-// Reload tenant info when active tenant changes
+    })()
+  }, [])
+
+  // Reload tenant info when active tenant changes
   useEffect(() => {
     const handleTenantChange = () => {
       // Reload tenant information when tenant switches
@@ -96,6 +103,7 @@ useEffect(() => {
       window.removeEventListener('storage', handleTenantChange)
     }
   }, [])
+
   // Track changes to enable/disable save button
   useEffect(() => {
     // Check if userName or shortcuts have changed from defaults
@@ -133,10 +141,8 @@ useEffect(() => {
       }
       
       localStorage.setItem('userSettings', JSON.stringify(settings))
-      window.location.reload() // Add this line
+      window.location.reload()
 
-// Simulate API delay
-await new Promise(resolve => setTimeout(resolve, 500))
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500))
       
@@ -147,6 +153,55 @@ await new Promise(resolve => setTimeout(resolve, 500))
       alert('Failed to save settings. Please try again.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Please fill in all password fields')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      alert('New password must be at least 8 characters')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('New passwords do not match')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      
+      const res = await fetch(`${base}/api/change-password`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to change password')
+      }
+
+      alert('Password changed successfully!')
+      
+      // Clear form
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (error: any) {
+      alert(error.message || 'Failed to change password')
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -257,6 +312,57 @@ await new Promise(resolve => setTimeout(resolve, 500))
         <div className="helper" style={{marginTop: 4}}>
           Select up to 5 quick access buttons for the top navigation
         </div>
+      </div>
+
+      {/* Password Change Section */}
+      <div style={{
+        marginTop: 32,
+        paddingTop: 24,
+        borderTop: '1px solid var(--border)'
+      }}>
+        <h4 style={{ margin: 0, marginBottom: 16 }}>Change Password</h4>
+        
+        <div style={{ marginTop: 12 }}>
+          <label>Current Password</label>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Enter current password"
+            autoComplete="current-password"
+          />
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <label>New Password</label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+          />
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <label>Confirm New Password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Re-enter new password"
+            autoComplete="new-password"
+          />
+        </div>
+
+        <button
+          className="primary"
+          onClick={handleChangePassword}
+          disabled={changingPassword}
+          style={{ marginTop: 16, width: '100%' }}
+        >
+          {changingPassword ? 'Changing Password...' : 'Change Password'}
+        </button>
       </div>
 
       <p className="helper" style={{marginTop:16}}>
