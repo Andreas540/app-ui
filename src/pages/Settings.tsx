@@ -258,7 +258,8 @@ export default function Settings() {
           <input 
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
-            placeholder="Enter your name" 
+            placeholder="Enter your name"
+            autoComplete="name"  // 🆕 ADD THIS - tells browser this is a display name, not login 
           />
         </div>
       </div>
