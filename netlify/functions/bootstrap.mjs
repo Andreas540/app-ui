@@ -2,7 +2,6 @@
 
 import { checkMaintenance } from './utils/maintenance.mjs'
 import { resolveAuthz } from './utils/auth.mjs'
-import { logActivity } from './utils/activity-logger.mjs'  // 🆕 NEW - Add this import
 
 export async function handler(event) {
   // 🔴 FIRST LINE - before any other code
@@ -57,34 +56,9 @@ export async function handler(event) {
       ORDER BY name
     `;
 
-    // 🆕 NEW - Log successful activity
-    console.log('🔍 About to log activity')
-await logActivity({ 
-  sql, 
-  event, 
-  action: 'view_bootstrap',
-  success: true 
-})
-console.log('✅ Activity logged')
-
     return cors(200, { customers, products, partners, suppliers });
   } catch (e) {
-    console.error(e);
-    
-    // 🆕 NEW - Log error activity
-    try {
-      const { neon } = await import('@neondatabase/serverless');
-      const sql = neon(process.env.DATABASE_URL);
-      await logActivity({ 
-        sql, 
-        event, 
-        action: 'view_bootstrap',
-        success: false,
-        error: String(e?.message || e)
-      })
-    } catch (logErr) {
-      console.error('Logging failed:', logErr)
-    }
+    console.error(e);    
     
     return cors(500, { error: String(e?.message || e) });
   }

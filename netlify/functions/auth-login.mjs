@@ -2,6 +2,7 @@
 import { checkMaintenance } from './utils/maintenance.mjs'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { logActivity } from './utils/activity-logger.mjs'
 
 const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
 
@@ -66,6 +67,16 @@ async function handleLogin(event) {
 
     if (users.length === 0) {
       console.log('No user found for email:', emailSearch)
+      
+      // Log failed login attempt
+      await logActivity({
+        sql,
+        event,
+        action: 'login_failed',
+        success: false,
+        error: 'User not found'
+      })
+      
       return cors(401, { error: 'Invalid email or password' })
     }
 
@@ -97,10 +108,28 @@ async function handleLogin(event) {
 
     if (!passwordMatch) {
       console.log('Password verification failed')
+      
+      // Log failed login attempt
+      await logActivity({
+        sql,
+        event,
+        action: 'login_failed',
+        success: false,
+        error: 'Invalid password'
+      })
+      
       return cors(401, { error: 'Invalid email or password' })
     }
 
     console.log('Password verified successfully')
+
+    // Log successful login
+await logActivity({
+  sql,
+  event,
+  action: 'login_success',
+  success: true
+})
 
     // Update last login
     await sql`
