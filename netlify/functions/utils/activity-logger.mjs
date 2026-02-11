@@ -41,10 +41,9 @@ export async function logActivity({
       }
     }
 
-    // If still no userId, we can't log (required field)
+    // Log even without userId (for system events like blocked emails, non-existent users)
     if (!userId) {
-      console.log('⚠️ No userId available, skipping activity log')
-      return
+      console.log('⚠️ No userId available - logging system event')
     }
 
     // Extract tenantId from header OR use directly passed tenantId
