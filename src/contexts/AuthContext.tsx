@@ -97,15 +97,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = (newToken: string, userData: User) => {
-    setToken(newToken)
-    setUser(userData)
-    localStorage.setItem('authToken', newToken)
-    localStorage.setItem('userData', JSON.stringify(userData))
-    // 🆕 ADD THIS - Set active tenant on login
+  setToken(newToken)
+  setUser(userData)
+  localStorage.setItem('authToken', newToken)
+  localStorage.setItem('userData', JSON.stringify(userData))
+  
+  // Always handle activeTenantId - set it OR clear it for SuperAdmin
   if (userData.tenantId) {
     localStorage.setItem('activeTenantId', userData.tenantId)
+  } else {
+    // SuperAdmin or users without tenant - REMOVE any old tenant ID
+    localStorage.removeItem('activeTenantId')
   }
-  }
+}
 
   const logout = () => {
     setToken(null)
