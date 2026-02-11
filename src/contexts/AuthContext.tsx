@@ -101,6 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData)
     localStorage.setItem('authToken', newToken)
     localStorage.setItem('userData', JSON.stringify(userData))
+    // 🆕 ADD THIS - Set active tenant on login
+  if (userData.tenantId) {
+    localStorage.setItem('activeTenantId', userData.tenantId)
+  }
   }
 
   const logout = () => {
@@ -109,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('authToken')
     localStorage.removeItem('userData')
     localStorage.removeItem('userLevel') // Clear legacy userLevel too
+    localStorage.removeItem('activeTenantId')  // 🆕 ADD THIS
   }
 
   const verifyAuth = async () => {

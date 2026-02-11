@@ -9,7 +9,8 @@ export async function handler(event) {
   // 🔴 FIRST LINE - before any other code
   const maintenanceCheck = checkMaintenance()
   if (maintenanceCheck) return maintenanceCheck
-    if (event.httpMethod === 'OPTIONS') return cors(200, {})
+  
+  if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod === 'POST') return handleLogin(event)
   return cors(405, { error: 'Method not allowed' })
 }
@@ -18,7 +19,7 @@ async function handleLogin(event) {
   try {
     console.log('=== AUTH LOGIN START ===')
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, JWT_SECRET } = process.env
+    const { DATABASE_URL, JWT_SECRET, SUPER_ADMIN_EMAILS } = process.env
 
     console.log('DATABASE_URL exists:', !!DATABASE_URL)
     console.log('JWT_SECRET exists:', !!JWT_SECRET)
@@ -46,7 +47,7 @@ async function handleLogin(event) {
 
     const sql = neon(DATABASE_URL)
 
-    // Find user by email (legacy users table)
+    // Find user by email
     console.log('Searching for email:', emailSearch)
 
     const users = await sql`
@@ -55,15 +56,8 @@ async function handleLogin(event) {
         u.email,
         u.name,
         u.password_hash,
-        u.role,
-        u.access_level,
-        u.tenant_id,
-        u.active,
-        t.name as tenant_name,
-        t.business_type,
-        t.features as tenant_features
+        u.active
       FROM users u
-      LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.email = ${emailSearch}
       LIMIT 1
     `
@@ -84,8 +78,7 @@ async function handleLogin(event) {
       return cors(403, { error: 'Login Failed' })
     }
 
-    // ALSO block if disabled in app_users (the table used by resolveAuthz)
-    // This prevents "login works but API 403s" mismatch.
+    // ALSO block if disabled in app_users
     const disabledRows = await sql`
       SELECT is_disabled
       FROM public.app_users
@@ -99,7 +92,6 @@ async function handleLogin(event) {
 
     // Verify password
     console.log('Verifying password...')
-    console.log('Password hash from DB:', user.password_hash.substring(0, 20) + '...')
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
     console.log('Password match:', passwordMatch)
 
@@ -117,30 +109,76 @@ async function handleLogin(event) {
       WHERE id = ${user.id}
     `
 
-    // Get user's membership for this tenant to check user-specific features
-    const membership = await sql`
-      SELECT features as user_features
-      FROM tenant_memberships
-      WHERE user_id = ${user.id}::uuid
-        AND tenant_id = ${user.tenant_id}::uuid
-      LIMIT 1
+    // Check if SuperAdmin
+    const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
+    const isSuperAdmin = adminEmails.includes(emailSearch)
+
+    if (isSuperAdmin) {
+      console.log('User is SuperAdmin - no tenant required')
+      
+      // Generate JWT token (identity only)
+      const token = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email
+        },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+      )
+
+      return cors(200, {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: 'super_admin',
+          tenantId: null,
+          tenantName: null,
+          businessType: null,
+          features: []
+        }
+      })
+    }
+
+    // Get user's memberships from tenant_memberships (NEW multi-tenant system)
+    const memberships = await sql`
+      SELECT 
+        tm.tenant_id::text as tenant_id,
+        tm.role,
+        tm.features as user_features,
+        t.name as tenant_name,
+        t.business_type,
+        t.features as tenant_features
+      FROM tenant_memberships tm
+      JOIN tenants t ON t.id = tm.tenant_id
+      WHERE tm.user_id = ${user.id}::uuid
+      ORDER BY tm.created_at ASC
     `
 
-    const tenantFeatures = user.tenant_features || []
-    const userFeatures = membership.length > 0 ? membership[0].user_features : null
+    console.log('Memberships found:', memberships.length)
+
+    if (memberships.length === 0) {
+      console.log('User has no tenant memberships')
+      return cors(403, { error: 'No tenant access. Contact administrator.' })
+    }
+
+    // Use first membership as default tenant
+    const primaryMembership = memberships[0]
+    const tenantFeatures = primaryMembership.tenant_features || []
+    const userFeatures = primaryMembership.user_features
     const effectiveFeatures =
       userFeatures !== null
-        ? userFeatures.filter((f) => tenantFeatures.includes(f)) // Intersection
-        : tenantFeatures // Inherit all
+        ? userFeatures.filter((f) => tenantFeatures.includes(f))
+        : tenantFeatures
 
-    // Generate JWT token
+    console.log('Primary tenant:', primaryMembership.tenant_name)
+
+    // Generate JWT token (identity only - tenant comes from DB memberships)
     const token = jwt.sign(
       {
         userId: user.id,
-        email: user.email,
-        role: user.role,
-        tenantId: user.tenant_id,
-        accessLevel: user.access_level
+        email: user.email
       },
       JWT_SECRET,
       { expiresIn: '8h' }
@@ -153,13 +191,18 @@ async function handleLogin(event) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        accessLevel: user.access_level,
-        tenantId: user.tenant_id,
-        tenantName: user.tenant_name,
-        businessType: user.business_type,
+        role: primaryMembership.role,
+        tenantId: primaryMembership.tenant_id,
+        tenantName: primaryMembership.tenant_name,
+        businessType: primaryMembership.business_type,
         features: effectiveFeatures
-      }
+      },
+      // Also return all memberships for multi-tenant switching
+      memberships: memberships.map(m => ({
+        tenantId: m.tenant_id,
+        tenantName: m.tenant_name,
+        role: m.role
+      }))
     })
   } catch (e) {
     console.error('Login error:', e)
@@ -174,7 +217,6 @@ function cors(status, body) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      // include Authorization to be safe for other calls in your app
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     },
     body: JSON.stringify(body)
