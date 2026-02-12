@@ -16,7 +16,7 @@ export async function handler(event) {
 async function handleVerify(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, JWT_SECRET } = process.env
+    const { DATABASE_URL, JWT_SECRET, SUPER_ADMIN_EMAILS } = process.env
     
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
@@ -41,12 +41,132 @@ async function handleVerify(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // Check if user is SuperAdmin
+    const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
+    const userEmail = (decoded.email || '').toLowerCase().trim()
+    const isSuperAdmin = adminEmails.includes(userEmail)
+
+    console.log('🔵 auth-verify: user:', userEmail, 'isSuperAdmin:', isSuperAdmin)
+
     // Check for active tenant from header (for tenant switching)
     const activeTenantId = 
       event.headers['x-active-tenant'] || 
       event.headers['X-Active-Tenant'] ||
       null
 
+    // SUPERADMIN HANDLING
+    if (isSuperAdmin) {
+      console.log('🟢 SuperAdmin verification, activeTenantId:', activeTenantId)
+      
+      // SuperAdmin with specific tenant (impersonation)
+      if (activeTenantId) {
+        const tenantRows = await sql`
+          SELECT 
+            id::text as tenant_id,
+            name as tenant_name,
+            business_type,
+            features as tenant_features,
+            default_language as tenant_default_language,
+            default_locale as tenant_default_locale,
+            available_languages as tenant_available_languages
+          FROM tenants
+          WHERE id = ${activeTenantId}::uuid
+          LIMIT 1
+        `
+        
+        if (tenantRows.length === 0) {
+          console.log('🔴 Tenant not found:', activeTenantId)
+          return cors(403, { error: 'Tenant not found' })
+        }
+
+        // Get user basic info
+        const users = await sql`
+          SELECT id, email, name
+          FROM users
+          WHERE id = ${decoded.userId}
+          LIMIT 1
+        `
+
+        if (users.length === 0) {
+          return cors(401, { error: 'User not found' })
+        }
+
+        const user = users[0]
+        const tenant = tenantRows[0]
+
+        console.log('🟢 SuperAdmin impersonating:', tenant.tenant_name)
+
+        await logActivity({ 
+          sql, 
+          event, 
+          action: 'verify_token',
+          success: true,
+          userId: user.id,
+          tenantId: tenant.tenant_id
+        })
+
+        return cors(200, {
+          valid: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: 'super_admin',
+            accessLevel: 'admin',
+            tenantId: tenant.tenant_id,
+            tenantName: tenant.tenant_name,
+            businessType: tenant.business_type,
+            features: tenant.tenant_features || [],
+            tenant_default_language: tenant.tenant_default_language,
+            tenant_default_locale: tenant.tenant_default_locale,
+            tenant_available_languages: tenant.tenant_available_languages
+          }
+        })
+      }
+
+      // SuperAdmin without tenant (global mode)
+      const users = await sql`
+        SELECT id, email, name
+        FROM users
+        WHERE id = ${decoded.userId}
+        LIMIT 1
+      `
+
+      if (users.length === 0) {
+        return cors(401, { error: 'User not found' })
+      }
+
+      const user = users[0]
+
+      console.log('🟢 SuperAdmin global mode')
+
+      await logActivity({ 
+        sql, 
+        event, 
+        action: 'verify_token',
+        success: true,
+        userId: user.id,
+        tenantId: null
+      })
+
+      return cors(200, {
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: 'super_admin',
+          accessLevel: 'admin',
+          tenantId: null,
+          tenantName: null,
+          businessType: null,
+          features: []
+        }
+      })
+    }
+
+    // REGULAR USER HANDLING (not SuperAdmin)
+    
     // If active tenant specified, get user data for that tenant
     if (activeTenantId) {
       // Verify user has access to this tenant
@@ -97,22 +217,22 @@ async function handleVerify(event) {
         return cors(403, { error: 'Account is disabled' })
       }
 
-      // Calculate effective features: user_features || tenant_features
+      // Calculate effective features
       const tenantFeatures = membership[0].tenant_features || []
       const userFeatures = membership[0].user_features || null
       const effectiveFeatures = userFeatures !== null 
-        ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
-        : tenantFeatures // Inherit all
+        ? userFeatures.filter(f => tenantFeatures.includes(f))
+        : tenantFeatures
 
-        // 🆕 NEW - Log successful verification (active tenant case)
       await logActivity({ 
         sql, 
         event, 
         action: 'verify_token',
-        success: true 
+        success: true,
+        userId: user.id,
+        tenantId: membership[0].tenant_id
       })
 
-      // Return user info with active tenant context
       return cors(200, {
         valid: true,
         user: {
@@ -134,7 +254,7 @@ async function handleVerify(event) {
       })
     }
 
-    // No active tenant specified - get user's default tenant
+    // No active tenant - get user's default tenant
     const users = await sql`
       SELECT 
         u.id,
@@ -164,12 +284,11 @@ async function handleVerify(event) {
 
     const user = users[0]
 
-    // Check if user is still active
     if (!user.active) {
       return cors(403, { error: 'Account is disabled' })
     }
 
-    // Get user's membership for this tenant to check user-specific features
+    // Get user's membership features
     const membership = await sql`
       SELECT features as user_features
       FROM tenant_memberships
@@ -181,18 +300,18 @@ async function handleVerify(event) {
     const tenantFeatures = user.tenant_features || []
     const userFeatures = membership.length > 0 ? membership[0].user_features : null
     const effectiveFeatures = userFeatures !== null
-      ? userFeatures.filter(f => tenantFeatures.includes(f)) // Intersection
-      : tenantFeatures // Inherit all
+      ? userFeatures.filter(f => tenantFeatures.includes(f))
+      : tenantFeatures
 
-      // 🆕 NEW - Log successful verification (default tenant case)
     await logActivity({ 
       sql, 
       event, 
       action: 'verify_token',
-      success: true 
+      success: true,
+      userId: user.id,
+      tenantId: user.tenant_id
     })
 
-    // Return user info
     return cors(200, {
       valid: true,
       user: {
@@ -214,9 +333,8 @@ async function handleVerify(event) {
     })
 
   } catch (e) {
-    console.error('Verify error:', e)
+    console.error('🔴 Verify error:', e)
 
-    // 🆕 NEW - Log error activity
     try {
       const { neon } = await import('@neondatabase/serverless')
       const sql = neon(process.env.DATABASE_URL)
