@@ -64,11 +64,10 @@ export default function TenantSwitcher() {
       style={{
         background: 'linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%)',
         borderBottom: '2px solid #ffc107',
-        padding: '12px 16px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        padding: 12,
+        marginBottom: 16,
+        borderRadius: 8,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       }}
     >
       <div style={{ 
@@ -76,16 +75,12 @@ export default function TenantSwitcher() {
         alignItems: 'center', 
         gap: 12, 
         flexWrap: 'wrap',
-        maxWidth: 1200,
-        margin: '0 auto',
       }}>
         <div style={{ 
           fontWeight: 600, 
           fontSize: 13, 
           color: '#856404',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
+          whiteSpace: 'nowrap',
         }}>
           ⚡ SuperAdmin
         </div>
@@ -97,9 +92,9 @@ export default function TenantSwitcher() {
             disabled={loading}
             style={{
               width: '100%',
-              height: 40,
+              height: 38,
               padding: '0 12px',
-              fontSize: 14,
+              fontSize: 13,
               border: '2px solid #ffc107',
               borderRadius: 6,
               background: 'white',
@@ -108,10 +103,10 @@ export default function TenantSwitcher() {
               fontWeight: 500,
             }}
           >
-            <option value="">🌐 Global View (No Tenant)</option>
+            <option value="">🌐 Global View</option>
             {tenants.map(t => (
               <option key={t.id} value={t.id}>
-                👁️ {t.name}
+                {t.name}
               </option>
             ))}
           </select>
@@ -121,11 +116,9 @@ export default function TenantSwitcher() {
           <div style={{ 
             fontSize: 12, 
             color: '#856404',
-            padding: '6px 12px',
-            background: 'rgba(255,193,7,0.2)',
-            borderRadius: 4,
+            whiteSpace: 'nowrap',
           }}>
-            Viewing: <strong>{selectedTenant.name}</strong>
+            <strong>{selectedTenant.name}</strong>
           </div>
         )}
       </div>

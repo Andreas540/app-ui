@@ -423,8 +423,6 @@ useEffect(() => {
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
 
       <div className="layout">
-        <TenantSwitcher />
-        
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           {(() => {
             // SuperAdmin with tenant selected gets access to ALL features
@@ -601,6 +599,7 @@ useEffect(() => {
         </nav>
 
         <main className="content">
+          <TenantSwitcher />
           <Routes>
             {user?.businessType === 'physical_store' ? (
               <>
