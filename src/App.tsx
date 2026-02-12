@@ -44,6 +44,7 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
+import TenantSwitcher from './components/TenantSwitcher'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -419,172 +420,184 @@ useEffect(() => {
         </div>
       </header>
 
+      <TenantSwitcher />  {/* 🆕 ADD THIS LINE */}
+
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
 
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
-          {user?.businessType === 'physical_store' ? (
-            <>
-              {hasFeature('dashboard') && (
-                <NavLink to="/" onClick={() => setNavOpen(false)}>
-                  Store Dashboard
-                </NavLink>
-              )}
-              {hasFeature('settings') && (
-                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                  Settings
-                </NavLink>
-              )}
-              <button
-                onClick={handleLogout}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--muted)',
-                  color: 'var(--muted)',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  marginTop: '8px',
-                  width: '75%',
-                }}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              {hasFeature('dashboard') && (
-                <NavLink to="/" end onClick={() => setNavOpen(false)}>
-                  Main Dashboard
-                </NavLink>
-              )}
-              {hasFeature('customers') && (
-                <NavLink to="/customers" onClick={() => setNavOpen(false)}>
-                  Customers
-                </NavLink>
-              )}
-              {hasFeature('partners') && (
-                <NavLink to="/partners" onClick={() => setNavOpen(false)}>
-                  Partners
-                </NavLink>
-              )}
-              {hasFeature('price-checker') && (
-                <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
-                  Price Checker
-                </NavLink>
-              )}
-              {hasFeature('orders') && (
-                <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
-                  New Order
-                </NavLink>
-              )}
-              {hasFeature('payments') && (
-                <NavLink to="/payments" onClick={() => setNavOpen(false)}>
-                  New Payment
-                </NavLink>
-              )}
-              {hasFeature('products') && (
-                <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
-                  Products
-                </NavLink>
-              )}
-              {hasFeature('invoices') && (
-                <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
-                  Create Invoice
-                </NavLink>
-              )}
+          {(() => {
+            // SuperAdmin with tenant selected gets access to ALL features
+            const superAdminWithTenant = user?.role === 'super_admin' && user?.tenantId
+            const canAccess = (featureId: string) => hasFeature(featureId as any) || superAdminWithTenant
 
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Supply chain</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              {hasFeature('supply-chain') && (
-                <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
-                  Supply & Demand
-                </NavLink>                
-              )}
-              {hasFeature('production') && (
-                <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
-                  Production
-                </NavLink>
-              )}
-              {hasFeature('warehouse') && (
-                <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
-                  Warehouse
-                </NavLink>
-              )}            
-              {hasFeature('supplier-orders') && (
-                <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
-                  New Order (S)
-                </NavLink>
-              )}
-              {hasFeature('suppliers') && (
-                <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
-                  Suppliers
-                </NavLink>
-              )}
+            if (user?.businessType === 'physical_store') {
+              return (
+                <>
+                  {canAccess('dashboard') && (
+                    <NavLink to="/" onClick={() => setNavOpen(false)}>
+                      Store Dashboard
+                    </NavLink>
+                  )}
+                  {canAccess('settings') && (
+                    <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                      Settings
+                    </NavLink>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--muted)',
+                      color: 'var(--muted)',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      marginTop: '8px',
+                      width: '75%',
+                    }}
+                  >
+                    Logout
+                  </button>
+                </>
+              )
+            }
 
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Staff</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />              
-              {hasFeature('employees') && (
-                <NavLink to="/employees" onClick={() => setNavOpen(false)}>
-                  Employees
-                </NavLink>
-              )}
-              {hasFeature('time-approval') && (
-                <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
-                  Time Approval
-                </NavLink>
-              )}
-              {hasFeature('time-entry') && (
-                <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
-                  Time Entry
-                </NavLink>
-              )}
+            return (
+              <>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
+                <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+                {canAccess('dashboard') && (
+                  <NavLink to="/" end onClick={() => setNavOpen(false)}>
+                    Main Dashboard
+                  </NavLink>
+                )}
+                {canAccess('customers') && (
+                  <NavLink to="/customers" onClick={() => setNavOpen(false)}>
+                    Customers
+                  </NavLink>
+                )}
+                {canAccess('partners') && (
+                  <NavLink to="/partners" onClick={() => setNavOpen(false)}>
+                    Partners
+                  </NavLink>
+                )}
+                {canAccess('price-checker') && (
+                  <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
+                    Price Checker
+                  </NavLink>
+                )}
+                {canAccess('orders') && (
+                  <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
+                    New Order
+                  </NavLink>
+                )}
+                {canAccess('payments') && (
+                  <NavLink to="/payments" onClick={() => setNavOpen(false)}>
+                    New Payment
+                  </NavLink>
+                )}
+                {canAccess('products') && (
+                  <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
+                    Products
+                  </NavLink>
+                )}
+                {canAccess('invoices') && (
+                  <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
+                    Create Invoice
+                  </NavLink>
+                )}
 
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Admin</div>
-              <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-              {hasFeature('costs') && (
-                <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
-                  New Cost
-                </NavLink>
-              )}
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Supply chain</div>
+                <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+                {canAccess('supply-chain') && (
+                  <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
+                    Supply & Demand
+                  </NavLink>
+                )}
+                {canAccess('production') && (
+                  <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
+                    Production
+                  </NavLink>
+                )}
+                {canAccess('warehouse') && (
+                  <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
+                    Warehouse
+                  </NavLink>
+                )}
+                {canAccess('supplier-orders') && (
+                  <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
+                    New Order (S)
+                  </NavLink>
+                )}
+                {canAccess('suppliers') && (
+                  <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
+                    Suppliers
+                  </NavLink>
+                )}
 
-              {user?.role === 'super_admin' && (
-                <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
-                  Super Admin
-                </NavLink>
-              )}
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Staff</div>
+                <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+                {canAccess('employees') && (
+                  <NavLink to="/employees" onClick={() => setNavOpen(false)}>
+                    Employees
+                  </NavLink>
+                )}
+                {canAccess('time-approval') && (
+                  <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
+                    Time Approval
+                  </NavLink>
+                )}
+                {canAccess('time-entry') && (
+                  <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
+                    Time Entry
+                  </NavLink>
+                )}
 
-              {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
-                <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-                  Tenant Admin
-                </NavLink>
-              )}
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Admin</div>
+                <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
+                {canAccess('costs') && (
+                  <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
+                    New Cost
+                  </NavLink>
+                )}
 
-              {hasFeature('settings') && (
-                <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                  Settings
-                </NavLink>
-              )}
+                {user?.role === 'super_admin' && (
+                  <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
+                    Super Admin
+                  </NavLink>
+                )}
 
-              <button
-                onClick={handleLogout}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--muted)',
-                  color: 'var(--muted)',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  marginTop: '16px',
-                  width: '75%',
-                }}
-              >
-                Logout
-              </button>
-            </>
-          )}
+                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
+                  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
+                    Tenant Admin
+                  </NavLink>
+                )}
+
+                {canAccess('settings') && (
+                  <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                    Settings
+                  </NavLink>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--muted)',
+                    color: 'var(--muted)',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    marginTop: '16px',
+                    width: '75%',
+                  }}
+                >
+                  Logout
+                </button>
+              </>
+            )
+          })()}
         </nav>
 
         <main className="content">

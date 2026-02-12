@@ -232,6 +232,35 @@ export async function resolveAuthz({ sql, event }) {
   const userEmailLower = (user.email || '').toLowerCase().trim()
   
   if (adminEmails.includes(userEmailLower)) {
+    // SuperAdmin trying to access a specific tenant (impersonation mode)
+    if (activeTenantId) {
+      const tenantRows = await sql`
+        SELECT id::text as tenant_id, name as tenant_name, business_type, features as tenant_features
+        FROM tenants
+        WHERE id = ${activeTenantId}::uuid
+        LIMIT 1
+      `
+      
+      if (tenantRows.length > 0) {
+        console.log('SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
+        return {
+          tenantId: tenantRows[0].tenant_id,
+          role: 'super_admin',  // Keep super_admin role
+          businessType: tenantRows[0].business_type,
+          tenantFeatures: tenantRows[0].tenant_features || [],
+          userFeatures: null,  // Full access to all tenant features
+          mode: 'super_admin_impersonating'
+        }
+      }
+      
+      // Requested tenant doesn't exist
+      return {
+        error: 'TENANT_NOT_FOUND',
+        message: 'The requested tenant does not exist'
+      }
+    }
+    
+    // SuperAdmin without tenant selected - global mode
     return {
       tenantId: null, // SuperAdmin has no specific tenant
       role: 'super_admin',
