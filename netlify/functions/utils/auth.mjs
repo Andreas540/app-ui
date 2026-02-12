@@ -129,11 +129,6 @@ export async function resolveAuthz({ sql, event }) {
     return { error: 'ACCOUNT_DISABLED' }
   }
 
-  const requestedTenantId =
-    event.headers['x-tenant-id'] ||
-    event.headers['X-Tenant-Id'] ||
-    null
-
   // Ensure app user exists (and store email if present)
   await sql`
     insert into public.app_users (id, email)
@@ -143,7 +138,6 @@ export async function resolveAuthz({ sql, event }) {
   `
 
   // HARD BLOCK: disabled users must never fall back
-  // (This is the critical fix that prevents the "login works again" scenario.)
   const disabledRows = await sql`
     select is_disabled
     from public.app_users
@@ -154,10 +148,78 @@ export async function resolveAuthz({ sql, event }) {
     return { error: 'ACCOUNT_DISABLED' }
   }
 
-  // Check for active tenant (multi-tenant switching)
+  // 🆕 CHECK SUPERADMIN FIRST (before activeTenantId check)
+  // This prevents SuperAdmin from being blocked by the membership check below
+  const { SUPER_ADMIN_EMAILS } = process.env
+  const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
+  const userEmailLower = (user.email || '').toLowerCase().trim()
+  
+  // Get activeTenantId early (needed for SuperAdmin impersonation)
   const activeTenantId =
     event.headers['x-active-tenant'] ||
     event.headers['X-Active-Tenant'] ||
+    null
+  
+  console.log('🔵 Checking SuperAdmin:', { 
+    userEmail: userEmailLower, 
+    isSuperAdmin: adminEmails.includes(userEmailLower),
+    activeTenantId 
+  })
+  
+  if (adminEmails.includes(userEmailLower)) {
+    console.log('🟢 User IS SuperAdmin')
+    
+    // SuperAdmin trying to access a specific tenant (impersonation mode)
+    if (activeTenantId) {
+      console.log('🔵 SuperAdmin requesting tenant:', activeTenantId)
+      
+      const tenantRows = await sql`
+        SELECT id::text as tenant_id, name as tenant_name, business_type, features as tenant_features
+        FROM tenants
+        WHERE id = ${activeTenantId}::uuid
+        LIMIT 1
+      `
+      
+      console.log('🔵 Tenant query result:', tenantRows.length, 'rows')
+      
+      if (tenantRows.length > 0) {
+        console.log('🟢 SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
+        return {
+          tenantId: tenantRows[0].tenant_id,
+          role: 'super_admin',
+          businessType: tenantRows[0].business_type,
+          tenantFeatures: tenantRows[0].tenant_features || [],
+          userFeatures: null,
+          mode: 'super_admin_impersonating'
+        }
+      }
+      
+      // Requested tenant doesn't exist
+      console.log('🔴 Tenant not found for ID:', activeTenantId)
+      return {
+        error: 'TENANT_NOT_FOUND',
+        message: 'The requested tenant does not exist'
+      }
+    }
+    
+    // SuperAdmin without tenant selected - global mode
+    console.log('🟢 SuperAdmin global mode (no tenant)')
+    return {
+      tenantId: null,
+      role: 'super_admin',
+      businessType: null,
+      tenantFeatures: [],
+      userFeatures: null,
+      mode: 'super_admin'
+    }
+  }
+
+  // REGULAR USER HANDLING (not SuperAdmin)
+  
+  // Check for legacy tenant header
+  const requestedTenantId =
+    event.headers['x-tenant-id'] ||
+    event.headers['X-Tenant-Id'] ||
     null
 
   // If active tenant specified, validate membership for it
@@ -224,66 +286,6 @@ export async function resolveAuthz({ sql, event }) {
     tenantFeatures: rows[0].tenant_features || [],
     userFeatures: rows[0].user_features,
     mode: 'membership'
-  }
-
-  // Check if user is SuperAdmin (no tenant membership required)
-  const { SUPER_ADMIN_EMAILS } = process.env
-  const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
-  const userEmailLower = (user.email || '').toLowerCase().trim()
-  
-  console.log('🔵 Checking SuperAdmin:', { 
-    userEmail: userEmailLower, 
-    adminEmails,
-    isSuperAdmin: adminEmails.includes(userEmailLower),
-    activeTenantId 
-  })
-  
-  if (adminEmails.includes(userEmailLower)) {
-    console.log('🟢 User IS SuperAdmin')
-    
-    // SuperAdmin trying to access a specific tenant (impersonation mode)
-    if (activeTenantId) {
-      console.log('🔵 SuperAdmin requesting tenant:', activeTenantId)
-      
-      const tenantRows = await sql`
-        SELECT id::text as tenant_id, name as tenant_name, business_type, features as tenant_features
-        FROM tenants
-        WHERE id = ${activeTenantId}::uuid
-        LIMIT 1
-      `
-      
-      console.log('🔵 Tenant query result:', tenantRows.length, 'rows')
-      
-      if (tenantRows.length > 0) {
-        console.log('🟢 SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
-        return {
-          tenantId: tenantRows[0].tenant_id,
-          role: 'super_admin',
-          businessType: tenantRows[0].business_type,
-          tenantFeatures: tenantRows[0].tenant_features || [],
-          userFeatures: null,
-          mode: 'super_admin_impersonating'
-        }
-      }
-      
-      // Requested tenant doesn't exist
-      console.log('🔴 Tenant not found for ID:', activeTenantId)
-      return {
-        error: 'TENANT_NOT_FOUND',
-        message: 'The requested tenant does not exist'
-      }
-    }
-    
-    // SuperAdmin without tenant selected - global mode
-    console.log('🟢 SuperAdmin global mode (no tenant)')
-    return {
-      tenantId: null,
-      role: 'super_admin',
-      businessType: null,
-      tenantFeatures: [],
-      userFeatures: null,
-      mode: 'super_admin'
-    }
   }
 
   // SECURITY FIX: No membership and not SuperAdmin => access denied
