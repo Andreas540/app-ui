@@ -20,9 +20,39 @@ export async function handler(event) {
     const sql = neon(DATABASE_URL);
 
     const authz = await resolveAuthz({ sql, event });
-    if (authz.error) return cors(403, { error: authz.error });
+    
+    console.log('🔵 Bootstrap authz result:', {
+      mode: authz.mode,
+      role: authz.role,
+      tenantId: authz.tenantId,
+      error: authz.error
+    })
+
+    // SuperAdmin in global mode (no tenant) - return empty bootstrap
+    if (authz.role === 'super_admin' && !authz.tenantId) {
+      console.log('🟢 SuperAdmin global mode - returning empty bootstrap')
+      return cors(200, { 
+        customers: [], 
+        products: [], 
+        partners: [], 
+        suppliers: [] 
+      });
+    }
+
+    // Error handling (after SuperAdmin check)
+    if (authz.error) {
+      console.log('🔴 Auth error:', authz.error)
+      return cors(403, { error: authz.error });
+    }
+
+    // Need a tenant to proceed
+    if (!authz.tenantId) {
+      console.log('🔴 No tenant ID')
+      return cors(403, { error: 'No tenant access' });
+    }
 
     const TENANT_ID = authz.tenantId;
+    console.log('🟢 Loading bootstrap for tenant:', TENANT_ID)
 
     // Customers: we need customer_type here (NOT the old 'type')
     const customers = await sql`
@@ -56,10 +86,16 @@ export async function handler(event) {
       ORDER BY name
     `;
 
+    console.log('🟢 Bootstrap loaded:', {
+      customers: customers.length,
+      products: products.length,
+      partners: partners.length,
+      suppliers: suppliers.length
+    })
+
     return cors(200, { customers, products, partners, suppliers });
   } catch (e) {
-    console.error(e);    
-    
+    console.error('🔴 Bootstrap error:', e);    
     return cors(500, { error: String(e?.message || e) });
   }
 }
@@ -71,7 +107,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   };

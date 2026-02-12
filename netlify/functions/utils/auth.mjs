@@ -231,9 +231,20 @@ export async function resolveAuthz({ sql, event }) {
   const adminEmails = SUPER_ADMIN_EMAILS ? SUPER_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []
   const userEmailLower = (user.email || '').toLowerCase().trim()
   
+  console.log('🔵 Checking SuperAdmin:', { 
+    userEmail: userEmailLower, 
+    adminEmails,
+    isSuperAdmin: adminEmails.includes(userEmailLower),
+    activeTenantId 
+  })
+  
   if (adminEmails.includes(userEmailLower)) {
+    console.log('🟢 User IS SuperAdmin')
+    
     // SuperAdmin trying to access a specific tenant (impersonation mode)
     if (activeTenantId) {
+      console.log('🔵 SuperAdmin requesting tenant:', activeTenantId)
+      
       const tenantRows = await sql`
         SELECT id::text as tenant_id, name as tenant_name, business_type, features as tenant_features
         FROM tenants
@@ -241,19 +252,22 @@ export async function resolveAuthz({ sql, event }) {
         LIMIT 1
       `
       
+      console.log('🔵 Tenant query result:', tenantRows.length, 'rows')
+      
       if (tenantRows.length > 0) {
-        console.log('SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
+        console.log('🟢 SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
         return {
           tenantId: tenantRows[0].tenant_id,
-          role: 'super_admin',  // Keep super_admin role
+          role: 'super_admin',
           businessType: tenantRows[0].business_type,
           tenantFeatures: tenantRows[0].tenant_features || [],
-          userFeatures: null,  // Full access to all tenant features
+          userFeatures: null,
           mode: 'super_admin_impersonating'
         }
       }
       
       // Requested tenant doesn't exist
+      console.log('🔴 Tenant not found for ID:', activeTenantId)
       return {
         error: 'TENANT_NOT_FOUND',
         message: 'The requested tenant does not exist'
@@ -261,8 +275,9 @@ export async function resolveAuthz({ sql, event }) {
     }
     
     // SuperAdmin without tenant selected - global mode
+    console.log('🟢 SuperAdmin global mode (no tenant)')
     return {
-      tenantId: null, // SuperAdmin has no specific tenant
+      tenantId: null,
       role: 'super_admin',
       businessType: null,
       tenantFeatures: [],
