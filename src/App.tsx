@@ -420,11 +420,11 @@ useEffect(() => {
         </div>
       </header>
 
-      <TenantSwitcher />  {/* 🆕 ADD THIS LINE */}
-
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
 
       <div className="layout">
+        <TenantSwitcher />
+        
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           {(() => {
             // SuperAdmin with tenant selected gets access to ALL features

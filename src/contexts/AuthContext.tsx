@@ -127,9 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasFeature = (featureId: FeatureId): boolean => {
     if (!user) return false
-    // Super admins have access to everything
-    if (user.role === 'super_admin') return true
-    // Check if feature is in user's enabled features
+    // Super admins with tenant selected have access to all features
+    if (user.role === 'super_admin' && user.tenantId) return true
+    // Super admins without tenant have no feature access (global mode)
+    if (user.role === 'super_admin' && !user.tenantId) return false
+    // Regular users: check if feature is in user's enabled features
     return user.features?.includes(featureId) || false
   }
 

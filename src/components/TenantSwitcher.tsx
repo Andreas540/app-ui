@@ -62,37 +62,50 @@ export default function TenantSwitcher() {
   return (
     <div
       style={{
-        background: '#fff3cd',
-        border: '1px solid #ffc107',
-        borderRadius: 8,
-        padding: 12,
-        margin: '16px 16px 0 16px',
+        background: 'linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%)',
+        borderBottom: '2px solid #ffc107',
+        padding: '12px 16px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}
     >
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: 12, 
-        flexWrap: 'wrap' 
+        flexWrap: 'wrap',
+        maxWidth: 1200,
+        margin: '0 auto',
       }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: '#856404' }}>
-          ⚡ SuperAdmin Mode
+        <div style={{ 
+          fontWeight: 600, 
+          fontSize: 13, 
+          color: '#856404',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}>
+          ⚡ SuperAdmin
         </div>
         
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ flex: 1, minWidth: 200, maxWidth: 400 }}>
           <select
             value={activeTenantId || ''}
             onChange={(e) => handleTenantChange(e.target.value)}
             disabled={loading}
             style={{
               width: '100%',
-              height: 36,
+              height: 40,
               padding: '0 12px',
-              fontSize: 13,
-              border: '1px solid #ffc107',
-              borderRadius: 4,
+              fontSize: 14,
+              border: '2px solid #ffc107',
+              borderRadius: 6,
               background: 'white',
               color: '#333',
+              cursor: loading ? 'wait' : 'pointer',
+              fontWeight: 500,
             }}
           >
             <option value="">🌐 Global View (No Tenant)</option>
@@ -105,8 +118,14 @@ export default function TenantSwitcher() {
         </div>
 
         {selectedTenant && (
-          <div style={{ fontSize: 12, color: '#856404' }}>
-            Viewing <strong>{selectedTenant.name}</strong>'s data with full admin access
+          <div style={{ 
+            fontSize: 12, 
+            color: '#856404',
+            padding: '6px 12px',
+            background: 'rgba(255,193,7,0.2)',
+            borderRadius: 4,
+          }}>
+            Viewing: <strong>{selectedTenant.name}</strong>
           </div>
         )}
       </div>
