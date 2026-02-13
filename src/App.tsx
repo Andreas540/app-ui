@@ -164,7 +164,7 @@ function MainApp() {
 
   // 🆕 Idle timeout - auto logout after 15 minutes of inactivity
   useIdleTimeout(
-    15 * 60 * 1000, // 15 minutes
+    90 * 60 * 1000, // 15 minutes
     () => {
       console.log('Auto-logout due to inactivity')
       handleLogout()
