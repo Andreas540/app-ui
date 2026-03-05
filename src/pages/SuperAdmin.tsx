@@ -12,6 +12,7 @@ interface Tenant {
   business_type: string
   features?: FeatureId[]
   created_at: string
+  stripe_customer_id?: string | null
 }
 
 interface TenantIcon {
@@ -79,6 +80,12 @@ export default function SuperAdmin() {
   const [managingTenantName, setManagingTenantName] = useState('')
   const [managingTenantFeatures, setManagingTenantFeatures] = useState<FeatureId[]>([])
   const [savingFeatures, setSavingFeatures] = useState(false)
+
+  // Stripe customer ID management
+const [managingStripeId, setManagingStripeId] = useState<string | null>(null)
+const [managingStripeName, setManagingStripeName] = useState('')
+const [editingStripeCustomerId, setEditingStripeCustomerId] = useState('')
+const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -311,6 +318,40 @@ export default function SuperAdmin() {
     }
   }
 
+  function openManageStripe(tenant: Tenant) {
+  setManagingStripeId(tenant.id)
+  setManagingStripeName(tenant.name)
+  setEditingStripeCustomerId(tenant.stripe_customer_id || '')
+}
+
+async function handleSaveStripeCustomerId() {
+  if (!managingStripeId) return
+  try {
+    setSavingStripeCustomerId(true)
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(`${base}/api/super-admin`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        action: 'updateStripeCustomerId',
+        tenantId: managingStripeId,
+        stripeCustomerId: editingStripeCustomerId.trim() || null,
+      })
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Failed to save')
+    }
+    alert('Stripe customer ID saved!')
+    setManagingStripeId(null)
+    await loadData()
+  } catch (e: any) {
+    alert(e?.message || 'Failed to save')
+  } finally {
+    setSavingStripeCustomerId(false)
+  }
+}
+
   async function openManageIcons(tenant: Tenant) {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -538,13 +579,25 @@ export default function SuperAdmin() {
                         Type: {tenant.business_type === 'physical_store' ? 'Physical Store' : 'General'}
                       </div>
                       <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                        Features: {tenant.features?.length || 0} enabled
-                      </div>
+  Features: {tenant.features?.length || 0} enabled
+</div>
+<div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+  Stripe: {tenant.stripe_customer_id 
+    ? <span style={{ color: '#4CAF50' }}>{tenant.stripe_customer_id}</span>
+    : <span style={{ color: 'salmon' }}>Not set</span>
+  }
+</div>
                     </div>
                     
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button
-                        onClick={() => openManageTenantFeatures(tenant)}
+  <button
+    onClick={() => openManageStripe(tenant)}
+    style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+  >
+    Stripe
+  </button>
+  <button
+    onClick={() => openManageTenantFeatures(tenant)}
                         style={{
                           height: 36,
                           padding: '0 16px',
@@ -1106,6 +1159,54 @@ export default function SuperAdmin() {
           </div>
         </div>
       )}
+      {/* Manage Stripe Customer ID Modal */}
+{managingStripeId && (
+  <div
+    style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.7)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
+    }}
+    onClick={() => setManagingStripeId(null)}
+  >
+    <div
+      className="card"
+      style={{ maxWidth: 480, width: '100%' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 style={{ marginTop: 0 }}>Stripe: {managingStripeName}</h3>
+      <p className="helper" style={{ marginTop: 8 }}>
+        Paste the Stripe customer ID from Email 1 (starts with cus_)
+      </p>
+      <div style={{ marginTop: 16 }}>
+        <label>Stripe Customer ID</label>
+        <input
+          type="text"
+          value={editingStripeCustomerId}
+          onChange={(e) => setEditingStripeCustomerId(e.target.value)}
+          placeholder="cus_xxxxxxxxxxxxxxx"
+          style={{ height: CONTROL_H, marginTop: 6, fontFamily: 'monospace' }}
+        />
+      </div>
+      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+        <button
+          className="primary"
+          onClick={handleSaveStripeCustomerId}
+          disabled={savingStripeCustomerId}
+          style={{ height: CONTROL_H, flex: 1 }}
+        >
+          {savingStripeCustomerId ? 'Saving...' : 'Save'}
+        </button>
+        <button
+          onClick={() => setManagingStripeId(null)}
+          style={{ height: CONTROL_H, flex: 1 }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }

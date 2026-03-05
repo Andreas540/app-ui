@@ -29,9 +29,9 @@ async function handleGet(event) {
 
     if (action === 'listTenants') {
       const tenants = await sql`
-        SELECT id, name, business_type, features, created_at
-        FROM tenants
-        ORDER BY name ASC
+  SELECT id, name, business_type, features, created_at, stripe_customer_id
+  FROM tenants
+  ORDER BY name ASC
       `
       return cors(200, { tenants })
     }
@@ -327,10 +327,26 @@ if (action === 'toggleUserStatus') {
 
   return cors(200, { success: true, isActive: isActiveBoolean })
 }
+if (action === 'updateStripeCustomerId') {
+      const { tenantId, stripeCustomerId } = body
+
+      if (!tenantId) {
+        return cors(400, { error: 'tenantId is required' })
+      }
+
+      await sql`
+        UPDATE tenants
+        SET stripe_customer_id = ${stripeCustomerId || null}
+        WHERE id = ${tenantId}
+      `
+
+      return cors(200, { success: true })
+    }
 
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handlePost error:', e)
+  
     return cors(500, { error: String(e?.message || e) })
   }
 }
