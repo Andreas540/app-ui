@@ -17,23 +17,44 @@ export const handler = async (event) => {
 
   const sql = neon(process.env.DATABASE_URL)
 
-  // resolveAuthz requires { sql, event } — sql is needed to look up tenant membership
+  // resolveAuthz requires { sql, event } to look up tenant membership from DB
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(401, { error: authz.error })
 
   const user = getUserFromToken(event)
   if (!user?.email) return cors(401, { error: 'Could not resolve user email' })
 
-  // ── GET: fetch messages for this user ─────────────────────────────────────
+  // ── GET ───────────────────────────────────────────────────────────────────
   if (event.httpMethod === 'GET') {
     try {
-      const rows = await sql`
-        SELECT id, topic, message, sent_at, answered_at
-        FROM contact_messages
-        WHERE tenant_id  = ${authz.tenantId}::uuid
-          AND user_email = ${user.email}
-        ORDER BY sent_at DESC
-      `
+      let rows
+
+      if (authz.role === 'super_admin') {
+        // Super admin sees ALL messages across all tenants, latest first
+        rows = await sql`
+          SELECT
+            cm.id,
+            cm.topic,
+            cm.message,
+            cm.sent_at,
+            cm.answered_at,
+            cm.user_email,
+            t.name AS tenant_name
+          FROM contact_messages cm
+          LEFT JOIN tenants t ON t.id = cm.tenant_id
+          ORDER BY cm.sent_at DESC
+        `
+      } else {
+        // Regular users only see their own messages for their tenant
+        rows = await sql`
+          SELECT id, topic, message, sent_at, answered_at
+          FROM contact_messages
+          WHERE tenant_id  = ${authz.tenantId}::uuid
+            AND user_email = ${user.email}
+          ORDER BY sent_at DESC
+        `
+      }
+
       return cors(200, { messages: rows })
     } catch (err) {
       console.error('contact GET error:', err)
@@ -79,7 +100,6 @@ export const handler = async (event) => {
           body: formData.toString(),
         })
       } catch (formErr) {
-        // Non-fatal — DB save succeeded, just log the forms failure
         console.warn('Netlify Forms forward failed:', formErr)
       }
 
@@ -90,7 +110,7 @@ export const handler = async (event) => {
     }
   }
 
-  // ── PATCH: mark a message as answered (Super Admin only) ──────────────────
+  // ── PATCH: mark answered/unanswered (Super Admin only) ────────────────────
   if (event.httpMethod === 'PATCH') {
     if (authz.role !== 'super_admin') return cors(403, { error: 'Super admin only' })
 

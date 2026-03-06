@@ -47,6 +47,7 @@ import TimeEntrySimple from './pages/TimeEntrySimple'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import TenantSwitcher from './components/TenantSwitcher'
 import Contact from './pages/Contact'
+import Messages from './pages/Messages'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -535,6 +536,12 @@ useEffect(() => {
                   </NavLink>
                 )}
 
+                {user?.role === 'super_admin' && (
+  <NavLink to="/messages" onClick={() => setNavOpen(false)}>
+    Messages
+  </NavLink>
+)}
+
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
                   <NavLink to="/admin" onClick={() => setNavOpen(false)}>
                     Tenant Admin
@@ -643,6 +650,7 @@ useEffect(() => {
                   <Route path="/admin" element={<TenantAdmin />} />
                 )}
                 {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
+                {user?.role === 'super_admin' && <Route path="/messages" element={<Messages />} />}
                 {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}
                 {hasFeature('time-entry') && <Route path="/time-entry" element={<TimeEntry />} />}
                 {hasFeature('employees') && <Route path="/employees" element={<EmployeeManagement />} />}
