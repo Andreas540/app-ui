@@ -1,17 +1,54 @@
 import { useState, useEffect } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import { AVAILABLE_FEATURES, type FeatureId } from '../lib/features'
 
-// Map each shortcut to its feature ID so we can filter by hasFeature()
-const ALL_SHORTCUTS = [
-  { id: 'D', label: 'Dashboard',  title: 'Dashboard',  route: '/',           feature: 'dashboard'  },
-  { id: 'O', label: 'New Order',  title: 'New Order',  route: '/orders/new', feature: 'orders'     },
-  { id: 'P', label: 'Payments',   title: 'Payments',   route: '/payments',   feature: 'payments'   },
-  { id: 'C', label: 'Customers',  title: 'Customers',  route: '/customers',  feature: 'customers'  },
-  { id: 'I', label: 'Inventory',  title: 'Inventory',  route: '/inventory',  feature: 'inventory'  },
-] as const
+// ── Letter logic ──────────────────────────────────────────────────────────────
+// 1. Multi-word name  → initials of first two words, both caps  (e.g. "New Order" → NO)
+// 2. Single-word name → first letter, caps                      (e.g. "Warehouse" → W)
+// 3. If multiple items share the same generated letter           → first + second char
+//    of the name (e.g. "Payments"/"Products"/"Production" → Pa / Pr / Pr)
 
-const DEFAULT_SHORTCUTS = ['D', 'O', 'P', 'C']
+function assignLetters(names: string[]): string[] {
+  // Pass 1 — naive assignment
+  const letters = names.map(name => {
+    const words = name.split(' ').filter(w => /^[a-zA-Z]/.test(w))
+    if (words.length >= 2) {
+      return words[0][0].toUpperCase() + words[1][0].toUpperCase()
+    }
+    return name[0].toUpperCase()
+  })
+
+  // Pass 2 — fix single-char duplicates by expanding to 2 chars
+  return letters.map((letter, i) => {
+    const isDuplicate = letters.some((l, j) => j !== i && l === letter)
+    if (isDuplicate && letter.length === 1) {
+      return names[i][0].toUpperCase() + names[i][1].toLowerCase()
+    }
+    return letter
+  })
+}
+
+// ── Build shortcut list from AVAILABLE_FEATURES ───────────────────────────────
+const EXCLUDED_FROM_SHORTCUTS: FeatureId[] = ['tenant-admin', 'settings', 'inventory']
+
+const _raw = (Object.values(AVAILABLE_FEATURES) as Array<{
+  id: FeatureId; name: string; route: string; category: string
+}>).filter(f => !EXCLUDED_FROM_SHORTCUTS.includes(f.id))
+
+const _letters = assignLetters(_raw.map(f => f.name))
+
+const ALL_SHORTCUTS = _raw.map((f, i) => ({
+  id:       f.id,
+  label:    f.name,
+  letter:   _letters[i],
+  route:    f.route,
+  category: f.category,
+}))
+
+const DEFAULT_SHORTCUTS: FeatureId[] = ['dashboard', 'orders', 'payments', 'customers']
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Settings() {
   const { hasFeature, user } = useAuth()
@@ -19,25 +56,22 @@ export default function Settings() {
   const [tenantName, setTenantName]       = useState('')
   const [tenantLoading, setTenantLoading] = useState(true)
   const [userName, setUserName]           = useState('')
-  const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
+  const [selectedShortcuts, setSelectedShortcuts] = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
-  // Password change state
   const [currentPassword, setCurrentPassword]   = useState('')
   const [newPassword, setNewPassword]           = useState('')
   const [confirmPassword, setConfirmPassword]   = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
 
-  // Shortcuts the current user has feature access to
+  // Shortcuts filtered to what the current user has access to
   const availableShortcuts = ALL_SHORTCUTS.filter(s =>
-    user?.role === 'super_admin' || hasFeature(s.feature as any)
+    user?.role === 'super_admin' || hasFeature(s.id)
   )
-
-  // Shortcuts not yet selected (for dropdown options)
   const unselectedShortcuts = availableShortcuts.filter(s => !selectedShortcuts.includes(s.id))
 
-  // ── Tenant loading ────────────────────────────────────────────────────────
+  // ── Tenant ────────────────────────────────────────────────────────────────
 
   async function fetchTenant() {
     try {
@@ -47,8 +81,8 @@ export default function Settings() {
       if (!res.ok) throw new Error(`status ${res.status}`)
       const data = await res.json()
       setTenantName(data.tenant.name)
-    } catch (error) {
-      console.error('Failed to load tenant info:', error)
+    } catch (err) {
+      console.error('Failed to load tenant info:', err)
       setTenantName('Unknown')
     } finally {
       setTenantLoading(false)
@@ -56,7 +90,6 @@ export default function Settings() {
   }
 
   useEffect(() => { fetchTenant() }, [])
-
   useEffect(() => {
     window.addEventListener('storage', fetchTenant)
     return () => window.removeEventListener('storage', fetchTenant)
@@ -69,38 +102,39 @@ export default function Settings() {
     setHasChanges(userName.trim() !== '' || shortcutsChanged)
   }, [userName, selectedShortcuts])
 
-  // ── Shortcut helpers ──────────────────────────────────────────────────────
+  // ── Shortcuts ─────────────────────────────────────────────────────────────
 
-  const addShortcut = (shortcutId: string) => {
+  const addShortcut = (id: FeatureId) => {
     if (selectedShortcuts.length >= 4) return
     setSelectedShortcuts(prev => {
-      const updated = [...prev, shortcutId]
-      return ALL_SHORTCUTS.map(s => s.id).filter(id => updated.includes(id))
+      const updated = [...prev, id]
+      return ALL_SHORTCUTS.map(s => s.id).filter(i => updated.includes(i)) as FeatureId[]
     })
   }
 
-  const removeShortcut = (shortcutId: string) => {
-    setSelectedShortcuts(prev => prev.filter(id => id !== shortcutId))
+  const removeShortcut = (id: FeatureId) => {
+    setSelectedShortcuts(prev => prev.filter(i => i !== id))
   }
 
-  // ── Save / password ───────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     if (!hasChanges) return
     setSaving(true)
     try {
-      const settings = { userName: userName.trim(), selectedShortcuts }
-      localStorage.setItem('userSettings', JSON.stringify(settings))
+      localStorage.setItem('userSettings', JSON.stringify({ userName: userName.trim(), selectedShortcuts }))
       window.location.reload()
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(r => setTimeout(r, 500))
       setHasChanges(false)
-    } catch (error) {
-      console.error('Failed to save settings:', error)
+    } catch (err) {
+      console.error('Failed to save settings:', err)
       alert('Failed to save settings. Please try again.')
     } finally {
       setSaving(false)
     }
   }
+
+  // ── Password ──────────────────────────────────────────────────────────────
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -124,24 +158,25 @@ export default function Settings() {
       if (!res.ok) throw new Error(data.error || 'Failed to change password')
       alert('Password changed successfully!')
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
-    } catch (error: any) {
-      alert(error.message || 'Failed to change password')
+    } catch (err: any) {
+      alert(err.message || 'Failed to change password')
     } finally {
       setChangingPassword(false)
     }
   }
 
-  // Load saved settings on mount
+  // ── Load saved settings ───────────────────────────────────────────────────
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('userSettings')
       if (saved) {
-        const settings = JSON.parse(saved)
-        setUserName(settings.userName || '')
-        setSelectedShortcuts(settings.selectedShortcuts || DEFAULT_SHORTCUTS)
+        const s = JSON.parse(saved)
+        setUserName(s.userName || '')
+        setSelectedShortcuts(s.selectedShortcuts || DEFAULT_SHORTCUTS)
       }
-    } catch (error) {
-      console.error('Failed to load saved settings:', error)
+    } catch (err) {
+      console.error('Failed to load saved settings:', err)
     }
   }, [])
 
@@ -163,7 +198,7 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Company + User row */}
+      {/* Company + User */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>Company</label>
@@ -191,19 +226,18 @@ export default function Settings() {
       <div style={{ marginTop: 20 }}>
         <label>Quick access buttons ({selectedShortcuts.length}/4 selected)</label>
 
-        {/* Dropdown + icons, matching the 2-col grid above */}
         <div className="row row-2col-mobile" style={{ marginTop: 8, alignItems: 'flex-start' }}>
 
-          {/* Left col: dropdown — inherits same width as Company/User inputs */}
+          {/* Dropdown */}
           <div>
             <select
               value=""
-              onChange={(e) => { if (e.target.value) addShortcut(e.target.value) }}
+              onChange={(e) => { if (e.target.value) addShortcut(e.target.value as FeatureId) }}
               disabled={selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0}
               style={{
                 width: '100%',
                 opacity: selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 0.5 : 1,
-                cursor:  selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 'not-allowed' : 'pointer'
+                cursor:  selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 'not-allowed' : 'pointer',
               }}
             >
               <option value="" disabled>
@@ -213,8 +247,8 @@ export default function Settings() {
                     ? 'All added'
                     : 'Add shortcut…'}
               </option>
-              {unselectedShortcuts.map(shortcut => (
-                <option key={shortcut.id} value={shortcut.id}>{shortcut.label}</option>
+              {unselectedShortcuts.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
             <div className="helper" style={{ marginTop: 4 }}>
@@ -222,16 +256,16 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Right col: selected icons stacked vertically */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Selected icons — horizontal */}
+          <div style={{ display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap', paddingTop: 2 }}>
             {selectedShortcuts.map(id => {
-              const shortcut = ALL_SHORTCUTS.find(s => s.id === id)
-              if (!shortcut) return null
+              const s = ALL_SHORTCUTS.find(x => x.id === id)
+              if (!s) return null
               return (
                 <button
                   key={id}
                   onClick={() => removeShortcut(id)}
-                  title={`Remove ${shortcut.title}`}
+                  title={`${s.label} — click to remove`}
                   style={{
                     width: 40,
                     height: 40,
@@ -241,14 +275,15 @@ export default function Settings() {
                     borderRadius: 10,
                     cursor: 'pointer',
                     fontWeight: 700,
-                    fontSize: 14,
+                    fontSize: s.letter.length > 1 ? 11 : 14,
+                    letterSpacing: s.letter.length > 1 ? '-0.5px' : 'normal',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0
+                    flexShrink: 0,
                   }}
                 >
-                  {id}
+                  {s.letter}
                 </button>
               )
             })}
@@ -257,18 +292,13 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Password Change Section */}
+      {/* Password Change */}
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
-        {/* Hidden username for password managers */}
         <input
-          type="text"
-          name="username"
-          autoComplete="username"
+          type="text" name="username" autoComplete="username"
           value={localStorage.getItem('userEmail') || ''}
-          readOnly
-          tabIndex={-1}
+          readOnly tabIndex={-1} aria-hidden="true"
           style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
-          aria-hidden="true"
         />
 
         <h4 style={{ margin: 0, marginBottom: 16 }}>Change Password</h4>
