@@ -3,6 +3,7 @@ import MaintenanceGate from './components/MaintenanceGate'
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
 
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
@@ -149,7 +150,7 @@ function MainApp() {
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [userName, setUserName] = useState('')
-  const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(['D', 'O', 'P', 'C'])
+  const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -191,7 +192,7 @@ function MainApp() {
         const settings = JSON.parse(saved)
         const loadedName = settings.userName || 'User'
         setUserName(loadedName)
-        setSelectedShortcuts(settings.selectedShortcuts || ['D', 'O', 'P', 'C'])
+        setSelectedShortcuts(settings.selectedShortcuts || DEFAULT_SHORTCUTS)
       } else {
         setUserName('User')
       }
@@ -362,62 +363,23 @@ useEffect(() => {
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-          {user?.businessType === 'physical_store' ? null : (
-            <>
-              {selectedShortcuts.includes('D') && hasFeature('dashboard') && (
-                <NavLink
-                  to="/"
-                  end
-                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                  title="Dashboard"
-                  onClick={() => setNavOpen(false)}
-                >
-                  D
-                </NavLink>
-              )}
-              {selectedShortcuts.includes('O') && hasFeature('orders') && (
-                <NavLink
-                  to="/orders/new"
-                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                  title="New Order"
-                  onClick={() => setNavOpen(false)}
-                >
-                  O
-                </NavLink>
-              )}
-              {selectedShortcuts.includes('P') && hasFeature('payments') && (
-                <NavLink
-                  to="/payments"
-                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                  title="Payments"
-                  onClick={() => setNavOpen(false)}
-                >
-                  P
-                </NavLink>
-              )}
-              {selectedShortcuts.includes('C') && hasFeature('customers') && (
-                <NavLink
-                  to="/customers"
-                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                  title="Customers"
-                  onClick={() => setNavOpen(false)}
-                >
-                  C
-                </NavLink>
-              )}
-              {selectedShortcuts.includes('I') && hasFeature('inventory') && (
-                <NavLink
-                  to="/inventory"
-                  className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-                  title="Inventory"
-                  onClick={() => setNavOpen(false)}
-                >
-                  I
-                </NavLink>
-              )}
-            </>
-          )}
-        </div>
+  {user?.businessType !== 'physical_store' && selectedShortcuts.map(featureId => {
+    const shortcut = ALL_SHORTCUTS.find(s => s.id === featureId)
+    if (!shortcut || !hasFeature(featureId as any)) return null
+    return (
+      <NavLink
+        key={featureId}
+        to={shortcut.route}
+        end={shortcut.route === '/'}
+        className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+        title={shortcut.label}
+        onClick={() => setNavOpen(false)}
+      >
+        {shortcut.letter}
+      </NavLink>
+    )
+  })}
+</div>
       </header>
 
       {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}

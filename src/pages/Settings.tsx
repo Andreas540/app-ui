@@ -1,54 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
-import { AVAILABLE_FEATURES, type FeatureId } from '../lib/features'
-
-// ── Letter logic ──────────────────────────────────────────────────────────────
-// 1. Multi-word name  → initials of first two words, both caps  (e.g. "New Order" → NO)
-// 2. Single-word name → first letter, caps                      (e.g. "Warehouse" → W)
-// 3. If multiple items share the same generated letter           → first + second char
-//    of the name (e.g. "Payments"/"Products"/"Production" → Pa / Pr / Pr)
-
-function assignLetters(names: string[]): string[] {
-  // Pass 1 — naive assignment
-  const letters = names.map(name => {
-    const words = name.split(' ').filter(w => /^[a-zA-Z]/.test(w))
-    if (words.length >= 2) {
-      return words[0][0].toUpperCase() + words[1][0].toUpperCase()
-    }
-    return name[0].toUpperCase()
-  })
-
-  // Pass 2 — fix single-char duplicates by expanding to 2 chars
-  return letters.map((letter, i) => {
-    const isDuplicate = letters.some((l, j) => j !== i && l === letter)
-    if (isDuplicate && letter.length === 1) {
-      return names[i][0].toUpperCase() + names[i][1].toLowerCase()
-    }
-    return letter
-  })
-}
-
-// ── Build shortcut list from AVAILABLE_FEATURES ───────────────────────────────
-const EXCLUDED_FROM_SHORTCUTS: FeatureId[] = ['tenant-admin', 'settings', 'inventory']
-
-const _raw = (Object.values(AVAILABLE_FEATURES) as Array<{
-  id: FeatureId; name: string; route: string; category: string
-}>).filter(f => !EXCLUDED_FROM_SHORTCUTS.includes(f.id))
-
-const _letters = assignLetters(_raw.map(f => f.name))
-
-const ALL_SHORTCUTS = _raw.map((f, i) => ({
-  id:       f.id,
-  label:    f.name,
-  letter:   _letters[i],
-  route:    f.route,
-  category: f.category,
-}))
-
-const DEFAULT_SHORTCUTS: FeatureId[] = ['dashboard', 'orders', 'payments', 'customers']
-
-// ── Component ─────────────────────────────────────────────────────────────────
+import { type FeatureId } from '../lib/features'
+import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS } from '../lib/shortcuts'
 
 export default function Settings() {
   const { hasFeature, user } = useAuth()
@@ -165,7 +119,7 @@ export default function Settings() {
     }
   }
 
-  // ── Load saved settings ───────────────────────────────────────────────────
+  // ── Load saved settings on mount ──────────────────────────────────────────
 
   useEffect(() => {
     try {
