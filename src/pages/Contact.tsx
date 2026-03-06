@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { getAuthHeaders } from '../lib/api'
 
 const TOPICS = [
   { value: '',             label: 'How can we help you?' },
@@ -17,12 +18,10 @@ interface SentMessage {
   id: string
   topic: string
   message: string
-  sentAt: string // ISO string
+  sent_at: string
 }
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
-
-const STORAGE_KEY = 'contactMessages'
 
 function formatSentAt(iso: string): string {
   const d   = new Date(iso)
@@ -34,34 +33,37 @@ function formatSentAt(iso: string): string {
   return `${m}/${day}/${yy} ${hh}:${min}`
 }
 
-function loadMessages(): SentMessage[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveMessage(msg: SentMessage) {
-  const existing = loadMessages()
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([msg, ...existing]))
-}
-
 export default function Contact() {
   const { user } = useAuth()
 
-  const [topic, setTopic]     = useState('')
-  const [message, setMessage] = useState('')
-  const [status, setStatus]   = useState<Status>('idle')
+  const [topic, setTopic]       = useState('')
+  const [message, setMessage]   = useState('')
+  const [status, setStatus]     = useState<Status>('idle')
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([])
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId]     = useState<string | null>(null)
+  const [loading, setLoading]   = useState(true)
 
   const userEmail = user?.email || ''
   const canSubmit = topic !== '' && message.trim() !== '' && status !== 'sending'
 
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+  // Load sent messages on mount
   useEffect(() => {
-    setSentMessages(loadMessages())
+    ;(async () => {
+      try {
+        const res = await fetch(`${base}/api/contact`, {
+          headers: getAuthHeaders(),
+        })
+        if (!res.ok) throw new Error(`status ${res.status}`)
+        const data = await res.json()
+        setSentMessages(data.messages || [])
+      } catch (err) {
+        console.error('Failed to load contact messages:', err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [])
 
   const handleSubmit = async () => {
@@ -69,29 +71,20 @@ export default function Contact() {
     setStatus('sending')
 
     try {
-      const body = new URLSearchParams({
-        'form-name': 'contact',
-        topic,
-        email: userEmail,
-        message: message.trim(),
-      })
-
-      const res = await fetch('/', {
+      const res = await fetch(`${base}/api/contact`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ topic, message: message.trim() }),
       })
 
       if (!res.ok) throw new Error(`status ${res.status}`)
 
-      const newMsg: SentMessage = {
-        id:     crypto.randomUUID(),
-        topic,
-        message: message.trim(),
-        sentAt: new Date().toISOString(),
+      // Reload messages from DB
+      const listRes = await fetch(`${base}/api/contact`, { headers: getAuthHeaders() })
+      if (listRes.ok) {
+        const data = await listRes.json()
+        setSentMessages(data.messages || [])
       }
-      saveMessage(newMsg)
-      setSentMessages(loadMessages())
 
       setStatus('success')
       setTopic('')
@@ -202,54 +195,53 @@ export default function Contact() {
         </button>
 
         {/* Sent messages history */}
-        {sentMessages.length > 0 && (
+        {(loading || sentMessages.length > 0) && (
           <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
             <h4 style={{ margin: 0, marginBottom: 12 }}>Sent messages</h4>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {sentMessages.map(msg => {
-                const isExpanded = expandedId === msg.id
-                return (
-                  <div
-                    key={msg.id}
-                    onClick={() => setExpandedId(isExpanded ? null : msg.id)}
-                    style={{
-                      border: '1px solid var(--border)',
-                      borderRadius: 10,
-                      padding: '10px 14px',
-                      cursor: 'pointer',
-                      background: isExpanded ? 'rgba(255,255,255,0.03)' : 'transparent',
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    {/* Row 1: Topic */}
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>
-                      {TOPIC_LABEL[msg.topic] ?? msg.topic}
-                    </div>
-
-                    {/* Row 2: Sent date */}
-                    <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
-                      Sent: {formatSentAt(msg.sentAt)}
-                    </div>
-
-                    {/* Expanded: full message */}
-                    {isExpanded && (
-                      <div style={{
-                        marginTop: 10,
-                        paddingTop: 10,
-                        borderTop: '1px solid var(--border)',
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        whiteSpace: 'pre-wrap',
-                        color: 'var(--text, #fff)',
-                      }}>
-                        {msg.message}
+            {loading ? (
+              <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sentMessages.map(msg => {
+                  const isExpanded = expandedId === msg.id
+                  return (
+                    <div
+                      key={msg.id}
+                      onClick={() => setExpandedId(isExpanded ? null : msg.id)}
+                      style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        cursor: 'pointer',
+                        background: isExpanded ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        transition: 'background 0.15s',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>
+                        {TOPIC_LABEL[msg.topic] ?? msg.topic}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                      <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
+                        Sent: {formatSentAt(msg.sent_at)}
+                      </div>
+                      {isExpanded && (
+                        <div style={{
+                          marginTop: 10,
+                          paddingTop: 10,
+                          borderTop: '1px solid var(--border)',
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                          whiteSpace: 'pre-wrap',
+                          color: 'var(--text, #fff)',
+                        }}>
+                          {msg.message}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
