@@ -15,13 +15,14 @@ const cors = (status, body) => ({
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
 
-  const authz = await resolveAuthz(event)
+  const sql = neon(process.env.DATABASE_URL)
+
+  // resolveAuthz requires { sql, event } — sql is needed to look up tenant membership
+  const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(401, { error: authz.error })
 
   const user = getUserFromToken(event)
   if (!user?.email) return cors(401, { error: 'Could not resolve user email' })
-
-  const sql = neon(process.env.DATABASE_URL)
 
   // ── GET: fetch messages for this user ─────────────────────────────────────
   if (event.httpMethod === 'GET') {
@@ -40,7 +41,7 @@ export const handler = async (event) => {
     }
   }
 
-  // ── POST: save a new message ──────────────────────────────────────────────
+  // ── POST: save to DB + forward to Netlify Forms for email notification ────
   if (event.httpMethod === 'POST') {
     let body
     try {
@@ -53,6 +54,7 @@ export const handler = async (event) => {
     if (!topic || !message) return cors(400, { error: 'Missing required fields' })
 
     try {
+      // 1. Save to database
       await sql`
         INSERT INTO contact_messages (tenant_id, user_email, topic, message)
         VALUES (
@@ -62,6 +64,25 @@ export const handler = async (event) => {
           ${message}
         )
       `
+
+      // 2. Forward to Netlify Forms so email notifications keep working
+      try {
+        const formData = new URLSearchParams({
+          'form-name': 'contact',
+          topic,
+          email: user.email,
+          message,
+        })
+        await fetch(`${process.env.URL || 'https://data-entry-beta.netlify.app'}/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString(),
+        })
+      } catch (formErr) {
+        // Non-fatal — DB save succeeded, just log the forms failure
+        console.warn('Netlify Forms forward failed:', formErr)
+      }
+
       return cors(200, { ok: true })
     } catch (err) {
       console.error('contact POST error:', err)
