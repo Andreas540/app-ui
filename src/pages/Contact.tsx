@@ -3,10 +3,10 @@ import { useAuth } from '../contexts/AuthContext'
 
 const TOPICS = [
   { value: '', label: 'How can we help you?' },
-  { value: 'questions',     label: 'I have questions about the app' },
-  { value: 'subscription',  label: 'Changes in subscription' },
-  { value: 'improvements',  label: 'I want to suggest improvements' },
-  { value: 'other',         label: 'Something else' },
+  { value: 'questions',    label: 'I have questions about the app' },
+  { value: 'subscription', label: 'Changes in subscription' },
+  { value: 'improvements', label: 'I want to suggest improvements' },
+  { value: 'other',        label: 'Something else' },
 ]
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
@@ -50,89 +50,106 @@ export default function Contact() {
     }
   }
 
-  if (status === 'success') {
-    return (
-      <div className="card" style={{ maxWidth: 560 }}>
-        <h3 style={{ margin: 0, marginBottom: 8 }}>Message sent ✓</h3>
-        <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 20 }}>
-          Thanks for reaching out! We'll get back to you at <strong>{userEmail}</strong> within an hour.
-        </p>
-        <button className="primary" onClick={() => setStatus('idle')}>
-          Send another message
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="card" style={{ maxWidth: 560 }}>
-      <h3 style={{ margin: 0, marginBottom: 4 }}>Contact</h3>
-      <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 20 }}>
-        We try to answer within an hour.
-      </p>
-
-      {/* Topic */}
-      <div>
-        <label>Topic</label>
-        <select
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          style={{ width: '100%' }}
-        >
-          {TOPICS.map(t => (
-            <option key={t.value} value={t.value} disabled={t.value === ''}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Email (read-only, shown for transparency) */}
-      <div style={{ marginTop: 16 }}>
-        <label>Your email</label>
-        <input
-          value={userEmail}
-          disabled
+    <>
+      {/* Success modal */}
+      {status === 'success' && (
+        <div
+          onClick={() => setStatus('idle')}
           style={{
-            backgroundColor: 'transparent',
-            border: '1px solid var(--primary)',
-            color: '#999',
-            cursor: 'not-allowed',
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
           }}
-        />
-      </div>
-
-      {/* Message */}
-      <div style={{ marginTop: 16 }}>
-        <label>Message</label>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Describe your question or feedback…"
-          rows={5}
-          style={{ width: '100%', resize: 'vertical' }}
-        />
-      </div>
-
-      {status === 'error' && (
-        <p style={{ color: 'var(--danger, #ff6b6b)', marginTop: 8, marginBottom: 0 }}>
-          Something went wrong. Please try again.
-        </p>
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{ maxWidth: 360, width: '90%', textAlign: 'center' }}
+          >
+            <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
+            <h3 style={{ margin: 0, marginBottom: 12 }}>Thank you!</h3>
+            <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
+              We will get back to you via email asap.
+            </p>
+            <button className="primary" style={{ width: '100%' }} onClick={() => setStatus('idle')}>
+              Close
+            </button>
+          </div>
+        </div>
       )}
 
-      <button
-        className="primary"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        style={{
-          marginTop: 20,
-          width: '100%',
-          opacity: canSubmit ? 1 : 0.5,
-          cursor: canSubmit ? 'pointer' : 'not-allowed',
-        }}
-      >
-        {status === 'sending' ? 'Sending…' : 'Send message'}
-      </button>
-    </div>
+      {/* Form */}
+      <div className="card" style={{ maxWidth: 560 }}>
+        <h3 style={{ margin: 0, marginBottom: 12 }}>Contact</h3>
+        <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
+          We try to answer within an hour.
+        </p>
+
+        <div>
+          <label>Topic</label>
+          <select
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            {TOPICS.map(t => (
+              <option key={t.value} value={t.value} disabled={t.value === ''}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label>Your email</label>
+          <input
+            value={userEmail}
+            disabled
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid var(--primary)',
+              color: '#999',
+              cursor: 'not-allowed',
+            }}
+          />
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label>Message</label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Describe your question or feedback…"
+            rows={8}
+            style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
+          />
+        </div>
+
+        {status === 'error' && (
+          <p style={{ color: 'var(--danger, #ff6b6b)', marginTop: 8, marginBottom: 0 }}>
+            Something went wrong. Please try again.
+          </p>
+        )}
+
+        <button
+          className="primary"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          style={{
+            marginTop: 20,
+            width: '100%',
+            opacity: canSubmit ? 1 : 0.5,
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {status === 'sending' ? 'Sending…' : 'Send message'}
+        </button>
+      </div>
+    </>
   )
 }
