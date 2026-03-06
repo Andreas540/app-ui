@@ -37,6 +37,7 @@ export default function TenantAdmin() {
 
   // Toggle user status
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
+  const [loadingPortal, setLoadingPortal] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -154,6 +155,38 @@ export default function TenantAdmin() {
       setTogglingUserId(null)
     }
   }
+  async function handleManageSubscription() {
+    try {
+      setLoadingPortal(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+
+      const res = await fetch(`${base}/api/create-portal-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+        },
+        body: JSON.stringify({
+          returnUrl: window.location.href
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to open subscription portal')
+      }
+
+      const data = await res.json()
+      window.location.href = data.url
+    } catch (e: any) {
+      alert(e?.message || 'Failed to open subscription portal')
+    } finally {
+      setLoadingPortal(false)
+    }
+  }
 
   function openCreateUser() {
     setNewUserEmail('')
@@ -266,6 +299,15 @@ export default function TenantAdmin() {
           Your tenant has access to {tenantFeatures.length} features. 
           You can customize which features each user can access.
         </p>
+        <div style={{ marginTop: 16 }}>
+          <button
+            onClick={handleManageSubscription}
+            disabled={loadingPortal}
+            style={{ height: CONTROL_H, padding: '0 20px' }}
+          >
+            {loadingPortal ? 'Loading...' : 'Manage Subscription'}
+          </button>
+        </div>
       </div>
 
       {/* Users List */}
