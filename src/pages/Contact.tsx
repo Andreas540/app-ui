@@ -125,8 +125,7 @@ export default function Contact() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Describe your question or feedback…"
-            rows={8}
-            style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
+            style={{ width: '100%', minHeight: 180, resize: 'vertical', fontFamily: 'inherit' }}
           />
         </div>
 
