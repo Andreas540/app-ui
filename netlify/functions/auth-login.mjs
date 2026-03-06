@@ -190,7 +190,8 @@ async function handleLogin(event) {
       const token = jwt.sign(
         {
           userId: user.id,
-          email: user.email
+          email: user.email,
+          role: 'super_admin'
         },
         JWT_SECRET,
         { expiresIn: '8h' }
