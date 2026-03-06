@@ -6,7 +6,7 @@ const cors = (status, body) => ({
   headers: {
     'content-type': 'application/json',
     'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
     'access-control-allow-headers': 'content-type,authorization,x-active-tenant',
   },
   body: JSON.stringify(body),
@@ -27,7 +27,7 @@ export const handler = async (event) => {
   if (event.httpMethod === 'GET') {
     try {
       const rows = await sql`
-        SELECT id, topic, message, sent_at
+        SELECT id, topic, message, sent_at, answered_at
         FROM contact_messages
         WHERE tenant_id  = ${authz.tenantId}::uuid
           AND user_email = ${user.email}
@@ -66,6 +66,33 @@ export const handler = async (event) => {
     } catch (err) {
       console.error('contact POST error:', err)
       return cors(500, { error: 'Failed to save message' })
+    }
+  }
+
+  // ── PATCH: mark a message as answered (Super Admin only) ──────────────────
+  if (event.httpMethod === 'PATCH') {
+    if (authz.role !== 'super_admin') return cors(403, { error: 'Super admin only' })
+
+    let body
+    try {
+      body = JSON.parse(event.body || '{}')
+    } catch {
+      return cors(400, { error: 'Invalid JSON' })
+    }
+
+    const { id, answered } = body
+    if (!id) return cors(400, { error: 'Missing message id' })
+
+    try {
+      await sql`
+        UPDATE contact_messages
+        SET answered_at = ${answered ? new Date().toISOString() : null}
+        WHERE id = ${id}::uuid
+      `
+      return cors(200, { ok: true })
+    } catch (err) {
+      console.error('contact PATCH error:', err)
+      return cors(500, { error: 'Failed to update message' })
     }
   }
 

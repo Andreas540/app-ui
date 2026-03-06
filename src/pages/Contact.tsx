@@ -19,6 +19,7 @@ interface SentMessage {
   topic: string
   message: string
   sent_at: string
+  answered_at: string | null
 }
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
@@ -36,56 +37,43 @@ function formatSentAt(iso: string): string {
 export default function Contact() {
   const { user } = useAuth()
 
-  const [topic, setTopic]       = useState('')
-  const [message, setMessage]   = useState('')
-  const [status, setStatus]     = useState<Status>('idle')
+  const [topic, setTopic]     = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus]   = useState<Status>('idle')
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([])
   const [expandedId, setExpandedId]     = useState<string | null>(null)
-  const [loading, setLoading]   = useState(true)
+  const [loading, setLoading] = useState(true)
 
   const userEmail = user?.email || ''
   const canSubmit = topic !== '' && message.trim() !== '' && status !== 'sending'
-
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-  // Load sent messages on mount
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const res = await fetch(`${base}/api/contact`, {
-          headers: getAuthHeaders(),
-        })
-        if (!res.ok) throw new Error(`status ${res.status}`)
-        const data = await res.json()
-        setSentMessages(data.messages || [])
-      } catch (err) {
-        console.error('Failed to load contact messages:', err)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
+  async function fetchMessages() {
+    try {
+      const res = await fetch(`${base}/api/contact`, { headers: getAuthHeaders() })
+      if (!res.ok) throw new Error(`status ${res.status}`)
+      const data = await res.json()
+      setSentMessages(data.messages || [])
+    } catch (err) {
+      console.error('Failed to load contact messages:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchMessages() }, [])
 
   const handleSubmit = async () => {
     if (!canSubmit) return
     setStatus('sending')
-
     try {
       const res = await fetch(`${base}/api/contact`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ topic, message: message.trim() }),
       })
-
       if (!res.ok) throw new Error(`status ${res.status}`)
-
-      // Reload messages from DB
-      const listRes = await fetch(`${base}/api/contact`, { headers: getAuthHeaders() })
-      if (listRes.ok) {
-        const data = await listRes.json()
-        setSentMessages(data.messages || [])
-      }
-
+      await fetchMessages()
       setStatus('success')
       setTopic('')
       setMessage('')
@@ -205,6 +193,7 @@ export default function Contact() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {sentMessages.map(msg => {
                   const isExpanded = expandedId === msg.id
+                  const isAnswered = !!msg.answered_at
                   return (
                     <div
                       key={msg.id}
@@ -218,12 +207,32 @@ export default function Contact() {
                         transition: 'background 0.15s',
                       }}
                     >
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>
-                        {TOPIC_LABEL[msg.topic] ?? msg.topic}
+                      {/* Topic + answered badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>
+                          {TOPIC_LABEL[msg.topic] ?? msg.topic}
+                        </span>
+                        {isAnswered && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#fff',
+                            background: '#22c55e',
+                            borderRadius: 6,
+                            padding: '2px 7px',
+                            letterSpacing: '0.02em',
+                          }}>
+                            Answered
+                          </span>
+                        )}
                       </div>
+
+                      {/* Sent date */}
                       <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
                         Sent: {formatSentAt(msg.sent_at)}
                       </div>
+
+                      {/* Expanded message */}
                       {isExpanded && (
                         <div style={{
                           marginTop: 10,
