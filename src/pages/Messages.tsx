@@ -19,7 +19,7 @@ interface Message {
   tenant_name: string
 }
 
-function formatSentAt(iso: string): string {
+function formatDate(iso: string): string {
   const d   = new Date(iso)
   const m   = d.getMonth() + 1
   const day = d.getDate()
@@ -32,19 +32,19 @@ function formatSentAt(iso: string): string {
 export default function Messages() {
   const { user } = useAuth()
 
-  const [messages, setMessages]   = useState<Message[]>([])
-  const [loading, setLoading]     = useState(true)
+  const [messages, setMessages]     = useState<Message[]>([])
+  const [loading, setLoading]       = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-  // Guard — should never render for non-super-admin but just in case
   if (user?.role !== 'super_admin') {
     return <p style={{ padding: 16 }}>Access denied.</p>
   }
 
   async function fetchMessages() {
+    setLoading(true)
     try {
       const res = await fetch(`${base}/api/contact`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error(`status ${res.status}`)
@@ -68,7 +68,6 @@ export default function Messages() {
         body: JSON.stringify({ id: msg.id, answered: !msg.answered_at }),
       })
       if (!res.ok) throw new Error(`status ${res.status}`)
-      // Update locally without re-fetching
       setMessages(prev => prev.map(m =>
         m.id === msg.id
           ? { ...m, answered_at: msg.answered_at ? null : new Date().toISOString() }
@@ -89,16 +88,15 @@ export default function Messages() {
     <div className="card" style={{ maxWidth: 680 }}>
       <h3 style={{ margin: 0, marginBottom: 4 }}>Messages</h3>
       <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
-        All incoming contact messages across tenants.
+        All incoming contact messages.
       </p>
 
       {loading ? (
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
       ) : messages.length === 0 ? (
-        <p style={{ color: 'var(--muted)', fontSize: 14 }}>No messages yet.</p>
+        <p style={{ color: 'var(--muted)', fontSize: 14 }}>No messages.</p>
       ) : (
         <>
-          {/* Unanswered */}
           {unanswered.length > 0 && (
             <div style={{ marginBottom: 32 }}>
               <h4 style={{ margin: 0, marginBottom: 12 }}>
@@ -125,9 +123,11 @@ export default function Messages() {
             </div>
           )}
 
-          {/* Answered */}
           {answered.length > 0 && (
-            <div style={{ paddingTop: unanswered.length > 0 ? 24 : 0, borderTop: unanswered.length > 0 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{
+              paddingTop: unanswered.length > 0 ? 24 : 0,
+              borderTop: unanswered.length > 0 ? '1px solid var(--border)' : 'none',
+            }}>
               <h4 style={{ margin: 0, marginBottom: 12, color: 'var(--muted)' }}>Answered</h4>
               <MessageList
                 messages={answered}
@@ -143,8 +143,6 @@ export default function Messages() {
     </div>
   )
 }
-
-// ── Sub-component ─────────────────────────────────────────────────────────────
 
 interface MessageListProps {
   messages:   Message[]
@@ -173,13 +171,12 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
               transition: 'background 0.15s',
             }}
           >
-            {/* Header row — click to expand */}
             <div
               onClick={() => onExpand(isExpanded ? null : msg.id)}
               style={{ cursor: 'pointer' }}
             >
               {/* Topic + badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>
                   {TOPIC_LABEL[msg.topic] ?? msg.topic}
                 </span>
@@ -198,15 +195,25 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                 )}
               </div>
 
-              {/* Meta row */}
-              <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 3, display: 'flex', gap: 12 }}>
-                <span>{msg.user_email}</span>
-                <span>{msg.tenant_name}</span>
-                <span>Sent: {formatSentAt(msg.sent_at)}</span>
+              {/* Meta — stacked vertically for mobile */}
+              <div style={{
+                color: 'var(--muted)',
+                fontSize: 12,
+                marginTop: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+              }}>
+                <span>{msg.user_email} · {msg.tenant_name}</span>
+                <span>Sent: {formatDate(msg.sent_at)}</span>
+                {isAnswered && msg.answered_at && (
+                  <span style={{ color: '#22c55e' }}>
+                    Answered: {formatDate(msg.answered_at)}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Expanded: message + checkbox */}
             {isExpanded && (
               <div style={{
                 marginTop: 10,
@@ -223,7 +230,6 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                   {msg.message}
                 </div>
 
-                {/* Answered checkbox */}
                 <label
                   onClick={(e) => e.stopPropagation()}
                   style={{

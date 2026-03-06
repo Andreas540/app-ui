@@ -17,7 +17,6 @@ export const handler = async (event) => {
 
   const sql = neon(process.env.DATABASE_URL)
 
-  // resolveAuthz requires { sql, event } to look up tenant membership from DB
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(401, { error: authz.error })
 
@@ -29,8 +28,8 @@ export const handler = async (event) => {
     try {
       let rows
 
-      if (authz.role === 'super_admin') {
-        // Super admin sees ALL messages across all tenants, latest first
+      if (authz.role === 'super_admin' && !authz.tenantId) {
+        // Super admin with no tenant selected → all messages across all tenants
         rows = await sql`
           SELECT
             cm.id,
@@ -44,8 +43,24 @@ export const handler = async (event) => {
           LEFT JOIN tenants t ON t.id = cm.tenant_id
           ORDER BY cm.sent_at DESC
         `
+      } else if (authz.role === 'super_admin' && authz.tenantId) {
+        // Super admin with a tenant selected → only that tenant's messages
+        rows = await sql`
+          SELECT
+            cm.id,
+            cm.topic,
+            cm.message,
+            cm.sent_at,
+            cm.answered_at,
+            cm.user_email,
+            t.name AS tenant_name
+          FROM contact_messages cm
+          LEFT JOIN tenants t ON t.id = cm.tenant_id
+          WHERE cm.tenant_id = ${authz.tenantId}::uuid
+          ORDER BY cm.sent_at DESC
+        `
       } else {
-        // Regular users only see their own messages for their tenant
+        // Regular user → only their own messages for their tenant
         rows = await sql`
           SELECT id, topic, message, sent_at, answered_at
           FROM contact_messages
@@ -62,7 +77,7 @@ export const handler = async (event) => {
     }
   }
 
-  // ── POST: save to DB + forward to Netlify Forms for email notification ────
+  // ── POST: save to DB + forward to Netlify Forms ───────────────────────────
   if (event.httpMethod === 'POST') {
     let body
     try {
@@ -75,7 +90,6 @@ export const handler = async (event) => {
     if (!topic || !message) return cors(400, { error: 'Missing required fields' })
 
     try {
-      // 1. Save to database
       await sql`
         INSERT INTO contact_messages (tenant_id, user_email, topic, message)
         VALUES (
@@ -86,7 +100,6 @@ export const handler = async (event) => {
         )
       `
 
-      // 2. Forward to Netlify Forms so email notifications keep working
       try {
         const formData = new URLSearchParams({
           'form-name': 'contact',
