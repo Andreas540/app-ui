@@ -46,6 +46,7 @@ import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import TenantSwitcher from './components/TenantSwitcher'
+import Contact from './pages/Contact'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -522,6 +523,12 @@ useEffect(() => {
                   </NavLink>
                 )}
 
+                {canAccess('settings') && (
+                  <NavLink to="/contact" onClick={() => setNavOpen(false)}>
+                    Contact
+                    </NavLink>
+                    )}
+  
                 {user?.role === 'super_admin' && (
                   <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
                     Super Admin
@@ -598,6 +605,7 @@ useEffect(() => {
                   </>
                 )}
                 {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
+                <Route path="/contact" element={<Contact />} />
                 {hasFeature('partners') && (
                   <>
                     <Route path="/partners" element={<Partners />} />
