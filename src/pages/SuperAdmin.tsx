@@ -272,7 +272,19 @@ const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
       if (!res.ok) throw new Error('Failed to load tenant features')
       
       const data = await res.json()
-      setManagingTenantFeatures(data.features || DEFAULT_FEATURES)
+      const stored: FeatureId[] = data.features || DEFAULT_FEATURES
+      const expanded = [...stored]
+      MODULES.forEach(mod => {
+        if (mod.alwaysIncluded) {
+          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
+        } else {
+          const tenantHasModule = mod.features.some(f => stored.includes(f))
+          if (tenantHasModule) {
+            mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
+          }
+        }
+      })
+      setManagingTenantFeatures(expanded)
     } catch (e: any) {
       alert(e?.message || 'Failed to load features')
       setManagingTenantId(null)

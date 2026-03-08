@@ -82,7 +82,25 @@ export default function TenantAdmin() {
   async function openManageUserFeatures(targetUser: TenantUser) {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
-    setManagingUserFeatures(targetUser.features || tenantFeatures)
+
+    if (targetUser.features === null) {
+      setManagingUserFeatures(tenantFeatures)
+    } else {
+      const stored = targetUser.features
+      const expanded = [...stored]
+      MODULES.forEach(mod => {
+        const availableInModule = mod.alwaysIncluded
+          ? mod.features
+          : mod.features.filter(f => tenantFeatures.includes(f))
+        const userHasModule = availableInModule.some(f => stored.includes(f))
+        if (userHasModule) {
+          availableInModule.forEach(f => {
+            if (!expanded.includes(f)) expanded.push(f)
+          })
+        }
+      })
+      setManagingUserFeatures(expanded)
+    }
   }
 
   async function handleSaveUserFeatures() {
@@ -194,7 +212,14 @@ export default function TenantAdmin() {
     setNewUserPassword('')
     setNewUserName('')
     setNewUserRole('tenant_user')
-    setNewUserFeatures(tenantFeatures)
+    const allModuleFeatures: FeatureId[] = []
+    MODULES.forEach(mod => {
+      const available = mod.alwaysIncluded
+        ? mod.features
+        : mod.features.filter(f => tenantFeatures.includes(f))
+      available.forEach(f => { if (!allModuleFeatures.includes(f)) allModuleFeatures.push(f) })
+    })
+    setNewUserFeatures(allModuleFeatures)
     setShowCreateUser(true)
   }
 
