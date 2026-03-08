@@ -366,7 +366,7 @@ export default function TenantAdmin() {
                   )}
                 </div>
                 
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%', marginLeft: 'auto' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' }}>
   <button
     onClick={() => handleToggleUserStatus(u.id, u.active)}
     disabled={togglingUserId === u.id}
