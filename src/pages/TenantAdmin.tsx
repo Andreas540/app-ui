@@ -293,8 +293,11 @@ export default function TenantAdmin() {
       <div className="card" style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>Tenant Administration</h2>
         <p className="helper" style={{ marginTop: 8 }}>
-          Manage user permissions for {user?.tenantName || 'your organization'}
-        </p>
+  Manage user permissions for {user?.tenantName || 'your organization'}
+</p>
+<p className="helper" style={{ marginTop: 4 }}>
+  To change modules or number of users, please send a message through the Contact page.
+</p>
         <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>
           Your tenant has access to {tenantFeatures.length} features. 
           You can customize which features each user can access.
@@ -372,7 +375,7 @@ export default function TenantAdmin() {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
   <button
     onClick={() => handleToggleUserStatus(u.id, u.active)}
     disabled={togglingUserId === u.id}
