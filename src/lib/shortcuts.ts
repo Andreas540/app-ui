@@ -1,7 +1,7 @@
 import { AVAILABLE_FEATURES, type FeatureId } from './features'
 
 // Feature IDs excluded from the quick-access shortcut picker
-export const EXCLUDED_FROM_SHORTCUTS: FeatureId[] = ['tenant-admin', 'settings', 'inventory']
+export const EXCLUDED_FROM_SHORTCUTS: FeatureId[] = ['tenant-admin', 'settings']
 
 export const DEFAULT_SHORTCUTS: FeatureId[] = ['dashboard', 'orders', 'payments', 'customers']
 

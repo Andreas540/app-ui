@@ -1,76 +1,52 @@
 export const AVAILABLE_FEATURES = {
-  // Sales
-  dashboard: { id: 'dashboard', name: 'Main Dashboard', route: '/', category: 'Sales' },
-  customers: { id: 'customers', name: 'Customers', route: '/customers', category: 'Sales' },
-  partners: { id: 'partners', name: 'Partners', route: '/partners', category: 'Sales' },
-  'price-checker': { id: 'price-checker', name: 'Price Checker', route: '/price-checker', category: 'Sales' },
-  orders: { id: 'orders', name: 'Orders', route: '/orders/new', category: 'Sales' },
-  payments: { id: 'payments', name: 'Payments', route: '/payments', category: 'Sales' },
-  products: { id: 'products', name: 'Products', route: '/products/new', category: 'Sales' },
-  invoices: { id: 'invoices', name: 'Invoices', route: '/invoices/create', category: 'Sales' },
-  
-  // Inventory
-  inventory: { id: 'inventory', name: 'Inventory Dashboard', route: '/inventory', category: 'Inventory' },
-  'supply-chain': { id: 'supply-chain', name: 'Supply & Demand', route: '/supply-chain', category: 'Inventory' },
-  suppliers: { id: 'suppliers', name: 'Suppliers', route: '/suppliers', category: 'Inventory' },
-  'supplier-orders': { id: 'supplier-orders', name: 'Supplier Orders', route: '/supplier-orders/new', category: 'Inventory' },
-  warehouse: { id: 'warehouse', name: 'Warehouse', route: '/warehouse', category: 'Inventory' },
-  
-  // Labor & Time
-  production: { id: 'production', name: 'Production', route: '/labor-production', category: 'Labor' },
-  'time-entry': { id: 'time-entry', name: 'Time Entry', route: '/time-entry', category: 'Labor' },
-  employees: { id: 'employees', name: 'Employees', route: '/employees', category: 'Labor' },
-  'time-approval': { id: 'time-approval', name: 'Time Approval', route: '/time-approval', category: 'Labor' },
-  
-  // Financial
-  costs: { id: 'costs', name: 'Costs', route: '/costs/new', category: 'Financial' },
-  
-  // Admin & Settings
-  'tenant-admin': { id: 'tenant-admin', name: 'Tenant Admin', route: '/admin', category: 'Admin' },
-  settings: { id: 'settings', name: 'Settings', route: '/settings', category: 'Admin' },
+  // Sales & Cash Flow
+  dashboard:       { id: 'dashboard',       name: 'Dashboard',      route: '/',                   category: 'Sales',  module: 'sales' },
+  customers:       { id: 'customers',       name: 'Customers',      route: '/customers',           category: 'Sales',  module: 'sales' },
+  orders:          { id: 'orders',          name: 'New Order',      route: '/orders/new',          category: 'Sales',  module: 'sales' },
+  payments:        { id: 'payments',        name: 'New Payment',    route: '/payments',            category: 'Sales',  module: 'sales' },
+  partners:        { id: 'partners',        name: 'Partners',       route: '/partners',            category: 'Sales',  module: 'sales' },
+  products:        { id: 'products',        name: 'Products',       route: '/products/new',        category: 'Sales',  module: 'sales' },
+  'price-checker': { id: 'price-checker',   name: 'Price Checker',  route: '/price-checker',       category: 'Sales',  module: 'sales' },
+  invoices:        { id: 'invoices',        name: 'Create Invoice', route: '/invoices/create',     category: 'Sales',  module: 'sales' },
+  costs:           { id: 'costs',           name: 'Costs',          route: '/costs/new',           category: 'Sales',  module: 'sales' },
+
+  // Supply Chain
+  'supply-chain':    { id: 'supply-chain',    name: 'Supply & Demand', route: '/supply-chain',        category: 'Supply', module: 'supply-chain' },
+  production:        { id: 'production',      name: 'Production',      route: '/labor-production',    category: 'Supply', module: 'supply-chain' },
+  warehouse:         { id: 'warehouse',       name: 'Warehouse',        route: '/warehouse',           category: 'Supply', module: 'supply-chain' },
+  'supplier-orders': { id: 'supplier-orders', name: 'New Order (S)',    route: '/supplier-orders/new', category: 'Supply', module: 'supply-chain' },
+  suppliers:         { id: 'suppliers',       name: 'Suppliers',        route: '/suppliers',           category: 'Supply', module: 'supply-chain' },
+
+  // Employee Management
+  employees:       { id: 'employees',       name: 'Employees',      route: '/employees',           category: 'Labor',  module: 'labor' },
+  'time-approval': { id: 'time-approval',   name: 'Time Approval',  route: '/time-approval',       category: 'Labor',  module: 'labor' },
+  'time-entry':    { id: 'time-entry',      name: 'Time Entry',     route: '/time-entry',          category: 'Labor',  module: 'labor' },
+
+  // Admin (always included, not a paid module)
+  'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },
+  settings:        { id: 'settings',        name: 'Settings',       route: '/settings',            category: 'Admin',  module: 'admin' },
+  contact:         { id: 'contact',         name: 'Contact',        route: '/contact',             category: 'Admin',  module: 'admin' },
 } as const
 
 export type FeatureId = keyof typeof AVAILABLE_FEATURES
+export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'financial' | 'reports' | 'admin'
 
-// Categories for organizing features in the UI
 export const FEATURE_CATEGORIES = {
-  Sales: 'Sales',
-  Inventory: 'Inventory',
-  Labor: 'Labor & Time Tracking',
-  Financial: 'Financial',
-  Admin: 'Administration',
+  Sales:  'Sales & Cash Flow',
+  Supply: 'Supply Chain',
+  Labor:  'Employee Management',
+  Admin:  'Administration',
 } as const
 
-// Default features for new tenants (ALL features enabled)
-export const DEFAULT_FEATURES: FeatureId[] = [
-  'dashboard',
-  'customers',
-  'partners',
-  'price-checker',
-  'orders',
-  'payments',
-  'products',
-  'invoices',
-  'inventory',
-  'supply-chain',
-  'suppliers',
-  'supplier-orders',
-  'warehouse',
-  'production',
-  'time-entry',
-  'employees',
-  'time-approval',
-  'costs',
-  'tenant-admin',
-  'settings',
-]
-
-// Get features by category
-export function getFeaturesByCategory(category: keyof typeof FEATURE_CATEGORIES) {
-  return Object.values(AVAILABLE_FEATURES).filter(f => f.category === category)
+export function getFeaturesByModule(moduleId: ModuleId): (typeof AVAILABLE_FEATURES)[FeatureId][] {
+  return Object.values(AVAILABLE_FEATURES).filter(f => f.module === moduleId) as any
 }
 
-// Check if a feature ID is valid
 export function isValidFeature(id: string): id is FeatureId {
   return id in AVAILABLE_FEATURES
 }
+
+// Backward compatible — all non-admin features
+export const DEFAULT_FEATURES: FeatureId[] = Object.values(AVAILABLE_FEATURES)
+  .filter(f => f.module !== 'admin')
+  .map(f => f.id) as FeatureId[]

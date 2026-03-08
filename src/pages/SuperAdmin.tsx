@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import ManageUserModal from '../components/ManageUserModal'
 import type { FeatureId } from '../lib/features'
-import { DEFAULT_FEATURES, FEATURE_CATEGORIES, getFeaturesByCategory } from '../lib/features'
+import { AVAILABLE_FEATURES, DEFAULT_FEATURES } from '../lib/features'
+import { MODULES } from '../lib/modules'
 
 interface Tenant {
   id: string
@@ -315,6 +316,27 @@ const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
       setManagingTenantFeatures(managingTenantFeatures.filter(f => f !== featureId))
     } else {
       setManagingTenantFeatures([...managingTenantFeatures, featureId])
+    }
+  }
+
+  function isTenantModuleFullyChecked(moduleFeatures: FeatureId[]): boolean {
+    if (moduleFeatures.length === 0) return false
+    return moduleFeatures.every(f => managingTenantFeatures.includes(f))
+  }
+
+  function isTenantModulePartiallyChecked(moduleFeatures: FeatureId[]): boolean {
+    const checked = moduleFeatures.filter(f => managingTenantFeatures.includes(f))
+    return checked.length > 0 && checked.length < moduleFeatures.length
+  }
+
+  function toggleTenantModule(moduleFeatures: FeatureId[]) {
+    const fullyChecked = isTenantModuleFullyChecked(moduleFeatures)
+    if (fullyChecked) {
+      setManagingTenantFeatures(managingTenantFeatures.filter(f => !moduleFeatures.includes(f)))
+    } else {
+      const updated = [...managingTenantFeatures]
+      moduleFeatures.forEach(f => { if (!updated.includes(f)) updated.push(f) })
+      setManagingTenantFeatures(updated)
     }
   }
 
@@ -867,50 +889,66 @@ async function handleSaveStripeCustomerId() {
             </p>
 
             <div style={{ marginTop: 20 }}>
-              {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
-                const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
-                
+              {MODULES.map((mod) => {
+                const alwaysIncluded = mod.alwaysIncluded
+                const fullyChecked = alwaysIncluded || isTenantModuleFullyChecked(mod.features)
+                const partiallyChecked = !alwaysIncluded && isTenantModulePartiallyChecked(mod.features)
                 return (
-                  <div key={categoryKey} style={{ marginBottom: 24 }}>
-                    <div style={{ 
-                      fontWeight: 600, 
-                      fontSize: 14, 
-                      marginBottom: 12,
-                      color: 'var(--primary)',
-                    }}>
-                      {categoryName}
-                    </div>
-                    
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {categoryFeatures.map((feature) => (
-                        <label
-                          key={feature.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: 12,
-                            background: 'rgba(255,255,255,0.03)',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            border: '1px solid var(--border)',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={managingTenantFeatures.includes(feature.id as FeatureId)}
-                            onChange={() => toggleFeature(feature.id as FeatureId)}
-                            style={{ width: 20, height: 20 }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600 }}>{feature.name}</div>
-                            <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                              {feature.route}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                  <div key={mod.id} style={{ marginBottom: 24 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: alwaysIncluded ? 'default' : 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={fullyChecked}
+                        disabled={alwaysIncluded}
+                        ref={(el: HTMLInputElement | null) => { if (el) el.indeterminate = partiallyChecked }}
+                        onChange={() => !alwaysIncluded && toggleTenantModule(mod.features)}
+                        style={{ width: 20, height: 20 }}
+                      />
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary)' }}>
+                        {mod.name}
+                        {alwaysIncluded && (
+                          <span className="helper" style={{ fontWeight: 400, fontSize: 12, marginLeft: 8 }}>Always included</span>
+                        )}
+                        {mod.features.length === 0 && (
+                          <span className="helper" style={{ fontWeight: 400, fontSize: 12, marginLeft: 8 }}>No pages yet</span>
+                        )}
+                      </span>
+                    </label>
+                    {mod.features.length > 0 && (
+                      <div style={{ display: 'grid', gap: 8, paddingLeft: 32 }}>
+                        {mod.features.map((featureId) => {
+                          const feature = AVAILABLE_FEATURES[featureId]
+                          if (!feature) return null
+                          return (
+                            <label
+                              key={featureId}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: 12,
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: 8,
+                                cursor: alwaysIncluded ? 'default' : 'pointer',
+                                border: '1px solid var(--border)',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={alwaysIncluded || managingTenantFeatures.includes(featureId)}
+                                disabled={alwaysIncluded}
+                                onChange={() => !alwaysIncluded && toggleFeature(featureId)}
+                                style={{ width: 20, height: 20 }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600 }}>{feature.name}</div>
+                                <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>{feature.route}</div>
+                              </div>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}

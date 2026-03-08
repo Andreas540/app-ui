@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import type { FeatureId } from '../lib/features'
-import { FEATURE_CATEGORIES, getFeaturesByCategory } from '../lib/features'
+import { AVAILABLE_FEATURES } from '../lib/features'
+import { MODULES } from '../lib/modules'
 
 interface TenantUser {
   id: string
@@ -277,6 +278,39 @@ export default function TenantAdmin() {
     }
   }
 
+  function getAvailableModuleFeatures(moduleFeatures: FeatureId[]): FeatureId[] {
+    return moduleFeatures.filter(f => tenantFeatures.includes(f))
+  }
+
+  function isModuleFullyChecked(moduleFeatures: FeatureId[], currentFeatures: FeatureId[]): boolean {
+    const available = getAvailableModuleFeatures(moduleFeatures)
+    if (available.length === 0) return false
+    return available.every(f => currentFeatures.includes(f))
+  }
+
+  function isModulePartiallyChecked(moduleFeatures: FeatureId[], currentFeatures: FeatureId[]): boolean {
+    const available = getAvailableModuleFeatures(moduleFeatures)
+    const checked = available.filter(f => currentFeatures.includes(f))
+    return checked.length > 0 && checked.length < available.length
+  }
+
+  function toggleModule(moduleFeatures: FeatureId[], currentFeatures: FeatureId[], isNewUser: boolean = false) {
+    const available = getAvailableModuleFeatures(moduleFeatures)
+    const fullyChecked = isModuleFullyChecked(moduleFeatures, currentFeatures)
+    let updated: FeatureId[]
+    if (fullyChecked) {
+      updated = currentFeatures.filter(f => !available.includes(f))
+    } else {
+      updated = [...currentFeatures]
+      available.forEach(f => { if (!updated.includes(f)) updated.push(f) })
+    }
+    if (isNewUser) {
+      setNewUserFeatures(updated)
+    } else {
+      setManagingUserFeatures(updated)
+    }
+  }
+
   if (loading) return <div className="card"><p>Loading...</p></div>
   
   if (error) return (
@@ -495,44 +529,51 @@ export default function TenantAdmin() {
               </div>
 
               <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-                {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
-                  const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
-                  const availableFeatures = categoryFeatures.filter(f => 
-                    tenantFeatures.includes(f.id as FeatureId)
-                  )
-                  
+                {MODULES.filter(mod => mod.id !== 'admin').map((mod) => {
+                  const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
                   if (availableFeatures.length === 0) return null
-                  
+                  const fullyChecked = isModuleFullyChecked(mod.features, newUserFeatures)
+                  const partiallyChecked = isModulePartiallyChecked(mod.features, newUserFeatures)
                   return (
-                    <div key={categoryKey} style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 8, color: 'var(--primary)' }}>
-                        {categoryName}
-                      </div>
-                      
-                      <div style={{ display: 'grid', gap: 6 }}>
-                        {availableFeatures.map((feature) => (
-                          <label
-                            key={feature.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              padding: 8,
-                              background: 'rgba(255,255,255,0.03)',
-                              borderRadius: 6,
-                              cursor: 'pointer',
-                              fontSize: 13,
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={newUserFeatures.includes(feature.id as FeatureId)}
-                              onChange={() => toggleFeature(feature.id as FeatureId, true)}
-                              style={{ width: 16, height: 16 }}
-                            />
-                            <span>{feature.name}</span>
-                          </label>
-                        ))}
+                    <div key={mod.id} style={{ marginBottom: 16 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={fullyChecked}
+                          ref={(el: HTMLInputElement | null) => { if (el) el.indeterminate = partiallyChecked }}
+                          onChange={() => toggleModule(mod.features, newUserFeatures, true)}
+                          style={{ width: 16, height: 16 }}
+                        />
+                        <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--primary)' }}>{mod.name}</span>
+                      </label>
+                      <div style={{ display: 'grid', gap: 6, paddingLeft: 24 }}>
+                        {availableFeatures.map((featureId) => {
+                          const feature = AVAILABLE_FEATURES[featureId]
+                          if (!feature) return null
+                          return (
+                            <label
+                              key={featureId}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: 8,
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                fontSize: 13,
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={newUserFeatures.includes(featureId)}
+                                onChange={() => toggleFeature(featureId, true)}
+                                style={{ width: 16, height: 16 }}
+                              />
+                              <span>{feature.name}</span>
+                            </label>
+                          )
+                        })}
                       </div>
                     </div>
                   )
@@ -610,54 +651,54 @@ export default function TenantAdmin() {
             </div>
 
             <div style={{ marginTop: 20 }}>
-              {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, categoryName]) => {
-                const categoryFeatures = getFeaturesByCategory(categoryKey as keyof typeof FEATURE_CATEGORIES)
-                const availableFeatures = categoryFeatures.filter(f => 
-                  tenantFeatures.includes(f.id as FeatureId)
-                )
-                
+              {MODULES.filter(mod => mod.id !== 'admin').map((mod) => {
+                const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
                 if (availableFeatures.length === 0) return null
-                
+                const fullyChecked = isModuleFullyChecked(mod.features, managingUserFeatures)
+                const partiallyChecked = isModulePartiallyChecked(mod.features, managingUserFeatures)
                 return (
-                  <div key={categoryKey} style={{ marginBottom: 24 }}>
-                    <div style={{ 
-                      fontWeight: 600, 
-                      fontSize: 14, 
-                      marginBottom: 12,
-                      color: 'var(--primary)',
-                    }}>
-                      {categoryName}
-                    </div>
-                    
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {availableFeatures.map((feature) => (
-                        <label
-                          key={feature.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: 12,
-                            background: 'rgba(255,255,255,0.03)',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            border: '1px solid var(--border)',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={managingUserFeatures.includes(feature.id as FeatureId)}
-                            onChange={() => toggleFeature(feature.id as FeatureId, false)}
-                            style={{ width: 20, height: 20 }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600 }}>{feature.name}</div>
-                            <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                              {feature.route}
+                  <div key={mod.id} style={{ marginBottom: 24 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={fullyChecked}
+                        ref={(el: HTMLInputElement | null) => { if (el) el.indeterminate = partiallyChecked }}
+                        onChange={() => toggleModule(mod.features, managingUserFeatures, false)}
+                        style={{ width: 20, height: 20 }}
+                      />
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary)' }}>{mod.name}</span>
+                    </label>
+                    <div style={{ display: 'grid', gap: 8, paddingLeft: 32 }}>
+                      {availableFeatures.map((featureId) => {
+                        const feature = AVAILABLE_FEATURES[featureId]
+                        if (!feature) return null
+                        return (
+                          <label
+                            key={featureId}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: 12,
+                              background: 'rgba(255,255,255,0.03)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={managingUserFeatures.includes(featureId)}
+                              onChange={() => toggleFeature(featureId, false)}
+                              style={{ width: 20, height: 20 }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600 }}>{feature.name}</div>
+                              <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>{feature.route}</div>
                             </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        )
+                      })}
                     </div>
                   </div>
                 )
