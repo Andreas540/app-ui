@@ -427,7 +427,7 @@ useEffect(() => {
 
             return (
               <>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 4 }}>Sales & Cash Flow</div>
                 <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
                 {canAccess('dashboard') && (
                   <NavLink to="/" end onClick={() => setNavOpen(false)}>
@@ -469,8 +469,12 @@ useEffect(() => {
                     Create Invoice
                   </NavLink>
                 )}
-
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Supply chain</div>
+                {canAccess('costs') && (
+                  <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
+                    New Cost
+                  </NavLink>
+                )}
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Supply Chain</div>
                 <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
                 {canAccess('supply-chain') && (
                   <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
@@ -498,7 +502,7 @@ useEffect(() => {
                   </NavLink>
                 )}
 
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Staff</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Employee Management</div>
                 <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
                 {canAccess('employees') && (
                   <NavLink to="/employees" onClick={() => setNavOpen(false)}>
@@ -518,39 +522,29 @@ useEffect(() => {
 
                 <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 4 }}>Admin</div>
                 <div style={{ height: 1, background: '#fff', opacity: 0.3, marginBottom: 8 }} />
-                {canAccess('costs') && (
-                  <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
-                    New Cost
-                  </NavLink>
-                )}
-
-                {canAccess('settings') && (
+                {canAccess('contact') && (
                   <NavLink to="/contact" onClick={() => setNavOpen(false)}>
                     Contact
-                    </NavLink>
-                    )}
-  
+                  </NavLink>
+                )}
+                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
+                  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
+                    Account Admin
+                  </NavLink>
+                )}
+                {canAccess('settings') && (
+                  <NavLink to="/settings" onClick={() => setNavOpen(false)}>
+                    Settings
+                  </NavLink>
+                )}
                 {user?.role === 'super_admin' && (
                   <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
                     Super Admin
                   </NavLink>
                 )}
-
                 {user?.role === 'super_admin' && (
-  <NavLink to="/messages" onClick={() => setNavOpen(false)}>
-    Messages
-  </NavLink>
-)}
-
-                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
-                  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-                    Tenant Admin
-                  </NavLink>
-                )}
-
-                {canAccess('settings') && (
-                  <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                    Settings
+                  <NavLink to="/messages" onClick={() => setNavOpen(false)}>
+                    Messages
                   </NavLink>
                 )}
 
@@ -612,7 +606,7 @@ useEffect(() => {
                   </>
                 )}
                 {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
-                <Route path="/contact" element={<Contact />} />
+                {hasFeature('contact') && <Route path="/contact" element={<Contact />} />}
                 {hasFeature('partners') && (
                   <>
                     <Route path="/partners" element={<Partners />} />
@@ -620,8 +614,7 @@ useEffect(() => {
                     <Route path="/partners/:id" element={<PartnerDetail />} />
                     <Route path="/partners/:id/edit" element={<EditPartner />} />
                   </>
-                )}
-                {hasFeature('inventory') && <Route path="/inventory" element={<InventoryDashboard />} />}
+                )}                
                 {hasFeature('invoices') && (
                   <>
                     <Route path="/invoices/create" element={<CreateInvoicePage />} />
