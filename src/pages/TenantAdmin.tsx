@@ -82,21 +82,16 @@ export default function TenantAdmin() {
   async function openManageUserFeatures(targetUser: TenantUser) {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
-
+    const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
     if (targetUser.features === null) {
-      setManagingUserFeatures(tenantFeatures)
+      setManagingUserFeatures(allFeatures)
     } else {
       const stored = targetUser.features
       const expanded = [...stored]
       MODULES.forEach(mod => {
-        const availableInModule = mod.alwaysIncluded
-          ? mod.features
-          : mod.features.filter(f => tenantFeatures.includes(f))
-        const userHasModule = availableInModule.some(f => stored.includes(f))
-        if (userHasModule) {
-          availableInModule.forEach(f => {
-            if (!expanded.includes(f)) expanded.push(f)
-          })
+        const hasModule = mod.alwaysIncluded || mod.features.some(f => stored.includes(f))
+        if (hasModule) {
+          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
         }
       })
       setManagingUserFeatures(expanded)
@@ -212,14 +207,7 @@ export default function TenantAdmin() {
     setNewUserPassword('')
     setNewUserName('')
     setNewUserRole('tenant_user')
-    const allModuleFeatures: FeatureId[] = []
-    MODULES.forEach(mod => {
-      const available = mod.alwaysIncluded
-        ? mod.features
-        : mod.features.filter(f => tenantFeatures.includes(f))
-      available.forEach(f => { if (!allModuleFeatures.includes(f)) allModuleFeatures.push(f) })
-    })
-    setNewUserFeatures(allModuleFeatures)
+    setNewUserFeatures(MODULES.flatMap(m => m.features))
     setShowCreateUser(true)
   }
 
@@ -288,10 +276,11 @@ export default function TenantAdmin() {
   }
 
   function selectAllFeatures(isNewUser: boolean = false) {
+    const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
     if (isNewUser) {
-      setNewUserFeatures(tenantFeatures)
+      setNewUserFeatures(allFeatures)
     } else {
-      setManagingUserFeatures(tenantFeatures)
+      setManagingUserFeatures(allFeatures)
     }
   }
 
@@ -304,7 +293,7 @@ export default function TenantAdmin() {
   }
 
   function getAvailableModuleFeatures(moduleFeatures: FeatureId[]): FeatureId[] {
-    return moduleFeatures.filter(f => tenantFeatures.includes(f))
+    return moduleFeatures
   }
 
   function isModuleFullyChecked(moduleFeatures: FeatureId[], currentFeatures: FeatureId[]): boolean {
@@ -555,7 +544,7 @@ export default function TenantAdmin() {
 
               <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
                 {MODULES.map((mod) => {
-                  const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
+                  const availableFeatures = mod.features
                   if (availableFeatures.length === 0) return null
                   const fullyChecked = isModuleFullyChecked(mod.features, newUserFeatures)
                   const partiallyChecked = isModulePartiallyChecked(mod.features, newUserFeatures)
@@ -677,7 +666,7 @@ export default function TenantAdmin() {
 
             <div style={{ marginTop: 20 }}>
               {MODULES.map((mod) => {
-                const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
+                const availableFeatures = mod.features
                 if (availableFeatures.length === 0) return null
                 const fullyChecked = isModuleFullyChecked(mod.features, managingUserFeatures)
                 const partiallyChecked = isModulePartiallyChecked(mod.features, managingUserFeatures)
