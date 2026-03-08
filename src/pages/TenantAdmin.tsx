@@ -83,6 +83,7 @@ export default function TenantAdmin() {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
     const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
+      .filter(f => targetUser.role === 'tenant_user' ? f !== 'tenant-admin' : true)
     if (targetUser.features === null) {
       setManagingUserFeatures(allFeatures)
     } else {
@@ -91,12 +92,17 @@ export default function TenantAdmin() {
       MODULES.forEach(mod => {
         const hasModule = mod.alwaysIncluded || mod.features.some(f => stored.includes(f))
         if (hasModule) {
-          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
+          mod.features.forEach(f => {
+            if (!expanded.includes(f)) {
+              if (f === 'tenant-admin' && targetUser.role === 'tenant_user') return
+              expanded.push(f)
+            }
+          })
         }
       })
       setManagingUserFeatures(expanded)
     }
-  }
+  }      
 
   async function handleSaveUserFeatures() {
     if (!managingUserId) return
@@ -207,7 +213,8 @@ export default function TenantAdmin() {
     setNewUserPassword('')
     setNewUserName('')
     setNewUserRole('tenant_user')
-    setNewUserFeatures(MODULES.flatMap(m => m.features))
+    setNewUserFeatures(MODULES.flatMap(m => m.features)
+      .filter(f => newUserRole === 'tenant_user' ? f !== 'tenant-admin' : true))
     setShowCreateUser(true)
   }
 
@@ -276,11 +283,13 @@ export default function TenantAdmin() {
   }
 
   function selectAllFeatures(isNewUser: boolean = false) {
-    const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
     if (isNewUser) {
-      setNewUserFeatures(allFeatures)
+      setNewUserFeatures(MODULES.flatMap(m => m.features)
+        .filter(f => newUserRole === 'tenant_user' ? f !== 'tenant-admin' : true))
     } else {
-      setManagingUserFeatures(allFeatures)
+      const targetUser = users.find(u => u.id === managingUserId)
+      setManagingUserFeatures(MODULES.flatMap(m => m.features)
+        .filter(f => targetUser?.role === 'tenant_user' ? f !== 'tenant-admin' : true))
     }
   }
 
