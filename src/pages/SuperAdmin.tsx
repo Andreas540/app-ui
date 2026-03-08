@@ -569,8 +569,10 @@ async function handleSaveStripeCustomerId() {
                       padding: '12px 0',
                       borderBottom: '1px solid var(--border)',
                       display: 'flex',
+                      flexWrap: 'wrap',
                       justifyContent: 'space-between',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
+                      gap: 16,
                     }}
                   >
                     <div style={{ flex: 1 }}>
@@ -589,7 +591,7 @@ async function handleSaveStripeCustomerId() {
 </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' }}>
   <button
     onClick={() => openManageStripe(tenant)}
     style={{ height: 36, padding: '0 16px', fontSize: 13 }}
@@ -756,6 +758,7 @@ async function handleSaveStripeCustomerId() {
                       padding: '12px 0',
                       borderBottom: '1px solid var(--border)',
                       display: 'flex',
+                      flexWrap: 'wrap',
                       justifyContent: 'space-between',
                       alignItems: 'flex-start',
                       gap: 16,
@@ -797,7 +800,7 @@ async function handleSaveStripeCustomerId() {
                       </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' }}>
                       <button
                         onClick={() => handleToggleUserStatus(user.id, user.active ?? true)}
                         disabled={togglingUserId === user.id}
