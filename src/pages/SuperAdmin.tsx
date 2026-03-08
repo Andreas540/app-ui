@@ -766,24 +766,14 @@ async function handleSaveStripeCustomerId() {
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>
-                        {user.email}
-                        {!user.active && (
-                          <span 
-                            className="helper" 
-                            style={{ 
-                              marginLeft: 12, 
-                              color: 'salmon',
-                              fontSize: 12,
-                              fontWeight: 400
-                            }}
-                          >
-                            (Inactive)
-                          </span>
-                        )}
-                      </div>
+                      <div style={{ fontWeight: 600 }}>{user.email}</div>
                       {user.name && (
                         <div style={{ marginTop: 4 }}>{user.name}</div>
+                      )}
+                      {!user.active && (
+                        <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
+                          Inactive
+                        </div>
                       )}
                       <div style={{ marginTop: 8 }}>
                         {user.tenants && user.tenants.length > 0 ? (
