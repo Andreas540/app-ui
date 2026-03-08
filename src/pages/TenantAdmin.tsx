@@ -317,7 +317,8 @@ export default function TenantAdmin() {
           <button
             className="primary"
             onClick={openCreateUser}
-            style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+            disabled={true}
+            style={{ height: 36, padding: '0 16px', fontSize: 13, opacity: 0.4, cursor: 'not-allowed' }}
           >
             + Create User
           </button>
