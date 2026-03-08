@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import ManageUserModal from '../components/ManageUserModal'
 import type { FeatureId } from '../lib/features'
-import { AVAILABLE_FEATURES, DEFAULT_FEATURES } from '../lib/features'
+import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
 
 interface Tenant {
@@ -83,10 +83,18 @@ export default function SuperAdmin() {
   const [savingFeatures, setSavingFeatures] = useState(false)
 
   // Stripe customer ID management
-const [managingStripeId, setManagingStripeId] = useState<string | null>(null)
-const [managingStripeName, setManagingStripeName] = useState('')
-const [editingStripeCustomerId, setEditingStripeCustomerId] = useState('')
-const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
+  const [managingStripeId, setManagingStripeId] = useState<string | null>(null)
+  const [managingStripeName, setManagingStripeName] = useState('')
+  const [editingStripeCustomerId, setEditingStripeCustomerId] = useState('')
+  const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
+
+  // Subscription quota management
+  const [managingQuotaTenantId, setManagingQuotaTenantId] = useState<string | null>(null)
+  const [managingQuotaTenantName, setManagingQuotaTenantName] = useState('')
+  const [quotaValues, setQuotaValues] = useState<Record<string, number>>({})
+  const [usedCounts, setUsedCounts] = useState<Record<string, number>>({})
+  const [savingQuotas, setSavingQuotas] = useState(false)
+  const [loadingQuotas, setLoadingQuotas] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -272,19 +280,20 @@ const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
       if (!res.ok) throw new Error('Failed to load tenant features')
       
       const data = await res.json()
-      const stored: FeatureId[] = data.features || DEFAULT_FEATURES
-      const expanded = [...stored]
-      MODULES.forEach(mod => {
-        if (mod.alwaysIncluded) {
-          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
-        } else {
-          const tenantHasModule = mod.features.some(f => stored.includes(f))
-          if (tenantHasModule) {
+      const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
+      if (!data.features) {
+        setManagingTenantFeatures(allFeatures)
+      } else {
+        const stored: FeatureId[] = data.features
+        const expanded = [...stored]
+        MODULES.forEach(mod => {
+          const hasModule = mod.alwaysIncluded || mod.features.some(f => stored.includes(f))
+          if (hasModule) {
             mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
           }
-        }
-      })
-      setManagingTenantFeatures(expanded)
+        })
+        setManagingTenantFeatures(expanded)
+      }
     } catch (e: any) {
       alert(e?.message || 'Failed to load features')
       setManagingTenantId(null)
@@ -385,6 +394,60 @@ async function handleSaveStripeCustomerId() {
     setSavingStripeCustomerId(false)
   }
 }
+
+  async function openManageSubscription(tenant: Tenant) {
+    try {
+      setLoadingQuotas(true)
+      setManagingQuotaTenantId(tenant.id)
+      setManagingQuotaTenantName(tenant.name)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(
+        `${base}/api/super-admin?action=getSubscriptionQuotas&tenantId=${tenant.id}`,
+        { headers: getAuthHeaders() }
+      )
+      if (!res.ok) throw new Error('Failed to load quotas')
+      const data = await res.json()
+      const qv: Record<string, number> = {}
+      for (const q of data.quotas || []) {
+        qv[q.module_id] = q.max_users
+      }
+      setQuotaValues(qv)
+      setUsedCounts(data.usedCounts || {})
+    } catch (e: any) {
+      alert(e?.message || 'Failed to load subscription data')
+      setManagingQuotaTenantId(null)
+    } finally {
+      setLoadingQuotas(false)
+    }
+  }
+
+  async function handleSaveSubscription() {
+    if (!managingQuotaTenantId) return
+    try {
+      setSavingQuotas(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const quotas = Object.entries(quotaValues).map(([moduleId, maxUsers]) => ({ moduleId, maxUsers }))
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'updateSubscriptionQuotas',
+          tenantId: managingQuotaTenantId,
+          quotas
+        })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      alert('Subscription updated!')
+      setManagingQuotaTenantId(null)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save subscription')
+    } finally {
+      setSavingQuotas(false)
+    }
+  }
 
   async function openManageIcons(tenant: Tenant) {
     try {
@@ -626,6 +689,12 @@ async function handleSaveStripeCustomerId() {
                     </div>
                     
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' }}>
+                      <button
+                        onClick={() => openManageSubscription(tenant)}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+                      >
+                        Subscription
+                      </button>
   <button
     onClick={() => openManageStripe(tenant)}
     style={{ height: 36, padding: '0 16px', fontSize: 13 }}
@@ -1202,6 +1271,113 @@ async function handleSaveStripeCustomerId() {
           </div>
         </div>
       )}
+      {/* Subscription Quota Modal */}
+      {managingQuotaTenantId && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
+          }}
+          onClick={() => setManagingQuotaTenantId(null)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 520, width: '100%', maxHeight: '90vh', overflow: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Subscription: {managingQuotaTenantName}</h3>
+            <p className="helper" style={{ marginTop: 8 }}>
+              Set the number of users per module. Pricing: $9.99 per user per module per month.
+            </p>
+
+            {loadingQuotas ? (
+              <p className="helper" style={{ marginTop: 16 }}>Loading...</p>
+            ) : (
+              <div style={{ marginTop: 20, display: 'grid', gap: 12 }}>
+                {MODULES.filter(m => !m.alwaysIncluded).map(mod => {
+                  const max = quotaValues[mod.id] || 0
+                  const used = usedCounts[mod.id] || 0
+                  const available = Math.max(0, max - used)
+                  return (
+                    <div
+                      key={mod.id}
+                      style={{
+                        padding: 16,
+                        border: '1px solid var(--border)',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600 }}>{mod.name}</div>
+                          <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                            Used: {used} · Available: {available}
+                          </div>
+                          {used > max && max > 0 && (
+                            <div style={{ fontSize: 12, color: 'salmon', marginTop: 4 }}>
+                              Over quota by {used - max}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ fontSize: 13 }}>Max users</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={max}
+                            onChange={(e) => setQuotaValues(prev => ({
+                              ...prev,
+                              [mod.id]: Math.max(0, parseInt(e.target.value) || 0)
+                            }))}
+                            style={{ width: 70, height: CONTROL_H, textAlign: 'center' }}
+                          />
+                        </div>
+                      </div>
+                      {max > 0 && (
+                        <div className="helper" style={{ fontSize: 12, marginTop: 8 }}>
+                          Monthly: ${(max * mod.pricePerUser).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                <div style={{
+                  padding: 12,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}>
+                  Total monthly: ${
+                    MODULES.filter(m => !m.alwaysIncluded)
+                      .reduce((sum, mod) => sum + (quotaValues[mod.id] || 0) * mod.pricePerUser, 0)
+                      .toFixed(2)
+                  }
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+              <button
+                className="primary"
+                onClick={handleSaveSubscription}
+                disabled={savingQuotas || loadingQuotas}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {savingQuotas ? 'Saving...' : 'Save Subscription'}
+              </button>
+              <button
+                onClick={() => setManagingQuotaTenantId(null)}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Manage Stripe Customer ID Modal */}
 {managingStripeId && (
   <div

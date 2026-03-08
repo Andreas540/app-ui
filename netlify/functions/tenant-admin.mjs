@@ -122,23 +122,13 @@ async function handlePost(event) {
         return cors(404, { error: 'User not found in this tenant' })
       }
 
-      // Get tenant's available features to validate
-      const tenant = await sql`
-        SELECT features
-        FROM tenants
-        WHERE id = ${tenantId}
-        LIMIT 1
-      `
+      const { modules } = body
 
-      const tenantFeatures = tenant[0]?.features || []
-
-      // Ensure user can only assign features the tenant has
-      const validFeatures = features.filter(f => tenantFeatures.includes(f))
-
-      // Update user's features in tenant_memberships
+      // Update user's features and modules in tenant_memberships
       await sql`
         UPDATE tenant_memberships
-        SET features = ${JSON.stringify(validFeatures)}::jsonb
+        SET features = ${JSON.stringify(features)}::jsonb,
+            modules = ${modules ? JSON.stringify(modules) : null}::jsonb
         WHERE user_id = ${targetUserId}
           AND tenant_id = ${tenantId}
       `

@@ -106,6 +106,44 @@ async function handleGet(event) {
       })
     }
 
+    if (action === 'getSubscriptionQuotas') {
+      const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
+      if (!tenantId) return cors(400, { error: 'tenantId required' })
+
+      // Get quotas
+      const quotas = await sql`
+        SELECT module_id, max_users
+        FROM tenant_module_quotas
+        WHERE tenant_id = ${tenantId}
+      `
+
+      // Get used counts per module
+      // NULL modules = full access = counts for all modules
+      // Otherwise count users where modules array contains that module_id
+      const memberships = await sql`
+        SELECT modules
+        FROM tenant_memberships
+        WHERE tenant_id = ${tenantId}
+        AND (SELECT active FROM users WHERE id = user_id LIMIT 1) = true
+      `
+
+      const usedCounts = {}
+      for (const row of memberships) {
+        if (row.modules === null) {
+          // Full access - counts for all paid modules
+          for (const mod of ['sales', 'supply-chain', 'labor', 'financial', 'reports']) {
+            usedCounts[mod] = (usedCounts[mod] || 0) + 1
+          }
+        } else if (Array.isArray(row.modules)) {
+          for (const modId of row.modules) {
+            usedCounts[modId] = (usedCounts[modId] || 0) + 1
+          }
+        }
+      }
+
+      return cors(200, { quotas, usedCounts })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -339,6 +377,32 @@ if (action === 'updateStripeCustomerId') {
         SET stripe_customer_id = ${stripeCustomerId || null}
         WHERE id = ${tenantId}
       `
+
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateSubscriptionQuotas') {
+      const { tenantId, quotas } = body
+      if (!tenantId || !Array.isArray(quotas)) {
+        return cors(400, { error: 'tenantId and quotas required' })
+      }
+
+      for (const { moduleId, maxUsers } of quotas) {
+        if (!moduleId) continue
+        if (maxUsers === 0) {
+          await sql`
+            DELETE FROM tenant_module_quotas
+            WHERE tenant_id = ${tenantId} AND module_id = ${moduleId}
+          `
+        } else {
+          await sql`
+            INSERT INTO tenant_module_quotas (tenant_id, module_id, max_users)
+            VALUES (${tenantId}, ${moduleId}, ${maxUsers})
+            ON CONFLICT (tenant_id, module_id)
+            DO UPDATE SET max_users = EXCLUDED.max_users
+          `
+        }
+      }
 
       return cors(200, { success: true })
     }

@@ -123,7 +123,10 @@ export default function TenantAdmin() {
         body: JSON.stringify({
           action: 'updateUserFeatures',
           userId: managingUserId,
-          features: managingUserFeatures
+          features: managingUserFeatures,
+          modules: MODULES
+            .filter(mod => !mod.alwaysIncluded && mod.features.some(f => managingUserFeatures.includes(f)))
+            .map(mod => mod.id)
         })
       })
       
