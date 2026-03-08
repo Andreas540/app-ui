@@ -291,7 +291,7 @@ export default function TenantAdmin() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Tenant Administration</h2>
+        <h2 style={{ margin: 0 }}>Account Administration</h2>
         <p className="helper" style={{ marginTop: 8 }}>
   Manage user permissions for {user?.tenantName || 'your organization'}
 </p>
@@ -308,7 +308,7 @@ export default function TenantAdmin() {
             {loadingPortal ? 'Loading...' : 'Manage Subscription'}
           </button>
         </div>
-        <p className="helper" style={{ marginTop: 4 }}>
+        <p className="helper" style={{ marginTop: 8 }}>
   To change modules or number of users, please send a message through the Contact page.
 </p>
       </div>
@@ -346,22 +346,7 @@ export default function TenantAdmin() {
 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>
-                    {u.email}
-                    {!u.active && (
-                      <span 
-                        className="helper" 
-                        style={{ 
-                          marginLeft: 12, 
-                          color: 'salmon',
-                          fontSize: 12,
-                          fontWeight: 400
-                        }}
-                      >
-                        (Inactive)
-                      </span>
-                    )}
-                  </div>
+                  <div style={{ fontWeight: 600 }}>{u.email}</div>
                   {u.name && (
                     <div style={{ marginTop: 4 }}>{u.name}</div>
                   )}
@@ -374,9 +359,14 @@ export default function TenantAdmin() {
                       : `Access: ${u.features.length} of ${tenantFeatures.length} features`
                     }
                   </div>
+                  {!u.active && (
+                    <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
+                      Inactive
+                    </div>
+                  )}
                 </div>
                 
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%', marginLeft: 'auto' }}>
   <button
     onClick={() => handleToggleUserStatus(u.id, u.active)}
     disabled={togglingUserId === u.id}
