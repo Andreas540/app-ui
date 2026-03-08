@@ -295,9 +295,6 @@ export default function TenantAdmin() {
         <p className="helper" style={{ marginTop: 8 }}>
   Manage user permissions for {user?.tenantName || 'your organization'}
 </p>
-<p className="helper" style={{ marginTop: 4 }}>
-  To change modules or number of users, please send a message through the Contact page.
-</p>
         <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>
           Your tenant has access to {tenantFeatures.length} features. 
           You can customize which features each user can access.
@@ -311,6 +308,9 @@ export default function TenantAdmin() {
             {loadingPortal ? 'Loading...' : 'Manage Subscription'}
           </button>
         </div>
+        <p className="helper" style={{ marginTop: 4 }}>
+  To change modules or number of users, please send a message through the Contact page.
+</p>
       </div>
 
       {/* Users List */}
@@ -335,14 +335,15 @@ export default function TenantAdmin() {
               <div
                 key={u.id}
                 style={{
-                  padding: '12px 0',
-                  borderBottom: '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: 16,
-                  opacity: u.active ? 1 : 0.5,
-                }}
+  padding: '12px 0',
+  borderBottom: '1px solid var(--border)',
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  gap: 16,
+  opacity: u.active ? 1 : 0.5,
+}}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600 }}>
@@ -375,7 +376,7 @@ export default function TenantAdmin() {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%' }}>
   <button
     onClick={() => handleToggleUserStatus(u.id, u.active)}
     disabled={togglingUserId === u.id}
