@@ -529,7 +529,7 @@ export default function TenantAdmin() {
               </div>
 
               <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-                {MODULES.filter(mod => mod.id !== 'admin').map((mod) => {
+                {MODULES.map((mod) => {
                   const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
                   if (availableFeatures.length === 0) return null
                   const fullyChecked = isModuleFullyChecked(mod.features, newUserFeatures)
@@ -651,7 +651,7 @@ export default function TenantAdmin() {
             </div>
 
             <div style={{ marginTop: 20 }}>
-              {MODULES.filter(mod => mod.id !== 'admin').map((mod) => {
+              {MODULES.map((mod) => {
                 const availableFeatures = mod.features.filter(f => tenantFeatures.includes(f))
                 if (availableFeatures.length === 0) return null
                 const fullyChecked = isModuleFullyChecked(mod.features, managingUserFeatures)
