@@ -134,7 +134,7 @@ export default function NewProduct() {
           <label>Product name</label>
           <input
             type="text"
-            placeholder="e.g. ACE Ultra"
+            placeholder=""
             value={name}
             onChange={e => setName(e.target.value)}
           />
