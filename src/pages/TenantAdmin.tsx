@@ -92,7 +92,12 @@ export default function TenantAdmin() {
       // Paid module features are respected exactly as stored
       MODULES.forEach(mod => {
         if (mod.alwaysIncluded) {
-          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
+          mod.features.forEach(f => {
+            if (!expanded.includes(f)) {
+              if (f === 'tenant-admin' && targetUser.role === 'tenant_user') return
+              expanded.push(f)
+            }
+          })
         }
       })
       setManagingUserFeatures(expanded)
