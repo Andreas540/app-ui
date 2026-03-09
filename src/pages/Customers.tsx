@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
+
+const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
+
+// Mirrors the backend helper — both 'BLV' and 'Direct' are direct customer types
+function isDirectType(customerType: string | null | undefined) {
+  return customerType === 'BLV' || customerType === 'Direct'
+}
 
 function fmtIntMoney(n: number) {
   const v = Number(n) || 0
@@ -10,14 +18,19 @@ function fmtIntMoney(n: number) {
 }
 
 export default function Customers() {
+  const { user } = useAuth()
+  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
+  const directValue = isBLVTenant ? 'BLV' : 'Direct'
+  const directLabel = isBLVTenant ? 'BLV' : 'Direct'
+
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
-  const [filterType, setFilterType] = useState<'All' | 'BLV' | 'Partner'>('All')
-  const [sortBy, setSortBy] = useState<'owed' | 'name'>('owed') // sorting: default "Owed amount"
+  const [filterType, setFilterType] = useState<'All' | 'Direct' | 'BLV' | 'Partner'>('All')
+  const [sortBy, setSortBy] = useState<'owed' | 'name'>('owed')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   // Net owed for partner "JJ Boston" to exclude from Owed to partners
@@ -46,24 +59,24 @@ export default function Customers() {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const bootRes = await fetch(`${base}/api/bootstrap`, { 
-  cache: 'no-store',
-  headers: getAuthHeaders()
-})
+          cache: 'no-store',
+          headers: getAuthHeaders()
+        })
         if (!bootRes.ok) throw new Error('bootstrap failed')
         const boot = await bootRes.json()
         const partners: Array<{ id: string; name: string }> = boot.partners ?? []
         const jj = partners.find(p => (p.name || '').trim().toLowerCase() === 'jj boston')
         if (!jj) { setJjNet(0); return }
         const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(jj.id)}`, { 
-  cache: 'no-store',
-  headers: getAuthHeaders()
-})
+          cache: 'no-store',
+          headers: getAuthHeaders()
+        })
         if (!res.ok) throw new Error('partner fetch failed')
         const data = await res.json()
         const net = Number(data?.totals?.net_owed ?? 0)
         setJjNet(Number.isFinite(net) ? net : 0)
       } catch {
-        setJjNet(0) // safe fallback
+        setJjNet(0)
       }
     })()
   }, [])
@@ -88,6 +101,10 @@ export default function Customers() {
   // Apply customer_type filter locally
   const visible = useMemo(() => {
     if (filterType === 'All') return customers
+    if (filterType === 'Direct' || filterType === 'BLV') {
+      // Catch both 'Direct' and legacy 'BLV' records on any tenant
+      return customers.filter(c => isDirectType((c as any).customer_type))
+    }
     return customers.filter(c => (c as any).customer_type === filterType)
   }, [customers, filterType])
 
@@ -95,10 +112,8 @@ export default function Customers() {
   const sortedVisible = useMemo(() => {
     const arr = [...visible]
     if (sortBy === 'owed') {
-      // Sort by owed amount (desc)
       arr.sort((a, b) => Number(b.owed_to_me || 0) - Number(a.owed_to_me || 0))
     } else {
-      // Sort by customer name (A→Z)
       arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     }
     return arr
@@ -114,13 +129,13 @@ export default function Customers() {
     [visible]
   )
 
-  // Owed to partners: exclude JJ Boston; BLV filter shows 0
+  // Owed to partners: exclude JJ Boston; direct filter shows 0
   const filteredPartnerNet = useMemo(() => {
-    if (filterType === 'BLV') return 0
+    if (filterType === directValue) return 0
     const net = Number(partnerTotals.net) || 0
     const adjusted = net - (Number(jjNet) || 0)
     return adjusted < 0 ? 0 : adjusted
-  }, [partnerTotals.net, filterType, jjNet])
+  }, [partnerTotals.net, filterType, jjNet, directValue])
 
   // "My $" = Total owed to me (filtered) - Owed to partners (filtered), never below 0
   const myDollars = useMemo(
@@ -192,7 +207,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Filter row: All / BLV / Partner */}
+      {/* Filter row: All / Direct (or BLV) / Partner */}
       <div
         style={{
           display: 'grid',
@@ -201,9 +216,9 @@ export default function Customers() {
           marginTop: 8,
         }}
       >
-        <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: 'calc(var(--control-h) * 0.67)' }}>All</button>
-        <button className="primary" onClick={() => setFilterType('BLV')}     aria-pressed={filterType === 'BLV'}     style={{ height: 'calc(var(--control-h) * 0.67)' }}>BLV</button>
-        <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: 'calc(var(--control-h) * 0.67)' }}>Partner</button>
+        <button className="primary" onClick={() => setFilterType('All')}        aria-pressed={filterType === 'All'}        style={{ height: 'calc(var(--control-h) * 0.67)' }}>All</button>
+        <button className="primary" onClick={() => setFilterType(directValue)}  aria-pressed={filterType === directValue}  style={{ height: 'calc(var(--control-h) * 0.67)' }}>{directLabel}</button>
+        <button className="primary" onClick={() => setFilterType('Partner')}    aria-pressed={filterType === 'Partner'}    style={{ height: 'calc(var(--control-h) * 0.67)' }}>Partner</button>
       </div>
 
       {/* Blank row */}
@@ -227,7 +242,7 @@ export default function Customers() {
       {/* Blank row */}
       <div style={{ height: 8 }} />
 
-      {/* Owed to partners (respects BLV/Partner filter, excludes JJ Boston) */}
+      {/* Owed to partners (respects Direct/Partner filter, excludes JJ Boston) */}
       <div
         style={{
           display: 'grid',
