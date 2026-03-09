@@ -3,17 +3,25 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { useAuth } from '../contexts/AuthContext'
+
+const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function EditCustomer() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
+  const { user } = useAuth()
+
+  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
+  const directValue: CustomerType = isBLVTenant ? 'BLV' : 'Direct'
+  const directLabel  = isBLVTenant ? 'BLV' : 'Direct'
 
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
   // form state
   const [name, setName] = useState('')
-  const [customerType, setCustomerType] = useState<CustomerType>('BLV')
+  const [customerType, setCustomerType] = useState<CustomerType>(directValue)
   const [shippingCost, setShippingCost] = useState<string>('')
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
@@ -33,7 +41,7 @@ export default function EditCustomer() {
         const d = await fetchCustomerDetail(id)
         const c = d.customer
         setName(c.name || '')
-        setCustomerType((c.customer_type as CustomerType) || 'BLV')
+        setCustomerType((c.customer_type as CustomerType) || directValue)
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
@@ -117,7 +125,7 @@ export default function EditCustomer() {
         <div>
           <label>Customer Type</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
-            <option value="BLV">BLV</option>
+            <option value={directValue}>{directLabel}</option>
             <option value="Partner">Partner</option>
           </select>
         </div>
