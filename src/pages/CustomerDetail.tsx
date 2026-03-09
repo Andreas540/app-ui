@@ -251,7 +251,7 @@ export default function CustomerDetailPage() {
 
               {/* ✨ NEW: Company name */}
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Company name</div>
+                <div className="helper">Contact</div>
                 <div>{customer.company_name || '—'}</div>
               </div>
               {/* ✨ END NEW */}
