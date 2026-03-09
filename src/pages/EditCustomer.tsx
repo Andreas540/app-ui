@@ -185,7 +185,7 @@ setCustomerType(
 
       {/* Company name - full width */}
       <div style={{ marginTop: 12 }}>
-        <label>Company name</label>
+        <label>Contact</label>
         <input
           value={companyName}
           onChange={e=>setCompanyName(e.target.value)}
