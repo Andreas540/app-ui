@@ -41,7 +41,10 @@ export default function EditCustomer() {
         const d = await fetchCustomerDetail(id)
         const c = d.customer
         setName(c.name || '')
-        setCustomerType((c.customer_type as CustomerType) || directValue)
+        const loaded = c.customer_type as CustomerType
+setCustomerType(
+  (loaded === 'BLV' || loaded === 'Direct') ? directValue : (loaded || directValue)
+)
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
