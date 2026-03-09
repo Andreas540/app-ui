@@ -56,6 +56,26 @@ export default function CustomerDetailPage() {
     return s ? `tel:${s}` : undefined
   }
 
+  function formatPhoneDisplay(p?: string): string {
+  if (!p) return '—'
+  const digits = p.trim().replace(/\D/g, '')
+  if (!digits) return p
+
+  // 2-digit country codes (subset of most common)
+  const CC2 = new Set([
+    '20','27','30','31','32','33','34','36','39','40','41','43','44','45',
+    '46','47','48','49','51','52','53','54','55','56','57','58','60','61',
+    '62','63','64','65','66','81','82','84','86','90','91','92','93','94',
+    '95','98'
+  ])
+
+  const ccLen = digits.startsWith('1') ? 1 : CC2.has(digits.slice(0, 2)) ? 2 : 1
+  const cc   = digits.slice(0, ccLen)
+  const rest = digits.slice(ccLen)
+  const parts = [rest.slice(0, 3), rest.slice(3, 6), rest.slice(6)].filter(Boolean)
+  return `+${cc} ${parts.join(' ')}`
+}
+
   const handleOrderClick = (order: any) => {
     setSelectedOrder(order)
     setShowOrderModal(true)
@@ -238,7 +258,8 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 12 }}>
                 <div className="helper">Phone</div>
-                <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{customer.phone}</a> : '—'}</div>
+                <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{formatPhoneDisplay(customer.phone)}</a> : '—'}</div>
+
               </div>
 
               <div style={{ marginTop: 12 }}>
