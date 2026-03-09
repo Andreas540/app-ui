@@ -124,9 +124,9 @@ console.log('Creating customer for tenant:', tenantId);
     if (!name || typeof name !== 'string') {
       return cors(400, { error: 'name is required' });
     }
-    if (!['BLV', 'Partner'].includes(customer_type)) {
-      return cors(400, { error: 'customer_type must be BLV or Partner' });
-    }
+    if (!['BLV', 'Direct', 'Partner'].includes(customer_type)) {
+  return cors(400, { error: 'customer_type must be BLV, Direct, or Partner' });
+}
 
     let ship = null;
     if (shipping_cost !== undefined && shipping_cost !== null) {
