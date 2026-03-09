@@ -136,7 +136,7 @@ export default function CreateCustomer() {
         </div>
 
         <div>
-          <label>Company name</label>
+          <label>Contact</label>
           <input
             type="text"
             value={companyName}
