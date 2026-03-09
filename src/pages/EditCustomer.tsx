@@ -189,7 +189,7 @@ setCustomerType(
         <input
           value={companyName}
           onChange={e=>setCompanyName(e.target.value)}
-          placeholder="e.g. Acme Corp"
+          placeholder=""
         />
       </div>
 
