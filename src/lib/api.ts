@@ -263,7 +263,7 @@ export async function listPartnersWithOwed(q?: string) {
 }
 
 // ---- Create/Fetch/Update Customer ----
-export type CustomerType = 'BLV' | 'Partner'
+export type CustomerType = 'BLV' | 'Direct' | 'Partner'
 
 export type NewCustomerInput = {
   name: string

@@ -2,6 +2,17 @@
 
 import { resolveAuthz } from './utils/auth.mjs'
 
+// ---------------------------------------------------------------------------
+// Helper: both 'BLV' (legacy) and 'Direct' (all other tenants) are "direct"
+// customer types — same business logic, different stored label.
+// Use this helper everywhere you need to branch on direct vs partner behavior.
+// ---------------------------------------------------------------------------
+export function isDirectType(customer_type) {
+  return customer_type === 'BLV' || customer_type === 'Direct'
+}
+
+const VALID_CUSTOMER_TYPES = ['BLV', 'Direct', 'Partner']
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getCustomer(event)
@@ -13,17 +24,17 @@ async function getCustomer(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
-if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
-const id = (event.queryStringParameters?.id || '').trim()
-if (!id) return cors(400, { error: 'id required' })
+    const id = (event.queryStringParameters?.id || '').trim()
+    if (!id) return cors(400, { error: 'id required' })
 
-const sql = neon(DATABASE_URL)
+    const sql = neon(DATABASE_URL)
 
-const authz = await resolveAuthz({ sql, event })
-if (authz.error) return cors(403, { error: authz.error })
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
 
-const TENANT_ID = authz.tenantId
+    const TENANT_ID = authz.tenantId
 
     const cust = await sql`
       SELECT id, name, customer_type, shipping_cost, company_name, phone,
@@ -122,7 +133,7 @@ async function updateCustomer(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
-if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+    if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const body = JSON.parse(event.body || '{}')
     const {
@@ -132,8 +143,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     if (!id)   return cors(400, { error: 'id is required' })
     if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
-    if (customer_type && !['BLV','Partner'].includes(customer_type)) {
-      return cors(400, { error: 'invalid customer_type' })
+    if (customer_type && !VALID_CUSTOMER_TYPES.includes(customer_type)) {
+      return cors(400, { error: `invalid customer_type — must be one of: ${VALID_CUSTOMER_TYPES.join(', ')}` })
     }
     const sc = (shipping_cost === null || shipping_cost === undefined)
       ? null
@@ -144,9 +155,9 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     const sql = neon(DATABASE_URL)
     const authz = await resolveAuthz({ sql, event })
-if (authz.error) return cors(403, { error: authz.error })
+    if (authz.error) return cors(403, { error: authz.error })
 
-const TENANT_ID = authz.tenantId
+    const TENANT_ID = authz.tenantId
 
     // Get current shipping cost to check if it changed
     const current = await sql`
