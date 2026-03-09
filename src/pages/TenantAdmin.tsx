@@ -83,21 +83,16 @@ export default function TenantAdmin() {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
     const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
-      .filter(f => targetUser.role === 'tenant_user' ? f !== 'tenant-admin' : true)
     if (targetUser.features === null) {
       setManagingUserFeatures(allFeatures)
     } else {
       const stored = targetUser.features
       const expanded = [...stored]
+      // Only auto-add features from always-included modules (e.g. Admin)
+      // Paid module features are respected exactly as stored
       MODULES.forEach(mod => {
-        const hasModule = mod.alwaysIncluded || mod.features.some(f => stored.includes(f))
-        if (hasModule) {
-          mod.features.forEach(f => {
-            if (!expanded.includes(f)) {
-              if (f === 'tenant-admin' && targetUser.role === 'tenant_user') return
-              expanded.push(f)
-            }
-          })
+        if (mod.alwaysIncluded) {
+          mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
         }
       })
       setManagingUserFeatures(expanded)
