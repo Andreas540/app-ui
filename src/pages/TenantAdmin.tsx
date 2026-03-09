@@ -349,7 +349,7 @@ export default function TenantAdmin() {
   const CONTROL_H = 44
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div className="card" style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>Account Administration</h2>
         <p className="helper" style={{ marginTop: 8 }}>
