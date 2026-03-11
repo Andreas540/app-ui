@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   fetchBootstrap,
+  getAuthHeaders,
   PAYMENT_TYPES,
   PARTNER_PAYMENT_TYPES,
   SUPPLIER_PAYMENT_TYPES,
@@ -14,6 +15,8 @@ import {
   createSupplierPayment
 } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner' }
 type PartnerLite = { id: string; name: string }
@@ -22,6 +25,8 @@ type SupplierLite = { id: string; name: string }
 export default function Payments() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
 
   const [people, setPeople] = useState<CustomerLite[]>([])
   const [partners, setPartners] = useState<PartnerLite[]>([])
@@ -34,6 +39,8 @@ export default function Payments() {
 
   // form - customer payments
   const [entityId, setEntityId] = useState('')
+  const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number }[]>([])
+  const [selectedOrderId, setSelectedOrderId] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
@@ -97,6 +104,28 @@ useEffect(() => {
     }
   })()
 }, [location.search])
+
+useEffect(() => {
+    if (!entityId || !config.payments.showOrderSelection) {
+      setOrders([])
+      setSelectedOrderId('')
+      return
+    }
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(
+          `${base}/api/orders?customer_id=${entityId}`,
+          { headers: getAuthHeaders() }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        setOrders(data.orders || [])
+        setSelectedOrderId('')
+        setAmountStr('')
+      } catch { /* silent */ }
+    })()
+  }, [entityId, config.payments.showOrderSelection])
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
@@ -296,6 +325,7 @@ useEffect(() => {
         amount: amountNum,
         payment_date: date,
         notes: notes.trim() || null,
+        order_id: selectedOrderId || null,
       })
 
       // 2) If Partner credit, also save a partner payment (type Other, note prefixed)
@@ -321,6 +351,7 @@ useEffect(() => {
       setAmountStr('')
       setPaymentType('Cash payment')
       setNotes('')
+      setSelectedOrderId('')
       // Reset partner-for-credit to first partner for convenience
       if (partners.length) setPartnerForCreditId(partners[0].id)
     } catch (e:any) {
@@ -455,6 +486,35 @@ useEffect(() => {
               <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
           </div>
+
+          {config.payments.showOrderSelection && (
+            <div className="row" style={{ marginTop: 12 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label>Order (optional)</label>
+                <select
+                  value={selectedOrderId}
+                  onChange={e => {
+                    const orderId = e.target.value
+                    setSelectedOrderId(orderId)
+                    if (orderId) {
+                      const order = orders.find(o => o.id === orderId)
+                      if (order) setAmountStr(String(order.amount))
+                    } else {
+                      setAmountStr('')
+                    }
+                  }}
+                  style={{ height: CONTROL_H }}
+                >
+                  <option value="">Choose order</option>
+                  {orders.map(o => (
+                    <option key={o.id} value={o.id}>
+                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="row row-2col-mobile" style={{marginTop:12}}>
             <div>
