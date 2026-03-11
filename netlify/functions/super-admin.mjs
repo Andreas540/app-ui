@@ -389,19 +389,13 @@ if (action === 'updateStripeCustomerId') {
 
       for (const { moduleId, maxUsers } of quotas) {
         if (!moduleId) continue
-        if (maxUsers === 0) {
-          await sql`
-            DELETE FROM tenant_module_quotas
-            WHERE tenant_id = ${tenantId} AND module_id = ${moduleId}
-          `
-        } else {
-          await sql`
-            INSERT INTO tenant_module_quotas (tenant_id, module_id, max_users)
-            VALUES (${tenantId}, ${moduleId}, ${maxUsers})
-            ON CONFLICT (tenant_id, module_id)
-            DO UPDATE SET max_users = EXCLUDED.max_users
-          `
-        }
+        if (maxUsers === undefined || maxUsers === null) continue
+        await sql`
+  INSERT INTO tenant_module_quotas (tenant_id, module_id, max_users)
+  VALUES (${tenantId}, ${moduleId}, ${maxUsers})
+  ON CONFLICT (tenant_id, module_id)
+  DO UPDATE SET max_users = EXCLUDED.max_users
+`
       }
 
       return cors(200, { success: true })
