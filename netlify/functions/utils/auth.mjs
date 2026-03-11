@@ -118,10 +118,12 @@ export async function resolveAuthz({ sql, event }) {
 
   const user = getUserFromToken(event)
 
-  // No/invalid token => preserve current BLV behavior for now
   if (!user?.userId) {
-    return { tenantId: TENANT_ID, role: 'tenant_admin', tenantFeatures: [], userFeatures: null, mode: 'fallback' }
+  return {
+    error: 'AUTH_REQUIRED',
+    message: 'Authentication required'
   }
+}
 
   // Optional immediate hard-block by email (only affects emails in BLOCKED_EMAILS)
   const emailNorm = (user.email || '').toLowerCase().trim()
