@@ -114,10 +114,12 @@ async function getCustomer(event) {
     `
 
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount, notes, created_at
-      FROM payments
-      WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
-      ORDER BY payment_date DESC, created_at DESC
+      SELECT p.id, p.payment_date, p.payment_type, p.amount, p.notes, p.created_at,
+             p.order_id, o.order_no
+      FROM payments p
+      LEFT JOIN orders o ON o.id = p.order_id AND o.tenant_id = ${TENANT_ID}
+      WHERE p.tenant_id = ${TENANT_ID} AND p.customer_id = ${id}
+      ORDER BY p.payment_date DESC, p.created_at DESC
       LIMIT 100
     `
 

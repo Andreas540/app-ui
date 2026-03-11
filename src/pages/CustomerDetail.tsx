@@ -504,7 +504,7 @@ export default function CustomerDetailPage() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
-                      {(p as any).payment_type}
+                      {(p as any).payment_type}{(p as any).order_no ? ` · #${(p as any).order_no}` : ''}
                     </div>
 
                     {/* AMOUNT with conditional sign, 2 decimals */}
