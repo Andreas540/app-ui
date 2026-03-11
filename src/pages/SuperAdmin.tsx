@@ -1296,9 +1296,9 @@ async function handleSaveStripeCustomerId() {
             ) : (
               <div style={{ marginTop: 20, display: 'grid', gap: 12 }}>
                 {MODULES.filter(m => !m.alwaysIncluded).map(mod => {
-                  const max = quotaValues[mod.id] || 0
-                  const used = usedCounts[mod.id] || 0
-                  const available = Math.max(0, max - used)
+                  const max = quotaValues[mod.id] ?? 0
+const used = usedCounts[mod.id] || 0
+const available = max - used
                   return (
                     <div
                       key={mod.id}
@@ -1311,14 +1311,9 @@ async function handleSaveStripeCustomerId() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600 }}>{mod.name}</div>
-                          <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
-                            Used: {used} · Available: {available}
-                          </div>
-                          {used > max && max > 0 && (
-                            <div style={{ fontSize: 12, color: 'salmon', marginTop: 4 }}>
-                              Over quota by {used - max}
-                            </div>
-                          )}
+                          <div className="helper" style={{ fontSize: 12, marginTop: 4, color: available < 0 ? 'salmon' : 'inherit' }}>
+  Used: {used} · {available >= 0 ? `Available: ${available}` : `Over quota: ${Math.abs(available)}`}
+</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <label style={{ fontSize: 13 }}>Max users</label>
