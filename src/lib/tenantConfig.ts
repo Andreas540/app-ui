@@ -11,6 +11,7 @@ export interface TenantConfig {
     customers: string       // plural
     order: string           // "Order" | "Job" | "Booking" etc
     orders: string          // plural
+    directCustomerGroup: string
   }
   ui: {
     showCostEffectiveness: boolean
@@ -33,6 +34,7 @@ const defaultConfig: TenantConfig = {
     customers: 'Customers',
     order: 'Order',
     orders: 'Orders',
+    directCustomerGroup: 'Direct customers',
   },
   ui: {
     showCostEffectiveness: true,
@@ -45,6 +47,9 @@ const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
   'c00e0058-3dec-4300-829d-cca7e3033ca6': {
     payments: {
       showOrderSelection: false
+    },
+    labels: {
+      directCustomerGroup: 'BLV customers'
     }
   },
   // Add tenant-specific overrides here keyed by tenantId

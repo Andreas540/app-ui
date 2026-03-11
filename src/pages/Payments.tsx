@@ -18,7 +18,7 @@ import { todayYMD } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
-type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Partner' }
+type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Direct' | 'Partner' }
 type PartnerLite = { id: string; name: string }
 type SupplierLite = { id: string; name: string }
 
@@ -422,9 +422,9 @@ useEffect(() => {
   if (!people.length) return <div className="card"><p>No customers found.</p></div>
 
   const CONTROL_H = 44
-  const blv = people.filter(p => p.customer_type === 'BLV')
-  const viaPartner = people.filter(p => p.customer_type === 'Partner')
-  const hasCustomerType = blv.length + viaPartner.length > 0
+  const directCustomers = people.filter(p => p.customer_type === 'BLV' || p.customer_type === 'Direct')
+const viaPartner = people.filter(p => p.customer_type === 'Partner')
+const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
   return (
     <div className="card" style={{maxWidth:720}}>
@@ -469,9 +469,9 @@ useEffect(() => {
               <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
                 {hasCustomerType ? (
                   <>
-                    <optgroup label="BLV customers">
-                      {blv.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </optgroup>
+                    <optgroup label={config.labels.directCustomerGroup}>
+  {directCustomers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+</optgroup>
                     <optgroup label="Customer via Partner">
                       {viaPartner.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </optgroup>
