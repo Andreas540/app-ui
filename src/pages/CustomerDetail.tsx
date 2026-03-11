@@ -148,6 +148,15 @@ export default function CustomerDetailPage() {
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
 
+  // Compute total paid per order from payments list
+  const paidByOrderId: Record<string, number> = {}
+  for (const p of payments) {
+    const oid = (p as any).order_id
+    if (oid) {
+      paidByOrderId[oid] = (paidByOrderId[oid] || 0) + Number((p as any).amount)
+    }
+  }
+
   // Compact layout constants
   const DATE_COL = 55 // px (smaller; pulls middle text left)
   const LINE_GAP = 4  // tighter than default
@@ -403,15 +412,26 @@ export default function CustomerDetailPage() {
                     </div>
 
                     {/* RIGHT TOTAL — show with 2 decimals */}
-                    <div 
-                      className="helper" 
-                      onClick={() => handleOrderClick(o)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{textAlign:'right', cursor: 'pointer'}}
-                    >
-                      {fmtMoney((o as any).total)}
-                    </div>
+                    {(() => {
+                      const orderTotal = Number((o as any).total) || 0
+                      const paid = paidByOrderId[o.id] || 0
+                      const orderColor = paid >= orderTotal && orderTotal > 0
+                        ? '#10b981'
+                        : paid > 0 && paid < orderTotal
+                          ? '#f59e0b'
+                          : undefined
+                      return (
+                        <div
+                          className="helper"
+                          onClick={() => handleOrderClick(o)}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}
+                        >
+                          {fmtMoney(orderTotal)}
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* NOTES ROW */}
