@@ -53,7 +53,7 @@ export default function CreateUser() {
         throw new Error(data.error || `Failed to create user (status ${res.status})`)
       }
 
-      const data = await res.json()
+      await res.json()
       alert(t('createUser.created'))
 
       // Clear form
