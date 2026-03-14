@@ -1,5 +1,6 @@
 // src/pages/EmployeeManagement.tsx
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -34,122 +35,8 @@ function safeString(value: any): string {
   return isEmpty(value) ? '' : String(value)
 }
 
-type Language = 'es' | 'en'
-
-const translations = {
-  en: {
-    title: 'Employee Management',
-    newEmployee: 'New Employee',
-    showInactive: 'Show inactive employees',
-    editEmployee: 'Edit Employee',
-    name: 'Name',
-    employeeCode: 'Employee Code (auto)',
-    hourSalary: 'Salary/hour',
-    email: 'Email',
-    notes: 'Notes',
-    optionalNotes: 'Optional notes...',
-    active: 'Active',
-    create: 'Create',
-    update: 'Update',
-    cancel: 'Cancel',
-    activeEmployees: 'Active Employees',
-    noActiveEmployees: 'No active employees. Click "New Employee" to add one.',
-    edit: 'Edit',
-    deactivate: 'Deactivate',
-    shareLink: 'Share link',
-    inactiveEmployees: 'Inactive Employees',
-    inactive: '(Inactive)',
-    reactivate: 'Reactivate',
-    reshareLink: 'Re-share link',
-    nameRequired: 'Employee name is required',
-    created: 'Employee created successfully!',
-    updated: 'Employee updated successfully!',
-    deactivateConfirm: (name: string) => `Deactivate ${name}? Their time entries will be preserved.`,
-    deactivated: 'Employee deactivated',
-    reactivateConfirm: (name: string) => `Reactivate ${name}?`,
-    reactivated: 'Employee reactivated',
-    shareLinkMessage: (name: string, url: string) => `Hi ${name}, here's your time entry link: ${url}`,
-    timeEntry: 'Time Entry',
-    linkCopied: 'Link copied to clipboard',
-    copyLink: (url: string) => `Copy this link:\n\n${url}`,
-    shareFailed: 'Failed to share link',
-    codeGenerateFailed: 'Failed to generate employee code',
-    saveFailed: 'Save failed',
-    deactivateFailed: 'Deactivate failed',
-    reactivateFailed: 'Reactivate failed',
-    createLinkFailed: 'Failed to create share link',
-    noUrlReturned: 'No url returned',
-    loadFailed: 'Failed to load employees',
-    loading: 'Loading…',
-    error: 'Error:',
-    salaryOptions: 'When should this salary take effect?',
-    salaryApplyToHistory: 'Apply new salary to all previous hours',
-    salaryFromToday: 'New salary valid from today',
-    salaryFromSpecificDate: 'New salary valid from specific date',
-    selectDate: 'Please select a date',
-    salaryUpdated: (name: string) => `Updated salary for ${name}`,
-    salaryAppliedToHistory: 'applied to all previous hours',
-    salaryEffectiveFrom: (date: string) => `effective from ${date}`,
-  },
-  es: {
-    title: 'Gestión de Empleados',
-    newEmployee: 'Nuevo Empleado',
-    showInactive: 'Mostrar empleados inactivos',
-    editEmployee: 'Editar Empleado',
-    name: 'Nombre',
-    employeeCode: 'Código de Empleado',
-    hourSalary: 'Salario/hora',
-    email: 'Correo electrónico',
-    notes: 'Notas',
-    optionalNotes: 'Notas opcionales...',
-    active: 'Activo',
-    create: 'Crear',
-    update: 'Actualizar',
-    cancel: 'Cancelar',
-    activeEmployees: 'Empleados Activos',
-    noActiveEmployees: 'No hay empleados activos. Haz clic en "Nuevo Empleado" para agregar uno.',
-    edit: 'Editar',
-    deactivate: 'Desactivar',
-    shareLink: 'Compartir enlace',
-    inactiveEmployees: 'Empleados Inactivos',
-    inactive: '(Inactivo)',
-    reactivate: 'Reactivar',
-    reshareLink: 'Volver a compartir enlace',
-    nameRequired: 'El nombre del empleado es requerido',
-    created: '¡Empleado creado exitosamente!',
-    updated: '¡Empleado actualizado exitosamente!',
-    deactivateConfirm: (name: string) => `¿Desactivar ${name}? Sus entradas de tiempo se conservarán.`,
-    deactivated: 'Empleado desactivado',
-    reactivateConfirm: (name: string) => `¿Reactivar ${name}?`,
-    reactivated: 'Empleado reactivado',
-    shareLinkMessage: (name: string, url: string) => `Hola ${name}, aquí está tu enlace de entrada de tiempo: ${url}`,
-    timeEntry: 'Entrada de Tiempo',
-    linkCopied: 'Enlace copiado al portapapeles',
-    copyLink: (url: string) => `Copia este enlace:\n\n${url}`,
-    shareFailed: 'Error al compartir enlace',
-    codeGenerateFailed: 'Error al generar código de empleado',
-    saveFailed: 'Error al guardar',
-    deactivateFailed: 'Error al desactivar',
-    reactivateFailed: 'Error al reactivar',
-    createLinkFailed: 'Error al crear enlace para compartir',
-    noUrlReturned: 'No se devolvió url',
-    loadFailed: 'Error al cargar empleados',
-    loading: 'Cargando…',
-    error: 'Error:',
-    salaryOptions: '¿Cuándo debe aplicarse este salario?',
-    salaryApplyToHistory: 'Aplicar nuevo salario a todas las horas anteriores',
-    salaryFromToday: 'Nuevo salario válido desde hoy',
-    salaryFromSpecificDate: 'Nuevo salario válido desde fecha específica',
-    selectDate: 'Por favor selecciona una fecha',
-    salaryUpdated: (name: string) => `Salario actualizado para ${name}`,
-    salaryAppliedToHistory: 'aplicado a todas las horas anteriores',
-    salaryEffectiveFrom: (date: string) => `efectivo desde ${date}`,
-  },
-}
-
 export default function EmployeeManagement() {
-  const [lang, setLang] = useState<Language>('es')
-  const t = translations[lang]
+  const { t } = useTranslation()
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -193,7 +80,7 @@ export default function EmployeeManagement() {
       if (!showInactive) url += '?active=true'
 
       const res = await fetch(url, { headers: getAuthHeaders() })
-      if (!res.ok) throw new Error(t.loadFailed)
+      if (!res.ok) throw new Error(t('employees.loadFailed'))
 
       const data = await res.json()
       setEmployees(data)
@@ -209,7 +96,7 @@ export default function EmployeeManagement() {
     const res = await fetch(`${base}/api/employees?next_code=true`, { headers: getAuthHeaders() })
     if (!res.ok) {
       const j = await res.json().catch(() => ({}))
-      throw new Error(j.error || t.codeGenerateFailed)
+      throw new Error(j.error || t('employees.codeGenerateFailed'))
     }
     const j = await res.json()
     return String(j.next_code || '')
@@ -230,7 +117,7 @@ export default function EmployeeManagement() {
       const nextCode = await fetchNextEmployeeCode()
       setEmployeeCode(nextCode || '')
     } catch (e: any) {
-      alert(e?.message || t.codeGenerateFailed)
+      alert(e?.message || t('employees.codeGenerateFailed'))
       setEmployeeCode('')
     }
   }
@@ -263,14 +150,14 @@ export default function EmployeeManagement() {
 
   async function handleSave() {
   if (!name.trim()) {
-    alert(t.nameRequired)
+    alert(t('employees.nameRequired'))
     return
   }
 
   const salaryNum = hourSalary.trim() ? parseFloat(hourSalary) : null
 
   if (salaryOption === 'specific' && !specificDate && editingId && salaryNum !== null) {
-    alert(t.selectDate)
+    alert(t('employees.selectDate'))
     return
   }
 
@@ -298,35 +185,35 @@ export default function EmployeeManagement() {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}))
-      throw new Error(errData.error || t.saveFailed)
+      throw new Error(errData.error || t('employees.saveFailed'))
     }
 
     const result = await res.json()
 
     // Show appropriate success message
     if (result.created) {
-      alert(t.created)
+      alert(t('employees.created'))
     } else if (result.updated && salaryNum !== null) {
-      let message = t.salaryUpdated(name.trim())
+      let message = t('employees.salaryUpdated', { name: name.trim() })
       if (result.applied_to_history) {
-        message += ` (${t.salaryAppliedToHistory})`
+        message += ` (${t('employees.salaryAppliedToHistory')})`
       } else if (salaryOption === 'specific') {
-        message += ` (${t.salaryEffectiveFrom(specificDate)})`
+        message += ` (${t('employees.salaryEffectiveFrom', { date: specificDate })})`
       }
       alert(message)
     } else if (result.updated) {
-      alert(t.updated)
+      alert(t('employees.updated'))
     }
 
     handleCancel()
     await loadEmployees()
   } catch (e: any) {
-    alert(e?.message || t.saveFailed)
+    alert(e?.message || t('employees.saveFailed'))
   }
 }
 
   async function handleDeactivate(id: string, employeeName: string) {
-    if (!confirm(t.deactivateConfirm(employeeName))) return
+    if (!confirm(t('employees.deactivateConfirm', { name: employeeName }))) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -337,17 +224,17 @@ export default function EmployeeManagement() {
       })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.deactivateFailed)
+        throw new Error(errData.error || t('employees.deactivateFailed'))
       }
-      alert(t.deactivated)
+      alert(t('employees.deactivated'))
       await loadEmployees()
     } catch (e: any) {
-      alert(e?.message || t.deactivateFailed)
+      alert(e?.message || t('employees.deactivateFailed'))
     }
   }
 
   async function handleReactivate(id: string, employeeName: string) {
-    if (!confirm(t.reactivateConfirm(employeeName))) return
+    if (!confirm(t('employees.reactivateConfirm', { name: employeeName }))) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -358,12 +245,12 @@ export default function EmployeeManagement() {
       })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.reactivateFailed)
+        throw new Error(errData.error || t('employees.reactivateFailed'))
       }
-      alert(t.reactivated)
+      alert(t('employees.reactivated'))
       await loadEmployees()
     } catch (e: any) {
-      alert(e?.message || t.reactivateFailed)
+      alert(e?.message || t('employees.reactivateFailed'))
     }
   }
 
@@ -377,18 +264,18 @@ export default function EmployeeManagement() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || t.createLinkFailed)
+        throw new Error(j.error || t('employees.createLinkFailed'))
       }
 
       const j = await res.json()
       const url = String(j.url || '')
-      if (!url) throw new Error(t.noUrlReturned)
+      if (!url) throw new Error(t('employees.noUrlReturned'))
 
-      const msg = t.shareLinkMessage(emp.name, url)
+      const msg = t('employees.shareLinkMessage', { name: emp.name, url })
 
       if ((navigator as any).share) {
         try {
-          await (navigator as any).share({ title: t.timeEntry, text: msg })
+          await (navigator as any).share({ title: t('timeEntry.title'), text: msg })
           return
         } catch {
           // fall through to clipboard
@@ -396,15 +283,15 @@ export default function EmployeeManagement() {
       }
 
       const ok = await copyToClipboard(url)
-      if (ok) alert(t.linkCopied)
-      else alert(t.copyLink(url))
+      if (ok) alert(t('employees.linkCopied'))
+      else alert(t('employees.copyLink', { url }))
     } catch (e: any) {
-      alert(e?.message || t.shareFailed)
+      alert(e?.message || t('employees.shareFailed'))
     }
   }
 
-  if (loading) return <div className="card"><p>{t.loading}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')}: {err}</p></div>
 
   const CONTROL_H = 44
   const activeEmployees = employees.filter(e => e.active)
@@ -413,45 +300,10 @@ export default function EmployeeManagement() {
   return (
     <div className="card" style={{ maxWidth: 1000 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>{t.title}</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Language switcher */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={() => setLang('en')}
-              style={{
-                fontSize: 20,
-                padding: '4px 8px',
-                background: lang === 'en' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                cursor: 'pointer',
-                opacity: lang === 'en' ? 1 : 0.5,
-              }}
-              title="English"
-            >
-              🇺🇸
-            </button>
-            <button
-              onClick={() => setLang('es')}
-              style={{
-                fontSize: 20,
-                padding: '4px 8px',
-                background: lang === 'es' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                cursor: 'pointer',
-                opacity: lang === 'es' ? 1 : 0.5,
-              }}
-              title="Español"
-            >
-              🇪🇸
-            </button>
-          </div>
-          <button className="primary" onClick={handleNew} style={{ height: CONTROL_H }}>
-            + {t.newEmployee}
-          </button>
-        </div>
+        <h3 style={{ margin: 0 }}>{t('employees.title')}</h3>
+        <button className="primary" onClick={handleNew} style={{ height: CONTROL_H }}>
+          + {t('employees.newEmployee')}
+        </button>
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -462,7 +314,7 @@ export default function EmployeeManagement() {
             onChange={e => setShowInactive(e.target.checked)}
             style={{ width: 18, height: 18 }}
           />
-          <span>{t.showInactive}</span>
+          <span>{t('employees.showInactive')}</span>
         </label>
       </div>
 
@@ -477,15 +329,15 @@ export default function EmployeeManagement() {
           }}
         >
           <h4 style={{ margin: '0 0 16px 0', fontSize: 16 }}>
-            {editingId ? t.editEmployee : t.newEmployee}
+            {editingId ? t('employees.editEmployee') : t('employees.newEmployee')}
           </h4>
 
           {/* Row 1: Name (full width) */}
           <div>
-            <label>{t.name} *</label>
+            <label>{t('name')} *</label>
             <input
               type="text"
-              placeholder={t.name}
+              placeholder={t('name')}
               value={name}
               onChange={e => setName(e.target.value)}
               style={{ height: CONTROL_H }}
@@ -496,7 +348,7 @@ export default function EmployeeManagement() {
           {/* Row 2: Employee Code + Salary/hour */}
           <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
             <div>
-              <label>{t.employeeCode}</label>
+              <label>{t('employees.employeeCode')}</label>
               <input
                 type="text"
                 placeholder="Auto-generated"
@@ -506,7 +358,7 @@ export default function EmployeeManagement() {
               />
             </div>
             <div>
-              <label>{t.hourSalary}</label>
+              <label>{t('employees.hourSalary')}</label>
               <input
                 type="number"
                 step="0.01"
@@ -523,7 +375,7 @@ export default function EmployeeManagement() {
           {editingId && hourSalary.trim() && (
             <div style={{ marginTop: 12, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
-                {t.salaryOptions}
+                {t('employees.salaryOptions')}
               </label>
               
               <div style={{ display: 'grid', gap: 10 }}>
@@ -535,7 +387,7 @@ export default function EmployeeManagement() {
                     onChange={() => setSalaryOption('history')}
                     style={{ width: 18, height: 18 }}
                   />
-                  <span style={{ fontSize: 14 }}>{t.salaryApplyToHistory}</span>
+                  <span style={{ fontSize: 14 }}>{t('employees.salaryApplyToHistory')}</span>
                 </label>
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
@@ -546,7 +398,7 @@ export default function EmployeeManagement() {
                     onChange={() => setSalaryOption('next')}
                     style={{ width: 18, height: 18 }}
                   />
-                  <span style={{ fontSize: 14 }}>{t.salaryFromToday}</span>
+                  <span style={{ fontSize: 14 }}>{t('employees.salaryFromToday')}</span>
                 </label>
 
                 <div>
@@ -558,7 +410,7 @@ export default function EmployeeManagement() {
                       onChange={() => setSalaryOption('specific')}
                       style={{ width: 18, height: 18 }}
                     />
-                    <span style={{ fontSize: 14 }}>{t.salaryFromSpecificDate}</span>
+                    <span style={{ fontSize: 14 }}>{t('employees.salaryFromSpecificDate')}</span>
                   </label>
                   
                   {salaryOption === 'specific' && (
@@ -577,7 +429,7 @@ export default function EmployeeManagement() {
           )}
 
           <div style={{ marginTop: 12 }}>
-            <label>{t.email}</label>
+            <label>{t('email')}</label>
             <input
               type="email"
               placeholder="email@example.com"
@@ -588,9 +440,9 @@ export default function EmployeeManagement() {
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label>{t.notes}</label>
+            <label>{t('notes')}</label>
             <textarea
-              placeholder={t.optionalNotes}
+              placeholder={t('employees.optionalNotes')}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
@@ -606,16 +458,16 @@ export default function EmployeeManagement() {
                 onChange={e => setActive(e.target.checked)}
                 style={{ width: 18, height: 18 }}
               />
-              <span>{t.active}</span>
+              <span>{t('active')}</span>
             </label>
           </div>
 
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button className="primary" onClick={handleSave} style={{ height: CONTROL_H }}>
-              {editingId ? t.update : t.create}
+              {editingId ? t('employees.updateButton') : t('employees.createButton')}
             </button>
             <button onClick={handleCancel} style={{ height: CONTROL_H }}>
-              {t.cancel}
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -623,11 +475,11 @@ export default function EmployeeManagement() {
 
       <div style={{ marginTop: 24 }}>
         <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
-          {t.activeEmployees} ({activeEmployees.length})
+          {t('employees.activeEmployees')} ({activeEmployees.length})
         </h4>
 
         {activeEmployees.length === 0 ? (
-          <p className="helper">{t.noActiveEmployees}</p>
+          <p className="helper">{t('employees.noActiveEmployees')}</p>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {activeEmployees.map(emp => (
@@ -673,7 +525,7 @@ export default function EmployeeManagement() {
                       cursor: 'pointer',
                     }}
                   >
-                    {t.edit}
+                    {t('edit')}
                   </button>
 
                   <button
@@ -689,7 +541,7 @@ export default function EmployeeManagement() {
                       cursor: 'pointer',
                     }}
                   >
-                    {t.deactivate}
+                    {t('employees.deactivate')}
                   </button>
 
                   <button
@@ -704,7 +556,7 @@ export default function EmployeeManagement() {
                       cursor: 'pointer',
                     }}
                   >
-                    {t.shareLink}
+                    {t('employees.shareLink')}
                   </button>
                 </div>
               </div>
@@ -716,7 +568,7 @@ export default function EmployeeManagement() {
       {showInactive && inactiveEmployees.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
-            {t.inactiveEmployees} ({inactiveEmployees.length})
+            {t('employees.inactiveEmployees')} ({inactiveEmployees.length})
           </h4>
 
           <div style={{ display: 'grid', gap: 8 }}>
@@ -738,7 +590,7 @@ export default function EmployeeManagement() {
                       {emp.employee_code}
                     </span>
                   )}
-                  <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>{t.inactive}</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>{t('employees.inactiveBadge')}</span>
                 </div>
                 {!isEmpty(emp.email) && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
 
@@ -755,7 +607,7 @@ export default function EmployeeManagement() {
                       cursor: 'pointer',
                     }}
                   >
-                    {t.reactivate}
+                    {t('employees.reactivate')}
                   </button>
 
                   <button
@@ -770,7 +622,7 @@ export default function EmployeeManagement() {
                       cursor: 'pointer',
                     }}
                   >
-                    {t.reshareLink}
+                    {t('employees.reshareLink')}
                   </button>
                 </div>
               </div>

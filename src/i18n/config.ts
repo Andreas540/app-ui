@@ -9,18 +9,18 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    
-    ns: ['common', 'navigation', 'validation'],
+
+    ns: ['common', 'navigation'],
     defaultNS: 'common',
-    
+
     interpolation: {
       escapeValue: false,
     },
-    
+
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },
-    
+
     react: {
       useSuspense: false,
     },

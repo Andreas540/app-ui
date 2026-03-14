@@ -1,5 +1,6 @@
 // src/pages/TimeApproval.tsx
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatLongDate } from '../lib/time'
 
@@ -26,82 +27,6 @@ type Employee = {
   employee_code: string | null
 }
 
-type Lang = 'es' | 'en'
-
-const translations = {
-  es: {
-    timeApproval: 'Aprobación de Tiempo',
-    employee: 'Empleado',
-    allEmployees: 'Todos los Empleados',
-    fromDate: 'Desde',
-    toDate: 'Hasta',
-    showApproved: 'Mostrar aprobados',
-    pendingApproval: 'Por Aprobar',
-    pendingHours: 'Horas Pendientes',
-    approvedHours: 'Horas Aprobadas',
-    totalHours: 'Total de Horas',
-    selectAll: 'Seleccionar todo',
-    selected: 'seleccionado(s)',
-    approveSelected: 'Aprobar Seleccionados',
-    noEntries: 'No se encontraron entradas de tiempo para los filtros seleccionados.',
-    hrs: 'hrs',
-    approved: '✓ Aprobado',
-    approve: 'Aprobar',
-    unapprove: 'Desaprobar',
-    note: 'Nota',
-    approvedBy: 'Aprobado por',
-    on: 'el',
-    confirmUnapprove: '¿Desaprobar esta entrada de tiempo? El empleado podrá editarla nuevamente.',
-    selectEntries: 'Por favor seleccione entradas de tiempo para aprobar',
-    confirmBulk: '¿Aprobar {count} entradas de tiempo?',
-    bulkSuccess: '{count} entradas de tiempo aprobadas',
-    approvalFailed: 'Error en la aprobación',
-    bulkFailed: 'Error en la aprobación masiva',
-    loading: 'Cargando…',
-    error: 'Error',
-    thisWeek: 'Esta semana',
-lastWeek: 'Semana pasada',
-totalEarnings: 'Ganancias totales',
-approvedEarnings: 'Ganancias aprobadas',
-noEndTime: 'Sin hora de salida',
-  },
-  en: {
-    timeApproval: 'Time Approval',
-    employee: 'Employee',
-    allEmployees: 'All Employees',
-    fromDate: 'From Date',
-    toDate: 'To Date',
-    showApproved: 'Show approved',
-    pendingApproval: 'Pending Approval',
-    pendingHours: 'Pending Hours',
-    approvedHours: 'Approved Hours',
-    totalHours: 'Total Hours',
-    selectAll: 'Select all',
-    selected: 'selected',
-    approve: 'Approve',
-    approveSelected: 'Approve Selected',
-    noEntries: 'No time entries found for selected filters.',
-    hrs: 'hrs',
-    approved: '✓ Approved',
-    unapprove: 'Unapprove',
-    note: 'Note',
-    approvedBy: 'Approved by',
-    on: 'on',
-    confirmUnapprove: 'Unapprove this time entry? Employee will be able to edit it again.',
-    selectEntries: 'Please select time entries to approve',
-    confirmBulk: 'Approve {count} time entries?',
-    bulkSuccess: '{count} time entries approved',
-    approvalFailed: 'Approval failed',
-    bulkFailed: 'Bulk approval failed',
-    loading: 'Loading…',
-    error: 'Error',
-    thisWeek: 'This week',
-lastWeek: 'Last week',
-totalEarnings: 'Total earnings',
-approvedEarnings: 'Approved earnings',
-noEndTime: 'No end time',
-  },
-}
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
@@ -114,24 +39,16 @@ function toLocalYMD(date: Date): string {
   const dd = String(date.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
 }
-function formatHoursMinutes(decimalHours: number, lang: Lang): string {
+function formatHoursMinutes(decimalHours: number): string {
   const totalMinutes = Math.round(decimalHours * 60)
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
-  
-  if (lang === 'es') {
-    if (hours === 0) return `${minutes} min`
-    if (minutes === 0) return `${hours} hrs`
-    return `${hours} hrs ${minutes} min`
-  } else {
-    if (hours === 0) return `${minutes} min`
-    if (minutes === 0) return `${hours} hrs`
-    return `${hours} hrs ${minutes} min`
-  }
+  if (hours === 0) return `${minutes} min`
+  if (minutes === 0) return `${hours} hrs`
+  return `${hours} hrs ${minutes} min`
 }
 export default function TimeApproval() {
-  const [lang, setLang] = useState<Lang>('es') // Spanish default
-  const t = translations[lang]
+  const { t } = useTranslation()
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -251,17 +168,17 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.approvalFailed)
+        throw new Error(errData.error || t('timeApproval.approvalFailed'))
       }
 
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || t.approvalFailed)
+      alert(e?.message || t('timeApproval.approvalFailed'))
     }
   }
 
   async function handleUnapprove(entryId: string) {
-    if (!confirm(t.confirmUnapprove)) {
+    if (!confirm(t('timeApproval.confirmUnapprove'))) {
       return
     }
 
@@ -282,22 +199,22 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.approvalFailed)
+        throw new Error(errData.error || t('timeApproval.approvalFailed'))
       }
 
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || t.approvalFailed)
+      alert(e?.message || t('timeApproval.approvalFailed'))
     }
   }
 
   async function handleBulkApprove() {
     if (selectedIds.size === 0) {
-      alert(t.selectEntries)
+      alert(t('timeApproval.selectEntries'))
       return
     }
 
-    if (!confirm(t.confirmBulk.replace('{count}', String(selectedIds.size)))) {
+    if (!confirm(t('timeApproval.confirmBulk', { count: selectedIds.size }))) {
       return
     }
 
@@ -319,10 +236,10 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
         })
       }
 
-      alert(t.bulkSuccess.replace('{count}', String(selectedIds.size)))
+      alert(t('timeApproval.bulkSuccess', { count: selectedIds.size }))
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || t.bulkFailed)
+      alert(e?.message || t('timeApproval.bulkFailed'))
     }
   }
 
@@ -390,9 +307,9 @@ const stats = useMemo(() => {
   const pendingEntries = timeEntries.filter(e => !e.approved)
 
   if (loading && timeEntries.length === 0) {
-    return <div className="card"><p>{t.loading}</p></div>
+    return <div className="card"><p>{t('loading')}</p></div>
   }
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error}: {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')}: {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -416,7 +333,7 @@ const stats = useMemo(() => {
         }
       `}</style>
 
-      {/* Reload button and Language toggle flags - top right corner */}
+      {/* Reload button - top right corner */}
 <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 0, zIndex: 10 }}>
   <button
     onClick={() => loadTimeEntries()}
@@ -433,62 +350,24 @@ const stats = useMemo(() => {
       alignItems: 'center',
       justifyContent: 'center',
     }}
-    title={lang === 'es' ? 'Actualizar' : 'Refresh'}
+    title={t('refresh')}
   >
     🔄
   </button>
-  <button
-    onClick={() => setLang('en')}
-    style={{
-      width: 40,
-      height: 40,
-      padding: 0,
-      border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
-      borderRadius: 8,
-      cursor: 'pointer',
-      background: 'transparent',
-      fontSize: 24,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-    title="English"
-  >
-    🇺🇸
-  </button>
-  <button
-    onClick={() => setLang('es')}
-    style={{
-      width: 40,
-      height: 40,
-      padding: 0,
-      border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
-      borderRadius: 8,
-      cursor: 'pointer',
-      background: 'transparent',
-      fontSize: 24,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-    title="Español"
-  >
-    🇪🇸
-  </button>
 </div>
 
-      <h3>{t.timeApproval}</h3>
+      <h3>{t('timeApproval.title')}</h3>
 
       {/* Filters - Employee and week selector */}
 <div style={{ marginTop: 16 }}>
   <div>
-    <label>{t.employee}</label>
+    <label>{t('employee')}</label>
     <select
       value={selectedEmployeeId}
       onChange={e => setSelectedEmployeeId(e.target.value)}
       style={{ height: CONTROL_H, width: '100%' }}
     >
-      <option value="all">{t.allEmployees}</option>
+      <option value="all">{t('timeApproval.allEmployees')}</option>
       {employees.map(emp => (
         <option key={emp.id} value={emp.id}>
           {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
@@ -510,7 +389,7 @@ const stats = useMemo(() => {
         fontSize: 14,
       }}
     >
-      {t.thisWeek}
+      {t('timeEntry.thisWeek')}
     </button>
     <button
       onClick={() => setViewPeriod('lastWeek')}
@@ -524,7 +403,7 @@ const stats = useMemo(() => {
         fontSize: 14,
       }}
     >
-      {t.lastWeek}
+      {t('timeEntry.lastWeek')}
     </button>
   </div>
 </div>
@@ -543,37 +422,37 @@ const stats = useMemo(() => {
   fontSize: 14 
 }}>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.pendingApproval}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.pendingApproval')}</div>
     <div style={{ fontSize: 16, fontWeight: 600, color: '#fbbf24' }}>
       {stats.pendingCount}
     </div>
   </div>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.pendingHours}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeApproval.pendingHours')}</div>
     <div style={{ fontSize: 16, fontWeight: 600, color: '#fbbf24' }}>
-      {formatHoursMinutes(stats.pendingHours, lang)}
+      {formatHoursMinutes(stats.pendingHours)}
     </div>
   </div>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.approvedHours}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.approvedHours')}</div>
     <div style={{ fontSize: 16, fontWeight: 600, color: '#22c55e' }}>
-      {formatHoursMinutes(stats.approvedHours, lang)}
+      {formatHoursMinutes(stats.approvedHours)}
     </div>
   </div>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.approvedEarnings}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeApproval.approvedEarnings')}</div>
     <div style={{ fontSize: 16, fontWeight: 600, color: '#22c55e' }}>
       ${stats.approvedEarnings}
     </div>
   </div>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.totalHours}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.totalHours')}</div>
     <div style={{ fontSize: 16, fontWeight: 600 }}>
-      {formatHoursMinutes(stats.totalHours, lang)}
+      {formatHoursMinutes(stats.totalHours)}
     </div>
   </div>
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t.totalEarnings}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.totalEarnings')}</div>
     <div style={{ fontSize: 16, fontWeight: 600 }}>
       ${stats.totalEarnings}
     </div>
@@ -609,9 +488,9 @@ const stats = useMemo(() => {
                 style={{ width: 18, height: 18 }}
               />
               <span>
-                {selectedIds.size === 0 
-                  ? t.selectAll
-                  : `${selectedIds.size} ${t.selected}`}
+                {selectedIds.size === 0
+                  ? t('timeApproval.selectAll')
+                  : `${selectedIds.size} ${t('timeApproval.selected')}`}
               </span>
             </label>
             {selectedIds.size > 0 && (
@@ -620,7 +499,7 @@ const stats = useMemo(() => {
                 onClick={handleBulkApprove}
                 style={{ height: 32, padding: '0 12px', fontSize: 12 }}
               >
-                {t.approveSelected} ({selectedIds.size})
+                {t('timeApproval.approveSelected')} ({selectedIds.size})
               </button>
             )}
           </div>
@@ -642,7 +521,7 @@ const stats = useMemo(() => {
               onChange={e => setShowApproved(e.target.checked)}
               style={{ width: 18, height: 18 }}
             />
-            <span>{t.showApproved}</span>
+            <span>{t('timeApproval.showApproved')}</span>
           </label>
         </div>
       </div>
@@ -651,7 +530,7 @@ const stats = useMemo(() => {
       <div style={{ marginTop: 24 }}>
         {displayedEntries.length === 0 ? (
           <p className="helper">
-            {t.noEntries}
+            {t('timeApproval.noEntries')}
           </p>
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
@@ -721,11 +600,11 @@ const stats = useMemo(() => {
                               })()}
                             </div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-  {entry.start_time} - {entry.end_time || t.noEndTime}
+  {entry.start_time} - {entry.end_time || t('timeApproval.noEndTime')}
   {entry.total_hours && (
     <>
       <span style={{ margin: '0 8px' }}>•</span>
-      {formatHoursMinutes(entry.total_hours, lang)}
+      {formatHoursMinutes(entry.total_hours)}
     </>
   )}
 </div>
@@ -736,12 +615,12 @@ const stats = useMemo(() => {
 )}
 {entry.notes && (
   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-    {t.note}: {entry.notes}
+    {t('timeApproval.note')}: {entry.notes}
   </div>
 )}
                             {entry.approved && entry.approved_by && (
                               <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
-                                {t.approvedBy} {entry.approved_by} {t.on} {new Date(entry.approved_at!).toLocaleDateString()}
+                                {t('timeApproval.approvedBy')} {entry.approved_by} {t('timeApproval.on')} {new Date(entry.approved_at!).toLocaleDateString()}
                               </div>
                             )}
                           </div>
@@ -756,7 +635,7 @@ const stats = useMemo(() => {
       fontWeight: 600,
       padding: '6px 12px'
     }}>
-      {t.approved}
+      {t('timeApproval.approved')}
     </span>
     <button
       onClick={() => handleUnapprove(entry.id)}
@@ -770,7 +649,7 @@ const stats = useMemo(() => {
         cursor: 'pointer'
       }}
     >
-      {t.unapprove}
+      {t('timeApproval.unapprove')}
     </button>
   </>
 ) : (
@@ -785,9 +664,9 @@ const stats = useMemo(() => {
       opacity: entry.end_time ? 1 : 0.4,
       cursor: entry.end_time ? 'pointer' : 'not-allowed'
     }}
-    title={entry.end_time ? '' : t.noEndTime}
+    title={entry.end_time ? '' : t('timeApproval.noEndTime')}
   >
-    {t.approve}
+    {t('timeApproval.approve')}
   </button>
 )}
                         </div>

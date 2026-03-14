@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD, formatLongDate } from '../lib/time'
 
@@ -25,87 +26,6 @@ type TimeEntry = {
   updated_at: string
 }
 
-type Lang = 'es' | 'en'
-
-const translations = {
-  es: {
-    timeEntry: 'Entrada de Tiempo',
-    employee: 'Empleado',
-    reportingAs: 'Reportando como',
-    date: 'Fecha',
-    totalHours: 'Total de Horas',
-    startTime: 'Hora de Inicio',
-    endTime: 'Hora de Fin',
-    notes: 'Notas (opcional)',
-    notesPlaceholder: 'Notas opcionales...',
-    saveEntry: 'Guardar Entrada',
-    clear: 'Limpiar',
-    timeSummary: 'Resumen de Tiempo de',
-    thisWeek: 'Esta semana',
-lastWeek: 'Semana pasada',
-    daysWorked: 'Días trabajados:',
-    totalHoursLabel: 'Total de horas:',
-    totalEarnings: 'Ganancias totales:',
-    approvedHours: 'Horas aprobadas:',
-    pendingApproval: 'Pendiente de aprobación:',
-    recentEntries: 'Entradas Recientes',
-    approved: '✓ Aprobado',
-    pending: 'Pendiente',
-    delete: 'Eliminar',
-    hrs: 'hrs',
-    loading: 'Cargando…',
-    error: 'Error',
-    noEmployees: 'No se encontraron empleados. Por favor agregue empleados primero.',
-    employeeMissing: 'Empleado faltante',
-    selectDate: 'Por favor seleccione una fecha',
-    enterTimes: 'Por favor ingrese hora de inicio y fin',
-    saveFailed: 'Error al guardar',
-    entrySaved: '¡Entrada de tiempo guardada exitosamente!',
-    entryUpdated: '¡Entrada de tiempo actualizada exitosamente!',
-    confirmDelete: '¿Eliminar esta entrada de tiempo?',
-    entryDeleted: 'Entrada de tiempo eliminada',
-    deleteFailed: 'Error al eliminar',
-  },
-  en: {
-    timeEntry: 'Time Entry',
-    employee: 'Employee',
-    reportingAs: 'Reporting as',
-    date: 'Date',
-    totalHours: 'Total Hours',
-    startTime: 'Start Time',
-    endTime: 'End Time',
-    notes: 'Notes (optional)',
-    notesPlaceholder: 'Optional notes...',
-    saveEntry: 'Save Time Entry',
-    clear: 'Clear',
-    timeSummary: 'Time Summary for',
-    thisWeek: 'This week',
-    lastWeek: 'Last week',
-    daysWorked: 'Days worked:',
-    totalHoursLabel: 'Total hours:',
-    totalEarnings: 'Total earnings:',
-    approvedHours: 'Approved hours:',
-    pendingApproval: 'Pending approval:',
-    recentEntries: 'Recent Time Entries',
-    approved: '✓ Approved',
-    pending: 'Pending',
-    delete: 'Delete',
-    hrs: 'hrs',
-    loading: 'Loading…',
-    error: 'Error',
-    noEmployees: 'No employees found. Please add employees first.',
-    employeeMissing: 'Employee missing',
-    selectDate: 'Please select a date',
-    enterTimes: 'Please enter both start and end times',
-    saveFailed: 'Save failed',
-    entrySaved: 'Time entry saved successfully!',
-    entryUpdated: 'Time entry updated successfully!',
-    confirmDelete: 'Delete this time entry?',
-    entryDeleted: 'Time entry deleted',
-    deleteFailed: 'Delete failed',
-  },
-}
-
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null
   const n = typeof v === 'number' ? v : Number(v)
@@ -126,39 +46,34 @@ function getEmployeeTokenFromUrl(): string | null {
     return null
   }
 }
-function formatHoursMinutes(decimalHours: number, lang: Lang): string {
-  const totalMinutes = Math.round(decimalHours * 60) // Round to nearest minute first
+
+function formatHoursMinutes(decimalHours: number): string {
+  const totalMinutes = Math.round(decimalHours * 60)
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
-  
-  if (lang === 'es') {
-    if (hours === 0) return `${minutes} min`
-    if (minutes === 0) return `${hours} hrs`
-    return `${hours} hrs ${minutes} min`
-  } else {
-    if (hours === 0) return `${minutes} min`
-    if (minutes === 0) return `${hours} hrs`
-    return `${hours} hrs ${minutes} min`
-  }
+  if (hours === 0) return `${minutes} min`
+  if (minutes === 0) return `${hours} hrs`
+  return `${hours} hrs ${minutes} min`
 }
+
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   return new Date(d.setDate(diff))
 }
+
 function toLocalYMD(date: Date): string {
   const yyyy = date.getFullYear()
   const mm = String(date.getMonth() + 1).padStart(2, '0')
   const dd = String(date.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
 }
+
 export default function TimeEntry() {
+  const { t } = useTranslation()
   const employeeToken = getEmployeeTokenFromUrl()
   const employeeMode = !!employeeToken
-
-  const [lang, setLang] = useState<Lang>('es') // Spanish default
-  const t = translations[lang]
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [employeeMe, setEmployeeMe] = useState<Employee | null>(null)
@@ -262,62 +177,62 @@ export default function TimeEntry() {
   }
 
   async function loadTimeEntries() {
-  try {
-    const base = apiBase()
+    try {
+      const base = apiBase()
 
-    const today = new Date()
-    let fromDate: Date
-    let toDate: Date
+      const today = new Date()
+      let fromDate: Date
+      let toDate: Date
 
-    if (viewPeriod === 'thisWeek') {
-      fromDate = getMondayOfWeek(today)
-      toDate = new Date(fromDate)
-      toDate.setDate(toDate.getDate() + 6)
-    } else {
-      const lastWeekDate = new Date(today)
-      lastWeekDate.setDate(today.getDate() - 7)
-      fromDate = getMondayOfWeek(lastWeekDate)
-      toDate = new Date(fromDate)
-      toDate.setDate(toDate.getDate() + 6)
+      if (viewPeriod === 'thisWeek') {
+        fromDate = getMondayOfWeek(today)
+        toDate = new Date(fromDate)
+        toDate.setDate(toDate.getDate() + 6)
+      } else {
+        const lastWeekDate = new Date(today)
+        lastWeekDate.setDate(today.getDate() - 7)
+        fromDate = getMondayOfWeek(lastWeekDate)
+        toDate = new Date(fromDate)
+        toDate.setDate(toDate.getDate() + 6)
+      }
+
+      const from = toLocalYMD(fromDate)
+      const to = toLocalYMD(toDate)
+
+      const mode = employeeMode ? 'employee' : 'app'
+      const qs = employeeMode
+        ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+        : `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+
+      const res = await fetch(`${base}/api/time-entries?${qs}`, {
+        headers: headersFor(mode),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
+      }
+
+      const data = await res.json()
+      setTimeEntries(data)
+      setErr(null)
+    } catch (e: any) {
+      console.error('Failed to load time entries:', e)
+      setErr(e?.message || 'Failed to load time entries')
     }
-
-    const from = toLocalYMD(fromDate)
-const to = toLocalYMD(toDate)
-
-    const mode = employeeMode ? 'employee' : 'app'
-    const qs = employeeMode
-      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-      : `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-
-    const res = await fetch(`${base}/api/time-entries?${qs}`, {
-      headers: headersFor(mode),
-    })
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(errorData.error || `Failed to load time entries (${res.status})`)
-    }
-
-    const data = await res.json()
-    setTimeEntries(data)
-    setErr(null)
-  } catch (e: any) {
-    console.error('Failed to load time entries:', e)
-    setErr(e?.message || 'Failed to load time entries')
   }
-}
 
   async function handleSave() {
     if (!selectedEmployeeId) {
-      alert(t.employeeMissing)
+      alert(t('timeEntry.employeeMissing'))
       return
     }
     if (!workDate) {
-      alert(t.selectDate)
+      alert(t('timeEntry.selectDate'))
       return
     }
     if (!startTime || !endTime) {
-      alert(t.enterTimes)
+      alert(t('timeEntry.enterTimes'))
       return
     }
 
@@ -342,12 +257,12 @@ const to = toLocalYMD(toDate)
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.saveFailed)
+        throw new Error(errData.error || t('timeEntry.saveFailed'))
       }
 
       const result = await res.json()
-      if (result.created) alert(t.entrySaved)
-      else if (result.updated) alert(t.entryUpdated)
+      if (result.created) alert(t('timeEntry.entrySaved'))
+      else if (result.updated) alert(t('timeEntry.entryUpdated'))
 
       await loadTimeEntries()
       setNotes('')
@@ -356,12 +271,12 @@ const to = toLocalYMD(toDate)
       nextDay.setDate(nextDay.getDate() + 1)
       setWorkDate(nextDay.toISOString().split('T')[0])
     } catch (e: any) {
-      alert(e?.message || t.saveFailed)
+      alert(e?.message || t('timeEntry.saveFailed'))
     }
   }
 
   async function handleDelete(entryId: string) {
-    if (!confirm(t.confirmDelete)) return
+    if (!confirm(t('timeEntry.confirmDelete'))) return
 
     try {
       const base = apiBase()
@@ -374,13 +289,13 @@ const to = toLocalYMD(toDate)
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.deleteFailed)
+        throw new Error(errData.error || t('timeEntry.deleteFailed'))
       }
 
-      alert(t.entryDeleted)
+      alert(t('timeEntry.entryDeleted'))
       await loadTimeEntries()
     } catch (e: any) {
-      alert(e?.message || t.deleteFailed)
+      alert(e?.message || t('timeEntry.deleteFailed'))
     }
   }
 
@@ -407,36 +322,36 @@ const to = toLocalYMD(toDate)
   }, [startTime, endTime])
 
   const stats = useMemo(() => {
-  const totalHoursNum = timeEntries.reduce((sum, entry) => {
-    const h = toNumberOrNull(entry.total_hours) || 0
-    return sum + h
-  }, 0)
-
-  const totalEarningsNum = timeEntries.reduce((sum, entry) => {
-    const s = toNumberOrNull(entry.salary) || 0
-    return sum + s
-  }, 0)
-
-  const approvedHoursNum = timeEntries
-    .filter(e => e.approved)
-    .reduce((sum, entry) => {
+    const totalHoursNum = timeEntries.reduce((sum, entry) => {
       const h = toNumberOrNull(entry.total_hours) || 0
       return sum + h
     }, 0)
 
-  const pendingHoursNum = totalHoursNum - approvedHoursNum
+    const totalEarningsNum = timeEntries.reduce((sum, entry) => {
+      const s = toNumberOrNull(entry.salary) || 0
+      return sum + s
+    }, 0)
 
-  return {
-    totalHours: totalHoursNum,
-    totalEarnings: totalEarningsNum.toFixed(2),
-    approvedHours: approvedHoursNum,
-    pendingHours: pendingHoursNum,
-    daysWorked: timeEntries.length,
-  }
-}, [timeEntries])
+    const approvedHoursNum = timeEntries
+      .filter(e => e.approved)
+      .reduce((sum, entry) => {
+        const h = toNumberOrNull(entry.total_hours) || 0
+        return sum + h
+      }, 0)
 
-  if (loading) return <div className="card"><p>{t.loading}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error}: {err}</p></div>
+    const pendingHoursNum = totalHoursNum - approvedHoursNum
+
+    return {
+      totalHours: totalHoursNum,
+      totalEarnings: totalEarningsNum.toFixed(2),
+      approvedHours: approvedHoursNum,
+      pendingHours: pendingHoursNum,
+      daysWorked: timeEntries.length,
+    }
+  }, [timeEntries])
+
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -445,58 +360,16 @@ const to = toLocalYMD(toDate)
     : employees.find(e => e.id === selectedEmployeeId)
 
   if (!employeeMode && employees.length === 0) {
-    return <div className="card"><p>{t.noEmployees}</p></div>
+    return <div className="card"><p>{t('timeEntry.noEmployees')}</p></div>
   }
 
   return (
     <div className="card" style={{ maxWidth: 900, position: 'relative' }}>
-      {/* Language toggle flags - top right corner */}
-      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
-  <button
-    onClick={() => setLang('en')}
-    style={{
-      width: 40,
-      height: 40,
-      padding: 0,
-      border: lang === 'en' ? '2px solid var(--primary)' : '2px solid transparent',
-      borderRadius: 8,
-      cursor: 'pointer',
-      background: 'transparent',
-      fontSize: 24,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-    title="English"
-  >
-    🇺🇸
-  </button>
-  <button
-    onClick={() => setLang('es')}
-    style={{
-      width: 40,
-      height: 40,
-      padding: 0,
-      border: lang === 'es' ? '2px solid var(--primary)' : '2px solid transparent',
-      borderRadius: 8,
-      cursor: 'pointer',
-      background: 'transparent',
-      fontSize: 24,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-    title="Español"
-  >
-    🇪🇸
-  </button>
-</div>
-
-      <h3>{t.timeEntry}</h3>
+      <h3>{t('timeEntry.title')}</h3>
 
       {!employeeMode && (
         <div style={{ marginTop: 16 }}>
-          <label>{t.employee}</label>
+          <label>{t('employee')}</label>
           <select
             value={selectedEmployeeId}
             onChange={e => setSelectedEmployeeId(e.target.value)}
@@ -513,14 +386,14 @@ const to = toLocalYMD(toDate)
 
       {employeeMode && selectedEmployee && (
         <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
-          {t.reportingAs} <span style={{ color: 'var(--text)', fontWeight: 600 }}>{selectedEmployee.name}</span>
+          {t('timeEntry.reportingAs')} <span style={{ color: 'var(--text)', fontWeight: 600 }}>{selectedEmployee.name}</span>
           {selectedEmployee.employee_code ? ` (${selectedEmployee.employee_code})` : ''}
         </div>
       )}
 
       <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
         <div>
-          <label>{t.date}</label>
+          <label>{t('date')}</label>
           <input
             type="date"
             value={workDate}
@@ -529,7 +402,7 @@ const to = toLocalYMD(toDate)
           />
         </div>
         <div>
-          <label>{t.totalHours}: {calculatedHours || '—'}</label>
+          <label>{t('timeEntry.totalHours')} {calculatedHours || '—'}</label>
           <div
             style={{
               height: CONTROL_H,
@@ -543,128 +416,76 @@ const to = toLocalYMD(toDate)
               width: '100%',
             }}
           >
-            {calculatedHours || '—'} {t.hrs}
+            {calculatedHours || '—'} {t('hrs')}
           </div>
         </div>
       </div>
 
-      <div style={{ 
-  marginTop: 12, 
-  display: 'grid', 
-  gridTemplateColumns: '1fr 1fr', 
-  gap: 12 
-}}>
-  <div>
-    <label>{t.startTime}</label>
-    <input
-      type="text"
-      inputMode="numeric"
-      placeholder="08:00"
-      maxLength={5}
-      value={startTime}
-      onChange={e => {
-        const val = e.target.value
-        
-        // Allow empty or partial input
-        if (val === '') {
-          setStartTime('')
-          return
-        }
-        
-        // Remove all non-digits
-        const digits = val.replace(/\D/g, '')
-        
-        // Format as user types
-        if (digits.length === 0) {
-          setStartTime('')
-        } else if (digits.length <= 2) {
-          setStartTime(digits)
-        } else if (digits.length <= 4) {
-          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2))
-        }
-      }}
-      onFocus={e => {
-        // Select all on focus for easy replacement
-        e.target.select()
-      }}
-      onBlur={e => {
-        const digits = e.target.value.replace(/\D/g, '')
-        if (digits.length === 4) {
-          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
-        } else if (digits.length === 3) {
-          // User entered 3 digits, assume 0 prefix for minutes
-          setStartTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
-        } else if (digits.length > 0 && digits.length < 3) {
-          // Invalid, reset to default
-          setStartTime('08:00')
-        }
-      }}
-      style={{ 
-        height: CONTROL_H, 
-        width: '100%', 
-        boxSizing: 'border-box'
-      }}
-    />
-  </div>
-  <div>
-    <label>{t.endTime}</label>
-    <input
-      type="text"
-      inputMode="numeric"
-      placeholder="17:00"
-      maxLength={5}
-      value={endTime}
-      onChange={e => {
-        const val = e.target.value
-        
-        // Allow empty or partial input
-        if (val === '') {
-          setEndTime('')
-          return
-        }
-        
-        // Remove all non-digits
-        const digits = val.replace(/\D/g, '')
-        
-        // Format as user types
-        if (digits.length === 0) {
-          setEndTime('')
-        } else if (digits.length <= 2) {
-          setEndTime(digits)
-        } else if (digits.length <= 4) {
-          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2))
-        }
-      }}
-      onFocus={e => {
-        // Select all on focus for easy replacement
-        e.target.select()
-      }}
-      onBlur={e => {
-        const digits = e.target.value.replace(/\D/g, '')
-        if (digits.length === 4) {
-          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
-        } else if (digits.length === 3) {
-          // User entered 3 digits, assume 0 prefix for minutes
-          setEndTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
-        } else if (digits.length > 0 && digits.length < 3) {
-          // Invalid, reset to default
-          setEndTime('17:00')
-        }
-      }}
-      style={{ 
-        height: CONTROL_H, 
-        width: '100%', 
-        boxSizing: 'border-box'
-      }}
-    />
-  </div>
-</div>
+      <div style={{
+        marginTop: 12,
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 12
+      }}>
+        <div>
+          <label>{t('timeEntry.startTime')}</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="08:00"
+            maxLength={5}
+            value={startTime}
+            onChange={e => {
+              const val = e.target.value
+              if (val === '') { setStartTime(''); return }
+              const digits = val.replace(/\D/g, '')
+              if (digits.length === 0) setStartTime('')
+              else if (digits.length <= 2) setStartTime(digits)
+              else if (digits.length <= 4) setStartTime(digits.slice(0, 2) + ':' + digits.slice(2))
+            }}
+            onFocus={e => e.target.select()}
+            onBlur={e => {
+              const digits = e.target.value.replace(/\D/g, '')
+              if (digits.length === 4) setStartTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
+              else if (digits.length === 3) setStartTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
+              else if (digits.length > 0 && digits.length < 3) setStartTime('08:00')
+            }}
+            style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+          />
+        </div>
+        <div>
+          <label>{t('timeEntry.endTime')}</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="17:00"
+            maxLength={5}
+            value={endTime}
+            onChange={e => {
+              const val = e.target.value
+              if (val === '') { setEndTime(''); return }
+              const digits = val.replace(/\D/g, '')
+              if (digits.length === 0) setEndTime('')
+              else if (digits.length <= 2) setEndTime(digits)
+              else if (digits.length <= 4) setEndTime(digits.slice(0, 2) + ':' + digits.slice(2))
+            }}
+            onFocus={e => e.target.select()}
+            onBlur={e => {
+              const digits = e.target.value.replace(/\D/g, '')
+              if (digits.length === 4) setEndTime(digits.slice(0, 2) + ':' + digits.slice(2, 4))
+              else if (digits.length === 3) setEndTime(digits.slice(0, 2) + ':' + digits.slice(2) + '0')
+              else if (digits.length > 0 && digits.length < 3) setEndTime('17:00')
+            }}
+            style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
+          />
+        </div>
+      </div>
 
       <div style={{ marginTop: 12 }}>
-        <label>{t.notes}</label>
+        <label>{t('notesOptional')}</label>
         <input
           type="text"
-          placeholder={t.notesPlaceholder}
+          placeholder={t('timeEntry.notesPlaceholder')}
           value={notes}
           onChange={e => setNotes(e.target.value)}
           style={{ height: CONTROL_H, width: '100%' }}
@@ -673,10 +494,10 @@ const to = toLocalYMD(toDate)
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button className="primary" onClick={handleSave} style={{ height: CONTROL_H, flex: 1 }}>
-          {t.saveEntry}
+          {t('timeEntry.saveButton')}
         </button>
         <button onClick={handleClear} style={{ height: CONTROL_H, flex: 1 }}>
-          {t.clear}
+          {t('clear')}
         </button>
       </div>
 
@@ -700,66 +521,66 @@ const to = toLocalYMD(toDate)
             }}
           >
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-              {t.timeSummary} {selectedEmployee.name}
+              {t('timeEntry.timeSummaryFor')} {selectedEmployee.name}
             </h4>
             <div style={{ display: 'flex', gap: 8 }}>
-  <button
-    onClick={() => setViewPeriod('thisWeek')}
-    style={{
-      padding: '4px 12px',
-      fontSize: 12,
-      background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
-      border: '1px solid var(--border)',
-      borderRadius: 4,
-      cursor: 'pointer',
-    }}
-  >
-    {t.thisWeek}
-  </button>
-  <button
-    onClick={() => setViewPeriod('lastWeek')}
-    style={{
-      padding: '4px 12px',
-      fontSize: 12,
-      background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
-      border: '1px solid var(--border)',
-      borderRadius: 4,
-      cursor: 'pointer',
-    }}
-  >
-    {t.lastWeek}
-  </button>
-</div>
+              <button
+                onClick={() => setViewPeriod('thisWeek')}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('timeEntry.thisWeek')}
+              </button>
+              <button
+                onClick={() => setViewPeriod('lastWeek')}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('timeEntry.lastWeek')}
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.daysWorked}</span>
-    <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.totalHoursLabel}</span>
-    <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours, lang)}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.approvedHours}</span>
-    <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(stats.approvedHours, lang)}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.pendingApproval}</span>
-    <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours, lang)}</span>
-  </div>
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.totalEarnings}</span>
-    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
-  </div>
-</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="helper">{t('timeEntry.daysWorked')}</span>
+              <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="helper">{t('timeEntry.totalHours')}</span>
+              <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="helper">{t('timeEntry.approvedHours')}</span>
+              <span style={{ fontWeight: 600, color: '#22c55e' }}>{formatHoursMinutes(stats.approvedHours)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="helper">{t('timeEntry.pendingApproval')}</span>
+              <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="helper">{t('timeEntry.totalEarnings')}</span>
+              <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+            </div>
+          </div>
         </div>
       )}
 
       {timeEntries.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>{t.recentEntries}</h4>
+          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>{t('timeEntry.recentEntries')}</h4>
           <div style={{ display: 'grid', gap: 8, maxHeight: 400, overflow: 'auto' }}>
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
@@ -779,32 +600,32 @@ const to = toLocalYMD(toDate)
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 200 }}>
-  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-    {formatLongDate(entry.work_date)}
-  </div>
-  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-    {entry.start_time} - {entry.end_time}
-    <span style={{ margin: '0 8px' }}>•</span>
-    {hours === null ? '—' : formatHoursMinutes(hours, lang)}
-  </div>
-  {toNumberOrNull(entry.salary) !== null && (
-    <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
-      ${toNumberOrNull(entry.salary)!.toFixed(2)}
-    </div>
-  )}
-  {entry.notes && (
-    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-      {entry.notes}
-    </div>
-  )}
-</div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                      {formatLongDate(entry.work_date)}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {entry.start_time} - {entry.end_time}
+                      <span style={{ margin: '0 8px' }}>•</span>
+                      {hours === null ? '—' : formatHoursMinutes(hours)}
+                    </div>
+                    {toNumberOrNull(entry.salary) !== null && (
+                      <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
+                        ${toNumberOrNull(entry.salary)!.toFixed(2)}
+                      </div>
+                    )}
+                    {entry.notes && (
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {entry.notes}
+                      </div>
+                    )}
+                  </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {entry.approved ? (
-                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>{t.approved}</span>
+                      <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>{t('approved')}</span>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>{t.pending}</span>
+                        <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>{t('pending')}</span>
                         <button
                           onClick={() => handleDelete(entry.id)}
                           style={{
@@ -817,7 +638,7 @@ const to = toLocalYMD(toDate)
                             cursor: 'pointer',
                           }}
                         >
-                          {t.delete}
+                          {t('delete')}
                         </button>
                       </>
                     )}
@@ -831,6 +652,3 @@ const to = toLocalYMD(toDate)
     </div>
   )
 }
-
-
-
