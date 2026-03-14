@@ -13,13 +13,15 @@ interface User {
   tenantName: string | null
   businessType: string
   features: FeatureId[]
-  // Add language/locale fields
   preferred_language?: string
   preferred_locale?: string
-  // Add tenant-level language/locale fields
+  preferred_currency?: string | null
+  preferred_timezone?: string | null
   tenant_default_language?: string
   tenant_default_locale?: string
   tenant_available_languages?: string[]
+  tenant_default_currency?: string | null
+  tenant_default_timezone?: string | null
 }
 
 interface AuthContextType {

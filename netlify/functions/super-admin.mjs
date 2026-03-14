@@ -29,9 +29,10 @@ async function handleGet(event) {
 
     if (action === 'listTenants') {
       const tenants = await sql`
-  SELECT id, name, business_type, features, created_at, stripe_customer_id
-  FROM tenants
-  ORDER BY name ASC
+        SELECT id, name, business_type, features, created_at, stripe_customer_id,
+               default_language, default_currency, default_timezone
+        FROM tenants
+        ORDER BY name ASC
       `
       return cors(200, { tenants })
     }
@@ -378,6 +379,24 @@ if (action === 'updateStripeCustomerId') {
         WHERE id = ${tenantId}
       `
 
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateTenantGeo') {
+      const { tenantId, language, currency, timezone } = body
+      if (!tenantId) return cors(400, { error: 'tenantId is required' })
+
+      const languageToLocale = { en: 'en-US', sv: 'sv-SE', es: 'es-ES' }
+      const locale = languageToLocale[language] || 'en-US'
+
+      await sql`
+        UPDATE tenants
+        SET default_language = ${language},
+            default_locale   = ${locale},
+            default_currency = ${currency},
+            default_timezone = ${timezone}
+        WHERE id = ${tenantId}
+      `
       return cors(200, { success: true })
     }
 

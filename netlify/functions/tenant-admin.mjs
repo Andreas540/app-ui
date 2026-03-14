@@ -34,9 +34,9 @@ async function handleGet(event) {
 
     // Get all users in the tenant with their permissions
     if (action === 'getTenantUsers') {
-      // Get tenant's available features
+      // Get tenant's available features and geo defaults
       const tenant = await sql`
-        SELECT features
+        SELECT features, default_language, default_currency, default_timezone, default_locale
         FROM tenants
         WHERE id = ${tenantId}
         LIMIT 1
@@ -46,22 +46,31 @@ async function handleGet(event) {
 
       // Get all users in this tenant
       const users = await sql`
-  SELECT 
-    u.id,
-    u.email,
-    u.name,
-    tm.role,
-    tm.features,
-    u.active
-  FROM users u
-  JOIN tenant_memberships tm ON tm.user_id = u.id
-  WHERE tm.tenant_id = ${tenantId}
-  ORDER BY u.email ASC
-`
+        SELECT
+          u.id,
+          u.email,
+          u.name,
+          tm.role,
+          tm.features,
+          u.active,
+          u.preferred_language,
+          u.preferred_currency,
+          u.preferred_timezone
+        FROM users u
+        JOIN tenant_memberships tm ON tm.user_id = u.id
+        WHERE tm.tenant_id = ${tenantId}
+        ORDER BY u.email ASC
+      `
 
-      return cors(200, { 
+      return cors(200, {
         users: users,
-        tenantFeatures: tenantFeatures
+        tenantFeatures: tenantFeatures,
+        tenantGeo: {
+          default_language: tenant[0]?.default_language || 'en',
+          default_currency: tenant[0]?.default_currency || 'USD',
+          default_timezone: tenant[0]?.default_timezone || 'UTC',
+          default_locale:   tenant[0]?.default_locale   || 'en-US',
+        }
       })
     }
 
@@ -267,6 +276,32 @@ if (action === 'toggleUserStatus') {
 
   return cors(200, { success: true, isActive: isActiveBoolean })
 }
+
+    if (action === 'updateUserGeo') {
+      const { userId: targetUserId, language, currency, timezone } = body
+      if (!targetUserId) return cors(400, { error: 'userId is required' })
+
+      // Verify user belongs to this tenant
+      const membership = await sql`
+        SELECT user_id FROM tenant_memberships
+        WHERE user_id = ${targetUserId} AND tenant_id = ${tenantId}
+        LIMIT 1
+      `
+      if (membership.length === 0) return cors(404, { error: 'User not found in this tenant' })
+
+      const languageToLocale = { en: 'en-US', sv: 'sv-SE', es: 'es-ES' }
+      const locale = language != null ? (languageToLocale[language] || 'en-US') : null
+
+      await sql`
+        UPDATE users
+        SET preferred_language = ${language ?? null},
+            preferred_locale   = ${locale},
+            preferred_currency = ${currency ?? null},
+            preferred_timezone = ${timezone ?? null}
+        WHERE id = ${targetUserId}
+      `
+      return cors(200, { success: true })
+    }
 
     return cors(400, { error: 'Invalid action' })
   } catch (e) {

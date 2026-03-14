@@ -7,9 +7,10 @@ interface LocaleContextType {
   language: string;
   locale: string;
   currency: string;
+  timezone: string;
   setLanguage: (lang: string) => void;
-  setLocale: (locale: string) => void;
   setCurrency: (currency: string) => void;
+  setTimezone: (timezone: string) => void;
   availableLanguages: string[];
   formatCurrency: (amount: number) => string;
   formatDate: (date: Date) => string;
@@ -17,64 +18,72 @@ interface LocaleContextType {
 
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
+const LANGUAGE_TO_LOCALE: Record<string, string> = {
+  en: 'en-US',
+  sv: 'sv-SE',
+  es: 'es-ES',
+};
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  
+
   const [language, setLanguageState] = useState<string>('en');
   const [locale, setLocaleState] = useState<string>('en-US');
   const [currency, setCurrencyState] = useState<string>('USD');
+  const [timezone, setTimezoneState] = useState<string>('UTC');
 
-  // Load tenant/user preferences on mount
+  // Load tenant/user preferences on mount or when user changes
   useEffect(() => {
     if (user) {
-      const userLang = user.preferred_language;
-      const tenantLang = user.tenant_default_language || 'en';
-      const lang = userLang || tenantLang;
-      
-      const userLocale = user.preferred_locale;
-      const tenantLocale = user.tenant_default_locale || 'en-US';
-      const loc = userLocale || tenantLocale;
-      
+      const lang = user.preferred_language || user.tenant_default_language || 'en';
+      const loc = LANGUAGE_TO_LOCALE[lang] || 'en-US';
+      const curr = user.preferred_currency ?? user.tenant_default_currency ?? 'USD';
+      const tz = user.preferred_timezone ?? user.tenant_default_timezone ?? 'UTC';
+
       setLanguageState(lang);
       setLocaleState(loc);
+      setCurrencyState(curr);
+      setTimezoneState(tz);
       i18n.changeLanguage(lang);
-      
-      // Derive initial currency from locale
-      const currencyMap: Record<string, string> = {
-        'sv-SE': 'SEK',
-        'en-US': 'USD',
-        'en-GB': 'GBP',
-        'es-ES': 'EUR',
-        'es-MX': 'MXN',
-      };
-      setCurrencyState(currencyMap[loc] || 'USD');
     }
   }, [user]);
+
+  async function saveUserGeo(fields: { language?: string; currency?: string; timezone?: string }) {
+    try {
+      const token = localStorage.getItem('authToken');
+      const activeTenantId = localStorage.getItem('activeTenantId');
+      if (!token || !user?.id) return;
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
+      await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+        },
+        body: JSON.stringify({ action: 'updateUserGeo', userId: user.id, ...fields }),
+      });
+    } catch (e) {
+      console.error('Failed to save geo preferences:', e);
+    }
+  }
 
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
-    
-    // Update locale/date formatting based on language
-    const languageToLocale: Record<string, string> = {
-      'en': 'en-US',
-      'sv': 'sv-SE',
-      'es': 'es-ES',
-    };
-    
-    setLocaleState(languageToLocale[lang] || 'en-US');
-    // Currency is independent - NOT changed here
-    // TODO: Save to user preferences via API
-  };
-
-  const setLocale = (loc: string) => {
+    const loc = LANGUAGE_TO_LOCALE[lang] || 'en-US';
     setLocaleState(loc);
-    // TODO: Save to user preferences via API
+    saveUserGeo({ language: lang });
   };
 
   const setCurrency = (curr: string) => {
     setCurrencyState(curr);
-    // TODO: Save to user preferences via API
+    saveUserGeo({ currency: curr });
+  };
+
+  const setTimezone = (tz: string) => {
+    setTimezoneState(tz);
+    saveUserGeo({ timezone: tz });
   };
 
   const formatCurrency = (amount: number) => {
@@ -89,6 +98,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: timezone,
     }).format(date);
   };
 
@@ -100,9 +110,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         language,
         locale,
         currency,
+        timezone,
         setLanguage,
-        setLocale,
         setCurrency,
+        setTimezone,
         availableLanguages,
         formatCurrency,
         formatDate,

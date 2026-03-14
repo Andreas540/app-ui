@@ -14,6 +14,9 @@ interface Tenant {
   features?: FeatureId[]
   created_at: string
   stripe_customer_id?: string | null
+  default_language?: string | null
+  default_currency?: string | null
+  default_timezone?: string | null
 }
 
 interface TenantIcon {
@@ -95,6 +98,14 @@ export default function SuperAdmin() {
   const [usedCounts, setUsedCounts] = useState<Record<string, number>>({})
   const [savingQuotas, setSavingQuotas] = useState(false)
   const [loadingQuotas, setLoadingQuotas] = useState(false)
+
+  // Geo management
+  const [managingGeoTenantId, setManagingGeoTenantId] = useState<string | null>(null)
+  const [managingGeoTenantName, setManagingGeoTenantName] = useState('')
+  const [editingGeoLanguage, setEditingGeoLanguage] = useState('en')
+  const [editingGeoCurrency, setEditingGeoCurrency] = useState('USD')
+  const [editingGeoTimezone, setEditingGeoTimezone] = useState('UTC')
+  const [savingGeo, setSavingGeo] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -362,10 +373,48 @@ export default function SuperAdmin() {
   }
 
   function openManageStripe(tenant: Tenant) {
-  setManagingStripeId(tenant.id)
-  setManagingStripeName(tenant.name)
-  setEditingStripeCustomerId(tenant.stripe_customer_id || '')
-}
+    setManagingStripeId(tenant.id)
+    setManagingStripeName(tenant.name)
+    setEditingStripeCustomerId(tenant.stripe_customer_id || '')
+  }
+
+  function openManageGeo(tenant: Tenant) {
+    setManagingGeoTenantId(tenant.id)
+    setManagingGeoTenantName(tenant.name)
+    setEditingGeoLanguage(tenant.default_language || 'en')
+    setEditingGeoCurrency(tenant.default_currency || 'USD')
+    setEditingGeoTimezone(tenant.default_timezone || 'UTC')
+  }
+
+  async function handleSaveTenantGeo() {
+    if (!managingGeoTenantId) return
+    try {
+      setSavingGeo(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'updateTenantGeo',
+          tenantId: managingGeoTenantId,
+          language: editingGeoLanguage,
+          currency: editingGeoCurrency,
+          timezone: editingGeoTimezone,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      alert('Geo settings saved!')
+      setManagingGeoTenantId(null)
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save geo settings')
+    } finally {
+      setSavingGeo(false)
+    }
+  }
 
 async function handleSaveStripeCustomerId() {
   if (!managingStripeId) return
@@ -681,10 +730,13 @@ async function handleSaveStripeCustomerId() {
   Features: {tenant.features?.length || 0} enabled
 </div>
 <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-  Stripe: {tenant.stripe_customer_id 
+  Stripe: {tenant.stripe_customer_id
     ? <span style={{ color: '#4CAF50' }}>{tenant.stripe_customer_id}</span>
     : <span style={{ color: 'salmon' }}>Not set</span>
   }
+</div>
+<div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+  Geo: {tenant.default_language || 'en'} / {tenant.default_currency || 'USD'} / {tenant.default_timezone || 'UTC'}
 </div>
                     </div>
                     
@@ -713,13 +765,15 @@ async function handleSaveStripeCustomerId() {
                       </button>
                       <button
                         onClick={() => openManageIcons(tenant)}
-                        style={{
-                          height: 36,
-                          padding: '0 16px',
-                          fontSize: 13,
-                        }}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                       >
                         Icons
+                      </button>
+                      <button
+                        onClick={() => openManageGeo(tenant)}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+                      >
+                        Geo
                       </button>
                     </div>
                   </div>
@@ -1421,6 +1475,135 @@ const available = max - used
     </div>
   </div>
 )}
+
+      {/* Manage Tenant Geo Modal */}
+      {managingGeoTenantId && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: 16,
+          }}
+          onClick={() => setManagingGeoTenantId(null)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 480, width: '100%', maxHeight: '90vh', overflow: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>Geo Settings: {managingGeoTenantName}</h3>
+            <p className="helper" style={{ marginTop: 8 }}>
+              Set default language, currency, and timezone for this tenant.
+              Users can override individually in Account Administration.
+            </p>
+
+            <div style={{ marginTop: 16 }}>
+              <label>Default Language</label>
+              <select
+                value={editingGeoLanguage}
+                onChange={(e) => setEditingGeoLanguage(e.target.value)}
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              >
+                <option value="en">English (en-US)</option>
+                <option value="sv">Swedish (sv-SE)</option>
+                <option value="es">Spanish (es-ES)</option>
+              </select>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label>Default Currency</label>
+              <select
+                value={editingGeoCurrency}
+                onChange={(e) => setEditingGeoCurrency(e.target.value)}
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              >
+                <option value="USD">USD – US Dollar</option>
+                <option value="SEK">SEK – Swedish Krona</option>
+                <option value="EUR">EUR – Euro</option>
+                <option value="GBP">GBP – British Pound</option>
+                <option value="NOK">NOK – Norwegian Krone</option>
+                <option value="DKK">DKK – Danish Krone</option>
+                <option value="CAD">CAD – Canadian Dollar</option>
+                <option value="AUD">AUD – Australian Dollar</option>
+                <option value="MXN">MXN – Mexican Peso</option>
+                <option value="GHS">GHS – Ghanaian Cedi</option>
+                <option value="BRL">BRL – Brazilian Real</option>
+                <option value="JPY">JPY – Japanese Yen</option>
+                <option value="CHF">CHF – Swiss Franc</option>
+                <option value="SGD">SGD – Singapore Dollar</option>
+              </select>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label>Default Timezone</label>
+              <select
+                value={editingGeoTimezone}
+                onChange={(e) => setEditingGeoTimezone(e.target.value)}
+                style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
+              >
+                <option value="UTC">UTC</option>
+                <optgroup label="Americas">
+                  <option value="America/New_York">America/New_York (ET)</option>
+                  <option value="America/Chicago">America/Chicago (CT)</option>
+                  <option value="America/Denver">America/Denver (MT)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+                  <option value="America/Toronto">America/Toronto</option>
+                  <option value="America/Vancouver">America/Vancouver</option>
+                  <option value="America/Mexico_City">America/Mexico_City</option>
+                  <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+                  <option value="America/Bogota">America/Bogota</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="Europe/Stockholm">Europe/Stockholm (CET)</option>
+                  <option value="Europe/Oslo">Europe/Oslo</option>
+                  <option value="Europe/Copenhagen">Europe/Copenhagen</option>
+                  <option value="Europe/Paris">Europe/Paris</option>
+                  <option value="Europe/Berlin">Europe/Berlin</option>
+                  <option value="Europe/Amsterdam">Europe/Amsterdam</option>
+                  <option value="Europe/Rome">Europe/Rome</option>
+                  <option value="Europe/Madrid">Europe/Madrid</option>
+                  <option value="Europe/Helsinki">Europe/Helsinki</option>
+                </optgroup>
+                <optgroup label="Africa">
+                  <option value="Africa/Accra">Africa/Accra</option>
+                  <option value="Africa/Lagos">Africa/Lagos</option>
+                  <option value="Africa/Nairobi">Africa/Nairobi</option>
+                  <option value="Africa/Cairo">Africa/Cairo</option>
+                  <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+                </optgroup>
+                <optgroup label="Asia / Pacific">
+                  <option value="Asia/Dubai">Asia/Dubai</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata</option>
+                  <option value="Asia/Bangkok">Asia/Bangkok</option>
+                  <option value="Asia/Singapore">Asia/Singapore</option>
+                  <option value="Asia/Tokyo">Asia/Tokyo</option>
+                  <option value="Asia/Shanghai">Asia/Shanghai</option>
+                  <option value="Australia/Sydney">Australia/Sydney</option>
+                  <option value="Pacific/Auckland">Pacific/Auckland</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+              <button
+                className="primary"
+                onClick={handleSaveTenantGeo}
+                disabled={savingGeo}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {savingGeo ? 'Saving...' : 'Save Geo Settings'}
+              </button>
+              <button
+                onClick={() => setManagingGeoTenantId(null)}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
