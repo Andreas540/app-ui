@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -18,6 +19,7 @@ function fmtIntMoney(n: number) {
 }
 
 export default function Customers() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const isBLVTenant = user?.tenantId === BLV_TENANT_ID
   const directValue = isBLVTenant ? 'BLV' : 'Direct'
@@ -150,7 +152,7 @@ export default function Customers() {
         <div style={{ position: 'relative' }}>
           <input
             ref={inputRef}
-            placeholder="Search customer"
+            placeholder={t('customers.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -201,7 +203,7 @@ export default function Customers() {
               className="primary"
               style={{ width: '100%', height: 'var(--control-h)' }}
             >
-              Create New Customer
+              {t('customers.createNew')}
             </button>
           </Link>
         </div>
@@ -216,9 +218,9 @@ export default function Customers() {
           marginTop: 8,
         }}
       >
-        <button className="primary" onClick={() => setFilterType('All')}        aria-pressed={filterType === 'All'}        style={{ height: 'calc(var(--control-h) * 0.67)' }}>All</button>
+        <button className="primary" onClick={() => setFilterType('All')}        aria-pressed={filterType === 'All'}        style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.allFilter')}</button>
         <button className="primary" onClick={() => setFilterType(directValue)}  aria-pressed={filterType === directValue}  style={{ height: 'calc(var(--control-h) * 0.67)' }}>{directLabel}</button>
-        <button className="primary" onClick={() => setFilterType('Partner')}    aria-pressed={filterType === 'Partner'}    style={{ height: 'calc(var(--control-h) * 0.67)' }}>Partner</button>
+        <button className="primary" onClick={() => setFilterType('Partner')}    aria-pressed={filterType === 'Partner'}    style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.partnerFilter')}</button>
       </div>
 
       {/* Blank row */}
@@ -233,7 +235,7 @@ export default function Customers() {
           alignItems: 'center',
         }}
       >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total owed to me</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.totalOwedToMe')}</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(totalVisibleOwed)}
         </div>
@@ -251,7 +253,7 @@ export default function Customers() {
           alignItems: 'center',
         }}
       >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.owedToPartners')}</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(filteredPartnerNet)}
         </div>
@@ -267,7 +269,7 @@ export default function Customers() {
           marginTop: 4,
         }}
       >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>My $</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.myDollars')}</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(myDollars)}
         </div>
@@ -285,7 +287,7 @@ export default function Customers() {
           alignItems: 'center',
         }}
       >
-        <div style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>Sort by</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>{t('sortBy')}</div>
         <div>
           <select
             aria-label="Sort customers by"
@@ -297,8 +299,8 @@ export default function Customers() {
               padding: '0 10px',
             }}
           >
-            <option value="owed">Owed amount</option>
-            <option value="name">Customer name</option>
+            <option value="owed">{t('customers.sortOwed')}</option>
+            <option value="name">{t('customers.sortName')}</option>
           </select>
         </div>
       </div>
@@ -306,14 +308,14 @@ export default function Customers() {
       {/* Same spacer below sorting as above */}
       <div style={{ height: 8 }} />
 
-      {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
+      {err && <p style={{ color: 'salmon', marginTop: 8 }}>{t('error')} {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
-          <p>Loading…</p>
+          <p>{t('loading')}</p>
         ) : sortedVisible.length === 0 ? (
-          <p className="helper">No customers.</p>
+          <p className="helper">{t('customers.noCustomers')}</p>
         ) : (
           <div>
             {sortedVisible.map((c) => (
@@ -334,7 +336,7 @@ export default function Customers() {
       {/* Clear search below the (single) result */}
       {query && sortedVisible.length === 1 && (
         <div style={{ marginTop: 8 }}>
-          <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
+          <button className="primary" onClick={() => setQuery('')}>{t('clearSearch')}</button>
         </div>
       )}
     </div>

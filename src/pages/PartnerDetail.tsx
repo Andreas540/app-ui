@@ -1,5 +1,6 @@
 // src/pages/PartnerDetail.tsx
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -62,6 +63,7 @@ type Partner = {
 
 export default function PartnerDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { t } = useTranslation()
   const [data, setData] = useState<PartnerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -361,8 +363,8 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const { partner, totals, orders, payments } = data
@@ -392,8 +394,8 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           <Link
             to={`/partners/${partner.id}/edit`}
             className="icon-btn"
-            title="Edit partner"
-            aria-label="Edit partner"
+            title={t('partners.editTitle')}
+            aria-label={t('partners.editTitle')}
             style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
           >
             ✎
@@ -409,7 +411,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           >
             🖨️
           </button>
-          <Link to="/partners" className="helper">&larr; Back to partners</Link>
+          <Link to="/partners" className="helper">&larr; {t('partners.backToPartners')}</Link>
         </div>
       </div>
 
@@ -430,7 +432,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
             whiteSpace: 'nowrap'
           }}
         >
-          P to P Transfer
+          {t('partners.partnerToPartnerTransfer')}
         </button>
         <button
           className="primary"
@@ -449,9 +451,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
             opacity: hasCreditors ? 1 : 0.4,
             cursor: hasCreditors ? 'pointer' : 'not-allowed'
           }}
-          title={hasCreditors ? 'Make a debt payment to another partner' : 'No debt to other partners'}
+          title={hasCreditors ? 'Make a debt payment to another partner' : t('partners.noDebtToOthers')}
         >
-          P to P Payment
+          {t('partners.partnerToPartnerPayment')}
         </button>
       </div>
 
@@ -461,7 +463,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           {/* First row: Amount and To Partner */}
           <div className="row row-2col-mobile" style={{ marginBottom: 12 }}>
             <div>
-              <label>Amount (USD)</label>
+              <label>{t('partners.amountUSD')}</label>
               <input
                 type="text"
                 value={transferAmount}
@@ -470,12 +472,12 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               />
             </div>
             <div>
-              <label>To Partner</label>
+              <label>{t('partners.toPartner')}</label>
               <select
                 value={transferToPartnerId}
                 onChange={(e) => setTransferToPartnerId(e.target.value)}
               >
-                <option value="">Select partner...</option>
+                <option value="">{t('partners.selectPartner')}</option>
                 {allPartners.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -491,7 +493,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 type="text"
                 value={transferNotes}
                 onChange={(e) => setTransferNotes(e.target.value)}
-                placeholder="Optional notes..."
+                placeholder={t('optionalNotesPlaceholder')}
               />
             </div>
             <button
@@ -504,7 +506,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 whiteSpace: 'nowrap'
               }}
             >
-              {transferring ? 'Processing...' : 'Make transfer'}
+              {transferring ? t('partners.processing') : t('partners.makeTransfer')}
             </button>
           </div>
         </div>
@@ -516,7 +518,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           {/* First row: Amount and To Partner */}
           <div className="row row-2col-mobile" style={{ marginBottom: 12 }}>
             <div>
-              <label>Amount (USD)</label>
+              <label>{t('partners.amountUSD')}</label>
               <input
                 type="text"
                 value={paymentAmount}
@@ -525,15 +527,15 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               />
             </div>
             <div>
-              <label>To Partner</label>
+              <label>{t('partners.toPartner')}</label>
               <select
                 value={paymentToPartnerId}
                 onChange={(e) => setPaymentToPartnerId(e.target.value)}
               >
-                <option value="">Select creditor...</option>
+                <option value="">{t('partners.selectCreditor')}</option>
                 {creditors.map(c => (
                   <option key={c.partner_id} value={c.partner_id}>
-                    {c.partner_name} (owed: {fmtMoney(c.net_owed)})
+                    {c.partner_name} ({t('partners.owed')} {fmtMoney(c.net_owed)})
                   </option>
                 ))}
               </select>
@@ -548,7 +550,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 type="text"
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                placeholder="Optional notes..."
+                placeholder={t('optionalNotesPlaceholder')}
               />
             </div>
             <button
@@ -561,7 +563,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 whiteSpace: 'nowrap'
               }}
             >
-              {paying ? 'Processing...' : 'Make payment'}
+              {paying ? t('partners.processing') : t('partners.makePayment')}
             </button>
           </div>
         </div>
@@ -577,7 +579,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               onClick={() => setShowInfo(true)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              Show info
+              {t('showInfo')}
             </button>
           ) : (
             <div>
@@ -586,16 +588,16 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 onClick={() => setShowInfo(false)}
                 style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
               >
-                Hide info
+                {t('hideInfo')}
               </button>
 
               <div style={{ marginTop: 10 }}>
-                <div className="helper">Phone</div>
+                <div className="helper">{t('phone')}</div>
                 <div>{partner.phone ? <a href={phoneHref(partner.phone)}>{partner.phone}</a> : '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Address</div>
+                <div className="helper">{t('address')}</div>
                 <div>
                   {[partner.address1, partner.address2].filter(Boolean).join(', ') || '—'}
                   {[partner.address1, partner.address2].filter(Boolean).length > 0 && <br/>}
@@ -613,7 +615,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           data-printable-title="Owed to Partner"
           style={{ textAlign:'right' }}
         >
-          <div className="helper">Owed to partner</div>
+          <div className="helper">{t('partners.owedToPartner')}</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
         </div>
       </div>
@@ -631,7 +633,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 data-printable-title={`Owed by ${debtor.partner_name}`}
                 style={{ marginBottom: 8 }}
               >
-                <div className="helper">Owed by {debtor.partner_name}</div>
+                <div className="helper">{t('partners.owedBy')} {debtor.partner_name}</div>
                 <div style={{ fontWeight: 700 }}>{fmtIntMoney(debtor.net_owed)}</div>
               </div>
             ))}
@@ -647,19 +649,19 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         style={{ marginTop: 20 }}
       >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Orders with partner stake</h4>
+          <h4 style={{margin:0}}>{t('partners.ordersWithPartner')}</h4>
           {orders.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllOrders(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllOrders ? 'Show less' : 'Show all orders'}
+              {showAllOrders ? t('showLess') : t('showAllOrders')}
             </button>
           )}
         </div>
 
-        {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
+        {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
             {shownOrders.map(o => {
               const middleLine2 = [
@@ -729,19 +731,19 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         style={{ marginTop: 20 }}
       >
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Payments to partner</h4>
+          <h4 style={{margin:0}}>{t('partners.paymentsToPartner')}</h4>
           {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllPayments ? 'Show less' : 'Show all payments'}
+              {showAllPayments ? t('showLess') : t('showAllPayments')}
             </button>
           )}
         </div>
 
-        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
+        {payments.length === 0 ? <p className="helper">{t('noPaymentsYet')}</p> : (
           <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
             {shownPayments.map(p => {
               const notes = (p.notes ?? '').trim()

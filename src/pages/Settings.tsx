@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { type FeatureId } from '../lib/features'
 import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS } from '../lib/shortcuts'
 
 export default function Settings() {
+  const { t } = useTranslation()
   const { hasFeature, user } = useAuth()
 
   const [tenantName, setTenantName]       = useState('')
@@ -82,7 +84,7 @@ export default function Settings() {
       setHasChanges(false)
     } catch (err) {
       console.error('Failed to save settings:', err)
-      alert('Failed to save settings. Please try again.')
+      alert(t('settingsPage.savingFailed'))
     } finally {
       setSaving(false)
     }
@@ -92,13 +94,13 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('Please fill in all password fields'); return
+      alert(t('settingsPage.fillAllFields')); return
     }
     if (newPassword.length < 8) {
-      alert('New password must be at least 8 characters'); return
+      alert(t('settingsPage.passwordMinLength')); return
     }
     if (newPassword !== confirmPassword) {
-      alert('New passwords do not match'); return
+      alert(t('settingsPage.passwordMismatch')); return
     }
     setChangingPassword(true)
     try {
@@ -110,7 +112,7 @@ export default function Settings() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to change password')
-      alert('Password changed successfully!')
+      alert(t('settingsPage.passwordChanged'))
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
     } catch (err: any) {
       alert(err.message || 'Failed to change password')
@@ -141,33 +143,33 @@ export default function Settings() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>App Settings</h3>
+        <h3 style={{ margin: 0 }}>{t('settingsPage.title')}</h3>
         <button
           className={hasChanges ? 'primary' : ''}
           onClick={handleSave}
           disabled={!hasChanges || saving}
           style={{ opacity: hasChanges ? 1 : 0.5, cursor: hasChanges ? 'pointer' : 'not-allowed' }}
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('saving') : t('save')}
         </button>
       </div>
 
       {/* Company + User */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Company</label>
+          <label>{t('settingsPage.company')}</label>
           <input
-            value={tenantLoading ? 'Loading...' : tenantName}
+            value={tenantLoading ? t('loadingDots') : tenantName}
             disabled
             style={{ backgroundColor: 'transparent', border: '1px solid var(--primary)', color: '#999', cursor: 'not-allowed' }}
           />
         </div>
         <div>
-          <label>User</label>
+          <label>{t('settingsPage.user')}</label>
           <input
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder={t('settingsPage.enterName')}
             name="display-name"
             autoComplete="off"
             data-lpignore="true"
@@ -178,7 +180,7 @@ export default function Settings() {
 
       {/* Quick access buttons */}
       <div style={{ marginTop: 20 }}>
-        <label>Quick access buttons ({selectedShortcuts.length}/4 selected)</label>
+        <label>{t('settingsPage.quickAccess', { count: selectedShortcuts.length })}</label>
 
         <div className="row row-2col-mobile" style={{ marginTop: 8, alignItems: 'flex-start' }}>
 
@@ -196,17 +198,17 @@ export default function Settings() {
             >
               <option value="" disabled>
                 {selectedShortcuts.length >= 4
-                  ? 'Max 4 reached'
+                  ? t('settingsPage.maxReached')
                   : unselectedShortcuts.length === 0
-                    ? 'All added'
-                    : 'Add shortcut…'}
+                    ? t('settingsPage.allAdded')
+                    : t('settingsPage.addShortcut')}
               </option>
               {unselectedShortcuts.map(s => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
             <div className="helper" style={{ marginTop: 4 }}>
-              Select up to 4. Click an icon to remove it.
+              {t('settingsPage.quickAccessHelp')}
             </div>
           </div>
 
@@ -219,7 +221,7 @@ export default function Settings() {
                 <button
                   key={id}
                   onClick={() => removeShortcut(id)}
-                  title={`${s.label} — click to remove`}
+                  title={t('settingsPage.removeTitle', { label: s.label })}
                   style={{
                     width: 40,
                     height: 40,
@@ -255,22 +257,22 @@ export default function Settings() {
           style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
         />
 
-        <h4 style={{ margin: 0, marginBottom: 16 }}>Change Password</h4>
+        <h4 style={{ margin: 0, marginBottom: 16 }}>{t('settingsPage.changePassword')}</h4>
 
         <div style={{ marginTop: 12 }}>
-          <label>Current Password</label>
+          <label>{t('settingsPage.currentPassword')}</label>
           <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Enter current password" autoComplete="current-password" />
+            placeholder={t('settingsPage.currentPasswordPlaceholder')} autoComplete="current-password" />
         </div>
         <div style={{ marginTop: 12 }}>
-          <label>New Password</label>
+          <label>{t('settingsPage.newPassword')}</label>
           <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="At least 8 characters" autoComplete="new-password" />
+            placeholder={t('settingsPage.newPasswordPlaceholder')} autoComplete="new-password" />
         </div>
         <div style={{ marginTop: 12 }}>
-          <label>Confirm New Password</label>
+          <label>{t('settingsPage.confirmNewPassword')}</label>
           <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter new password" autoComplete="new-password" />
+            placeholder={t('settingsPage.confirmNewPasswordPlaceholder')} autoComplete="new-password" />
         </div>
 
         <button
@@ -279,7 +281,7 @@ export default function Settings() {
           disabled={changingPassword}
           style={{ marginTop: 16, width: '100%' }}
         >
-          {changingPassword ? 'Changing Password...' : 'Change Password'}
+          {changingPassword ? t('settingsPage.changingPassword') : t('settingsPage.changePasswordButton')}
         </button>
       </div>
 

@@ -1,6 +1,7 @@
 // src/pages/NewOrderSupplier.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
 type Supplier = { id: string; name: string }
@@ -21,6 +22,7 @@ const todayYMD = () => {
 }
 
 export default function NewOrderSupplier() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -143,7 +145,7 @@ export default function NewOrderSupplier() {
   }, [supplierId, lines])
 
   async function handleSave() {
-    if (!canSave) { alert('Select a supplier and add at least one product with integer qty and a cost (≤3 decimals).'); return }
+    if (!canSave) { alert(t('supplierOrders.alertCanSave')); return }
     try {
       setSaving(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -175,10 +177,10 @@ export default function NewOrderSupplier() {
         const t = await res.text().catch(()=> '')
         throw new Error(`Save failed (${res.status}) ${t?.slice(0,140)}`)
       }
-      alert('Supplier order saved.')
+      alert(t('supplierOrders.saved'))
       navigate('/suppliers')
     } catch (e:any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
       setSaving(false)
     }
@@ -194,17 +196,17 @@ export default function NewOrderSupplier() {
 
   return (
     <div className="card" style={{ maxWidth: 900 }}>
-      <h3>New Order (S)</h3>
+      <h3>{t('supplierOrders.newTitle')}</h3>
 
-      {err && <p style={{ color:'salmon' }}>Error: {err}</p>}
-      {loading ? <p>Loading…</p> : (
+      {err && <p style={{ color:'salmon' }}>{t('error')} {err}</p>}
+      {loading ? <p>{t('loading')}</p> : (
         <>
           {/* Supplier row (stacks on mobile) */}
           <div className="row" style={{ marginTop: 12 }}>
             <div style={{ width: '100%' }}>
-              <label>Choose supplier</label>
+              <label>{t('supplierOrders.chooseSupplier')}</label>
               <select value={supplierId} onChange={e=>setSupplierId(e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                 {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
@@ -216,7 +218,7 @@ export default function NewOrderSupplier() {
               {/* Product & Quantity: force 2 cols even on mobile */}
               <div className="row row-2col-mobile" style={{ marginTop: 6 }}>
                 <div>
-                  <label>Product</label>
+                  <label>{t('product')}</label>
                   <select
                     value={l.product_id}
                     onChange={(e) => {
@@ -226,12 +228,12 @@ export default function NewOrderSupplier() {
                       else updateLine(idx, { lastCost: null })
                     }}
                   >
-                    <option value="">Select…</option>
+                    <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label>Quantity</label>
+                  <label>{t('quantity')}</label>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -249,7 +251,7 @@ export default function NewOrderSupplier() {
               {/* Cost & Cost last time: force 2 cols even on mobile */}
               <div className="row row-2col-mobile" style={{ marginTop: 6 }}>
                 <div>
-                  <label>Cost</label>
+                  <label>{t('cost')}</label>
                   <input
                     type="number"
                     step="0.001"
@@ -261,7 +263,7 @@ export default function NewOrderSupplier() {
                   />
                 </div>
                 <div>
-                  <label>Cost last time</label>
+                  <label>{t('supplierOrders.costLastTime')}</label>
                   <input
                     type="text"
                     value={l.lastCost == null ? '' : Number(l.lastCost).toFixed(3)}
@@ -274,22 +276,22 @@ export default function NewOrderSupplier() {
               {/* Add / Remove product controls */}
               <div style={{ marginTop: 8, display:'flex', gap:12, alignItems:'center' }}>
                 <button
-                  aria-label="Add product"
-                  title="Add product"
+                  aria-label={t('supplierOrders.addProduct')}
+                  title={t('supplierOrders.addProduct')}
                   className="primary"
                   onClick={addProductBlock}
                   style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center' }}
                 >+</button>
-                <span className="helper">Add product</span>
+                <span className="helper">{t('supplierOrders.addProduct')}</span>
 
                 <button
-                  aria-label="Remove product"
-                  title="Remove product"
+                  aria-label={t('supplierOrders.removeProduct')}
+                  title={t('supplierOrders.removeProduct')}
                   className="primary"
                   onClick={() => removeProductBlock(idx)}
                   style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center', marginLeft: 12 }}
                 >–</button>
-                <span className="helper">Remove product</span>
+                <span className="helper">{t('supplierOrders.removeProduct')}</span>
               </div>
             </div>
           ))}
@@ -298,26 +300,26 @@ export default function NewOrderSupplier() {
           <div style={{ marginTop: 12, display:'flex', gap:18, alignItems:'center', flexWrap:'wrap' }}>
             <label style={{ display:'flex', alignItems:'center', gap:6 }}>
               <input type="checkbox" checked={delivered} onChange={e=>setDelivered(e.target.checked)} style={{ width:14, height:14 }} />
-              Delivered
+              {t('delivered')}
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:6 }}>
               <input type="checkbox" checked={received} onChange={e=>setReceived(e.target.checked)} style={{ width:14, height:14 }} />
-              Received
+              {t('received')}
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:6 }}>
               <input type="checkbox" checked={inCustoms} onChange={e=>setInCustoms(e.target.checked)} style={{ width:14, height:14 }} />
-              In Customs
+              {t('inCustoms')}
             </label>
           </div>
 
           {/* Dates (stack on mobile; 50/50 on desktop via your base .row) */}
           <div className="row" style={{ marginTop: 12 }}>
             <div>
-              <label>Order date</label>
+              <label>{t('supplierOrders.orderDate')}</label>
               <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} />
             </div>
             <div>
-              <label>Est. delivery date</label>
+              <label>{t('supplierOrders.estDeliveryDate')}</label>
               <input type="date" value={estDeliveryDate} onChange={e=>setEstDeliveryDate(e.target.value)} />
             </div>
           </div>
@@ -325,7 +327,7 @@ export default function NewOrderSupplier() {
           {/* Notes */}
           <div className="row" style={{ marginTop: 12 }}>
             <div style={{ width:'100%' }}>
-              <label>Notes</label>
+              <label>{t('notes')}</label>
               <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} />
             </div>
           </div>
@@ -333,9 +335,9 @@ export default function NewOrderSupplier() {
           {/* Actions */}
           <div style={{ marginTop: 16, display:'flex', gap:8 }}>
             <button className="primary" onClick={handleSave} disabled={!canSave || saving} style={{ height: 'var(--control-h)' }}>
-              {saving ? 'Saving…' : 'Save order'}
+              {saving ? t('saving') : t('supplierOrders.saveOrder')}
             </button>
-            <button onClick={handleClear} style={{ height: 'var(--control-h)' }}>Clear</button>
+            <button onClick={handleClear} style={{ height: 'var(--control-h)' }}>{t('clear')}</button>
           </div>
         </>
       )}

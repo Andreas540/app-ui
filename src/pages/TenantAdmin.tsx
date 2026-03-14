@@ -1,5 +1,6 @@
 // src/pages/TenantAdmin.tsx
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
@@ -26,11 +27,12 @@ interface TenantGeo {
 
 export default function TenantAdmin() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [users, setUsers] = useState<TenantUser[]>([])
   const [tenantFeatures, setTenantFeatures] = useState<FeatureId[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Manage user features modal
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
   const [managingUserName, setManagingUserName] = useState('')
@@ -72,7 +74,7 @@ export default function TenantAdmin() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const token = localStorage.getItem('authToken')
       const activeTenantId = localStorage.getItem('activeTenantId')
@@ -84,7 +86,7 @@ export default function TenantAdmin() {
       }
 
       const res = await fetch(`${base}/api/tenant-admin?action=getTenantUsers`, { headers })
-      
+
       if (!res.ok) {
         if (res.status === 403) {
           throw new Error('Tenant admin access required')
@@ -127,7 +129,7 @@ export default function TenantAdmin() {
       })
       setManagingUserFeatures(expanded)
     }
-  }      
+  }
 
   function openManageUserGeo(targetUser: TenantUser) {
     setManagingGeoUserId(targetUser.id)
@@ -163,7 +165,7 @@ export default function TenantAdmin() {
         const data = await res.json()
         throw new Error(data.error || 'Failed to save')
       }
-      alert('User geo settings saved!')
+      alert(t('tenantAdmin.geoSaved'))
       setManagingGeoUserId(null)
       await loadData()
     } catch (e: any) {
@@ -175,13 +177,13 @@ export default function TenantAdmin() {
 
   async function handleSaveUserFeatures() {
     if (!managingUserId) return
-    
+
     try {
       setSavingFeatures(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const token = localStorage.getItem('authToken')
       const activeTenantId = localStorage.getItem('activeTenantId')
-      
+
       const res = await fetch(`${base}/api/tenant-admin`, {
         method: 'POST',
         headers: {
@@ -198,13 +200,13 @@ export default function TenantAdmin() {
             .map(mod => mod.id)
         })
       })
-      
+
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Failed to save features')
       }
-      
-      alert('User permissions updated successfully!')
+
+      alert(t('tenantAdmin.permissionsUpdated'))
       setManagingUserId(null)
       await loadData()
     } catch (e: any) {
@@ -292,11 +294,11 @@ export default function TenantAdmin() {
 
   async function handleCreateUser() {
     if (!newUserEmail.trim()) {
-      alert('Please enter an email')
+      alert(t('tenantAdmin.alertEnterEmail'))
       return
     }
     if (newUserPassword.length < 8) {
-      alert('Password must be at least 8 characters')
+      alert(t('tenantAdmin.alertPasswordLength'))
       return
     }
 
@@ -328,7 +330,7 @@ export default function TenantAdmin() {
         throw new Error(data.error || 'Failed to create user')
       }
 
-      alert('User created successfully!')
+      alert(t('tenantAdmin.userCreated'))
       setShowCreateUser(false)
       await loadData()
     } catch (e: any) {
@@ -406,11 +408,11 @@ export default function TenantAdmin() {
     }
   }
 
-  if (loading) return <div className="card"><p>Loading...</p></div>
-  
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+
   if (error) return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ color: 'salmon' }}>Error</h3>
+      <h3 style={{ color: 'salmon' }}>{t('error')}</h3>
       <p>{error}</p>
     </div>
   )
@@ -420,13 +422,12 @@ export default function TenantAdmin() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Account Administration</h2>
+        <h2 style={{ margin: 0 }}>{t('tenantAdmin.title')}</h2>
         <p className="helper" style={{ marginTop: 8 }}>
-  Manage user permissions for {user?.tenantName || 'your organization'}
+  {t('tenantAdmin.subtitle', { name: user?.tenantName || 'your organization' })}
 </p>
         <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>
-          Your tenant has access to {tenantFeatures.length} features. 
-          You can customize which features each user can access.
+          {t('tenantAdmin.featuresInfo', { count: tenantFeatures.length })}
         </p>
         <div style={{ marginTop: 16 }}>
           <button
@@ -434,30 +435,30 @@ export default function TenantAdmin() {
             disabled={loadingPortal}
             style={{ height: CONTROL_H, padding: '0 20px' }}
           >
-            {loadingPortal ? 'Loading...' : 'Manage Subscription'}
+            {loadingPortal ? t('loadingDots') : t('tenantAdmin.manageSubscription')}
           </button>
         </div>
         <p className="helper" style={{ marginTop: 8 }}>
-  To change modules or number of users, please send a message through the Contact page.
+  {t('tenantAdmin.changeModulesInfo')}
 </p>
       </div>
 
       {/* Users List */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Team Members</h3>
+          <h3 style={{ margin: 0 }}>{t('tenantAdmin.teamMembers')}</h3>
           <button
             className="primary"
             onClick={openCreateUser}
             disabled={true}
             style={{ height: 36, padding: '0 16px', fontSize: 13, opacity: 0.4, cursor: 'not-allowed' }}
           >
-            + Create User
+            {t('tenantAdmin.createUserButton')}
           </button>
         </div>
 
         {users.length === 0 ? (
-          <p className="helper">No users yet</p>
+          <p className="helper">{t('tenantAdmin.noUsers')}</p>
         ) : (
           <div style={{ marginTop: 16 }}>
             {users.map((u) => (
@@ -480,21 +481,21 @@ export default function TenantAdmin() {
                     <div style={{ marginTop: 4 }}>{u.name}</div>
                   )}
                   <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
-                    Role: {u.role === 'tenant_admin' ? 'Admin' : 'User'}
+                    {t('tenantAdmin.roleLabel')} {u.role === 'tenant_admin' ? t('adminRole') : t('userRole')}
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                    {u.features === null 
-                      ? `Access: All ${tenantFeatures.length} tenant features`
-                      : `Access: ${u.features.length} of ${tenantFeatures.length} features`
+                    {u.features === null
+                      ? t('tenantAdmin.accessAll', { count: tenantFeatures.length })
+                      : t('tenantAdmin.accessCount', { count: u.features.length, total: tenantFeatures.length })
                     }
                   </div>
                   {!u.active && (
                     <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
-                      Inactive
+                      {t('inactive')}
                     </div>
                   )}
                 </div>
-                
+
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' }}>
   <button
     onClick={() => handleToggleUserStatus(u.id, u.active)}
@@ -508,21 +509,21 @@ export default function TenantAdmin() {
       color: 'white',
     }}
   >
-    {togglingUserId === u.id ? '...' : (u.active ? 'Active' : 'Inactive')}
+    {togglingUserId === u.id ? '...' : (u.active ? t('active') : t('inactive'))}
   </button>
                   <button
                     onClick={() => openManageUserFeatures(u)}
                     disabled={!u.active}
                     style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                   >
-                    Permissions
+                    {t('tenantAdmin.permissionsButton')}
                   </button>
                   <button
                     onClick={() => openManageUserGeo(u)}
                     disabled={!u.active}
                     style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                   >
-                    Geo
+                    {t('tenantAdmin.geoButton')}
                   </button>
                 </div>
               </div>
@@ -559,69 +560,69 @@ export default function TenantAdmin() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Create New User</h3>
-            
+            <h3 style={{ marginTop: 0 }}>{t('createUser.title')}</h3>
+
             <div style={{ marginTop: 16 }}>
-              <label>Email *</label>
+              <label>{t('createUser.emailRequired')}</label>
               <input
                 type="email"
                 value={newUserEmail}
                 onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder="user@example.com"
+                placeholder={t('createUser.emailPlaceholder')}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               />
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Name (optional)</label>
+              <label>{t('createUser.nameOptional')}</label>
               <input
                 type="text"
                 value={newUserName}
                 onChange={(e) => setNewUserName(e.target.value)}
-                placeholder="John Doe"
+                placeholder={t('createUser.namePlaceholder')}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               />
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Password *</label>
+              <label>{t('createUser.passwordRequired')}</label>
               <input
                 type="password"
                 value={newUserPassword}
                 onChange={(e) => setNewUserPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder={t('tenantAdmin.passwordPlaceholder')}
                 autoComplete="new-password"
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               />
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Role *</label>
+              <label>{t('tenantAdmin.roleRequired')}</label>
               <select
                 value={newUserRole}
                 onChange={(e) => setNewUserRole(e.target.value as 'tenant_user' | 'tenant_admin')}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               >
-                <option value="tenant_user">User</option>
-                <option value="tenant_admin">Admin</option>
+                <option value="tenant_user">{t('userRole')}</option>
+                <option value="tenant_admin">{t('adminRole')}</option>
               </select>
             </div>
 
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <label style={{ margin: 0, fontWeight: 600 }}>Permissions</label>
+                <label style={{ margin: 0, fontWeight: 600 }}>{t('tenantAdmin.permissionsLabel')}</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     onClick={() => selectAllFeatures(true)}
                     style={{ height: 32, fontSize: 12, padding: '0 12px' }}
                   >
-                    Select All
+                    {t('tenantAdmin.selectAll')}
                   </button>
                   <button
                     onClick={() => clearAllFeatures(true)}
                     style={{ height: 32, fontSize: 12, padding: '0 12px' }}
                   >
-                    Clear All
+                    {t('tenantAdmin.clearAll')}
                   </button>
                 </div>
               </div>
@@ -686,13 +687,13 @@ export default function TenantAdmin() {
                 disabled={creatingUser}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {creatingUser ? 'Creating...' : 'Create User'}
+                {creatingUser ? t('createUser.creatingText') : t('createUser.createButton')}
               </button>
               <button
                 onClick={() => setShowCreateUser(false)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -727,10 +728,9 @@ export default function TenantAdmin() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Manage Permissions: {managingUserName}</h3>
+            <h3 style={{ marginTop: 0 }}>{t('tenantAdmin.managePermissionsTitle', { name: managingUserName })}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
-              Select which features this user can access. 
-              Only features enabled for your tenant are available.
+              {t('tenantAdmin.featureSelectHelp')}
             </p>
 
             <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
@@ -738,13 +738,13 @@ export default function TenantAdmin() {
                 onClick={() => selectAllFeatures(false)}
                 style={{ flex: 1, height: 36, fontSize: 13 }}
               >
-                Select All
+                {t('tenantAdmin.selectAll')}
               </button>
               <button
                 onClick={() => clearAllFeatures(false)}
                 style={{ flex: 1, height: 36, fontSize: 13 }}
               >
-                Clear All
+                {t('tenantAdmin.clearAll')}
               </button>
             </div>
 
@@ -810,13 +810,13 @@ export default function TenantAdmin() {
                 disabled={savingFeatures}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {savingFeatures ? 'Saving...' : 'Save Permissions'}
+                {savingFeatures ? t('saving') : t('tenantAdmin.savePermissions')}
               </button>
               <button
                 onClick={() => setManagingUserId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -838,33 +838,33 @@ export default function TenantAdmin() {
             style={{ maxWidth: 480, width: '100%', maxHeight: '90vh', overflow: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Geo Settings: {managingGeoUserName}</h3>
+            <h3 style={{ marginTop: 0 }}>{t('tenantAdmin.geoSettingsTitle', { name: managingGeoUserName })}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
-              Leave a field on "Use tenant default" to inherit the organisation setting.
+              {t('tenantAdmin.geoHelp')}
             </p>
 
             <div style={{ marginTop: 16 }}>
-              <label>Language</label>
+              <label>{t('tenantAdmin.language')}</label>
               <select
                 value={editingGeoLanguage ?? ''}
                 onChange={(e) => setEditingGeoLanguage(e.target.value || null)}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               >
-                <option value="">Use tenant default ({tenantGeo.default_language})</option>
-                <option value="en">English (en-US)</option>
-                <option value="sv">Swedish (sv-SE)</option>
-                <option value="es">Spanish (es-ES)</option>
+                <option value="">{t('tenantAdmin.useTenantDefault', { default: tenantGeo.default_language })}</option>
+                <option value="en">{t('tenantAdmin.langEnglish')}</option>
+                <option value="sv">{t('tenantAdmin.langSwedish')}</option>
+                <option value="es">{t('tenantAdmin.langSpanish')}</option>
               </select>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Currency</label>
+              <label>{t('tenantAdmin.currency')}</label>
               <select
                 value={editingGeoCurrency ?? ''}
                 onChange={(e) => setEditingGeoCurrency(e.target.value || null)}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               >
-                <option value="">Use tenant default ({tenantGeo.default_currency})</option>
+                <option value="">{t('tenantAdmin.useTenantDefault', { default: tenantGeo.default_currency })}</option>
                 <option value="USD">USD – US Dollar</option>
                 <option value="SEK">SEK – Swedish Krona</option>
                 <option value="EUR">EUR – Euro</option>
@@ -883,13 +883,13 @@ export default function TenantAdmin() {
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Timezone</label>
+              <label>{t('tenantAdmin.timezone')}</label>
               <select
                 value={editingGeoTimezone ?? ''}
                 onChange={(e) => setEditingGeoTimezone(e.target.value || null)}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               >
-                <option value="">Use tenant default ({tenantGeo.default_timezone})</option>
+                <option value="">{t('tenantAdmin.useTenantDefault', { default: tenantGeo.default_timezone })}</option>
                 <option value="UTC">UTC</option>
                 <optgroup label="Americas">
                   <option value="America/New_York">America/New_York (ET)</option>
@@ -941,13 +941,13 @@ export default function TenantAdmin() {
                 disabled={savingGeo}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {savingGeo ? 'Saving...' : 'Save Geo Settings'}
+                {savingGeo ? t('saving') : t('tenantAdmin.saveGeo')}
               </button>
               <button
                 onClick={() => setManagingGeoUserId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>

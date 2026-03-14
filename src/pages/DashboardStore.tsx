@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface InventoryItem {
   item_name: string
@@ -31,6 +32,7 @@ function fmtIntMoney(n: number) {
 }
 
 export default function DashboardStore() {
+  const { t } = useTranslation()
   const [showInventory, setShowInventory] = useState(false)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<Location[]>([])
@@ -143,7 +145,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
       {/* Sales Stats */}
       <div className="card" style={{ marginBottom: 20 }}>
         {statsLoading ? (
-          <div className="helper">Loading sales...</div>
+          <div className="helper">{t('loading')}</div>
         ) : (
           <div style={{ display: 'grid', gap: 12 }}>
             {/* Today */}
@@ -155,7 +157,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>Today</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('storeDashboard.today')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(salesStats?.today || 0)}
               </div>
@@ -170,7 +172,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>Yesterday</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('storeDashboard.yesterday')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(salesStats?.yesterday || 0)}
               </div>
@@ -185,7 +187,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>This Week</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('storeDashboard.thisWeek')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(salesStats?.thisWeek || 0)}
               </div>
@@ -200,7 +202,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>Last Week</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('storeDashboard.lastWeek')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(salesStats?.lastWeek || 0)}
               </div>
@@ -216,7 +218,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 }}
               >
                 <div className="helper" style={{ fontSize: 12 }}>
-                  Last update: {lastUpdateFormatted}
+                  {t('storeDashboard.lastUpdate')} {lastUpdateFormatted}
                 </div>
               </div>
             )}
@@ -231,25 +233,25 @@ const sortedInventory = [...inventory].sort((a, b) => {
           onClick={handleViewInventory}
           style={{ height: 44, width: '100%' }}
         >
-          {showInventory ? 'Hide Inventory' : 'View Inventory'}
+          {showInventory ? t('storeDashboard.hideInventory') : t('storeDashboard.viewInventory')}
         </button>
       </div>
 
       {/* Inventory List */}
       {showInventory && (
         <div className="card">
-          <h3 style={{ margin: 0, marginBottom: 16 }}>Inventory</h3>
+          <h3 style={{ margin: 0, marginBottom: 16 }}>{t('storeDashboard.inventory')}</h3>
 
           {/* Location Filter & Sort */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Filter by Location</label>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>{t('storeDashboard.filterByLocation')}</label>
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 style={{ height: 44, width: '100%' }}
               >
-                <option value="">All Locations</option>
+                <option value="">{t('storeDashboard.allLocations')}</option>
                 {locations.map((loc) => (
                   <option key={loc.location_id} value={loc.location_id}>
                     {loc.location_name}
@@ -259,24 +261,24 @@ const sortedInventory = [...inventory].sort((a, b) => {
             </div>
 
             <div>
-  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Sort by</label>
+  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>{t('sortBy')}</label>
   <select
     value={sortBy}
     onChange={(e) => setSortBy(e.target.value as any)}
     style={{ height: 44, width: '100%' }}
   >
-    <option value="item_name">Item Name</option>
-    <option value="quantity_desc">Qty (High to Low)</option>
-    <option value="quantity_asc">Qty (Low to High)</option>
-    <option value="days">Days Remaining</option>
+    <option value="item_name">{t('storeDashboard.itemName')}</option>
+    <option value="quantity_desc">{t('storeDashboard.qtyHighToLow')}</option>
+    <option value="quantity_asc">{t('storeDashboard.qtyLowToHigh')}</option>
+    <option value="days">{t('storeDashboard.daysRemaining')}</option>
   </select>
 </div>
           </div>
 
           {loading ? (
-            <div className="helper">Loading inventory...</div>
+            <div className="helper">{t('storeDashboard.loadingInventory')}</div>
           ) : sortedInventory.length === 0 ? (
-            <div className="helper">No inventory items found</div>
+            <div className="helper">{t('storeDashboard.noInventoryItems')}</div>
           ) : (
             <>
               {/* Header Row */}
@@ -292,10 +294,10 @@ const sortedInventory = [...inventory].sort((a, b) => {
                   fontSize: 13
                 }}
               >
-                <div>Item</div>
-                <div>Variation</div>
-                <div style={{ textAlign: 'right' }}>In Stock</div>
-                <div style={{ textAlign: 'right' }}>Will Last</div>
+                <div>{t('storeDashboard.item')}</div>
+                <div>{t('storeDashboard.variation')}</div>
+                <div style={{ textAlign: 'right' }}>{t('storeDashboard.inStock')}</div>
+                <div style={{ textAlign: 'right' }}>{t('storeDashboard.willLast')}</div>
               </div>
 
               {/* Inventory Rows */}
@@ -316,8 +318,8 @@ const sortedInventory = [...inventory].sort((a, b) => {
                   <div className="helper">{item.variation_name || '-'}</div>
                   <div style={{ textAlign: 'right' }}>{item.quantity?.toLocaleString('en-US') || 0}</div>
                   <div style={{ textAlign: 'right' }} className="helper">
-  {item.days_of_inventory_remaining != null 
-    ? `${Number(item.days_of_inventory_remaining).toFixed(2)} days`
+  {item.days_of_inventory_remaining != null
+    ? t('storeDashboard.days', { n: Number(item.days_of_inventory_remaining).toFixed(2) })
     : '-'
   }
 </div>

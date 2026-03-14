@@ -1,12 +1,14 @@
 // src/pages/EditOrder.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type PartnerRef = { id: string; name: string }
 
 export default function EditOrder() {
+  const { t } = useTranslation()
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
   
@@ -246,18 +248,18 @@ export default function EditOrder() {
   }
 
   async function save() {
-    if (!person) { alert('Customer missing'); return }
-    if (!product) { alert('Product missing'); return }
+    if (!person) { alert(t('orders.customerMissing')); return }
+    if (!product) { alert(t('orders.productMissing')); return }
 
     const qty = parseInt(qtyStr || '0', 10)
-    if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+    if (!Number.isInteger(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
 
     const unitPrice = parsePriceToNumber(priceStr)
-    if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
+    if (!Number.isFinite(unitPrice)) { alert(t('orders.alertEnterPrice')); return }
     if (isRefundProduct) {
-      if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
+      if (!(unitPrice < 0)) { alert(t('orders.alertRefundNegative')); return }
     } else {
-      if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
+      if (!(unitPrice > 0)) { alert(t('orders.alertEnterPositivePrice')); return }
     }
 
     // Build partner_splits
@@ -319,15 +321,15 @@ export default function EditOrder() {
 
       if (!res.ok) throw new Error('Failed to update order')
       
-      alert('Order updated!')
+      alert(t('orders.orderUpdated'))
       navigate(-1)
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
   async function deleteOrder() {
-    if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
+    if (!confirm(t('orders.confirmDelete', { number: orderNo }))) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -341,16 +343,16 @@ export default function EditOrder() {
       })
 
       if (!res.ok) throw new Error('Failed to delete order')
-      
-      alert('Order deleted')
+
+      alert(t('orders.orderDeleted'))
       navigate(-1)
     } catch (e: any) {
-      alert(e?.message || 'Delete failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -358,14 +360,14 @@ export default function EditOrder() {
     <div className="card" style={{maxWidth: 720}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <div>
-          <h3 style={{ margin:0 }}>Edit Order</h3>
-          <div className="helper" style={{ marginTop: 4 }}>Order #{orderNo}</div>
+          <h3 style={{ margin:0 }}>{t('orders.editOrderTitle')}</h3>
+          <div className="helper" style={{ marginTop: 4 }}>{t('orders.orderNumber', { number: orderNo })}</div>
         </div>
         
         {/* Profit display - top right (hidden for Refund/Discount) */}
         {Number.isFinite(orderValue) && orderValue > 0 && !isRefundProduct && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
-            <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
+            <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
               ${profit.toFixed(2)}
             </div>
@@ -378,7 +380,7 @@ export default function EditOrder() {
 
       {/* Customer name (read-only) */}
       <div style={{ marginTop: 12 }}>
-        <label>Customer</label>
+        <label>{t('customer')}</label>
         <input
           type="text"
           value={customerName}
@@ -390,13 +392,13 @@ export default function EditOrder() {
       {/* Product | Order date */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Product</label>
+          <label>{t('product')}</label>
           <select value={productId} onChange={e=>setProductId(e.target.value)} style={{ height: CONTROL_H }}>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div>
-          <label>Order date</label>
+          <label>{t('orders.orderDate')}</label>
           <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} style={{ height: CONTROL_H }} />
         </div>
       </div>
@@ -404,7 +406,7 @@ export default function EditOrder() {
       {/* Quantity | Order price */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Quantity</label>
+          <label>{t('quantity')}</label>
           <input
             type="text"
             inputMode="numeric"
@@ -415,7 +417,7 @@ export default function EditOrder() {
           />
         </div>
         <div>
-          <label>Order price (USD)</label>
+          <label>{t('orders.orderPriceUSD')}</label>
           <input
             type="text"
             inputMode="decimal"
@@ -431,7 +433,7 @@ export default function EditOrder() {
       {/* Order value | Delivered */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Order value (USD)</label>
+          <label>{t('orders.orderValueUSD')}</label>
           <input
             type="text"
             value={Number.isFinite(orderValue) ? orderValue.toFixed(2) : ''}
@@ -442,7 +444,7 @@ export default function EditOrder() {
         </div>
         <div style={{ display:'flex', alignItems:'end' }}>
           <label style={{ width:'100%' }}>
-            Delivered
+            {t('delivered')}
             <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
               <input
                 type="checkbox"
@@ -450,7 +452,7 @@ export default function EditOrder() {
                 onChange={e => setDelivered(e.target.checked)}
                 style={{ width: 18, height: 18 }}
               />
-              <span className="helper">{delivered ? 'Yes' : 'No'}</span>
+              <span className="helper">{delivered ? t('yes') : t('no')}</span>
             </div>
           </label>
         </div>
@@ -461,7 +463,7 @@ export default function EditOrder() {
         <>
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
-              <label>Partner 1</label>
+              <label>{t('orders.partner1')}</label>
               <select
                 value={partner1Id}
                 onChange={e=>setPartner1Id(e.target.value)}
@@ -474,7 +476,7 @@ export default function EditOrder() {
               </select>
             </div>
             <div>
-              <label>Per item</label>
+              <label>{t('orders.perItem')}</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -485,7 +487,7 @@ export default function EditOrder() {
               />
             </div>
             <div>
-              <label>To Partner 1 (USD)</label>
+              <label>{t('orders.toPartner1USD')}</label>
               <input
                 type="text"
                 value={partner1Total > 0 ? partner1Total.toFixed(2) : ''}
@@ -498,7 +500,7 @@ export default function EditOrder() {
 
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
             <div>
-              <label>Partner 2</label>
+              <label>{t('orders.partner2')}</label>
               <select
                 value={partner2Id}
                 onChange={e=>setPartner2Id(e.target.value)}
@@ -511,7 +513,7 @@ export default function EditOrder() {
               </select>
             </div>
             <div>
-              <label>Per item</label>
+              <label>{t('orders.perItem')}</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -522,7 +524,7 @@ export default function EditOrder() {
               />
             </div>
             <div>
-              <label>To Partner 2 (USD)</label>
+              <label>{t('orders.toPartner2USD')}</label>
               <input
                 type="text"
                 value={partner2Total > 0 ? partner2Total.toFixed(2) : ''}
@@ -537,10 +539,10 @@ export default function EditOrder() {
 
       {/* Notes field */}
       <div style={{ marginTop: 12 }}>
-        <label>Notes (optional)</label>
+        <label>{t('notesOptional')}</label>
         <input
           type="text"
-          placeholder="Add notes about this order..."
+          placeholder={t('optionalNotesPlaceholder')}
           value={notes}
           onChange={e => setNotes(e.target.value)}
           style={{ height: CONTROL_H }}
@@ -551,7 +553,7 @@ export default function EditOrder() {
       {showMoreFields && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
-            <label>Product cost this order</label>
+            <label>{t('orders.productCostThisOrder')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -562,7 +564,7 @@ export default function EditOrder() {
             />
           </div>
           <div>
-            <label>Shipping cost this order</label>
+            <label>{t('orders.shippingCostThisOrder')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -576,25 +578,25 @@ export default function EditOrder() {
       )}
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save changes</button>
-        <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>Cancel</button>
+        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>
+        <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>{t('cancel')}</button>
         <button
           onClick={() => setShowMoreFields(v => !v)}
           style={{ height: CONTROL_H }}
         >
-          More
+          {t('orders.more')}
         </button>
         <button
           onClick={deleteOrder}
-          style={{ 
-            height: CONTROL_H, 
+          style={{
+            height: CONTROL_H,
             marginLeft: 'auto',
             backgroundColor: 'salmon',
             color: 'white',
             border: 'none'
           }}
         >
-          Delete
+          {t('delete')}
         </button>
       </div>
     </div>

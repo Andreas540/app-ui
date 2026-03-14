@@ -1,5 +1,6 @@
 // src/components/PrintDialog.tsx
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PrintManager } from '../lib/printManager'
 import type { PrintOptions } from '../lib/printManager'
 
@@ -10,6 +11,7 @@ interface PrintDialogProps {
 }
 
 export default function PrintDialog({ isOpen, onClose, options }: PrintDialogProps) {
+  const { t } = useTranslation()
   const [localOptions, setLocalOptions] = useState<PrintOptions | null>(options)
   const [includeAll, setIncludeAll] = useState(true)
   const [lastThreeMonths, setLastThreeMonths] = useState(false)
@@ -127,7 +129,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>Print to PDF</h3>
+          <h3 style={{ margin: 0 }}>{t('printDialog.title')}</h3>
           <button
             onClick={onClose}
             style={{
@@ -145,14 +147,14 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
 
         <div style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h4 style={{ margin: 0 }}>Sections to print</h4>
+            <h4 style={{ margin: 0 }}>{t('printDialog.sectionsToPrint')}</h4>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="helper" onClick={handleSelectAll} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Select all
+                {t('printDialog.selectAll')}
               </button>
               <span className="helper">|</span>
               <button className="helper" onClick={handleDeselectAll} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Deselect all
+                {t('printDialog.deselectAll')}
               </button>
             </div>
           </div>
@@ -191,7 +193,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
 
           {/* Filter and Sort Options */}
           <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 16 }}>
-            <h4 style={{ margin: '0 0 12px 0' }}>More options</h4>
+            <h4 style={{ margin: '0 0 12px 0' }}>{t('printDialog.moreOptions')}</h4>
             
             <div style={{ display: 'grid', gap: 4 }}>
               <label
@@ -216,7 +218,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Include all orders and payments
+                  {t('printDialog.includeAll')}
                 </span>
               </label>
 
@@ -242,7 +244,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Include last 3 months only
+                  {t('printDialog.lastThreeMonths')}
                 </span>
               </label>
 
@@ -268,7 +270,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Sort by order date
+                  {t('printDialog.sortByDate')}
                 </span>
               </label>
 
@@ -294,7 +296,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
                   }}
                 />
                 <span style={{ flex: 1 }}>
-                  Sort by customer
+                  {t('printDialog.sortByCustomer')}
                 </span>
               </label>
             </div>
@@ -315,7 +317,7 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
               fontWeight: 500
             }}
           >
-            Print to PDF
+            {t('printDialog.printToPdf')}
           </button>
         </div>
       </div>

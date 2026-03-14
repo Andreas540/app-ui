@@ -1,6 +1,7 @@
 // src/pages/Suppliers.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
 type Supplier = {
@@ -15,6 +16,7 @@ function fmtIntMoney(n: number) {
 }
 
 export default function Suppliers() {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,7 +87,7 @@ export default function Suppliers() {
         <div style={{ position: 'relative' }}>
           <input
             ref={inputRef}
-            placeholder="Search suppliers"
+            placeholder={t('suppliers.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -133,7 +135,7 @@ export default function Suppliers() {
         <div>
           <Link to="/suppliers/new">
             <button className="primary" style={{ width: '100%', height: 'var(--control-h)' }}>
-              Create New Supplier
+              {t('suppliers.createNew')}
             </button>
           </Link>
         </div>
@@ -144,7 +146,7 @@ export default function Suppliers() {
 
       {/* Total owed to suppliers */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to suppliers</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('suppliers.owedToSuppliers')}</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(totalOwed)}
         </div>
@@ -153,14 +155,14 @@ export default function Suppliers() {
       {/* Spacer */}
       <div style={{ height: 8 }} />
 
-      {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
+      {err && <p style={{ color: 'salmon', marginTop: 8 }}>{t('error')} {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
-          <p>Loading…</p>
+          <p>{t('loading')}</p>
         ) : visible.length === 0 ? (
-          <p className="helper">No suppliers.</p>
+          <p className="helper">{t('suppliers.noSuppliers')}</p>
         ) : (
           <div>
             {visible.map((s) => (
@@ -183,7 +185,7 @@ export default function Suppliers() {
       {/* Clear search when exactly one match */}
       {query && visible.length === 1 && (
         <div style={{ marginTop: 8 }}>
-          <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
+          <button className="primary" onClick={() => setQuery('')}>{t('clearSearch')}</button>
         </div>
       )}
     </div>

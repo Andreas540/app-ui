@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: string;
@@ -25,6 +26,7 @@ interface ManageUserModalProps {
 }
 
 export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUserModalProps) {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
@@ -81,7 +83,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
       setTogglingStatus(true);
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '';
       const token = localStorage.getItem('authToken');
-      
+
       const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
         headers: {
@@ -213,19 +215,19 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
         onClick={e => e.stopPropagation()}
       >
         {loading ? (
-          <p>Loading...</p>
+          <p>{t('loading')}</p>
         ) : !user ? (
           <>
-            <h3>User not found</h3>
-            <button onClick={onClose}>Close</button>
+            <h3>{t('manageUserModal.userNotFound')}</h3>
+            <button onClick={onClose}>{t('close')}</button>
           </>
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div>
-                <h3 style={{ margin: 0 }}>Manage User: {user.email}</h3>
+                <h3 style={{ margin: 0 }}>{t('manageUserModal.heading')} {user.email}</h3>
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span className="helper" style={{ fontSize: 13 }}>Status:</span>
+                  <span className="helper" style={{ fontSize: 13 }}>{t('manageUserModal.status')}</span>
                   <button
   onClick={handleToggleUserStatus}
   disabled={togglingStatus}
@@ -238,7 +240,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
     color: 'white',
   }}
 >
-  {togglingStatus ? 'Updating...' : (userActive ? 'Active' : 'Inactive')}
+  {togglingStatus ? t('manageUserModal.updating') : (userActive ? t('active') : t('inactive'))}
 </button>
                 </div>
               </div>
@@ -261,9 +263,9 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
 
             {/* Current Memberships */}
             <div style={{ marginBottom: 24 }}>
-              <h4>Current Tenant Memberships</h4>
+              <h4>{t('manageUserModal.currentTenants')}</h4>
               {memberships.length === 0 ? (
-                <p className="helper">No tenant memberships yet</p>
+                <p className="helper">{t('manageUserModal.noMemberships')}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {memberships.map(m => (
@@ -282,7 +284,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                       <div>
                         <strong>{m.tenant_name}</strong>
                         <span className="helper" style={{ marginLeft: 12 }}>
-                          ({m.role === 'tenant_admin' ? 'Admin' : 'User'})
+                          ({m.role === 'tenant_admin' ? t('manageUserModal.adminRole') : t('manageUserModal.userRole')})
                         </span>
                       </div>
                       <button
@@ -297,7 +299,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                           fontSize: 13
                         }}
                       >
-                        Remove
+                        {t('remove')}
                       </button>
                     </div>
                   ))}
@@ -307,20 +309,20 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
 
             {/* Add New Membership */}
             <div>
-              <h4>Add to Tenant</h4>
+              <h4>{t('manageUserModal.addToTenant')}</h4>
               {unassignedTenants.length === 0 ? (
-                <p className="helper">User is already a member of all tenants</p>
+                <p className="helper">{t('manageUserModal.allTenantsAssigned')}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <label>Tenant</label>
+                    <label>{t('tenant')}</label>
                     <select
                       value={selectedTenant}
                       onChange={e => setSelectedTenant(e.target.value)}
                       disabled={adding}
                       style={{ height: CONTROL_H }}
                     >
-                      <option value="">Select tenant...</option>
+                      <option value="">{t('manageUserModal.selectTenant')}</option>
                       {unassignedTenants.map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
@@ -328,15 +330,15 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                   </div>
 
                   <div>
-                    <label>Role</label>
+                    <label>{t('role')}</label>
                     <select
                       value={selectedRole}
                       onChange={e => setSelectedRole(e.target.value)}
                       disabled={adding}
                       style={{ height: CONTROL_H }}
                     >
-                      <option value="tenant_user">User</option>
-                      <option value="tenant_admin">Admin</option>
+                      <option value="tenant_user">{t('userRole')}</option>
+                      <option value="tenant_admin">{t('adminRole')}</option>
                     </select>
                   </div>
 
@@ -346,7 +348,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                     disabled={!selectedTenant || adding}
                     style={{ height: CONTROL_H }}
                   >
-                    {adding ? 'Adding...' : 'Add Membership'}
+                    {adding ? t('manageUserModal.adding') : t('manageUserModal.addMembership')}
                   </button>
                 </div>
               )}

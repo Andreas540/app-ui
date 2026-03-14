@@ -1,9 +1,11 @@
 // src/pages/Login.tsx
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -21,7 +23,7 @@ export default function Login() {
       await handleLogin()
     } catch (err) {
       console.error('Login error:', err)
-      setError('An error occurred during login')
+      setError(t('login.errorGeneric'))
     } finally {
       setLoading(false)
     }
@@ -29,7 +31,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('Email and password required')
+      setError(t('login.errorRequired'))
       return
     }
 
@@ -43,7 +45,7 @@ export default function Login() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Login failed')
+        setError(data.error || t('login.errorFailed'))
         return
       }
 
@@ -54,7 +56,7 @@ export default function Login() {
       navigate('/')
     } catch (err) {
       console.error('Login error:', err)
-      setError('Login failed. Please try again.')
+      setError(t('login.errorRetry'))
     }
   }
 
@@ -68,12 +70,12 @@ export default function Login() {
     }}>
       <div className="card" style={{ maxWidth: 400, width: '100%', margin: '0 16px' }}>
         <h3 style={{ textAlign: 'center', marginBottom: 24 }}>
-          Login
+          {t('login.heading')}
         </h3>
-        
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label>Email</label>
+            <label>{t('email')}</label>
             <input
               type="email"
               value={email}
@@ -81,7 +83,7 @@ export default function Login() {
                 setEmail(e.target.value)
                 setError('')
               }}
-              placeholder="Enter your email"
+              placeholder={t('login.emailPlaceholder')}
               autoFocus
               style={{ marginTop: 4 }}
               disabled={loading}
@@ -89,7 +91,7 @@ export default function Login() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label>Password</label>
+            <label>{t('login.passwordLabel')}</label>
             <input
               type="password"
               value={password}
@@ -97,7 +99,7 @@ export default function Login() {
                 setPassword(e.target.value)
                 setError('')
               }}
-              placeholder="Enter your password"
+              placeholder={t('login.passwordPlaceholder')}
               style={{ marginTop: 4 }}
               disabled={loading}
             />
@@ -120,7 +122,7 @@ export default function Login() {
             style={{ width: '100%', marginTop: 8 }}
             disabled={loading || !email.trim() || !password.trim()}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('login.loading') : t('login.button')}
           </button>
         </form>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
+import { useTranslation } from 'react-i18next'
 
 type Customer = {
   id: string
@@ -24,6 +25,7 @@ type Order = {
 }
 
 export default function CreateInvoicePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
@@ -47,7 +49,7 @@ export default function CreateInvoicePage() {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/create-invoice`, { 
+const res = await fetch(`${base}/api/create-invoice`, {
   cache: 'no-store',
   headers: getAuthHeaders(),
 })
@@ -80,7 +82,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, { 
+const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, {
   cache: 'no-store',
   headers: getAuthHeaders(),
 })
@@ -162,7 +164,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
   }
 
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
-  
+
     const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
 
@@ -177,19 +179,19 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
   return (
     <div className="card" style={{ maxWidth: 800 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Create Invoice</h2>
-        <Link to="/" className="helper">&larr; Back</Link>
+        <h2 style={{ margin: 0 }}>{t('invoice.createTitle')}</h2>
+        <Link to="/" className="helper">{t('back_link')}</Link>
       </div>
 
-      {loading && <p>Loading customers...</p>}
-      {error && <p style={{ color: 'salmon' }}>Error: {error}</p>}
+      {loading && <p>{t('invoice.loadingCustomers')}</p>}
+      {error && <p style={{ color: 'salmon' }}>{t('error')} {error}</p>}
 
       {!loading && !error && (
         <>
           <div style={{ display: 'flex', gap: 40, marginBottom: 20 }}>
             <div style={{ flex: 1 }}>
               <label htmlFor="customer-select" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                Select customer
+                {t('invoice.selectCustomer')}
               </label>
               <select
                 id="customer-select"
@@ -203,7 +205,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                   borderRadius: 4,
                 }}
               >
-                <option value="">-- Select a customer --</option>
+                <option value="">{t('invoice.selectCustomerPlaceholder')}</option>
                 {customers.map(customer => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
@@ -228,7 +230,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                   )}
                   <div>United States</div>
                   {!selectedCustomer.company_name && !selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
-                    <div className="helper">No address on file</div>
+                    <div className="helper">{t('invoice.noAddressOnFile')}</div>
                   )}
                 </div>
               </div>
@@ -238,13 +240,13 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
           {selectedCustomerId && (
             <>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                Select orders to be included
+                {t('invoice.selectOrders')}
               </label>
-              
-              {ordersLoading && <p>Loading orders...</p>}
-              
+
+              {ordersLoading && <p>{t('invoice.loadingOrders')}</p>}
+
               {!ordersLoading && orders.length === 0 && (
-                <p className="helper">No orders found for this customer.</p>
+                <p className="helper">{t('invoice.noOrdersForCustomer')}</p>
               )}
 
               {!ordersLoading && orders.length > 0 && (
@@ -275,17 +277,17 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               type="checkbox"
                               checked={selectedOrders.has(order.item_id)}
                               onChange={() => toggleOrder(order.item_id)}
-                              style={{ 
-                                cursor: 'pointer', 
-                                width: 14, 
+                              style={{
+                                cursor: 'pointer',
+                                width: 14,
                                 height: 14,
                                 marginTop: 2,
                                 flexShrink: 0
                               }}
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ 
-                                display: 'grid', 
+                              <div style={{
+                                display: 'grid',
                                 gridTemplateColumns: '70px 1fr 80px',
                                 gap: 12,
                                 marginBottom: 4
@@ -294,8 +296,8 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
                                 <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
                               </div>
-                              <div style={{ 
-                                display: 'grid', 
+                              <div style={{
+                                display: 'grid',
                                 gridTemplateColumns: '70px 1fr 80px',
                                 gap: 12
                               }}>
@@ -322,7 +324,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           fontWeight: 500
                         }}
                       >
-                        Choose selected
+                        {t('invoice.chooseSelected')}
                       </button>
                     </>
                   ) : (
@@ -332,7 +334,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           <div key={order.item_id} style={{ marginBottom: 8 }}>
                             <div>{formatDate(order.order_date)} - {order.product}</div>
                             <div style={{ marginLeft: 20 }}>
-                              Qty: {order.quantity} × {fmtMoney(order.unit_price)} = {fmtMoney(order.amount)}
+                              {t('invoice.qty')}: {order.quantity} × {fmtMoney(order.unit_price)} = {fmtMoney(order.amount)}
                             </div>
                           </div>
                         ))}
@@ -352,13 +354,13 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           marginBottom: 20
                         }}
                       >
-                        New selection
+                        {t('invoice.newSelection')}
                       </button>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                         <div>
                           <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            Invoice date
+                            {t('invoice.invoiceDate')}
                           </label>
                           <input
                             id="invoice-date"
@@ -377,7 +379,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
                         <div>
                           <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            Due date
+                            {t('invoice.dueDate')}
                           </label>
                           <input
                             id="due-date"
@@ -398,7 +400,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div>
                           <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            Est. delivery date
+                            {t('invoice.estDeliveryDate')}
                           </label>
                           <input
                             id="delivery-date"
@@ -417,7 +419,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
                         <div>
                           <label htmlFor="payment-method" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            Payment method
+                            {t('invoice.paymentMethod')}
                           </label>
                           <select
                             id="payment-method"
@@ -439,7 +441,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                       {invoiceNo && (
                         <div style={{ marginTop: 16 }}>
                           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            Invoice no
+                            {t('invoice.invoiceNo')}
                           </label>
                           <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
                             {invoiceNo}
@@ -455,17 +457,17 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                             </div>
 
                             <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>Our contact:</div>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.ourContact')}</div>
                               <div>Julian de Armas</div>
                             </div>
 
                             <div>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>Wire Transfer Instructions:</div>
-                              <div>Company Name: BLV Pack Design LLC</div>
-                              <div>Bank Name: Bank of America</div>
-                              <div>Account Name: BLV Pack Design LLC</div>
-                              <div>Account Number: 898161854242</div>
-                              <div>Routing Number (ABA): 026009593</div>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
+                              <div>{t('invoice.companyName')} BLV Pack Design LLC</div>
+                              <div>{t('invoice.bankName')} Bank of America</div>
+                              <div>{t('invoice.accountName')} BLV Pack Design LLC</div>
+                              <div>{t('invoice.accountNumber')} 898161854242</div>
+                              <div>{t('invoice.routingNumber')} 026009593</div>
                             </div>
                           </div>
 
@@ -482,7 +484,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               fontWeight: 500
                             }}
                           >
-                            Preview Invoice
+                            {t('invoice.previewInvoice')}
                           </button>
                         </div>
                       )}
@@ -497,4 +499,3 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     </div>
   )
 }
-

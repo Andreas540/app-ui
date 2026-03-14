@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { formatUSAny } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
@@ -34,10 +35,11 @@ function fmtMoneyWithThousands(n: number) {
 }
 
 export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
+  const { t } = useTranslation()
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
-  
+
   // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
     setOrder(initialOrder)
@@ -59,10 +61,10 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 })
         if (!res.ok) throw new Error('Failed to fetch order details')
         const data = await res.json()
-        
+
         // Update order with profit data
         setOrder({ ...initialOrder, ...data.order })
-        
+
         // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
           const bootRes = await fetch(`${base}/api/bootstrap`, {
@@ -71,7 +73,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
           if (bootRes.ok) {
             const boot = await bootRes.json()
             const partners = boot.partners || []
-            
+
             const enrichedSplits = data.partner_splits.map((split: any) => {
               const partner = partners.find((p: any) => p.id === split.partner_id)
               return {
@@ -136,44 +138,44 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
   let deliverySymbol = '○'
   let deliveryColor = '#d1d5db'
-  let deliveryText = 'Not delivered'
+  let deliveryText = t('notDelivered')
 
   if (deliveryStatus === 'delivered') {
     deliverySymbol = '✓'
     deliveryColor = '#10b981'
     deliveryText = totalQty
-      ? `Delivered in full (${deliveredQty}/${totalQty})`
-      : 'Delivered in full'
+      ? t('orderModal.deliveredInFullQty', { delivered: deliveredQty, total: totalQty })
+      : t('orderModal.deliveredInFull')
   } else if (deliveryStatus === 'partial') {
     deliverySymbol = '◐'
     deliveryColor = '#f59e0b'
     deliveryText = totalQty
-      ? `Partially delivered (${deliveredQty}/${totalQty})`
-      : 'Partially delivered'
+      ? t('orderModal.partiallyDeliveredQty', { delivered: deliveredQty, total: totalQty })
+      : t('orderModal.partiallyDelivered')
   }
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title={`Order #${order.order_no || order.id}`}
     >
       <div style={{ display: 'grid', gap: 16, position: 'relative', marginTop: -16 }}>
 
         {/* Profit display - positioned absolutely in top right of modal */}
         {showProfit && (
-          <div style={{ 
+          <div style={{
             position: 'absolute',
             top: -40,
             right: 40,
-            textAlign: 'right', 
-            fontSize: 14 
+            textAlign: 'right',
+            fontSize: 14
           }}>
-            <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
-            <div style={{ 
-              fontWeight: 600, 
-              fontSize: 16, 
-              color: profit >= 0 ? 'var(--primary)' : 'salmon' 
+            <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
+            <div style={{
+              fontWeight: 600,
+              fontSize: 16,
+              color: profit >= 0 ? 'var(--primary)' : 'salmon'
             }}>
               {fmtMoneyWithThousands(profit)}
             </div>
@@ -184,9 +186,9 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         )}
 
                 {/* Delivered Status (tri-state) */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           gap: 8,
           fontSize: 14,
           fontWeight: 600,
@@ -200,19 +202,19 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         {/* First Row: Order Date, Total Amount, Order Lines */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
           <div>
-            <div className="helper" style={fieldStyle}>Order Date</div>
+            <div className="helper" style={fieldStyle}>{t('orderModal.orderDate')}</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div className="helper" style={fieldStyle}>Total Amount</div>
+            <div className="helper" style={fieldStyle}>{t('orderModal.totalAmount')}</div>
             <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
           </div>
 
           {order.lines && (
             <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>Order Lines</div>
-              <div style={{ fontWeight: 600 }}>{order.lines} item(s)</div>
+              <div className="helper" style={fieldStyle}>{t('orderModal.orderLines')}</div>
+              <div style={{ fontWeight: 600 }}>{order.lines} {t('orderModal.items')}</div>
             </div>
           )}
         </div>
@@ -224,21 +226,21 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           {order.product_name && (
             <div>
-              <div className="helper" style={fieldStyle}>Product</div>
+              <div className="helper" style={fieldStyle}>{t('product')}</div>
               <div style={{ fontWeight: 600 }}>{order.product_name}</div>
             </div>
           )}
 
           {order.qty && (
             <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>Quantity</div>
+              <div className="helper" style={fieldStyle}>{t('quantity')}</div>
               <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
             </div>
           )}
 
           {order.unit_price && (
             <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>Unit Price</div>
+              <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
               <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
             </div>
           )}
@@ -254,14 +256,14 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               gap: 16,
               marginBottom: 4
             }}>
-              <div className="helper" style={{ fontWeight: 600 }}>Partner</div>
-              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Per item</div>
-              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>Partner Amount</div>
+              <div className="helper" style={{ fontWeight: 600 }}>{t('partner')}</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>{t('orders.perItem')}</div>
+              <div className="helper" style={{ fontWeight: 600, textAlign: 'right' }}>{t('orderModal.partnerAmount')}</div>
             </div>
 
             {/* Partner Rows - aligned with 3-column grid */}
             {loadingPartners ? (
-              <div className="helper">Loading partner info...</div>
+              <div className="helper">{t('orderModal.loadingPartner')}</div>
             ) : (
               partnerSplits.map((split, idx) => {
                 const perItem = order.qty > 0 ? split.amount / order.qty : 0
@@ -288,21 +290,21 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
         {/* Additional Information */}
         {(order.discount || order.notes) && (
-          <div style={{ 
+          <div style={{
             marginTop: 8,
             paddingTop: 16,
             borderTop: '1px solid var(--line)'
           }}>
             {order.discount && (
               <div style={{ marginBottom: 8 }}>
-                <div className="helper" style={fieldStyle}>Discount</div>
+                <div className="helper" style={fieldStyle}>{t('orderModal.discount')}</div>
                 <div>{fmtMoney(order.discount)}</div>
               </div>
             )}
-            
+
             {order.notes && (
               <div>
-                <div className="helper" style={fieldStyle}>Notes</div>
+                <div className="helper" style={fieldStyle}>{t('notes')}</div>
                 <div>{order.notes}</div>
               </div>
             )}
@@ -310,26 +312,26 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         )}
 
         {/* Action Buttons */}
-        <div style={{ 
-          display: 'flex', 
-          gap: 8, 
+        <div style={{
+          display: 'flex',
+          gap: 8,
           marginTop: 16,
           paddingTop: 16,
           borderTop: '1px solid var(--line)'
         }}>
           <Link to={`/orders/${order.id}/edit`} style={{ flex: 1 }}>
-            <button 
+            <button
               className="primary"
               style={{ width: '100%' }}
             >
-              Edit Order
+              {t('orderModal.editOrder')}
             </button>
           </Link>
-          <button 
+          <button
             onClick={onClose}
             style={{ flex: 1 }}
           >
-            Close
+            {t('close')}
           </button>
         </div>
       </div>

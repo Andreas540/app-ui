@@ -1,5 +1,6 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatUSAny } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import {
@@ -99,6 +100,7 @@ function shouldHideProduct(name: string) {
   )
 }
 export default function SupplyChainOverview() {
+  const { t } = useTranslation()
   const [data, setData] = useState<SupplyChainData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -296,15 +298,15 @@ export default function SupplyChainOverview() {
 
   // Get demand title
   const getDemandTitle = () => {
-    if (demandFilter === '30d') return 'Demand: Last 30 days'
-    if (demandFilter === '3m') return 'Demand: Last 3 months'
-    if (demandFilter === '6m') return 'Demand: Last 6 months'
+    if (demandFilter === '30d') return t('supplyChain.demandTitle30Days')
+    if (demandFilter === '3m') return t('supplyChain.demandTitle3Months')
+    if (demandFilter === '6m') return t('supplyChain.demandTitle6Months')
     if (demandFilter === 'custom' && demandCustomFrom && demandCustomTo) {
       const from = new Date(demandCustomFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       const to = new Date(demandCustomTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      return `Demand: ${from} - ${to}`
+      return t('supplyChain.demandTitleCustomRange', { from, to })
     }
-    return 'Demand'
+    return t('supplyChain.demand')
   }
 
   // Create warehouse inventory lookup for color coding
@@ -443,7 +445,7 @@ export default function SupplyChainOverview() {
         </head>
         <body>
           <div class="controls">
-            <button class="btn btn-primary" onclick="window.print()">Print</button>
+            <button class="btn btn-primary" onclick="window.print()">${t('print')}</button>
             <button class="btn" onclick="window.close()">Close</button>
           </div>
 
@@ -490,8 +492,8 @@ export default function SupplyChainOverview() {
 
   const intFmt = new Intl.NumberFormat('en-US')
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const sectionHeaderStyle: React.CSSProperties = {
@@ -533,12 +535,12 @@ export default function SupplyChainOverview() {
 
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      <h3 style={{ margin: 0 }}>Supply Chain Overview</h3>
+      <h3 style={{ margin: 0 }}>{t('supplyChain.title')}</h3>
 
       {/* Section: Demand */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('demand')}>
-          <span>Demand</span>
+          <span>{t('supplyChain.demand')}</span>
           <span style={expandIconStyle}>{expandedSections.demand ? '−' : '+'}</span>
         </div>
 
@@ -563,7 +565,7 @@ export default function SupplyChainOverview() {
                 aria-pressed={demandFilter === '30d'}
                 style={{ height: 'calc(var(--control-h) * 0.67)' }}
               >
-                Last 30 d
+                {t('supplyChain.last30d')}
               </button>
               <button
                 className="primary"
@@ -575,7 +577,7 @@ export default function SupplyChainOverview() {
                 aria-pressed={demandFilter === '3m'}
                 style={{ height: 'calc(var(--control-h) * 0.67)' }}
               >
-                Last 3 m
+                {t('supplyChain.last3m')}
               </button>
               <button
                 className="primary"
@@ -587,14 +589,14 @@ export default function SupplyChainOverview() {
                 aria-pressed={demandFilter === '6m'}
                 style={{ height: 'calc(var(--control-h) * 0.67)' }}
               >
-                Last 6 m
+                {t('supplyChain.last6m')}
               </button>
             </div>
 
             {/* Filter row - Second row: Custom date range */}
             <div className="row row-2col-mobile" style={{ marginBottom: 16 }}>
               <div>
-                <label>From</label>
+                <label>{t('supplyChain.from')}</label>
                 <input
                   type="date"
                   value={demandCustomFrom}
@@ -608,7 +610,7 @@ export default function SupplyChainOverview() {
                 />
               </div>
               <div>
-                <label>To</label>
+                <label>{t('supplyChain.to')}</label>
                 <input
                   type="date"
                   value={demandCustomTo}
@@ -635,11 +637,11 @@ export default function SupplyChainOverview() {
 
             {/* Chart */}
             {demandLoading ? (
-              <p className="helper">Loading demand data...</p>
+              <p className="helper">{t('supplyChain.loadingDemand')}</p>
             ) : demandErr ? (
-              <p style={{ color: 'salmon' }}>Error: {demandErr}</p>
+              <p style={{ color: 'salmon' }}>{t('error')} {demandErr}</p>
             ) : filteredDemandData.length === 0 ? (
-              <p className="helper">No demand data for this period.</p>
+              <p className="helper">{t('supplyChain.noDemandData')}</p>
             ) : (
               <div style={{ height: 300, marginTop: 12, outline: 'none' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -705,7 +707,7 @@ export default function SupplyChainOverview() {
       {/* Section: Pay attention to */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('payAttention')}>
-          <span>Pay attention to</span>
+          <span>{t('supplyChain.payAttentionTo')}</span>
           <span style={expandIconStyle}>{expandedSections.payAttention ? '−' : '+'}</span>
         </div>
 
@@ -719,7 +721,7 @@ export default function SupplyChainOverview() {
       {/* Section 1: Recently delivered */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('recentDeliveries')}>
-          <span>Recently delivered</span>
+          <span>{t('supplyChain.recentlyDelivered')}</span>
           <span style={expandIconStyle}>{expandedSections.recentDeliveries ? '−' : '+'}</span>
         </div>
 
@@ -747,7 +749,7 @@ export default function SupplyChainOverview() {
                     fontSize: 18,
                     fontWeight: 'bold',
                   }}
-                  title="Previous week"
+                  title={t('supplyChain.previousWeek')}
                 >
                   ←
                 </button>
@@ -757,7 +759,7 @@ export default function SupplyChainOverview() {
                     {deliveryWeekHeader}
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                    Total qty delivered: {intFmt.format(deliveryTotalQty)}
+                    {t('supplyChain.totalQtyDelivered', { qty: intFmt.format(deliveryTotalQty) })}
                   </div>
                   {weeklyDeliveryData.length > 0 && (
                     <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -780,7 +782,7 @@ export default function SupplyChainOverview() {
                     fontWeight: 'bold',
                     opacity: weekOffset >= 0 ? 0.4 : 1,
                   }}
-                  title="Next week"
+                  title={t('supplyChain.nextWeek')}
                 >
                   →
                 </button>
@@ -788,7 +790,7 @@ export default function SupplyChainOverview() {
 
               {/* Horizontal bar chart */}
               {weeklyDeliveryData.length === 0 ? (
-                <p className="helper">No deliveries in this week.</p>
+                <p className="helper">{t('supplyChain.noDeliveriesThisWeek')}</p>
               ) : (
                 <div style={{
                   width: '100%',
@@ -853,7 +855,7 @@ export default function SupplyChainOverview() {
 
             {/* Original delivery list */}
             {data.recent_deliveries.filter(item => !shouldHideProduct(item.product)).length === 0 ? (
-              <p className="helper">No deliveries in the last 30 days.</p>
+              <p className="helper">{t('supplyChain.noDeliveriesLast30Days')}</p>
             ) : (
               <div>
                 <div
@@ -864,7 +866,7 @@ export default function SupplyChainOverview() {
                     ...tableHeaderStyle,
                   }}
                 >
-                  <div>Del. date</div>
+                  <div>{t('supplyChain.delDateColumn')}</div>
                   <div>Customer</div>
                   <div>Product</div>
                   <div style={{ textAlign: 'right' }}>Qty</div>
@@ -897,7 +899,7 @@ export default function SupplyChainOverview() {
       {/* NEW SECTION: Production */}
 <div style={{ marginTop: 20 }}>
   <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
-    <span>Production</span>
+    <span>{t('supplyChain.production')}</span>
     <span style={expandIconStyle}>{expandedSections.production ? '−' : '+'}</span>
   </div>
 
@@ -924,7 +926,7 @@ export default function SupplyChainOverview() {
         fontSize: 18,
         fontWeight: 'bold',
       }}
-      title="Previous week"
+      title={t('supplyChain.previousWeek')}
     >
       ←
     </button>
@@ -934,7 +936,7 @@ export default function SupplyChainOverview() {
         {productionWeekHeader}
       </div>
       <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-        Total qty produced: {intFmt.format(productionTotalQty)}
+        {t('supplyChain.totalQtyProduced', { qty: intFmt.format(productionTotalQty) })}
       </div>
       {weeklyProductionData.length > 0 && (
         <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -957,7 +959,7 @@ export default function SupplyChainOverview() {
         fontWeight: 'bold',
         opacity: productionWeekOffset >= 0 ? 0.4 : 1,
       }}
-      title="Next week"
+      title={t('supplyChain.nextWeek')}
     >
       →
     </button>
@@ -965,7 +967,7 @@ export default function SupplyChainOverview() {
 
   {/* Horizontal bar chart */}
   {weeklyProductionData.length === 0 ? (
-    <p className="helper">No production in this week.</p>
+    <p className="helper">{t('supplyChain.noDeliveriesThisWeek')}</p>
   ) : (
     <div style={{
       width: '100%',
@@ -1035,7 +1037,7 @@ export default function SupplyChainOverview() {
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle}>
           <span onClick={() => toggleSection('notDelivered')} style={{ cursor: 'pointer', flex: 1 }}>
-            Not delivered
+            {t('supplyChain.notDelivered')}
           </span>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button
@@ -1051,7 +1053,7 @@ export default function SupplyChainOverview() {
                 padding: '4px 8px',
                 color: 'white',
               }}
-              title="Print not delivered list"
+              title={t('supplyChain.printNotDelivered')}
             >
               🖨️
             </button>
@@ -1064,7 +1066,7 @@ export default function SupplyChainOverview() {
         {expandedSections.notDelivered && (
           <div style={{ marginTop: 12 }}>
             {data.not_delivered.length === 0 ? (
-              <p className="helper">No undelivered orders.</p>
+              <p className="helper">{t('supplyChain.noUndeliveredOrders')}</p>
             ) : (
               <div>
                 <div
@@ -1112,14 +1114,14 @@ export default function SupplyChainOverview() {
       {/* Section 3: In the warehouse */}
 <div style={{ marginTop: 20 }}>
   <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
-    <span>In the warehouse</span>
+    <span>{t('supplyChain.inWarehouse')}</span>
     <span style={expandIconStyle}>{expandedSections.warehouse ? '−' : '+'}</span>
   </div>
 
   {expandedSections.warehouse && (
     <div style={{ marginTop: 12 }}>
       {data.warehouse_inventory.length === 0 ? (
-        <p className="helper">No inventory data.</p>
+        <p className="helper">{t('supplyChain.noInventoryData')}</p>
       ) : (
         <div>
           {/* Header: 4 columns 25/25/25/25 */}
@@ -1133,8 +1135,8 @@ export default function SupplyChainOverview() {
             }}
           >
             <div>Product</div>
-            <div style={{ textAlign: 'right' }}>Pre-prod</div>
-            <div style={{ textAlign: 'right' }}>Finished</div>
+            <div style={{ textAlign: 'right' }}>{t('supplyChain.preProdColumn')}</div>
+            <div style={{ textAlign: 'right' }}>{t('supplyChain.finishedColumn')}</div>
             <div style={{ textAlign: 'right' }}>Total Qty</div>
           </div>
 
@@ -1198,14 +1200,14 @@ export default function SupplyChainOverview() {
       {/* Section 4: In Customs */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('inCustoms')}>
-          <span>In Customs</span>
+          <span>{t('supplyChain.inCustoms')}</span>
           <span style={expandIconStyle}>{expandedSections.inCustoms ? '−' : '+'}</span>
         </div>
 
         {expandedSections.inCustoms && (
           <div style={{ marginTop: 12 }}>
             {data.in_customs.length === 0 ? (
-              <p className="helper">No orders in customs.</p>
+              <p className="helper">{t('supplyChain.noOrdersInCustoms')}</p>
             ) : (
               <div>
                 <div
@@ -1243,14 +1245,14 @@ export default function SupplyChainOverview() {
       {/* Section 5: Ordered from suppliers */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
-          <span>Ordered from suppliers</span>
+          <span>{t('supplyChain.orderedFromSuppliers')}</span>
           <span style={expandIconStyle}>{expandedSections.orderedFromSuppliers ? '−' : '+'}</span>
         </div>
 
         {expandedSections.orderedFromSuppliers && (
           <div style={{ marginTop: 12 }}>
             {data.ordered_from_suppliers.length === 0 ? (
-              <p className="helper">No supplier orders.</p>
+              <p className="helper">{t('supplyChain.noSupplierOrders')}</p>
             ) : (
               <div>
                 <div

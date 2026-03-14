@@ -1,12 +1,14 @@
 // src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, createOrder, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 type PartnerRef = { id: string; name: string }
 
 export default function NewOrder() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -274,8 +276,8 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
   const partner1TotalStr = partner1Total > 0 ? usdFmt.format(partner1Total) : ''
   const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
 
 const hasCustomers = people.length > 0
 const hasProducts = filteredProducts.length > 0
@@ -286,12 +288,12 @@ const hasProducts = filteredProducts.length > 0
   return (
     <div className="card" style={{maxWidth: 720}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
-        <h3 style={{ margin:0 }}>New Order</h3>
+        <h3 style={{ margin:0 }}>{t('orders.newOrderTitle')}</h3>
 
         {/* Profit display - top right (only for positive orders) */}
         {Number.isFinite(orderValue) && orderValue > 0 && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
-            <div style={{ color: 'var(--text-secondary)' }}>Profit</div>
+            <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
               ${profit.toFixed(2)}
             </div>
@@ -304,15 +306,15 @@ const hasProducts = filteredProducts.length > 0
 
       {/* Search customer (full width) */}
       <div style={{ marginTop: 12, position: 'relative' }}>
-        <label>Search customer</label>
+        <label>{t('orders.searchCustomer')}</label>
 {!hasCustomers && (
   <div className="helper" style={{ marginTop: 4 }}>
-    No customers yet — create your first customer to place an order.
+    {t('orders.noCustomersYet')}
   </div>
 )}
         <input
           ref={inputRef}
-          placeholder="Start typing a name…"
+          placeholder={t('orders.startTyping')}
           value={query}
           onChange={(e) => {
             const val = e.target.value
@@ -368,7 +370,7 @@ const hasProducts = filteredProducts.length > 0
       {/* Product | Order date */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Product</label>
+          <label>{t('product')}</label>
           <select
   value={productId}
   onChange={e=>setProductId(e.target.value)}
@@ -376,14 +378,14 @@ const hasProducts = filteredProducts.length > 0
   disabled={!hasProducts}
 >
   {!hasProducts ? (
-    <option value="">No products yet — create a product first</option>
+    <option value="">{t('orders.noProductsYet')}</option>
   ) : (
     filteredProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
   )}
 </select>
         </div>
         <div>
-          <label>Order date</label>
+          <label>{t('orders.orderDate')}</label>
           <input
             type="date"
             value={orderDate}
@@ -396,7 +398,7 @@ const hasProducts = filteredProducts.length > 0
       {/* Quantity | Price | Price last time - now equal thirds */}
       <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <div>
-          <label>Quantity</label>
+          <label>{t('quantity')}</label>
           <input
             type="text"
             inputMode="numeric"
@@ -407,7 +409,7 @@ const hasProducts = filteredProducts.length > 0
           />
         </div>
         <div>
-          <label>Price</label>
+          <label>{t('price')}</label>
           <input
             type="text"
             inputMode="decimal"
@@ -423,7 +425,7 @@ const hasProducts = filteredProducts.length > 0
           />
         </div>
         <div>
-          <label>Price last time</label>
+          <label>{t('orders.priceLastTime')}</label>
           <input
             type="text"
             value={
@@ -441,7 +443,7 @@ const hasProducts = filteredProducts.length > 0
       {/* Order value | Delivered */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Order value</label>
+          <label>{t('orders.orderValue')}</label>
           <input
             type="text"
             value={orderValueStr}
@@ -453,7 +455,7 @@ const hasProducts = filteredProducts.length > 0
 
         {/* Delivered: only the checkbox toggles; show "Yes" only when checked */}
         <div>
-          <label>Delivered</label>
+          <label>{t('delivered')}</label>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
             <input
               type="checkbox"
@@ -461,7 +463,7 @@ const hasProducts = filteredProducts.length > 0
               onChange={e => setDelivered(e.target.checked)}
               style={{ width: 18, height: 18 }}
             />
-            {delivered && <span className="helper">Yes</span>}
+            {delivered && <span className="helper">{t('yes')}</span>}
           </div>
         </div>
       </div>
@@ -472,7 +474,7 @@ const hasProducts = filteredProducts.length > 0
           {/* Partner 1 row: now equal thirds */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
-              <label>Partner 1</label>
+              <label>{t('orders.partner1')}</label>
               <select
                 value={partner1Id}
                 onChange={e=>setPartner1Id(e.target.value)}
@@ -485,7 +487,7 @@ const hasProducts = filteredProducts.length > 0
               </select>
             </div>
             <div>
-              <label>Per item</label>
+              <label>{t('orders.perItem')}</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -496,7 +498,7 @@ const hasProducts = filteredProducts.length > 0
               />
             </div>
             <div>
-              <label>To Partner 1</label>
+              <label>{t('orders.toPartner1')}</label>
               <input
                 type="text"
                 value={partner1TotalStr}
@@ -510,7 +512,7 @@ const hasProducts = filteredProducts.length > 0
           {/* Partner 2 row: now equal thirds */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
-              <label>Partner 2</label>
+              <label>{t('orders.partner2')}</label>
               <select
                 value={partner2Id}
                 onChange={e=>setPartner2Id(e.target.value)}
@@ -523,7 +525,7 @@ const hasProducts = filteredProducts.length > 0
               </select>
             </div>
             <div>
-              <label>Per item</label>
+              <label>{t('orders.perItem')}</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -534,7 +536,7 @@ const hasProducts = filteredProducts.length > 0
               />
             </div>
             <div>
-              <label>To Partner 2</label>
+              <label>{t('orders.toPartner2')}</label>
               <input
                 type="text"
                 value={partner2TotalStr}
@@ -549,10 +551,10 @@ const hasProducts = filteredProducts.length > 0
 
       {/* Notes field - always shows, always last */}
       <div style={{ marginTop: 12 }}>
-        <label>Notes (optional)</label>
+        <label>{t('notesOptional')}</label>
         <input
           type="text"
-          placeholder="Add notes about this order..."
+          placeholder={t('optionalNotesPlaceholder')}
           value={notes}
           onChange={e => setNotes(e.target.value)}
           style={{ height: CONTROL_H }}
@@ -595,7 +597,7 @@ const hasProducts = filteredProducts.length > 0
       {showMoreFields && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
-            <label>Product cost this order</label>
+            <label>{t('orders.productCostThisOrder')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -606,7 +608,7 @@ const hasProducts = filteredProducts.length > 0
             />
           </div>
           <div>
-            <label>Shipping cost this order</label>
+            <label>{t('orders.shippingCostThisOrder')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -622,18 +624,18 @@ const hasProducts = filteredProducts.length > 0
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button className="primary" onClick={async () => {
           // save flow
-          if (!person) { alert('Select a customer first'); return }
-          if (!product) { alert('Pick a product'); return }
+          if (!person) { alert(t('orders.alertSelectCustomer')); return }
+          if (!product) { alert(t('orders.alertPickProduct')); return }
 
           const qty = parseInt(qtyStr || '0', 10)
-          if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a quantity > 0'); return }
+          if (!Number.isInteger(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
 
           const unitPrice = parsePriceToNumber(priceStr)
-          if (!Number.isFinite(unitPrice)) { alert('Enter a valid unit price'); return }
+          if (!Number.isFinite(unitPrice)) { alert(t('orders.alertEnterPrice')); return }
           if (isRefundProduct) {
-            if (!(unitPrice < 0)) { alert('Refund/Discount requires a NEGATIVE unit price'); return }
+            if (!(unitPrice < 0)) { alert(t('orders.alertRefundNegative')); return }
           } else {
-            if (!(unitPrice > 0)) { alert('Enter a unit price > 0'); return }
+            if (!(unitPrice > 0)) { alert(t('orders.alertEnterPositivePrice')); return }
           }
 
           // Build partner_splits only for Partner customers
@@ -678,7 +680,7 @@ const hasProducts = filteredProducts.length > 0
               partner_splits: splits.length ? splits : undefined,
             })
 
-            alert(`Saved! Order #${order_no}`)
+            alert(t('orders.orderSaved', { number: order_no }))
 
             // Post-save reset
             const params = new URLSearchParams(location.search)
@@ -700,9 +702,9 @@ const hasProducts = filteredProducts.length > 0
             setProductCostStr(''); setShippingCostStr('')
             setShowMoreFields(false)
           } catch (e: any) {
-            alert(e?.message || 'Save failed')
+            alert(e?.message || t('payments.alertSaveFailed'))
           }
-        }} style={{ height: CONTROL_H }}>Save order</button>
+        }} style={{ height: CONTROL_H }}>{t('orders.saveOrder')}</button>
 
         <button
           onClick={() => {
@@ -712,13 +714,13 @@ const hasProducts = filteredProducts.length > 0
           }}
           style={{ height: CONTROL_H }}
         >
-          Clear
+          {t('clear')}
         </button>
         <button
           onClick={() => setShowMoreFields(v => !v)}
           style={{ height: CONTROL_H }}
         >
-          {showMoreFields ? 'Less' : 'More'}
+          {showMoreFields ? t('orders.less') : t('orders.more')}
         </button>
       </div>
     </div>

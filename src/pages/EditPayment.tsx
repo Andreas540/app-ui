@@ -1,6 +1,7 @@
 // src/pages/EditPayment.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   fetchBootstrap, 
   PAYMENT_TYPES, 
@@ -21,6 +22,7 @@ export default function EditPayment() {
   const { paymentId } = useParams<{ paymentId: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   const paymentTypeParam = searchParams.get('type')
   const isPartnerPayment = paymentTypeParam === 'partner'
@@ -160,7 +162,7 @@ export default function EditPayment() {
   async function save() {
     const amountNum = Number((amountStr || '').replace(',', '.'))
     if (!Number.isFinite(amountNum) || amountNum === 0) {
-      alert('Enter a valid non-zero amount')
+      alert(t('editPayment.alertEnterAmount'))
       return
     }
 
@@ -191,41 +193,41 @@ export default function EditPayment() {
         body: JSON.stringify(body)
       })
 
-      if (!res.ok) throw new Error('Failed to update payment')
-      
-      alert('Payment updated!')
+      if (!res.ok) throw new Error(t('editPayment.failedUpdate'))
+
+      alert(t('editPayment.updated'))
       navigate(-1)
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
   async function deletePayment() {
-    if (!confirm('Delete this payment? This cannot be undone.')) return
+    if (!confirm(t('editPayment.confirmDelete'))) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       let endpoint = 'payment'
       if (isPartnerPayment) endpoint = 'partner-payment'
       if (isSupplierPayment) endpoint = 'supplier-payment'
-      
+
       const res = await fetch(`${base}/api/${endpoint}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
         body: JSON.stringify({ id: paymentId })
       })
 
-      if (!res.ok) throw new Error('Failed to delete payment')
-      
-      alert('Payment deleted')
+      if (!res.ok) throw new Error(t('editPayment.failedDelete'))
+
+      alert(t('editPayment.deleted'))
       navigate(-1)
     } catch (e: any) {
-      alert(e?.message || 'Delete failed')
+      alert(e?.message || t('editPayment.deleteFailed'))
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
   let paymentTypes, entityList, entityLabel
@@ -233,20 +235,20 @@ export default function EditPayment() {
   if (isPartnerPayment) {
     paymentTypes = PARTNER_PAYMENT_TYPES
     entityList = partners
-    entityLabel = 'Partner'
+    entityLabel = t('partner')
   } else if (isSupplierPayment) {
     paymentTypes = SUPPLIER_PAYMENT_TYPES
     entityList = suppliers
-    entityLabel = 'Supplier'
+    entityLabel = t('supplier')
   } else {
     paymentTypes = PAYMENT_TYPES
     entityList = customers
-    entityLabel = 'Customer'
+    entityLabel = t('customer')
   }
 
   return (
     <div className="card" style={{maxWidth:720}}>
-      <h3>Edit Payment</h3>
+      <h3>{t('editPayment.title')}</h3>
 
       <div className="row row-2col-mobile" style={{marginTop:12}}>
         <div>
@@ -258,14 +260,14 @@ export default function EditPayment() {
           </select>
         </div>
         <div>
-          <label>Payment date</label>
+          <label>{t('editPayment.paymentDate')}</label>
           <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 
       <div className="row row-2col-mobile" style={{marginTop:12}}>
         <div>
-          <label>Payment Type</label>
+          <label>{t('editPayment.paymentType')}</label>
           <select value={paymentType} onChange={e=>setPaymentType(e.target.value as any)} style={{ height: CONTROL_H }}>
             {paymentTypes.map(t => (
               <option key={t} value={t}>{t}</option>
@@ -273,7 +275,7 @@ export default function EditPayment() {
           </select>
         </div>
         <div>
-          <label>Amount (USD)</label>
+          <label>{t('editPayment.amountUSD')}</label>
           <input
             type="text"
             placeholder="0.00"
@@ -295,25 +297,25 @@ export default function EditPayment() {
 
       <div className="row" style={{marginTop:12}}>
         <div style={{gridColumn:'1 / -1'}}>
-          <label>Notes (optional)</label>
+          <label>{t('notesOptional')}</label>
           <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 
       <div style={{marginTop:16, display:'flex', gap:8}}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save changes</button>
-        <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>Cancel</button>
+        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>
+        <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>{t('cancel')}</button>
         <button
           onClick={deletePayment}
-          style={{ 
-            height: CONTROL_H, 
+          style={{
+            height: CONTROL_H,
             marginLeft: 'auto',
             backgroundColor: 'salmon',
             color: 'white',
             border: 'none'
           }}
         >
-          Delete
+          {t('delete')}
         </button>
       </div>
     </div>

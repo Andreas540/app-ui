@@ -3,6 +3,7 @@ import MaintenanceGate from './components/MaintenanceGate'
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
 
 import Dashboard from './pages/Dashboard'
@@ -147,6 +148,7 @@ function EmployeeShell() {
 }
 
 function MainApp() {
+  const { t } = useTranslation('navigation')
   const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -348,7 +350,7 @@ useEffect(() => {
                 width: '100%',
               }}
             >
-              Welcome {userName}!
+              {t('welcome', { name: userName })}
             </div>
             <div
               style={{
@@ -397,12 +399,12 @@ useEffect(() => {
                 <>
                   {canAccess('dashboard') && (
                     <NavLink to="/" onClick={() => setNavOpen(false)}>
-                      Store Dashboard
+                      {t('storeDashboard')}
                     </NavLink>
                   )}
                   {canAccess('settings') && (
                     <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                      Settings
+                      {t('settings')}
                     </NavLink>
                   )}
                   <button
@@ -418,7 +420,7 @@ useEffect(() => {
                       width: '75%',
                     }}
                   >
-                    Logout
+                    {t('logout')}
                   </button>
                 </>
               )
@@ -426,118 +428,118 @@ useEffect(() => {
 
             return (
               <>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Sales & Cash Flow</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('salesCashFlow')}</div>
                 {canAccess('dashboard') && (
                   <NavLink to="/" end onClick={() => setNavOpen(false)}>
-                    Main Dashboard
+                    {t('mainDashboard')}
                   </NavLink>
                 )}
                 {canAccess('customers') && (
                   <NavLink to="/customers" onClick={() => setNavOpen(false)}>
-                    Customers
+                    {t('customers')}
                   </NavLink>
                 )}
                 {canAccess('partners') && (
                   <NavLink to="/partners" onClick={() => setNavOpen(false)}>
-                    Partners
+                    {t('partners')}
                   </NavLink>
                 )}
                 {canAccess('price-checker') && (
                   <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
-                    Price Checker
+                    {t('priceChecker')}
                   </NavLink>
                 )}
                 {canAccess('orders') && (
                   <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
-                    New Order
+                    {t('newOrder')}
                   </NavLink>
                 )}
                 {canAccess('payments') && (
                   <NavLink to="/payments" onClick={() => setNavOpen(false)}>
-                    New Payment
+                    {t('newPayment')}
                   </NavLink>
                 )}
                 {canAccess('products') && (
                   <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
-                    Products
+                    {t('products')}
                   </NavLink>
                 )}
                 {canAccess('invoices') && (
                   <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
-                    Create Invoice
+                    {t('createInvoice')}
                   </NavLink>
                 )}
                 {canAccess('costs') && (
                   <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
-                    New Cost
+                    {t('newCost')}
                   </NavLink>
                 )}
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Supply Chain</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('supplyChain')}</div>
                 {canAccess('supply-chain') && (
                   <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
-                    Supply & Demand
+                    {t('supplyDemand')}
                   </NavLink>
                 )}
                 {canAccess('production') && (
                   <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
-                    Production
+                    {t('production')}
                   </NavLink>
                 )}
                 {canAccess('warehouse') && (
                   <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
-                    Warehouse
+                    {t('warehouse')}
                   </NavLink>
                 )}
                 {canAccess('supplier-orders') && (
                   <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
-                    New Order (S)
+                    {t('newOrderSupplier')}
                   </NavLink>
                 )}
                 {canAccess('suppliers') && (
                   <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
-                    Suppliers
+                    {t('suppliers')}
                   </NavLink>
                 )}
 
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Employee Management</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('employeeManagement')}</div>
                 {canAccess('employees') && (
                   <NavLink to="/employees" onClick={() => setNavOpen(false)}>
-                    Employees
+                    {t('employees')}
                   </NavLink>
                 )}
                 {canAccess('time-approval') && (
                   <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
-                    Time Approval
+                    {t('timeApproval')}
                   </NavLink>
                 )}
                 {canAccess('time-entry') && (
                   <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
-                    Time Entry
+                    {t('timeEntry')}
                   </NavLink>
                 )}
 
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Admin</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('admin')}</div>
                 <NavLink to="/contact" onClick={() => setNavOpen(false)}>
-                  Contact
+                  {t('contact')}
                 </NavLink>
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
                   <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-                    Account Admin
+                    {t('accountAdmin')}
                   </NavLink>
                 )}
                 {canAccess('settings') && (
                   <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                    Settings
+                    {t('settings')}
                   </NavLink>
                 )}
                 {user?.role === 'super_admin' && (
                   <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
-                    Super Admin
+                    {t('superAdmin')}
                   </NavLink>
                 )}
                 {user?.role === 'super_admin' && (
                   <NavLink to="/messages" onClick={() => setNavOpen(false)}>
-                    Messages
+                    {t('messages')}
                   </NavLink>
                 )}
 
@@ -554,7 +556,7 @@ useEffect(() => {
                     width: '75%',
                   }}
                 >
-                  Logout
+                  {t('logout')}
                 </button>
               </>
             )

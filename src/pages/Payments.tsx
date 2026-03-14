@@ -1,6 +1,7 @@
 // src/pages/Payments.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   fetchBootstrap,
   getAuthHeaders,
@@ -23,6 +24,7 @@ type PartnerLite = { id: string; name: string }
 type SupplierLite = { id: string; name: string }
 
 export default function Payments() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
@@ -301,19 +303,19 @@ useEffect(() => {
 
   // --- Save handlers ---
   async function saveCustomerPayment() {
-    if (!customer) { alert('Select a customer'); return }
+    if (!customer) { alert(t('payments.alertSelectCustomer')); return }
 
     // Require partner selection when "Partner credit"
     if (isPartnerCredit) {
       if (!partnerForCreditId) {
-        alert('Choose a partner for this Partner credit.')
+        alert(t('payments.alertChoosePartner'))
         return
       }
     }
 
     const amountNum = Number((amountStr || '').replace(',', '.'))
     if (!Number.isFinite(amountNum) || amountNum === 0) {
-      alert('Enter a non-zero amount (use negative for credits if desired)')
+      alert(t('payments.alertEnterAmount'))
       return
     }
 
@@ -340,7 +342,7 @@ useEffect(() => {
         })
       }
 
-      alert('Payment saved!')
+      alert(t('payments.saved'))
       const params = new URLSearchParams(location.search)
       const returnTo = params.get('return_to')
       const returnId = params.get('return_id')
@@ -355,15 +357,15 @@ useEffect(() => {
       // Reset partner-for-credit to first partner for convenience
       if (partners.length) setPartnerForCreditId(partners[0].id)
     } catch (e:any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
   async function savePartnerPayment() {
-    if (!partner) { alert('Select a partner'); return }
+    if (!partner) { alert(t('payments.alertSelectPartner')); return }
     const amountNum = Number((partnerAmountStr || '').replace(',', '.'))
     if (!Number.isFinite(amountNum) || amountNum === 0) {
-      alert('Enter a non-zero amount')
+      alert(t('payments.alertEnterAmountSimple'))
       return
     }
     try {
@@ -374,20 +376,20 @@ useEffect(() => {
         payment_date: partnerDate,
         notes: partnerNotes.trim() || null,
       })
-      alert('Partner payment saved!')
+      alert(t('payments.partnerSaved'))
       setPartnerAmountStr('')
       setPartnerPaymentType('Cash')
       setPartnerNotes('')
     } catch (e:any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
   async function saveSupplierPayment() {
-  if (!supplier) { alert('Select a supplier'); return }
+  if (!supplier) { alert(t('payments.alertSelectSupplier')); return }
   const amountNum = Number((supplierAmountStr || '').replace(',', '.'))
   if (!Number.isFinite(amountNum) || amountNum === 0) {
-    alert('Enter a non-zero amount')
+    alert(t('payments.alertEnterAmountSimple'))
     return
   }
   try {
@@ -398,7 +400,7 @@ useEffect(() => {
       payment_date: supplierDate,
       notes: supplierNotes.trim() || null,
     })
-    alert('Supplier payment saved!')
+    alert(t('payments.supplierSaved'))
     
     // Check if we should return to supplier detail
     const params = new URLSearchParams(location.search)
@@ -413,13 +415,13 @@ useEffect(() => {
     setSupplierPaymentType('Cash')
     setSupplierNotes('')
   } catch (e:any) {
-    alert(e?.message || 'Save failed')
+    alert(e?.message || t('payments.alertSaveFailed'))
   }
 }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
-  if (!people.length) return <div className="card"><p>No customers found.</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+  if (!people.length) return <div className="card"><p>{t('payments.noCustomersFound')}</p></div>
 
   const CONTROL_H = 44
   const directCustomers = people.filter(p => p.customer_type === 'BLV' || p.customer_type === 'Direct')
@@ -437,7 +439,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
             onChange={e => { if (e.target.checked) setPaymentDirection('customer') }}
             style={{ width: 18, height: 18 }}
           />
-          <span>From customer</span>
+          <span>{t('payments.fromCustomer')}</span>
         </label>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
@@ -446,7 +448,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
             onChange={e => { if (e.target.checked) setPaymentDirection('partner') }}
             style={{ width: 18, height: 18 }}
           />
-          <span>To partner</span>
+          <span>{t('payments.toPartner')}</span>
         </label>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
           <input
@@ -455,24 +457,24 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
             onChange={e => { if (e.target.checked) setPaymentDirection('supplier') }}
             style={{ width: 18, height: 18 }}
           />
-          <span>To supplier</span>
+          <span>{t('payments.toSupplier')}</span>
         </label>
       </div>
 
       {paymentDirection === 'customer' ? (
         <>
-          <h3>Payments</h3>
-          
+          <h3>{t('payments.title')}</h3>
+
           <div className="row row-2col-mobile" style={{marginTop:12}}>
             <div>
-              <label>Customer</label>
+              <label>{t('customer')}</label>
               <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
                 {hasCustomerType ? (
                   <>
                     <optgroup label={config.labels.directCustomerGroup}>
   {directCustomers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
 </optgroup>
-                    <optgroup label="Customer via Partner">
+                    <optgroup label={t('payments.customerViaPartner')}>
                       {viaPartner.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </optgroup>
                   </>
@@ -482,7 +484,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
               </select>
             </div>
             <div>
-              <label>Payment date</label>
+              <label>{t('payments.paymentDate')}</label>
               <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
           </div>
@@ -490,7 +492,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
           {config.payments.showOrderSelection && (
             <div className="row" style={{ marginTop: 12 }}>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label>Order (optional)</label>
+                <label>{t('payments.orderOptional')}</label>
                 <select
                   value={selectedOrderId}
                   onChange={e => {
@@ -505,7 +507,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   }}
                   style={{ height: CONTROL_H }}
                 >
-                  <option value="">Choose order</option>
+                  <option value="">{t('payments.chooseOrder')}</option>
                   {orders.map(o => (
                     <option key={o.id} value={o.id}>
                       #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)}
@@ -518,7 +520,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
           <div className="row row-2col-mobile" style={{marginTop:12}}>
             <div>
-              <label>Payment Type</label>
+              <label>{t('payments.paymentType')}</label>
               <select
                 value={paymentType}
                 onChange={e=>{
@@ -530,11 +532,11 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 }}
                 style={{ height: CONTROL_H }}
               >
-                {PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
             <div>
-              <label>Amount (USD)</label>
+              <label>{t('payments.amountUSD')}</label>
               <input
                 type="text"
                 placeholder="0.00"
@@ -558,7 +560,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
           {isPartnerCredit && (
             <div className="row" style={{marginTop:12}}>
               <div style={{gridColumn:'1 / -1'}}>
-                <label>Partner</label>
+                <label>{t('partner')}</label>
                 <select
                   value={partnerForCreditId}
                   onChange={e=>setPartnerForCreditId(e.target.value)}
@@ -574,60 +576,60 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
           <div className="row" style={{marginTop:12}}>
             <div style={{gridColumn:'1 / -1'}}>
-              <label>Notes (optional)</label>
+              <label>{t('notesOptional')}</label>
               <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
           </div>
 
           <div style={{marginTop:16, display:'flex', gap:8}}>
-            <button className="primary" onClick={saveCustomerPayment} style={{ height: CONTROL_H }}>Save payment</button>
+            <button className="primary" onClick={saveCustomerPayment} style={{ height: CONTROL_H }}>{t('payments.savePayment')}</button>
             <button
-              onClick={()=>{ 
-                setAmountStr(''); 
-                setPaymentType('Cash payment'); 
-                setNotes(''); 
+              onClick={()=>{
+                setAmountStr('');
+                setPaymentType('Cash payment');
+                setNotes('');
                 if (partners.length) setPartnerForCreditId(partners[0].id)
               }}
               style={{ height: CONTROL_H }}
             >
-              Clear
+              {t('clear')}
             </button>
           </div>
 
           <p className="helper" style={{marginTop:12}}>
-            Positive = money received; negative = credit/discount/fee if you choose to represent it that way.
+            {t('payments.helpText')}
           </p>
         </>
       ) : paymentDirection === 'partner' ? (
         <>
-          <h3>Payment to Partner</h3>
+          <h3>{t('payments.paymentToPartner')}</h3>
 
           {partners.length === 0 ? (
-            <p className="helper" style={{marginTop:12}}>No partners found. Create partners first.</p>
+            <p className="helper" style={{marginTop:12}}>{t('payments.noPartners')}</p>
           ) : (
             <>
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
-                  <label>Partner</label>
+                  <label>{t('partner')}</label>
                   <select value={partnerId} onChange={e=>setPartnerId(e.target.value)} style={{ height: CONTROL_H }}>
                     {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label>Payment date</label>
+                  <label>{t('payments.paymentDate')}</label>
                   <input type="date" value={partnerDate} onChange={e=>setPartnerDate(e.target.value)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
-                  <label>Payment Type</label>
+                  <label>{t('payments.paymentType')}</label>
                   <select value={partnerPaymentType} onChange={e=>setPartnerPaymentType(e.target.value as PartnerPaymentType)} style={{ height: CONTROL_H }}>
-                    {PARTNER_PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {PARTNER_PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label>Amount (USD)</label>
+                  <label>{t('payments.amountUSD')}</label>
                   <input
                     type="text"
                     placeholder="0.00"
@@ -649,48 +651,48 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
               <div className="row" style={{marginTop:12}}>
                 <div style={{gridColumn:'1 / -1'}}>
-                  <label>Notes (optional)</label>
+                  <label>{t('notesOptional')}</label>
                   <input type="text" value={partnerNotes} onChange={e=>setPartnerNotes(e.target.value)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 
               <div style={{marginTop:16, display:'flex', gap:8}}>
-                <button className="primary" onClick={savePartnerPayment} style={{ height: CONTROL_H }}>Save payment</button>
-                <button onClick={()=>{ setPartnerAmountStr(''); setPartnerPaymentType('Cash'); setPartnerNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
+                <button className="primary" onClick={savePartnerPayment} style={{ height: CONTROL_H }}>{t('payments.savePayment')}</button>
+                <button onClick={()=>{ setPartnerAmountStr(''); setPartnerPaymentType('Cash'); setPartnerNotes(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
               </div>
             </>
           )}
         </>
       ) : (
         <>
-          <h3>Payment to Supplier</h3>
+          <h3>{t('payments.paymentToSupplier')}</h3>
 
           {suppliers.length === 0 ? (
-            <p className="helper" style={{marginTop:12}}>No suppliers found. Create suppliers first.</p>
+            <p className="helper" style={{marginTop:12}}>{t('payments.noSuppliers')}</p>
           ) : (
             <>
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
-                  <label>Supplier</label>
+                  <label>{t('supplier')}</label>
                   <select value={supplierId} onChange={e=>setSupplierId(e.target.value)} style={{ height: CONTROL_H }}>
                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label>Payment date</label>
+                  <label>{t('payments.paymentDate')}</label>
                   <input type="date" value={supplierDate} onChange={e=>setSupplierDate(e.target.value)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
-                  <label>Payment Type</label>
+                  <label>{t('payments.paymentType')}</label>
                   <select value={supplierPaymentType} onChange={e=>setSupplierPaymentType(e.target.value as SupplierPaymentType)} style={{ height: CONTROL_H }}>
-                    {SUPPLIER_PAYMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {SUPPLIER_PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label>Amount (USD)</label>
+                  <label>{t('payments.amountUSD')}</label>
                   <input
                     type="text"
                     placeholder="0.00"
@@ -712,14 +714,14 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
               <div className="row" style={{marginTop:12}}>
                 <div style={{gridColumn:'1 / -1'}}>
-                  <label>Notes (optional)</label>
+                  <label>{t('notesOptional')}</label>
                   <input type="text" value={supplierNotes} onChange={e=>setSupplierNotes(e.target.value)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 
               <div style={{marginTop:16, display:'flex', gap:8}}>
-                <button className="primary" onClick={saveSupplierPayment} style={{ height: CONTROL_H }}>Save payment</button>
-                <button onClick={()=>{ setSupplierAmountStr(''); setSupplierPaymentType('Cash'); setSupplierNotes(''); }} style={{ height: CONTROL_H }}>Clear</button>
+                <button className="primary" onClick={saveSupplierPayment} style={{ height: CONTROL_H }}>{t('payments.savePayment')}</button>
+                <button onClick={()=>{ setSupplierAmountStr(''); setSupplierPaymentType('Cash'); setSupplierNotes(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
               </div>
             </>
           )}

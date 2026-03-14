@@ -52,10 +52,13 @@
   "customer": "Customer",
   "partner": "Partner",
   "supplier": "Supplier",
+  "admin": "Admin",
+  "tenant": "Tenant",
   "price": "Price",
   "cost": "Cost",
   "hrs": "hrs",
   "refresh": "Refresh",
+  "reset": "Reset",
   "noResults": "No results.",
   "clearSearch": "Clear Search",
   "showMore": "Show more",
@@ -292,7 +295,12 @@
     "shippingCostPlaceholder": "e.g. 0.35",
     "applyCostToHistory": "Apply new cost to all previous orders",
     "applyCostFromNextOrder": "New cost valid from next order",
-    "applyCostFromSpecificDate": "Valid from specific date"
+    "applyCostFromSpecificDate": "Valid from specific date",
+    "created": "Customer created",
+    "contact": "Contact",
+    "alertNameRequired": "Name is required",
+    "alertShippingNumber": "Shipping cost must be a number (or leave empty)",
+    "failedUpdate": "Failed to update customer"
   },
 
   "customerDetail": {
@@ -340,7 +348,10 @@
     "alertEnterAmountSimple": "Enter a non-zero amount",
     "partnerSaved": "Partner payment saved!",
     "alertSelectSupplier": "Select a supplier",
-    "supplierSaved": "Supplier payment saved!"
+    "supplierSaved": "Supplier payment saved!",
+    "alertSaveFailed": "Save failed",
+    "noCustomersFound": "No customers found.",
+    "customerViaPartner": "Customer via Partner"
   },
 
   "orders": {
@@ -398,10 +409,12 @@
     "preProdColumn": "Pre-prod",
     "finishedColumn": "Finished",
     "totalQtyColumn": "Total Qty",
+    "notesPlaceholder": "Add notes about this entry...",
     "alertSelectProduct": "Select a product first",
     "alertEnterQuantity": "Enter a valid quantity (cannot be 0)",
     "alertSelectDate": "Select a date",
     "saved": "Warehouse entry saved!",
+    "saveFailed": "Save failed",
     "noProducts": "No products available."
   },
 
@@ -414,6 +427,7 @@
     "productCosts": "Product costs",
     "currentCosts": "Current costs",
     "historicalCosts": "Historical costs",
+    "created": "Product created!",
     "noProducts": "No products yet.",
     "noHistoricalCosts": "No historical costs yet.",
     "editProductTitle": "Edit Product",
@@ -459,7 +473,11 @@
     "createTitle": "Create New Supplier",
     "supplierName": "Supplier Name",
     "supplierNameRequired": "Supplier Name *",
-    "editTitle": "Edit Supplier"
+    "editTitle": "Edit Supplier",
+    "alertNoName": "Enter a supplier name",
+    "created": "Supplier created",
+    "alertNameRequired": "Supplier name is required",
+    "updated": "Supplier updated successfully"
   },
 
   "partners": {
@@ -486,7 +504,11 @@
     "paymentsToPartner": "Payments to partner",
     "createTitle": "Create New Partner",
     "partnerName": "Partner Name",
-    "editTitle": "Edit Partner"
+    "editTitle": "Edit Partner",
+    "alertNoName": "Enter a partner name",
+    "created": "Partner created",
+    "alertNameRequired": "Name is required",
+    "failedUpdate": "Failed to update partner"
   },
 
   "supplyChain": {
@@ -557,7 +579,23 @@
     "noDescription": "(No description)",
     "businessNonRecurring": "Business non-recurring costs",
     "privateNonRecurring": "Private non-recurring costs",
-    "noCostsFound": "No costs found for the last 3 months"
+    "noCostsFound": "No costs found for the last 3 months",
+    "loadingCosts": "Loading costs...",
+    "saved": "Cost saved successfully!",
+    "updated": "Cost updated successfully!",
+    "deleted": "Cost deleted successfully!",
+    "confirmDelete": "Are you sure you want to delete this cost?",
+    "failedLoadCategories": "Failed to load cost categories",
+    "failedLoadTypes": "Failed to load cost types",
+    "failedLoadForEdit": "Failed to load cost for editing",
+    "failedSave": "Failed to save cost",
+    "failedDelete": "Failed to delete cost",
+    "alertSelectCategory": "Please select a cost category",
+    "alertSelectType": "Please select a cost type",
+    "alertSelectDate": "Please select a date",
+    "alertEnterAmount": "Please enter an amount",
+    "alertEnterValidAmount": "Please enter a valid amount",
+    "alertIntervalMin": "Recurrence interval must be at least 1"
   },
 
   "invoice": {
@@ -595,7 +633,11 @@
     "subtotal": "Subtotal",
     "adjustments": "Adjustments/Discount",
     "downloadInvoice": "Download invoice",
-    "pressToShare": "Press invoice to share"
+    "pressToShare": "Press invoice to share",
+    "invoiceFor": "Invoice for",
+    "invoiceHash": "Invoice #",
+    "estDelivery": "Est. delivery",
+    "invoiceSnapshot": "Invoice Snapshot"
   },
 
   "supplierOrders": {
@@ -609,14 +651,30 @@
     "orderStatus": "Order Status",
     "deliveryDate": "Delivery date",
     "inCustomsDate": "In customs date",
-    "receivedDate": "Received date"
+    "receivedDate": "Received date",
+    "orderDate": "Order date",
+    "saved": "Supplier order saved",
+    "updated": "Supplier order updated",
+    "deleted": "Order deleted",
+    "failedDelete": "Failed to delete order",
+    "alertCanSave": "Select a supplier and add at least one product with quantity and cost",
+    "alertAllLinesValid": "Select a supplier and make every line valid: product, quantity, and cost",
+    "addProduct": "Add product",
+    "removeProduct": "Remove product"
   },
 
   "editPayment": {
     "title": "Edit Payment",
     "paymentDate": "Payment date",
     "paymentType": "Payment Type",
-    "amountUSD": "Amount (USD)"
+    "amountUSD": "Amount (USD)",
+    "alertEnterAmount": "Enter a valid non-zero amount",
+    "updated": "Payment updated!",
+    "deleted": "Payment deleted",
+    "confirmDelete": "Delete this payment? This cannot be undone.",
+    "failedUpdate": "Failed to update payment",
+    "failedDelete": "Failed to delete payment",
+    "deleteFailed": "Delete failed"
   },
 
   "settingsPage": {
@@ -707,7 +765,11 @@
     "partnerAmount": "Partner Amount",
     "loadingPartner": "Loading partner info...",
     "discount": "Discount",
-    "editOrder": "Edit Order"
+    "editOrder": "Edit Order",
+    "deliveredInFull": "Delivered in full",
+    "deliveredInFullQty": "Delivered in full ({{delivered}}/{{total}})",
+    "partiallyDelivered": "Partially delivered",
+    "partiallyDeliveredQty": "Partially delivered ({{delivered}}/{{total}})"
   },
 
   "paymentModal": {
@@ -748,7 +810,8 @@
     "selectTenant": "Select tenant...",
     "addMembership": "Add Membership",
     "adding": "Adding...",
-    "userNotFound": "User not found"
+    "userNotFound": "User not found",
+    "updating": "Updating..."
   },
 
   "tenantSwitcher": {
@@ -767,6 +830,104 @@
     "namePlaceholder": "Full name",
     "nameHelper": "If empty, will use email address",
     "createButton": "Create User",
-    "creatingText": "Creating..."
+    "creatingText": "Creating...",
+    "alertEmailRequired": "Email is required",
+    "alertPasswordRequired": "Password is required",
+    "alertPasswordLength": "Password must be at least 8 characters",
+    "created": "User created successfully!"
+  },
+
+  "tenantAdmin": {
+    "title": "Account Administration",
+    "subtitle": "Manage user permissions for {{name}}",
+    "featuresInfo": "Your tenant has access to {{count}} features. You can customize which features each user can access.",
+    "manageSubscription": "Manage Subscription",
+    "changeModulesInfo": "To change modules or number of users, please send a message through the Contact page.",
+    "teamMembers": "Team Members",
+    "createUserButton": "+ Create User",
+    "noUsers": "No users yet",
+    "roleLabel": "Role:",
+    "accessAll": "Access: All {{count}} tenant features",
+    "accessCount": "Access: {{count}} of {{total}} features",
+    "permissionsButton": "Permissions",
+    "geoButton": "Geo",
+    "permissionsLabel": "Permissions",
+    "selectAll": "Select All",
+    "clearAll": "Clear All",
+    "managePermissionsTitle": "Manage Permissions: {{name}}",
+    "featureSelectHelp": "Select which features this user can access. Only features enabled for your tenant are available.",
+    "savePermissions": "Save Permissions",
+    "geoSettingsTitle": "Geo Settings: {{name}}",
+    "geoHelp": "Leave a field on \"Use tenant default\" to inherit the organisation setting.",
+    "language": "Language",
+    "useTenantDefault": "Use tenant default ({{default}})",
+    "langEnglish": "English (en-US)",
+    "langSwedish": "Swedish (sv-SE)",
+    "langSpanish": "Spanish (es-ES)",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "saveGeo": "Save Geo Settings",
+    "roleRequired": "Role *",
+    "passwordPlaceholder": "At least 8 characters",
+    "alertEnterEmail": "Please enter an email",
+    "alertPasswordLength": "Password must be at least 8 characters",
+    "userCreated": "User created successfully!",
+    "permissionsUpdated": "User permissions updated successfully!",
+    "geoSaved": "User geo settings saved!"
+  },
+
+  "superAdmin": {
+    "title": "Super Admin",
+    "tabTenants": "Tenants",
+    "tabUsers": "Users",
+    "createTenant": "Create Tenant",
+    "tenantName": "Tenant name",
+    "businessType": "Business type",
+    "creating": "Creating...",
+    "noTenants": "No tenants yet",
+    "noUsers": "No users yet",
+    "created": "Tenant created successfully!",
+    "userCreated": "User created successfully!",
+    "featuresUpdated": "Tenant features updated successfully!",
+    "geoSaved": "Geo settings saved!",
+    "stripeSaved": "Stripe customer ID saved!",
+    "alertEnterTenantName": "Please enter a tenant name",
+    "alertEnterEmail": "Please enter an email",
+    "alertPasswordLength": "Password must be at least 8 characters",
+    "alertSelectTenant": "Please select at least one tenant",
+    "features": "Features",
+    "stripe": "Stripe",
+    "geo": "Geo",
+    "manage": "Manage",
+    "stripeCustomerId": "Stripe Customer ID",
+    "saveStripe": "Save Stripe ID",
+    "saving": "Saving...",
+    "tenantFeatures": "Tenant Features: {{name}}",
+    "geoSettingsTitle": "Geo Settings: {{name}}",
+    "language": "Language",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "saveGeo": "Save Geo Settings",
+    "addMembership": "Add Membership",
+    "addMembershipPlaceholder": "Select tenant...",
+    "memberships": "Tenant Memberships",
+    "userRole": "Role",
+    "addTenantRow": "+ Add tenant",
+    "removeTenant": "Remove"
+  },
+  "printDialog": {
+    "title": "Print to PDF",
+    "sectionsToPrint": "Sections to print",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "moreOptions": "More options",
+    "includeAll": "Include all orders and payments",
+    "lastThreeMonths": "Include last 3 months only",
+    "sortByDate": "Sort by order date",
+    "sortByCustomer": "Sort by customer",
+    "printToPdf": "Print to PDF"
+  },
+  "modal": {
+    "closeTitle": "Close"
   }
 }

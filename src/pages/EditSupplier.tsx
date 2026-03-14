@@ -1,6 +1,7 @@
 // src/pages/EditSupplier.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface Supplier {
   id: string
@@ -16,6 +17,7 @@ interface Supplier {
 }
 
 export default function EditSupplier() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -79,7 +81,7 @@ export default function EditSupplier() {
 
   async function handleSave() {
     if (!name.trim()) {
-      alert('Supplier name is required')
+      alert(t('suppliers.alertNameRequired'))
       return
     }
 
@@ -113,17 +115,17 @@ export default function EditSupplier() {
         throw new Error(`Failed to save (status ${res.status}) ${text?.slice(0, 140)}`)
       }
 
-      alert('Supplier updated successfully')
+      alert(t('suppliers.updated'))
       navigate(`/suppliers/${id}`)
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
   if (!supplier) return null
 
   const CONTROL_H = 44
@@ -131,13 +133,13 @@ export default function EditSupplier() {
   return (
     <div className="card" style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Edit Supplier</h3>
-        <Link to={`/suppliers/${id}`} className="helper">&larr; Back</Link>
+        <h3 style={{ margin: 0 }}>{t('suppliers.editTitle')}</h3>
+        <Link to={`/suppliers/${id}`} className="helper">{t('back_link')}</Link>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Supplier Name *</label>
+          <label>{t('suppliers.supplierNameRequired')}</label>
           <input
             type="text"
             value={name}
@@ -146,7 +148,7 @@ export default function EditSupplier() {
           />
         </div>
         <div>
-          <label>Phone</label>
+          <label>{t('phone')}</label>
           <input
             type="tel"
             value={phone}
@@ -158,7 +160,7 @@ export default function EditSupplier() {
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Email</label>
+          <label>{t('email')}</label>
           <input
             type="email"
             value={email}
@@ -170,7 +172,7 @@ export default function EditSupplier() {
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Address line 1</label>
+          <label>{t('addressLine1')}</label>
           <input
             type="text"
             value={address1}
@@ -179,7 +181,7 @@ export default function EditSupplier() {
           />
         </div>
         <div>
-          <label>Address line 2</label>
+          <label>{t('addressLine2')}</label>
           <input
             type="text"
             value={address2}
@@ -191,7 +193,7 @@ export default function EditSupplier() {
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>City</label>
+          <label>{t('city')}</label>
           <input
             type="text"
             value={city}
@@ -200,7 +202,7 @@ export default function EditSupplier() {
           />
         </div>
         <div>
-          <label>State</label>
+          <label>{t('state')}</label>
           <input
             type="text"
             value={state}
@@ -209,7 +211,7 @@ export default function EditSupplier() {
           />
         </div>
         <div>
-          <label>ZIP</label>
+          <label>{t('zip')}</label>
           <input
             type="text"
             value={postalCode}
@@ -221,7 +223,7 @@ export default function EditSupplier() {
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Country</label>
+          <label>{t('country')}</label>
           <input
             type="text"
             value={country}
@@ -238,14 +240,14 @@ export default function EditSupplier() {
           disabled={saving}
           style={{ height: CONTROL_H }}
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('saving') : t('saveChanges')}
         </button>
         <button
           onClick={() => navigate(`/suppliers/${id}`)}
           disabled={saving}
           style={{ height: CONTROL_H }}
         >
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </div>

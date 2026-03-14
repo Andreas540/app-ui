@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
 export default function EditProduct() {
+  const { t } = useTranslation()
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -47,14 +49,14 @@ export default function EditProduct() {
   }
 
   async function save() {
-    if (!selected) { alert('Pick a product'); return }
+    if (!selected) { alert(t('products.alertPickProduct')); return }
     const name = (newName || '').trim()
-    if (!name) { alert('Enter a product name'); return }
+    if (!name) { alert(t('products.alertEnterName')); return }
     const costNum = Number((costStr || '').replace(',', '.'))
-    if (!Number.isFinite(costNum) || costNum < 0) { alert('Enter a valid cost ≥ 0'); return }
+    if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
 
     if (costOption === 'specific' && !specificDate) {
-      alert('Please select a date')
+      alert(t('products.alertSelectDate'))
       return
     }
 
@@ -67,14 +69,14 @@ export default function EditProduct() {
         apply_to_history: costOption === 'history',
         effective_date: costOption === 'specific' ? specificDate : undefined,
       })
-      
-      let message = `Updated "${res.product.name}"`
+
+      let message = t('products.updatedProduct', { product: res.product.name })
       if (res.applied_to_history) {
-        message += ' (applied to all previous orders)'
+        message += ' ' + t('products.appliedToHistory')
       } else if (costOption === 'specific') {
-        message += ` (effective from ${specificDate})`
+        message += ' ' + t('products.effectiveFrom', { date: specificDate })
       }
-      
+
       alert(message)
       
       // refresh the list to reflect any name/cost changes
@@ -84,34 +86,34 @@ export default function EditProduct() {
       setCostOption('next')
       setSpecificDate(todayYMD())
     } catch (e:any) {
-      alert(e?.message || 'Update failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
-  if (!products.length) return <div className="card"><p>No products yet.</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+  if (!products.length) return <div className="card"><p>{t('products.noProducts')}</p></div>
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>Edit Product</h3>
+        <h3 style={{ margin:0 }}>{t('products.editProductTitle')}</h3>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Product</label>
+          <label>{t('product')}</label>
           <select value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label>New name</label>
+          <label>{t('products.newName')}</label>
           <input
             type="text"
             placeholder="e.g. ACE Ultra"
@@ -122,7 +124,7 @@ export default function EditProduct() {
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <label>New product cost (USD)</label>
+        <label>{t('products.newProductCostUSD')}</label>
         <input
           type="text"
           inputMode="decimal"
@@ -142,7 +144,7 @@ export default function EditProduct() {
             onChange={() => setCostOption('history')}
             style={{ width: 18, height: 18 }}
           />
-          <span>Apply new cost to all previous orders</span>
+          <span>{t('products.applyCostToHistory')}</span>
         </label>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
@@ -153,7 +155,7 @@ export default function EditProduct() {
             onChange={() => setCostOption('next')}
             style={{ width: 18, height: 18 }}
           />
-          <span>New cost valid from next order</span>
+          <span>{t('products.applyCostFromNextOrder')}</span>
         </label>
 
         <div>
@@ -165,7 +167,7 @@ export default function EditProduct() {
               onChange={() => setCostOption('specific')}
               style={{ width: 18, height: 18 }}
             />
-            <span>Valid from specific date</span>
+            <span>{t('products.applyCostFromSpecificDate')}</span>
           </label>
           
           {costOption === 'specific' && (
@@ -183,7 +185,7 @@ export default function EditProduct() {
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving} style={{ height: BTN_H }}>
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('saving') : t('saveChanges')}
         </button>
         <button 
           onClick={() => { 
@@ -196,7 +198,7 @@ export default function EditProduct() {
           }} 
           disabled={saving}
         >
-          Reset
+          {t('reset')}
         </button>
       </div>
     </div>

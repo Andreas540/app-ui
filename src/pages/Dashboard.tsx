@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -241,6 +242,7 @@ function ChartSlide({
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
@@ -455,8 +457,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   const ordersTitle =
     orderFilter === 'Not delivered'
-      ? 'Not delivered orders'
-      : 'Most recently registered orders'
+      ? t('dashboard.notDeliveredOrders')
+      : t('dashboard.mostRecentOrders')
 
   // --- Carousel interactions ---
   function next() { setSlide(s => (s === 2 ? 0 : ((s + 1) as 0 | 1 | 2))) }
@@ -479,7 +481,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   // Build slide specs
   const slide1: SlideSpec = {
-    title: 'Revenue & Gross profit',
+    title: t('dashboard.revenueGrossProfit'),
     data: rpsMonthly,
     bar1Key: 'revenue',
     bar2Key: 'gross_profit',
@@ -487,7 +489,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   }
 
   const slide2: SlideSpec = {
-    title: 'Revenue & Operating profit',
+    title: t('dashboard.revenueOperatingProfit'),
     data: rpsMonthly,
     bar1Key: 'revenue',
     bar2Key: 'operating_profit',
@@ -495,7 +497,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   }
 
   const slide3: SlideSpec = {
-    title: 'Revenue & Surplus',
+    title: t('dashboard.revenueSurplus'),
     data: rpsMonthly,
     bar1Key: 'revenue',
     bar2Key: 'surplus',
@@ -509,9 +511,9 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       {/* -------- Card 1: Totals -------- */}
       <div className="card">        
         {loading ? (
-          <div className="helper">Loading...</div>
+          <div className="helper">{t('loading')}</div>
         ) : err ? (
-          <div style={{ color: 'salmon' }}>Error: {err}</div>
+          <div style={{ color: 'salmon' }}>{t('error')} {err}</div>
         ) : (
           <div style={{ display: 'grid', gap: 12 }}>
             {/* Total owed to me */}
@@ -523,7 +525,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>Total owed to me</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.totalOwedToMe')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(totalOwedToMe)}
               </div>
@@ -538,7 +540,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToPartners')}</div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
                 {fmtIntMoney(owedToPartnersExJJ)}
               </div>
@@ -556,7 +558,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 borderTop: '1px solid #eee'
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>My $</div>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
               <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>
                 {fmtIntMoney(myDollars)}
               </div>
@@ -645,8 +647,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
             marginBottom: 8,
           }}
         >
-          <button 
-            className="primary" 
+          <button
+            className="primary"
             onClick={() => {
               setOrderFilter('Most recent')
               setOrderDisplayCount(5)
@@ -654,10 +656,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
             aria-pressed={orderFilter === 'Most recent'}
             style={{ height: 'calc(var(--control-h) * 0.67)' }}
           >
-            Most recent
+            {t('dashboard.mostRecent')}
           </button>
-          <button 
-            className="primary" 
+          <button
+            className="primary"
             onClick={() => {
               setOrderFilter('Not delivered')
               setOrderDisplayCount(5)
@@ -665,7 +667,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
             aria-pressed={orderFilter === 'Not delivered'}
             style={{ height: 'calc(var(--control-h) * 0.67)' }}
           >
-            Not delivered
+            {t('notDelivered')}
           </button>
         </div>
 
@@ -679,7 +681,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   onClick={() => setOrderDisplayCount(5)}
                   style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
                 >
-                  Collapse
+                  {t('dashboard.collapse')}
                 </button>
               )}
               {orderDisplayCount < 30 && recentOrders.length > orderDisplayCount && (
@@ -688,7 +690,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   onClick={() => setOrderDisplayCount(prev => prev + 5)}
                   style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
                 >
-                  Show 5 more
+                  {t('dashboard.showMore')}
                 </button>
               )}
             </div>
@@ -696,17 +698,17 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         </div>
 
         {ordersLoading ? (
-          <p className="helper">Loading orders...</p>
+          <p className="helper">{t('dashboard.loadingOrders')}</p>
         ) : ordersErr ? (
-          <p style={{ color: 'salmon' }}>Error loading orders: {ordersErr}</p>
+          <p style={{ color: 'salmon' }}>{t('dashboard.errorLoadingOrders', { error: ordersErr })}</p>
         ) : recentOrders.length === 0 ? (
-          <p className="helper">No orders found.</p>
+          <p className="helper">{t('dashboard.noOrdersFound')}</p>
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
               const detailsLine = o.product_name && o.qty != null
                 ? `${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / ${fmtMoney(o.unit_price ?? 0)}`
-                : `${o.lines} line(s)`
+                : t('dashboard.orderLines', { count: o.lines })
 
               const hasNotes = o.notes && o.notes.trim()
 

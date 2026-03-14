@@ -1,6 +1,7 @@
 // src/pages/InvoicePreview.tsx
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type InvoiceData = {
   invoiceNo: string
@@ -26,6 +27,7 @@ type InvoiceData = {
 }
 
 export default function InvoicePreview() {
+  const { t } = useTranslation()
   const { state } = useLocation()
   const navigate = useNavigate()
   const invoiceData = state as InvoiceData | undefined
@@ -86,12 +88,12 @@ export default function InvoicePreview() {
   // Set dynamic document title for print/download
 useEffect(() => {
   if (!invoiceData) return
-  
+
   const originalTitle = document.title
   const companyName = invoiceData.customer.company_name || ''
   const invoiceNo = invoiceData.invoiceNo || 'Invoice'
   document.title = companyName ? `${invoiceNo} - ${companyName}` : invoiceNo
-  
+
   return () => {
     document.title = originalTitle
   }
@@ -183,12 +185,12 @@ useEffect(() => {
     return (
       <div style={{ height: '100svh', display: 'grid', placeItems: 'center', background: '#fff' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ marginBottom: 12 }}>No invoice data found.</p>
+          <p style={{ marginBottom: 12 }}>{t('invoice.noInvoiceData')}</p>
           <button
             onClick={() => navigate('/invoices/create')}
             style={{ padding: '10px 16px', border: 'none', borderRadius: 8, background: '#0d6efd', color: '#fff' }}
           >
-            Create Invoice
+            {t('invoice.createTitle')}
           </button>
         </div>
       </div>
@@ -231,7 +233,7 @@ useEffect(() => {
                 boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
               }}
             >
-              Print
+              {t('print')}
             </button>
             <button
               onClick={onDownloadPdfDesktop}
@@ -245,7 +247,7 @@ useEffect(() => {
                 boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
               }}
             >
-              Download PDF
+              {t('invoice.downloadPDF')}
             </button>
           </>
         )}
@@ -263,7 +265,7 @@ useEffect(() => {
               boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
             }}
           >
-            Open Image
+            {t('invoice.openImage')}
           </button>
         )}
 
@@ -278,7 +280,7 @@ useEffect(() => {
             boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
           }}
         >
-          Back
+          {t('back')}
         </button>
       </div>
 
@@ -340,8 +342,8 @@ useEffect(() => {
               }}
             >
               <div style={{ width: 100, height: 100 }}>
-  <img 
-    src="/icons/icon-192.png" 
+  <img
+    src="/icons/icon-192.png"
     alt="BLV Logo"
     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
   />
@@ -356,16 +358,16 @@ useEffect(() => {
               {/* Right panel: labels left, values right */}
               <div style={{ fontSize: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 8px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice #</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>{t('invoice.invoiceHash')}</div>
                   <div style={{ textAlign: 'right' }}>{invoiceData.invoiceNo}</div>
 
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Invoice date</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>{t('invoice.invoiceDate')}</div>
                   <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.invoiceDate)}</div>
 
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Due date</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>{t('invoice.dueDate')}</div>
                   <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.dueDate)}</div>
 
-                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>Est. delivery</div>
+                  <div style={{ fontWeight: 'bold', color: '#1a4d8f' }}>{t('invoice.estDelivery')}</div>
                   <div style={{ textAlign: 'right' }}>{fmtDate(invoiceData.deliveryDate)}</div>
                 </div>
               </div>
@@ -383,7 +385,7 @@ useEffect(() => {
               }}
             >
               <div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Invoice for</div>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.invoiceFor')}</div>
                 <div>{invoiceData.customer.name}</div>
                 {invoiceData.customer.company_name && <div>{invoiceData.customer.company_name}</div>}
                 {invoiceData.customer.address1 && <div>{invoiceData.customer.address1}</div>}
@@ -392,29 +394,29 @@ useEffect(() => {
               </div>
 
               <div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Payment method</div>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.paymentMethod')}</div>
                 <div style={{ marginBottom: 16 }}>{invoiceData.paymentMethod}</div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Our contact</div>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.ourContact')}</div>
                 <div>Julian de Armas</div>
               </div>
 
               {/* Wire instructions: labels left, values right */}
               <div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>Wire Transfer Instructions</div>
+                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.wireInstructions')}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
-                  <div>Company Name:</div>
+                  <div>{t('invoice.companyName')}</div>
                   <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
 
-                  <div>Bank Name:</div>
+                  <div>{t('invoice.bankName')}</div>
                   <div style={{ textAlign: 'right' }}>Bank of America</div>
 
-                  <div>Account Name:</div>
+                  <div>{t('invoice.accountName')}</div>
                   <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
 
-                  <div>Account Number:</div>
+                  <div>{t('invoice.accountNumber')}</div>
                   <div style={{ textAlign: 'right' }}>898161854242</div>
 
-                  <div style={{ whiteSpace: 'nowrap' }}>Routing Number (ABA):</div>
+                  <div style={{ whiteSpace: 'nowrap' }}>{t('invoice.routingNumber')}</div>
                   <div style={{ textAlign: 'right' }}>026009593</div>
                 </div>
               </div>
@@ -425,10 +427,10 @@ useEffect(() => {
               <div className="items-scroll" style={{ flex: 1, minHeight: 0 }}>
                 <div style={{ borderTop: '1px solid #ddd' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontWeight: 'bold', color: '#1a4d8f', fontSize: 14, borderBottom: '1px solid #ddd' }}>
-                    <div>Description</div>
-                    <div style={{ textAlign: 'right' }}>Qty</div>
-                    <div style={{ textAlign: 'right' }}>Unit price</div>
-                    <div style={{ textAlign: 'right' }}>Total price</div>
+                    <div>{t('invoice.description')}</div>
+                    <div style={{ textAlign: 'right' }}>{t('invoice.qty')}</div>
+                    <div style={{ textAlign: 'right' }}>{t('invoice.unitPrice')}</div>
+                    <div style={{ textAlign: 'right' }}>{t('invoice.totalPrice')}</div>
                   </div>
                   {(invoiceData.orders || []).map((o, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontSize: 14, borderBottom: '1px solid #eee' }}>
@@ -444,9 +446,9 @@ useEffect(() => {
               <div style={{ borderTop: '2px solid #333', paddingTop: 16, marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 40, fontSize: 16 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ marginBottom: 12 }}>Subtotal</div>
-                    <div style={{ marginBottom: 12 }}>Adjustments/Discount</div>
-                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>Total</div>
+                    <div style={{ marginBottom: 12 }}>{t('invoice.subtotal')}</div>
+                    <div style={{ marginBottom: 12 }}>{t('invoice.adjustments')}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>{t('total')}</div>
                   </div>
                   <div style={{ textAlign: 'right', minWidth: 140 }}>
                     <div style={{ marginBottom: 12 }}>{money(subtotal)}</div>
@@ -476,7 +478,7 @@ useEffect(() => {
           <div style={{ position: 'relative', flex: 1, background: '#fff' }}>
             <img
               src={overlayImg}
-              alt="Invoice Snapshot"
+              alt={t('invoice.invoiceSnapshot')}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
@@ -498,7 +500,7 @@ useEffect(() => {
               onClick={() => setOverlayOpen(false)}
               style={{ padding: '10px 14px', border: 0, borderRadius: 10, background: '#6c757d', color: '#fff' }}
             >
-              Close
+              {t('close')}
             </button>
             <a
               href={overlayImg}
@@ -512,9 +514,9 @@ useEffect(() => {
                 fontWeight: 700,
               }}
             >
-              Download invoice
+              {t('invoice.downloadInvoice')}
             </a>
-            <span style={{ color: '#666', fontSize: 13 }}>Press invoice to share</span>
+            <span style={{ color: '#666', fontSize: 13 }}>{t('invoice.pressToShare')}</span>
           </div>
         </div>
       )}
@@ -532,23 +534,3 @@ useEffect(() => {
     </>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

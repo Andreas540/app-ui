@@ -1,6 +1,7 @@
 // src/pages/EditCustomer.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/api'
 import { todayYMD } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
@@ -8,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function EditCustomer() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { user } = useAuth()
@@ -65,13 +67,13 @@ setCustomerType(
 
   async function save() {
     if (!id) return
-    if (!name.trim()) { alert('Name is required'); return }
+    if (!name.trim()) { alert(t('customers.alertNameRequired')); return }
 
     const sc = shippingCost.trim() === '' ? null : Number(shippingCost.replace(',', '.'))
-    if (sc != null && !Number.isFinite(sc)) { alert('Shipping cost must be a number (or leave empty)'); return }
+    if (sc != null && !Number.isFinite(sc)) { alert(t('customers.alertShippingNumber')); return }
 
     if (costOption === 'specific' && !specificDate) {
-      alert('Please select a date')
+      alert(t('products.alertSelectDate'))
       return
     }
 
@@ -93,40 +95,40 @@ setCustomerType(
       })
       nav(`/customers/${id}`)
     } catch (e:any) {
-      alert(e?.message || 'Failed to update customer')
+      alert(e?.message || t('customers.failedUpdate'))
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <h3>Edit Customer</h3>
-        <Link to={id ? `/customers/${id}` : '/customers'} className="helper">Cancel</Link>
+        <h3>{t('customers.editTitle')}</h3>
+        <Link to={id ? `/customers/${id}` : '/customers'} className="helper">{t('cancel')}</Link>
       </div>
 
       {/* Customer Name - full width */}
       <div style={{ marginTop: 12 }}>
-        <label>Customer Name</label>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
+        <label>{t('customers.customerName')}</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder={t('fullNamePlaceholder')} />
       </div>
 
       {/* Shipping cost | Customer Type */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Shipping cost</label>
+          <label>{t('customers.shippingCost')}</label>
           <input
             type="text"
             inputMode="decimal"
-            placeholder="e.g. 0.35"
+            placeholder={t('customers.shippingCostPlaceholder')}
             value={shippingCost}
             onChange={e=>setShippingCost(e.target.value)}
           />
         </div>
         <div>
-          <label>Customer Type</label>
+          <label>{t('customers.customerType')}</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
             <option value={directValue}>{directLabel}</option>
             <option value="Partner">Partner</option>
@@ -144,7 +146,7 @@ setCustomerType(
             onChange={() => setCostOption('history')}
             style={{ width: 18, height: 18 }}
           />
-          <span>Apply new cost to all previous orders</span>
+          <span>{t('customers.applyCostToHistory')}</span>
         </label>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
@@ -155,7 +157,7 @@ setCustomerType(
             onChange={() => setCostOption('next')}
             style={{ width: 18, height: 18 }}
           />
-          <span>New cost valid from next order</span>
+          <span>{t('customers.applyCostFromNextOrder')}</span>
         </label>
 
         <div>
@@ -167,7 +169,7 @@ setCustomerType(
               onChange={() => setCostOption('specific')}
               style={{ width: 18, height: 18 }}
             />
-            <span>Valid from specific date</span>
+            <span>{t('customers.applyCostFromSpecificDate')}</span>
           </label>
           
           {costOption === 'specific' && (
@@ -185,7 +187,7 @@ setCustomerType(
 
       {/* Company name - full width */}
       <div style={{ marginTop: 12 }}>
-        <label>Contact</label>
+        <label>{t('customers.contact')}</label>
         <input
           value={companyName}
           onChange={e=>setCompanyName(e.target.value)}
@@ -196,11 +198,11 @@ setCustomerType(
       {/* Phone | Address line 1 */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Phone</label>
+          <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
         </div>
         <div>
-          <label>Address line 1</label>
+          <label>{t('addressLine1')}</label>
           <input value={address1} onChange={e=>setAddress1(e.target.value)} />
         </div>
       </div>
@@ -208,11 +210,11 @@ setCustomerType(
       {/* Address line 2 | City */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Address line 2</label>
+          <label>{t('addressLine2')}</label>
           <input value={address2} onChange={e=>setAddress2(e.target.value)} />
         </div>
         <div>
-          <label>City</label>
+          <label>{t('city')}</label>
           <input value={city} onChange={e=>setCity(e.target.value)} />
         </div>
       </div>
@@ -220,18 +222,18 @@ setCustomerType(
       {/* State | Postal code */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>State</label>
+          <label>{t('state')}</label>
           <input value={state} onChange={e=>setState(e.target.value)} />
         </div>
         <div>
-          <label>Postal code</label>
+          <label>{t('postalCode')}</label>
           <input value={postal} onChange={e=>setPostal(e.target.value)} />
         </div>
       </div>
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
-        <button className="primary" onClick={save}>Save changes</button>
-        <Link to={id ? `/customers/${id}` : '/customers'} style={{ alignSelf:'center' }} className="helper">Cancel</Link>
+        <button className="primary" onClick={save}>{t('saveChanges')}</button>
+        <Link to={id ? `/customers/${id}` : '/customers'} style={{ alignSelf:'center' }} className="helper">{t('cancel')}</Link>
       </div>
     </div>
   )

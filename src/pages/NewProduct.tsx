@@ -1,6 +1,7 @@
 // src/pages/NewProduct.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 
@@ -12,6 +13,7 @@ interface HistoricalCost {
 }
 
 export default function NewProduct() {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
   const [saving, setSaving] = useState(false)
@@ -89,13 +91,13 @@ export default function NewProduct() {
   async function save() {
     const nm = name.trim()
     const costNum = Number(parseCostInput(costStr || ''))
-    if (!nm) { alert('Enter product name'); return }
-    if (!Number.isFinite(costNum) || costNum < 0) { alert('Enter a valid cost ≥ 0'); return }
+    if (!nm) { alert(t('products.alertEnterName')); return }
+    if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
 
     try {
       setSaving(true)
       await createProduct({ name: nm, cost: costNum })
-      alert('Product created!')
+      alert(t('products.created'))
       setName('')
       setCostStr('')
       await loadProducts()
@@ -103,7 +105,7 @@ export default function NewProduct() {
         await loadHistoricalCosts()
       }
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
       setSaving(false)
     }
@@ -123,15 +125,15 @@ export default function NewProduct() {
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>New Product</h3>
+        <h3 style={{ margin:0 }}>{t('products.newProductTitle')}</h3>
         <Link to="/products/edit">
-          <button className="primary" style={{ height: BTN_H }}>Edit Product(s)</button>
+          <button className="primary" style={{ height: BTN_H }}>{t('products.editProductsButton')}</button>
         </Link>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Product name</label>
+          <label>{t('products.productName')}</label>
           <input
             type="text"
             placeholder=""
@@ -140,7 +142,7 @@ export default function NewProduct() {
           />
         </div>
         <div>
-          <label>Product cost (USD)</label>
+          <label>{t('products.productCostUSD')}</label>
           <input
             type="text"
             inputMode="decimal"
@@ -153,23 +155,23 @@ export default function NewProduct() {
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save product'}
+          {saving ? t('saving') : t('products.saveProduct')}
         </button>
         <button onClick={() => { setName(''); setCostStr(''); }} disabled={saving}>
-          Clear
+          {t('clear')}
         </button>
       </div>
 
       {/* ---- Product costs section ---- */}
       <div style={{ marginTop: 20 }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: 8 }}>
-          <h4 style={{ margin: 0 }}>Product costs</h4>
-          <button 
-            className="primary" 
+          <h4 style={{ margin: 0 }}>{t('products.productCosts')}</h4>
+          <button
+            className="primary"
             onClick={() => setShowHistorical(!showHistorical)}
             style={{ height: BTN_H, minWidth: 140 }}
           >
-            {showHistorical ? 'Current costs' : 'Historical costs'}
+            {showHistorical ? t('products.currentCosts') : t('products.historicalCosts')}
           </button>
         </div>
 
@@ -180,9 +182,9 @@ export default function NewProduct() {
             aria-busy={loadingList}
             style={{ display: 'grid', gap: 6 }}
           >
-            {loadingList && <div>Loading…</div>}
+            {loadingList && <div>{t('loading')}</div>}
             {!loadingList && filteredProducts.length === 0 && (
-              <div style={{ opacity: 0.7 }}>No products yet.</div>
+              <div style={{ opacity: 0.7 }}>{t('products.noProducts')}</div>
             )}
             {!loadingList && filteredProducts.map(p => (
               <div
@@ -213,9 +215,9 @@ export default function NewProduct() {
             aria-busy={loadingHistorical}
             style={{ display: 'grid', gap: 12 }}
           >
-            {loadingHistorical && <div>Loading…</div>}
+            {loadingHistorical && <div>{t('loading')}</div>}
             {!loadingHistorical && historicalCosts.length === 0 && (
-              <div style={{ opacity: 0.7 }}>No historical costs yet.</div>
+              <div style={{ opacity: 0.7 }}>{t('products.noHistoricalCosts')}</div>
             )}
             {!loadingHistorical && Object.keys(groupedHistorical).sort().map(productName => (
               <div 

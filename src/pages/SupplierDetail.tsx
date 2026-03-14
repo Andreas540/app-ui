@@ -1,6 +1,7 @@
 // src/pages/SupplierDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
@@ -79,6 +80,7 @@ async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
 
 export default function SupplierDetailPage() {
   // --- Hooks (fixed, stable order) ---
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<SupplierDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -128,8 +130,8 @@ export default function SupplierDetailPage() {
     setShowPaymentModal(true)
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const { supplier, totals, orders, payments } = data
@@ -155,8 +157,8 @@ export default function SupplierDetailPage() {
           <Link
             to={`/suppliers/${supplier.id}/edit`}
             className="icon-btn"
-            title="Edit supplier"
-            aria-label="Edit supplier"
+            title={t('suppliers.editTitle')}
+            aria-label={t('suppliers.editTitle')}
             style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
           >
             ✎
@@ -164,7 +166,7 @@ export default function SupplierDetailPage() {
         </div>
 
         <Link to="/suppliers" className="helper" style={{ whiteSpace:'nowrap' }}>
-          &larr; Suppliers
+          {t('suppliers.backToSuppliers')}
         </Link>
       </div>
 
@@ -185,7 +187,7 @@ export default function SupplierDetailPage() {
               whiteSpace: 'nowrap'
             }}
           >
-            New order
+            {t('newOrder')}
           </button>
         </Link>
 
@@ -204,7 +206,7 @@ export default function SupplierDetailPage() {
               whiteSpace: 'nowrap'
             }}
           >
-            New payment
+            {t('newPayment')}
           </button>
         </Link>
       </div>
@@ -219,7 +221,7 @@ export default function SupplierDetailPage() {
               onClick={() => setShowInfo(true)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              Show info
+              {t('showInfo')}
             </button>
           ) : (
             <div>
@@ -228,16 +230,16 @@ export default function SupplierDetailPage() {
                 onClick={() => setShowInfo(false)}
                 style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
               >
-                Hide info
+                {t('hideInfo')}
               </button>
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Phone</div>
+                <div className="helper">{t('phone')}</div>
                 <div>{supplier.phone ? <a href={phoneHref(supplier.phone)}>{supplier.phone}</a> : '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Address</div>
+                <div className="helper">{t('address')}</div>
                 <div>
                   {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
                 </div>
@@ -248,7 +250,7 @@ export default function SupplierDetailPage() {
 
         {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
-          <div className="helper">Owed to supplier</div>
+          <div className="helper">{t('suppliers.owedToSupplier')}</div>
           <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.owed_to_supplier)}</div>
         </div>
       </div>
@@ -256,19 +258,19 @@ export default function SupplierDetailPage() {
       {/* Orders with supplier */}
       <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Orders with supplier</h4>
+          <h4 style={{margin:0}}>{t('suppliers.ordersWithSupplier')}</h4>
           {orders.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllOrders(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllOrders ? 'Show less' : 'Show all orders'}
+              {showAllOrders ? t('showLess') : t('showAllOrders')}
             </button>
           )}
         </div>
 
-        {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
+        {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
               const hasNotes = o.notes && o.notes.trim()
@@ -286,7 +288,7 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    Received: {formatUSAny(o.received_date)}
+                    {t('suppliers.receivedLabel')} {formatUSAny(o.received_date)}
                   </span>
                 )
               } else if (o.in_customs && o.in_customs_date) {
@@ -299,7 +301,7 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    In customs: {formatUSAny(o.in_customs_date)}
+                    {t('suppliers.inCustomsLabel')} {formatUSAny(o.in_customs_date)}
                   </span>
                 )
               } else if (o.delivered && o.delivery_date) {
@@ -312,13 +314,13 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    Delivered: {formatUSAny(o.delivery_date)}
+                    {t('delivered')}: {formatUSAny(o.delivery_date)}
                   </span>
                 )
               } else if (o.est_delivery_date) {
                 statusBadge = (
                   <span className="helper" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                    Est. delivery: {formatUSAny(o.est_delivery_date)}
+                    {t('suppliers.estDelivery')} {formatUSAny(o.est_delivery_date)}
                   </span>
                 )
               }
@@ -396,7 +398,7 @@ export default function SupplierDetailPage() {
                       <div></div>
                       <div></div>
                       <div className="helper" style={{ lineHeight: '1.4' }}>
-                        Shipping cost
+                        {t('supplierOrderModal.shippingCost')}
                       </div>
                       <div className="helper" style={{textAlign:'right'}}>
                         {fmtMoney(totalShippingCost)}
@@ -432,19 +434,19 @@ export default function SupplierDetailPage() {
       {/* Payments to supplier */}
       <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Payments to supplier</h4>
+          <h4 style={{margin:0}}>{t('suppliers.paymentsToSupplier')}</h4>
           {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllPayments ? 'Show less' : 'Show all payments'}
+              {showAllPayments ? t('showLess') : t('showAllPayments')}
             </button>
           )}
         </div>
 
-        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
+        {payments.length === 0 ? <p className="helper">{t('noPaymentsYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownPayments.map(p => {
               const hasNotes = p.notes && p.notes.trim()

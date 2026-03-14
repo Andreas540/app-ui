@@ -1,6 +1,7 @@
 // src/pages/EditOrderSupplier.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
 type Product = { id: string; name: string }
@@ -43,6 +44,7 @@ function toQtyIntString(v: any): string {
 }
 
 export default function EditOrderSupplier() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -216,7 +218,7 @@ const pRes = await fetch(`${base}/api/product`, {
 
   async function handleSave() {
     if (!canSave) {
-      alert('Select a supplier and make every line valid: product, integer qty, and a cost (≤3 decimals).')
+      alert(t('supplierOrders.alertAllLinesValid'))
       return
     }
     try {
@@ -259,17 +261,17 @@ const pRes = await fetch(`${base}/api/product`, {
         const t = await res.text().catch(() => '')
         throw new Error(`Save failed (${res.status}) ${t?.slice(0, 200)}`)
       }
-      alert('Supplier order updated.')
+      alert(t('supplierOrders.updated'))
       navigate(-1)
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete Order #${orderNo}? This cannot be undone.`)) return
+    if (!confirm(t('orders.confirmDelete', { number: orderNo }))) return
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -278,31 +280,31 @@ const pRes = await fetch(`${base}/api/product`, {
   headers: getAuthHeaders(),
   body: JSON.stringify({ id }),
 })
-      if (!res.ok) throw new Error('Failed to delete order')
+      if (!res.ok) throw new Error(t('supplierOrders.failedDelete'))
 
-      alert('Order deleted')
+      alert(t('supplierOrders.deleted'))
       navigate('/suppliers')
     } catch (e: any) {
-      alert(e?.message || 'Delete failed')
+      alert(e?.message || t('supplierOrders.failedDelete'))
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
 
   return (
     <div className="card" style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div>
-          <h3 style={{ margin: 0 }}>Edit Order (S)</h3>
-          <div className="helper" style={{ marginTop: 4 }}>Order #{orderNo}</div>
+          <h3 style={{ margin: 0 }}>{t('supplierOrders.editTitle')}</h3>
+          <div className="helper" style={{ marginTop: 4 }}>{t('orders.orderNumber', { number: orderNo })}</div>
         </div>
       </div>
 
       {/* Supplier row (read-only) */}
       <div className="row" style={{ marginTop: 12 }}>
         <div style={{ width: '100%' }}>
-          <label>Supplier</label>
+          <label>{t('supplier')}</label>
           <input type="text" value={supplierName} readOnly style={{ opacity: 0.9 }} />
         </div>
       </div>
@@ -313,7 +315,7 @@ const pRes = await fetch(`${base}/api/product`, {
           {/* Product & Quantity */}
           <div className="row row-2col-mobile" style={{ marginTop: 6 }}>
             <div>
-              <label>Product</label>
+              <label>{t('product')}</label>
               <select
                 value={l.product_id}
                 onChange={(e) => {
@@ -323,7 +325,7 @@ const pRes = await fetch(`${base}/api/product`, {
                   else updateLine(idx, { lastCost: null })
                 }}
               >
-                <option value="">Select…</option>
+                <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -332,7 +334,7 @@ const pRes = await fetch(`${base}/api/product`, {
               </select>
             </div>
             <div>
-              <label>Quantity</label>
+              <label>{t('quantity')}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -353,7 +355,7 @@ const pRes = await fetch(`${base}/api/product`, {
           {/* Cost & Cost last time */}
           <div className="row row-2col-mobile" style={{ marginTop: 6 }}>
             <div>
-              <label>Cost</label>
+              <label>{t('cost')}</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -366,7 +368,7 @@ const pRes = await fetch(`${base}/api/product`, {
               />
             </div>
             <div>
-              <label>Cost last time</label>
+              <label>{t('supplierOrders.costLastTime')}</label>
               <input type="text" value={l.lastCost == null ? '' : Number(l.lastCost).toFixed(3)} readOnly disabled />
             </div>
           </div>
@@ -374,33 +376,33 @@ const pRes = await fetch(`${base}/api/product`, {
           {/* Add / Remove product controls */}
           <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
             <button
-              aria-label="Add product"
-              title="Add product"
+              aria-label={t('supplierOrders.addProduct')}
+              title={t('supplierOrders.addProduct')}
               className="primary"
               onClick={addProductBlock}
               style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center' }}
             >
               +
             </button>
-            <span className="helper">Add product</span>
+            <span className="helper">{t('supplierOrders.addProduct')}</span>
 
             <button
-              aria-label="Remove product"
-              title="Remove product"
+              aria-label={t('supplierOrders.removeProduct')}
+              title={t('supplierOrders.removeProduct')}
               className="primary"
               onClick={() => removeProductBlock(idx)}
               style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center', marginLeft: 12 }}
             >
               –
             </button>
-            <span className="helper">Remove product</span>
+            <span className="helper">{t('supplierOrders.removeProduct')}</span>
           </div>
         </div>
       ))}
 
       {/* Status checkboxes with date fields */}
       <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
-        <div className="helper" style={{ marginBottom: 8, fontWeight: 600 }}>Order Status</div>
+        <div className="helper" style={{ marginBottom: 8, fontWeight: 600 }}>{t('supplierOrders.orderStatus')}</div>
         
         {/* Delivered */}
         <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
@@ -415,11 +417,11 @@ const pRes = await fetch(`${base}/api/product`, {
                 }}
                 style={{ width: 14, height: 14 }}
               />
-              Delivered
+              {t('delivered')}
             </label>
           </div>
           <div>
-            <label>Delivery date</label>
+            <label>{t('supplierOrders.deliveryDate')}</label>
             <input
               type="date"
               value={deliveryDate}
@@ -443,11 +445,11 @@ const pRes = await fetch(`${base}/api/product`, {
                 }}
                 style={{ width: 14, height: 14 }}
               />
-              In Customs
+              {t('inCustoms')}
             </label>
           </div>
           <div>
-            <label>In customs date</label>
+            <label>{t('supplierOrders.inCustomsDate')}</label>
             <input
               type="date"
               value={inCustomsDate}
@@ -471,11 +473,11 @@ const pRes = await fetch(`${base}/api/product`, {
                 }}
                 style={{ width: 14, height: 14 }}
               />
-              Received
+              {t('received')}
             </label>
           </div>
           <div>
-            <label>Received date</label>
+            <label>{t('supplierOrders.receivedDate')}</label>
             <input
               type="date"
               value={receivedDate}
@@ -490,11 +492,11 @@ const pRes = await fetch(`${base}/api/product`, {
       {/* Dates */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Order date</label>
+          <label>{t('supplierOrders.orderDate')}</label>
           <input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
         </div>
         <div>
-          <label>Est. delivery date</label>
+          <label>{t('supplierOrders.estDeliveryDate')}</label>
           <input type="date" value={estDeliveryDate} onChange={(e) => setEstDeliveryDate(e.target.value)} />
         </div>
       </div>
@@ -502,7 +504,7 @@ const pRes = await fetch(`${base}/api/product`, {
       {/* Notes */}
       <div className="row" style={{ marginTop: 12 }}>
         <div style={{ width: '100%' }}>
-          <label>Notes</label>
+          <label>{t('notes')}</label>
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
@@ -517,10 +519,10 @@ const pRes = await fetch(`${base}/api/product`, {
           title={!canSave ? (disableReason || 'All lines must be valid') : 'Click to save'}
           style={{ height: 'var(--control-h)' }}
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('saving') : t('saveChanges')}
         </button>
         <button onClick={() => navigate(-1)} style={{ height: 'var(--control-h)' }}>
-          Cancel
+          {t('cancel')}
         </button>
         <button
           onClick={handleDelete}
@@ -532,7 +534,7 @@ const pRes = await fetch(`${base}/api/product`, {
             border: 'none',
           }}
         >
-          Delete
+          {t('delete')}
         </button>
       </div>
     </div>

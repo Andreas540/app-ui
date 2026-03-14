@@ -1,5 +1,6 @@
 // src/pages/PriceChecker.tsx
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 
 type PriceData = {
@@ -9,6 +10,7 @@ type PriceData = {
 }
 
 export default function PriceChecker() {
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<Person[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
@@ -75,25 +77,25 @@ const res = await fetch(
     return `$${Number(n).toFixed(2)}`
   }
 
-  if (loading) return <div className="card"><p>Loading...</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
 
   const showResults = selectedCustomerId && selectedProductId
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ margin: 0, marginBottom: 16 }}>Price Checker</h3>
+      <h3 style={{ margin: 0, marginBottom: 16 }}>{t('priceChecker.title')}</h3>
 
       {/* Filters */}
       <div className="row row-2col-mobile" style={{ gap: 12 }}>
         <div>
-          <label>Customer</label>
+          <label>{t('customer')}</label>
           <select
             value={selectedCustomerId}
             onChange={(e) => setSelectedCustomerId(e.target.value)}
             style={{ width: '100%' }}
           >
-            <option value="">— Select customer —</option>
+            <option value="">{t('priceChecker.selectCustomer')}</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -103,13 +105,13 @@ const res = await fetch(
         </div>
 
         <div>
-          <label>Product</label>
+          <label>{t('product')}</label>
           <select
             value={selectedProductId}
             onChange={(e) => setSelectedProductId(e.target.value)}
             style={{ width: '100%' }}
           >
-            <option value="">— Select product —</option>
+            <option value="">{t('priceChecker.selectProduct')}</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -123,13 +125,13 @@ const res = await fetch(
       {showResults && (
         <div style={{ marginTop: 24 }}>
           {dataLoading ? (
-            <p className="helper">Loading price data...</p>
+            <p className="helper">{t('priceChecker.loadingPriceData')}</p>
           ) : priceData ? (
             <div style={{ display: 'grid', gap: 20 }}>
               {/* Price last time */}
               <div>
                 <div className="helper" style={{ marginBottom: 8 }}>
-                  Price last time
+                  {t('priceChecker.priceLastTime')}
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
                   {fmtMoney(priceData.price_last_time)}
@@ -139,25 +141,25 @@ const res = await fetch(
               {/* Average price */}
               <div>
                 <div className="helper" style={{ marginBottom: 8 }}>
-                  Average price
+                  {t('priceChecker.averagePrice')}
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
                   {fmtMoney(priceData.average_price)}
                 </div>
                 <div className="helper" style={{ marginTop: 8 }}>
-                  {priceData.order_count} previous {priceData.order_count === 1 ? 'order' : 'orders'} for this product
+                  {t('priceChecker.previousOrders', { count: priceData.order_count })}
                 </div>
               </div>
             </div>
           ) : (
-            <p className="helper">No price data available for this combination.</p>
+            <p className="helper">{t('priceChecker.noPriceData')}</p>
           )}
         </div>
       )}
 
       {!showResults && (
         <p className="helper" style={{ marginTop: 24 }}>
-          Select both a customer and a product to view price data.
+          {t('priceChecker.selectBoth')}
         </p>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getAuthHeaders } from '../lib/api'
 
@@ -30,6 +31,7 @@ function formatDate(iso: string): string {
 }
 
 export default function Messages() {
+  const { t } = useTranslation()
   const { user } = useAuth()
 
   const [messages, setMessages]     = useState<Message[]>([])
@@ -40,7 +42,7 @@ export default function Messages() {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
   if (user?.role !== 'super_admin') {
-    return <p style={{ padding: 16 }}>Access denied.</p>
+    return <p style={{ padding: 16 }}>{t('messages.accessDenied')}</p>
   }
 
   async function fetchMessages() {
@@ -75,7 +77,7 @@ export default function Messages() {
       ))
     } catch (err) {
       console.error('Failed to toggle answered:', err)
-      alert('Failed to update message. Please try again.')
+      alert(t('messages.updateFailed'))
     } finally {
       setTogglingId(null)
     }
@@ -86,21 +88,21 @@ export default function Messages() {
 
   return (
     <div className="card" style={{ maxWidth: 680 }}>
-      <h3 style={{ margin: 0, marginBottom: 4 }}>Messages</h3>
+      <h3 style={{ margin: 0, marginBottom: 4 }}>{t('messages.title')}</h3>
       <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
-        All incoming contact messages.
+        {t('messages.description')}
       </p>
 
       {loading ? (
-        <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
+        <p style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</p>
       ) : messages.length === 0 ? (
-        <p style={{ color: 'var(--muted)', fontSize: 14 }}>No messages.</p>
+        <p style={{ color: 'var(--muted)', fontSize: 14 }}>{t('messages.noMessages')}</p>
       ) : (
         <>
           {unanswered.length > 0 && (
             <div style={{ marginBottom: 32 }}>
               <h4 style={{ margin: 0, marginBottom: 12 }}>
-                Unanswered
+                {t('messages.unanswered')}
                 <span style={{
                   marginLeft: 8,
                   fontSize: 12,
@@ -128,7 +130,7 @@ export default function Messages() {
               paddingTop: unanswered.length > 0 ? 24 : 0,
               borderTop: unanswered.length > 0 ? '1px solid var(--border)' : 'none',
             }}>
-              <h4 style={{ margin: 0, marginBottom: 12, color: 'var(--muted)' }}>Answered</h4>
+              <h4 style={{ margin: 0, marginBottom: 12, color: 'var(--muted)' }}>{t('messages.answered')}</h4>
               <MessageList
                 messages={answered}
                 expandedId={expandedId}
@@ -153,6 +155,7 @@ interface MessageListProps {
 }
 
 function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: MessageListProps) {
+  const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {messages.map(msg => {
@@ -190,7 +193,7 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                     padding: '2px 7px',
                     letterSpacing: '0.02em',
                   }}>
-                    Answered
+                    {t('messages.answeredBadge')}
                   </span>
                 )}
               </div>
@@ -205,10 +208,10 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                 gap: 2,
               }}>
                 <span>{msg.user_email} · {msg.tenant_name}</span>
-                <span>Sent: {formatDate(msg.sent_at)}</span>
+                <span>{t('messages.sentDate', { date: formatDate(msg.sent_at) })}</span>
                 {isAnswered && msg.answered_at && (
                   <span style={{ color: '#22c55e' }}>
-                    Answered: {formatDate(msg.answered_at)}
+                    {t('messages.answeredDate', { date: formatDate(msg.answered_at) })}
                   </span>
                 )}
               </div>
@@ -249,7 +252,7 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                     onChange={() => onToggle(msg)}
                     style={{ width: 16, height: 16, cursor: 'pointer' }}
                   />
-                  Mark as answered
+                  {t('messages.markAsAnswered')}
                 </label>
               </div>
             )}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { listPartnersWithOwed, type PartnerWithOwed } from '../lib/api'
 
 function fmtIntMoney(n: number) {
@@ -7,6 +8,7 @@ function fmtIntMoney(n: number) {
 }
 
 export default function Partners() {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [partners, setPartners] = useState<PartnerWithOwed[]>([])
   const [loading, setLoading] = useState(true)
@@ -65,7 +67,7 @@ export default function Partners() {
         <div style={{ position: 'relative' }}>
           <input
             ref={inputRef}
-            placeholder="Search partners"
+            placeholder={t('partners.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -116,7 +118,7 @@ export default function Partners() {
               className="primary"
               style={{ width: '100%', height: 'var(--control-h)' }}
             >
-              Create New Partner
+              {t('partners.createNew')}
             </button>
           </Link>
         </div>
@@ -134,7 +136,7 @@ export default function Partners() {
           alignItems: 'center',
         }}
       >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to partners</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('partners.owedToPartners')}</div>
         <div style={{ textAlign: 'right', fontWeight: 600 }}>
           {fmtIntMoney(totalPartnersOwed)}
         </div>
@@ -143,21 +145,21 @@ export default function Partners() {
       {/* Blank row */}
       <div style={{ height: 8 }} />
 
-      {err && <p style={{ color: 'salmon', marginTop: 8 }}>Error: {err}</p>}
+      {err && <p style={{ color: 'salmon', marginTop: 8 }}>{t('error')} {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>
         {loading ? (
-          <p>Loading…</p>
+          <p>{t('loading')}</p>
         ) : visible.length === 0 ? (
-          <p className="helper">No partners.</p>
+          <p className="helper">{t('partners.noPartners')}</p>
         ) : (
           <div>
             {visible.map((p) => (
               <Link key={p.id} to={`/partners/${p.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{p.name}</div>
-                  <div className="helper">Partner</div>
+                  <div className="helper">{t('partner')}</div>
                 </div>
                 <div style={{ textAlign: 'right', alignSelf: 'center' }}>
                   {fmtIntMoney(p.total_owed)}
@@ -171,7 +173,7 @@ export default function Partners() {
       {/* Clear search below the (single) result */}
       {query && visible.length === 1 && (
         <div style={{ marginTop: 8 }}>
-          <button className="primary" onClick={() => setQuery('')}>Clear Search</button>
+          <button className="primary" onClick={() => setQuery('')}>{t('clearSearch')}</button>
         </div>
       )}
     </div>

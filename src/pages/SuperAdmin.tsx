@@ -1,5 +1,6 @@
 // src/pages/SuperAdmin.tsx
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import ManageUserModal from '../components/ManageUserModal'
@@ -46,6 +47,7 @@ interface TenantMembership {
 }
 
 export default function SuperAdmin() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -149,7 +151,7 @@ export default function SuperAdmin() {
 
   async function handleCreateTenant() {
     if (!newTenantName.trim()) {
-      alert('Please enter a tenant name')
+      alert(t('superAdmin.alertEnterTenantName'))
       return
     }
 
@@ -172,7 +174,7 @@ export default function SuperAdmin() {
         throw new Error(data.error || 'Failed to create tenant')
       }
 
-      alert('Tenant created successfully!')
+      alert(t('superAdmin.created'))
       setNewTenantName('')
       setNewTenantBusinessType('general')
       await loadData()
@@ -186,17 +188,17 @@ export default function SuperAdmin() {
   async function handleCreateUser() {
     // Validate
     if (!newUserEmail.trim()) {
-      alert('Please enter an email')
+      alert(t('superAdmin.alertEnterEmail'))
       return
     }
     if (newUserPassword.length < 8) {
-      alert('Password must be at least 8 characters')
+      alert(t('superAdmin.alertPasswordLength'))
       return
     }
-    
+
     const validMemberships = newUserMemberships.filter(m => m.tenant_id)
     if (validMemberships.length === 0) {
-      alert('Please select at least one tenant')
+      alert(t('superAdmin.alertSelectTenant'))
       return
     }
 
@@ -221,7 +223,7 @@ export default function SuperAdmin() {
         throw new Error(data.error || 'Failed to create user')
       }
 
-      alert('User created successfully!')
+      alert(t('superAdmin.userCreated'))
       setNewUserEmail('')
       setNewUserPassword('')
       setNewUserName('')
@@ -333,7 +335,7 @@ export default function SuperAdmin() {
         throw new Error(data.error || 'Failed to save features')
       }
       
-      alert('Tenant features updated successfully!')
+      alert(t('superAdmin.featuresUpdated'))
       setManagingTenantId(null)
       await loadData()
     } catch (e: any) {
@@ -406,7 +408,7 @@ export default function SuperAdmin() {
         const data = await res.json()
         throw new Error(data.error || 'Failed to save')
       }
-      alert('Geo settings saved!')
+      alert(t('superAdmin.geoSaved'))
       setManagingGeoTenantId(null)
       await loadData()
     } catch (e: any) {
@@ -434,7 +436,7 @@ async function handleSaveStripeCustomerId() {
       const data = await res.json()
       throw new Error(data.error || 'Failed to save')
     }
-    alert('Stripe customer ID saved!')
+    alert(t('superAdmin.stripeSaved'))
     setManagingStripeId(null)
     await loadData()
   } catch (e: any) {
@@ -624,11 +626,11 @@ async function handleSaveStripeCustomerId() {
     }
   }
 
-  if (loading) return <div className="card"><p>Loading...</p></div>
-  
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+
   if (error) return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ color: 'salmon' }}>Error</h3>
+      <h3 style={{ color: 'salmon' }}>{t('error')}</h3>
       <p>{error}</p>
     </div>
   )
@@ -638,7 +640,7 @@ async function handleSaveStripeCustomerId() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Super Admin</h2>
+        <h2 style={{ margin: 0 }}>{t('superAdmin.title')}</h2>
         <p className="helper" style={{ marginTop: 8 }}>Manage tenants and users across the platform</p>
       </div>
 
@@ -649,14 +651,14 @@ async function handleSaveStripeCustomerId() {
           onClick={() => setActiveTab('tenants')}
           style={{ height: CONTROL_H, flex: 1 }}
         >
-          Tenants ({tenants.length})
+          {t('superAdmin.tabTenants')} ({tenants.length})
         </button>
         <button
           className={activeTab === 'users' ? 'primary' : ''}
           onClick={() => setActiveTab('users')}
           style={{ height: CONTROL_H, flex: 1 }}
         >
-          Users ({users.length})
+          {t('superAdmin.tabUsers')} ({users.length})
         </button>
       </div>
 
@@ -665,10 +667,10 @@ async function handleSaveStripeCustomerId() {
         <>
           {/* Create Tenant Form */}
           <div className="card" style={{ marginBottom: 20 }}>
-            <h3>Create New Tenant</h3>
+            <h3>{t('superAdmin.createTenant')}</h3>
             <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
               <div>
-                <label>Tenant Name</label>
+                <label>{t('superAdmin.tenantName')}</label>
                 <input
                   type="text"
                   value={newTenantName}
@@ -678,7 +680,7 @@ async function handleSaveStripeCustomerId() {
                 />
               </div>
               <div>
-                <label>Business Type</label>
+                <label>{t('superAdmin.businessType')}</label>
                 <select
                   value={newTenantBusinessType}
                   onChange={(e) => setNewTenantBusinessType(e.target.value)}
@@ -696,7 +698,7 @@ async function handleSaveStripeCustomerId() {
                 disabled={creatingTenant || !newTenantName.trim()}
                 style={{ height: CONTROL_H, width: '100%' }}
               >
-                {creatingTenant ? 'Creating...' : 'Create Tenant'}
+                {creatingTenant ? t('superAdmin.creating') : t('superAdmin.createTenant')}
               </button>
             </div>
           </div>
@@ -705,7 +707,7 @@ async function handleSaveStripeCustomerId() {
           <div className="card">
             <h3>Existing Tenants</h3>
             {tenants.length === 0 ? (
-              <p className="helper">No tenants yet</p>
+              <p className="helper">{t('superAdmin.noTenants')}</p>
             ) : (
               <div style={{ marginTop: 16 }}>
                 {tenants.map((tenant) => (
@@ -751,7 +753,7 @@ async function handleSaveStripeCustomerId() {
     onClick={() => openManageStripe(tenant)}
     style={{ height: 36, padding: '0 16px', fontSize: 13 }}
   >
-    Stripe
+    {t('superAdmin.stripe')}
   </button>
   <button
     onClick={() => openManageTenantFeatures(tenant)}
@@ -761,7 +763,7 @@ async function handleSaveStripeCustomerId() {
                           fontSize: 13,
                         }}
                       >
-                        Features
+                        {t('superAdmin.features')}
                       </button>
                       <button
                         onClick={() => openManageIcons(tenant)}
@@ -773,7 +775,7 @@ async function handleSaveStripeCustomerId() {
                         onClick={() => openManageGeo(tenant)}
                         style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                       >
-                        Geo
+                        {t('superAdmin.geo')}
                       </button>
                     </div>
                   </div>
@@ -793,7 +795,7 @@ async function handleSaveStripeCustomerId() {
             
             <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
               <div>
-                <label>Email *</label>
+                <label>{t('createUser.emailRequired')}</label>
                 <input
                   type="email"
                   value={newUserEmail}
@@ -803,7 +805,7 @@ async function handleSaveStripeCustomerId() {
                 />
               </div>
               <div>
-                <label>Name (optional)</label>
+                <label>{t('createUser.nameOptional')}</label>
                 <input
                   type="text"
                   value={newUserName}
@@ -816,7 +818,7 @@ async function handleSaveStripeCustomerId() {
 
             <div className="row" style={{ marginTop: 12 }}>
               <div>
-                <label>Password *</label>
+                <label>{t('createUser.passwordRequired')}</label>
                 <input
                   type="password"
                   value={newUserPassword}
@@ -840,7 +842,7 @@ async function handleSaveStripeCustomerId() {
                     padding: '0 12px',
                   }}
                 >
-                  + Add Tenant
+                  {t('superAdmin.addTenantRow')}
                 </button>
               </div>
 
@@ -852,7 +854,7 @@ async function handleSaveStripeCustomerId() {
                       onChange={(e) => updateMembership(index, 'tenant_id', e.target.value)}
                       style={{ height: CONTROL_H }}
                     >
-                      <option value="">Select tenant...</option>
+                      <option value="">{t('superAdmin.addMembershipPlaceholder')}</option>
                       {tenants.map((tenant) => (
                         <option key={tenant.id} value={tenant.id}>
                           {tenant.name}
@@ -866,8 +868,8 @@ async function handleSaveStripeCustomerId() {
                       onChange={(e) => updateMembership(index, 'role', e.target.value)}
                       style={{ height: CONTROL_H, flex: 1 }}
                     >
-                      <option value="tenant_user">User</option>
-                      <option value="tenant_admin">Tenant Admin</option>
+                      <option value="tenant_user">{t('userRole')}</option>
+                      <option value="tenant_admin">{t('admin')}</option>
                     </select>
                     {newUserMemberships.length > 1 && (
                       <button
@@ -896,7 +898,7 @@ async function handleSaveStripeCustomerId() {
                 disabled={creatingUser}
                 style={{ height: CONTROL_H, width: '100%' }}
               >
-                {creatingUser ? 'Creating...' : 'Create User'}
+                {creatingUser ? t('createUser.creatingText') : t('createUser.createButton')}
               </button>
             </div>
           </div>
@@ -905,7 +907,7 @@ async function handleSaveStripeCustomerId() {
           <div className="card">
             <h3>Existing Users</h3>
             {users.length === 0 ? (
-              <p className="helper">No users yet</p>
+              <p className="helper">{t('superAdmin.noUsers')}</p>
             ) : (
               <div style={{ marginTop: 16 }}>
                 {users.map((user) => (
@@ -929,7 +931,7 @@ async function handleSaveStripeCustomerId() {
                       )}
                       {!user.active && (
                         <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
-                          Inactive
+                          {t('inactive')}
                         </div>
                       )}
                       <div style={{ marginTop: 8 }}>
@@ -960,7 +962,7 @@ async function handleSaveStripeCustomerId() {
                           color: 'white',
                         }}
                       >
-                        {togglingUserId === user.id ? '...' : (user.active ? 'Active' : 'Inactive')}
+                        {togglingUserId === user.id ? '...' : (user.active ? t('active') : t('inactive'))}
                       </button>
                       <button
                         onClick={() => setManagingUserId(user.id)}
@@ -970,7 +972,7 @@ async function handleSaveStripeCustomerId() {
                           fontSize: 13,
                         }}
                       >
-                        Manage
+                        {t('superAdmin.manage')}
                       </button>
                     </div>
                   </div>
@@ -1018,7 +1020,7 @@ async function handleSaveStripeCustomerId() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Manage Features: {managingTenantName}</h3>
+            <h3 style={{ marginTop: 0 }}>{t('superAdmin.tenantFeatures', { name: managingTenantName })}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
               Select which features this tenant has access to
             </p>
@@ -1102,13 +1104,13 @@ async function handleSaveStripeCustomerId() {
                 disabled={savingFeatures}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {savingFeatures ? 'Saving...' : 'Save Features'}
+                {savingFeatures ? t('superAdmin.saving') : t('save')}
               </button>
               <button
                 onClick={() => setManagingTenantId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -1346,7 +1348,7 @@ async function handleSaveStripeCustomerId() {
             </p>
 
             {loadingQuotas ? (
-              <p className="helper" style={{ marginTop: 16 }}>Loading...</p>
+              <p className="helper" style={{ marginTop: 16 }}>{t('loading')}</p>
             ) : (
               <div style={{ marginTop: 20, display: 'grid', gap: 12 }}>
                 {MODULES.filter(m => !m.alwaysIncluded).map(mod => {
@@ -1414,13 +1416,13 @@ const available = max - used
                 disabled={savingQuotas || loadingQuotas}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {savingQuotas ? 'Saving...' : 'Save Subscription'}
+                {savingQuotas ? t('superAdmin.saving') : t('save')}
               </button>
               <button
                 onClick={() => setManagingQuotaTenantId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -1447,7 +1449,7 @@ const available = max - used
         Paste the Stripe customer ID from Email 1 (starts with cus_)
       </p>
       <div style={{ marginTop: 16 }}>
-        <label>Stripe Customer ID</label>
+        <label>{t('superAdmin.stripeCustomerId')}</label>
         <input
           type="text"
           value={editingStripeCustomerId}
@@ -1463,13 +1465,13 @@ const available = max - used
           disabled={savingStripeCustomerId}
           style={{ height: CONTROL_H, flex: 1 }}
         >
-          {savingStripeCustomerId ? 'Saving...' : 'Save'}
+          {savingStripeCustomerId ? t('superAdmin.saving') : t('superAdmin.saveStripe')}
         </button>
         <button
           onClick={() => setManagingStripeId(null)}
           style={{ height: CONTROL_H, flex: 1 }}
         >
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </div>
@@ -1491,27 +1493,27 @@ const available = max - used
             style={{ maxWidth: 480, width: '100%', maxHeight: '90vh', overflow: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>Geo Settings: {managingGeoTenantName}</h3>
+            <h3 style={{ marginTop: 0 }}>{t('superAdmin.geoSettingsTitle', { name: managingGeoTenantName })}</h3>
             <p className="helper" style={{ marginTop: 8 }}>
               Set default language, currency, and timezone for this tenant.
               Users can override individually in Account Administration.
             </p>
 
             <div style={{ marginTop: 16 }}>
-              <label>Default Language</label>
+              <label>{t('superAdmin.language')}</label>
               <select
                 value={editingGeoLanguage}
                 onChange={(e) => setEditingGeoLanguage(e.target.value)}
                 style={{ height: CONTROL_H, width: '100%', marginTop: 4 }}
               >
-                <option value="en">English (en-US)</option>
-                <option value="sv">Swedish (sv-SE)</option>
-                <option value="es">Spanish (es-ES)</option>
+                <option value="en">{t('tenantAdmin.langEnglish')}</option>
+                <option value="sv">{t('tenantAdmin.langSwedish')}</option>
+                <option value="es">{t('tenantAdmin.langSpanish')}</option>
               </select>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Default Currency</label>
+              <label>{t('superAdmin.currency')}</label>
               <select
                 value={editingGeoCurrency}
                 onChange={(e) => setEditingGeoCurrency(e.target.value)}
@@ -1535,7 +1537,7 @@ const available = max - used
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <label>Default Timezone</label>
+              <label>{t('superAdmin.timezone')}</label>
               <select
                 value={editingGeoTimezone}
                 onChange={(e) => setEditingGeoTimezone(e.target.value)}
@@ -1592,13 +1594,13 @@ const available = max - used
                 disabled={savingGeo}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                {savingGeo ? 'Saving...' : 'Save Geo Settings'}
+                {savingGeo ? t('superAdmin.saving') : t('superAdmin.saveGeo')}
               </button>
               <button
                 onClick={() => setManagingGeoTenantId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>

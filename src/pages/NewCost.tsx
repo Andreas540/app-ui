@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getCostCategories, getCostTypes, createCost, getExistingCosts, updateCost, deleteCost } from '../lib/api';
 
 interface RecurringDetails {
@@ -36,6 +37,7 @@ interface NonRecurringCostSummary {
 
 const NewCost = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const formRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef<boolean>(false);
   
@@ -137,7 +139,7 @@ const NewCost = () => {
       }
     } catch (err) {
       console.error('Error loading cost categories:', err);
-      setError('Failed to load cost categories');
+      setError(t('costs.failedLoadCategories'));
     }
   };
 
@@ -148,7 +150,7 @@ const NewCost = () => {
       setCostType('');
     } catch (err) {
       console.error('Error loading cost types:', err);
-      setError('Failed to load cost types');
+      setError(t('costs.failedLoadTypes'));
     }
   };
 
@@ -267,7 +269,7 @@ const NewCost = () => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
       console.error('Error setting up edit:', err);
-      setError('Failed to load cost for editing');
+      setError(t('costs.failedLoadForEdit'));
     }
   };
 
@@ -275,19 +277,19 @@ const NewCost = () => {
   const handleDeleteCost = async () => {
     if (!editingCostId || !editingCostType) return;
     
-    if (!window.confirm('Are you sure you want to delete this cost?')) {
+    if (!window.confirm(t('costs.confirmDelete'))) {
       return;
     }
     
     setLoading(true);
     try {
       await deleteCost(editingCostId, editingCostType);
-      alert('Cost deleted successfully!');
+      alert(t('costs.deleted'));
       handleClear();
       loadExistingCosts();
     } catch (err: any) {
       console.error('Error deleting cost:', err);
-      setError(err.message || 'Failed to delete cost');
+      setError(err.message || t('costs.failedDelete'));
     } finally {
       setLoading(false);
     }
@@ -408,27 +410,27 @@ const NewCost = () => {
 
   const validateForm = (): boolean => {
     if (!costCategory) {
-      setError('Please select a cost category');
+      setError(t('costs.alertSelectCategory'));
       return false;
     }
     if (!costType) {
-      setError('Please select a cost type');
+      setError(t('costs.alertSelectType'));
       return false;
     }
     if (!costDate) {
-      setError('Please select a date');
+      setError(t('costs.alertSelectDate'));
       return false;
     }
     if (amount.trim() === '') {
-      setError('Please enter an amount');
+      setError(t('costs.alertEnterAmount'));
       return false;
     }
     if (parseAmount(amount) <= 0) {
-      setError('Please enter a valid amount');
+      setError(t('costs.alertEnterValidAmount'));
       return false;
     }
     if (isRecurring && recurringDetails.recur_interval < 1) {
-      setError('Recurrence interval must be at least 1');
+      setError(t('costs.alertIntervalMin'));
       return false;
     }
     return true;
@@ -465,19 +467,19 @@ const NewCost = () => {
         console.log('- costData:', costData);
         
         await updateCost(editingCostId, editingCostType, costData);
-        alert('Cost updated successfully!');
+        alert(t('costs.updated'));
       } else {
         // Create new cost
         await createCost(costData);
-        alert('Cost saved successfully!');
+        alert(t('costs.saved'));
       }
-      
+
       handleClear();
       // Reload costs to show the changes
       loadExistingCosts();
     } catch (err: any) {
       console.error('Error saving cost:', err);
-      setError(err.message || 'Failed to save cost');
+      setError(err.message || t('costs.failedSave'));
     } finally {
       setLoading(false);
     }
@@ -519,7 +521,7 @@ const NewCost = () => {
       {/* Register/Edit Cost Card */}
       <div ref={formRef} className="card" style={{ maxWidth: 720 }}>
         <h3 style={{ margin: 0, marginBottom: 16 }}>
-          {editingCostId ? 'Edit Cost' : 'Register New Cost'}
+          {editingCostId ? t('costs.editTitle') : t('costs.registerTitle')}
         </h3>
 
         {error && (
@@ -545,7 +547,7 @@ const NewCost = () => {
               disabled={editingCostId !== null}
               style={{ width: 18, height: 18 }}
             />
-            <span>Business</span>
+            <span>{t('costs.business')}</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
@@ -555,20 +557,20 @@ const NewCost = () => {
               disabled={editingCostId !== null}
               style={{ width: 18, height: 18 }}
             />
-            <span>Private</span>
+            <span>{t('costs.private')}</span>
           </label>
         </div>
 
         {/* Cost Category Dropdown */}
         <div style={{ marginTop: 12 }}>
-          <label>Cost Category</label>
+          <label>{t('costs.costCategory')}</label>
           <select
             value={costCategory}
             onChange={(e) => setCostCategory(e.target.value)}
             disabled={loading || editingCostId !== null}
             style={{ height: CONTROL_H }}
           >
-            <option value="">Select category...</option>
+            <option value="">{t('costs.selectCategory')}</option>
             {costCategoryOptions.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -581,7 +583,7 @@ const NewCost = () => {
         {isRecurring && (
           <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
             <div>
-              <label>Recurrence</label>
+              <label>{t('costs.recurrence')}</label>
               <select
                 value={recurringDetails.recur_kind}
                 onChange={(e) => setRecurringDetails({
@@ -590,13 +592,13 @@ const NewCost = () => {
                 })}
                 style={{ height: CONTROL_H }}
               >
-                <option value="monthly">Monthly</option>
-                <option value="weekly">Weekly</option>
-                <option value="yearly">Yearly</option>
+                <option value="monthly">{t('costs.monthly')}</option>
+                <option value="weekly">{t('costs.weekly')}</option>
+                <option value="yearly">{t('costs.yearly')}</option>
               </select>
             </div>
             <div>
-              <label>Every (interval)</label>
+              <label>{t('costs.every')}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -620,9 +622,9 @@ const NewCost = () => {
                 style={{ height: CONTROL_H }}
               />
               <p className="helper" style={{ marginTop: 4 }}>
-                {recurringDetails.recur_kind === 'monthly' ? 'month(s)' :
-                 recurringDetails.recur_kind === 'weekly' ? 'week(s)' :
-                 'year(s)'}
+                {recurringDetails.recur_kind === 'monthly' ? t('costs.months') :
+                 recurringDetails.recur_kind === 'weekly' ? t('costs.weeks') :
+                 t('costs.years')}
               </p>
             </div>
           </div>
@@ -631,14 +633,14 @@ const NewCost = () => {
         {/* Cost Type Dropdown - Show when category is selected */}
         {costCategory && (
           <div style={{ marginTop: 12 }}>
-            <label>Cost Type</label>
+            <label>{t('costs.costType')}</label>
             <select
               value={costType}
               onChange={(e) => setCostType(e.target.value)}
               disabled={loading || !costTypeOptions.length}
               style={{ height: CONTROL_H }}
             >
-              <option value="">Select type...</option>
+              <option value="">{t('costs.selectType')}</option>
               {costTypeOptions.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -651,12 +653,12 @@ const NewCost = () => {
         {/* Cost Description - Show when category is selected */}
         {costCategory && (
           <div style={{ marginTop: 12 }}>
-            <label>Cost description (optional)</label>
+            <label>{t('costs.costDescription')}</label>
             <input
               type="text"
               value={cost}
               onChange={(e) => setCost(e.target.value)}
-              placeholder="Enter cost description (optional)"
+              placeholder={t('costs.costDescriptionPlaceholder')}
               disabled={loading}
               style={{ height: CONTROL_H }}
             />
@@ -670,7 +672,7 @@ const NewCost = () => {
               // Recurring: Show Start Date and End Date in two columns
               <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
                 <div>
-                  <label>Start Date</label>
+                  <label>{t('costs.startDate')}</label>
                   <input
                     type="date"
                     value={costDate}
@@ -680,7 +682,7 @@ const NewCost = () => {
                   />
                 </div>
                 <div>
-                  <label>End Date (optional)</label>
+                  <label>{t('costs.endDateOptional')}</label>
                   <input
                     type="date"
                     value={endDate}
@@ -694,7 +696,7 @@ const NewCost = () => {
             ) : (
               // Non-recurring: Show single Date field
               <div style={{ marginTop: 12 }}>
-                <label>Date</label>
+                <label>{t('date')}</label>
                 <input
                   type="date"
                   value={costDate}
@@ -710,7 +712,7 @@ const NewCost = () => {
         {/* Amount Field - Show when category is selected */}
         {costCategory && (
           <div style={{ marginTop: 12 }}>
-            <label>Cost Amount</label>
+            <label>{t('costs.costAmount')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -733,7 +735,7 @@ const NewCost = () => {
             disabled={loading}
             style={{ height: CONTROL_H }}
           >
-            {loading ? (editingCostId ? 'Updating...' : 'Saving...') : (editingCostId ? 'Update' : 'Save')}
+            {loading ? (editingCostId ? t('updating') : t('saving')) : (editingCostId ? t('update') : t('save'))}
           </button>
           {editingCostId && (
             <button
@@ -746,7 +748,7 @@ const NewCost = () => {
                 border: 'none'
               }}
             >
-              Delete
+              {t('delete')}
             </button>
           )}
           <button
@@ -754,14 +756,14 @@ const NewCost = () => {
             disabled={loading}
             style={{ height: CONTROL_H }}
           >
-            Clear
+            {t('clear')}
           </button>
           <button
             onClick={handleCancel}
             disabled={loading}
             style={{ height: CONTROL_H }}
           >
-            Cancel
+            {t('cancel')}
           </button>
         </div>
       </div>
@@ -782,7 +784,7 @@ const NewCost = () => {
             aria-pressed={viewMode === 'B'}
             style={{ height: 'calc(var(--control-h) * 0.67)' }}
           >
-            See Business Costs
+            {t('costs.seeBusinessCosts')}
           </button>
           <button
             className="primary"
@@ -790,7 +792,7 @@ const NewCost = () => {
             aria-pressed={viewMode === 'P'}
             style={{ height: 'calc(var(--control-h) * 0.67)' }}
           >
-            See Private Costs
+            {t('costs.seePrivateCosts')}
           </button>
         </div>
 
@@ -798,7 +800,7 @@ const NewCost = () => {
         <div style={{ marginTop: 24 }}>
           {loadingCosts ? (
             <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-              Loading costs...
+              {t('costs.loadingCosts')}
             </div>
           ) : (
             <>
@@ -806,7 +808,7 @@ const NewCost = () => {
               {recurringCosts.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
                   <h4 style={{ margin: 0, marginBottom: 12 }}>
-                    {viewMode === 'B' ? 'Business recurring costs' : 'Private recurring costs'}
+                    {viewMode === 'B' ? t('costs.businessRecurring') : t('costs.privateRecurring')}
                   </h4>
                   
                   {/* Headers */}
@@ -819,9 +821,9 @@ const NewCost = () => {
                     fontWeight: 600,
                     fontSize: 14
                   }}>
-                    <div>Month</div>
-                    <div>Cost Type</div>
-                    <div style={{ textAlign: 'right' }}>Amount</div>
+                    <div>{t('costs.monthColumn')}</div>
+                    <div>{t('costs.costType')}</div>
+                    <div style={{ textAlign: 'right' }}>{t('amount')}</div>
                   </div>
 
                   {/* Data rows */}
@@ -867,7 +869,7 @@ const NewCost = () => {
                             >
                               <div></div>
                               <div className="helper" style={{ lineHeight: '1.4' }}>
-                                {detail.cost || '(No description)'}
+                                {detail.cost || t('costs.noDescription')}
                               </div>
                               <div className="helper" style={{ textAlign: 'right' }}>
                                 ${formatCurrency(detail.amount)}
@@ -884,7 +886,7 @@ const NewCost = () => {
                                   minHeight: 'unset'
                                 }}
                               >
-                                Edit
+                                {t('edit')}
                               </button>
                             </div>
                           ))}
@@ -899,7 +901,7 @@ const NewCost = () => {
               {nonRecurringCosts.length > 0 && (
                 <div>
                   <h4 style={{ margin: 0, marginBottom: 12 }}>
-                    {viewMode === 'B' ? 'Business non-recurring costs' : 'Private non-recurring costs'}
+                    {viewMode === 'B' ? t('costs.businessNonRecurring') : t('costs.privateNonRecurring')}
                   </h4>
                   
                   {/* Headers */}
@@ -912,9 +914,9 @@ const NewCost = () => {
                     fontWeight: 600,
                     fontSize: 14
                   }}>
-                    <div>Month</div>
-                    <div>Cost Type</div>
-                    <div style={{ textAlign: 'right' }}>Amount</div>
+                    <div>{t('costs.monthColumn')}</div>
+                    <div>{t('costs.costType')}</div>
+                    <div style={{ textAlign: 'right' }}>{t('amount')}</div>
                   </div>
 
                   {/* Data rows */}
@@ -960,7 +962,7 @@ const NewCost = () => {
                             >
                               <div></div>
                               <div className="helper" style={{ lineHeight: '1.4' }}>
-                                {detail.cost || '(No description)'}
+                                {detail.cost || t('costs.noDescription')}
                               </div>
                               <div className="helper" style={{ textAlign: 'right' }}>
                                 ${formatCurrency(detail.amount)}
@@ -977,7 +979,7 @@ const NewCost = () => {
                                   minHeight: 'unset'
                                 }}
                               >
-                                Edit
+                                {t('edit')}
                               </button>
                             </div>
                           ))}
@@ -990,7 +992,7 @@ const NewCost = () => {
 
               {/* No costs message */}
               {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
-                <p className="helper">No costs found for the last 3 months</p>
+                <p className="helper">{t('costs.noCostsFound')}</p>
               )}
             </>
           )}

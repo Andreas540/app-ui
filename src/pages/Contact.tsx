@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getAuthHeaders } from '../lib/api'
 
@@ -35,6 +36,7 @@ function formatSentAt(iso: string): string {
 }
 
 export default function Contact() {
+  const { t } = useTranslation()
   const { user } = useAuth()
 
   const [topic, setTopic]     = useState('')
@@ -105,12 +107,12 @@ export default function Contact() {
             style={{ maxWidth: 360, width: '90%', textAlign: 'center' }}
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
-            <h3 style={{ margin: 0, marginBottom: 12 }}>Thank you!</h3>
+            <h3 style={{ margin: 0, marginBottom: 12 }}>{t('contact.thankYou')}</h3>
             <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
-              We will get back to you via email asap.
+              {t('contact.successMessage')}
             </p>
             <button className="primary" style={{ width: '100%' }} onClick={() => setStatus('idle')}>
-              Close
+              {t('close')}
             </button>
           </div>
         </div>
@@ -118,13 +120,13 @@ export default function Contact() {
 
       {/* Form */}
       <div className="card" style={{ maxWidth: 560 }}>
-        <h3 style={{ margin: 0, marginBottom: 12 }}>Contact</h3>
+        <h3 style={{ margin: 0, marginBottom: 12 }}>{t('contact.title')}</h3>
         <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
-          We try to answer within an hour.
+          {t('contact.subheading')}
         </p>
 
         <div>
-          <label>Topic</label>
+          <label>{t('contact.topic')}</label>
           <select
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -139,7 +141,7 @@ export default function Contact() {
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <label>Your email</label>
+          <label>{t('contact.yourEmail')}</label>
           <input
             value={userEmail}
             disabled
@@ -153,18 +155,18 @@ export default function Contact() {
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <label>Message</label>
+          <label>{t('contact.message')}</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Describe your question or feedback…"
+            placeholder={t('contact.messagePlaceholder')}
             style={{ width: '100%', minHeight: 180, resize: 'vertical', fontFamily: 'inherit' }}
           />
         </div>
 
         {status === 'error' && (
           <p style={{ color: 'var(--danger, #ff6b6b)', marginTop: 8, marginBottom: 0 }}>
-            Something went wrong. Please try again.
+            {t('contact.submitError')}
           </p>
         )}
 
@@ -179,16 +181,16 @@ export default function Contact() {
             cursor: canSubmit ? 'pointer' : 'not-allowed',
           }}
         >
-          {status === 'sending' ? 'Sending…' : 'Send message'}
+          {status === 'sending' ? t('contact.sending') : t('contact.sendMessage')}
         </button>
 
         {/* Sent messages history */}
         {(loading || sentMessages.length > 0) && (
           <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
-            <h4 style={{ margin: 0, marginBottom: 12 }}>Sent messages</h4>
+            <h4 style={{ margin: 0, marginBottom: 12 }}>{t('contact.sentMessages')}</h4>
 
             {loading ? (
-              <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
+              <p style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {sentMessages.map(msg => {
@@ -222,14 +224,14 @@ export default function Contact() {
                             padding: '2px 7px',
                             letterSpacing: '0.02em',
                           }}>
-                            Answered
+                            {t('messages.answeredBadge')}
                           </span>
                         )}
                       </div>
 
                       {/* Sent date */}
                       <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
-                        Sent: {formatSentAt(msg.sent_at)}
+                        {t('contact.sentDate', { date: formatSentAt(msg.sent_at) })}
                       </div>
 
                       {/* Expanded message */}

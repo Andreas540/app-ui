@@ -1,12 +1,14 @@
 // src/pages/CustomerDetail.tsx
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 
 export default function CustomerDetailPage() {
+  const { t } = useTranslation()
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
@@ -135,8 +137,8 @@ export default function CustomerDetailPage() {
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const { customer, totals, orders, payments } = data
@@ -172,8 +174,8 @@ export default function CustomerDetailPage() {
           <Link
             to={`/customers/${customer.id}/edit`}
             className="icon-btn"
-            title="Edit customer"
-            aria-label="Edit customer"
+            title={t('customerDetail.editCustomer')}
+            aria-label={t('customerDetail.editCustomer')}
             style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
           >
             ✎
@@ -181,7 +183,7 @@ export default function CustomerDetailPage() {
         </div>
 
         <Link to="/customers" className="helper" style={{ whiteSpace:'nowrap' }}>
-          &larr; Customers
+          {t('customerDetail.backToCustomers')}
         </Link>
       </div>
 
@@ -202,7 +204,7 @@ export default function CustomerDetailPage() {
               whiteSpace: 'nowrap'
             }}
           >
-            New order
+            {t('newOrder')}
           </button>
         </Link>
 
@@ -221,7 +223,7 @@ export default function CustomerDetailPage() {
               whiteSpace: 'nowrap'
             }}
           >
-            New payment
+            {t('newPayment')}
           </button>
         </Link>
       </div>
@@ -236,7 +238,7 @@ export default function CustomerDetailPage() {
               onClick={() => setShowInfo(true)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              Show info
+              {t('showInfo')}
             </button>
           ) : (
             <div>
@@ -245,34 +247,34 @@ export default function CustomerDetailPage() {
                 onClick={() => setShowInfo(false)}
                 style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
               >
-                Hide info
+                {t('hideInfo')}
               </button>
 
               <div style={{ marginTop: 10 }}>
-                <div className="helper">Type</div>
+                <div className="helper">{t('customerDetail.type')}</div>
                 <div>{customer.customer_type}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Shipping cost</div>
+                <div className="helper">{t('customerDetail.shippingCost')}</div>
                 <div>{fmtMoney((customer as any).shipping_cost ?? 0)}</div>
               </div>
 
               {/* ✨ NEW: Company name */}
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Contact</div>
+                <div className="helper">{t('contact.title')}</div>
                 <div>{customer.company_name || '—'}</div>
               </div>
               {/* ✨ END NEW */}
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Phone</div>
+                <div className="helper">{t('phone')}</div>
                 <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{formatPhoneDisplay(customer.phone)}</a> : '—'}</div>
 
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div className="helper">Address</div>
+                <div className="helper">{t('address')}</div>
                 <div>
                   {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
                 </div>
@@ -283,7 +285,7 @@ export default function CustomerDetailPage() {
 
         {/* RIGHT */}
         <div style={{ textAlign:'right' }}>
-          <div className="helper">Owed to me</div>
+          <div className="helper">{t('customerDetail.owedToMe')}</div>
           <div style={{ fontWeight: 700 }}>{fmtMoney((totals as any).owed_to_me)}</div>
         </div>
       </div>
@@ -291,26 +293,26 @@ export default function CustomerDetailPage() {
       {/* Recent orders */}
       <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Recent orders</h4>
+          <h4 style={{margin:0}}>{t('customerDetail.recentOrders')}</h4>
           {orders.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllOrders(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllOrders ? 'Show less' : 'Show all orders'}
+              {showAllOrders ? t('showLess') : t('showAllOrders')}
             </button>
           )}
         </div>
 
-        {orders.length === 0 ? <p className="helper">No orders yet.</p> : (
+        {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
               // NOTE: server should provide product_name, qty, unit_price, partner_amount
               const middle =
                 (o as any).product_name && (o as any).qty != null
                   ? `${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / ${fmtMoney((o as any).unit_price ?? 0)}`
-                  : `${o.lines} line(s)`
+                  : t('customerDetail.orderLines', { count: o.lines })
 
               const withPartner = isPartnerCustomer && (o as any).partner_amount != null
                 ? `${middle} / ${fmtIntMoney((o as any).partner_amount)}`
@@ -355,16 +357,16 @@ export default function CustomerDetailPage() {
 
                         let symbol = '○'
                         let color = '#d1d5db'
-                        let title = 'Not delivered'
+                        let title = t('notDelivered')
 
                         if (status === 'delivered') {
                           symbol = '✓'
                           color = '#10b981'
-                          title = 'Delivered in full'
+                          title = t('customerDetail.deliveredInFull')
                         } else if (status === 'partial') {
                           symbol = '◐'
                           color = '#f59e0b'
-                          title = `Partially delivered (${deliveredQty}/${totalQty})`
+                          title = t('customerDetail.partiallyDelivered', { delivered: deliveredQty, total: totalQty })
                         }
 
                         return (
@@ -468,19 +470,19 @@ export default function CustomerDetailPage() {
       {/* Recent payments */}
       <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>Recent payments</h4>
+          <h4 style={{margin:0}}>{t('customerDetail.recentPayments')}</h4>
           {payments.length > 5 && (
             <button
               className="helper"
               onClick={() => setShowAllPayments(v => !v)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {showAllPayments ? 'Show less' : 'Show all payments'}
+              {showAllPayments ? t('showLess') : t('showAllPayments')}
             </button>
           )}
         </div>
 
-        {payments.length === 0 ? <p className="helper">No payments yet.</p> : (
+        {payments.length === 0 ? <p className="helper">{t('noPaymentsYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownPayments.map(p => {
               const hasNotes = (p as any).notes && (p as any).notes.trim()
@@ -606,6 +608,7 @@ function DeliveryModal({
   onClose: () => void
   onSave: (orderId: string, newDeliveredQuantity: number) => void
 }) {
+  const { t } = useTranslation()
 
   const totalQty = (order as any).total_qty ?? (order as any).qty ?? 0
   const initialDelivered =
@@ -623,10 +626,10 @@ function DeliveryModal({
   const clampedValue = Math.max(0, Math.min(numeric, totalQty))
   const remaining = totalQty - clampedValue
 
-  let statusLabel = 'Not delivered'
-  if (clampedValue === 0) statusLabel = 'Not delivered'
-  else if (clampedValue === totalQty) statusLabel = 'Delivered in full'
-  else statusLabel = `Partially delivered (${clampedValue}/${totalQty})`
+  let statusLabel = t('notDelivered')
+  if (clampedValue === 0) statusLabel = t('notDelivered')
+  else if (clampedValue === totalQty) statusLabel = t('customerDetail.deliveredInFullStatus')
+  else statusLabel = t('customerDetail.partiallyDelivered', { delivered: clampedValue, total: totalQty })
 
   return (
     <div
@@ -646,19 +649,19 @@ function DeliveryModal({
         style={{ maxWidth: 360, width: '90%', padding: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h4 style={{ marginTop: 0, marginBottom: 8 }}>Update delivery</h4>
+        <h4 style={{ marginTop: 0, marginBottom: 8 }}>{t('customerDetail.updateDelivery')}</h4>
 
         <div className="helper" style={{ marginBottom: 8 }}>
           Order #{(order as any).order_no ?? order.id}
         </div>
 
         <div className="helper" style={{ marginBottom: 4 }}>
-          Ordered quantity
+          {t('customerDetail.orderedQty')}
         </div>
         <div style={{ marginBottom: 8 }}>{totalQty}</div>
 
         <div className="helper" style={{ marginBottom: 4 }}>
-          Delivered quantity
+          {t('customerDetail.deliveredQty')}
         </div>
         <input
           type="number"
@@ -682,7 +685,7 @@ function DeliveryModal({
             onClick={() => setInputValue('0')}
             style={{ flex: 1 }}
           >
-            Set to 0
+            {t('customerDetail.setToZero')}
           </button>
           <button
             type="button"
@@ -690,16 +693,16 @@ function DeliveryModal({
             onClick={() => setInputValue(String(totalQty))}
             style={{ flex: 1 }}
           >
-            Full delivery
+            {t('customerDetail.fullDelivery')}
           </button>
         </div>
 
         <div className="helper" style={{ marginBottom: 4 }}>
-          New status
+          {t('customerDetail.newStatus')}
         </div>
         <div style={{ marginBottom: 12 }}>
           {statusLabel}{' '}
-          {totalQty > 0 && remaining !== 0 && `(${remaining} remaining)`}
+          {totalQty > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -709,7 +712,7 @@ function DeliveryModal({
             onClick={onClose}
             disabled={saving}
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -717,7 +720,7 @@ function DeliveryModal({
             onClick={() => onSave(order.id, clampedValue)}
             disabled={saving}
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
       </div>

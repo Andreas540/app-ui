@@ -52,10 +52,13 @@
   "customer": "Cliente",
   "partner": "Socio",
   "supplier": "Proveedor",
+  "admin": "Administrador",
+  "tenant": "Organización",
   "price": "Precio",
   "cost": "Costo",
   "hrs": "hrs",
   "refresh": "Actualizar",
+  "reset": "Restablecer",
   "noResults": "Sin resultados.",
   "clearSearch": "Limpiar búsqueda",
   "showMore": "Mostrar más",
@@ -292,7 +295,12 @@
     "shippingCostPlaceholder": "ej. 0.35",
     "applyCostToHistory": "Aplicar nuevo costo a todos los pedidos anteriores",
     "applyCostFromNextOrder": "Nuevo costo válido desde el próximo pedido",
-    "applyCostFromSpecificDate": "Válido desde fecha específica"
+    "applyCostFromSpecificDate": "Válido desde fecha específica",
+    "created": "Cliente creado",
+    "contact": "Contacto",
+    "alertNameRequired": "El nombre es obligatorio",
+    "alertShippingNumber": "El costo de envío debe ser un número (o déjalo vacío)",
+    "failedUpdate": "Error al actualizar el cliente"
   },
 
   "customerDetail": {
@@ -340,7 +348,10 @@
     "alertEnterAmountSimple": "Ingrese un monto distinto de cero",
     "partnerSaved": "¡Pago al socio guardado!",
     "alertSelectSupplier": "Seleccione un proveedor",
-    "supplierSaved": "¡Pago al proveedor guardado!"
+    "supplierSaved": "¡Pago al proveedor guardado!",
+    "alertSaveFailed": "Error al guardar",
+    "noCustomersFound": "No se encontraron clientes.",
+    "customerViaPartner": "Cliente vía Socio"
   },
 
   "orders": {
@@ -398,10 +409,12 @@
     "preProdColumn": "Pre-prod",
     "finishedColumn": "Terminado",
     "totalQtyColumn": "Cantidad Total",
+    "notesPlaceholder": "Añadir notas sobre esta entrada...",
     "alertSelectProduct": "Seleccione un producto primero",
     "alertEnterQuantity": "Ingrese una cantidad válida (no puede ser 0)",
     "alertSelectDate": "Seleccione una fecha",
     "saved": "¡Entrada de almacén guardada!",
+    "saveFailed": "Error al guardar",
     "noProducts": "No hay productos disponibles."
   },
 
@@ -414,6 +427,7 @@
     "productCosts": "Costos del producto",
     "currentCosts": "Costos actuales",
     "historicalCosts": "Costos históricos",
+    "created": "¡Producto creado!",
     "noProducts": "Sin productos aún.",
     "noHistoricalCosts": "Sin costos históricos aún.",
     "editProductTitle": "Editar Producto",
@@ -459,7 +473,11 @@
     "createTitle": "Crear Nuevo Proveedor",
     "supplierName": "Nombre del Proveedor",
     "supplierNameRequired": "Nombre del Proveedor *",
-    "editTitle": "Editar Proveedor"
+    "editTitle": "Editar Proveedor",
+    "alertNoName": "Ingresa un nombre de proveedor",
+    "created": "Proveedor creado",
+    "alertNameRequired": "El nombre del proveedor es obligatorio",
+    "updated": "Proveedor actualizado con éxito"
   },
 
   "partners": {
@@ -486,7 +504,11 @@
     "paymentsToPartner": "Pagos al socio",
     "createTitle": "Crear Nuevo Socio",
     "partnerName": "Nombre del Socio",
-    "editTitle": "Editar Socio"
+    "editTitle": "Editar Socio",
+    "alertNoName": "Ingresa un nombre de socio",
+    "created": "Socio creado",
+    "alertNameRequired": "El nombre es obligatorio",
+    "failedUpdate": "Error al actualizar el socio"
   },
 
   "supplyChain": {
@@ -557,7 +579,23 @@
     "noDescription": "(Sin descripción)",
     "businessNonRecurring": "Costos no recurrentes de negocio",
     "privateNonRecurring": "Costos no recurrentes privados",
-    "noCostsFound": "No se encontraron costos en los últimos 3 meses"
+    "noCostsFound": "No se encontraron costos en los últimos 3 meses",
+    "loadingCosts": "Cargando costos...",
+    "saved": "¡Costo guardado con éxito!",
+    "updated": "¡Costo actualizado con éxito!",
+    "deleted": "¡Costo eliminado con éxito!",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este costo?",
+    "failedLoadCategories": "Error al cargar las categorías de costos",
+    "failedLoadTypes": "Error al cargar los tipos de costos",
+    "failedLoadForEdit": "Error al cargar el costo para editar",
+    "failedSave": "Error al guardar el costo",
+    "failedDelete": "Error al eliminar el costo",
+    "alertSelectCategory": "Por favor selecciona una categoría de costo",
+    "alertSelectType": "Por favor selecciona un tipo de costo",
+    "alertSelectDate": "Por favor selecciona una fecha",
+    "alertEnterAmount": "Por favor ingresa un monto",
+    "alertEnterValidAmount": "Por favor ingresa un monto válido",
+    "alertIntervalMin": "El intervalo de recurrencia debe ser al menos 1"
   },
 
   "invoice": {
@@ -595,7 +633,11 @@
     "subtotal": "Subtotal",
     "adjustments": "Ajustes/Descuento",
     "downloadInvoice": "Descargar factura",
-    "pressToShare": "Presiona la factura para compartir"
+    "pressToShare": "Presiona la factura para compartir",
+    "invoiceFor": "Factura para",
+    "invoiceHash": "Factura #",
+    "estDelivery": "Entrega est.",
+    "invoiceSnapshot": "Captura de factura"
   },
 
   "supplierOrders": {
@@ -609,14 +651,30 @@
     "orderStatus": "Estado del Pedido",
     "deliveryDate": "Fecha de entrega",
     "inCustomsDate": "Fecha en aduana",
-    "receivedDate": "Fecha de recepción"
+    "receivedDate": "Fecha de recepción",
+    "orderDate": "Fecha del pedido",
+    "saved": "Pedido al proveedor guardado",
+    "updated": "Pedido al proveedor actualizado",
+    "deleted": "Pedido eliminado",
+    "failedDelete": "Error al eliminar el pedido",
+    "alertCanSave": "Selecciona un proveedor y agrega al menos un producto con cantidad y costo",
+    "alertAllLinesValid": "Selecciona un proveedor y valida cada línea: producto, cantidad y costo",
+    "addProduct": "Agregar producto",
+    "removeProduct": "Quitar producto"
   },
 
   "editPayment": {
     "title": "Editar Pago",
     "paymentDate": "Fecha de pago",
     "paymentType": "Tipo de pago",
-    "amountUSD": "Monto (USD)"
+    "amountUSD": "Monto (USD)",
+    "alertEnterAmount": "Ingresa un monto válido distinto de cero",
+    "updated": "¡Pago actualizado!",
+    "deleted": "Pago eliminado",
+    "confirmDelete": "¿Eliminar este pago? Esta acción no se puede deshacer.",
+    "failedUpdate": "Error al actualizar el pago",
+    "failedDelete": "Error al eliminar el pago",
+    "deleteFailed": "Error al eliminar"
   },
 
   "settingsPage": {
@@ -707,7 +765,11 @@
     "partnerAmount": "Monto del Socio",
     "loadingPartner": "Cargando información del socio...",
     "discount": "Descuento",
-    "editOrder": "Editar Pedido"
+    "editOrder": "Editar Pedido",
+    "deliveredInFull": "Entregado completo",
+    "deliveredInFullQty": "Entregado completo ({{delivered}}/{{total}})",
+    "partiallyDelivered": "Parcialmente entregado",
+    "partiallyDeliveredQty": "Parcialmente entregado ({{delivered}}/{{total}})"
   },
 
   "paymentModal": {
@@ -748,7 +810,8 @@
     "selectTenant": "Seleccionar tenant...",
     "addMembership": "Agregar Membresía",
     "adding": "Agregando...",
-    "userNotFound": "Usuario no encontrado"
+    "userNotFound": "Usuario no encontrado",
+    "updating": "Actualizando..."
   },
 
   "tenantSwitcher": {
@@ -767,6 +830,104 @@
     "namePlaceholder": "Nombre completo",
     "nameHelper": "Si está vacío, se usará el correo electrónico",
     "createButton": "Crear Usuario",
-    "creatingText": "Creando..."
+    "creatingText": "Creando...",
+    "alertEmailRequired": "El correo electrónico es obligatorio",
+    "alertPasswordRequired": "La contraseña es obligatoria",
+    "alertPasswordLength": "La contraseña debe tener al menos 8 caracteres",
+    "created": "¡Usuario creado exitosamente!"
+  },
+
+  "tenantAdmin": {
+    "title": "Administración de Cuenta",
+    "subtitle": "Gestionar permisos de usuario para {{name}}",
+    "featuresInfo": "Tu organización tiene acceso a {{count}} funciones. Puedes personalizar qué funciones puede acceder cada usuario.",
+    "manageSubscription": "Gestionar Suscripción",
+    "changeModulesInfo": "Para cambiar módulos o número de usuarios, envía un mensaje a través de la página de Contacto.",
+    "teamMembers": "Miembros del Equipo",
+    "createUserButton": "+ Crear Usuario",
+    "noUsers": "Sin usuarios aún",
+    "roleLabel": "Rol:",
+    "accessAll": "Acceso: Todas las {{count}} funciones",
+    "accessCount": "Acceso: {{count}} de {{total}} funciones",
+    "permissionsButton": "Permisos",
+    "geoButton": "Geo",
+    "permissionsLabel": "Permisos",
+    "selectAll": "Seleccionar Todo",
+    "clearAll": "Limpiar Todo",
+    "managePermissionsTitle": "Gestionar Permisos: {{name}}",
+    "featureSelectHelp": "Selecciona qué funciones puede acceder este usuario. Solo las funciones habilitadas para tu organización están disponibles.",
+    "savePermissions": "Guardar Permisos",
+    "geoSettingsTitle": "Configuración Geo: {{name}}",
+    "geoHelp": "Deja un campo en \"Usar predeterminado de la organización\" para heredar la configuración.",
+    "language": "Idioma",
+    "useTenantDefault": "Usar predeterminado ({{default}})",
+    "langEnglish": "Inglés (en-US)",
+    "langSwedish": "Sueco (sv-SE)",
+    "langSpanish": "Español (es-ES)",
+    "currency": "Moneda",
+    "timezone": "Zona horaria",
+    "saveGeo": "Guardar Configuración Geo",
+    "roleRequired": "Rol *",
+    "passwordPlaceholder": "Al menos 8 caracteres",
+    "alertEnterEmail": "Por favor ingresa un correo electrónico",
+    "alertPasswordLength": "La contraseña debe tener al menos 8 caracteres",
+    "userCreated": "¡Usuario creado exitosamente!",
+    "permissionsUpdated": "¡Permisos de usuario actualizados exitosamente!",
+    "geoSaved": "¡Configuración geo guardada!"
+  },
+
+  "superAdmin": {
+    "title": "Super Admin",
+    "tabTenants": "Organizaciones",
+    "tabUsers": "Usuarios",
+    "createTenant": "Crear Organización",
+    "tenantName": "Nombre de la organización",
+    "businessType": "Tipo de negocio",
+    "creating": "Creando...",
+    "noTenants": "Sin organizaciones aún",
+    "noUsers": "Sin usuarios aún",
+    "created": "¡Organización creada exitosamente!",
+    "userCreated": "¡Usuario creado exitosamente!",
+    "featuresUpdated": "¡Funciones de la organización actualizadas!",
+    "geoSaved": "¡Configuración geo guardada!",
+    "stripeSaved": "¡ID de cliente Stripe guardado!",
+    "alertEnterTenantName": "Por favor ingresa un nombre de organización",
+    "alertEnterEmail": "Por favor ingresa un correo electrónico",
+    "alertPasswordLength": "La contraseña debe tener al menos 8 caracteres",
+    "alertSelectTenant": "Por favor selecciona al menos una organización",
+    "features": "Funciones",
+    "stripe": "Stripe",
+    "geo": "Geo",
+    "manage": "Gestionar",
+    "stripeCustomerId": "ID de Cliente Stripe",
+    "saveStripe": "Guardar ID Stripe",
+    "saving": "Guardando...",
+    "tenantFeatures": "Funciones: {{name}}",
+    "geoSettingsTitle": "Configuración Geo: {{name}}",
+    "language": "Idioma",
+    "currency": "Moneda",
+    "timezone": "Zona horaria",
+    "saveGeo": "Guardar Configuración Geo",
+    "addMembership": "Agregar Membresía",
+    "addMembershipPlaceholder": "Seleccionar organización...",
+    "memberships": "Membresías",
+    "userRole": "Rol",
+    "addTenantRow": "+ Agregar organización",
+    "removeTenant": "Eliminar"
+  },
+  "printDialog": {
+    "title": "Imprimir a PDF",
+    "sectionsToPrint": "Secciones a imprimir",
+    "selectAll": "Seleccionar todo",
+    "deselectAll": "Deseleccionar todo",
+    "moreOptions": "Más opciones",
+    "includeAll": "Incluir todos los pedidos y pagos",
+    "lastThreeMonths": "Incluir solo los últimos 3 meses",
+    "sortByDate": "Ordenar por fecha de pedido",
+    "sortByCustomer": "Ordenar por cliente",
+    "printToPdf": "Imprimir a PDF"
+  },
+  "modal": {
+    "closeTitle": "Cerrar"
   }
 }

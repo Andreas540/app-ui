@@ -1,6 +1,7 @@
 // src/pages/CreateCustomer.tsx
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createCustomer, type CustomerType } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -8,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function CreateCustomer() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -47,9 +49,9 @@ export default function CreateCustomer() {
   }
 
   async function save() {
-    if (!name.trim()) { alert('Enter a customer name'); return }
+    if (!name.trim()) { alert(t('customers.alertNoName')); return }
     const ship = resolvedShipping()
-    if (!Number.isFinite(ship)) { alert('Enter a valid custom shipping cost (>= 0)'); return }
+    if (!Number.isFinite(ship)) { alert(t('customers.alertInvalidShipping')); return }
 
     try {
       await createCustomer({
@@ -65,24 +67,24 @@ export default function CreateCustomer() {
         state: state.trim() || undefined,
         postal_code: postal.trim() || undefined,
       })
-      alert('Customer created')
+      alert(t('customers.created'))
       navigate('/customers')
     } catch (e: any) {
-      alert(e?.message || 'Save failed')
+      alert(e?.message || t('payments.alertSaveFailed'))
     }
   }
 
   return (
     <div className="card" style={{maxWidth: 900}}>
-      <h3>Create New Customer</h3>
+      <h3>{t('customers.createTitle')}</h3>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Customer Name</label>
+          <label>{t('customers.customerName')}</label>
           <input type="text" value={name} onChange={e=>setName(e.target.value)} />
         </div>
         <div>
-          <label>Customer Type</label>
+          <label>{t('customers.customerType')}</label>
           <select value={ctype} onChange={e=>setCtype(e.target.value as CustomerType)}>
             <option value={directValue}>{directLabel}</option>
             <option value="Partner">Partner</option>
@@ -93,7 +95,7 @@ export default function CreateCustomer() {
       {/* Row with Shipping Cost, Company name, Phone */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Shipping Cost</label>
+          <label>{t('customers.shippingCost')}</label>
 
           {shipMode === 'preset' ? (
             <select
@@ -111,7 +113,7 @@ export default function CreateCustomer() {
             >
               <option value="0">0</option>
               <option value="0.35">0.35</option>
-              <option value="custom">Custom…</option>
+              <option value="custom">{t('customers.customShipping')}</option>
             </select>
           ) : (
             <div style={{ display:'flex', gap:8 }}>
@@ -119,7 +121,7 @@ export default function CreateCustomer() {
                 ref={customInputRef}
                 type="text"
                 inputMode="decimal"
-                placeholder="Enter amount (e.g. 0.42)"
+                placeholder={t('customers.customShippingPlaceholder')}
                 value={shipCustom}
                 onChange={e=>setShipCustom(e.target.value)}
                 style={{ height: CONTROL_H, flex:1 }}
@@ -129,14 +131,14 @@ export default function CreateCustomer() {
                 onClick={() => { setShipMode('preset'); setShipCustom('') }}
                 style={{ height: CONTROL_H }}
               >
-                Presets
+                {t('customers.presets')}
               </button>
             </div>
           )}
         </div>
 
         <div>
-          <label>Contact</label>
+          <label>{t('customers.contact')}</label>
           <input
             type="text"
             value={companyName}
@@ -145,40 +147,40 @@ export default function CreateCustomer() {
         </div>
 
         <div>
-          <label>Phone</label>
+          <label>{t('phone')}</label>
           <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} />
         </div>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>Address line 1</label>
+          <label>{t('addressLine1')}</label>
           <input type="text" value={address1} onChange={e=>setAddress1(e.target.value)} />
         </div>
         <div>
-          <label>Address line 2</label>
+          <label>{t('addressLine2')}</label>
           <input type="text" value={address2} onChange={e=>setAddress2(e.target.value)} />
         </div>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>City</label>
+          <label>{t('city')}</label>
           <input type="text" value={city} onChange={e=>setCity(e.target.value)} />
         </div>
         <div>
-          <label>State</label>
+          <label>{t('state')}</label>
           <input type="text" value={state} onChange={e=>setState(e.target.value)} />
         </div>
         <div>
-          <label>ZIP</label>
+          <label>{t('zip')}</label>
           <input type="text" value={postal} onChange={e=>setPostal(e.target.value)} />
         </div>
       </div>
 
       <div style={{ marginTop:16, display:'flex', gap:8 }}>
-        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>Save</button>
-        <button onClick={()=>history.back()} style={{ height: CONTROL_H }}>Cancel</button>
+        <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('save')}</button>
+        <button onClick={()=>history.back()} style={{ height: CONTROL_H }}>{t('cancel')}</button>
       </div>
     </div>
   )

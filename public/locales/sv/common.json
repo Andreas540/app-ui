@@ -52,10 +52,13 @@
   "customer": "Kund",
   "partner": "Partner",
   "supplier": "Leverantör",
+  "admin": "Admin",
+  "tenant": "Organisation",
   "price": "Pris",
   "cost": "Kostnad",
   "hrs": "tim",
   "refresh": "Uppdatera",
+  "reset": "Återställ",
   "noResults": "Inga resultat.",
   "clearSearch": "Rensa sökning",
   "showMore": "Visa mer",
@@ -292,7 +295,12 @@
     "shippingCostPlaceholder": "t.ex. 0.35",
     "applyCostToHistory": "Tillämpa ny kostnad på alla tidigare beställningar",
     "applyCostFromNextOrder": "Ny kostnad gäller från nästa beställning",
-    "applyCostFromSpecificDate": "Gäller från specifikt datum"
+    "applyCostFromSpecificDate": "Gäller från specifikt datum",
+    "created": "Kund skapad",
+    "contact": "Kontakt",
+    "alertNameRequired": "Namn krävs",
+    "alertShippingNumber": "Fraktkostnaden måste vara ett nummer (eller lämna tomt)",
+    "failedUpdate": "Det gick inte att uppdatera kunden"
   },
 
   "customerDetail": {
@@ -340,7 +348,10 @@
     "alertEnterAmountSimple": "Ange ett belopp som inte är noll",
     "partnerSaved": "Partnerbetalning sparad!",
     "alertSelectSupplier": "Välj en leverantör",
-    "supplierSaved": "Leverantörsbetalning sparad!"
+    "supplierSaved": "Leverantörsbetalning sparad!",
+    "alertSaveFailed": "Kunde inte spara",
+    "noCustomersFound": "Inga kunder hittades.",
+    "customerViaPartner": "Kund via Partner"
   },
 
   "orders": {
@@ -398,10 +409,12 @@
     "preProdColumn": "Förprod",
     "finishedColumn": "Färdigt",
     "totalQtyColumn": "Totalt antal",
+    "notesPlaceholder": "Lägg till anteckningar om detta inlägg...",
     "alertSelectProduct": "Välj en produkt först",
     "alertEnterQuantity": "Ange ett giltigt antal (kan inte vara 0)",
     "alertSelectDate": "Välj ett datum",
     "saved": "Lagerinlägg sparat!",
+    "saveFailed": "Kunde inte spara",
     "noProducts": "Inga produkter tillgängliga."
   },
 
@@ -414,6 +427,7 @@
     "productCosts": "Produktkostnader",
     "currentCosts": "Aktuella kostnader",
     "historicalCosts": "Historiska kostnader",
+    "created": "Produkt skapad!",
     "noProducts": "Inga produkter ännu.",
     "noHistoricalCosts": "Inga historiska kostnader ännu.",
     "editProductTitle": "Redigera produkt",
@@ -459,7 +473,11 @@
     "createTitle": "Skapa ny leverantör",
     "supplierName": "Leverantörsnamn",
     "supplierNameRequired": "Leverantörsnamn *",
-    "editTitle": "Redigera leverantör"
+    "editTitle": "Redigera leverantör",
+    "alertNoName": "Ange ett leverantörsnamn",
+    "created": "Leverantör skapad",
+    "alertNameRequired": "Leverantörsnamn krävs",
+    "updated": "Leverantör uppdaterad"
   },
 
   "partners": {
@@ -486,7 +504,11 @@
     "paymentsToPartner": "Betalningar till partner",
     "createTitle": "Skapa ny partner",
     "partnerName": "Partnernamn",
-    "editTitle": "Redigera partner"
+    "editTitle": "Redigera partner",
+    "alertNoName": "Ange ett partnernamn",
+    "created": "Partner skapad",
+    "alertNameRequired": "Namn krävs",
+    "failedUpdate": "Det gick inte att uppdatera partnern"
   },
 
   "supplyChain": {
@@ -557,7 +579,23 @@
     "noDescription": "(Ingen beskrivning)",
     "businessNonRecurring": "Icke återkommande företagskostnader",
     "privateNonRecurring": "Icke återkommande privata kostnader",
-    "noCostsFound": "Inga kostnader hittade för de senaste 3 månaderna"
+    "noCostsFound": "Inga kostnader hittade för de senaste 3 månaderna",
+    "loadingCosts": "Laddar kostnader...",
+    "saved": "Kostnaden sparades!",
+    "updated": "Kostnaden uppdaterades!",
+    "deleted": "Kostnaden raderades!",
+    "confirmDelete": "Är du säker på att du vill ta bort denna kostnad?",
+    "failedLoadCategories": "Kunde inte ladda kostnadskategorier",
+    "failedLoadTypes": "Kunde inte ladda kostnadstyper",
+    "failedLoadForEdit": "Kunde inte ladda kostnaden för redigering",
+    "failedSave": "Kunde inte spara kostnaden",
+    "failedDelete": "Kunde inte ta bort kostnaden",
+    "alertSelectCategory": "Välj en kostnadskategori",
+    "alertSelectType": "Välj en kostnadstyp",
+    "alertSelectDate": "Välj ett datum",
+    "alertEnterAmount": "Ange ett belopp",
+    "alertEnterValidAmount": "Ange ett giltigt belopp",
+    "alertIntervalMin": "Återkommande intervall måste vara minst 1"
   },
 
   "invoice": {
@@ -595,7 +633,11 @@
     "subtotal": "Delsumma",
     "adjustments": "Justeringar/Rabatt",
     "downloadInvoice": "Ladda ner faktura",
-    "pressToShare": "Tryck på faktura för att dela"
+    "pressToShare": "Tryck på faktura för att dela",
+    "invoiceFor": "Faktura till",
+    "invoiceHash": "Faktura #",
+    "estDelivery": "Beräknad leverans",
+    "invoiceSnapshot": "Fakturaögonblicksbild"
   },
 
   "supplierOrders": {
@@ -609,14 +651,30 @@
     "orderStatus": "Beställningsstatus",
     "deliveryDate": "Leveransdatum",
     "inCustomsDate": "Tulldatum",
-    "receivedDate": "Mottagningsdatum"
+    "receivedDate": "Mottagningsdatum",
+    "orderDate": "Beställningsdatum",
+    "saved": "Leverantörsorder sparad",
+    "updated": "Leverantörsorder uppdaterad",
+    "deleted": "Order raderad",
+    "failedDelete": "Det gick inte att radera ordern",
+    "alertCanSave": "Välj en leverantör och lägg till minst en produkt med antal och kostnad",
+    "alertAllLinesValid": "Välj en leverantör och se till att alla rader är giltiga: produkt, antal och kostnad",
+    "addProduct": "Lägg till produkt",
+    "removeProduct": "Ta bort produkt"
   },
 
   "editPayment": {
     "title": "Redigera betalning",
     "paymentDate": "Betalningsdatum",
     "paymentType": "Betalningstyp",
-    "amountUSD": "Belopp (USD)"
+    "amountUSD": "Belopp (USD)",
+    "alertEnterAmount": "Ange ett giltigt belopp som inte är noll",
+    "updated": "Betalning uppdaterad!",
+    "deleted": "Betalning raderad",
+    "confirmDelete": "Radera den här betalningen? Det går inte att ångra.",
+    "failedUpdate": "Det gick inte att uppdatera betalningen",
+    "failedDelete": "Det gick inte att radera betalningen",
+    "deleteFailed": "Radering misslyckades"
   },
 
   "settingsPage": {
@@ -707,7 +765,11 @@
     "partnerAmount": "Partnerbelopp",
     "loadingPartner": "Laddar partnerinformation...",
     "discount": "Rabatt",
-    "editOrder": "Redigera beställning"
+    "editOrder": "Redigera beställning",
+    "deliveredInFull": "Levererad i sin helhet",
+    "deliveredInFullQty": "Levererad i sin helhet ({{delivered}}/{{total}})",
+    "partiallyDelivered": "Delvis levererad",
+    "partiallyDeliveredQty": "Delvis levererad ({{delivered}}/{{total}})"
   },
 
   "paymentModal": {
@@ -748,7 +810,8 @@
     "selectTenant": "Välj tenant...",
     "addMembership": "Lägg till medlemskap",
     "adding": "Lägger till...",
-    "userNotFound": "Användare hittades inte"
+    "userNotFound": "Användare hittades inte",
+    "updating": "Uppdaterar..."
   },
 
   "tenantSwitcher": {
@@ -767,6 +830,104 @@
     "namePlaceholder": "Fullständigt namn",
     "nameHelper": "Om tomt används e-postadressen",
     "createButton": "Skapa användare",
-    "creatingText": "Skapar..."
+    "creatingText": "Skapar...",
+    "alertEmailRequired": "E-post krävs",
+    "alertPasswordRequired": "Lösenord krävs",
+    "alertPasswordLength": "Lösenordet måste ha minst 8 tecken",
+    "created": "Användaren skapades!"
+  },
+
+  "tenantAdmin": {
+    "title": "Kontoadministration",
+    "subtitle": "Hantera användarbehörigheter för {{name}}",
+    "featuresInfo": "Din organisation har tillgång till {{count}} funktioner. Du kan anpassa vilka funktioner varje användare kan komma åt.",
+    "manageSubscription": "Hantera prenumeration",
+    "changeModulesInfo": "För att ändra moduler eller antal användare, skicka ett meddelande via kontaktsidan.",
+    "teamMembers": "Teammedlemmar",
+    "createUserButton": "+ Skapa användare",
+    "noUsers": "Inga användare ännu",
+    "roleLabel": "Roll:",
+    "accessAll": "Åtkomst: Alla {{count}} funktioner",
+    "accessCount": "Åtkomst: {{count}} av {{total}} funktioner",
+    "permissionsButton": "Behörigheter",
+    "geoButton": "Geo",
+    "permissionsLabel": "Behörigheter",
+    "selectAll": "Välj alla",
+    "clearAll": "Rensa alla",
+    "managePermissionsTitle": "Hantera behörigheter: {{name}}",
+    "featureSelectHelp": "Välj vilka funktioner den här användaren kan komma åt. Bara funktioner som är aktiverade för din organisation är tillgängliga.",
+    "savePermissions": "Spara behörigheter",
+    "geoSettingsTitle": "Geo-inställningar: {{name}}",
+    "geoHelp": "Lämna ett fält på \"Använd organisationsstandard\" för att ärva organisationens inställning.",
+    "language": "Språk",
+    "useTenantDefault": "Använd organisationsstandard ({{default}})",
+    "langEnglish": "Engelska (en-US)",
+    "langSwedish": "Svenska (sv-SE)",
+    "langSpanish": "Spanska (es-ES)",
+    "currency": "Valuta",
+    "timezone": "Tidszon",
+    "saveGeo": "Spara geo-inställningar",
+    "roleRequired": "Roll *",
+    "passwordPlaceholder": "Minst 8 tecken",
+    "alertEnterEmail": "Ange en e-postadress",
+    "alertPasswordLength": "Lösenordet måste ha minst 8 tecken",
+    "userCreated": "Användaren skapades!",
+    "permissionsUpdated": "Användarbehörigheter uppdaterades!",
+    "geoSaved": "Geo-inställningar sparades!"
+  },
+
+  "superAdmin": {
+    "title": "Super Admin",
+    "tabTenants": "Organisationer",
+    "tabUsers": "Användare",
+    "createTenant": "Skapa organisation",
+    "tenantName": "Organisationsnamn",
+    "businessType": "Affärstyp",
+    "creating": "Skapar...",
+    "noTenants": "Inga organisationer ännu",
+    "noUsers": "Inga användare ännu",
+    "created": "Organisationen skapades!",
+    "userCreated": "Användaren skapades!",
+    "featuresUpdated": "Organisationsfunktioner uppdaterades!",
+    "geoSaved": "Geo-inställningar sparades!",
+    "stripeSaved": "Stripe-kund-ID sparades!",
+    "alertEnterTenantName": "Ange ett organisationsnamn",
+    "alertEnterEmail": "Ange en e-postadress",
+    "alertPasswordLength": "Lösenordet måste ha minst 8 tecken",
+    "alertSelectTenant": "Välj minst en organisation",
+    "features": "Funktioner",
+    "stripe": "Stripe",
+    "geo": "Geo",
+    "manage": "Hantera",
+    "stripeCustomerId": "Stripe-kund-ID",
+    "saveStripe": "Spara Stripe-ID",
+    "saving": "Sparar...",
+    "tenantFeatures": "Funktioner: {{name}}",
+    "geoSettingsTitle": "Geo-inställningar: {{name}}",
+    "language": "Språk",
+    "currency": "Valuta",
+    "timezone": "Tidszon",
+    "saveGeo": "Spara geo-inställningar",
+    "addMembership": "Lägg till medlemskap",
+    "addMembershipPlaceholder": "Välj organisation...",
+    "memberships": "Medlemskap",
+    "userRole": "Roll",
+    "addTenantRow": "+ Lägg till organisation",
+    "removeTenant": "Ta bort"
+  },
+  "printDialog": {
+    "title": "Skriv ut till PDF",
+    "sectionsToPrint": "Avsnitt att skriva ut",
+    "selectAll": "Välj alla",
+    "deselectAll": "Avmarkera alla",
+    "moreOptions": "Fler alternativ",
+    "includeAll": "Inkludera alla beställningar och betalningar",
+    "lastThreeMonths": "Inkludera endast de senaste 3 månaderna",
+    "sortByDate": "Sortera efter beställningsdatum",
+    "sortByCustomer": "Sortera efter kund",
+    "printToPdf": "Skriv ut till PDF"
+  },
+  "modal": {
+    "closeTitle": "Stäng"
   }
 }

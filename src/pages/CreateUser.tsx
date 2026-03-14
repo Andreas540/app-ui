@@ -1,31 +1,33 @@
 // src/pages/CreateUser.tsx
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
 export default function CreateUser() {
   const navigate = useNavigate()
-  
+  const { t } = useTranslation()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [role, setRole] = useState<'tenant_admin' | 'user'>('user')
-  
+
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit() {
     // Validation
     if (!email.trim()) {
-      alert('Email is required')
+      alert(t('createUser.alertEmailRequired'))
       return
     }
     if (!password) {
-      alert('Password is required')
+      alert(t('createUser.alertPasswordRequired'))
       return
     }
     if (password.length < 8) {
-      alert('Password must be at least 8 characters')
+      alert(t('createUser.alertPasswordLength'))
       return
     }
 
@@ -34,7 +36,7 @@ export default function CreateUser() {
       setError(null)
 
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      
+
       const res = await fetch(`${base}/api/user-create`, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -52,17 +54,17 @@ export default function CreateUser() {
       }
 
       const data = await res.json()
-      alert(`User created successfully!\n\nEmail: ${data.user.email}\nRole: ${data.user.role}`)
-      
+      alert(t('createUser.created'))
+
       // Clear form
       setEmail('')
       setPassword('')
       setName('')
       setRole('user')
-      
+
       // Optionally navigate back
       // navigate('/admin')
-      
+
     } catch (e: any) {
       console.error('Create user error:', e)
       setError(e?.message || String(e))
@@ -74,15 +76,15 @@ export default function CreateUser() {
   return (
     <div className="card" style={{ maxWidth: 600 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Create New User</h2>
-        <Link to="/" className="helper">&larr; Back</Link>
+        <h2 style={{ margin: 0 }}>{t('createUser.title')}</h2>
+        <Link to="/" className="helper">{t('back_link')}</Link>
       </div>
 
       {error && (
-        <div style={{ 
-          padding: 12, 
-          marginBottom: 16, 
-          background: '#fee', 
+        <div style={{
+          padding: 12,
+          marginBottom: 16,
+          background: '#fee',
           border: '1px solid #fcc',
           borderRadius: 8,
           color: '#c00'
@@ -93,55 +95,55 @@ export default function CreateUser() {
 
       <div style={{ display: 'grid', gap: 16 }}>
         <div>
-          <label>Email *</label>
+          <label>{t('createUser.emailRequired')}</label>
           <input
   type="email"
   value={email}
   onChange={(e) => setEmail(e.target.value)}
-  placeholder="user@example.com"
+  placeholder={t('createUser.emailPlaceholder')}
   disabled={creating}
   autoComplete="off"
 />
         </div>
 
         <div>
-          <label>Password *</label>
+          <label>{t('createUser.passwordRequired')}</label>
           <input
   type="password"
   value={password}
   onChange={(e) => setPassword(e.target.value)}
-  placeholder="Minimum 8 characters"
+  placeholder={t('createUser.passwordPlaceholder')}
   disabled={creating}
   autoComplete="new-password"
 />
           <div className="helper" style={{ marginTop: 4 }}>
-            Must be at least 8 characters
+            {t('createUser.passwordRequirement')}
           </div>
         </div>
 
         <div>
-          <label>Name (optional)</label>
+          <label>{t('createUser.nameOptional')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
+            placeholder={t('createUser.namePlaceholder')}
             disabled={creating}
           />
           <div className="helper" style={{ marginTop: 4 }}>
-            If empty, will use email address
+            {t('createUser.nameHelper')}
           </div>
         </div>
 
         <div>
-          <label>Role</label>
+          <label>{t('role')}</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as 'tenant_admin' | 'user')}
             disabled={creating}
           >
-            <option value="user">User</option>
-            <option value="tenant_admin">Admin</option>
+            <option value="user">{t('userRole')}</option>
+            <option value="tenant_admin">{t('adminRole')}</option>
           </select>
         </div>
 
@@ -152,14 +154,14 @@ export default function CreateUser() {
             disabled={creating}
             style={{ flex: 1 }}
           >
-            {creating ? 'Creating...' : 'Create User'}
+            {creating ? t('createUser.creatingText') : t('createUser.createButton')}
           </button>
           <button
             onClick={() => navigate('/')}
             disabled={creating}
             style={{ flex: 1 }}
           >
-            Cancel
+            {t('cancel')}
           </button>
         </div>
       </div>

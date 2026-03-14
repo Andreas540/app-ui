@@ -1,5 +1,6 @@
 // src/components/TenantSwitcher.tsx
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getAuthHeaders } from '../lib/api'
 
@@ -10,6 +11,7 @@ interface Tenant {
 
 export default function TenantSwitcher() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTenantId, setActiveTenantId] = useState<string | null>(
@@ -30,9 +32,9 @@ export default function TenantSwitcher() {
       const res = await fetch(`${base}/api/super-admin?action=listTenants`, {
         headers: getAuthHeaders()
       })
-      
+
       if (!res.ok) throw new Error('Failed to load tenants')
-      
+
       const data = await res.json()
       setTenants(data.tenants || [])
     } catch (e) {
@@ -52,7 +54,7 @@ export default function TenantSwitcher() {
       localStorage.setItem('activeTenantId', tenantId)
       setActiveTenantId(tenantId)
     }
-    
+
     // Reload the page to apply new tenant context
     window.location.reload()
   }
@@ -70,21 +72,21 @@ export default function TenantSwitcher() {
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       }}
     >
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 12, 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
         flexWrap: 'wrap',
       }}>
-        <div style={{ 
-          fontWeight: 600, 
-          fontSize: 13, 
+        <div style={{
+          fontWeight: 600,
+          fontSize: 13,
           color: '#856404',
           whiteSpace: 'nowrap',
         }}>
-          ⚡ SuperAdmin
+          {t('tenantSwitcher.superAdminLabel')}
         </div>
-        
+
         <div style={{ flex: 1, minWidth: 200, maxWidth: 400 }}>
           <select
             value={activeTenantId || ''}
@@ -103,7 +105,7 @@ export default function TenantSwitcher() {
               fontWeight: 500,
             }}
           >
-            <option value="">🌐 Global View</option>
+            <option value="">{t('tenantSwitcher.globalView')}</option>
             {tenants.map(t => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -113,8 +115,8 @@ export default function TenantSwitcher() {
         </div>
 
         {selectedTenant && (
-          <div style={{ 
-            fontSize: 12, 
+          <div style={{
+            fontSize: 12,
             color: '#856404',
             whiteSpace: 'nowrap',
           }}>

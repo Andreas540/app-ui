@@ -1,6 +1,7 @@
 // src/pages/Warehouse.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -13,6 +14,7 @@ type InventoryItem = {
 }
 
 export default function Warehouse() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
@@ -134,19 +136,19 @@ export default function Warehouse() {
 
   const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>
-  if (!products.length) return <div className="card"><p>No products available.</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
+  if (!products.length) return <div className="card"><p>{t('warehouse.noProducts')}</p></div>
 
   return (
     <>
       {/* Adjust Warehouse Inventory Card */}
       <div className="card" style={{ maxWidth: 720 }}>
-        <h3 style={{ margin: 0 }}>Adjust Warehouse Inventory</h3>
+        <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
 
         {/* Row 1: Stage (M or P) - MOVED TO TOP */}
         <div style={{ marginTop: 12 }}>
-          <label style={{ display: 'block', marginBottom: 8 }}>Stage</label>
+          <label style={{ display: 'block', marginBottom: 8 }}>{t('warehouse.stage')}</label>
           <div style={{ 
             display: 'flex', 
             gap: 12, 
@@ -171,7 +173,7 @@ export default function Warehouse() {
                   height: 16,
                 }}
               />
-              <span>Pre-production (M)</span>
+              <span>{t('warehouse.preProduction')}</span>
             </label>
             <label style={{ 
               display: 'flex', 
@@ -192,14 +194,14 @@ export default function Warehouse() {
                   height: 16,
                 }}
               />
-              <span>Finished products (P)</span>
+              <span>{t('warehouse.finishedProducts')}</span>
             </label>
           </div>
         </div>
 
         {/* Row 2: Product */}
         <div style={{ marginTop: 12 }}>
-          <label>Product</label>
+          <label>{t('product')}</label>
           <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
@@ -215,7 +217,7 @@ export default function Warehouse() {
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           {/* LEFT: Qty */}
           <div>
-            <label>Qty (- if reducing inv.)</label>
+            <label>{t('warehouse.qtyLabel')}</label>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -233,8 +235,8 @@ export default function Warehouse() {
                   cursor: 'pointer',
                   flexShrink: 0,
                 }}
-                title="Toggle negative"
-                aria-label="Toggle negative quantity"
+                title={t('warehouse.toggleNegative')}
+                aria-label={t('warehouse.toggleNegative')}
               >
                 −
               </button>
@@ -255,14 +257,14 @@ export default function Warehouse() {
 
             {willGoNegative && (
               <div style={{ color: 'salmon', fontSize: 13, marginTop: 4 }}>
-                ⚠️ This will reduce {selectedProduct?.name} below zero (New qty: {newInventoryQty})
+                {t('warehouse.negativeWarning', { product: selectedProduct?.name, qty: newInventoryQty })}
               </div>
             )}
           </div>
 
           {/* RIGHT: Date */}
           <div>
-            <label>Date</label>
+            <label>{t('date')}</label>
             <input
               type="date"
               value={date}
@@ -300,10 +302,10 @@ export default function Warehouse() {
 
         {/* Row 5: Notes */}
         <div style={{ marginTop: 12 }}>
-          <label>Notes (optional)</label>
+          <label>{t('notesOptional')}</label>
           <input
             type="text"
-            placeholder="Add notes about this entry..."
+            placeholder={t('warehouse.notesPlaceholder')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             style={{ height: CONTROL_H }}
@@ -316,18 +318,18 @@ export default function Warehouse() {
             className="primary"
             onClick={async () => {
               if (!selectedProduct) {
-                alert('Select a product first')
+                alert(t('warehouse.alertSelectProduct'))
                 return
               }
 
               const qty = parseQtyToNumber(qtyStr)
               if (!Number.isInteger(qty) || qty === 0) {
-                alert('Enter a valid quantity (cannot be 0)')
+                alert(t('warehouse.alertEnterQuantity'))
                 return
               }
 
               if (!date) {
-                alert('Select a date')
+                alert(t('warehouse.alertSelectDate'))
                 return
               }
 
@@ -358,7 +360,7 @@ export default function Warehouse() {
                   throw new Error(errData.error || `Save failed (${res.status})`)
                 }
 
-                alert('Warehouse entry saved!')
+                alert(t('warehouse.saved'))
 
                 setQtyStr('')
                 setDate(todayYMD())
@@ -368,12 +370,12 @@ export default function Warehouse() {
                 setNotes('')
                 await loadInventory()
               } catch (e: any) {
-                alert(e?.message || 'Save failed')
+                alert(e?.message || t('warehouse.saveFailed'))
               }
             }}
             style={{ height: CONTROL_H }}
           >
-            Save
+            {t('save')}
           </button>
 
           <button
@@ -387,23 +389,23 @@ export default function Warehouse() {
             }}
             style={{ height: CONTROL_H }}
           >
-            Clear
+            {t('clear')}
           </button>
 
           <button
             onClick={() => navigate(-1)}
             style={{ height: CONTROL_H }}
           >
-            Cancel
+            {t('cancel')}
           </button>
         </div>
       </div>
 
       {/* Current Inventory Card */}
       <div className="card" style={{ maxWidth: 720, marginTop: 16 }}>
-        <h4 style={{ margin: 0, marginBottom: 12 }}>Current Inventory</h4>
+        <h4 style={{ margin: 0, marginBottom: 12 }}>{t('warehouse.currentInventory')}</h4>
         {inventory.length === 0 ? (
-          <p className="helper">No inventory data yet</p>
+          <p className="helper">{t('warehouse.noInventoryData')}</p>
         ) : (
           <div>
             {/* Header */}
@@ -419,10 +421,10 @@ export default function Warehouse() {
                 color: 'var(--text-secondary)',
               }}
             >
-              <div>Product</div>
-              <div style={{ textAlign: 'right' }}>Pre-prod</div>
-              <div style={{ textAlign: 'right' }}>Finished</div>
-              <div style={{ textAlign: 'right' }}>Total Qty</div>
+              <div>{t('product')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
             </div>
 
             {/* Rows */}

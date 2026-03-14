@@ -1,9 +1,11 @@
 // src/pages/EditPartner.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
 export default function EditPartner() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
 
@@ -55,7 +57,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
   async function save() {
     if (!id) return
-    if (!name.trim()) { alert('Name is required'); return }
+    if (!name.trim()) { alert(t('partners.alertNameRequired')); return }
 
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -81,34 +83,34 @@ const res = await fetch(`${base}/api/partner`, {
       
       nav(`/partners/${id}`)
     } catch (e:any) {
-      alert(e?.message || 'Failed to update partner')
+      alert(e?.message || t('partners.failedUpdate'))
     }
   }
 
-  if (loading) return <div className="card"><p>Loading…</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>Error: {err}</p></div>
+  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <h3>Edit Partner</h3>
-        <Link to={id ? `/partners/${id}` : '/partners'} className="helper">Cancel</Link>
+        <h3>{t('partners.editTitle')}</h3>
+        <Link to={id ? `/partners/${id}` : '/partners'} className="helper">{t('cancel')}</Link>
       </div>
 
       {/* Partner Name - full width */}
       <div style={{ marginTop: 12 }}>
-        <label>Partner Name</label>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" />
+        <label>{t('partners.partnerName')}</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder={t('fullNamePlaceholder')} />
       </div>
 
       {/* Phone | Address line 1 - 2 columns equal width */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Phone</label>
+          <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
         </div>
         <div>
-          <label>Address line 1</label>
+          <label>{t('addressLine1')}</label>
           <input value={address1} onChange={e=>setAddress1(e.target.value)} />
         </div>
       </div>
@@ -116,11 +118,11 @@ const res = await fetch(`${base}/api/partner`, {
       {/* Address line 2 | City - 2 columns equal width */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>Address line 2</label>
+          <label>{t('addressLine2')}</label>
           <input value={address2} onChange={e=>setAddress2(e.target.value)} />
         </div>
         <div>
-          <label>City</label>
+          <label>{t('city')}</label>
           <input value={city} onChange={e=>setCity(e.target.value)} />
         </div>
       </div>
@@ -128,18 +130,18 @@ const res = await fetch(`${base}/api/partner`, {
       {/* State | Postal code - 2 columns equal width */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>State</label>
+          <label>{t('state')}</label>
           <input value={state} onChange={e=>setState(e.target.value)} />
         </div>
         <div>
-          <label>Postal code</label>
+          <label>{t('postalCode')}</label>
           <input value={postal} onChange={e=>setPostal(e.target.value)} />
         </div>
       </div>
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
-        <button className="primary" onClick={save}>Save changes</button>
-        <Link to={id ? `/partners/${id}` : '/partners'} style={{ alignSelf:'center' }} className="helper">Cancel</Link>
+        <button className="primary" onClick={save}>{t('saveChanges')}</button>
+        <Link to={id ? `/partners/${id}` : '/partners'} style={{ alignSelf:'center' }} className="helper">{t('cancel')}</Link>
       </div>
     </div>
   )
