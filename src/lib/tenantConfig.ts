@@ -17,6 +17,12 @@ export interface TenantConfig {
     showCostEffectiveness: boolean
     requiresApproval: boolean
   }
+  booking: {
+    serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
+    bookingProviderName: string      // display name of connected provider, e.g. "SimplyBook"
+    smsRemindersEnabled: boolean     // show/hide reminder settings UI
+    showBookingParticipants: boolean // show participant management for group bookings
+  }
   pages: {
     [pageKey: string]: {
       hiddenFields?: string[]
@@ -39,6 +45,12 @@ const defaultConfig: TenantConfig = {
   ui: {
     showCostEffectiveness: true,
     requiresApproval: false,
+  },
+  booking: {
+    serviceTypeLabel: 'Session',
+    bookingProviderName: '',
+    smsRemindersEnabled: false,
+    showBookingParticipants: false,
   },
   pages: {}
 }

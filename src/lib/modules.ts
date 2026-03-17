@@ -50,6 +50,14 @@ export const MODULES: ModuleDef[] = [
     features: featuresForModule('financial'), // empty until pages are added
   },
   {
+    id: 'booking',
+    name: 'Bookings',
+    pricePerUser: 9.99,
+    description: 'Booking management, client records, payment tracking and SMS reminders',
+    alwaysIncluded: false,
+    features: featuresForModule('booking'),
+  },
+  {
     id: 'admin',
     name: 'Administration',
     pricePerUser: 0,

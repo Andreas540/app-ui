@@ -22,6 +22,15 @@ export const AVAILABLE_FEATURES = {
   'time-approval': { id: 'time-approval',   name: 'Time Approval',  route: '/time-approval',       category: 'Labor',  module: 'labor' },
   'time-entry':    { id: 'time-entry',      name: 'Time Entry',     route: '/time-entry',          category: 'Labor',  module: 'labor' },
 
+  // Booking
+  'booking-dashboard':   { id: 'booking-dashboard',   name: 'Booking Dashboard',  route: '/bookings',            category: 'Booking', module: 'booking' },
+  'bookings':            { id: 'bookings',             name: 'Bookings',           route: '/bookings/list',       category: 'Booking', module: 'booking' },
+  'booking-customers':   { id: 'booking-customers',   name: 'Booking Clients',    route: '/bookings/clients',    category: 'Booking', module: 'booking' },
+  'booking-payments':    { id: 'booking-payments',    name: 'Booking Payments',   route: '/bookings/payments',   category: 'Booking', module: 'booking' },
+  'booking-reminders':   { id: 'booking-reminders',   name: 'Reminders',          route: '/bookings/reminders',  category: 'Booking', module: 'booking' },
+  'booking-sms-usage':   { id: 'booking-sms-usage',   name: 'SMS Usage',          route: '/bookings/sms-usage',  category: 'Booking', module: 'booking' },
+  'booking-integration': { id: 'booking-integration', name: 'Integration',        route: '/bookings/integration',category: 'Booking', module: 'booking' },
+
   // Admin (always included, not a paid module)
   'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },
   settings:        { id: 'settings',        name: 'Settings',       route: '/settings',            category: 'Admin',  module: 'admin' },
@@ -29,13 +38,14 @@ export const AVAILABLE_FEATURES = {
 } as const
 
 export type FeatureId = keyof typeof AVAILABLE_FEATURES
-export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'financial' | 'reports' | 'admin'
+export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'financial' | 'reports' | 'admin' | 'booking'
 
 export const FEATURE_CATEGORIES = {
-  Sales:  'Sales & Cash Flow',
-  Supply: 'Supply Chain',
-  Labor:  'Employee Management',
-  Admin:  'Administration',
+  Sales:   'Sales & Cash Flow',
+  Supply:  'Supply Chain',
+  Labor:   'Employee Management',
+  Booking: 'Bookings',
+  Admin:   'Administration',
 } as const
 
 export function getFeaturesByModule(moduleId: ModuleId): (typeof AVAILABLE_FEATURES)[FeatureId][] {
