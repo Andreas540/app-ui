@@ -104,36 +104,40 @@ async function runSync(event) {
     let recordsProcessed = 0
 
     // ── Step 1: Sync services ──────────────────────────────────────────────
-    const serviceList = await sbCall('getServiceList', [], companyLogin, token)
-    // Returns object keyed by service id or an array — handle both
-    const services = Array.isArray(serviceList)
-      ? serviceList
-      : Object.values(serviceList || {})
+    try {
+      const serviceList = await sbCall('getEventList', [], companyLogin, token)
+      // Returns object keyed by service id or an array — handle both
+      const services = Array.isArray(serviceList)
+        ? serviceList
+        : Object.values(serviceList || {})
 
-    for (const svc of services) {
-      const externalId = String(svc.id ?? '')
-      if (!externalId) continue
+      for (const svc of services) {
+        const externalId = String(svc.id ?? '')
+        if (!externalId) continue
 
-      await sql`
-        INSERT INTO services (
-          tenant_id, external_provider, external_service_id,
-          name, service_type, description,
-          duration_minutes, price_amount, currency,
-          capacity, active
-        ) VALUES (
-          ${TENANT_ID}, ${provider}, ${externalId},
-          ${svc.name ?? 'Unnamed service'},
-          ${svc.type ?? svc.service_type ?? 'other'},
-          ${svc.description ?? null},
-          ${parseInt(svc.duration ?? svc.duration_minutes ?? 60, 10)},
-          ${parseFloat(svc.price ?? svc.price_amount ?? 0)},
-          ${svc.currency ?? 'USD'},
-          ${svc.capacity ? parseInt(svc.capacity, 10) : null},
-          ${svc.is_active !== false}
-        )
-        ON CONFLICT DO NOTHING
-      `
-      recordsProcessed++
+        await sql`
+          INSERT INTO services (
+            tenant_id, external_provider, external_service_id,
+            name, service_type, description,
+            duration_minutes, price_amount, currency,
+            capacity, active
+          ) VALUES (
+            ${TENANT_ID}, ${provider}, ${externalId},
+            ${svc.name ?? 'Unnamed service'},
+            ${svc.type ?? svc.service_type ?? 'other'},
+            ${svc.description ?? null},
+            ${parseInt(svc.duration ?? svc.duration_minutes ?? 60, 10)},
+            ${parseFloat(svc.price ?? svc.price_amount ?? 0)},
+            ${svc.currency ?? 'USD'},
+            ${svc.capacity ? parseInt(svc.capacity, 10) : null},
+            ${svc.is_active !== false}
+          )
+          ON CONFLICT DO NOTHING
+        `
+        recordsProcessed++
+      }
+    } catch (svcErr) {
+      console.warn('sync: service list fetch failed (non-fatal):', svcErr?.message)
     }
 
     // Build service lookup: externalServiceId → our services.id
@@ -216,7 +220,7 @@ async function runSync(event) {
     const filter = { date_from: fmt(dateFrom), date_to: fmt(dateTo) }
 
     for (let page = 1; page <= 20; page++) {
-      const bookingResult = await sbCall('getBookingList', [filter, null, page, 50], companyLogin, token)
+      const bookingResult = await sbCall('getBookings', [filter, null, page, 50], companyLogin, token)
       const bookings = Array.isArray(bookingResult)
         ? bookingResult
         : (bookingResult?.data ?? Object.values(bookingResult || {}))

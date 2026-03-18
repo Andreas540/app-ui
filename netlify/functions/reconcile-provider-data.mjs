@@ -101,7 +101,7 @@ export async function handler() {
             // Pull upcoming booking IDs from provider (pages of 50)
             const providerBookingIds = new Set()
             for (let page = 1; page <= 20; page++) {
-              const result = await sbCall('getBookingList', [filter, null, page, 50], companyLogin, token)
+              const result = await sbCall('getBookings', [filter, null, page, 50], companyLogin, token)
               const bookings = Array.isArray(result)
                 ? result
                 : (result?.data ?? Object.values(result || {}))
