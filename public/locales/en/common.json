@@ -84,7 +84,6 @@
   "postalCode": "Postal code",
   "country": "Country",
   "fullNamePlaceholder": "Full name",
-
   "login": {
     "heading": "Login",
     "emailPlaceholder": "Enter your email",
@@ -97,7 +96,6 @@
     "errorGeneric": "An error occurred during login",
     "errorRetry": "Login failed. Please try again."
   },
-
   "timeEntry": {
     "title": "Time Entry",
     "employee": "Employee",
@@ -128,7 +126,6 @@
     "entryDeleted": "Time entry deleted",
     "deleteFailed": "Delete failed"
   },
-
   "timeApproval": {
     "title": "Time Approval",
     "allEmployees": "All Employees",
@@ -160,7 +157,6 @@
     "thisWeek": "This week",
     "lastWeek": "Last week"
   },
-
   "employees": {
     "title": "Employee Management",
     "newEmployee": "New Employee",
@@ -208,7 +204,6 @@
     "optionalNotes": "Optional notes...",
     "selectDate": "Please select a date"
   },
-
   "production": {
     "statisticsFor": "Statistics for",
     "totalQtyProduced": "Total qty produced:",
@@ -225,7 +220,6 @@
     "notesPlaceholder": "Optional notes...",
     "alertSaveFailed": "Save failed"
   },
-
   "dashboard": {
     "totalOwedToMe": "Total owed to me",
     "owedToPartners": "Owed to partners",
@@ -245,7 +239,6 @@
     "showMore": "Show 5 more",
     "collapse": "Collapse"
   },
-
   "storeDashboard": {
     "today": "Today",
     "yesterday": "Yesterday",
@@ -269,7 +262,6 @@
     "willLast": "Will Last",
     "days": "{{n}} days"
   },
-
   "customers": {
     "searchPlaceholder": "Search customer",
     "createNew": "Create New Customer",
@@ -302,7 +294,6 @@
     "alertShippingNumber": "Shipping cost must be a number (or leave empty)",
     "failedUpdate": "Failed to update customer"
   },
-
   "customerDetail": {
     "editCustomer": "Edit customer",
     "backToCustomers": "← Customers",
@@ -323,7 +314,6 @@
     "deliveredInFullStatus": "Delivered in full",
     "partiallyDeliveredWithRemaining": "Partially delivered ({{remaining}} remaining)"
   },
-
   "payments": {
     "fromCustomer": "From customer",
     "toPartner": "To partner",
@@ -353,7 +343,6 @@
     "noCustomersFound": "No customers found.",
     "customerViaPartner": "Customer via Partner"
   },
-
   "orders": {
     "newOrderTitle": "New Order",
     "editOrderTitle": "Edit Order",
@@ -393,7 +382,6 @@
     "toPartner1USD": "To Partner 1 (USD)",
     "toPartner2USD": "To Partner 2 (USD)"
   },
-
   "warehouse": {
     "title": "Adjust Warehouse Inventory",
     "stage": "Stage",
@@ -417,7 +405,6 @@
     "saveFailed": "Save failed",
     "noProducts": "No products available."
   },
-
   "products": {
     "newProductTitle": "New Product",
     "editProductsButton": "Edit Product(s)",
@@ -444,7 +431,6 @@
     "appliedToHistory": "(applied to all previous orders)",
     "effectiveFrom": "(effective from {{date}})"
   },
-
   "priceChecker": {
     "title": "Price Checker",
     "selectCustomer": "— Select customer —",
@@ -457,7 +443,6 @@
     "noPriceData": "No price data available for this combination.",
     "selectBoth": "Select both a customer and a product to view price data."
   },
-
   "suppliers": {
     "searchPlaceholder": "Search suppliers",
     "createNew": "Create New Supplier",
@@ -479,7 +464,6 @@
     "alertNameRequired": "Supplier name is required",
     "updated": "Supplier updated successfully"
   },
-
   "partners": {
     "searchPlaceholder": "Search partners",
     "createNew": "Create New Partner",
@@ -510,7 +494,6 @@
     "alertNameRequired": "Name is required",
     "failedUpdate": "Failed to update partner"
   },
-
   "supplyChain": {
     "title": "Supply Chain Overview",
     "demand": "Demand",
@@ -547,7 +530,6 @@
     "finishedColumn": "Finished",
     "printNotDelivered": "Print not delivered list"
   },
-
   "costs": {
     "registerTitle": "Register New Cost",
     "editTitle": "Edit Cost",
@@ -597,7 +579,6 @@
     "alertEnterValidAmount": "Please enter a valid amount",
     "alertIntervalMin": "Recurrence interval must be at least 1"
   },
-
   "invoice": {
     "createTitle": "Create Invoice",
     "loadingCustomers": "Loading customers...",
@@ -639,7 +620,6 @@
     "estDelivery": "Est. delivery",
     "invoiceSnapshot": "Invoice Snapshot"
   },
-
   "supplierOrders": {
     "newTitle": "New Order (S)",
     "editTitle": "Edit Order (S)",
@@ -662,7 +642,6 @@
     "addProduct": "Add product",
     "removeProduct": "Remove product"
   },
-
   "editPayment": {
     "title": "Edit Payment",
     "paymentDate": "Payment date",
@@ -676,7 +655,6 @@
     "failedDelete": "Failed to delete payment",
     "deleteFailed": "Delete failed"
   },
-
   "settingsPage": {
     "title": "App Settings",
     "company": "Company",
@@ -703,7 +681,6 @@
     "passwordChanged": "Password changed successfully!",
     "savingFailed": "Failed to save settings. Please try again."
   },
-
   "messages": {
     "title": "Messages",
     "description": "All incoming contact messages.",
@@ -717,7 +694,6 @@
     "answeredDate": "Answered: {{date}}",
     "updateFailed": "Failed to update message. Please try again."
   },
-
   "contact": {
     "title": "Contact",
     "helpPlaceholder": "How can we help you?",
@@ -738,7 +714,6 @@
     "successMessage": "We will get back to you via email asap.",
     "sentDate": "Sent: {{date}}"
   },
-
   "inventoryDashboard": {
     "title": "Inventory Dashboard",
     "stockOverview": "Stock Overview",
@@ -754,7 +729,6 @@
     "generateReport": "Generate Report",
     "recentActivity": "Recent Activity"
   },
-
   "orderModal": {
     "orderNumber": "Order #{{number}}",
     "orderDate": "Order Date",
@@ -771,7 +745,6 @@
     "partiallyDelivered": "Partially delivered",
     "partiallyDeliveredQty": "Partially delivered ({{delivered}}/{{total}})"
   },
-
   "paymentModal": {
     "title": "Payment Details",
     "paymentAmount": "Payment Amount",
@@ -782,7 +755,6 @@
     "recorded": "Recorded",
     "editPayment": "Edit Payment"
   },
-
   "supplierOrderModal": {
     "orderDate": "Order Date",
     "estDeliveryDate": "Est. Delivery Date",
@@ -797,7 +769,6 @@
     "notAvailable": "N/A",
     "editOrder": "Edit Order"
   },
-
   "manageUserModal": {
     "heading": "Manage User:",
     "status": "Status:",
@@ -813,12 +784,10 @@
     "userNotFound": "User not found",
     "updating": "Updating..."
   },
-
   "tenantSwitcher": {
     "superAdminLabel": "⚡ SuperAdmin",
     "globalView": "🌐 Global View"
   },
-
   "createUser": {
     "title": "Create New User",
     "emailRequired": "Email *",
@@ -836,7 +805,6 @@
     "alertPasswordLength": "Password must be at least 8 characters",
     "created": "User created successfully!"
   },
-
   "tenantAdmin": {
     "title": "Account Administration",
     "subtitle": "Manage user permissions for {{name}}",
@@ -875,7 +843,6 @@
     "permissionsUpdated": "User permissions updated successfully!",
     "geoSaved": "User geo settings saved!"
   },
-
   "superAdmin": {
     "title": "Super Admin",
     "tabTenants": "Tenants",
@@ -929,5 +896,31 @@
   },
   "modal": {
     "closeTitle": "Close"
+  },
+  "bookingIntegration": {
+    "title": "Booking Integration",
+    "subtitle": "Connect your booking provider to sync services, clients and bookings.",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "provider": "Provider",
+    "accountName": "Account name",
+    "connectedSince": "Connected since",
+    "currency": "Currency",
+    "lastSync": "Last sync",
+    "neverSynced": "Never synced",
+    "syncNow": "Sync now",
+    "syncHelp": "Pull latest bookings, services and clients from your provider.",
+    "syncComingSoon": "Sync available in next release",
+    "disconnect": "Disconnect",
+    "disconnecting": "Disconnecting…",
+    "disconnectConfirm": "Disconnect this provider? Existing booking data will be kept.",
+    "connectInstructions": "Enter your SimplyBook.me company login and API key to connect. Find your API key in SimplyBook under Settings → API.",
+    "companyLogin": "Company login",
+    "companyLoginPlaceholder": "your-company",
+    "apiKey": "API key",
+    "apiKeyPlaceholder": "Paste your SimplyBook API key",
+    "apiKeyHelp": "Settings → API → API key in your SimplyBook dashboard.",
+    "connecting": "Connecting…",
+    "connectButton": "Connect SimplyBook"
   }
 }

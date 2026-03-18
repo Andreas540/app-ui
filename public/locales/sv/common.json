@@ -84,7 +84,6 @@
   "postalCode": "Postnummer",
   "country": "Land",
   "fullNamePlaceholder": "Fullständigt namn",
-
   "login": {
     "heading": "Logga in",
     "emailPlaceholder": "Ange din e-post",
@@ -97,7 +96,6 @@
     "errorGeneric": "Ett fel inträffade vid inloggning",
     "errorRetry": "Inloggning misslyckades. Försök igen."
   },
-
   "timeEntry": {
     "title": "Tidrapportering",
     "employee": "Anställd",
@@ -128,7 +126,6 @@
     "entryDeleted": "Tidrapport borttagen",
     "deleteFailed": "Misslyckades att ta bort"
   },
-
   "timeApproval": {
     "title": "Tidsgodkännande",
     "allEmployees": "Alla anställda",
@@ -160,7 +157,6 @@
     "thisWeek": "Denna vecka",
     "lastWeek": "Förra veckan"
   },
-
   "employees": {
     "title": "Personalhantering",
     "newEmployee": "Ny anställd",
@@ -208,7 +204,6 @@
     "optionalNotes": "Valfria anteckningar...",
     "selectDate": "Välj ett datum"
   },
-
   "production": {
     "statisticsFor": "Statistik för",
     "totalQtyProduced": "Total producerad kvantitet:",
@@ -225,7 +220,6 @@
     "notesPlaceholder": "Valfria anteckningar...",
     "alertSaveFailed": "Misslyckades att spara"
   },
-
   "dashboard": {
     "totalOwedToMe": "Totalt som skyldes mig",
     "owedToPartners": "Skuld till partners",
@@ -245,7 +239,6 @@
     "showMore": "Visa 5 till",
     "collapse": "Dölj"
   },
-
   "storeDashboard": {
     "today": "Idag",
     "yesterday": "Igår",
@@ -269,7 +262,6 @@
     "willLast": "Räcker",
     "days": "{{n}} dagar"
   },
-
   "customers": {
     "searchPlaceholder": "Sök kund",
     "createNew": "Skapa ny kund",
@@ -302,7 +294,6 @@
     "alertShippingNumber": "Fraktkostnaden måste vara ett nummer (eller lämna tomt)",
     "failedUpdate": "Det gick inte att uppdatera kunden"
   },
-
   "customerDetail": {
     "editCustomer": "Redigera kund",
     "backToCustomers": "← Kunder",
@@ -323,7 +314,6 @@
     "deliveredInFullStatus": "Fullt levererad",
     "partiallyDeliveredWithRemaining": "Delvis levererad ({{remaining}} återstår)"
   },
-
   "payments": {
     "fromCustomer": "Från kund",
     "toPartner": "Till partner",
@@ -353,7 +343,6 @@
     "noCustomersFound": "Inga kunder hittades.",
     "customerViaPartner": "Kund via Partner"
   },
-
   "orders": {
     "newOrderTitle": "Ny beställning",
     "editOrderTitle": "Redigera beställning",
@@ -393,7 +382,6 @@
     "toPartner1USD": "Till Partner 1 (USD)",
     "toPartner2USD": "Till Partner 2 (USD)"
   },
-
   "warehouse": {
     "title": "Justera lagerbestånd",
     "stage": "Fas",
@@ -417,7 +405,6 @@
     "saveFailed": "Kunde inte spara",
     "noProducts": "Inga produkter tillgängliga."
   },
-
   "products": {
     "newProductTitle": "Ny produkt",
     "editProductsButton": "Redigera produkt(er)",
@@ -444,7 +431,6 @@
     "appliedToHistory": "(tillämpas på alla tidigare beställningar)",
     "effectiveFrom": "(gäller från {{date}})"
   },
-
   "priceChecker": {
     "title": "Priskontroll",
     "selectCustomer": "— Välj kund —",
@@ -457,7 +443,6 @@
     "noPriceData": "Ingen prisdata tillgänglig för denna kombination.",
     "selectBoth": "Välj både en kund och en produkt för att se prisdata."
   },
-
   "suppliers": {
     "searchPlaceholder": "Sök leverantörer",
     "createNew": "Skapa ny leverantör",
@@ -479,7 +464,6 @@
     "alertNameRequired": "Leverantörsnamn krävs",
     "updated": "Leverantör uppdaterad"
   },
-
   "partners": {
     "searchPlaceholder": "Sök partners",
     "createNew": "Skapa ny partner",
@@ -510,7 +494,6 @@
     "alertNameRequired": "Namn krävs",
     "failedUpdate": "Det gick inte att uppdatera partnern"
   },
-
   "supplyChain": {
     "title": "Leveranskedjeöversikt",
     "demand": "Efterfrågan",
@@ -547,7 +530,6 @@
     "finishedColumn": "Färdigt",
     "printNotDelivered": "Skriv ut ej levererat"
   },
-
   "costs": {
     "registerTitle": "Registrera ny kostnad",
     "editTitle": "Redigera kostnad",
@@ -597,7 +579,6 @@
     "alertEnterValidAmount": "Ange ett giltigt belopp",
     "alertIntervalMin": "Återkommande intervall måste vara minst 1"
   },
-
   "invoice": {
     "createTitle": "Skapa faktura",
     "loadingCustomers": "Laddar kunder...",
@@ -639,7 +620,6 @@
     "estDelivery": "Beräknad leverans",
     "invoiceSnapshot": "Fakturaögonblicksbild"
   },
-
   "supplierOrders": {
     "newTitle": "Ny beställning (L)",
     "editTitle": "Redigera beställning (L)",
@@ -662,7 +642,6 @@
     "addProduct": "Lägg till produkt",
     "removeProduct": "Ta bort produkt"
   },
-
   "editPayment": {
     "title": "Redigera betalning",
     "paymentDate": "Betalningsdatum",
@@ -676,7 +655,6 @@
     "failedDelete": "Det gick inte att radera betalningen",
     "deleteFailed": "Radering misslyckades"
   },
-
   "settingsPage": {
     "title": "Appinställningar",
     "company": "Företag",
@@ -703,7 +681,6 @@
     "passwordChanged": "Lösenord ändrat!",
     "savingFailed": "Misslyckades att spara inställningar. Försök igen."
   },
-
   "messages": {
     "title": "Meddelanden",
     "description": "Alla inkommande kontaktmeddelanden.",
@@ -717,7 +694,6 @@
     "answeredDate": "Besvarad: {{date}}",
     "updateFailed": "Misslyckades att uppdatera meddelandet. Försök igen."
   },
-
   "contact": {
     "title": "Kontakt",
     "helpPlaceholder": "Hur kan vi hjälpa dig?",
@@ -738,7 +714,6 @@
     "successMessage": "Vi återkommer via e-post så snart som möjligt.",
     "sentDate": "Skickat: {{date}}"
   },
-
   "inventoryDashboard": {
     "title": "Lagerpanel",
     "stockOverview": "Lageröversikt",
@@ -754,7 +729,6 @@
     "generateReport": "Generera rapport",
     "recentActivity": "Senaste aktivitet"
   },
-
   "orderModal": {
     "orderNumber": "Beställning #{{number}}",
     "orderDate": "Beställningsdatum",
@@ -771,7 +745,6 @@
     "partiallyDelivered": "Delvis levererad",
     "partiallyDeliveredQty": "Delvis levererad ({{delivered}}/{{total}})"
   },
-
   "paymentModal": {
     "title": "Betalningsdetaljer",
     "paymentAmount": "Betalningsbelopp",
@@ -782,7 +755,6 @@
     "recorded": "Registrerad",
     "editPayment": "Redigera betalning"
   },
-
   "supplierOrderModal": {
     "orderDate": "Beställningsdatum",
     "estDeliveryDate": "Beräknat leveransdatum",
@@ -797,7 +769,6 @@
     "notAvailable": "N/A",
     "editOrder": "Redigera beställning"
   },
-
   "manageUserModal": {
     "heading": "Hantera användare:",
     "status": "Status:",
@@ -813,12 +784,10 @@
     "userNotFound": "Användare hittades inte",
     "updating": "Uppdaterar..."
   },
-
   "tenantSwitcher": {
     "superAdminLabel": "⚡ SuperAdmin",
     "globalView": "🌐 Global vy"
   },
-
   "createUser": {
     "title": "Skapa ny användare",
     "emailRequired": "E-post *",
@@ -836,7 +805,6 @@
     "alertPasswordLength": "Lösenordet måste ha minst 8 tecken",
     "created": "Användaren skapades!"
   },
-
   "tenantAdmin": {
     "title": "Kontoadministration",
     "subtitle": "Hantera användarbehörigheter för {{name}}",
@@ -875,7 +843,6 @@
     "permissionsUpdated": "Användarbehörigheter uppdaterades!",
     "geoSaved": "Geo-inställningar sparades!"
   },
-
   "superAdmin": {
     "title": "Super Admin",
     "tabTenants": "Organisationer",
@@ -929,5 +896,31 @@
   },
   "modal": {
     "closeTitle": "Stäng"
+  },
+  "bookingIntegration": {
+    "title": "Bokningsintegration",
+    "subtitle": "Anslut din bokningsleverantör för att synkronisera tjänster, klienter och bokningar.",
+    "connected": "Ansluten",
+    "notConnected": "Inte ansluten",
+    "provider": "Leverantör",
+    "accountName": "Kontonamn",
+    "connectedSince": "Ansluten sedan",
+    "currency": "Valuta",
+    "lastSync": "Senaste synk",
+    "neverSynced": "Aldrig synkad",
+    "syncNow": "Synka nu",
+    "syncHelp": "Hämta senaste bokningar, tjänster och klienter från leverantören.",
+    "syncComingSoon": "Synk tillgänglig i nästa version",
+    "disconnect": "Koppla från",
+    "disconnecting": "Kopplar från…",
+    "disconnectConfirm": "Koppla från denna leverantör? Befintlig bokningsdata behålls.",
+    "connectInstructions": "Ange ditt företagsinlogg och API-nyckel för SimplyBook.me. Hitta din API-nyckel i SimplyBook under Inställningar → API.",
+    "companyLogin": "Företagsinlogg",
+    "companyLoginPlaceholder": "ditt-foretag",
+    "apiKey": "API-nyckel",
+    "apiKeyPlaceholder": "Klistra in din SimplyBook API-nyckel",
+    "apiKeyHelp": "Inställningar → API → API-nyckel i din SimplyBook-panel.",
+    "connecting": "Ansluter…",
+    "connectButton": "Anslut SimplyBook"
   }
 }

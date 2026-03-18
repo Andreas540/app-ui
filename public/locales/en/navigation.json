@@ -27,5 +27,13 @@
   "superAdmin": "Super Admin",
   "messages": "Messages",
   "logout": "Log out",
-  "welcome": "Welcome {{name}}!"
+  "welcome": "Welcome {{name}}!",
+  "bookingSection": "Bookings",
+  "bookingDashboard": "Dashboard",
+  "bookingList": "All Bookings",
+  "bookingClients": "Clients",
+  "bookingPayments": "Payments",
+  "bookingReminders": "Reminders",
+  "bookingSmsUsage": "SMS Usage",
+  "bookingIntegrationNav": "Integration"
 }

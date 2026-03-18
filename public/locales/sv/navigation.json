@@ -27,5 +27,13 @@
   "superAdmin": "Super Admin",
   "messages": "Meddelanden",
   "logout": "Logga ut",
-  "welcome": "Välkommen {{name}}!"
+  "welcome": "Välkommen {{name}}!",
+  "bookingSection": "Bokningar",
+  "bookingDashboard": "Panel",
+  "bookingList": "Alla bokningar",
+  "bookingClients": "Klienter",
+  "bookingPayments": "Betalningar",
+  "bookingReminders": "Påminnelser",
+  "bookingSmsUsage": "SMS-användning",
+  "bookingIntegrationNav": "Integration"
 }

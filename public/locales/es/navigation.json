@@ -27,5 +27,13 @@
   "superAdmin": "Super Admin",
   "messages": "Mensajes",
   "logout": "Cerrar sesión",
-  "welcome": "¡Bienvenido {{name}}!"
+  "welcome": "¡Bienvenido {{name}}!",
+  "bookingSection": "Reservas",
+  "bookingDashboard": "Panel",
+  "bookingList": "Todas las reservas",
+  "bookingClients": "Clientes",
+  "bookingPayments": "Pagos",
+  "bookingReminders": "Recordatorios",
+  "bookingSmsUsage": "Uso de SMS",
+  "bookingIntegrationNav": "Integración"
 }

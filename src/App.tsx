@@ -48,6 +48,13 @@ import { useIdleTimeout } from './hooks/useIdleTimeout'
 import TenantSwitcher from './components/TenantSwitcher'
 import Contact from './pages/Contact'
 import Messages from './pages/Messages'
+import BookingIntegrationPage from './pages/BookingIntegrationPage'
+import BookingDashboardPage from './pages/BookingDashboardPage'
+import BookingsPage from './pages/BookingsPage'
+import BookingCustomersPage from './pages/BookingCustomersPage'
+import BookingPaymentsPage from './pages/BookingPaymentsPage'
+import BookingRemindersPage from './pages/BookingRemindersPage'
+import BookingSmsUsagePage from './pages/BookingSmsUsagePage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -518,6 +525,45 @@ useEffect(() => {
                   </NavLink>
                 )}
 
+                {canAccess('booking-dashboard') && (
+                  <>
+                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('bookingSection', { ns: 'navigation' })}</div>
+                    <NavLink to="/bookings" end onClick={() => setNavOpen(false)}>
+                      {t('bookingDashboard', { ns: 'navigation' })}
+                    </NavLink>
+                    {canAccess('bookings') && (
+                      <NavLink to="/bookings/list" onClick={() => setNavOpen(false)}>
+                        {t('bookingList', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                    {canAccess('booking-customers') && (
+                      <NavLink to="/bookings/clients" onClick={() => setNavOpen(false)}>
+                        {t('bookingClients', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                    {canAccess('booking-payments') && (
+                      <NavLink to="/bookings/payments" onClick={() => setNavOpen(false)}>
+                        {t('bookingPayments', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                    {canAccess('booking-reminders') && (
+                      <NavLink to="/bookings/reminders" onClick={() => setNavOpen(false)}>
+                        {t('bookingReminders', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                    {canAccess('booking-sms-usage') && (
+                      <NavLink to="/bookings/sms-usage" onClick={() => setNavOpen(false)}>
+                        {t('bookingSmsUsage', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                    {canAccess('booking-integration') && (
+                      <NavLink to="/bookings/integration" onClick={() => setNavOpen(false)}>
+                        {t('bookingIntegrationNav', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
+                  </>
+                )}
+
                 <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('admin')}</div>
                 <NavLink to="/contact" onClick={() => setNavOpen(false)}>
                   {t('contact')}
@@ -643,7 +689,16 @@ useEffect(() => {
                 {hasFeature('time-entry') && <Route path="/time-entry" element={<TimeEntry />} />}
                 {hasFeature('employees') && <Route path="/employees" element={<EmployeeManagement />} />}
                 {hasFeature('time-approval') && <Route path="/time-approval" element={<TimeApproval />} />}
-                
+
+                {/* Booking module */}
+                {hasFeature('booking-dashboard') && <Route path="/bookings" element={<BookingDashboardPage />} />}
+                {hasFeature('bookings') && <Route path="/bookings/list" element={<BookingsPage />} />}
+                {hasFeature('booking-customers') && <Route path="/bookings/clients" element={<BookingCustomersPage />} />}
+                {hasFeature('booking-payments') && <Route path="/bookings/payments" element={<BookingPaymentsPage />} />}
+                {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
+                {hasFeature('booking-sms-usage') && <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />}
+                {hasFeature('booking-integration') && <Route path="/bookings/integration" element={<BookingIntegrationPage />} />}
+
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
               </>

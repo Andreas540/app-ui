@@ -84,7 +84,6 @@
   "postalCode": "Código postal",
   "country": "País",
   "fullNamePlaceholder": "Nombre completo",
-
   "login": {
     "heading": "Iniciar sesión",
     "emailPlaceholder": "Ingresa tu correo",
@@ -97,7 +96,6 @@
     "errorGeneric": "Ocurrió un error al iniciar sesión",
     "errorRetry": "Inicio de sesión fallido. Inténtalo de nuevo."
   },
-
   "timeEntry": {
     "title": "Entrada de Tiempo",
     "employee": "Empleado",
@@ -128,7 +126,6 @@
     "entryDeleted": "Entrada de tiempo eliminada",
     "deleteFailed": "Error al eliminar"
   },
-
   "timeApproval": {
     "title": "Aprobación de Tiempo",
     "allEmployees": "Todos los Empleados",
@@ -160,7 +157,6 @@
     "thisWeek": "Esta semana",
     "lastWeek": "Semana pasada"
   },
-
   "employees": {
     "title": "Gestión de Empleados",
     "newEmployee": "Nuevo Empleado",
@@ -208,7 +204,6 @@
     "optionalNotes": "Notas opcionales...",
     "selectDate": "Por favor selecciona una fecha"
   },
-
   "production": {
     "statisticsFor": "Estadísticas para",
     "totalQtyProduced": "Cantidad total producida:",
@@ -225,7 +220,6 @@
     "notesPlaceholder": "Notas opcionales...",
     "alertSaveFailed": "Error al guardar"
   },
-
   "dashboard": {
     "totalOwedToMe": "Total que me deben",
     "owedToPartners": "Adeudado a socios",
@@ -245,7 +239,6 @@
     "showMore": "Mostrar 5 más",
     "collapse": "Colapsar"
   },
-
   "storeDashboard": {
     "today": "Hoy",
     "yesterday": "Ayer",
@@ -269,7 +262,6 @@
     "willLast": "Durará",
     "days": "{{n}} días"
   },
-
   "customers": {
     "searchPlaceholder": "Buscar cliente",
     "createNew": "Crear Nuevo Cliente",
@@ -302,7 +294,6 @@
     "alertShippingNumber": "El costo de envío debe ser un número (o déjalo vacío)",
     "failedUpdate": "Error al actualizar el cliente"
   },
-
   "customerDetail": {
     "editCustomer": "Editar cliente",
     "backToCustomers": "← Clientes",
@@ -323,7 +314,6 @@
     "deliveredInFullStatus": "Entregado completo",
     "partiallyDeliveredWithRemaining": "Entrega parcial ({{remaining}} restante)"
   },
-
   "payments": {
     "fromCustomer": "De cliente",
     "toPartner": "A socio",
@@ -353,7 +343,6 @@
     "noCustomersFound": "No se encontraron clientes.",
     "customerViaPartner": "Cliente vía Socio"
   },
-
   "orders": {
     "newOrderTitle": "Nuevo Pedido",
     "editOrderTitle": "Editar Pedido",
@@ -393,7 +382,6 @@
     "toPartner1USD": "Al Socio 1 (USD)",
     "toPartner2USD": "Al Socio 2 (USD)"
   },
-
   "warehouse": {
     "title": "Ajustar Inventario de Almacén",
     "stage": "Etapa",
@@ -417,7 +405,6 @@
     "saveFailed": "Error al guardar",
     "noProducts": "No hay productos disponibles."
   },
-
   "products": {
     "newProductTitle": "Nuevo Producto",
     "editProductsButton": "Editar Producto(s)",
@@ -444,7 +431,6 @@
     "appliedToHistory": "(aplicado a todos los pedidos anteriores)",
     "effectiveFrom": "(efectivo desde {{date}})"
   },
-
   "priceChecker": {
     "title": "Verificador de Precios",
     "selectCustomer": "— Seleccionar cliente —",
@@ -457,7 +443,6 @@
     "noPriceData": "No hay datos de precio para esta combinación.",
     "selectBoth": "Selecciona un cliente y un producto para ver los datos de precio."
   },
-
   "suppliers": {
     "searchPlaceholder": "Buscar proveedores",
     "createNew": "Crear Nuevo Proveedor",
@@ -479,7 +464,6 @@
     "alertNameRequired": "El nombre del proveedor es obligatorio",
     "updated": "Proveedor actualizado con éxito"
   },
-
   "partners": {
     "searchPlaceholder": "Buscar socios",
     "createNew": "Crear Nuevo Socio",
@@ -510,7 +494,6 @@
     "alertNameRequired": "El nombre es obligatorio",
     "failedUpdate": "Error al actualizar el socio"
   },
-
   "supplyChain": {
     "title": "Visión General de Cadena de Suministro",
     "demand": "Demanda",
@@ -547,7 +530,6 @@
     "finishedColumn": "Terminado",
     "printNotDelivered": "Imprimir lista no entregada"
   },
-
   "costs": {
     "registerTitle": "Registrar Nuevo Costo",
     "editTitle": "Editar Costo",
@@ -597,7 +579,6 @@
     "alertEnterValidAmount": "Por favor ingresa un monto válido",
     "alertIntervalMin": "El intervalo de recurrencia debe ser al menos 1"
   },
-
   "invoice": {
     "createTitle": "Crear Factura",
     "loadingCustomers": "Cargando clientes...",
@@ -639,7 +620,6 @@
     "estDelivery": "Entrega est.",
     "invoiceSnapshot": "Captura de factura"
   },
-
   "supplierOrders": {
     "newTitle": "Nuevo Pedido (P)",
     "editTitle": "Editar Pedido (P)",
@@ -662,7 +642,6 @@
     "addProduct": "Agregar producto",
     "removeProduct": "Quitar producto"
   },
-
   "editPayment": {
     "title": "Editar Pago",
     "paymentDate": "Fecha de pago",
@@ -676,7 +655,6 @@
     "failedDelete": "Error al eliminar el pago",
     "deleteFailed": "Error al eliminar"
   },
-
   "settingsPage": {
     "title": "Configuración de la App",
     "company": "Empresa",
@@ -703,7 +681,6 @@
     "passwordChanged": "¡Contraseña cambiada exitosamente!",
     "savingFailed": "Error al guardar configuración. Inténtalo de nuevo."
   },
-
   "messages": {
     "title": "Mensajes",
     "description": "Todos los mensajes de contacto entrantes.",
@@ -717,7 +694,6 @@
     "answeredDate": "Respondido: {{date}}",
     "updateFailed": "Error al actualizar el mensaje. Inténtalo de nuevo."
   },
-
   "contact": {
     "title": "Contacto",
     "helpPlaceholder": "¿En qué podemos ayudarte?",
@@ -738,7 +714,6 @@
     "successMessage": "Te responderemos por correo lo antes posible.",
     "sentDate": "Enviado: {{date}}"
   },
-
   "inventoryDashboard": {
     "title": "Panel de Inventario",
     "stockOverview": "Resumen de Stock",
@@ -754,7 +729,6 @@
     "generateReport": "Generar Reporte",
     "recentActivity": "Actividad Reciente"
   },
-
   "orderModal": {
     "orderNumber": "Pedido #{{number}}",
     "orderDate": "Fecha del Pedido",
@@ -771,7 +745,6 @@
     "partiallyDelivered": "Parcialmente entregado",
     "partiallyDeliveredQty": "Parcialmente entregado ({{delivered}}/{{total}})"
   },
-
   "paymentModal": {
     "title": "Detalles del Pago",
     "paymentAmount": "Monto del Pago",
@@ -782,7 +755,6 @@
     "recorded": "Registrado",
     "editPayment": "Editar Pago"
   },
-
   "supplierOrderModal": {
     "orderDate": "Fecha del Pedido",
     "estDeliveryDate": "Fecha Est. de Entrega",
@@ -797,7 +769,6 @@
     "notAvailable": "N/D",
     "editOrder": "Editar Pedido"
   },
-
   "manageUserModal": {
     "heading": "Gestionar Usuario:",
     "status": "Estado:",
@@ -813,12 +784,10 @@
     "userNotFound": "Usuario no encontrado",
     "updating": "Actualizando..."
   },
-
   "tenantSwitcher": {
     "superAdminLabel": "⚡ SuperAdmin",
     "globalView": "🌐 Vista Global"
   },
-
   "createUser": {
     "title": "Crear Nuevo Usuario",
     "emailRequired": "Correo *",
@@ -836,7 +805,6 @@
     "alertPasswordLength": "La contraseña debe tener al menos 8 caracteres",
     "created": "¡Usuario creado exitosamente!"
   },
-
   "tenantAdmin": {
     "title": "Administración de Cuenta",
     "subtitle": "Gestionar permisos de usuario para {{name}}",
@@ -875,7 +843,6 @@
     "permissionsUpdated": "¡Permisos de usuario actualizados exitosamente!",
     "geoSaved": "¡Configuración geo guardada!"
   },
-
   "superAdmin": {
     "title": "Super Admin",
     "tabTenants": "Organizaciones",
@@ -929,5 +896,31 @@
   },
   "modal": {
     "closeTitle": "Cerrar"
+  },
+  "bookingIntegration": {
+    "title": "Integración de Reservas",
+    "subtitle": "Conecta tu proveedor de reservas para sincronizar servicios, clientes y reservas.",
+    "connected": "Conectado",
+    "notConnected": "No conectado",
+    "provider": "Proveedor",
+    "accountName": "Nombre de cuenta",
+    "connectedSince": "Conectado desde",
+    "currency": "Moneda",
+    "lastSync": "Última sincronización",
+    "neverSynced": "Nunca sincronizado",
+    "syncNow": "Sincronizar ahora",
+    "syncHelp": "Obtener las últimas reservas, servicios y clientes del proveedor.",
+    "syncComingSoon": "Sincronización disponible en la próxima versión",
+    "disconnect": "Desconectar",
+    "disconnecting": "Desconectando…",
+    "disconnectConfirm": "¿Desconectar este proveedor? Los datos de reservas existentes se conservarán.",
+    "connectInstructions": "Ingresa tu login de empresa y clave API de SimplyBook.me. Encuentra tu clave API en SimplyBook en Configuración → API.",
+    "companyLogin": "Login de empresa",
+    "companyLoginPlaceholder": "tu-empresa",
+    "apiKey": "Clave API",
+    "apiKeyPlaceholder": "Pega tu clave API de SimplyBook",
+    "apiKeyHelp": "Configuración → API → Clave API en tu panel de SimplyBook.",
+    "connecting": "Conectando…",
+    "connectButton": "Conectar SimplyBook"
   }
 }
