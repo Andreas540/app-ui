@@ -316,7 +316,65 @@ async function runSync(event) {
       WHERE id = ${syncRunId}
     `
 
-    return cors(200, { ok: true, records_processed: recordsProcessed })
+    // ── Schedule reminders for upcoming bookings ───────────────────────────
+    // Best-effort: errors here don't fail the sync response.
+    let remindersCreated = 0
+    try {
+      const activeRules = await sql`
+        SELECT id, trigger_event, minutes_offset, channel, template_key, service_id
+        FROM reminder_rules
+        WHERE tenant_id = ${TENANT_ID} AND active = true
+      `
+
+      if (activeRules.length) {
+        const upcomingBookings = await sql`
+          SELECT id, start_at, booking_status, payment_status, customer_id, service_id
+          FROM bookings
+          WHERE tenant_id = ${TENANT_ID}
+            AND booking_status NOT IN ('canceled')
+            AND start_at >= now()
+          LIMIT 500
+        `
+
+        const nowMs = Date.now()
+        for (const booking of upcomingBookings) {
+          for (const rule of activeRules) {
+            if (rule.service_id && rule.service_id !== booking.service_id) continue
+
+            let scheduledFor
+            if (rule.trigger_event === 'before_start') {
+              scheduledFor = new Date(new Date(booking.start_at).getTime() + rule.minutes_offset * 60000)
+            } else if (rule.trigger_event === 'booking_confirmed') {
+              scheduledFor = new Date(nowMs + rule.minutes_offset * 60000)
+            } else if (rule.trigger_event === 'unpaid_balance') {
+              if (booking.payment_status === 'paid') continue
+              scheduledFor = new Date(new Date(booking.start_at).getTime() + rule.minutes_offset * 60000)
+            } else {
+              continue
+            }
+            if (scheduledFor.getTime() <= nowMs) continue
+
+            await sql`
+              INSERT INTO message_jobs (
+                tenant_id, booking_id, customer_id, channel, template_key,
+                scheduled_for, status, billable, stripe_reported
+              ) VALUES (
+                ${TENANT_ID}, ${booking.id}, ${booking.customer_id},
+                ${rule.channel}, ${rule.template_key},
+                ${scheduledFor.toISOString()}, 'queued', false, false
+              )
+              ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for)
+                DO NOTHING
+            `
+            remindersCreated++
+          }
+        }
+      }
+    } catch (reminderErr) {
+      console.warn('Reminder scheduling after sync failed (non-fatal):', reminderErr?.message)
+    }
+
+    return cors(200, { ok: true, records_processed: recordsProcessed, reminders_scheduled: remindersCreated })
   } catch (e) {
     console.error('sync-booking-provider error:', e)
 
