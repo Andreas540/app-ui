@@ -63,7 +63,10 @@ async function handlePost(event) {
 
     // Create Stripe portal session
     const stripe = new Stripe(STRIPE_SECRET_KEY)
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody)
     const returnUrl = body.returnUrl || 'https://app.biznizoptimizer.com'
 
     const portalSession = await stripe.billingPortal.sessions.create({

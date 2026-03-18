@@ -27,7 +27,10 @@ async function saveSettings(event) {
       return cors(403, { error: 'Admin access required' })
     }
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody)
     const {
       sms_monthly_cap_amount,
       sms_price_per_unit,

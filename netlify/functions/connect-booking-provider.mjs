@@ -24,7 +24,10 @@ async function connectProvider(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody)
     const { provider, company_login, api_key } = body
 
     if (!provider) return cors(400, { error: 'provider is required' })
@@ -148,7 +151,10 @@ async function disconnectProvider(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody2 = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody2)
     const { provider } = body
     if (!provider) return cors(400, { error: 'provider is required' })
 
