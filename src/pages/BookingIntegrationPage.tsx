@@ -32,6 +32,8 @@ export default function BookingIntegrationPage() {
   const [connectError, setConnectError] = useState<string | null>(null)
 
   const [disconnecting, setDisconnecting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
 
   const activeConnection = connections.find(c => c.connection_status === 'connected')
 
@@ -76,6 +78,27 @@ export default function BookingIntegrationPage() {
       setConnectError(e.message || 'Connection failed')
     } finally {
       setConnecting(false)
+    }
+  }
+
+  async function handleSync() {
+    if (!activeConnection) return
+    try {
+      setSyncing(true)
+      setSyncResult(null)
+      const res = await fetch(`${apiBase()}/api/sync-booking-provider`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: activeConnection.provider })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      setSyncResult(t('bookingIntegration.syncSuccess', { count: data.records_processed ?? 0 }))
+      await fetchIntegration()
+    } catch (e: any) {
+      setSyncResult(e.message || 'Sync failed')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -164,15 +187,20 @@ export default function BookingIntegrationPage() {
             </div>
           </div>
 
-          {/* Manual sync — functionality in Sprint 3 */}
+          {/* Manual sync */}
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div className="helper" style={{ marginBottom: 8 }}>{t('bookingIntegration.syncHelp')}</div>
+            {syncResult && (
+              <div style={{ marginBottom: 8, fontSize: 14, color: syncResult.includes('ailed') ? 'salmon' : '#10b981' }}>
+                {syncResult}
+              </div>
+            )}
             <button
-              disabled
-              title={t('bookingIntegration.syncComingSoon')}
-              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+              onClick={handleSync}
+              disabled={syncing}
+              style={{ opacity: syncing ? 0.6 : 1 }}
             >
-              {t('bookingIntegration.syncNow')}
+              {syncing ? t('bookingIntegration.syncing') : t('bookingIntegration.syncNow')}
             </button>
           </div>
         </div>

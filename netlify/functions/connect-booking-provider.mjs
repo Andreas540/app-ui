@@ -91,30 +91,33 @@ async function connectProvider(event) {
     // Upsert provider_connections row
     // NOTE: token is stored as plain text here.
     // TODO: encrypt with AES-256-GCM before storing (Sprint 6 hardening).
+    // Store api_key in refresh_token_encrypted so sync can re-authenticate when token expires.
+    // TODO: encrypt both with AES-256-GCM (Sprint 6 hardening).
     await sql`
       INSERT INTO provider_connections (
         tenant_id, provider, connection_status,
         external_account_id, external_account_name,
-        access_token_encrypted,
+        access_token_encrypted, refresh_token_encrypted,
         currency, country,
         onboarding_completed_at, updated_at
       ) VALUES (
         ${TENANT_ID}, ${provider}, 'connected',
         ${company_login.trim()}, ${accountName},
-        ${token},
+        ${token}, ${api_key.trim()},
         ${currency}, ${country},
         now(), now()
       )
       ON CONFLICT (tenant_id, provider)
         DO UPDATE SET
-          connection_status       = 'connected',
-          external_account_id     = EXCLUDED.external_account_id,
-          external_account_name   = EXCLUDED.external_account_name,
-          access_token_encrypted  = EXCLUDED.access_token_encrypted,
-          currency                = EXCLUDED.currency,
-          country                 = EXCLUDED.country,
-          onboarding_completed_at = now(),
-          updated_at              = now()
+          connection_status         = 'connected',
+          external_account_id       = EXCLUDED.external_account_id,
+          external_account_name     = EXCLUDED.external_account_name,
+          access_token_encrypted    = EXCLUDED.access_token_encrypted,
+          refresh_token_encrypted   = EXCLUDED.refresh_token_encrypted,
+          currency                  = EXCLUDED.currency,
+          country                   = EXCLUDED.country,
+          onboarding_completed_at   = now(),
+          updated_at                = now()
     `
 
     // Fetch the saved row to return to client

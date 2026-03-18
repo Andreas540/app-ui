@@ -55,6 +55,7 @@ import BookingCustomersPage from './pages/BookingCustomersPage'
 import BookingPaymentsPage from './pages/BookingPaymentsPage'
 import BookingRemindersPage from './pages/BookingRemindersPage'
 import BookingSmsUsagePage from './pages/BookingSmsUsagePage'
+import BookingDetailPage from './pages/BookingDetailPage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -693,6 +694,7 @@ useEffect(() => {
                 {/* Booking module */}
                 {hasFeature('booking-dashboard') && <Route path="/bookings" element={<BookingDashboardPage />} />}
                 {hasFeature('bookings') && <Route path="/bookings/list" element={<BookingsPage />} />}
+                {hasFeature('bookings') && <Route path="/bookings/:id" element={<BookingDetailPage />} />}
                 {hasFeature('booking-customers') && <Route path="/bookings/clients" element={<BookingCustomersPage />} />}
                 {hasFeature('booking-payments') && <Route path="/bookings/payments" element={<BookingPaymentsPage />} />}
                 {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
