@@ -61,7 +61,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   }

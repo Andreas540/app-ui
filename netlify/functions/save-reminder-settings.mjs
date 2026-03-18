@@ -23,7 +23,10 @@ async function saveSettings(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody)
     const { action } = body
 
     if (action === 'create_rule') {
@@ -104,7 +107,7 @@ function cors(status, body) {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'POST,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
+      'access-control-allow-headers': 'content-type,authorization,x-tenant-id,x-active-tenant',
     },
     body: JSON.stringify(body),
   }
