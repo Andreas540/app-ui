@@ -44,7 +44,7 @@ async function connectProvider(event) {
           jsonrpc: '2.0',
           id: 1,
           method: 'getToken',
-          params: [company_login.trim(), api_key.trim()]
+          params: { company_login: company_login.trim(), api_key: api_key.trim() }
         })
       })
 
