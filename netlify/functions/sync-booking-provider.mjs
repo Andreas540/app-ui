@@ -303,6 +303,47 @@ async function runSync(event) {
       if (bookings.length < 50) break
     }
 
+    // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
+    // Cancel queued message_jobs for bookings that are now canceled.
+    const canceledCleanup = await sql`
+      UPDATE message_jobs mj
+      SET
+        status        = 'canceled',
+        error_message = 'Booking canceled',
+        updated_at    = now()
+      WHERE mj.tenant_id = ${TENANT_ID}
+        AND mj.status   = 'queued'
+        AND EXISTS (
+          SELECT 1 FROM bookings b
+          WHERE b.id = mj.booking_id
+            AND b.booking_status = 'canceled'
+        )
+    `
+
+    // Cancel queued before_start jobs that are now past the booking's start_at
+    // (indicates the booking was rescheduled earlier and the old reminder window is stale).
+    const staleCleanup = await sql`
+      UPDATE message_jobs mj
+      SET
+        status        = 'canceled',
+        error_message = 'Booking rescheduled — stale reminder',
+        updated_at    = now()
+      WHERE mj.tenant_id    = ${TENANT_ID}
+        AND mj.status       = 'queued'
+        AND mj.scheduled_for < now()
+        AND EXISTS (
+          SELECT 1 FROM bookings b
+          WHERE b.id = mj.booking_id
+            AND b.booking_status NOT IN ('canceled')
+            AND b.start_at > now()
+        )
+    `
+
+    const cleanedCount = (canceledCleanup.length ?? 0) + (staleCleanup.length ?? 0)
+    if (cleanedCount > 0) {
+      console.log(`sync: cleaned up ${cleanedCount} stale message_jobs`)
+    }
+
     // ── Finalise ───────────────────────────────────────────────────────────
     await sql`
       UPDATE provider_connections
@@ -374,7 +415,7 @@ async function runSync(event) {
       console.warn('Reminder scheduling after sync failed (non-fatal):', reminderErr?.message)
     }
 
-    return cors(200, { ok: true, records_processed: recordsProcessed, reminders_scheduled: remindersCreated })
+    return cors(200, { ok: true, records_processed: recordsProcessed, reminders_scheduled: remindersCreated, jobs_cleaned: cleanedCount })
   } catch (e) {
     console.error('sync-booking-provider error:', e)
 

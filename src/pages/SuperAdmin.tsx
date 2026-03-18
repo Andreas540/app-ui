@@ -46,6 +46,20 @@ interface TenantMembership {
   role: 'tenant_user' | 'tenant_admin'
 }
 
+interface WebhookEvent {
+  id: string
+  tenant_id: string | null
+  tenant_name: string | null
+  provider: string
+  event_type: string
+  external_event_id: string | null
+  processed: boolean
+  processed_at: string | null
+  processing_error: string | null
+  created_at: string
+  payload: Record<string, unknown>
+}
+
 export default function SuperAdmin() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -77,7 +91,18 @@ export default function SuperAdmin() {
   const [creatingUser, setCreatingUser] = useState(false)
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'tenants' | 'users'>('tenants')
+  const [activeTab, setActiveTab] = useState<'tenants' | 'users' | 'webhooks'>('tenants')
+
+  // Webhook events state
+  const [webhookEvents, setWebhookEvents] = useState<WebhookEvent[]>([])
+  const [webhookTotal, setWebhookTotal] = useState(0)
+  const [webhookLoading, setWebhookLoading] = useState(false)
+  const [webhookError, setWebhookError] = useState<string | null>(null)
+  const [webhookOffset, setWebhookOffset] = useState(0)
+  const [webhookFilterTenantId, setWebhookFilterTenantId] = useState('')
+  const [webhookFilterProvider, setWebhookFilterProvider] = useState('')
+  const [webhookFilterProcessed, setWebhookFilterProcessed] = useState('')
+  const [webhookExpandedId, setWebhookExpandedId] = useState<string | null>(null)
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
   
@@ -146,6 +171,31 @@ export default function SuperAdmin() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadWebhookEvents(offset = 0, tenantId = '', provider = '', processed = '') {
+    try {
+      setWebhookLoading(true)
+      setWebhookError(null)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const params = new URLSearchParams({ limit: '50', offset: String(offset) })
+      if (tenantId) params.set('tenantId', tenantId)
+      if (provider) params.set('provider', provider)
+      if (processed !== '') params.set('processed', processed)
+      const res = await fetch(`${base}/api/get-webhook-events?${params}`, { headers: getAuthHeaders() })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error || 'Failed to load webhook events')
+      }
+      const data = await res.json()
+      setWebhookEvents(data.events || [])
+      setWebhookTotal(data.total || 0)
+      setWebhookOffset(offset)
+    } catch (e: any) {
+      setWebhookError(e?.message || 'Failed to load webhook events')
+    } finally {
+      setWebhookLoading(false)
     }
   }
 
@@ -660,6 +710,16 @@ async function handleSaveStripeCustomerId() {
         >
           {t('superAdmin.tabUsers')} ({users.length})
         </button>
+        <button
+          className={activeTab === 'webhooks' ? 'primary' : ''}
+          onClick={() => {
+            setActiveTab('webhooks')
+            if (!webhookEvents.length) loadWebhookEvents(0, webhookFilterTenantId, webhookFilterProvider, webhookFilterProcessed)
+          }}
+          style={{ height: CONTROL_H, flex: 1 }}
+        >
+          Webhooks
+        </button>
       </div>
 
       {/* Tenants Tab */}
@@ -981,6 +1041,153 @@ async function handleSaveStripeCustomerId() {
             )}
           </div>
         </>
+      )}
+
+      {/* Webhooks Tab */}
+      {activeTab === 'webhooks' && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Webhook Event Log</h3>
+          <p className="helper" style={{ marginTop: 4, marginBottom: 16 }}>
+            Raw inbound events from booking providers. Stored in <code>webhook_events</code>.
+          </p>
+
+          {/* Filters */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            <select
+              value={webhookFilterProcessed}
+              onChange={e => setWebhookFilterProcessed(e.target.value)}
+              style={{ height: CONTROL_H, minWidth: 140 }}
+            >
+              <option value="">All statuses</option>
+              <option value="false">Unprocessed</option>
+              <option value="true">Processed</option>
+            </select>
+            <select
+              value={webhookFilterProvider}
+              onChange={e => setWebhookFilterProvider(e.target.value)}
+              style={{ height: CONTROL_H, minWidth: 140 }}
+            >
+              <option value="">All providers</option>
+              <option value="simplybook">SimplyBook</option>
+              <option value="twilio">Twilio</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Tenant ID (UUID)"
+              value={webhookFilterTenantId}
+              onChange={e => setWebhookFilterTenantId(e.target.value)}
+              style={{ height: CONTROL_H, minWidth: 260 }}
+            />
+            <button
+              className="primary"
+              style={{ height: CONTROL_H }}
+              onClick={() => loadWebhookEvents(0, webhookFilterTenantId, webhookFilterProvider, webhookFilterProcessed)}
+              disabled={webhookLoading}
+            >
+              {webhookLoading ? 'Loading…' : 'Search'}
+            </button>
+          </div>
+
+          {webhookError && <p style={{ color: 'salmon' }}>{webhookError}</p>}
+
+          {!webhookLoading && webhookEvents.length === 0 && (
+            <p className="helper">No webhook events found.</p>
+          )}
+
+          {webhookEvents.length > 0 && (
+            <>
+              <p className="helper" style={{ marginBottom: 8 }}>
+                Showing {webhookOffset + 1}–{Math.min(webhookOffset + webhookEvents.length, webhookTotal)} of {webhookTotal}
+              </p>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 8px' }}>Time</th>
+                      <th style={{ padding: '6px 8px' }}>Tenant</th>
+                      <th style={{ padding: '6px 8px' }}>Provider</th>
+                      <th style={{ padding: '6px 8px' }}>Event Type</th>
+                      <th style={{ padding: '6px 8px' }}>Status</th>
+                      <th style={{ padding: '6px 8px' }}>Error</th>
+                      <th style={{ padding: '6px 8px' }}>Payload</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {webhookEvents.map(ev => (
+                      <>
+                        <tr
+                          key={ev.id}
+                          style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                          onClick={() => setWebhookExpandedId(webhookExpandedId === ev.id ? null : ev.id)}
+                        >
+                          <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--muted)', fontSize: 12 }}>
+                            {new Date(ev.created_at).toLocaleString()}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 12 }}>
+                            {ev.tenant_name || ev.tenant_id?.slice(0, 8) || '—'}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>{ev.provider}</td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 12 }}>{ev.event_type}</td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: ev.processed ? 'rgba(34,197,94,0.15)' : ev.processing_error ? 'rgba(239,68,68,0.15)' : 'rgba(234,179,8,0.15)',
+                              color: ev.processed ? '#22c55e' : ev.processing_error ? '#ef4444' : '#ca8a04',
+                            }}>
+                              {ev.processed ? 'processed' : ev.processing_error ? 'error' : 'pending'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 12, color: 'salmon', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {ev.processing_error || ''}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <button
+                              style={{ fontSize: 11, padding: '2px 8px', height: 'auto' }}
+                              onClick={e => { e.stopPropagation(); setWebhookExpandedId(webhookExpandedId === ev.id ? null : ev.id) }}
+                            >
+                              {webhookExpandedId === ev.id ? 'hide' : 'show'}
+                            </button>
+                          </td>
+                        </tr>
+                        {webhookExpandedId === ev.id && (
+                          <tr key={`${ev.id}-payload`} style={{ background: 'rgba(255,255,255,0.04)' }}>
+                            <td colSpan={7} style={{ padding: '12px 8px' }}>
+                              <pre style={{ margin: 0, fontSize: 11, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 400 }}>
+                                {JSON.stringify(ev.payload, null, 2)}
+                              </pre>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
+                <button
+                  disabled={webhookOffset === 0 || webhookLoading}
+                  onClick={() => loadWebhookEvents(Math.max(0, webhookOffset - 50), webhookFilterTenantId, webhookFilterProvider, webhookFilterProcessed)}
+                  style={{ height: CONTROL_H }}
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={webhookOffset + webhookEvents.length >= webhookTotal || webhookLoading}
+                  onClick={() => loadWebhookEvents(webhookOffset + 50, webhookFilterTenantId, webhookFilterProvider, webhookFilterProcessed)}
+                  style={{ height: CONTROL_H }}
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {/* Manage User Modal */}
