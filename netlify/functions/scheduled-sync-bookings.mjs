@@ -147,12 +147,11 @@ async function syncTenant(sql, conn) {
 
     // ── Step 2: Clients ─────────────────────────────────────────────────────
     const clientMap = {}
-    for (let page = 1; page <= 5; page++) {
-      const clientResult = await sbCall('getClientList', [null, null, page, 100], companyLogin, token)
+    {
+      const clientResult = await sbCall('getClientList', ['', 500], companyLogin, token)
       const clients = Array.isArray(clientResult)
         ? clientResult
         : (clientResult?.data ?? Object.values(clientResult || {}))
-      if (!clients.length) break
 
       for (const client of clients) {
         const externalClientId = String(client.id ?? '')
@@ -189,7 +188,6 @@ async function syncTenant(sql, conn) {
         }
       }
 
-      if (clients.length < 100) break
     }
 
     // ── Step 3: Bookings ────────────────────────────────────────────────────
@@ -199,12 +197,11 @@ async function syncTenant(sql, conn) {
     const fmt = d => d.toISOString().slice(0, 10)
     const filter = { date_from: fmt(dateFrom), date_to: fmt(dateTo) }
 
-    for (let page = 1; page <= 20; page++) {
-      const bookingResult = await sbCall('getBookings', [filter, null, page, 50], companyLogin, token)
+    {
+      const bookingResult = await sbCall('getBookings', [filter], companyLogin, token)
       const bookings = Array.isArray(bookingResult)
         ? bookingResult
         : (bookingResult?.data ?? Object.values(bookingResult || {}))
-      if (!bookings.length) break
 
       for (const bk of bookings) {
         const externalBookingId = String(bk.id ?? '')
@@ -274,7 +271,6 @@ async function syncTenant(sql, conn) {
         recordsProcessed++
       }
 
-      if (bookings.length < 50) break
     }
 
     // ── Cleanup canceled/stale message_jobs ─────────────────────────────────

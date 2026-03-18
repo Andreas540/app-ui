@@ -149,66 +149,58 @@ async function runSync(event) {
     const serviceMap = Object.fromEntries(serviceRows.map(r => [r.external_service_id, r.id]))
 
     // ── Step 2: Sync clients → customers ──────────────────────────────────
-    // Pull up to 500 clients (pages of 100)
+    // getClientList(searchString, limit) — no pagination, fetch up to 500
     const clientMap = {} // externalClientId → our customer_id
-    for (let page = 1; page <= 5; page++) {
-      const clientResult = await sbCall('getClientList', [null, null, page, 100], companyLogin, token)
-      const clients = Array.isArray(clientResult)
-        ? clientResult
-        : (clientResult?.data ?? Object.values(clientResult || {}))
+    const clientResult = await sbCall('getClientList', ['', 500], companyLogin, token)
+    const clients = Array.isArray(clientResult)
+      ? clientResult
+      : Object.values(clientResult || {})
 
-      if (!clients.length) break
+    for (const client of clients) {
+      const externalClientId = String(client.id ?? '')
+      if (!externalClientId) continue
 
-      for (const client of clients) {
-        const externalClientId = String(client.id ?? '')
-        if (!externalClientId) continue
+      const links = await sql`
+        SELECT customer_id
+        FROM booking_customer_links
+        WHERE tenant_id = ${TENANT_ID}
+          AND external_provider = ${provider}
+          AND external_customer_id = ${externalClientId}
+        LIMIT 1
+      `
 
-        // Check if we already have a link
-        const links = await sql`
-          SELECT customer_id
-          FROM booking_customer_links
-          WHERE tenant_id = ${TENANT_ID}
-            AND external_provider = ${provider}
-            AND external_customer_id = ${externalClientId}
-          LIMIT 1
+      if (links.length) {
+        clientMap[externalClientId] = links[0].customer_id
+      } else {
+        const name = (client.name || client.full_name || 'Unknown').trim()
+        const phone = client.phone || client.phone1 || null
+        const newCust = await sql`
+          INSERT INTO customers (
+            tenant_id, name, customer_type, phone,
+            sms_consent, sms_consent_at
+          ) VALUES (
+            ${TENANT_ID}, ${name}, 'Direct', ${phone},
+            false, null
+          )
+          RETURNING id
         `
+        const customerId = newCust[0].id
 
-        if (links.length) {
-          clientMap[externalClientId] = links[0].customer_id
-        } else {
-          // Create a new customer row
-          const name = (client.name || client.full_name || 'Unknown').trim()
-          const phone = client.phone || client.phone1 || null
-          const newCust = await sql`
-            INSERT INTO customers (
-              tenant_id, name, customer_type, phone,
-              sms_consent, sms_consent_at
-            ) VALUES (
-              ${TENANT_ID}, ${name}, 'Direct', ${phone},
-              false, null
-            )
-            RETURNING id
-          `
-          const customerId = newCust[0].id
-
-          await sql`
-            INSERT INTO booking_customer_links (
-              tenant_id, customer_id, external_provider, external_customer_id, raw_payload
-            ) VALUES (
-              ${TENANT_ID}, ${customerId}, ${provider}, ${externalClientId},
-              ${JSON.stringify(client)}
-            )
-          `
-          clientMap[externalClientId] = customerId
-          recordsProcessed++
-        }
+        await sql`
+          INSERT INTO booking_customer_links (
+            tenant_id, customer_id, external_provider, external_customer_id, raw_payload
+          ) VALUES (
+            ${TENANT_ID}, ${customerId}, ${provider}, ${externalClientId},
+            ${JSON.stringify(client)}
+          )
+        `
+        clientMap[externalClientId] = customerId
+        recordsProcessed++
       }
-
-      if (clients.length < 100) break
     }
 
     // ── Step 3: Sync bookings ──────────────────────────────────────────────
-    // Pull last 30 days + next 90 days
+    // getBookings(filter) — returns all matching bookings, no pagination
     const now = new Date()
     const dateFrom = new Date(now)
     dateFrom.setDate(dateFrom.getDate() - 30)
@@ -219,15 +211,12 @@ async function runSync(event) {
 
     const filter = { date_from: fmt(dateFrom), date_to: fmt(dateTo) }
 
-    for (let page = 1; page <= 20; page++) {
-      const bookingResult = await sbCall('getBookings', [filter, null, page, 50], companyLogin, token)
-      const bookings = Array.isArray(bookingResult)
-        ? bookingResult
-        : (bookingResult?.data ?? Object.values(bookingResult || {}))
+    const bookingResult = await sbCall('getBookings', [filter], companyLogin, token)
+    const allBookings = Array.isArray(bookingResult)
+      ? bookingResult
+      : (bookingResult?.data ?? Object.values(bookingResult || {}))
 
-      if (!bookings.length) break
-
-      for (const bk of bookings) {
+    for (const bk of allBookings) {
         const externalBookingId = String(bk.id ?? '')
         if (!externalBookingId) continue
 
@@ -307,9 +296,6 @@ async function runSync(event) {
         `
         recordsProcessed++
       }
-
-      if (bookings.length < 50) break
-    }
 
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
     // Cancel queued message_jobs for bookings that are now canceled.
