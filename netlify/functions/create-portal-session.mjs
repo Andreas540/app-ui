@@ -67,7 +67,7 @@ async function handlePost(event) {
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
       : (event.body || '{}')
     const body = JSON.parse(rawBody)
-    const returnUrl = body.returnUrl || 'https://app.biznizoptimizer.com'
+    const returnUrl = body.returnUrl || 'https://data-entry-beta.netlify.app'
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
