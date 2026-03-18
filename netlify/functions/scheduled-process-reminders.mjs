@@ -48,11 +48,41 @@ export async function handler() {
 
     if (!jobs.length) return { statusCode: 200 }
 
+    // Load monthly cap settings per tenant (cache to avoid repeated queries)
+    const capCache = {}
+    async function isAtCap(tenantId) {
+      if (!(tenantId in capCache)) {
+        const capRows = await sql`
+          SELECT tbs.sms_monthly_cap_amount, tbs.sms_price_per_unit,
+                 COUNT(mj.id)::int AS sent_this_month
+          FROM tenant_billing_settings tbs
+          LEFT JOIN message_jobs mj
+            ON mj.tenant_id = tbs.tenant_id
+            AND mj.billable = true
+            AND mj.created_at >= date_trunc('month', now())
+          WHERE tbs.tenant_id = ${tenantId}
+          GROUP BY tbs.sms_monthly_cap_amount, tbs.sms_price_per_unit
+          LIMIT 1
+        `
+        if (!capRows.length) { capCache[tenantId] = false; return false }
+        const { sms_monthly_cap_amount, sms_price_per_unit, sent_this_month } = capRows[0]
+        const cost = sent_this_month * Number(sms_price_per_unit)
+        capCache[tenantId] = cost >= Number(sms_monthly_cap_amount)
+      }
+      return capCache[tenantId]
+    }
+
     let sent = 0
     let skipped = 0
     let failed = 0
 
     for (const job of jobs) {
+      // Check monthly cap
+      if (await isAtCap(job.tenant_id)) {
+        await sql`UPDATE message_jobs SET status = 'canceled', error_message = 'Monthly SMS cap reached', updated_at = now() WHERE id = ${job.id}`
+        skipped++
+        continue
+      }
       // Mark as sending immediately to prevent double-send
       await sql`
         UPDATE message_jobs SET status = 'sending', updated_at = now()
