@@ -232,21 +232,25 @@ async function runSync(event) {
         if (!externalBookingId) continue
 
         const externalClientId = String(bk.client_id ?? '')
-        const externalServiceId = String(bk.service_id ?? '')
+        // SimplyBook uses event_id for the service
+        const externalServiceId = String(bk.event_id ?? bk.service_id ?? '')
 
         const customerId = clientMap[externalClientId] ?? null
         const serviceId = serviceMap[externalServiceId] ?? null
 
-        // Build start/end timestamps from SimplyBook date+time fields
-        const startStr = bk.start_date_time ?? `${bk.date ?? bk.start_date ?? ''} ${bk.start_time ?? '00:00:00'}`
-        const endStr = bk.end_date_time ?? `${bk.date ?? bk.end_date ?? ''} ${bk.end_time ?? '00:00:00'}`
+        // start_date / end_date already contain "YYYY-MM-DD HH:MM:SS"
+        const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
+        const endStr = bk.end_date_time ?? bk.end_date ?? `${bk.date ?? ''} ${bk.end_time ?? '00:00:00'}`
 
-        const startAt = startStr.trim() ? new Date(startStr.replace(' ', 'T') + 'Z') : null
-        const endAt = endStr.trim() ? new Date(endStr.replace(' ', 'T') + 'Z') : null
+        const startAt = startStr.trim() ? new Date(startStr.trim().replace(' ', 'T') + 'Z') : null
+        const endAt = endStr.trim() ? new Date(endStr.trim().replace(' ', 'T') + 'Z') : null
         if (!startAt || isNaN(startAt.getTime())) continue
 
-        // Map SimplyBook status → our booking_status
-        const rawStatus = (bk.status ?? 'approved').toLowerCase()
+        // is_confirm: "1" = confirmed, "0" = pending; fallback to status field
+        const rawStatus = bk.status != null ? String(bk.status).toLowerCase()
+          : (bk.is_confirm === '1' || bk.is_confirm === 1) ? 'approved'
+          : (bk.is_confirm === '0' || bk.is_confirm === 0) ? 'pending'
+          : 'approved'
         const bookingStatus =
           rawStatus === 'cancelled' || rawStatus === 'canceled' ? 'canceled'
           : rawStatus === 'pending' ? 'pending'
@@ -254,13 +258,14 @@ async function runSync(event) {
           : rawStatus === 'completed' ? 'completed'
           : 'confirmed'
 
-        const totalAmount = bk.total_amount_due != null
-          ? parseFloat(bk.total_amount_due)
-          : bk.total_price != null
-          ? parseFloat(bk.total_price)
+        // payed_amount is SimplyBook's field name (their typo)
+        const totalAmount = bk.invoice_amount != null ? parseFloat(bk.invoice_amount)
+          : bk.event_price != null ? parseFloat(bk.event_price)
+          : bk.total_amount_due != null ? parseFloat(bk.total_amount_due)
+          : bk.total_price != null ? parseFloat(bk.total_price)
           : null
-
-        const paidAmount = bk.paid_amount != null ? parseFloat(bk.paid_amount) : 0
+        const paidAmount = bk.payed_amount != null ? parseFloat(bk.payed_amount)
+          : bk.paid_amount != null ? parseFloat(bk.paid_amount) : 0
         const paymentStatus =
           totalAmount == null ? 'unpaid'
           : paidAmount >= totalAmount ? 'paid'
@@ -278,14 +283,14 @@ async function runSync(event) {
             notes, raw_payload
           ) VALUES (
             ${TENANT_ID}, ${conn.id}, ${provider}, ${externalBookingId},
-            ${bk.status ?? null},
+            ${bk.status ?? bk.is_confirm ?? null},
             ${customerId}, ${serviceId},
-            ${bk.unit_name ?? bk.staff_name ?? null},
+            ${bk.unit ?? bk.unit_name ?? bk.staff_name ?? null},
             ${bookingStatus}, ${paymentStatus},
             ${startAt.toISOString()}, ${endAt ? endAt.toISOString() : startAt.toISOString()},
             ${parseInt(bk.participant_count ?? bk.count ?? 1, 10)},
-            ${totalAmount}, ${bk.currency ?? null},
-            ${bk.notes ?? bk.note ?? null},
+            ${totalAmount}, ${bk.event_currency ?? bk.currency ?? null},
+            ${bk.comment ?? bk.notes ?? bk.note ?? null},
             ${JSON.stringify(bk)}
           )
           ON CONFLICT (tenant_id, external_provider, external_booking_id)
