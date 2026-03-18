@@ -37,14 +37,14 @@ async function connectProvider(event) {
     // Validate credentials by fetching a token from SimplyBook
     let token
     try {
-      const res = await fetch('https://user-api.simplybook.me/admin/', {
+      const res = await fetch('https://user-api.simplybook.me/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           method: 'getToken',
-          params: { company_login: company_login.trim(), api_key: api_key.trim() }
+          params: [company_login.trim(), api_key.trim()]
         })
       })
 

@@ -29,10 +29,10 @@ async function sbCall(method, params, companyLogin, token) {
 }
 
 async function getToken(companyLogin, apiKey) {
-  const res = await fetch('https://user-api.simplybook.me/admin/', {
+  const res = await fetch('https://user-api.simplybook.me/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getToken', params: { company_login: companyLogin, api_key: apiKey } }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getToken', params: [companyLogin, apiKey] }),
   })
   if (!res.ok) throw new Error(`SimplyBook auth HTTP ${res.status}`)
   const data = await res.json()
