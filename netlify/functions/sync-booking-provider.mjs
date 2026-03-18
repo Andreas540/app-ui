@@ -203,6 +203,7 @@ async function runSync(event) {
         clientsProcessed++
       }
     }
+    if (clients.length > 0) console.log('sync: first client keys:', JSON.stringify(Object.keys(clients[0])), '| id field:', clients[0]?.id)
     console.log(`sync: getClientList returned ${Object.keys(clientMap).length} clients`)
 
     // ── Step 3: Sync bookings ──────────────────────────────────────────────
@@ -224,9 +225,10 @@ async function runSync(event) {
       : (bookingResult?.data ?? Object.values(bookingResult || {}))
 
     console.log(`sync: getBookings returned ${allBookings.length} bookings`)
+    if (allBookings.length > 0) console.log('sync: first booking keys:', JSON.stringify(Object.keys(allBookings[0])), '| sample:', JSON.stringify(allBookings[0]).slice(0, 300))
 
     for (const bk of allBookings) {
-        const externalBookingId = String(bk.id ?? '')
+        const externalBookingId = String(bk.id ?? bk.booking_id ?? bk.record_id ?? '')
         if (!externalBookingId) continue
 
         const externalClientId = String(bk.client_id ?? '')
