@@ -70,6 +70,7 @@ export default function BookingRemindersPage() {
   const [newRule, setNewRule] = useState({ ...BLANK_RULE })
 
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
+  const [showAddTemplate, setShowAddTemplate] = useState(false)
   const [tmplKey, setTmplKey] = useState('')
   const [tmplBody, setTmplBody] = useState('')
   const [tmplSubject, setTmplSubject] = useState('')
@@ -129,12 +130,23 @@ export default function BookingRemindersPage() {
     setTmplBody(existing?.body ?? '')
     setTmplSubject(existing?.subject ?? '')
     setEditingTemplate(existing ?? { id: '', template_key: templateKey, channel, subject: null, body: '' })
+    setShowAddTemplate(false)
+  }
+
+  function openNewTemplate() {
+    setTmplKey('')
+    setTmplChannel('sms')
+    setTmplBody('')
+    setTmplSubject('')
+    setEditingTemplate({ id: '', template_key: '', channel: 'sms', subject: null, body: '' })
+    setShowAddTemplate(true)
   }
 
   async function handleSaveTemplate(e: React.FormEvent) {
     e.preventDefault()
     await callSave({ action: 'upsert_template', template_key: tmplKey, channel: tmplChannel, subject: tmplSubject || null, body: tmplBody })
     setEditingTemplate(null)
+    setShowAddTemplate(false)
   }
 
   async function handleGenerateReminders() {
@@ -254,8 +266,23 @@ export default function BookingRemindersPage() {
       {editingTemplate && (
         <form onSubmit={handleSaveTemplate} className="card" style={{ padding: 20, marginBottom: 24, display: 'grid', gap: 12 }}>
           <h3 style={{ marginTop: 0 }}>
-            Template: <code style={{ fontSize: 13 }}>{tmplKey}</code> · {tmplChannel.toUpperCase()}
+            {showAddTemplate ? 'New template' : <>Template: <code style={{ fontSize: 13 }}>{tmplKey}</code> · {tmplChannel.toUpperCase()}</>}
           </h3>
+          {showAddTemplate && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>Template key</label>
+                <input value={tmplKey} onChange={e => setTmplKey(e.target.value)} required placeholder="e.g. reminder_24h" style={{ width: '100%' }} />
+                <div className="helper" style={{ marginTop: 4 }}>Use this key in reminder rules.</div>
+              </div>
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>Channel</label>
+                <select value={tmplChannel} onChange={e => setTmplChannel(e.target.value)} style={{ width: '100%' }}>
+                  {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
           {tmplChannel === 'email' && (
             <div>
               <label className="helper" style={{ display: 'block', marginBottom: 4 }}>Subject</label>
@@ -275,29 +302,36 @@ export default function BookingRemindersPage() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="submit" className="primary" disabled={saving}>Save template</button>
-            <button type="button" onClick={() => setEditingTemplate(null)}>Cancel</button>
+            <button type="button" onClick={() => { setEditingTemplate(null); setShowAddTemplate(false) }}>Cancel</button>
           </div>
         </form>
       )}
 
       {/* ── Templates list ────────────────────────────────────────── */}
-      {templates.length > 0 && !editingTemplate && (
+      {!editingTemplate && (
         <div style={{ marginBottom: 24 }}>
-          <h3 style={{ marginBottom: 12 }}>Message templates</h3>
-          <div style={{ display: 'grid', gap: 6 }}>
-            {templates.map(tmpl => (
-              <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>
-                    <code>{tmpl.template_key}</code> · {tmpl.channel.toUpperCase()}
-                  </div>
-                  {tmpl.subject && <div className="helper">Subject: {tmpl.subject}</div>}
-                  <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
-                </div>
-                <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>Edit</button>
-              </div>
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Message templates</h3>
+            <button onClick={openNewTemplate} disabled={saving}>+ Add template</button>
           </div>
+          {templates.length === 0 ? (
+            <div className="helper">No templates yet. Add a template, then reference its key in a rule.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 6 }}>
+              {templates.map(tmpl => (
+                <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      <code>{tmpl.template_key}</code> · {tmpl.channel.toUpperCase()}
+                    </div>
+                    {tmpl.subject && <div className="helper">Subject: {tmpl.subject}</div>}
+                    <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
+                  </div>
+                  <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>Edit</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
