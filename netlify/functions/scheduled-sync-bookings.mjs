@@ -257,7 +257,7 @@ async function syncTenant(sql, conn) {
             ${bk.comment ?? bk.notes ?? bk.note ?? null},
             ${JSON.stringify(bk)}
           )
-          ON CONFLICT (tenant_id, external_provider, external_booking_id)
+          ON CONFLICT (tenant_id, external_provider, external_booking_id) WHERE external_booking_id IS NOT NULL
             DO UPDATE SET
               external_status     = EXCLUDED.external_status,
               customer_id         = COALESCE(EXCLUDED.customer_id, bookings.customer_id),
