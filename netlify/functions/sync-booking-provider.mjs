@@ -59,7 +59,10 @@ async function runSync(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    const body = JSON.parse(rawBody)
     const provider = body.provider || 'simplybook'
     if (provider !== 'simplybook') return cors(400, { error: 'Unsupported provider' })
 
