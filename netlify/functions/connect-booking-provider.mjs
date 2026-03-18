@@ -51,7 +51,7 @@ async function connectProvider(event) {
       if (!res.ok) return cors(502, { error: 'Could not reach SimplyBook API' })
 
       const data = await res.json()
-      if (data.error) return cors(401, { error: `SimplyBook rejected credentials: ${JSON.stringify(data.error)}` })
+      if (data.error) return cors(401, { error: `SimplyBook rejected credentials: ${data.error.message || data.error}` })
       token = data.result
     } catch (fetchErr) {
       console.error('SimplyBook token fetch failed:', fetchErr)
