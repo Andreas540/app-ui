@@ -101,7 +101,9 @@ async function runSync(event) {
     `
     syncRunId = syncRunRows[0].id
 
-    let recordsProcessed = 0
+    let servicesProcessed = 0
+    let clientsProcessed = 0
+    let bookingsProcessed = 0
 
     // ── Step 1: Sync services ──────────────────────────────────────────────
     try {
@@ -110,6 +112,8 @@ async function runSync(event) {
       const services = Array.isArray(serviceList)
         ? serviceList
         : Object.values(serviceList || {})
+
+      console.log(`sync: getEventList returned ${services.length} services`)
 
       for (const svc of services) {
         const externalId = String(svc.id ?? '')
@@ -134,7 +138,7 @@ async function runSync(event) {
           )
           ON CONFLICT DO NOTHING
         `
-        recordsProcessed++
+        servicesProcessed++
       }
     } catch (svcErr) {
       console.warn('sync: service list fetch failed (non-fatal):', svcErr?.message)
@@ -195,9 +199,10 @@ async function runSync(event) {
           )
         `
         clientMap[externalClientId] = customerId
-        recordsProcessed++
+        clientsProcessed++
       }
     }
+    console.log(`sync: getClientList returned ${Object.keys(clientMap).length} clients`)
 
     // ── Step 3: Sync bookings ──────────────────────────────────────────────
     // getBookings(filter) — returns all matching bookings, no pagination
@@ -215,6 +220,8 @@ async function runSync(event) {
     const allBookings = Array.isArray(bookingResult)
       ? bookingResult
       : (bookingResult?.data ?? Object.values(bookingResult || {}))
+
+    console.log(`sync: getBookings returned ${allBookings.length} bookings`)
 
     for (const bk of allBookings) {
         const externalBookingId = String(bk.id ?? '')
@@ -294,7 +301,7 @@ async function runSync(event) {
               raw_payload      = EXCLUDED.raw_payload,
               updated_at       = now()
         `
-        recordsProcessed++
+        bookingsProcessed++
       }
 
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
@@ -344,6 +351,9 @@ async function runSync(event) {
       SET last_sync_at = now(), updated_at = now()
       WHERE id = ${conn.id}
     `
+
+    const recordsProcessed = servicesProcessed + clientsProcessed + bookingsProcessed
+    console.log(`sync: services=${servicesProcessed} clients=${clientsProcessed} bookings=${bookingsProcessed}`)
 
     await sql`
       UPDATE sync_runs
@@ -409,7 +419,15 @@ async function runSync(event) {
       console.warn('Reminder scheduling after sync failed (non-fatal):', reminderErr?.message)
     }
 
-    return cors(200, { ok: true, records_processed: recordsProcessed, reminders_scheduled: remindersCreated, jobs_cleaned: cleanedCount })
+    return cors(200, {
+      ok: true,
+      services: servicesProcessed,
+      clients: clientsProcessed,
+      bookings: bookingsProcessed,
+      records_processed: recordsProcessed,
+      reminders_scheduled: remindersCreated,
+      jobs_cleaned: cleanedCount,
+    })
   } catch (e) {
     console.error('sync-booking-provider error:', e)
 
