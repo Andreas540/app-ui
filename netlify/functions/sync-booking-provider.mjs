@@ -156,6 +156,7 @@ async function runSync(event) {
     // getClientList(searchString, limit) — no pagination, fetch up to 500
     const clientMap = {} // externalClientId → our customer_id
     const clientResult = await sbCall('getClientList', ['', 500], companyLogin, token)
+    console.log('sync: getClientList raw type:', typeof clientResult, '| isArray:', Array.isArray(clientResult), '| keys:', clientResult && typeof clientResult === 'object' ? JSON.stringify(Object.keys(clientResult).slice(0, 10)) : String(clientResult))
     const clients = Array.isArray(clientResult)
       ? clientResult
       : Object.values(clientResult || {})
@@ -217,6 +218,7 @@ async function runSync(event) {
     const filter = { date_from: fmt(dateFrom), date_to: fmt(dateTo) }
 
     const bookingResult = await sbCall('getBookings', [filter], companyLogin, token)
+    console.log('sync: getBookings raw type:', typeof bookingResult, '| isArray:', Array.isArray(bookingResult), '| keys:', bookingResult && typeof bookingResult === 'object' ? JSON.stringify(Object.keys(bookingResult).slice(0, 10)) : String(bookingResult))
     const allBookings = Array.isArray(bookingResult)
       ? bookingResult
       : (bookingResult?.data ?? Object.values(bookingResult || {}))
