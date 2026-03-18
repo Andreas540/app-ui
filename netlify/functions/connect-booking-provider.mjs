@@ -28,23 +28,23 @@ async function connectProvider(event) {
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
       : (event.body || '{}')
     const body = JSON.parse(rawBody)
-    const { provider, company_login, api_key } = body
+    const { provider, company_login, user_login, api_key } = body
 
     if (!provider) return cors(400, { error: 'provider is required' })
     if (provider !== 'simplybook') return cors(400, { error: 'Unsupported provider' })
-    if (!company_login || !api_key) return cors(400, { error: 'company_login and api_key are required' })
+    if (!company_login || !user_login || !api_key) return cors(400, { error: 'company_login, user_login and api_key are required' })
 
     // Validate credentials by fetching a token from SimplyBook
     let token
     try {
-      const res = await fetch('https://user-api.simplybook.me/', {
+      const res = await fetch('https://user-api.simplybook.me/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
-          method: 'getToken',
-          params: [company_login.trim(), api_key.trim()]
+          method: 'getUserToken',
+          params: [company_login.trim(), user_login.trim(), api_key.trim()]
         })
       })
 
@@ -70,7 +70,7 @@ async function connectProvider(event) {
         headers: {
           'Content-Type': 'application/json',
           'X-Company-Login': company_login.trim(),
-          'X-Token': token
+          'X-User-Token': token
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -100,13 +100,13 @@ async function connectProvider(event) {
       INSERT INTO provider_connections (
         tenant_id, provider, connection_status,
         external_account_id, external_account_name,
-        access_token_encrypted, refresh_token_encrypted,
+        access_token_encrypted, refresh_token_encrypted, user_login,
         currency, country,
         onboarding_completed_at, updated_at
       ) VALUES (
         ${TENANT_ID}, ${provider}, 'connected',
         ${company_login.trim()}, ${accountName},
-        ${token}, ${api_key.trim()},
+        ${token}, ${api_key.trim()}, ${user_login.trim()},
         ${currency}, ${country},
         now(), now()
       )
@@ -117,6 +117,7 @@ async function connectProvider(event) {
           external_account_name     = EXCLUDED.external_account_name,
           access_token_encrypted    = EXCLUDED.access_token_encrypted,
           refresh_token_encrypted   = EXCLUDED.refresh_token_encrypted,
+          user_login                = EXCLUDED.user_login,
           currency                  = EXCLUDED.currency,
           country                   = EXCLUDED.country,
           onboarding_completed_at   = now(),

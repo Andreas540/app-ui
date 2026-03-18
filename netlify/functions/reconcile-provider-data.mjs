@@ -18,7 +18,7 @@ async function sbCall(method, params, companyLogin, token) {
     headers: {
       'Content-Type': 'application/json',
       'X-Company-Login': companyLogin,
-      'X-Token': token,
+      'X-User-Token': token,
     },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: params ?? [] }),
   })
@@ -28,11 +28,11 @@ async function sbCall(method, params, companyLogin, token) {
   return data.result
 }
 
-async function getToken(companyLogin, apiKey) {
-  const res = await fetch('https://user-api.simplybook.me/', {
+async function getToken(companyLogin, userLogin, apiKey) {
+  const res = await fetch('https://user-api.simplybook.me/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getToken', params: [companyLogin, apiKey] }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getUserToken', params: [companyLogin, userLogin, apiKey] }),
   })
   if (!res.ok) throw new Error(`SimplyBook auth HTTP ${res.status}`)
   const data = await res.json()
@@ -54,7 +54,7 @@ export async function handler() {
     const connections = await sql`
       SELECT
         pc.id, pc.tenant_id, pc.provider,
-        pc.external_account_id, pc.refresh_token_encrypted
+        pc.external_account_id, pc.refresh_token_encrypted, pc.user_login
       FROM provider_connections pc
       WHERE pc.connection_status = 'connected'
     `
@@ -83,13 +83,14 @@ export async function handler() {
 
         // ── Part 1: Booking reconciliation ──────────────────────────────────
         const companyLogin = conn.external_account_id
+        const userLogin = conn.user_login
         const apiKey = conn.refresh_token_encrypted
 
-        if (!companyLogin || !apiKey) {
+        if (!companyLogin || !userLogin || !apiKey) {
           mismatches.push({ type: 'config_error', message: 'Missing credentials' })
         } else {
           try {
-            const token = await getToken(companyLogin, apiKey)
+            const token = await getToken(companyLogin, userLogin, apiKey)
 
             const now = new Date()
             const dateTo = new Date(now)

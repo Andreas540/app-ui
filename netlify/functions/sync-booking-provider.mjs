@@ -20,7 +20,7 @@ async function sbCall(method, params, companyLogin, token) {
     headers: {
       'Content-Type': 'application/json',
       'X-Company-Login': companyLogin,
-      'X-Token': token,
+      'X-User-Token': token,
     },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: params ?? [] }),
   })
@@ -30,11 +30,11 @@ async function sbCall(method, params, companyLogin, token) {
   return data.result
 }
 
-async function getToken(companyLogin, apiKey) {
-  const res = await fetch('https://user-api.simplybook.me/', {
+async function getToken(companyLogin, userLogin, apiKey) {
+  const res = await fetch('https://user-api.simplybook.me/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getToken', params: [companyLogin, apiKey] }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getUserToken', params: [companyLogin, userLogin, apiKey] }),
   })
   if (!res.ok) throw new Error(`SimplyBook auth HTTP ${res.status}`)
   const data = await res.json()
@@ -65,7 +65,7 @@ async function runSync(event) {
 
     // Load provider connection
     const conns = await sql`
-      SELECT id, external_account_id, access_token_encrypted, refresh_token_encrypted, connection_status
+      SELECT id, external_account_id, access_token_encrypted, refresh_token_encrypted, user_login, connection_status
       FROM provider_connections
       WHERE tenant_id = ${TENANT_ID} AND provider = ${provider}
       LIMIT 1
@@ -75,12 +75,13 @@ async function runSync(event) {
     if (conn.connection_status !== 'connected') return cors(400, { error: 'Provider is not connected' })
 
     const companyLogin = conn.external_account_id
+    const userLogin = conn.user_login
     const apiKey = conn.refresh_token_encrypted // stored at connect time
 
-    if (!companyLogin || !apiKey) return cors(400, { error: 'Missing credentials — please reconnect' })
+    if (!companyLogin || !userLogin || !apiKey) return cors(400, { error: 'Missing credentials — please reconnect' })
 
     // Get a fresh token (avoids expiry issues)
-    const token = await getToken(companyLogin, apiKey)
+    const token = await getToken(companyLogin, userLogin, apiKey)
 
     // Store refreshed token
     await sql`

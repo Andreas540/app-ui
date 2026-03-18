@@ -27,6 +27,7 @@ export default function BookingIntegrationPage() {
 
   // Connect form state
   const [companyLogin, setCompanyLogin] = useState('')
+  const [userLogin, setUserLogin] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [connecting, setConnecting] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -60,18 +61,19 @@ export default function BookingIntegrationPage() {
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault()
-    if (!companyLogin.trim() || !apiKey.trim()) return
+    if (!companyLogin.trim() || !userLogin.trim() || !apiKey.trim()) return
     try {
       setConnecting(true)
       setConnectError(null)
       const res = await fetch(`${apiBase()}/api/connect-booking-provider`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'simplybook', company_login: companyLogin.trim(), api_key: apiKey.trim() })
+        body: JSON.stringify({ provider: 'simplybook', company_login: companyLogin.trim(), user_login: userLogin.trim(), api_key: apiKey.trim() })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       setCompanyLogin('')
+      setUserLogin('')
       setApiKey('')
       await fetchIntegration()
     } catch (e: any) {
@@ -236,6 +238,23 @@ export default function BookingIntegrationPage() {
 
             <div>
               <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
+                {t('bookingIntegration.userLogin')}
+              </label>
+              <input
+                type="email"
+                value={userLogin}
+                onChange={e => setUserLogin(e.target.value)}
+                placeholder={t('bookingIntegration.userLoginPlaceholder')}
+                required
+                style={{ width: '100%' }}
+              />
+              <div className="helper" style={{ marginTop: 4 }}>
+                {t('bookingIntegration.userLoginHelp')}
+              </div>
+            </div>
+
+            <div>
+              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
                 {t('bookingIntegration.apiKey')}
               </label>
               <input
@@ -258,7 +277,7 @@ export default function BookingIntegrationPage() {
             <button
               type="submit"
               className="primary"
-              disabled={connecting || !companyLogin.trim() || !apiKey.trim()}
+              disabled={connecting || !companyLogin.trim() || !userLogin.trim() || !apiKey.trim()}
               style={{ opacity: connecting ? 0.6 : 1 }}
             >
               {connecting ? t('bookingIntegration.connecting') : t('bookingIntegration.connectButton')}
