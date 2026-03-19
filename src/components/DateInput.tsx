@@ -14,10 +14,14 @@ export function DateInput({ value, onChange, style, className, disabled, ...rest
   const { locale } = useLocale()
   const nativeRef = useRef<HTMLInputElement>(null)
 
-  // Format for display — parse at noon to avoid DST/timezone edge cases
-  const displayValue = value
-    ? new Intl.DateTimeFormat(locale).format(new Date(value + 'T12:00:00'))
-    : ''
+  // Format for display — strip any time component first, then parse at noon to avoid DST edge cases
+  const dateOnly = value ? value.split('T')[0] : ''
+  const displayValue = (() => {
+    if (!dateOnly) return ''
+    const d = new Date(dateOnly + 'T12:00:00')
+    if (isNaN(d.getTime())) return dateOnly // fallback: show raw if unparseable
+    return new Intl.DateTimeFormat(locale).format(d)
+  })()
 
   function openPicker() {
     if (disabled) return
@@ -47,7 +51,7 @@ export function DateInput({ value, onChange, style, className, disabled, ...rest
       <input
         ref={nativeRef}
         type="date"
-        value={value}
+        value={dateOnly}
         onChange={e => onChange(e.target.value)}
         onClick={openPicker}
         disabled={disabled}
