@@ -923,5 +923,60 @@
     "apiKeyHelp": "Configuración → API → Clave API en tu panel de SimplyBook.",
     "connecting": "Conectando…",
     "connectButton": "Conectar SimplyBook"
+  },
+  "bookingDashboard": {
+    "title": "Reservas",
+    "todayCount": "Reservas de hoy",
+    "upcomingCount": "Próximos 7 días",
+    "monthlyRevenue": "Ingresos este mes",
+    "bookings": "reservas",
+    "outstanding": "Pendiente",
+    "unpaid": "sin pagar",
+    "todaySchedule": "Agenda de hoy",
+    "nothingToday": "No hay reservas programadas para hoy.",
+    "upcoming": "Próximas (7 días)",
+    "viewAll": "Ver todas →"
+  },
+  "bookingsList": {
+    "title": "Todas las reservas",
+    "allStatuses": "Todos los estados",
+    "clearFilters": "Limpiar",
+    "results": "resultados",
+    "noBookings": "No se encontraron reservas."
+  },
+  "bookingPayments": {
+    "title": "Pagos de reservas",
+    "outstanding": "Pendiente",
+    "bookings": "reservas",
+    "collected": "Recaudado",
+    "paid": "pagado",
+    "deposits": "Depósitos recibidos",
+    "all": "Todos",
+    "results": "resultados",
+    "none": "No se encontraron reservas."
+  },
+  "bookingClients": {
+    "title": "Clientes de reservas",
+    "searchPlaceholder": "Buscar por nombre…",
+    "clients": "clientes",
+    "bookings": "reservas",
+    "last": "Último",
+    "outstanding": "pendiente",
+    "noClients": "No se encontraron clientes. Realiza una sincronización para importar clientes."
+  },
+  "bookingDetail": {
+    "backToList": "Todas las reservas",
+    "booking": "Reserva",
+    "date": "Fecha y hora",
+    "duration": "Duración",
+    "customer": "Cliente",
+    "phone": "Teléfono",
+    "serviceType": "Tipo de servicio",
+    "staff": "Personal",
+    "participants": "Participantes",
+    "location": "Ubicación",
+    "amount": "Importe",
+    "notes": "Notas",
+    "obligations": "Obligaciones de pago"
   }
 }

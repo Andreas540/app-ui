@@ -225,7 +225,11 @@ async function runSync(event) {
       : (bookingResult?.data ?? Object.values(bookingResult || {}))
 
     console.log(`sync: getBookings returned ${allBookings.length} bookings`)
-    if (allBookings.length > 0) console.log('sync: first booking keys:', JSON.stringify(Object.keys(allBookings[0])), '| sample:', JSON.stringify(allBookings[0]).slice(0, 300))
+    if (allBookings.length > 0) {
+      const first = allBookings[0]
+      console.log('sync: first booking keys:', JSON.stringify(Object.keys(first)))
+      console.log('sync: first booking offset:', first.offset, '| start_date:', first.start_date, '| client_timezone:', first.client_timezone)
+    }
 
     for (const bk of allBookings) {
         const externalBookingId = String(bk.id ?? bk.booking_id ?? bk.record_id ?? '')
@@ -242,8 +246,15 @@ async function runSync(event) {
         const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
         const endStr = bk.end_date_time ?? bk.end_date ?? `${bk.date ?? ''} ${bk.end_time ?? '00:00:00'}`
 
-        const startAt = startStr.trim() ? new Date(startStr.trim().replace(' ', 'T') + 'Z') : null
-        const endAt = endStr.trim() ? new Date(endStr.trim().replace(' ', 'T') + 'Z') : null
+        // SimplyBook times are in the company's local timezone.
+        // offset field is UTC offset in hours (e.g. -5 for EST). Subtract to get UTC.
+        const utcOffsetHours = parseFloat(bk.offset ?? '0') || 0
+        const toUtc = (str) => {
+          const d = new Date(str.trim().replace(' ', 'T') + 'Z') // parsed as UTC (wrong local time)
+          return isNaN(d.getTime()) ? null : new Date(d.getTime() - utcOffsetHours * 3600000)
+        }
+        const startAt = startStr.trim() ? toUtc(startStr) : null
+        const endAt = endStr.trim() ? toUtc(endStr) : null
         if (!startAt || isNaN(startAt.getTime())) continue
 
         // is_confirm: "1" = confirmed, "0" = pending; fallback to status field

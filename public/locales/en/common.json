@@ -926,5 +926,60 @@
     "apiKeyHelp": "Settings → API User Keys in your SimplyBook dashboard.",
     "connecting": "Connecting…",
     "connectButton": "Connect SimplyBook"
+  },
+  "bookingDashboard": {
+    "title": "Bookings",
+    "todayCount": "Today's bookings",
+    "upcomingCount": "Next 7 days",
+    "monthlyRevenue": "Revenue this month",
+    "bookings": "bookings",
+    "outstanding": "Outstanding",
+    "unpaid": "unpaid",
+    "todaySchedule": "Today's Schedule",
+    "nothingToday": "No bookings scheduled today.",
+    "upcoming": "Upcoming (next 7 days)",
+    "viewAll": "View all →"
+  },
+  "bookingsList": {
+    "title": "All Bookings",
+    "allStatuses": "All statuses",
+    "clearFilters": "Clear",
+    "results": "results",
+    "noBookings": "No bookings found."
+  },
+  "bookingPayments": {
+    "title": "Booking Payments",
+    "outstanding": "Outstanding",
+    "bookings": "bookings",
+    "collected": "Collected",
+    "paid": "paid",
+    "deposits": "Deposits received",
+    "all": "All",
+    "results": "results",
+    "none": "No bookings found."
+  },
+  "bookingClients": {
+    "title": "Booking Clients",
+    "searchPlaceholder": "Search by name…",
+    "clients": "clients",
+    "bookings": "bookings",
+    "last": "Last",
+    "outstanding": "outstanding",
+    "noClients": "No booking clients found. Run a sync to import clients."
+  },
+  "bookingDetail": {
+    "backToList": "All bookings",
+    "booking": "Booking",
+    "date": "Date & time",
+    "duration": "Duration",
+    "customer": "Customer",
+    "phone": "Phone",
+    "serviceType": "Service type",
+    "staff": "Staff",
+    "participants": "Participants",
+    "location": "Location",
+    "amount": "Amount",
+    "notes": "Notes",
+    "obligations": "Payment obligations"
   }
 }

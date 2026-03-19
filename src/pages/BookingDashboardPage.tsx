@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
 
 interface BookingRow {
   id: string
@@ -62,25 +63,26 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, stri
   )
 }
 
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function fmtTime(iso: string, locale: string, timezone: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+function fmtDate(iso: string, locale: string, timezone: string) {
+  return new Date(iso).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })
 }
 
-function fmtCurrency(amount: number | null, currency: string | null) {
+function fmtCurrency(amount: number | null, currency: string | null, locale: string, defaultCurrency: string) {
   if (amount == null) return '—'
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency || 'USD',
+    currency: currency || defaultCurrency,
     minimumFractionDigits: 0,
   }).format(amount)
 }
 
 export default function BookingDashboardPage() {
   const { t } = useTranslation()
+  const { locale, timezone, currency: tenantCurrency } = useLocale()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -126,13 +128,13 @@ export default function BookingDashboardPage() {
         </div>
         <div className="card" style={{ padding: 20 }}>
           <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.monthlyRevenue', 'Revenue this month')}</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{fmtCurrency(data.monthly_revenue, null)}</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{fmtCurrency(data.monthly_revenue, null, locale, tenantCurrency)}</div>
           <div className="helper">{data.monthly_booking_count} {t('bookingDashboard.bookings', 'bookings')}</div>
         </div>
         <div className="card" style={{ padding: 20 }}>
           <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.outstanding', 'Outstanding')}</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: data.outstanding_count > 0 ? '#f59e0b' : undefined }}>
-            {fmtCurrency(data.outstanding_amount, null)}
+            {fmtCurrency(data.outstanding_amount, null, locale, tenantCurrency)}
           </div>
           <div className="helper">{data.outstanding_count} {t('bookingDashboard.unpaid', 'unpaid')}</div>
         </div>
@@ -149,7 +151,7 @@ export default function BookingDashboardPage() {
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ minWidth: 80, fontWeight: 600, fontSize: 14 }}>
-                    {fmtTime(bk.start_at)}
+                    {fmtTime(bk.start_at, locale, timezone)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
@@ -159,7 +161,7 @@ export default function BookingDashboardPage() {
                     <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
                     <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
                     {bk.total_amount != null && (
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtCurrency(bk.total_amount, bk.currency)}</span>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}</span>
                     )}
                   </div>
                 </div>
@@ -183,7 +185,7 @@ export default function BookingDashboardPage() {
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ minWidth: 110, fontWeight: 600, fontSize: 13 }}>
-                    {fmtDate(bk.start_at)} {fmtTime(bk.start_at)}
+                    {fmtDate(bk.start_at, locale, timezone)} {fmtTime(bk.start_at, locale, timezone)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
@@ -192,7 +194,7 @@ export default function BookingDashboardPage() {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
                     {bk.total_amount != null && (
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtCurrency(bk.total_amount, bk.currency)}</span>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}</span>
                     )}
                   </div>
                 </div>

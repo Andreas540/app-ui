@@ -918,10 +918,68 @@
     "connectInstructions": "Ange ditt företagsinlogg och API-nyckel för SimplyBook.me. Hitta din API-nyckel i SimplyBook under Inställningar → API.",
     "companyLogin": "Företagsinlogg",
     "companyLoginPlaceholder": "ditt-foretag",
+    "userLogin": "Administratörse-post",
+    "userLoginPlaceholder": "din@epost.se",
+    "userLoginHelp": "E-postadressen du använder för att logga in på SimplyBook.me.",
     "apiKey": "API-nyckel",
     "apiKeyPlaceholder": "Klistra in din SimplyBook API-nyckel",
     "apiKeyHelp": "Inställningar → API → API-nyckel i din SimplyBook-panel.",
     "connecting": "Ansluter…",
     "connectButton": "Anslut SimplyBook"
+  },
+  "bookingDashboard": {
+    "title": "Bokningar",
+    "todayCount": "Dagens bokningar",
+    "upcomingCount": "Nästa 7 dagarna",
+    "monthlyRevenue": "Intäkter denna månad",
+    "bookings": "bokningar",
+    "outstanding": "Utestående",
+    "unpaid": "obetald",
+    "todaySchedule": "Dagens schema",
+    "nothingToday": "Inga bokningar schemalagda idag.",
+    "upcoming": "Kommande (nästa 7 dagarna)",
+    "viewAll": "Visa alla →"
+  },
+  "bookingsList": {
+    "title": "Alla bokningar",
+    "allStatuses": "Alla statusar",
+    "clearFilters": "Rensa",
+    "results": "resultat",
+    "noBookings": "Inga bokningar hittades."
+  },
+  "bookingPayments": {
+    "title": "Bokningsbetalningar",
+    "outstanding": "Utestående",
+    "bookings": "bokningar",
+    "collected": "Insamlat",
+    "paid": "betald",
+    "deposits": "Mottagna depositioner",
+    "all": "Alla",
+    "results": "resultat",
+    "none": "Inga bokningar hittades."
+  },
+  "bookingClients": {
+    "title": "Bokningskunder",
+    "searchPlaceholder": "Sök på namn…",
+    "clients": "kunder",
+    "bookings": "bokningar",
+    "last": "Senast",
+    "outstanding": "utestående",
+    "noClients": "Inga bokningskunder hittades. Kör en synkronisering för att importera kunder."
+  },
+  "bookingDetail": {
+    "backToList": "Alla bokningar",
+    "booking": "Bokning",
+    "date": "Datum och tid",
+    "duration": "Varaktighet",
+    "customer": "Kund",
+    "phone": "Telefon",
+    "serviceType": "Tjänstetyp",
+    "staff": "Personal",
+    "participants": "Deltagare",
+    "location": "Plats",
+    "amount": "Belopp",
+    "notes": "Anteckningar",
+    "obligations": "Betalningsskyldigheter"
   }
 }

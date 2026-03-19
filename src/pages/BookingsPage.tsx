@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
 
 interface BookingRow {
   id: string
@@ -53,17 +54,17 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, stri
   )
 }
 
-function fmtDateTime(iso: string) {
+function fmtDateTime(iso: string, locale: string, timezone: string) {
   const d = new Date(iso)
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
-    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: timezone }) + ' ' +
+    d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 }
 
-function fmtCurrency(amount: number | null, currency: string | null) {
+function fmtCurrency(amount: number | null, currency: string | null, locale: string, defaultCurrency: string) {
   if (amount == null) return '—'
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency || 'USD',
+    currency: currency || defaultCurrency,
     minimumFractionDigits: 0,
   }).format(amount)
 }
@@ -72,6 +73,7 @@ const BOOKING_STATUSES = ['confirmed', 'pending', 'completed', 'canceled', 'no_s
 
 export default function BookingsPage() {
   const { t } = useTranslation()
+  const { locale, timezone, currency: tenantCurrency } = useLocale()
 
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [total, setTotal] = useState(0)
@@ -164,7 +166,7 @@ export default function BookingsPage() {
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ minWidth: 110, fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
-                    {fmtDateTime(bk.start_at)}
+                    {fmtDateTime(bk.start_at, locale, timezone)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -179,7 +181,7 @@ export default function BookingsPage() {
                     <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
                     <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
                     <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textAlign: 'right' }}>
-                      {fmtCurrency(bk.total_amount, bk.currency)}
+                      {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
                     </span>
                   </div>
                 </div>

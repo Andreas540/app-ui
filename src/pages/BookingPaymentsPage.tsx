@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
 
 interface PaymentSummary {
   collected: number
@@ -53,17 +54,17 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function fmtCurrency(amount: number | null, currency?: string | null) {
+function fmtCurrency(amount: number | null, locale: string, defaultCurrency: string, currency?: string | null) {
   if (amount == null) return '—'
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency || 'USD',
+    currency: currency || defaultCurrency,
     minimumFractionDigits: 0,
   }).format(amount)
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+function fmtDate(iso: string, locale: string, timezone: string) {
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: timezone })
 }
 
 const PAYMENT_STATUSES = [
@@ -74,6 +75,7 @@ const PAYMENT_STATUSES = [
 
 export default function BookingPaymentsPage() {
   const { t } = useTranslation()
+  const { locale, timezone, currency: tenantCurrency } = useLocale()
   const [summary, setSummary] = useState<PaymentSummary | null>(null)
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [total, setTotal] = useState(0)
@@ -124,21 +126,21 @@ export default function BookingPaymentsPage() {
           <div className="card" style={{ padding: 20 }}>
             <div className="helper" style={{ marginBottom: 4 }}>{t('bookingPayments.outstanding', 'Outstanding')}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: summary.outstanding > 0 ? '#f59e0b' : undefined }}>
-              {fmtCurrency(summary.outstanding)}
+              {fmtCurrency(summary.outstanding, locale, tenantCurrency)}
             </div>
             <div className="helper">{summary.outstanding_count} {t('bookingPayments.bookings', 'bookings')}</div>
           </div>
           <div className="card" style={{ padding: 20 }}>
             <div className="helper" style={{ marginBottom: 4 }}>{t('bookingPayments.collected', 'Collected')}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: '#10b981' }}>
-              {fmtCurrency(summary.collected)}
+              {fmtCurrency(summary.collected, locale, tenantCurrency)}
             </div>
             <div className="helper">{summary.paid_count} {t('bookingPayments.paid', 'paid')}</div>
           </div>
           {summary.deposit_received > 0 && (
             <div className="card" style={{ padding: 20 }}>
               <div className="helper" style={{ marginBottom: 4 }}>{t('bookingPayments.deposits', 'Deposits received')}</div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>{fmtCurrency(summary.deposit_received)}</div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>{fmtCurrency(summary.deposit_received, locale, tenantCurrency)}</div>
             </div>
           )}
         </div>
@@ -192,7 +194,7 @@ export default function BookingPaymentsPage() {
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ minWidth: 90, fontSize: 13, color: 'var(--muted)' }}>
-                    {fmtDate(bk.start_at)}
+                    {fmtDate(bk.start_at, locale, timezone)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -205,7 +207,7 @@ export default function BookingPaymentsPage() {
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
                     <StatusBadge status={bk.payment_status} />
                     <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textAlign: 'right' }}>
-                      {fmtCurrency(bk.total_amount, bk.currency)}
+                      {fmtCurrency(bk.total_amount, locale, tenantCurrency, bk.currency)}
                     </span>
                   </div>
                 </div>

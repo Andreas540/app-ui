@@ -212,8 +212,13 @@ async function syncTenant(sql, conn) {
 
         const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
         const endStr = bk.end_date_time ?? bk.end_date ?? `${bk.date ?? ''} ${bk.end_time ?? '00:00:00'}`
-        const startAt = startStr.trim() ? new Date(startStr.trim().replace(' ', 'T') + 'Z') : null
-        const endAt = endStr.trim() ? new Date(endStr.trim().replace(' ', 'T') + 'Z') : null
+        const utcOffsetHours = parseFloat(bk.offset ?? '0') || 0
+        const toUtc = (str) => {
+          const d = new Date(str.trim().replace(' ', 'T') + 'Z')
+          return isNaN(d.getTime()) ? null : new Date(d.getTime() - utcOffsetHours * 3600000)
+        }
+        const startAt = startStr.trim() ? toUtc(startStr) : null
+        const endAt = endStr.trim() ? toUtc(endStr) : null
         if (!startAt || isNaN(startAt.getTime())) continue
 
         const rawStatus = bk.status != null ? String(bk.status).toLowerCase()
