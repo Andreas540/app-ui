@@ -37,8 +37,18 @@ function kickOutToMaintenance() {
 
 async function handleAuthFailure(res: Response) {
   // Backend returns 503 during maintenance - kick everyone out
-  if (res.status === 503 || res.status === 401 || res.status === 403) {
+  if (res.status === 503) {
     kickOutToMaintenance()
+    throw new Error(`Auth blocked (status ${res.status})`)
+  }
+  // Session expired or unauthorized - redirect to login
+  if (res.status === 401 || res.status === 403) {
+    try {
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('userData')
+      localStorage.removeItem('activeTenantId')
+    } catch { /* ignore */ }
+    window.location.replace('/login')
     throw new Error(`Auth blocked (status ${res.status})`)
   }
 }
