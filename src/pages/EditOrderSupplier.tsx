@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
 
 type Product = { id: string; name: string }
@@ -422,10 +423,9 @@ const pRes = await fetch(`${base}/api/product`, {
           </div>
           <div>
             <label>{t('supplierOrders.deliveryDate')}</label>
-            <input
-              type="date"
+            <DateInput
               value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              onChange={v => setDeliveryDate(v)}
               disabled={!delivered}
               style={{ opacity: delivered ? 1 : 0.5 }}
             />
@@ -450,10 +450,9 @@ const pRes = await fetch(`${base}/api/product`, {
           </div>
           <div>
             <label>{t('supplierOrders.inCustomsDate')}</label>
-            <input
-              type="date"
+            <DateInput
               value={inCustomsDate}
-              onChange={(e) => setInCustomsDate(e.target.value)}
+              onChange={v => setInCustomsDate(v)}
               disabled={!inCustoms}
               style={{ opacity: inCustoms ? 1 : 0.5 }}
             />
@@ -478,10 +477,9 @@ const pRes = await fetch(`${base}/api/product`, {
           </div>
           <div>
             <label>{t('supplierOrders.receivedDate')}</label>
-            <input
-              type="date"
+            <DateInput
               value={receivedDate}
-              onChange={(e) => setReceivedDate(e.target.value)}
+              onChange={v => setReceivedDate(v)}
               disabled={!received}
               style={{ opacity: received ? 1 : 0.5 }}
             />
@@ -493,11 +491,11 @@ const pRes = await fetch(`${base}/api/product`, {
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('supplierOrders.orderDate')}</label>
-          <input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
+          <DateInput value={orderDate} onChange={v => setOrderDate(v)} />
         </div>
         <div>
           <label>{t('supplierOrders.estDeliveryDate')}</label>
-          <input type="date" value={estDeliveryDate} onChange={(e) => setEstDeliveryDate(e.target.value)} />
+          <DateInput value={estDeliveryDate} onChange={v => setEstDeliveryDate(v)} />
         </div>
       </div>
 

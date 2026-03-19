@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { useTranslation } from 'react-i18next'
+import { DateInput } from '../components/DateInput'
 
 type Customer = {
   id: string
@@ -362,11 +363,9 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.invoiceDate')}
                           </label>
-                          <input
-                            id="invoice-date"
-                            type="date"
+                          <DateInput
                             value={invoiceDate}
-                            onChange={(e) => setInvoiceDate(e.target.value)}
+                            onChange={v => setInvoiceDate(v)}
                             style={{
                               width: '100%',
                               padding: '8px 12px',
@@ -381,11 +380,9 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.dueDate')}
                           </label>
-                          <input
-                            id="due-date"
-                            type="date"
+                          <DateInput
                             value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
+                            onChange={v => setDueDate(v)}
                             style={{
                               width: '100%',
                               padding: '8px 12px',
@@ -402,11 +399,9 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.estDeliveryDate')}
                           </label>
-                          <input
-                            id="delivery-date"
-                            type="date"
+                          <DateInput
                             value={deliveryDate}
-                            onChange={(e) => setDeliveryDate(e.target.value)}
+                            onChange={v => setDeliveryDate(v)}
                             style={{
                               width: '100%',
                               padding: '8px 12px',

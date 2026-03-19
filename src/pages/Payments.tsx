@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { DateInput } from '../components/DateInput'
 import {
   fetchBootstrap,
   getAuthHeaders,
@@ -485,7 +486,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
             </div>
             <div>
               <label>{t('payments.paymentDate')}</label>
-              <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
+              <DateInput value={date} onChange={v => setDate(v)} style={{ height: CONTROL_H }} />
             </div>
           </div>
 
@@ -617,7 +618,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 </div>
                 <div>
                   <label>{t('payments.paymentDate')}</label>
-                  <input type="date" value={partnerDate} onChange={e=>setPartnerDate(e.target.value)} style={{ height: CONTROL_H }} />
+                  <DateInput value={partnerDate} onChange={v => setPartnerDate(v)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 
@@ -680,7 +681,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 </div>
                 <div>
                   <label>{t('payments.paymentDate')}</label>
-                  <input type="date" value={supplierDate} onChange={e=>setSupplierDate(e.target.value)} style={{ height: CONTROL_H }} />
+                  <DateInput value={supplierDate} onChange={v => setSupplierDate(v)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
 

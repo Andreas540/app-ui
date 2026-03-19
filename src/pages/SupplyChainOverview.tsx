@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatUSAny } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
+import { DateInput } from '../components/DateInput'
 import {
   ResponsiveContainer,
   BarChart,
@@ -597,12 +598,11 @@ export default function SupplyChainOverview() {
             <div className="row row-2col-mobile" style={{ marginBottom: 16 }}>
               <div>
                 <label>{t('supplyChain.from')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={demandCustomFrom}
-                  onChange={(e) => {
-                    setDemandCustomFrom(e.target.value)
-                    if (e.target.value && demandCustomTo) {
+                  onChange={(v) => {
+                    setDemandCustomFrom(v)
+                    if (v && demandCustomTo) {
                       setDemandFilter('custom')
                     }
                   }}
@@ -611,12 +611,11 @@ export default function SupplyChainOverview() {
               </div>
               <div>
                 <label>{t('supplyChain.to')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={demandCustomTo}
-                  onChange={(e) => {
-                    setDemandCustomTo(e.target.value)
-                    if (demandCustomFrom && e.target.value) {
+                  onChange={(v) => {
+                    setDemandCustomTo(v)
+                    if (demandCustomFrom && v) {
                       setDemandFilter('custom')
                     }
                   }}

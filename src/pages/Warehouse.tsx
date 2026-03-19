@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 type InventoryItem = {
   product: string
@@ -265,10 +266,9 @@ export default function Warehouse() {
           {/* RIGHT: Date */}
           <div>
             <label>{t('date')}</label>
-            <input
-              type="date"
+            <DateInput
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={v => setDate(v)}
               style={{ height: CONTROL_H }}
             />
           </div>

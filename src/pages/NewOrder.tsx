@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, createOrder, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 type PartnerRef = { id: string; name: string }
 
@@ -386,10 +387,9 @@ const hasProducts = filteredProducts.length > 0
         </div>
         <div>
           <label>{t('orders.orderDate')}</label>
-          <input
-            type="date"
+          <DateInput
             value={orderDate}
-            onChange={e=>setOrderDate(e.target.value)}
+            onChange={v => setOrderDate(v)}
             style={{ height: CONTROL_H }}
           />
         </div>

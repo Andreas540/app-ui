@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 type PartnerRef = { id: string; name: string }
 
@@ -399,7 +400,7 @@ export default function EditOrder() {
         </div>
         <div>
           <label>{t('orders.orderDate')}</label>
-          <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} style={{ height: CONTROL_H }} />
+          <DateInput value={orderDate} onChange={v => setOrderDate(v)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 

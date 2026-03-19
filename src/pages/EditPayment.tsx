@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { DateInput } from '../components/DateInput'
 import { 
   fetchBootstrap, 
   PAYMENT_TYPES, 
@@ -261,7 +262,7 @@ export default function EditPayment() {
         </div>
         <div>
           <label>{t('editPayment.paymentDate')}</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ height: CONTROL_H }} />
+          <DateInput value={date} onChange={v => setDate(v)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 

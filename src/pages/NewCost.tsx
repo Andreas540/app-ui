@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCostCategories, getCostTypes, createCost, getExistingCosts, updateCost, deleteCost } from '../lib/api';
+import { DateInput } from '../components/DateInput';
 
 interface RecurringDetails {
   recur_kind: 'monthly' | 'weekly' | 'yearly';
@@ -673,22 +674,19 @@ const NewCost = () => {
               <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
                 <div>
                   <label>{t('costs.startDate')}</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={costDate}
-                    onChange={(e) => setCostDate(e.target.value)}
+                    onChange={v => setCostDate(v)}
                     disabled={loading}
                     style={{ height: CONTROL_H }}
                   />
                 </div>
                 <div>
                   <label>{t('costs.endDateOptional')}</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={v => setEndDate(v)}
                     disabled={loading}
-                    min={costDate}
                     style={{ height: CONTROL_H }}
                   />
                 </div>
@@ -697,10 +695,9 @@ const NewCost = () => {
               // Non-recurring: Show single Date field
               <div style={{ marginTop: 12 }}>
                 <label>{t('date')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={costDate}
-                  onChange={(e) => setCostDate(e.target.value)}
+                  onChange={v => setCostDate(v)}
                   disabled={loading}
                   style={{ height: CONTROL_H }}
                 />

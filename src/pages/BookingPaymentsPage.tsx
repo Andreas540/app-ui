@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useLocale } from '../contexts/LocaleContext'
+import { DateInput } from '../components/DateInput'
 
 interface PaymentSummary {
   collected: number
@@ -164,16 +165,14 @@ export default function BookingPaymentsPage() {
             </button>
           ))}
         </div>
-        <input
-          type="date"
+        <DateInput
           value={filterDateFrom}
-          onChange={e => { setFilterDateFrom(e.target.value); setPage(1) }}
+          onChange={v => { setFilterDateFrom(v); setPage(1) }}
           style={{ minWidth: 130 }}
         />
-        <input
-          type="date"
+        <DateInput
           value={filterDateTo}
-          onChange={e => { setFilterDateTo(e.target.value); setPage(1) }}
+          onChange={v => { setFilterDateTo(v); setPage(1) }}
           style={{ minWidth: 130 }}
         />
         <div className="helper" style={{ marginLeft: 'auto' }}>

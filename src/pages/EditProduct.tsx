@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 export default function EditProduct() {
   const { t } = useTranslation()
@@ -172,10 +173,9 @@ export default function EditProduct() {
           
           {costOption === 'specific' && (
             <div style={{ marginTop: 8, marginLeft: 28 }}>
-              <input
-                type="date"
+              <DateInput
                 value={specificDate}
-                onChange={e => setSpecificDate(e.target.value)}
+                onChange={v => setSpecificDate(v)}
                 style={{ width: '100%', maxWidth: 200 }}
               />
             </div>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 type Product = { id: string; name: string }
 
@@ -265,10 +266,9 @@ export default function LaborProduction() {
 
       {/* Date selector */}
       <div style={{ marginTop: 16 }}>
-        <input
-          type="date"
+        <DateInput
           value={selectedDate}
-          onChange={e => setSelectedDate(e.target.value)}
+          onChange={v => setSelectedDate(v)}
           style={{ height: CONTROL_H, width: '100%' }}
         />
 

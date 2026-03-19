@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD, formatLongDate } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 
 type Employee = {
   id: string
@@ -394,10 +395,9 @@ export default function TimeEntry() {
       <div className="row row-2col-mobile" style={{ marginTop: 16 }}>
         <div>
           <label>{t('date')}</label>
-          <input
-            type="date"
+          <DateInput
             value={workDate}
-            onChange={e => setWorkDate(e.target.value)}
+            onChange={v => setWorkDate(v)}
             style={{ height: CONTROL_H, width: '100%' }}
           />
         </div>

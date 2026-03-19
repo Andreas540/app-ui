@@ -4,6 +4,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/api'
 import { todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
@@ -174,10 +175,9 @@ setCustomerType(
           
           {costOption === 'specific' && (
             <div style={{ marginTop: 8, marginLeft: 28 }}>
-              <input
-                type="date"
+              <DateInput
                 value={specificDate}
-                onChange={e => setSpecificDate(e.target.value)}
+                onChange={v => setSpecificDate(v)}
                 style={{ width: '100%', maxWidth: 200 }}
               />
             </div>

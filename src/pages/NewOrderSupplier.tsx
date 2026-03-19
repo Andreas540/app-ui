@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
 
 type Supplier = { id: string; name: string }
@@ -316,11 +317,11 @@ export default function NewOrderSupplier() {
           <div className="row" style={{ marginTop: 12 }}>
             <div>
               <label>{t('supplierOrders.orderDate')}</label>
-              <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} />
+              <DateInput value={orderDate} onChange={v => setOrderDate(v)} />
             </div>
             <div>
               <label>{t('supplierOrders.estDeliveryDate')}</label>
-              <input type="date" value={estDeliveryDate} onChange={e=>setEstDeliveryDate(e.target.value)} />
+              <DateInput value={estDeliveryDate} onChange={v => setEstDeliveryDate(v)} />
             </div>
           </div>
 
