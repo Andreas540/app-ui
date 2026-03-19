@@ -101,6 +101,30 @@ async function runSync(event) {
     `
     syncRunId = syncRunRows[0].id
 
+    // Fetch tenant timezone for correct local→UTC conversion
+    const tenantRows = await sql`SELECT default_timezone FROM tenants WHERE id = ${TENANT_ID} LIMIT 1`
+    const tenantTz = tenantRows[0]?.default_timezone || 'UTC'
+
+    // Convert a SimplyBook local datetime string to UTC using the tenant's IANA timezone.
+    // SimplyBook stores times in the company's local timezone; bk.offset is unreliable.
+    function localToUtc(str) {
+      if (!str || !str.trim()) return null
+      const cleanStr = str.trim().replace(' ', 'T')
+      const approxUtc = new Date(cleanStr + 'Z')
+      if (isNaN(approxUtc.getTime())) return null
+      if (!tenantTz || tenantTz === 'UTC') return approxUtc
+      const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tenantTz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      })
+      const parts = Object.fromEntries(fmt.formatToParts(approxUtc).map(p => [p.type, p.value]))
+      const h = parts.hour === '24' ? '00' : parts.hour
+      const localAtApprox = new Date(`${parts.year}-${parts.month}-${parts.day}T${h}:${parts.minute}:${parts.second}Z`)
+      const offsetMs = localAtApprox.getTime() - approxUtc.getTime()
+      return new Date(approxUtc.getTime() - offsetMs)
+    }
+
     let servicesProcessed = 0
     let clientsProcessed = 0
     let bookingsProcessed = 0
@@ -242,19 +266,12 @@ async function runSync(event) {
         const customerId = clientMap[externalClientId] ?? null
         const serviceId = serviceMap[externalServiceId] ?? null
 
-        // start_date / end_date already contain "YYYY-MM-DD HH:MM:SS"
+        // start_date / end_date already contain "YYYY-MM-DD HH:MM:SS" in company local time
         const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
         const endStr = bk.end_date_time ?? bk.end_date ?? `${bk.date ?? ''} ${bk.end_time ?? '00:00:00'}`
 
-        // SimplyBook times are in the company's local timezone.
-        // offset field is UTC offset in hours (e.g. -5 for EST). Subtract to get UTC.
-        const utcOffsetHours = parseFloat(bk.offset ?? '0') || 0
-        const toUtc = (str) => {
-          const d = new Date(str.trim().replace(' ', 'T') + 'Z') // parsed as UTC (wrong local time)
-          return isNaN(d.getTime()) ? null : new Date(d.getTime() - utcOffsetHours * 3600000)
-        }
-        const startAt = startStr.trim() ? toUtc(startStr) : null
-        const endAt = endStr.trim() ? toUtc(endStr) : null
+        const startAt = startStr.trim() ? localToUtc(startStr) : null
+        const endAt = endStr.trim() ? localToUtc(endStr) : null
         if (!startAt || isNaN(startAt.getTime())) continue
 
         // is_confirm: "1" = confirmed, "0" = pending; fallback to status field

@@ -45,6 +45,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       setCurrencyState(curr);
       setTimezoneState(tz);
       i18n.changeLanguage(lang);
+      document.documentElement.lang = lang;
     }
   }, [user]);
 
@@ -71,6 +72,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
+    document.documentElement.lang = lang;
     const loc = LANGUAGE_TO_LOCALE[lang] || 'en-US';
     setLocaleState(loc);
     saveUserGeo({ language: lang });

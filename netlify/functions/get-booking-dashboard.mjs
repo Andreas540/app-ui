@@ -23,6 +23,10 @@ async function getDashboard(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
+    // Use tenant's timezone for "today" so date boundaries match the business's local day
+    const tenantRows = await sql`SELECT default_timezone FROM tenants WHERE id = ${TENANT_ID} LIMIT 1`
+    const tenantTz = tenantRows[0]?.default_timezone || 'UTC'
+
     // Today's bookings
     const todayBookings = await sql`
       SELECT
@@ -36,8 +40,8 @@ async function getDashboard(event) {
       LEFT JOIN customers c ON c.id = b.customer_id
       LEFT JOIN services  s ON s.id = b.service_id
       WHERE b.tenant_id = ${TENANT_ID}
-        AND b.start_at >= date_trunc('day', now() AT TIME ZONE 'UTC')
-        AND b.start_at <  date_trunc('day', now() AT TIME ZONE 'UTC') + interval '1 day'
+        AND b.start_at >= date_trunc('day', now() AT TIME ZONE ${tenantTz})
+        AND b.start_at <  date_trunc('day', now() AT TIME ZONE ${tenantTz}) + interval '1 day'
         AND b.booking_status NOT IN ('canceled')
       ORDER BY b.start_at ASC
     `
@@ -55,8 +59,8 @@ async function getDashboard(event) {
       LEFT JOIN customers c ON c.id = b.customer_id
       LEFT JOIN services  s ON s.id = b.service_id
       WHERE b.tenant_id = ${TENANT_ID}
-        AND b.start_at >= date_trunc('day', now() AT TIME ZONE 'UTC') + interval '1 day'
-        AND b.start_at <  date_trunc('day', now() AT TIME ZONE 'UTC') + interval '8 days'
+        AND b.start_at >= date_trunc('day', now() AT TIME ZONE ${tenantTz}) + interval '1 day'
+        AND b.start_at <  date_trunc('day', now() AT TIME ZONE ${tenantTz}) + interval '8 days'
         AND b.booking_status NOT IN ('canceled')
       ORDER BY b.start_at ASC
       LIMIT 50
@@ -70,8 +74,8 @@ async function getDashboard(event) {
       FROM bookings
       WHERE tenant_id = ${TENANT_ID}
         AND booking_status IN ('confirmed', 'completed')
-        AND start_at >= date_trunc('month', now() AT TIME ZONE 'UTC')
-        AND start_at <  date_trunc('month', now() AT TIME ZONE 'UTC') + interval '1 month'
+        AND start_at >= date_trunc('month', now() AT TIME ZONE ${tenantTz})
+        AND start_at <  date_trunc('month', now() AT TIME ZONE ${tenantTz}) + interval '1 month'
     `
 
     // Outstanding balances — unpaid or deposit-only
