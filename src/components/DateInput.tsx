@@ -49,13 +49,14 @@ export function DateInput({ value, onChange, style, className, disabled, ...rest
         type="date"
         value={value}
         onChange={e => onChange(e.target.value)}
+        onClick={openPicker}
         disabled={disabled}
         tabIndex={-1}
         aria-hidden="true"
         style={{
           position: 'absolute', top: 0, left: 0,
           width: '100%', height: '100%',
-          opacity: 0, pointerEvents: 'none',
+          opacity: 0, pointerEvents: disabled ? 'none' : 'all',
           cursor: 'pointer',
         }}
         {...rest}
