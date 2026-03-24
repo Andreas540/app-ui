@@ -21,7 +21,7 @@ export function useIdleTimeout(timeoutMs: number, onTimeout: () => void) {
         
         if (token) {
           const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-          await fetch(`${base}/.netlify/functions/log-activity`, {
+          await fetch(`${base}/api/log-activity`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

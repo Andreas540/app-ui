@@ -238,11 +238,22 @@ function MainApp() {
     90 * 60 * 1000, // 15 minutes
     () => {
       console.log('Auto-logout due to inactivity')
-      handleLogout()
+      handleLogout(null) // idle timeout already logged by useIdleTimeout
     }
   )
 
-  const handleLogout = () => {
+  const handleLogout = async (logAction: string | null = 'logout_active') => {
+    if (logAction) {
+      try {
+        const base = apiBase()
+        await fetch(`${base}/api/log-activity`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ action: logAction }),
+        })
+      } catch {}
+    }
+
     try {
       authLogout()
     } catch {}
@@ -488,7 +499,7 @@ useEffect(() => {
                     </NavLink>
                   )}
                   <button
-                    onClick={handleLogout}
+                    onClick={() => handleLogout()}
                     style={{
                       background: 'transparent',
                       border: '1px solid var(--muted)',
@@ -668,7 +679,7 @@ useEffect(() => {
                 )}
 
                 <button
-                  onClick={handleLogout}
+                  onClick={() => handleLogout()}
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--muted)',
