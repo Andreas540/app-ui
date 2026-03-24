@@ -83,6 +83,7 @@ export async function handler(event) {
 
   const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000)
   const windowStartIso = windowStart.toISOString()
+  const windowStartEpoch = Math.floor(windowStart.getTime() / 1000)
 
   try {
     if (!tenantId) {
@@ -90,7 +91,7 @@ export async function handler(event) {
       const rows = await sql`
         SELECT
           GREATEST(0, LEAST(95,
-            FLOOR(EXTRACT(EPOCH FROM (created_at - ${windowStartIso}::timestamptz)) / 900)
+            FLOOR((EXTRACT(EPOCH FROM created_at) - ${windowStartEpoch}) / 900)
           ))::int                                        AS bucket_index,
           action,
           COALESCE(tenant_id::text, 'system')           AS entity_id,
@@ -98,10 +99,10 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          created_at >= ${windowStartIso}::timestamptz
+          created_at >= NOW() - INTERVAL '24 hours'
           AND action NOT IN ('verify_token')
-        GROUP BY bucket_index, action, entity_id, entity_name
-        ORDER BY entity_name, bucket_index
+        GROUP BY 1, 2, 3, 4
+        ORDER BY 4, 1
       `
 
       return cors(200, {
@@ -120,7 +121,7 @@ export async function handler(event) {
       const rows = await sql`
         SELECT
           GREATEST(0, LEAST(95,
-            FLOOR(EXTRACT(EPOCH FROM (created_at - ${windowStartIso}::timestamptz)) / 900)
+            FLOOR((EXTRACT(EPOCH FROM created_at) - ${windowStartEpoch}) / 900)
           ))::int                                        AS bucket_index,
           action,
           COALESCE(user_id::text, 'system')             AS entity_id,
@@ -128,11 +129,11 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          created_at >= ${windowStartIso}::timestamptz
+          created_at >= NOW() - INTERVAL '24 hours'
           AND tenant_id = ${tenantId}::uuid
           AND action NOT IN ('verify_token')
-        GROUP BY bucket_index, action, entity_id, entity_name
-        ORDER BY entity_name, bucket_index
+        GROUP BY 1, 2, 3, 4
+        ORDER BY 4, 1
       `
 
       return cors(200, {
