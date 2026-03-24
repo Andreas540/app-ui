@@ -34,6 +34,11 @@ const FALLBACK_PALETTE = [
   '#2dd4bf', '#38bdf8', '#fb7185',
 ]
 
+function actionLabel(action: string): string {
+  const stripped = action.startsWith('page_view_') ? action.slice('page_view_'.length) : action
+  return stripped.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 function actionColor(action: string): string {
   if (ACTION_COLORS[action]) return ACTION_COLORS[action]
   let h = 0
@@ -97,7 +102,7 @@ function ActivityTooltip({ active, payload, label }: any) {
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
       {items.map((p: any) => (
         <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ color: p.fill }}>{p.dataKey.replace(/_/g, ' ')}</span>
+          <span style={{ color: p.fill }}>{actionLabel(p.dataKey)}</span>
           <span style={{ fontWeight: 600 }}>{p.value}</span>
         </div>
       ))}
@@ -132,7 +137,7 @@ function EntityChart({
         {activeActions.map(a => (
           <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 7, height: 7, borderRadius: 1, background: actionColor(a), flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{a.replace(/_/g, ' ')}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{actionLabel(a)}</span>
           </div>
         ))}
       </div>
