@@ -48,6 +48,7 @@ import { useIdleTimeout } from './hooks/useIdleTimeout'
 import TenantSwitcher from './components/TenantSwitcher'
 import Contact from './pages/Contact'
 import Messages from './pages/Messages'
+import StatsLogs from './pages/StatsLogs'
 import BookingIntegrationPage from './pages/BookingIntegrationPage'
 import BookingDashboardPage from './pages/BookingDashboardPage'
 import BookingsPage from './pages/BookingsPage'
@@ -589,6 +590,11 @@ useEffect(() => {
                     {t('messages')}
                   </NavLink>
                 )}
+                {user?.role === 'super_admin' && (
+                  <NavLink to="/stats-logs" onClick={() => setNavOpen(false)}>
+                    Stats &amp; Logs
+                  </NavLink>
+                )}
 
                 <button
                   onClick={handleLogout}
@@ -686,6 +692,7 @@ useEffect(() => {
                 )}
                 {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
                 {user?.role === 'super_admin' && <Route path="/messages" element={<Messages />} />}
+                {user?.role === 'super_admin' && <Route path="/stats-logs" element={<StatsLogs />} />}
                 {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}
                 {hasFeature('time-entry') && <Route path="/time-entry" element={<TimeEntry />} />}
                 {hasFeature('employees') && <Route path="/employees" element={<EmployeeManagement />} />}
