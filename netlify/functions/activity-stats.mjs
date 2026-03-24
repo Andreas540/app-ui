@@ -91,7 +91,7 @@ export async function handler(event) {
       const rows = await sql`
         SELECT
           GREATEST(0, LEAST(95,
-            FLOOR((EXTRACT(EPOCH FROM created_at) - ${windowStartEpoch}) / 900)
+            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / 900)
           ))::int                                        AS bucket_index,
           action,
           COALESCE(tenant_id::text, 'system')           AS entity_id,
@@ -99,7 +99,7 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          created_at >= NOW() - INTERVAL '24 hours'
+          timestamp >= NOW() - INTERVAL '24 hours'
           AND action NOT IN ('verify_token')
         GROUP BY 1, 2, 3, 4
         ORDER BY 4, 1
@@ -121,7 +121,7 @@ export async function handler(event) {
       const rows = await sql`
         SELECT
           GREATEST(0, LEAST(95,
-            FLOOR((EXTRACT(EPOCH FROM created_at) - ${windowStartEpoch}) / 900)
+            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / 900)
           ))::int                                        AS bucket_index,
           action,
           COALESCE(user_id::text, 'system')             AS entity_id,
@@ -129,7 +129,7 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          created_at >= NOW() - INTERVAL '24 hours'
+          timestamp >= NOW() - INTERVAL '24 hours'
           AND tenant_id = ${tenantId}::uuid
           AND action NOT IN ('verify_token')
         GROUP BY 1, 2, 3, 4
