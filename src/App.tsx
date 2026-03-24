@@ -5,6 +5,7 @@ import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
+import { getAuthHeaders } from './lib/api'
 
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
@@ -156,6 +157,63 @@ function EmployeeShell() {
   )
 }
 
+// ── Page-view action mapping ───────────────────────────────────────────────────
+const PAGE_ACTIONS: Record<string, string> = {
+  '/':                           'page_view_dashboard',
+  '/customers':                  'page_view_customers',
+  '/customers/new':              'page_view_create_customer',
+  '/customers/:id':              'page_view_customer_detail',
+  '/customers/:id/edit':         'page_view_edit_customer',
+  '/partners':                   'page_view_partners',
+  '/partners/new':               'page_view_create_partner',
+  '/partners/:id':               'page_view_partner_detail',
+  '/partners/:id/edit':          'page_view_edit_partner',
+  '/price-checker':              'page_view_price_checker',
+  '/orders/new':                 'page_view_new_order',
+  '/orders/:id/edit':            'page_view_edit_order',
+  '/payments':                   'page_view_payments',
+  '/payments/:id/edit':          'page_view_edit_payment',
+  '/products/new':               'page_view_new_product',
+  '/products/edit':              'page_view_edit_product',
+  '/invoices/create':            'page_view_create_invoice',
+  '/invoices/preview':           'page_view_invoice_preview',
+  '/suppliers':                  'page_view_suppliers',
+  '/suppliers/new':              'page_view_create_supplier',
+  '/suppliers/:id':              'page_view_supplier_detail',
+  '/suppliers/:id/edit':         'page_view_edit_supplier',
+  '/supplier-orders/new':        'page_view_new_supplier_order',
+  '/supplier-orders/:id/edit':   'page_view_edit_supplier_order',
+  '/costs/new':                  'page_view_new_cost',
+  '/warehouse':                  'page_view_warehouse',
+  '/supply-chain':               'page_view_supply_chain',
+  '/labor-production':           'page_view_labor_production',
+  '/time-entry':                 'page_view_time_entry',
+  '/employees':                  'page_view_employees',
+  '/time-approval':              'page_view_time_approval',
+  '/settings':                   'page_view_settings',
+  '/contact':                    'page_view_contact',
+  '/admin':                      'page_view_tenant_admin',
+  '/super-admin':                'page_view_super_admin',
+  '/messages':                   'page_view_messages',
+  '/stats-logs':                 'page_view_stats_logs',
+  '/bookings':                   'page_view_booking_dashboard',
+  '/bookings/list':              'page_view_bookings_list',
+  '/bookings/:id':               'page_view_booking_detail',
+  '/bookings/clients':           'page_view_booking_clients',
+  '/bookings/payments':          'page_view_booking_payments',
+  '/bookings/reminders':         'page_view_booking_reminders',
+  '/bookings/sms-usage':         'page_view_booking_sms_usage',
+  '/bookings/integration':       'page_view_booking_integration',
+}
+
+function pathnameToAction(pathname: string): string | null {
+  // Normalise dynamic segments (UUIDs and numeric IDs → :id)
+  const normalised = pathname
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ':id')
+    .replace(/\/\d+(?=\/|$)/g, '/:id')
+  return PAGE_ACTIONS[normalised] ?? null
+}
+
 function MainApp() {
   const { t } = useTranslation('navigation')
   const location = useLocation()
@@ -253,6 +311,19 @@ function MainApp() {
 
     loadTenants()
   }, [isAuthenticated, user])
+
+  // ── Page-view logging ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const action = pathnameToAction(location.pathname)
+    if (!action) return
+    const base = apiBase()
+    fetch(`${base}/api/log-activity`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ action }),
+    }).catch(() => {})
+  }, [location.pathname, isLoggedIn])
 
   // Auto-redirect from / if user doesn't have dashboard access
 useEffect(() => {
