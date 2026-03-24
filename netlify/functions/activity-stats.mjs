@@ -145,6 +145,6 @@ export async function handler(event) {
     }
   } catch (e) {
     console.error('activity-stats error:', e)
-    return cors(500, { error: 'Failed to fetch activity stats' })
+    return cors(500, { error: 'Failed to fetch activity stats', detail: e?.message || String(e) })
   }
 }
