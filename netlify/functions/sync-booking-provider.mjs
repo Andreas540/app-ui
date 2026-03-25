@@ -382,11 +382,11 @@ async function runSync(event) {
               `
               orderId = orderRow[0].id
 
-              // Service line item (requires service_id and a non-zero amount)
-              if (serviceId && totalAmount != null && totalAmount > 0) {
+              // Service line item — requires service_id; price defaults to 0 if unknown
+              if (serviceId) {
                 await sql`
                   INSERT INTO order_items (order_id, service_id, qty, unit_price)
-                  VALUES (${orderId}, ${serviceId}, 1, ${totalAmount})
+                  VALUES (${orderId}, ${serviceId}, 1, ${totalAmount ?? 0})
                 `
               }
 
