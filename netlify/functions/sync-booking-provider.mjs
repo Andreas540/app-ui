@@ -355,6 +355,8 @@ async function runSync(event) {
             `
             const bookingId = bookingRow[0]?.id
             let orderId = bookingRow[0]?.order_id
+            // Fall back to service_id stored on the booking if current sync didn't map it
+            const effectiveServiceId = serviceId ?? bookingRow[0]?.service_id ?? null
 
             if (bookingId && !orderId) {
               // Atomically get the next order number.
@@ -388,14 +390,14 @@ async function runSync(event) {
             }
 
             // Service line item — add if missing (order may exist from a prior sync attempt)
-            if (bookingId && orderId && serviceId) {
+            if (bookingId && orderId && effectiveServiceId) {
               const existingItem = await sql`
                 SELECT id FROM order_items WHERE order_id = ${orderId} LIMIT 1
               `
               if (!existingItem.length) {
                 await sql`
                   INSERT INTO order_items (order_id, service_id, qty, unit_price)
-                  VALUES (${orderId}, ${serviceId}, 1, ${totalAmount ?? 0})
+                  VALUES (${orderId}, ${effectiveServiceId}, 1, ${totalAmount ?? 0})
                 `
               }
             }
