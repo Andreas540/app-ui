@@ -192,8 +192,8 @@ CREATE TABLE IF NOT EXISTS order_counters (
 );
 
 CREATE TABLE IF NOT EXISTS tenant_order_counters (
-  tenant_id  UUID PRIMARY KEY,
-  last_no    INT NOT NULL DEFAULT 0
+  tenant_id     UUID PRIMARY KEY,
+  last_order_no BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
