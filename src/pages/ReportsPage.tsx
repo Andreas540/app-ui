@@ -154,10 +154,10 @@ function loadOrder(): string[] {
     const s = localStorage.getItem(LS_ORDER)
     if (s) {
       const saved: string[] = JSON.parse(s)
-      // append any new reports not yet in the saved list
-      const merged = [...saved]
-      ALL_REPORTS.forEach(r => { if (!merged.includes(r.id)) merged.push(r.id) })
-      return merged
+      // strip removed reports, append any newly added ones
+      const valid = saved.filter(id => ALL_REPORTS.some(r => r.id === id))
+      ALL_REPORTS.forEach(r => { if (!valid.includes(r.id)) valid.push(r.id) })
+      return valid
     }
   } catch {}
   return ALL_REPORTS.map(r => r.id)
@@ -167,10 +167,10 @@ function loadVisible(): string[] {
     const s = localStorage.getItem(LS_VISIBLE)
     if (s) {
       const saved: string[] = JSON.parse(s)
-      // new reports default to visible
-      const merged = [...saved]
-      ALL_REPORTS.forEach(r => { if (!merged.includes(r.id)) merged.push(r.id) })
-      return merged
+      // strip removed reports, new reports default to visible
+      const valid = saved.filter(id => ALL_REPORTS.some(r => r.id === id))
+      ALL_REPORTS.forEach(r => { if (!valid.includes(r.id)) valid.push(r.id) })
+      return valid
     }
   } catch {}
   return ALL_REPORTS.map(r => r.id)
