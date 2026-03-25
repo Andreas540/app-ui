@@ -514,7 +514,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <option value="">{t('payments.chooseOrder')}</option>
                   {orders.map(o => (
                     <option key={o.id} value={o.id}>
-                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)}{Number(o.balance) > 0 ? ` · Due: $${Number(o.balance).toFixed(2)}` : ''}
+                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
                     </option>
                   ))}
                 </select>

@@ -32,10 +32,18 @@ async function getOrders(event) {
         o.order_date,
         COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
         COALESCE(MAX(p.name), MAX(s.name), 'Service') AS product_name,
-        COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric(12,2) AS paid_amount,
+        COALESCE((
+          SELECT SUM(py.amount) FROM payments py
+          WHERE py.order_id = o.id
+             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+        ), 0)::numeric(12,2) AS paid_amount,
         GREATEST(
           COALESCE(SUM(oi.qty * oi.unit_price), 0) -
-          COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0),
+          COALESCE((
+            SELECT SUM(py.amount) FROM payments py
+            WHERE py.order_id = o.id
+               OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+          ), 0),
           0
         )::numeric(12,2) AS balance
       FROM orders o

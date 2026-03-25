@@ -405,8 +405,15 @@ async function runSync(event) {
             // Create payment record for any amount already collected
             if (bookingId && paidAmount > 0) {
               const existing = await sql`
-                SELECT id FROM payments WHERE booking_id = ${bookingId} LIMIT 1
+                SELECT id, order_id FROM payments WHERE booking_id = ${bookingId} LIMIT 1
               `
+              // Backfill order_id on existing payment if it was created before order linking
+              if (existing.length && !existing[0].order_id && orderId) {
+                await sql`
+                  UPDATE payments SET order_id = ${orderId}
+                  WHERE id = ${existing[0].id}
+                `
+              }
               if (!existing.length) {
                 await sql`
                   INSERT INTO payments (
