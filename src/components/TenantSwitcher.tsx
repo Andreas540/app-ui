@@ -44,7 +44,7 @@ export default function TenantSwitcher() {
     }
   }
 
-  function handleTenantChange(tenantId: string) {
+  async function handleTenantChange(tenantId: string) {
     if (tenantId === '') {
       // Clear tenant - go back to global SuperAdmin mode
       localStorage.removeItem('activeTenantId')
@@ -53,6 +53,26 @@ export default function TenantSwitcher() {
       // Set tenant - impersonate this tenant
       localStorage.setItem('activeTenantId', tenantId)
       setActiveTenantId(tenantId)
+
+      // Pre-fetch user data for the new tenant so the initial render after reload
+      // has the correct tenantId (and Reports/other feature links show immediately)
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const token = localStorage.getItem('authToken')
+        const res = await fetch(`${base}/api/auth-verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'X-Active-Tenant': tenantId,
+          },
+          body: JSON.stringify({ token }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.user) localStorage.setItem('userData', JSON.stringify(data.user))
+        }
+      } catch { /* ignore — verifyToken on reload will fix it */ }
     }
 
     // Reload the page to apply new tenant context
