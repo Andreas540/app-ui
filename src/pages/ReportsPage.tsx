@@ -118,6 +118,7 @@ function ChartSlide({ data, bar1Key, bar2Key, lineKey, computePct }: ChartSlideP
 type ReportDef = {
   id: string
   title: string
+  placeholder?: true
   bar1Key: string
   bar1Label: string
   bar2Key: string
@@ -136,9 +137,10 @@ const ALL_REPORTS: ReportDef[] = [
   {
     id: 'placeholder',
     title: 'Placeholder Report',
-    bar1Key: 'revenue',    bar1Label: 'Bar 1',
-    bar2Key: 'gross_profit', bar2Label: 'Bar 2',
-    lineKey: 'grossPct',
+    placeholder: true,
+    bar1Key: '', bar1Label: '',
+    bar2Key: '', bar2Label: '',
+    lineKey: '',
   },
 ]
 
@@ -146,11 +148,29 @@ const LS_ORDER   = 'reports_order'
 const LS_VISIBLE = 'reports_visible'
 
 function loadOrder(): string[] {
-  try { const s = localStorage.getItem(LS_ORDER);   if (s) return JSON.parse(s) } catch {}
+  try {
+    const s = localStorage.getItem(LS_ORDER)
+    if (s) {
+      const saved: string[] = JSON.parse(s)
+      // append any new reports not yet in the saved list
+      const merged = [...saved]
+      ALL_REPORTS.forEach(r => { if (!merged.includes(r.id)) merged.push(r.id) })
+      return merged
+    }
+  } catch {}
   return ALL_REPORTS.map(r => r.id)
 }
 function loadVisible(): string[] {
-  try { const s = localStorage.getItem(LS_VISIBLE); if (s) return JSON.parse(s) } catch {}
+  try {
+    const s = localStorage.getItem(LS_VISIBLE)
+    if (s) {
+      const saved: string[] = JSON.parse(s)
+      // new reports default to visible
+      const merged = [...saved]
+      ALL_REPORTS.forEach(r => { if (!merged.includes(r.id)) merged.push(r.id) })
+      return merged
+    }
+  } catch {}
   return ALL_REPORTS.map(r => r.id)
 }
 
@@ -287,8 +307,8 @@ export default function ReportsPage() {
                     disabled={idx === 0}
                     title="Move left"
                     style={{
-                      width: 28, height: 28, padding: 0, fontSize: 14,
-                      opacity: idx === 0 ? 0.25 : 1,
+                      width: 28, height: 28, padding: 0, fontSize: 16, fontWeight: 700,
+                      color: '#fff', opacity: idx === 0 ? 0.2 : 1,
                       background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
                     }}
                   >←</button>
@@ -297,33 +317,44 @@ export default function ReportsPage() {
                     disabled={idx === orderedVisible.length - 1}
                     title="Move right"
                     style={{
-                      width: 28, height: 28, padding: 0, fontSize: 14,
-                      opacity: idx === orderedVisible.length - 1 ? 0.25 : 1,
+                      width: 28, height: 28, padding: 0, fontSize: 16, fontWeight: 700,
+                      color: '#fff', opacity: idx === orderedVisible.length - 1 ? 0.2 : 1,
                       background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
                     }}
                   >→</button>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div style={{ display: 'flex', gap: '4px 16px', flexWrap: 'wrap', marginBottom: 6 }}>
-                {[
-                  { color: '#f59e0b', label: report.bar1Label },
-                  { color: '#60a5fa', label: report.bar2Label },
-                ].map(({ color, label }) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
+              {report.placeholder ? (
+                <div style={{
+                  height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '1px dashed var(--border)', borderRadius: 8,
+                  color: 'var(--text-secondary)', fontSize: 13,
+                }}>
+                  Coming soon
+                </div>
+              ) : (
+                <>
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '4px 16px', flexWrap: 'wrap', marginBottom: 6 }}>
+                    {[
+                      { color: '#f59e0b', label: report.bar1Label },
+                      { color: '#60a5fa', label: report.bar2Label },
+                    ].map(({ color, label }) => (
+                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              <ChartSlide
-                data={rpsData}
-                bar1Key={report.bar1Key}
-                bar2Key={report.bar2Key}
-                lineKey={report.lineKey}
-              />
+                  <ChartSlide
+                    data={rpsData}
+                    bar1Key={report.bar1Key}
+                    bar2Key={report.bar2Key}
+                    lineKey={report.lineKey}
+                  />
+                </>
+              )}
             </div>
           ))}
         </div>
