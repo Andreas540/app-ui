@@ -193,13 +193,13 @@ export default function BookingPaymentsPage() {
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--muted)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
                       {fmtDate(bk.start_at, locale, timezone)}
                     </span>
                     <StatusBadge status={bk.payment_status} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
-                    <span style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
                       {bk.customer_name ?? '—'}
                     </span>
                     <span style={{ fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
