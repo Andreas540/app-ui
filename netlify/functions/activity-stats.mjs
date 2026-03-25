@@ -84,6 +84,8 @@ export async function handler(event) {
   const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000)
   const windowStartIso = windowStart.toISOString()
   const windowStartEpoch = Math.floor(windowStart.getTime() / 1000)
+  const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
 
   try {
     if (!tenantId) {
@@ -132,6 +134,7 @@ export async function handler(event) {
           timestamp >= NOW() - INTERVAL '24 hours'
           AND tenant_id = ${tenantId}::uuid
           AND action NOT IN ('verify_token')
+          AND (email IS NULL OR email != ALL(${superAdminEmails}))
         GROUP BY 1, 2, 3, 4
         ORDER BY 4, 1
       `
