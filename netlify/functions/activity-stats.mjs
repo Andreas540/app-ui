@@ -103,6 +103,7 @@ export async function handler(event) {
         WHERE
           timestamp >= NOW() - INTERVAL '24 hours'
           AND action NOT IN ('verify_token')
+          AND (email IS NULL OR email != ALL(${superAdminEmails}))
         GROUP BY 1, 2, 3, 4
         ORDER BY 4, 1
       `
