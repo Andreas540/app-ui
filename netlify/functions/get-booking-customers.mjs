@@ -25,33 +25,61 @@ async function getCustomers(event) {
     const params = event.queryStringParameters || {}
     const q = (params.q || '').trim()
     const page = Math.max(1, parseInt(params.page || '1', 10))
+    const sort = ['name', 'booking_count', 'last_booking'].includes(params.sort) ? params.sort : 'last_booking'
     const perPage = 50
     const offset = (page - 1) * perPage
     const like = q ? `%${q.toLowerCase()}%` : null
 
-    const rows = await sql`
-      SELECT
-        c.id,
-        c.name,
-        c.phone,
-        COUNT(b.id)::int                                      AS booking_count,
-        MAX(b.start_at)                                       AS last_booking_at,
-        COALESCE(SUM(b.total_amount) FILTER (WHERE b.booking_status NOT IN ('canceled')), 0)::numeric(12,2)
-                                                              AS total_booked,
-        COUNT(b.id) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid')
-                              AND b.booking_status NOT IN ('canceled'))::int
-                                                              AS unpaid_count,
-        COALESCE(SUM(b.total_amount) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid')
-                                              AND b.booking_status NOT IN ('canceled')), 0)::numeric(12,2)
-                                                              AS unpaid_amount
-      FROM customers c
-      INNER JOIN bookings b ON b.customer_id = c.id AND b.tenant_id = ${TENANT_ID}
-      WHERE c.tenant_id = ${TENANT_ID}
-        AND (${like}::text IS NULL OR LOWER(c.name) LIKE ${like})
-      GROUP BY c.id, c.name, c.phone
-      ORDER BY last_booking_at DESC NULLS LAST
-      LIMIT ${perPage} OFFSET ${offset}
-    `
+    let rows
+    if (sort === 'name') {
+      rows = await sql`
+        SELECT c.id, c.name, c.phone,
+          COUNT(b.id)::int AS booking_count,
+          MAX(b.start_at)  AS last_booking_at,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS total_booked,
+          COUNT(b.id) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled'))::int AS unpaid_count,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS unpaid_amount
+        FROM customers c
+        INNER JOIN bookings b ON b.customer_id = c.id AND b.tenant_id = ${TENANT_ID}
+        WHERE c.tenant_id = ${TENANT_ID}
+          AND (${like}::text IS NULL OR LOWER(c.name) LIKE ${like})
+        GROUP BY c.id, c.name, c.phone
+        ORDER BY c.name ASC
+        LIMIT ${perPage} OFFSET ${offset}
+      `
+    } else if (sort === 'booking_count') {
+      rows = await sql`
+        SELECT c.id, c.name, c.phone,
+          COUNT(b.id)::int AS booking_count,
+          MAX(b.start_at)  AS last_booking_at,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS total_booked,
+          COUNT(b.id) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled'))::int AS unpaid_count,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS unpaid_amount
+        FROM customers c
+        INNER JOIN bookings b ON b.customer_id = c.id AND b.tenant_id = ${TENANT_ID}
+        WHERE c.tenant_id = ${TENANT_ID}
+          AND (${like}::text IS NULL OR LOWER(c.name) LIKE ${like})
+        GROUP BY c.id, c.name, c.phone
+        ORDER BY booking_count DESC NULLS LAST
+        LIMIT ${perPage} OFFSET ${offset}
+      `
+    } else {
+      rows = await sql`
+        SELECT c.id, c.name, c.phone,
+          COUNT(b.id)::int AS booking_count,
+          MAX(b.start_at)  AS last_booking_at,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS total_booked,
+          COUNT(b.id) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled'))::int AS unpaid_count,
+          COALESCE(SUM(b.total_amount) FILTER (WHERE b.payment_status IN ('unpaid','deposit_paid') AND b.booking_status NOT IN ('canceled')), 0)::numeric(12,2) AS unpaid_amount
+        FROM customers c
+        INNER JOIN bookings b ON b.customer_id = c.id AND b.tenant_id = ${TENANT_ID}
+        WHERE c.tenant_id = ${TENANT_ID}
+          AND (${like}::text IS NULL OR LOWER(c.name) LIKE ${like})
+        GROUP BY c.id, c.name, c.phone
+        ORDER BY last_booking_at DESC NULLS LAST
+        LIMIT ${perPage} OFFSET ${offset}
+      `
+    }
 
     const countRows = await sql`
       SELECT COUNT(DISTINCT c.id)::int AS total

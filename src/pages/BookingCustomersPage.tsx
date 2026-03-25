@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
 
 interface BookingCustomer {
   id: string
@@ -14,6 +15,8 @@ interface BookingCustomer {
   unpaid_amount: number
 }
 
+type SortOption = 'last_booking' | 'name' | 'booking_count'
+
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
@@ -23,23 +26,25 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function fmtCurrency(amount: number) {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount)
+function fmtCurrency(amount: number, locale: string, currency: string) {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount)
 }
 
 export default function BookingCustomersPage() {
   const { t } = useTranslation()
+  const { locale, currency: tenantCurrency } = useLocale()
   const [customers, setCustomers] = useState<BookingCustomer[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('last_booking')
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetchCustomers()
-  }, [page])
+  }, [page, sortBy])
 
   function onSearchChange(val: string) {
     setSearch(val)
@@ -50,11 +55,11 @@ export default function BookingCustomersPage() {
     }, 300)
   }
 
-  async function fetchCustomers(q = search, p = page) {
+  async function fetchCustomers(q = search, p = page, s = sortBy) {
     try {
       setLoading(true)
       setError(null)
-      const params = new URLSearchParams({ page: String(p) })
+      const params = new URLSearchParams({ page: String(p), sort: s })
       if (q) params.set('q', q)
       const res = await fetch(`${apiBase()}/api/get-booking-customers?${params}`, {
         headers: getAuthHeaders(),
@@ -70,6 +75,11 @@ export default function BookingCustomersPage() {
     }
   }
 
+  function onSortChange(val: SortOption) {
+    setSortBy(val)
+    setPage(1)
+  }
+
   const perPage = 50
   const totalPages = Math.ceil(total / perPage)
 
@@ -77,17 +87,30 @@ export default function BookingCustomersPage() {
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
       <h2 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h2>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
+      {/* Search + sort + count */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input
           type="text"
           placeholder={t('bookingClients.searchPlaceholder', 'Search by name…')}
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          style={{ flex: 1, maxWidth: 300 }}
+          style={{ flex: 1, minWidth: 160 }}
         />
-        <div className="helper" style={{ marginLeft: 'auto' }}>
+        <div className="helper" style={{ marginLeft: 'auto', flexShrink: 0 }}>
           {total} {t('bookingClients.clients', 'clients')}
         </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <span className="helper">{t('sortBy', 'Sort by')}:</span>
+        <select
+          value={sortBy}
+          onChange={e => onSortChange(e.target.value as SortOption)}
+          style={{ fontSize: 13 }}
+        >
+          <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
+          <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
+          <option value="name">{t('bookingClients.sortName', 'Name')}</option>
+        </select>
       </div>
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
@@ -100,26 +123,44 @@ export default function BookingCustomersPage() {
         <>
           <div style={{ display: 'grid', gap: 6 }}>
             {customers.map(c => (
-              <Link key={c.id} to={`/customers/${c.id}`} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600 }}>{c.name}</div>
-                    {c.phone && <div className="helper">{c.phone}</div>}
-                  </div>
-                  <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{c.booking_count} {t('bookingClients.bookings', 'bookings')}</div>
-                      <div className="helper">{t('bookingClients.last', 'Last')}: {fmtDate(c.last_booking_at)}</div>
-                    </div>
-                    {c.unpaid_count > 0 && (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: '#f59e0b' }}>{fmtCurrency(c.unpaid_amount)}</div>
-                        <div className="helper" style={{ color: '#f59e0b' }}>{t('bookingClients.outstanding', 'outstanding')}</div>
-                      </div>
-                    )}
-                  </div>
+              <div key={c.id} className="card" style={{ padding: '12px 16px' }}>
+                {/* Row 1: name · outstanding badge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                  <Link to={`/customers/${c.id}`} style={{ textDecoration: 'none', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                      {c.name}
+                    </span>
+                  </Link>
+                  {c.unpaid_count > 0 && (
+                    <span style={{
+                      flexShrink: 0, marginLeft: 8,
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 12,
+                      fontSize: 11, fontWeight: 600,
+                      background: '#f59e0b22', color: '#f59e0b',
+                    }}>
+                      {fmtCurrency(c.unpaid_amount, locale, tenantCurrency)} {t('bookingClients.outstanding', 'outstanding')}
+                    </span>
+                  )}
                 </div>
-              </Link>
+                {/* Row 2: booking count · last booking */}
+                <div style={{ marginBottom: c.phone ? 3 : 0 }}>
+                  <span className="helper">
+                    {c.booking_count} {t('bookingClients.bookings', 'bookings')}
+                    {' · '}
+                    {t('bookingClients.last', 'Last')}: {fmtDate(c.last_booking_at)}
+                  </span>
+                </div>
+                {/* Row 3: phone (clickable) */}
+                {c.phone && (
+                  <a
+                    href={`tel:${c.phone}`}
+                    style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', display: 'block' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {c.phone}
+                  </a>
+                )}
+              </div>
             ))}
           </div>
 
