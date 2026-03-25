@@ -357,10 +357,16 @@ async function runSync(event) {
             let orderId = bookingRow[0]?.order_id
 
             if (bookingId && !orderId) {
-              // Atomically get the next order number
+              // Atomically get the next order number.
+              // On first use, initialize to current max so we never collide with existing orders.
               const counterRow = await sql`
-                INSERT INTO tenant_order_counters (tenant_id, last_order_no) VALUES (${TENANT_ID}, 1)
-                ON CONFLICT (tenant_id) DO UPDATE SET last_order_no = tenant_order_counters.last_order_no + 1
+                INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+                VALUES (
+                  ${TENANT_ID},
+                  (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${TENANT_ID})
+                )
+                ON CONFLICT (tenant_id) DO UPDATE
+                  SET last_order_no = tenant_order_counters.last_order_no + 1
                 RETURNING last_order_no
               `
               const orderNo = counterRow[0].last_order_no
