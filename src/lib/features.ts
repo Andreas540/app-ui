@@ -30,6 +30,7 @@ export const AVAILABLE_FEATURES = {
   'booking-reminders':   { id: 'booking-reminders',   name: 'Reminders',          route: '/bookings/reminders',  category: 'Booking', module: 'booking' },
   'booking-sms-usage':   { id: 'booking-sms-usage',   name: 'SMS Usage',          route: '/bookings/sms-usage',  category: 'Booking', module: 'booking' },
   'booking-integration': { id: 'booking-integration', name: 'Integration',        route: '/bookings/integration',category: 'Booking', module: 'booking' },
+  'new-booking':         { id: 'new-booking',         name: 'New Booking',        route: '/bookings/new',        category: 'Booking', module: 'booking' },
 
   // Financial / Reports
   financial:       { id: 'financial',       name: 'Sales & Profit', route: '/reports',             category: 'Financial', module: 'financial' },
