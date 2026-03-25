@@ -87,30 +87,35 @@ export default function BookingCustomersPage() {
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
       <h2 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h2>
 
-      {/* Search + sort + count */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder={t('bookingClients.searchPlaceholder', 'Search by name…')}
-          value={search}
-          onChange={e => onSearchChange(e.target.value)}
-          style={{ flex: 1, minWidth: 160 }}
-        />
-        <div className="helper" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-          {total} {t('bookingClients.clients', 'clients')}
+      {/* Count (left) + search/sort (right) */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, alignItems: 'stretch' }}>
+        {/* Left: client count */}
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{total}</div>
+          <div className="helper">{t('bookingClients.clients', 'clients')}</div>
         </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-        <span className="helper">{t('sortBy', 'Sort by')}:</span>
-        <select
-          value={sortBy}
-          onChange={e => onSortChange(e.target.value as SortOption)}
-          style={{ fontSize: 13 }}
-        >
-          <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
-          <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
-          <option value="name">{t('bookingClients.sortName', 'Name')}</option>
-        </select>
+        {/* Right: search + sort stacked */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input
+            type="text"
+            placeholder={t('bookingClients.searchPlaceholder', 'Search by name…')}
+            value={search}
+            onChange={e => onSearchChange(e.target.value)}
+            style={{ width: '100%' }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="helper">{t('sortBy', 'Sort by')}:</span>
+            <select
+              value={sortBy}
+              onChange={e => onSortChange(e.target.value as SortOption)}
+              style={{ fontSize: 13 }}
+            >
+              <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
+              <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
+              <option value="name">{t('bookingClients.sortName', 'Name')}</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
