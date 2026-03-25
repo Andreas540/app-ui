@@ -83,7 +83,7 @@ function buildChartData(
 function XTick({ x, y, payload, index }: any) {
   if (index % 8 !== 0) return null
   return (
-    <text x={x} y={y + 10} textAnchor="middle" fontSize={8} style={{ fill: 'var(--text-secondary)' }}>
+    <text x={x} y={y + 10} textAnchor="middle" fontSize={8} fill="#9ca3af">
       {payload.value}
     </text>
   )
@@ -92,7 +92,7 @@ function XTick({ x, y, payload, index }: any) {
 /** Custom Y-axis tick — uses style so CSS variables resolve correctly. */
 function YTick({ x, y, payload }: any) {
   return (
-    <text x={x} y={y + 3} textAnchor="end" fontSize={8} style={{ fill: 'var(--text-secondary)' }}>
+    <text x={x} y={y + 3} textAnchor="end" fontSize={8} fill="#9ca3af">
       {payload.value}
     </text>
   )
