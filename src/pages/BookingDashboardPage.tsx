@@ -115,8 +115,17 @@ export default function BookingDashboardPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null)
 
   const listRef = useRef<HTMLDivElement>(null)
+  const scrollPending = useRef(false)
 
   useEffect(() => { fetchDashboard() }, [])
+
+  // Scroll after React has actually committed the new render
+  useEffect(() => {
+    if (scrollPending.current) {
+      scrollPending.current = false
+      scrollToList()
+    }
+  })
 
   useEffect(() => {
     const month = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}`
@@ -239,13 +248,13 @@ export default function BookingDashboardPage() {
   function handleCardClick(filter: FilterMode) {
     setActiveFilter(filter)
     setSelectedDate(null)
-    setTimeout(scrollToList, 50)
+    scrollPending.current = true
   }
 
   function handleDateClick(dateStr: string) {
     setSelectedDate(dateStr)
     fetchDateData(dateStr, data)
-    setTimeout(scrollToList, 50)
+    scrollPending.current = true
   }
 
   // Build calendar grid
@@ -276,7 +285,7 @@ export default function BookingDashboardPage() {
   if (!data)   return null
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px', paddingBottom: '60vh' }}>
 
       {/* Header with sync button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
