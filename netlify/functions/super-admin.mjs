@@ -168,7 +168,10 @@ async function handlePost(event) {
     const isSuperAdmin = await checkSuperAdmin(sql, userId)
     if (!isSuperAdmin) return cors(403, { error: 'Super admin access required' })
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : event.body
+    const body = JSON.parse(rawBody || '{}')
     const { action } = body
 
     if (action === 'createTenant') {

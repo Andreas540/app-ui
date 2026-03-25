@@ -103,7 +103,10 @@ async function handlePost(event) {
       return cors(403, { error: 'Tenant admin access required' })
     }
 
-    const body = JSON.parse(event.body || '{}')
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : event.body
+    const body = JSON.parse(rawBody || '{}')
     const { action } = body
 
     // Update user's features
