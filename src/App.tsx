@@ -667,7 +667,7 @@ useEffect(() => {
                 )}
                 </>)}
 
-                {(['booking-dashboard','bookings','booking-customers','booking-payments','booking-reminders','booking-sms-usage','booking-integration','new-booking'] as const).some(f => canAccess(f)) && (<>
+                {canAccess('booking-dashboard') && (<>
                   {sectionHeader('booking', t('bookingSection', { ns: 'navigation' }))}
                   {!collapsed['booking'] && (<>
                     <NavLink to="/bookings" end onClick={() => setNavOpen(false)}>
