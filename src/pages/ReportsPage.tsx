@@ -337,11 +337,15 @@ export default function ReportsPage() {
                     onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
                     title="About this report"
                     style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1,
-                      padding: 0, display: 'flex', alignItems: 'center',
+                      width: 20, height: 20, padding: 0, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: '50%', cursor: 'pointer',
+                      background: 'var(--border, rgba(255,255,255,0.15))',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700,
+                      lineHeight: 1,
                     }}
-                  >ℹ</button>
+                  >i</button>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
