@@ -97,20 +97,16 @@ export default function BookingCustomersPage() {
           onChange={e => onSearchChange(e.target.value)}
           style={{ width: '100%' }}
         />
-        {/* empty cell keeps grid aligned */}
-        <div />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="helper" style={{ whiteSpace: 'nowrap' }}>{t('sortBy', 'Sort by')}:</span>
-          <select
-            value={sortBy}
-            onChange={e => onSortChange(e.target.value as SortOption)}
-            style={{ fontSize: 13, flex: 1 }}
-          >
-            <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
-            <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
-            <option value="name">{t('bookingClients.sortName', 'Name')}</option>
-          </select>
-        </div>
+        <span className="helper" style={{ whiteSpace: 'nowrap' }}>{t('sortBy', 'Sort by')}:</span>
+        <select
+          value={sortBy}
+          onChange={e => onSortChange(e.target.value as SortOption)}
+          style={{ width: '100%' }}
+        >
+          <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
+          <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
+          <option value="name">{t('bookingClients.sortName', 'Name')}</option>
+        </select>
       </div>
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
