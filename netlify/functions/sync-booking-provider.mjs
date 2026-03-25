@@ -382,17 +382,22 @@ async function runSync(event) {
               `
               orderId = orderRow[0].id
 
-              // Service line item — requires service_id; price defaults to 0 if unknown
-              if (serviceId) {
+              // Link booking → order
+              await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
+              ordersCreated++
+            }
+
+            // Service line item — add if missing (order may exist from a prior sync attempt)
+            if (bookingId && orderId && serviceId) {
+              const existingItem = await sql`
+                SELECT id FROM order_items WHERE order_id = ${orderId} LIMIT 1
+              `
+              if (!existingItem.length) {
                 await sql`
                   INSERT INTO order_items (order_id, service_id, qty, unit_price)
                   VALUES (${orderId}, ${serviceId}, 1, ${totalAmount ?? 0})
                 `
               }
-
-              // Link booking → order
-              await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
-              ordersCreated++
             }
 
             // Create payment record for any amount already collected
