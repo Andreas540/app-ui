@@ -218,16 +218,28 @@ export default function BookingDashboardPage() {
     }
   }
 
+  function scrollToList() {
+    const el = listRef.current
+    if (!el) return
+    const scrollContainer = el.closest('.content') as HTMLElement | null
+    if (scrollContainer) {
+      const top = el.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top + scrollContainer.scrollTop
+      scrollContainer.scrollTo({ top, behavior: 'smooth' })
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   function handleCardClick(filter: FilterMode) {
     setActiveFilter(filter)
     setSelectedDate(null)
-    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    setTimeout(scrollToList, 50)
   }
 
   function handleDateClick(dateStr: string) {
     setSelectedDate(dateStr)
     fetchDateData(dateStr, data)
-    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    setTimeout(scrollToList, 50)
   }
 
   // Build calendar grid
