@@ -1,6 +1,6 @@
 // src/App.tsx
 import MaintenanceGate from './components/MaintenanceGate'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
@@ -230,7 +230,7 @@ function MainApp() {
     try { return JSON.parse(localStorage.getItem('nav_collapsed') || '{}') } catch { return {} }
   })
 
-  const { isAuthenticated, user, logout: authLogout, hasFeature } = useAuth()
+  const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth } = useAuth()
 
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
@@ -270,6 +270,20 @@ function MainApp() {
 
     window.location.href = '/login'
   }
+
+  // Periodically verify the token so expired sessions redirect to login
+  // without waiting for the idle timeout or an API call to fail.
+  // verifyAuthRef avoids stale closure without restarting the interval on every render.
+  const verifyAuthRef = useRef(verifyAuth)
+  useEffect(() => { verifyAuthRef.current = verifyAuth })
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const id = setInterval(async () => {
+      const valid = await verifyAuthRef.current()
+      if (!valid) window.location.href = '/login'
+    }, 5 * 60 * 1000) // every 5 minutes
+    return () => clearInterval(id)
+  }, [isAuthenticated])
 
   useEffect(() => {
     try {
