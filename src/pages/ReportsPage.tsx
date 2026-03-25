@@ -118,7 +118,7 @@ function ChartSlide({ data, bar1Key, bar2Key, lineKey, computePct }: ChartSlideP
 type ReportDef = {
   id: string
   title: string
-  placeholder?: true
+  description: string
   bar1Key: string
   bar1Label: string
   bar2Key: string
@@ -130,17 +130,18 @@ const ALL_REPORTS: ReportDef[] = [
   {
     id: 'revenue_gross_profit',
     title: 'Revenue & Gross Profit',
+    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
     bar1Key: 'revenue',    bar1Label: 'Revenue',
     bar2Key: 'gross_profit', bar2Label: 'Gross Profit',
     lineKey: 'grossPct',
   },
   {
-    id: 'placeholder',
-    title: 'Placeholder Report',
-    placeholder: true,
-    bar1Key: '', bar1Label: '',
-    bar2Key: '', bar2Label: '',
-    lineKey: '',
+    id: 'revenue_operating_profit',
+    title: 'Revenue & Operating Profit',
+    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.',
+    bar1Key: 'revenue',         bar1Label: 'Revenue',
+    bar2Key: 'operating_profit', bar2Label: 'Operating Profit',
+    lineKey: 'operatingPct',
   },
 ]
 
@@ -183,6 +184,7 @@ export default function ReportsPage() {
   const [order,        setOrder]        = useState<string[]>(loadOrder)
   const [visible,      setVisible]      = useState<string[]>(loadVisible)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [infoOpen, setInfoOpen]         = useState<string | null>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -297,10 +299,50 @@ export default function ReportsPage() {
           gap: 16,
         }}>
           {orderedVisible.map((report, idx) => (
-            <div key={report.id} className="card" style={{ padding: '12px 16px 16px' }}>
+            <div key={report.id} className="card" style={{ padding: '12px 16px 16px', position: 'relative' }}>
+              {/* Info modal overlay */}
+              {infoOpen === report.id && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                    onClick={() => setInfoOpen(null)}
+                  />
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'var(--card, #1e2130)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '16px 20px',
+                    zIndex: 200,
+                    display: 'flex', flexDirection: 'column', gap: 10,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{report.title}</div>
+                      <button
+                        onClick={() => setInfoOpen(null)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                      >✕</button>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {report.description}
+                    </p>
+                  </div>
+                </>
+              )}
               {/* Card header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{report.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{report.title}</span>
+                  <button
+                    onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
+                    title="About this report"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1,
+                      padding: 0, display: 'flex', alignItems: 'center',
+                    }}
+                  >ℹ</button>
+                </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     onClick={() => move(report.id, -1)}
@@ -325,36 +367,24 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {report.placeholder ? (
-                <div style={{
-                  height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px dashed var(--border)', borderRadius: 8,
-                  color: 'var(--text-secondary)', fontSize: 13,
-                }}>
-                  Coming soon
-                </div>
-              ) : (
-                <>
-                  {/* Legend */}
-                  <div style={{ display: 'flex', gap: '4px 16px', flexWrap: 'wrap', marginBottom: 6 }}>
-                    {[
-                      { color: '#f59e0b', label: report.bar1Label },
-                      { color: '#60a5fa', label: report.bar2Label },
-                    ].map(({ color, label }) => (
-                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
-                      </div>
-                    ))}
+              {/* Legend */}
+              <div style={{ display: 'flex', gap: '4px 16px', flexWrap: 'wrap', marginBottom: 6 }}>
+                {[
+                  { color: '#f59e0b', label: report.bar1Label },
+                  { color: '#60a5fa', label: report.bar2Label },
+                ].map(({ color, label }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
                   </div>
-                  <ChartSlide
-                    data={rpsData}
-                    bar1Key={report.bar1Key}
-                    bar2Key={report.bar2Key}
-                    lineKey={report.lineKey}
-                  />
-                </>
-              )}
+                ))}
+              </div>
+              <ChartSlide
+                data={rpsData}
+                bar1Key={report.bar1Key}
+                bar2Key={report.bar2Key}
+                lineKey={report.lineKey}
+              />
             </div>
           ))}
         </div>
