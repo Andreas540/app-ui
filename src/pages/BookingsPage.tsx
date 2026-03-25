@@ -163,25 +163,26 @@ export default function BookingsPage() {
           <div style={{ display: 'grid', gap: 6 }}>
             {bookings.map(bk => (
               <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ minWidth: 110, fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
-                    {fmtDateTime(bk.start_at, locale, timezone)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {bk.customer_name ?? '—'}
-                    </div>
-                    <div className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {bk.service_name ?? '—'}
-                      {bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <div className="card" style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                      {fmtDateTime(bk.start_at, locale, timezone)}
+                    </span>
                     <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
-                    <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
-                    <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textAlign: 'right' }}>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+                    <span style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+                      {bk.customer_name ?? '—'}
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
                       {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
                     </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+                      {bk.service_name ?? '—'}{bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}
+                    </span>
+                    <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
                   </div>
                 </div>
               </Link>
