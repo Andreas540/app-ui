@@ -197,11 +197,12 @@ export default function ReportsPage() {
     return () => { stop = true }
   }, [])
 
-  useEffect(() => { localStorage.setItem(LS_ORDER,   JSON.stringify(order))   }, [order])
-  useEffect(() => { localStorage.setItem(LS_VISIBLE, JSON.stringify(visible)) }, [visible])
-
   function toggleVisible(id: string) {
-    setVisible(v => v.includes(id) ? v.filter(x => x !== id) : [...v, id])
+    setVisible(v => {
+      const next = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
+      localStorage.setItem(LS_VISIBLE, JSON.stringify(next))
+      return next
+    })
   }
 
   function move(id: string, dir: -1 | 1) {
@@ -211,6 +212,7 @@ export default function ReportsPage() {
       const swap = idx + dir
       if (swap < 0 || swap >= next.length) return prev
       ;[next[idx], next[swap]] = [next[swap], next[idx]]
+      localStorage.setItem(LS_ORDER, JSON.stringify(next))
       return next
     })
   }
