@@ -42,7 +42,7 @@ export default function Payments() {
 
   // form - customer payments
   const [entityId, setEntityId] = useState('')
-  const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number }[]>([])
+  const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
@@ -501,7 +501,10 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                     setSelectedOrderId(orderId)
                     if (orderId) {
                       const order = orders.find(o => o.id === orderId)
-                      if (order) setAmountStr(String(order.amount))
+                      if (order) {
+                        const fill = Number(order.balance) > 0 ? order.balance : order.amount
+                        setAmountStr(String(fill))
+                      }
                     } else {
                       setAmountStr('')
                     }
@@ -511,7 +514,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <option value="">{t('payments.chooseOrder')}</option>
                   {orders.map(o => (
                     <option key={o.id} value={o.id}>
-                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)}
+                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)}{Number(o.balance) > 0 ? ` · Due: $${Number(o.balance).toFixed(2)}` : ''}
                     </option>
                   ))}
                 </select>

@@ -30,16 +30,21 @@ async function getOrders(event) {
         o.id,
         o.order_no,
         o.order_date,
-        COALESCE(oi.qty, 1) AS qty,
-        COALESCE(oi.unit_price, 0) AS unit_price,
-        (COALESCE(oi.qty, 1) * COALESCE(oi.unit_price, 0)) AS amount,
-        COALESCE(p.name, s.name, 'Service') AS product_name
+        COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
+        COALESCE(MAX(p.name), MAX(s.name), 'Service') AS product_name,
+        COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric(12,2) AS paid_amount,
+        GREATEST(
+          COALESCE(SUM(oi.qty * oi.unit_price), 0) -
+          COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0),
+          0
+        )::numeric(12,2) AS balance
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
       LEFT JOIN services s ON s.id = oi.service_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${customerId}
+      GROUP BY o.id, o.order_no, o.order_date
       ORDER BY o.order_date DESC, o.order_no DESC
     `;
 
