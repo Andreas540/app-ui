@@ -221,13 +221,19 @@ export default function BookingDashboardPage() {
   function scrollToList() {
     const el = listRef.current
     if (!el) return
-    const scrollContainer = el.closest('.content') as HTMLElement | null
-    if (scrollContainer) {
-      const top = el.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top + scrollContainer.scrollTop
-      scrollContainer.scrollTo({ top, behavior: 'smooth' })
-    } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Walk up to find the first element that actually scrolls
+    let parent: HTMLElement | null = el.parentElement
+    while (parent && parent !== document.documentElement) {
+      const { overflowY } = getComputedStyle(parent)
+      if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
+        const offset = el.getBoundingClientRect().top - parent.getBoundingClientRect().top + parent.scrollTop
+        parent.scrollTo({ top: offset, behavior: 'smooth' })
+        return
+      }
+      parent = parent.parentElement
     }
+    // Fallback: window scroll
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' })
   }
 
   function handleCardClick(filter: FilterMode) {
