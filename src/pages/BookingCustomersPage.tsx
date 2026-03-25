@@ -87,34 +87,29 @@ export default function BookingCustomersPage() {
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
       <h2 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h2>
 
-      {/* Count (left) + search/sort (right) */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20, alignItems: 'stretch' }}>
-        {/* Left: client count */}
-        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{total}</div>
-          <div className="helper">{t('bookingClients.clients', 'clients')}</div>
-        </div>
-        {/* Right: search + sort stacked */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <input
-            type="text"
-            placeholder={t('bookingClients.searchPlaceholder', 'Search by name…')}
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            style={{ width: '100%' }}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="helper">{t('sortBy', 'Sort by')}:</span>
-            <select
-              value={sortBy}
-              onChange={e => onSortChange(e.target.value as SortOption)}
-              style={{ fontSize: 13 }}
-            >
-              <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
-              <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
-              <option value="name">{t('bookingClients.sortName', 'Name')}</option>
-            </select>
-          </div>
+      {/* 2-column grid: count label | search+sort */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 12, rowGap: 8, marginBottom: 20, alignItems: 'center' }}>
+        <span className="helper" style={{ whiteSpace: 'nowrap' }}>{total} {t('bookingClients.clients', 'clients')}</span>
+        <input
+          type="text"
+          placeholder={t('bookingClients.searchPlaceholder', 'Search by name…')}
+          value={search}
+          onChange={e => onSearchChange(e.target.value)}
+          style={{ width: '100%' }}
+        />
+        {/* empty cell keeps grid aligned */}
+        <div />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="helper" style={{ whiteSpace: 'nowrap' }}>{t('sortBy', 'Sort by')}:</span>
+          <select
+            value={sortBy}
+            onChange={e => onSortChange(e.target.value as SortOption)}
+            style={{ fontSize: 13, flex: 1 }}
+          >
+            <option value="last_booking">{t('bookingClients.sortLastBooking', 'Last booking')}</option>
+            <option value="booking_count">{t('bookingClients.sortBookingCount', '# Bookings')}</option>
+            <option value="name">{t('bookingClients.sortName', 'Name')}</option>
+          </select>
         </div>
       </div>
 
@@ -136,7 +131,7 @@ export default function BookingCustomersPage() {
                       {c.name}
                     </span>
                   </Link>
-                  {c.unpaid_count > 0 && (
+                  {c.unpaid_count > 0 && c.unpaid_amount > 0 && (
                     <span style={{
                       flexShrink: 0, marginLeft: 8,
                       display: 'inline-block', padding: '2px 8px', borderRadius: 12,
