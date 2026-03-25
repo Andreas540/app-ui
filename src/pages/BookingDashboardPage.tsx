@@ -496,29 +496,38 @@ function BookingRowCard({
   timezone: string
   tenantCurrency: string
 }) {
+  const time = new Date(bk.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+  const date = showDate
+    ? new Date(bk.start_at).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })
+    : null
+
   return (
     <Link to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
-      <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ minWidth: showDate ? 110 : 80, fontWeight: 600, fontSize: showDate ? 13 : 14 }}>
-          {showDate
-            ? `${new Date(bk.start_at).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })} `
-            : ''}
-          {new Date(bk.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
-          <div className="helper">
-            {bk.service_name ?? '—'}{bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <div className="card" style={{ padding: '12px 16px' }}>
+        {/* Row 1: time/date · booking status */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+            {date ? `${date} · ` : ''}{time}
+          </span>
           <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
-          <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
+        </div>
+        {/* Row 2: customer name · amount */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+          <span style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+            {bk.customer_name ?? '—'}
+          </span>
           {bk.total_amount != null && (
-            <span style={{ fontWeight: 600, fontSize: 14 }}>
+            <span style={{ fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
               {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
             </span>
           )}
+        </div>
+        {/* Row 3: service · payment status */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+            {bk.service_name ?? '—'}{bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}
+          </span>
+          <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
         </div>
       </div>
     </Link>
@@ -533,26 +542,31 @@ function PaymentRowCard({
   timezone: string
   tenantCurrency: string
 }) {
+  const date = new Date(bk.start_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: timezone })
+
   return (
     <Link to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
-      <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ minWidth: 90, fontSize: 13, color: 'var(--muted)' }}>
-          {new Date(bk.start_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: timezone })}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {bk.customer_name ?? '—'}
-          </div>
-          <div className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {bk.service_name ?? '—'}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+      <div className="card" style={{ padding: '12px 16px' }}>
+        {/* Row 1: date · payment status */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>{date}</span>
           <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
-          <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textAlign: 'right' }}>
+        </div>
+        {/* Row 2: customer name · amount */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+          <span style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>
+            {bk.customer_name ?? '—'}
+          </span>
+          <span style={{ fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
             {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
           </span>
         </div>
+        {/* Row 3: service */}
+        {bk.service_name && (
+          <div className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {bk.service_name}
+          </div>
+        )}
       </div>
     </Link>
   )
