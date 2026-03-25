@@ -703,7 +703,7 @@ useEffect(() => {
                         {t('bookingIntegrationNav', { ns: 'navigation' })}
                       </NavLink>
                     )}
-                    {canAccess('booking-dashboard') && (
+                    {canAccess('new-booking') && (
                       <NavLink to="/bookings/new" onClick={() => setNavOpen(false)}>
                         {t('newBooking', { ns: 'navigation' })}
                       </NavLink>
@@ -855,7 +855,7 @@ useEffect(() => {
                 {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
                 {hasFeature('booking-sms-usage') && <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />}
                 {hasFeature('booking-integration') && <Route path="/bookings/integration" element={<BookingIntegrationPage />} />}
-                {hasFeature('booking-dashboard') && <Route path="/bookings/new" element={<NewBookingPage />} />}
+                {hasFeature('new-booking') && <Route path="/bookings/new" element={<NewBookingPage />} />}
 
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
