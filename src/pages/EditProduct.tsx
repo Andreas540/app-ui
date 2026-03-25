@@ -65,7 +65,7 @@ export default function EditProduct() {
       setSaving(true)
       const res = await updateProduct({
         id: selected.id,
-        name,
+        name: selected.category === 'service' ? undefined : name,
         cost: costNum,
         apply_to_history: costOption === 'history',
         effective_date: costOption === 'specific' ? specificDate : undefined,
@@ -109,7 +109,11 @@ export default function EditProduct() {
         <div>
           <label>{t('product')}</label>
           <select value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {products.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.name}{p.category === 'service' ? ' [Service]' : ''}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -120,7 +124,12 @@ export default function EditProduct() {
             placeholder="e.g. ACE Ultra"
             value={newName}
             onChange={e=>setNewName(e.target.value)}
+            disabled={selected?.category === 'service'}
+            title={selected?.category === 'service' ? 'Name is managed by SimplyBook' : undefined}
           />
+          {selected?.category === 'service' && (
+            <p className="helper" style={{ marginTop: 4 }}>Name is synced from SimplyBook and cannot be edited here.</p>
+          )}
         </div>
       </div>
 

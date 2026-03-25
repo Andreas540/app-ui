@@ -24,10 +24,10 @@ if (authz.error) return cors(403, { error: authz.error });
 const TENANT_ID = authz.tenantId;
 
     const rows = await sql`
-      SELECT id, name, cost
+      SELECT id, name, cost, category
       FROM products
       WHERE tenant_id = ${TENANT_ID}
-      ORDER BY name
+      ORDER BY category, name
     `;
     return cors(200, { products: rows });
   } catch (e) {
@@ -113,14 +113,18 @@ if (authz.error) return cors(403, { error: authz.error });
 
 const TENANT_ID = authz.tenantId;
 
-    // Get current cost to check if it changed
+    // Get current record
     const current = await sql`
-      SELECT cost
+      SELECT cost, category
       FROM products
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       LIMIT 1
     `;
     if (current.length === 0) return cors(404, { error: 'Product not found' });
+
+    // Services have their name managed by SimplyBook sync — never overwrite it
+    const isService = current[0].category === 'service';
+    const effectiveName = isService ? undefined : name;
 
     const currentCost = Number(current[0].cost);
     const costChanged = newCostNum !== undefined && newCostNum !== currentCost;
@@ -147,7 +151,7 @@ const TENANT_ID = authz.tenantId;
     // Update product record
     const updatedRows = await sql`
   UPDATE products
-  SET name = COALESCE(${name}, name),
+  SET name = COALESCE(${effectiveName ?? null}, name),
       cost = CASE
         WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum}
         ELSE cost

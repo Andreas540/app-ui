@@ -145,7 +145,16 @@ async function runSync(event) {
         const externalId = String(svc.id ?? '')
         if (!externalId) continue
 
-        await sql`
+        const svcName = svc.name ?? 'Unnamed service'
+        const svcType = svc.type ?? svc.service_type ?? 'other'
+        const svcDesc = svc.description ?? null
+        const svcDuration = parseInt(svc.duration ?? svc.duration_minutes ?? 60, 10)
+        const svcPrice = parseFloat(svc.price ?? svc.price_amount ?? 0)
+        const svcCurrency = svc.currency ?? 'USD'
+        const svcCapacity = svc.capacity ? parseInt(svc.capacity, 10) : null
+        const svcActive = svc.is_active !== false
+
+        const svcRow = await sql`
           INSERT INTO services (
             tenant_id, external_provider, external_service_id,
             name, service_type, description,
@@ -153,16 +162,44 @@ async function runSync(event) {
             capacity, active
           ) VALUES (
             ${TENANT_ID}, ${provider}, ${externalId},
-            ${svc.name ?? 'Unnamed service'},
-            ${svc.type ?? svc.service_type ?? 'other'},
-            ${svc.description ?? null},
-            ${parseInt(svc.duration ?? svc.duration_minutes ?? 60, 10)},
-            ${parseFloat(svc.price ?? svc.price_amount ?? 0)},
-            ${svc.currency ?? 'USD'},
-            ${svc.capacity ? parseInt(svc.capacity, 10) : null},
-            ${svc.is_active !== false}
+            ${svcName}, ${svcType}, ${svcDesc},
+            ${svcDuration}, ${svcPrice}, ${svcCurrency},
+            ${svcCapacity}, ${svcActive}
           )
-          ON CONFLICT DO NOTHING
+          ON CONFLICT (tenant_id, external_provider, external_service_id)
+          DO UPDATE SET
+            name             = EXCLUDED.name,
+            service_type     = EXCLUDED.service_type,
+            description      = EXCLUDED.description,
+            duration_minutes = EXCLUDED.duration_minutes,
+            price_amount     = EXCLUDED.price_amount,
+            currency         = EXCLUDED.currency,
+            capacity         = EXCLUDED.capacity,
+            active           = EXCLUDED.active
+          RETURNING id
+        `
+        const svcId = svcRow[0].id
+
+        // Mirror into unified products table (category='service', same UUID)
+        await sql`
+          INSERT INTO products (
+            id, tenant_id, name, category,
+            external_provider, external_service_id, service_type, description,
+            duration_minutes, price_amount, currency, capacity, active
+          ) VALUES (
+            ${svcId}, ${TENANT_ID}, ${svcName}, 'service',
+            ${provider}, ${externalId}, ${svcType}, ${svcDesc},
+            ${svcDuration}, ${svcPrice}, ${svcCurrency}, ${svcCapacity}, ${svcActive}
+          )
+          ON CONFLICT (id) DO UPDATE SET
+            name             = EXCLUDED.name,
+            service_type     = EXCLUDED.service_type,
+            description      = EXCLUDED.description,
+            duration_minutes = EXCLUDED.duration_minutes,
+            price_amount     = EXCLUDED.price_amount,
+            currency         = EXCLUDED.currency,
+            capacity         = EXCLUDED.capacity,
+            active           = EXCLUDED.active
         `
         servicesProcessed++
       }

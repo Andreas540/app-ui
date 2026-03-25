@@ -382,7 +382,7 @@ export async function createProduct(input: { name: string; cost: number }) {
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {

@@ -192,8 +192,9 @@ export default function NewProduct() {
                 role="listitem"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr auto',
+                  gridTemplateColumns: '1fr auto auto',
                   alignItems: 'center',
+                  gap: 8,
                   padding: '6px 0',
                   borderBottom: '1px solid var(--border, #e6e6e6)'
                 }}
@@ -202,6 +203,11 @@ export default function NewProduct() {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {p.name}
                 </div>
+                {p.category === 'service' && (
+                  <span className="helper" style={{ fontSize: 11, background: 'var(--border, #e6e6e6)', borderRadius: 4, padding: '1px 6px', whiteSpace: 'nowrap' }}>
+                    Service
+                  </span>
+                )}
                 <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {fmtMoney(p.cost ?? 0)}
                 </div>
