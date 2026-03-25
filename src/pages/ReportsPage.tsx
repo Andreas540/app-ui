@@ -1,7 +1,7 @@
 // src/pages/ReportsPage.tsx
 // Financial Reports page — Sales & Profit.
 // Dropdown to select which reports to show; ← → arrows to reorder.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import {
   ResponsiveContainer,
@@ -133,6 +133,13 @@ const ALL_REPORTS: ReportDef[] = [
     bar2Key: 'gross_profit', bar2Label: 'Gross Profit',
     lineKey: 'grossPct',
   },
+  {
+    id: 'placeholder',
+    title: 'Placeholder Report',
+    bar1Key: 'revenue',    bar1Label: 'Bar 1',
+    bar2Key: 'gross_profit', bar2Label: 'Bar 2',
+    lineKey: 'grossPct',
+  },
 ]
 
 const LS_ORDER   = 'reports_order'
@@ -156,6 +163,7 @@ export default function ReportsPage() {
   const [order,        setOrder]        = useState<string[]>(loadOrder)
   const [visible,      setVisible]      = useState<string[]>(loadVisible)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let stop = false
@@ -195,41 +203,58 @@ export default function ReportsPage() {
           <h3 style={{ margin: 0 }}>Sales &amp; Profit</h3>
 
           {/* Report selector */}
-          <div style={{ position: 'relative' }}>
+          <div>
             <button
+              ref={btnRef}
               onClick={() => setDropdownOpen(o => !o)}
               style={{ height: 36, padding: '0 14px', fontSize: 13 }}
             >
               Reports ▾
             </button>
-            {dropdownOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 99 }}
-                  onClick={() => setDropdownOpen(false)}
-                />
-                <div style={{
-                  position: 'absolute', right: 0, top: '100%', marginTop: 4,
-                  background: 'var(--card)', border: '1px solid var(--border)',
-                  borderRadius: 8, padding: '6px 0', zIndex: 100, minWidth: 220,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                }}>
-                  {ALL_REPORTS.map(r => (
-                    <label key={r.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '8px 16px', cursor: 'pointer',
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={visible.includes(r.id)}
-                        onChange={() => toggleVisible(r.id)}
-                      />
-                      <span style={{ fontSize: 13 }}>{r.title}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
+            {dropdownOpen && (() => {
+              const rect = btnRef.current?.getBoundingClientRect()
+              const dropW = 200
+              // Anchor right edge of dropdown to right edge of button, clamped to viewport
+              const rawRight = rect ? window.innerWidth - rect.right : 16
+              const right = Math.max(8, rawRight)
+              const top = rect ? rect.bottom + 4 : 60
+              return (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                    onClick={() => setDropdownOpen(false)}
+                  />
+                  <div style={{
+                    position: 'fixed',
+                    top,
+                    right,
+                    width: dropW,
+                    maxWidth: `calc(100vw - ${right + 8}px)`,
+                    background: 'var(--card, #1e2130)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '4px 0',
+                    zIndex: 100,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                  }}>
+                    {ALL_REPORTS.map(r => (
+                      <label key={r.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '6px 12px', cursor: 'pointer',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={visible.includes(r.id)}
+                          onChange={() => toggleVisible(r.id)}
+                          style={{ width: 14, height: 14, flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: 13 }}>{r.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
       </div>
