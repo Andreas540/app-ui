@@ -32,7 +32,7 @@ export const AVAILABLE_FEATURES = {
   'booking-integration': { id: 'booking-integration', name: 'Integration',        route: '/bookings/integration',category: 'Booking', module: 'booking' },
 
   // Financial / Reports
-  financial:       { id: 'financial',       name: 'Reports',        route: '/reports',             category: 'Financial', module: 'financial' },
+  financial:       { id: 'financial',       name: 'Sales & Profit', route: '/reports',             category: 'Financial', module: 'financial' },
 
   // Admin (always included, not a paid module)
   'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },

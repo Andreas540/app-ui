@@ -568,9 +568,12 @@ useEffect(() => {
                   </NavLink>
                 )}
                 {canAccess('financial') && (
-                  <NavLink to="/reports" onClick={() => setNavOpen(false)}>
-                    Reports
-                  </NavLink>
+                  <>
+                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Reports</div>
+                    <NavLink to="/reports" onClick={() => setNavOpen(false)}>
+                      Sales &amp; Profit
+                    </NavLink>
+                  </>
                 )}
                 <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('supplyChain')}</div>
                 {canAccess('supply-chain') && (
