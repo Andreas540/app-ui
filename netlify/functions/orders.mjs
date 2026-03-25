@@ -30,13 +30,14 @@ async function getOrders(event) {
         o.id,
         o.order_no,
         o.order_date,
-        oi.qty,
-        oi.unit_price,
-        (oi.qty * oi.unit_price) AS amount,
-        p.name AS product_name
+        COALESCE(oi.qty, 1) AS qty,
+        COALESCE(oi.unit_price, 0) AS unit_price,
+        (COALESCE(oi.qty, 1) * COALESCE(oi.unit_price, 0)) AS amount,
+        COALESCE(p.name, s.name, 'Service') AS product_name
       FROM orders o
-      JOIN order_items oi ON oi.order_id = o.id
-      JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+      LEFT JOIN services s ON s.id = oi.service_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${customerId}
       ORDER BY o.order_date DESC, o.order_no DESC
