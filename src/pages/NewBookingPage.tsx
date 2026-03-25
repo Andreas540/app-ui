@@ -1,0 +1,354 @@
+// src/pages/NewBookingPage.tsx
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { fetchBootstrap, getAuthHeaders, listProducts } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
+
+interface ServiceOption {
+  id: string
+  name: string
+  duration_minutes: number | null
+  price_amount: number | null
+  currency: string | null
+}
+
+interface CustomerOption {
+  id: string
+  name: string
+}
+
+function apiBase() {
+  return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+}
+
+function toDateStr(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone,
+  }).formatToParts(date)
+  return [
+    parts.find(p => p.type === 'year')!.value,
+    parts.find(p => p.type === 'month')!.value,
+    parts.find(p => p.type === 'day')!.value,
+  ].join('-')
+}
+
+function addMinutes(timeStr: string, minutes: number): string {
+  const [h, m] = timeStr.split(':').map(Number)
+  const total = h * 60 + m + minutes
+  const hh = Math.floor(total / 60) % 24
+  const mm = total % 60
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+}
+
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+export default function NewBookingPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { locale, timezone } = useLocale()
+
+  const [services, setServices] = useState<ServiceOption[]>([])
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [calCounts, setCalCounts] = useState<Record<string, number>>({})
+
+  const [selectedServiceId, setSelectedServiceId] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [startTime, setStartTime] = useState('09:00')
+  const [priceStr, setPriceStr] = useState('')
+  const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const [calMonth, setCalMonth] = useState<Date>(() => {
+    const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d
+  })
+
+  const formRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const [{ products }, bootstrap] = await Promise.all([
+          listProducts(),
+          fetchBootstrap(),
+        ])
+        setServices(
+          products
+            .filter(p => p.category === 'service')
+            .map(p => ({
+              id: p.id,
+              name: p.name,
+              duration_minutes: (p as any).duration_minutes ?? null,
+              price_amount: (p as any).price_amount ?? null,
+              currency: (p as any).currency ?? null,
+            }))
+        )
+        setCustomers((bootstrap.customers as any[]).map(c => ({ id: c.id, name: c.name })))
+        if (bootstrap.customers.length) setSelectedCustomerId((bootstrap.customers[0] as any).id)
+      } catch { /* silent */ }
+    })()
+  }, [])
+
+  useEffect(() => {
+    const month = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}`
+    ;(async () => {
+      try {
+        const res = await fetch(`${apiBase()}/api/get-booking-calendar?month=${month}`, { headers: getAuthHeaders() })
+        if (!res.ok) return
+        const json = await res.json()
+        setCalCounts(json.counts || {})
+      } catch { /* ignore */ }
+    })()
+  }, [calMonth])
+
+  // When service changes, pre-fill price
+  useEffect(() => {
+    const svc = services.find(s => s.id === selectedServiceId)
+    if (svc) setPriceStr(svc.price_amount != null ? String(svc.price_amount) : '')
+  }, [selectedServiceId, services])
+
+  const selectedService = useMemo(
+    () => services.find(s => s.id === selectedServiceId) ?? null,
+    [services, selectedServiceId]
+  )
+
+  const endTime = useMemo(() => {
+    if (!startTime || !selectedService?.duration_minutes) return null
+    return addMinutes(startTime, selectedService.duration_minutes)
+  }, [startTime, selectedService])
+
+  function handleDateClick(dateStr: string) {
+    setSelectedDate(dateStr)
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  async function save() {
+    if (!selectedServiceId) { alert(t('newBooking.selectServiceFirst')); return }
+    if (!selectedDate)      { alert(t('newBooking.selectDateFirst')); return }
+    if (!selectedCustomerId){ alert(t('newBooking.selectCustomer')); return }
+    if (!startTime)         { alert(t('newBooking.invalidTime')); return }
+
+    const price = Number((priceStr || '0').replace(',', '.'))
+
+    try {
+      setSaving(true)
+      const res = await fetch(`${apiBase()}/api/create-booking`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: selectedServiceId,
+          customer_id: selectedCustomerId,
+          date: selectedDate,
+          start_time: startTime,
+          total_amount: price,
+          notes: notes.trim() || null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`)
+      alert(t('newBooking.saved'))
+      navigate(`/bookings/${json.booking_id}`)
+    } catch (e: any) {
+      alert(e?.message || t('newBooking.errorCreate'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Calendar grid
+  const calYear = calMonth.getFullYear()
+  const calMo = calMonth.getMonth()
+  const firstDow = new Date(calYear, calMo, 1).getDay()
+  const daysInMonth = new Date(calYear, calMo + 1, 0).getDate()
+  const calDays: (number | null)[] = []
+  for (let i = 0; i < firstDow; i++) calDays.push(null)
+  for (let d = 1; d <= daysInMonth; d++) calDays.push(d)
+  const monthLabel = calMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+  const todayStr = toDateStr(new Date(), timezone)
+
+  const dateLabel = selectedDate
+    ? new Date(selectedDate + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })
+    : null
+
+  return (
+    <div className="card" style={{ maxWidth: 720 }}>
+      <h3 style={{ marginBottom: 20 }}>{t('newBooking.title')}</h3>
+
+      {/* Service selector */}
+      <div style={{ marginBottom: 20 }}>
+        <label>{t('bookingReminders.service', 'Service')}</label>
+        {services.length === 0 ? (
+          <p className="helper">{t('newBooking.noServices')}</p>
+        ) : (
+          <select
+            value={selectedServiceId}
+            onChange={e => setSelectedServiceId(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            <option value="">{t('newBooking.selectService')}</option>
+            {services.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name}{s.duration_minutes ? ` (${s.duration_minutes} min)` : ''}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Calendar */}
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <button
+            onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })}
+            style={{ padding: '4px 12px' }}
+          >←</button>
+          <span style={{ fontWeight: 600 }}>{monthLabel}</span>
+          <button
+            onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d })}
+            style={{ padding: '4px 12px' }}
+          >→</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+          {DAY_LABELS.map(dl => (
+            <div key={dl} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--muted)', padding: '4px 0' }}>
+              {dl}
+            </div>
+          ))}
+          {calDays.map((day, i) => {
+            if (day === null) return <div key={`e${i}`} />
+            const dateStr = `${calYear}-${String(calMo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+            const count = calCounts[dateStr] ?? 0
+            const isToday = dateStr === todayStr
+            const isSelected = dateStr === selectedDate
+            return (
+              <div
+                key={dateStr}
+                onClick={() => handleDateClick(dateStr)}
+                style={{
+                  textAlign: 'center',
+                  padding: '5px 2px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  background: isSelected ? 'var(--accent)' : isToday ? 'var(--accent)22' : undefined,
+                  color: isSelected ? '#fff' : undefined,
+                  fontWeight: isToday ? 700 : undefined,
+                  fontSize: 13,
+                }}
+              >
+                <div>{day}</div>
+                {count > 0 && (
+                  <div style={{
+                    fontSize: 10, lineHeight: 1, fontWeight: 600,
+                    color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--accent)',
+                  }}>
+                    {count}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Booking form — shown after date selected */}
+      <div ref={formRef}>
+        {!selectedDate ? (
+          <p className="helper">{t('newBooking.pickDate')}</p>
+        ) : (
+          <>
+            <h4 style={{ marginBottom: 16 }}>{dateLabel}</h4>
+
+            {/* Customer */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <label style={{ margin: 0 }}>{t('newBooking.customer')}</label>
+                <Link to="/customers/new" style={{ fontSize: 13 }}>{t('newBooking.newCustomer')}</Link>
+              </div>
+              <select
+                value={selectedCustomerId}
+                onChange={e => setSelectedCustomerId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Time */}
+            <div className="row" style={{ marginBottom: 12 }}>
+              <div>
+                <label>{t('newBooking.startTime')}</label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={e => setStartTime(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label>{t('newBooking.endTime')}</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={endTime ?? '—'}
+                  style={{ width: '100%', background: 'var(--input-bg, #f5f5f5)', color: 'var(--muted)' }}
+                />
+                {selectedService?.duration_minutes && (
+                  <p className="helper" style={{ marginTop: 4 }}>
+                    {t('newBooking.duration', { min: selectedService.duration_minutes })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div style={{ marginBottom: 12 }}>
+              <label>{t('newBooking.price')}</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={priceStr}
+                onChange={e => setPriceStr(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            {/* Notes */}
+            <div style={{ marginBottom: 12 }}>
+              <label>{t('newBooking.notes')}</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            {/* SMS confirmation — stub */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'not-allowed', opacity: 0.5 }}>
+                <input type="checkbox" disabled style={{ width: 16, height: 16 }} />
+                <span>{t('newBooking.sendSmsComingSoon')}</span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="primary" onClick={save} disabled={saving}>
+                {saving ? t('newBooking.saving') : t('newBooking.save')}
+              </button>
+              <button onClick={() => setSelectedDate(null)} disabled={saving}>
+                {t('cancel', 'Cancel')}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

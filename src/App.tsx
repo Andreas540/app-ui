@@ -58,6 +58,7 @@ import BookingPaymentsPage from './pages/BookingPaymentsPage'
 import BookingRemindersPage from './pages/BookingRemindersPage'
 import BookingSmsUsagePage from './pages/BookingSmsUsagePage'
 import BookingDetailPage from './pages/BookingDetailPage'
+import NewBookingPage from './pages/NewBookingPage'
 import ReportsPage from './pages/ReportsPage'
 
 function apiBase() {
@@ -702,6 +703,11 @@ useEffect(() => {
                         {t('bookingIntegrationNav', { ns: 'navigation' })}
                       </NavLink>
                     )}
+                    {canAccess('bookings') && (
+                      <NavLink to="/bookings/new" onClick={() => setNavOpen(false)}>
+                        {t('newBooking', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
                   </>)}
                 </>)}
 
@@ -849,6 +855,7 @@ useEffect(() => {
                 {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
                 {hasFeature('booking-sms-usage') && <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />}
                 {hasFeature('booking-integration') && <Route path="/bookings/integration" element={<BookingIntegrationPage />} />}
+                {hasFeature('bookings') && <Route path="/bookings/new" element={<NewBookingPage />} />}
 
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
