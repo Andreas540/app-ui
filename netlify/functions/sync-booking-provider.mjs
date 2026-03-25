@@ -128,6 +128,8 @@ async function runSync(event) {
     let servicesProcessed = 0
     let clientsProcessed = 0
     let bookingsProcessed = 0
+    let ordersCreated = 0
+    let paymentsCreated = 0
 
     // ── Step 1: Sync services ──────────────────────────────────────────────
     try {
@@ -339,6 +341,79 @@ async function runSync(event) {
               updated_at       = now()
         `
         bookingsProcessed++
+
+        // ── Create order + payment if not yet linked ───────────────────────
+        // Best-effort: errors here don't fail the sync.
+        if (bookingStatus !== 'canceled' && customerId) {
+          try {
+            const bookingRow = await sql`
+              SELECT id, order_id FROM bookings
+              WHERE tenant_id = ${TENANT_ID}
+                AND external_provider = ${provider}
+                AND external_booking_id = ${externalBookingId}
+              LIMIT 1
+            `
+            const bookingId = bookingRow[0]?.id
+            let orderId = bookingRow[0]?.order_id
+
+            if (bookingId && !orderId) {
+              // Atomically get the next order number
+              const counterRow = await sql`
+                INSERT INTO tenant_order_counters (tenant_id, last_no) VALUES (${TENANT_ID}, 1)
+                ON CONFLICT (tenant_id) DO UPDATE SET last_no = tenant_order_counters.last_no + 1
+                RETURNING last_no
+              `
+              const orderNo = counterRow[0].last_no
+
+              const orderRow = await sql`
+                INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+                VALUES (
+                  ${TENANT_ID}, ${customerId}, ${orderNo},
+                  ${startAt.toISOString().slice(0, 10)},
+                  TRUE, ${bookingId}
+                )
+                RETURNING id
+              `
+              orderId = orderRow[0].id
+
+              // Service line item (requires service_id and a non-zero amount)
+              if (serviceId && totalAmount != null && totalAmount > 0) {
+                await sql`
+                  INSERT INTO order_items (order_id, service_id, qty, unit_price)
+                  VALUES (${orderId}, ${serviceId}, 1, ${totalAmount})
+                `
+              }
+
+              // Link booking → order
+              await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
+              ordersCreated++
+            }
+
+            // Create payment record for any amount already collected
+            if (bookingId && paidAmount > 0) {
+              const existing = await sql`
+                SELECT id FROM payments WHERE booking_id = ${bookingId} LIMIT 1
+              `
+              if (!existing.length) {
+                await sql`
+                  INSERT INTO payments (
+                    tenant_id, customer_id, payment_type,
+                    amount, payment_date,
+                    order_id, booking_id, notes
+                  ) VALUES (
+                    ${TENANT_ID}, ${customerId}, 'booking',
+                    ${paidAmount}, ${startAt.toISOString().slice(0, 10)},
+                    ${orderId ?? null}, ${bookingId},
+                    ${'Booking #' + externalBookingId}
+                  )
+                `
+                paymentsCreated++
+              }
+            }
+          } catch (orderErr) {
+            console.warn(`sync: order/payment creation failed for booking ${externalBookingId} (non-fatal):`, orderErr?.message)
+          }
+        }
       }
 
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
@@ -390,7 +465,7 @@ async function runSync(event) {
     `
 
     const recordsProcessed = servicesProcessed + clientsProcessed + bookingsProcessed
-    console.log(`sync: services=${servicesProcessed} clients=${clientsProcessed} bookings=${bookingsProcessed}`)
+    console.log(`sync: services=${servicesProcessed} clients=${clientsProcessed} bookings=${bookingsProcessed} orders=${ordersCreated} payments=${paymentsCreated}`)
 
     await sql`
       UPDATE sync_runs
@@ -461,6 +536,8 @@ async function runSync(event) {
       services: servicesProcessed,
       clients: clientsProcessed,
       bookings: bookingsProcessed,
+      orders_created: ordersCreated,
+      payments_created: paymentsCreated,
       records_processed: recordsProcessed,
       reminders_scheduled: remindersCreated,
       jobs_cleaned: cleanedCount,
