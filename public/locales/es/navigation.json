@@ -35,5 +35,7 @@
   "bookingPayments": "Pagos",
   "bookingReminders": "Recordatorios",
   "bookingSmsUsage": "Uso de SMS",
-  "bookingIntegrationNav": "Integración"
+  "bookingIntegrationNav": "Integración",
+  "reportsSection": "Informes",
+  "reportsSalesProfit": "Ventas y Beneficios"
 }

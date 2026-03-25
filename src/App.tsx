@@ -597,10 +597,10 @@ useEffect(() => {
                 )}
                 </>)}
                 {canAccess('financial') && (<>
-                  {sectionHeader('reports', 'Reports')}
+                  {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (
                     <NavLink to="/reports" onClick={() => setNavOpen(false)}>
-                      Sales &amp; Profit
+                      {t('reportsSalesProfit')}
                     </NavLink>
                   )}
                 </>)}

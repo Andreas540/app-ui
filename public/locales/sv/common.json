@@ -220,6 +220,9 @@
     "notesPlaceholder": "Valfria anteckningar...",
     "alertSaveFailed": "Misslyckades att spara"
   },
+  "reports": {
+    "pageTitle": "Försäljning och vinst"
+  },
   "dashboard": {
     "totalOwedToMe": "Totalt som skyldes mig",
     "owedToPartners": "Skuld till partners",

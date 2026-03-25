@@ -220,6 +220,9 @@
     "notesPlaceholder": "Notas opcionales...",
     "alertSaveFailed": "Error al guardar"
   },
+  "reports": {
+    "pageTitle": "Ventas y Beneficios"
+  },
   "dashboard": {
     "totalOwedToMe": "Total que me deben",
     "owedToPartners": "Adeudado a socios",

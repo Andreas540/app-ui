@@ -220,6 +220,9 @@
     "notesPlaceholder": "Optional notes...",
     "alertSaveFailed": "Save failed"
   },
+  "reports": {
+    "pageTitle": "Sales & Profit"
+  },
   "dashboard": {
     "totalOwedToMe": "Total owed to me",
     "owedToPartners": "Owed to partners",

@@ -35,5 +35,7 @@
   "bookingPayments": "Payments",
   "bookingReminders": "Reminders",
   "bookingSmsUsage": "SMS Usage",
-  "bookingIntegrationNav": "Integration"
+  "bookingIntegrationNav": "Integration",
+  "reportsSection": "Reports",
+  "reportsSalesProfit": "Sales & Profit"
 }

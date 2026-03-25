@@ -2,6 +2,7 @@
 // Financial Reports page — Sales & Profit.
 // Dropdown to select which reports to show; ← → arrows to reorder.
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import {
   ResponsiveContainer,
@@ -178,6 +179,7 @@ function loadVisible(): string[] {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const { t } = useTranslation()
   const [rpsData,      setRpsData]      = useState<RpsPoint[]>([])
   const [loading,      setLoading]      = useState(true)
   const [err,          setErr]          = useState<string | null>(null)
@@ -222,7 +224,7 @@ export default function ReportsPage() {
       {/* ── Header card ──────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <h3 style={{ margin: 0 }}>Sales &amp; Profit</h3>
+          <h3 style={{ margin: 0 }}>{t('reports.pageTitle')}</h3>
 
           {/* Report selector */}
           <div>
@@ -231,7 +233,7 @@ export default function ReportsPage() {
               onClick={() => setDropdownOpen(o => !o)}
               style={{ height: 36, padding: '0 14px', fontSize: 13 }}
             >
-              Reports ▾
+              {t('reports.pageTitle')} ▾
             </button>
             {dropdownOpen && (() => {
               const rect = btnRef.current?.getBoundingClientRect()

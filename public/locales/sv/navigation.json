@@ -35,5 +35,7 @@
   "bookingPayments": "Betalningar",
   "bookingReminders": "Påminnelser",
   "bookingSmsUsage": "SMS-användning",
-  "bookingIntegrationNav": "Integration"
+  "bookingIntegrationNav": "Integration",
+  "reportsSection": "Rapporter",
+  "reportsSalesProfit": "Försäljning och vinst"
 }
