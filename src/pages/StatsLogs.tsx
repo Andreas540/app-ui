@@ -83,7 +83,16 @@ function buildChartData(
 function XTick({ x, y, payload, index }: any) {
   if (index % 8 !== 0) return null
   return (
-    <text x={x} y={y + 10} textAnchor="middle" fontSize={8} fill="var(--text-secondary)">
+    <text x={x} y={y + 10} textAnchor="middle" fontSize={8} style={{ fill: 'var(--text-secondary)' }}>
+      {payload.value}
+    </text>
+  )
+}
+
+/** Custom Y-axis tick — uses style so CSS variables resolve correctly. */
+function YTick({ x, y, payload }: any) {
+  return (
+    <text x={x} y={y + 3} textAnchor="end" fontSize={8} style={{ fill: 'var(--text-secondary)' }}>
       {payload.value}
     </text>
   )
@@ -155,7 +164,7 @@ function EntityChart({
           <YAxis
             allowDecimals={false}
             width={24}
-            tick={{ fontSize: 8, fill: 'var(--text-secondary)' }}
+            tick={<YTick />}
             tickLine={false}
             axisLine={false}
           />
