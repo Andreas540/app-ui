@@ -119,8 +119,8 @@ export default function BookingPaymentsPage() {
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
-      <h2 style={{ marginBottom: 24 }}>{t('bookingPayments.title', 'Booking Payments')}</h2>
+    <div className="card" style={{ maxWidth: 900 }}>
+      <h3 style={{ marginBottom: 24 }}>{t('bookingPayments.title', 'Booking Payments')}</h3>
 
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 28 }}>

@@ -285,11 +285,11 @@ export default function BookingDashboardPage() {
   if (!data)   return null
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px', paddingBottom: '60vh' }}>
+    <div className="card" style={{ maxWidth: 900, paddingBottom: '60vh' }}>
 
       {/* Header with sync button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>{t('bookingDashboard.title', 'Bookings')}</h2>
+        <h3 style={{ margin: 0 }}>{t('bookingDashboard.title', 'Bookings')}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {syncResult && (
             <span style={{ fontSize: 13, color: syncResult.includes('ailed') ? 'salmon' : '#10b981' }}>

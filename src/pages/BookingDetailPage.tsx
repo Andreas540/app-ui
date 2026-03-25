@@ -128,7 +128,7 @@ export default function BookingDetailPage() {
   if (!booking) return null
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 16px' }}>
+    <div className="card" style={{ maxWidth: 700 }}>
       <div style={{ marginBottom: 20 }}>
         <Link to="/bookings/list" className="helper" style={{ color: 'var(--accent)' }}>
           ← {t('bookingDetail.backToList', 'All bookings')}
@@ -136,9 +136,9 @@ export default function BookingDetailPage() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>
+        <h3 style={{ margin: 0 }}>
           {booking.service_name ?? t('bookingDetail.booking', 'Booking')}
-        </h2>
+        </h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <StatusBadge status={booking.booking_status} map={STATUS_COLORS} />
           <StatusBadge status={booking.payment_status} map={PAYMENT_COLORS} />

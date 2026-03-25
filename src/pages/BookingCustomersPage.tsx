@@ -84,8 +84,8 @@ export default function BookingCustomersPage() {
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
-      <h2 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h2>
+    <div className="card" style={{ maxWidth: 800 }}>
+      <h3 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h3>
 
       {/* 2-column grid: count label | search+sort */}
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 12, rowGap: 8, marginBottom: 20, alignItems: 'center' }}>
