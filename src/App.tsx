@@ -226,6 +226,9 @@ function MainApp() {
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('nav_collapsed') || '{}') } catch { return {} }
+  })
 
   const { isAuthenticated, user, logout: authLogout, hasFeature } = useAuth()
 
@@ -519,9 +522,34 @@ useEffect(() => {
               )
             }
 
+            const toggleSection = (id: string) => {
+              setCollapsed(prev => {
+                const next = { ...prev, [id]: !prev[id] }
+                localStorage.setItem('nav_collapsed', JSON.stringify(next))
+                return next
+              })
+            }
+            const sectionHeader = (id: string, label: string, first = false) => (
+              <button
+                onClick={() => toggleSection(id)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontWeight: 700, color: '#fff', fontSize: 15,
+                  marginTop: first ? 8 : 16, marginBottom: collapsed[id] ? 0 : 8,
+                  paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)',
+                  textAlign: 'left', padding: '0 0 8px 0',
+                }}
+              >
+                <span>{label}</span>
+                <span style={{ fontSize: 10, opacity: 0.6 }}>{collapsed[id] ? '▶' : '▼'}</span>
+              </button>
+            )
+
             return (
               <>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('salesCashFlow')}</div>
+                {sectionHeader('sales', t('salesCashFlow'), true)}
+                {!collapsed['sales'] && (<>
                 {canAccess('dashboard') && (
                   <NavLink to="/" end onClick={() => setNavOpen(false)}>
                     {t('mainDashboard')}
@@ -567,15 +595,17 @@ useEffect(() => {
                     {t('newCost')}
                   </NavLink>
                 )}
-                {canAccess('financial') && (
-                  <>
-                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>Reports</div>
+                </>)}
+                {canAccess('financial') && (<>
+                  {sectionHeader('reports', 'Reports')}
+                  {!collapsed['reports'] && (
                     <NavLink to="/reports" onClick={() => setNavOpen(false)}>
                       Sales &amp; Profit
                     </NavLink>
-                  </>
-                )}
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('supplyChain')}</div>
+                  )}
+                </>)}
+                {sectionHeader('supply', t('supplyChain'))}
+                {!collapsed['supply'] && (<>
                 {canAccess('supply-chain') && (
                   <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
                     {t('supplyDemand')}
@@ -601,8 +631,10 @@ useEffect(() => {
                     {t('suppliers')}
                   </NavLink>
                 )}
+                </>)}
 
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('employeeManagement')}</div>
+                {sectionHeader('labor', t('employeeManagement'))}
+                {!collapsed['labor'] && (<>
                 {canAccess('employees') && (
                   <NavLink to="/employees" onClick={() => setNavOpen(false)}>
                     {t('employees')}
@@ -618,10 +650,11 @@ useEffect(() => {
                     {t('timeEntry')}
                   </NavLink>
                 )}
+                </>)}
 
-                {canAccess('booking-dashboard') && (
-                  <>
-                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('bookingSection', { ns: 'navigation' })}</div>
+                {canAccess('booking-dashboard') && (<>
+                  {sectionHeader('booking', t('bookingSection', { ns: 'navigation' }))}
+                  {!collapsed['booking'] && (<>
                     <NavLink to="/bookings" end onClick={() => setNavOpen(false)}>
                       {t('bookingDashboard', { ns: 'navigation' })}
                     </NavLink>
@@ -655,10 +688,11 @@ useEffect(() => {
                         {t('bookingIntegrationNav', { ns: 'navigation' })}
                       </NavLink>
                     )}
-                  </>
-                )}
+                  </>)}
+                </>)}
 
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('admin')}</div>
+                {sectionHeader('admin', t('admin'))}
+                {!collapsed['admin'] && (<>
                 <NavLink to="/contact" onClick={() => setNavOpen(false)}>
                   {t('contact')}
                 </NavLink>
@@ -687,6 +721,7 @@ useEffect(() => {
                     Stats &amp; Logs
                   </NavLink>
                 )}
+                </>)}
 
                 <button
                   onClick={() => handleLogout()}
