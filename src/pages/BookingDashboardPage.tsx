@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
@@ -25,6 +25,8 @@ interface DashboardData {
   outstanding_count: number
   outstanding_amount: number
 }
+
+type FilterMode = 'today' | '7days' | 'revenue' | 'outstanding'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -58,17 +60,9 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, stri
       color: map[status] ?? '#9ca3af',
       textTransform: 'capitalize',
     }}>
-      {status.replace('_', ' ')}
+      {status.replace(/_/g, ' ')}
     </span>
   )
-}
-
-function fmtTime(iso: string, locale: string, timezone: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
-}
-
-function fmtDate(iso: string, locale: string, timezone: string) {
-  return new Date(iso).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })
 }
 
 function fmtCurrency(amount: number | null, currency: string | null, locale: string, defaultCurrency: string) {
@@ -80,27 +74,69 @@ function fmtCurrency(amount: number | null, currency: string | null, locale: str
   }).format(amount)
 }
 
+function toDateStr(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone,
+  }).formatToParts(date)
+  const y = parts.find(p => p.type === 'year')!.value
+  const m = parts.find(p => p.type === 'month')!.value
+  const d = parts.find(p => p.type === 'day')!.value
+  return `${y}-${m}-${d}`
+}
+
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
 export default function BookingDashboardPage() {
   const { t } = useTranslation()
   const { locale, timezone, currency: tenantCurrency } = useLocale()
+
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [activeFilter, setActiveFilter] = useState<FilterMode>('today')
+
+  // Calendar
+  const [calMonth, setCalMonth] = useState<Date>(() => {
+    const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d
+  })
+  const [calCounts, setCalCounts] = useState<Record<string, number>>({})
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [dateBookings, setDateBookings] = useState<BookingRow[]>([])
+  const [datePayments, setDatePayments] = useState<BookingRow[]>([])
+  const [dateLoading, setDateLoading] = useState(false)
+
+  // Payment list for revenue / outstanding modes
+  const [paymentList, setPaymentList] = useState<BookingRow[]>([])
+  const [paymentLoading, setPaymentLoading] = useState(false)
+
+  // Sync
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
+
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { fetchDashboard() }, [])
+
   useEffect(() => {
-    fetchDashboard()
-  }, [])
+    const month = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}`
+    fetchCalendarCounts(month)
+    setSelectedDate(null)
+  }, [calMonth])
+
+  useEffect(() => {
+    if (activeFilter === 'revenue' || activeFilter === 'outstanding') {
+      fetchPaymentList(activeFilter)
+    }
+  }, [activeFilter])
 
   async function fetchDashboard() {
     try {
       setLoading(true)
       setError(null)
-      const res = await fetch(`${apiBase()}/api/get-booking-dashboard`, {
-        headers: getAuthHeaders(),
-      })
+      const res = await fetch(`${apiBase()}/api/get-booking-dashboard`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      setData(json)
+      setData(await res.json())
     } catch (e: any) {
       setError(e.message || 'Failed to load dashboard')
     } finally {
@@ -108,31 +144,185 @@ export default function BookingDashboardPage() {
     }
   }
 
+  async function fetchCalendarCounts(month: string) {
+    try {
+      const res = await fetch(`${apiBase()}/api/get-booking-calendar?month=${month}`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const json = await res.json()
+      setCalCounts(json.counts || {})
+    } catch { /* optional */ }
+  }
+
+  async function fetchPaymentList(mode: 'revenue' | 'outstanding') {
+    try {
+      setPaymentLoading(true)
+      const now = new Date()
+      const params = new URLSearchParams({ page: '1' })
+      if (mode === 'revenue') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        params.set('date_from', toDateStr(firstDay, timezone))
+        params.set('date_to', toDateStr(lastDay, timezone))
+      } else {
+        params.set('status', 'unpaid')
+      }
+      const res = await fetch(`${apiBase()}/api/get-booking-payments?${params}`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const json = await res.json()
+      setPaymentList(json.bookings || [])
+    } catch { /* ignore */ } finally {
+      setPaymentLoading(false)
+    }
+  }
+
+  async function fetchDateData(dateStr: string, currentData: DashboardData | null) {
+    setDateLoading(true)
+    try {
+      const res = await fetch(`${apiBase()}/api/get-booking-calendar-date?date=${dateStr}`, { headers: getAuthHeaders() })
+      if (res.ok) {
+        const json = await res.json()
+        setDateBookings(json.bookings || [])
+        setDatePayments(json.payments || [])
+      } else {
+        // fallback: filter from already-loaded today/upcoming
+        const allLoaded = [...(currentData?.today ?? []), ...(currentData?.upcoming ?? [])]
+        setDateBookings(allLoaded.filter(bk => toDateStr(new Date(bk.start_at), timezone) === dateStr))
+        setDatePayments([])
+      }
+    } catch {
+      const allLoaded = [...(currentData?.today ?? []), ...(currentData?.upcoming ?? [])]
+      setDateBookings(allLoaded.filter(bk => toDateStr(new Date(bk.start_at), timezone) === dateStr))
+      setDatePayments([])
+    } finally {
+      setDateLoading(false)
+    }
+  }
+
+  async function handleSync() {
+    try {
+      setSyncing(true)
+      setSyncResult(null)
+      const res = await fetch(`${apiBase()}/api/sync-booking-provider`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'simplybook' }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`)
+      setSyncResult(t('bookingIntegration.syncSuccess', { count: json.records_processed ?? 0 }))
+      await fetchDashboard()
+    } catch (e: any) {
+      setSyncResult(e.message || 'Sync failed')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  function handleCardClick(filter: FilterMode) {
+    setActiveFilter(filter)
+    setSelectedDate(null)
+    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
+
+  function handleDateClick(dateStr: string) {
+    setSelectedDate(dateStr)
+    fetchDateData(dateStr, data)
+    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
+
+  // Build calendar grid
+  const calYear = calMonth.getFullYear()
+  const calMo = calMonth.getMonth()
+  const firstDow = new Date(calYear, calMo, 1).getDay()
+  const daysInMonth = new Date(calYear, calMo + 1, 0).getDate()
+  const calDays: (number | null)[] = []
+  for (let i = 0; i < firstDow; i++) calDays.push(null)
+  for (let d = 1; d <= daysInMonth; d++) calDays.push(d)
+  const monthLabel = calMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+  const todayStr = toDateStr(new Date(), timezone)
+
+  function getListTitle(): string {
+    if (selectedDate) {
+      return new Date(selectedDate + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })
+    }
+    switch (activeFilter) {
+      case 'today':       return t('bookingDashboard.todaySchedule', "Today's Schedule")
+      case '7days':       return t('bookingDashboard.upcoming', 'Next 7 Days')
+      case 'revenue':     return t('bookingDashboard.monthlyRevenue', 'Revenue This Month')
+      case 'outstanding': return t('bookingDashboard.outstandingAmount', 'Outstanding Amount')
+    }
+  }
+
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
-  if (error) return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
-  if (!data) return null
+  if (error)   return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
+  if (!data)   return null
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
-      <h2 style={{ marginBottom: 24 }}>{t('bookingDashboard.title', 'Bookings')}</h2>
 
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <div className="card" style={{ padding: 20 }}>
+      {/* Header with sync button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>{t('bookingDashboard.title', 'Bookings')}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {syncResult && (
+            <span style={{ fontSize: 13, color: syncResult.includes('ailed') ? 'salmon' : '#10b981' }}>
+              {syncResult}
+            </span>
+          )}
+          <button onClick={handleSync} disabled={syncing} style={{ opacity: syncing ? 0.6 : 1 }}>
+            {syncing ? t('bookingIntegration.syncing', 'Syncing…') : t('bookingIntegration.syncNow', 'Sync now')}
+          </button>
+        </div>
+      </div>
+
+      {/* Summary cards — 2 rows × 2 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
+        <div
+          className="card"
+          onClick={() => handleCardClick('today')}
+          style={{
+            padding: 20, cursor: 'pointer',
+            outline: activeFilter === 'today' && !selectedDate ? '2px solid var(--accent)' : undefined,
+          }}
+        >
           <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.todayCount', "Today's bookings")}</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{data.today.length}</div>
         </div>
-        <div className="card" style={{ padding: 20 }}>
+
+        <div
+          className="card"
+          onClick={() => handleCardClick('7days')}
+          style={{
+            padding: 20, cursor: 'pointer',
+            outline: activeFilter === '7days' && !selectedDate ? '2px solid var(--accent)' : undefined,
+          }}
+        >
           <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.upcomingCount', 'Next 7 days')}</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{data.upcoming.length}</div>
         </div>
-        <div className="card" style={{ padding: 20 }}>
+
+        <div
+          className="card"
+          onClick={() => handleCardClick('revenue')}
+          style={{
+            padding: 20, cursor: 'pointer',
+            outline: activeFilter === 'revenue' && !selectedDate ? '2px solid var(--accent)' : undefined,
+          }}
+        >
           <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.monthlyRevenue', 'Revenue this month')}</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{fmtCurrency(data.monthly_revenue, null, locale, tenantCurrency)}</div>
           <div className="helper">{data.monthly_booking_count} {t('bookingDashboard.bookings', 'bookings')}</div>
         </div>
-        <div className="card" style={{ padding: 20 }}>
-          <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.outstanding', 'Outstanding')}</div>
+
+        <div
+          className="card"
+          onClick={() => handleCardClick('outstanding')}
+          style={{
+            padding: 20, cursor: 'pointer',
+            outline: activeFilter === 'outstanding' && !selectedDate ? '2px solid var(--accent)' : undefined,
+          }}
+        >
+          <div className="helper" style={{ marginBottom: 4 }}>{t('bookingDashboard.outstandingAmount', 'Outstanding amount')}</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: data.outstanding_count > 0 ? '#f59e0b' : undefined }}>
             {fmtCurrency(data.outstanding_amount, null, locale, tenantCurrency)}
           </div>
@@ -140,69 +330,203 @@ export default function BookingDashboardPage() {
         </div>
       </div>
 
-      {/* Today's schedule */}
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ marginBottom: 16 }}>{t('bookingDashboard.todaySchedule', "Today's Schedule")}</h3>
-        {data.today.length === 0 ? (
-          <div className="helper">{t('bookingDashboard.nothingToday', 'No bookings scheduled today.')}</div>
+      {/* Calendar */}
+      <div className="card" style={{ padding: 20, marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <button
+            onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })}
+            style={{ padding: '4px 12px' }}
+          >←</button>
+          <span style={{ fontWeight: 600 }}>{monthLabel}</span>
+          <button
+            onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d })}
+            style={{ padding: '4px 12px' }}
+          >→</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+          {DAY_LABELS.map(dl => (
+            <div key={dl} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--muted)', padding: '4px 0' }}>
+              {dl}
+            </div>
+          ))}
+          {calDays.map((day, i) => {
+            if (day === null) return <div key={`e${i}`} />
+            const dateStr = `${calYear}-${String(calMo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+            const count = calCounts[dateStr] ?? 0
+            const isToday = dateStr === todayStr
+            const isSelected = dateStr === selectedDate
+            return (
+              <div
+                key={dateStr}
+                onClick={() => handleDateClick(dateStr)}
+                style={{
+                  textAlign: 'center',
+                  padding: '5px 2px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  background: isSelected ? 'var(--accent)' : isToday ? 'var(--accent)22' : undefined,
+                  color: isSelected ? '#fff' : undefined,
+                  fontWeight: isToday ? 700 : undefined,
+                  fontSize: 13,
+                }}
+              >
+                <div>{day}</div>
+                {count > 0 && (
+                  <div style={{
+                    fontSize: 10,
+                    lineHeight: 1,
+                    fontWeight: 600,
+                    color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--accent)',
+                  }}>
+                    {count}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* List section */}
+      <div ref={listRef}>
+        <h3 style={{ marginBottom: 16 }}>{getListTitle()}</h3>
+
+        {selectedDate ? (
+          /* Date-specific view */
+          dateLoading ? (
+            <div className="helper">{t('loading')}</div>
+          ) : dateBookings.length === 0 && datePayments.length === 0 ? (
+            <div className="helper">No bookings or payments for this date.</div>
+          ) : (
+            <>
+              {dateBookings.length > 0 && (
+                <>
+                  {datePayments.length > 0 && (
+                    <div className="helper" style={{ marginBottom: 8, fontWeight: 600 }}>Bookings</div>
+                  )}
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {dateBookings.map(bk => (
+                      <BookingRowCard key={bk.id} bk={bk} showDate locale={locale} timezone={timezone} tenantCurrency={tenantCurrency} />
+                    ))}
+                  </div>
+                </>
+              )}
+              {datePayments.length > 0 && (
+                <>
+                  <div className="helper" style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}>Payments</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {datePayments.map(bk => (
+                      <PaymentRowCard key={bk.id} bk={bk} locale={locale} timezone={timezone} tenantCurrency={tenantCurrency} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )
+        ) : activeFilter === 'today' ? (
+          data.today.length === 0 ? (
+            <div className="helper">{t('bookingDashboard.nothingToday', 'No bookings scheduled today.')}</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {data.today.map(bk => (
+                <BookingRowCard key={bk.id} bk={bk} showDate={false} locale={locale} timezone={timezone} tenantCurrency={tenantCurrency} />
+              ))}
+            </div>
+          )
+        ) : activeFilter === '7days' ? (
+          data.upcoming.length === 0 ? (
+            <div className="helper">No upcoming bookings in the next 7 days.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {data.upcoming.map(bk => (
+                <BookingRowCard key={bk.id} bk={bk} showDate locale={locale} timezone={timezone} tenantCurrency={tenantCurrency} />
+              ))}
+            </div>
+          )
+        ) : paymentLoading ? (
+          <div className="helper">{t('loading')}</div>
+        ) : paymentList.length === 0 ? (
+          <div className="helper">No payments found.</div>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
-            {data.today.map(bk => (
-              <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ minWidth: 80, fontWeight: 600, fontSize: 14 }}>
-                    {fmtTime(bk.start_at, locale, timezone)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
-                    <div className="helper">{bk.service_name ?? '—'}{bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
-                    <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
-                    {bk.total_amount != null && (
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+            {paymentList.map(bk => (
+              <PaymentRowCard key={bk.id} bk={bk} locale={locale} timezone={timezone} tenantCurrency={tenantCurrency} />
             ))}
           </div>
         )}
       </div>
+    </div>
+  )
+}
 
-      {/* Upcoming */}
-      {data.upcoming.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>{t('bookingDashboard.upcoming', 'Upcoming (next 7 days)')}</h3>
-            <Link to="/bookings/list" className="helper" style={{ color: 'var(--accent)' }}>
-              {t('bookingDashboard.viewAll', 'View all →')}
-            </Link>
-          </div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {data.upcoming.map(bk => (
-              <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ minWidth: 110, fontWeight: 600, fontSize: 13 }}>
-                    {fmtDate(bk.start_at, locale, timezone)} {fmtTime(bk.start_at, locale, timezone)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
-                    <div className="helper">{bk.service_name ?? '—'}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
-                    {bk.total_amount != null && (
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
+function BookingRowCard({
+  bk, showDate, locale, timezone, tenantCurrency,
+}: {
+  bk: BookingRow
+  showDate: boolean
+  locale: string
+  timezone: string
+  tenantCurrency: string
+}) {
+  return (
+    <Link to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
+      <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ minWidth: showDate ? 110 : 80, fontWeight: 600, fontSize: showDate ? 13 : 14 }}>
+          {showDate
+            ? `${new Date(bk.start_at).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })} `
+            : ''}
+          {new Date(bk.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600 }}>{bk.customer_name ?? '—'}</div>
+          <div className="helper">
+            {bk.service_name ?? '—'}{bk.assigned_staff_name ? ` · ${bk.assigned_staff_name}` : ''}
           </div>
         </div>
-      )}
-    </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <StatusBadge status={bk.booking_status} map={STATUS_COLORS} />
+          <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
+          {bk.total_amount != null && (
+            <span style={{ fontWeight: 600, fontSize: 14 }}>
+              {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+function PaymentRowCard({
+  bk, locale, timezone, tenantCurrency,
+}: {
+  bk: BookingRow
+  locale: string
+  timezone: string
+  tenantCurrency: string
+}) {
+  return (
+    <Link to={`/bookings/${bk.id}`} style={{ textDecoration: 'none' }}>
+      <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ minWidth: 90, fontSize: 13, color: 'var(--muted)' }}>
+          {new Date(bk.start_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: timezone })}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {bk.customer_name ?? '—'}
+          </div>
+          <div className="helper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {bk.service_name ?? '—'}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+          <StatusBadge status={bk.payment_status} map={PAYMENT_COLORS} />
+          <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textAlign: 'right' }}>
+            {fmtCurrency(bk.total_amount, bk.currency, locale, tenantCurrency)}
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }
