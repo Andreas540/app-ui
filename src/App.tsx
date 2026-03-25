@@ -848,6 +848,7 @@ useEffect(() => {
 
                 {/* Booking module */}
                 {hasFeature('booking-dashboard') && <Route path="/bookings" element={<BookingDashboardPage />} />}
+                {hasFeature('new-booking') && <Route path="/bookings/new" element={<NewBookingPage />} />}
                 {hasFeature('bookings') && <Route path="/bookings/list" element={<BookingsPage />} />}
                 {hasFeature('bookings') && <Route path="/bookings/:id" element={<BookingDetailPage />} />}
                 {hasFeature('booking-customers') && <Route path="/bookings/clients" element={<BookingCustomersPage />} />}
@@ -855,7 +856,6 @@ useEffect(() => {
                 {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
                 {hasFeature('booking-sms-usage') && <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />}
                 {hasFeature('booking-integration') && <Route path="/bookings/integration" element={<BookingIntegrationPage />} />}
-                {hasFeature('new-booking') && <Route path="/bookings/new" element={<NewBookingPage />} />}
 
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
