@@ -146,8 +146,8 @@ const ALL_REPORTS: ReportDef[] = [
   },
 ]
 
-const LS_ORDER   = 'reports_order'
-const LS_VISIBLE = 'reports_visible'
+const LS_ORDER  = 'reports_order'
+const LS_HIDDEN = 'reports_hidden'  // IDs explicitly unchecked by the user
 
 function loadOrder(): string[] {
   try {
@@ -164,13 +164,11 @@ function loadOrder(): string[] {
 }
 function loadVisible(): string[] {
   try {
-    const s = localStorage.getItem(LS_VISIBLE)
+    const s = localStorage.getItem(LS_HIDDEN)
     if (s) {
-      const saved: string[] = JSON.parse(s)
-      // strip removed reports, new reports default to visible
-      const valid = saved.filter(id => ALL_REPORTS.some(r => r.id === id))
-      ALL_REPORTS.forEach(r => { if (!valid.includes(r.id)) valid.push(r.id) })
-      return valid
+      const hidden: string[] = JSON.parse(s)
+      // visible = all reports minus explicitly hidden ones
+      return ALL_REPORTS.map(r => r.id).filter(id => !hidden.includes(id))
     }
   } catch {}
   return ALL_REPORTS.map(r => r.id)
@@ -200,7 +198,8 @@ export default function ReportsPage() {
   function toggleVisible(id: string) {
     setVisible(v => {
       const next = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
-      localStorage.setItem(LS_VISIBLE, JSON.stringify(next))
+      const hidden = ALL_REPORTS.map(r => r.id).filter(rid => !next.includes(rid))
+      localStorage.setItem(LS_HIDDEN, JSON.stringify(hidden))
       return next
     })
   }
