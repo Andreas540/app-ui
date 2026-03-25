@@ -58,6 +58,7 @@ import BookingPaymentsPage from './pages/BookingPaymentsPage'
 import BookingRemindersPage from './pages/BookingRemindersPage'
 import BookingSmsUsagePage from './pages/BookingSmsUsagePage'
 import BookingDetailPage from './pages/BookingDetailPage'
+import ReportsPage from './pages/ReportsPage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -184,6 +185,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/supplier-orders/new':        'page_view_new_supplier_order',
   '/supplier-orders/:id/edit':   'page_view_edit_supplier_order',
   '/costs/new':                  'page_view_new_cost',
+  '/reports':                    'page_view_reports',
   '/warehouse':                  'page_view_warehouse',
   '/supply-chain':               'page_view_supply_chain',
   '/labor-production':           'page_view_labor_production',
@@ -565,6 +567,11 @@ useEffect(() => {
                     {t('newCost')}
                   </NavLink>
                 )}
+                {canAccess('financial') && (
+                  <NavLink to="/reports" onClick={() => setNavOpen(false)}>
+                    Reports
+                  </NavLink>
+                )}
                 <div style={{ fontWeight: 700, color: '#fff', fontSize: 14, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>{t('supplyChain')}</div>
                 {canAccess('supply-chain') && (
                   <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
@@ -767,6 +774,7 @@ useEffect(() => {
                   </>
                 )}
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
+                {hasFeature('financial') && <Route path="/reports" element={<ReportsPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
