@@ -30,15 +30,21 @@ async function getOptions(event) {
         o.id,
         o.order_no,
         o.order_date,
-        COALESCE(o.amount, 0)::numeric(12,2) AS amount,
+        COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
         COALESCE((
           SELECT SUM(py.amount) FROM payments py
           WHERE py.order_id = o.id
+             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
         ), 0)::numeric(12,2) AS paid_amount,
-        GREATEST(COALESCE(o.amount, 0) - COALESCE((
-          SELECT SUM(py.amount) FROM payments py
-          WHERE py.order_id = o.id
-        ), 0), 0)::numeric(12,2) AS balance,
+        GREATEST(
+          COALESCE(SUM(oi.qty * oi.unit_price), 0) -
+          COALESCE((
+            SELECT SUM(py.amount) FROM payments py
+            WHERE py.order_id = o.id
+               OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+          ), 0),
+          0
+        )::numeric(12,2) AS balance,
         COALESCE(MAX(p.name), MAX(s.name)) AS product_name
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -46,11 +52,16 @@ async function getOptions(event) {
       LEFT JOIN services s ON s.id = oi.service_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${customer_id}
-      GROUP BY o.id, o.order_no, o.order_date, o.amount
-      HAVING GREATEST(COALESCE(o.amount, 0) - COALESCE((
-        SELECT SUM(py.amount) FROM payments py
-        WHERE py.order_id = o.id
-      ), 0), 0) > 0
+      GROUP BY o.id, o.order_no, o.order_date
+      HAVING GREATEST(
+        COALESCE(SUM(oi.qty * oi.unit_price), 0) -
+        COALESCE((
+          SELECT SUM(py.amount) FROM payments py
+          WHERE py.order_id = o.id
+             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+        ), 0),
+        0
+      ) > 0
       ORDER BY o.order_date DESC, o.order_no DESC
       LIMIT 20
     `
