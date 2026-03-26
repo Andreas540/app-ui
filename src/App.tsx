@@ -673,6 +673,11 @@ useEffect(() => {
                     <NavLink to="/bookings" end onClick={() => setNavOpen(false)}>
                       {t('bookingDashboard', { ns: 'navigation' })}
                     </NavLink>
+                    {canAccess('new-booking') && (
+                      <NavLink to="/bookings/new" onClick={() => setNavOpen(false)}>
+                        {t('newBooking', { ns: 'navigation' })}
+                      </NavLink>
+                    )}
                     {canAccess('bookings') && (
                       <NavLink to="/bookings/list" onClick={() => setNavOpen(false)}>
                         {t('bookingList', { ns: 'navigation' })}
@@ -701,11 +706,6 @@ useEffect(() => {
                     {canAccess('booking-integration') && (
                       <NavLink to="/bookings/integration" onClick={() => setNavOpen(false)}>
                         {t('bookingIntegrationNav', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('new-booking') && (
-                      <NavLink to="/bookings/new" onClick={() => setNavOpen(false)}>
-                        {t('newBooking', { ns: 'navigation' })}
                       </NavLink>
                     )}
                   </>)}

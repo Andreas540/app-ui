@@ -404,7 +404,7 @@ export default function BookingDashboardPage() {
                     fontSize: 10,
                     lineHeight: 1,
                     fontWeight: 600,
-                    color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--accent)',
+                    color: isSelected ? 'rgba(255,255,255,0.8)' : '#10b981',
                   }}>
                     {count}
                   </div>
