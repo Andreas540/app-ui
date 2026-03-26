@@ -43,6 +43,31 @@ function addMinutes(timeStr: string, minutes: number): string {
 
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const MINUTES = ['00', '15', '30', '45']
+
+function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [h, m] = value.split(':')
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select
+        value={h}
+        onChange={e => onChange(`${e.target.value}:${m}`)}
+        style={{ flex: 1, minWidth: 0 }}
+      >
+        {HOURS.map(hh => <option key={hh} value={hh}>{hh}</option>)}
+      </select>
+      <select
+        value={MINUTES.includes(m) ? m : '00'}
+        onChange={e => onChange(`${h}:${e.target.value}`)}
+        style={{ flex: 1, minWidth: 0 }}
+      >
+        {MINUTES.map(mm => <option key={mm} value={mm}>{mm}</option>)}
+      </select>
+    </div>
+  )
+}
+
 export default function NewBookingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -337,21 +362,11 @@ export default function NewBookingPage() {
             <div className="row" style={{ marginBottom: 12 }}>
               <div style={{ minWidth: 0 }}>
                 <label>{t('newBooking.startTime')}</label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={e => { setStartTime(e.target.value); setEndTimeOverride(null) }}
-                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
-                />
+                <TimePicker value={startTime} onChange={v => { setStartTime(v); setEndTimeOverride(null) }} />
               </div>
               <div style={{ minWidth: 0 }}>
                 <label>{t('newBooking.endTime')}</label>
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={e => setEndTimeOverride(e.target.value)}
-                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
-                />
+                <TimePicker value={endTime || '09:00'} onChange={setEndTimeOverride} />
                 {selectedService?.duration_minutes && !endTimeOverride && (
                   <p className="helper" style={{ marginTop: 4 }}>
                     {t('newBooking.duration', { min: selectedService.duration_minutes })}
