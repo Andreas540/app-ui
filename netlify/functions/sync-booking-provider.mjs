@@ -166,7 +166,7 @@ async function runSync(event) {
             ${svcDuration}, ${svcPrice}, ${svcCurrency},
             ${svcCapacity}, ${svcActive}
           )
-          ON CONFLICT (tenant_id, external_provider, external_service_id)
+          ON CONFLICT (tenant_id, external_provider, external_service_id) WHERE external_service_id IS NOT NULL
           DO UPDATE SET
             name             = EXCLUDED.name,
             service_type     = EXCLUDED.service_type,
@@ -590,7 +590,7 @@ async function runSync(event) {
                 ${rule.channel}, ${rule.template_key},
                 ${scheduledFor.toISOString()}, 'queued', false, false
               )
-              ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for)
+              ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for) WHERE booking_id IS NOT NULL
                 DO NOTHING
             `
             remindersCreated++
