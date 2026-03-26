@@ -207,13 +207,13 @@ async function runSync(event) {
       console.warn('sync: service list fetch failed (non-fatal):', svcErr?.message)
     }
 
-    // Build service lookup: externalServiceId → our services.id
+    // Build service lookup: externalServiceId → { id, price_amount }
     const serviceRows = await sql`
-      SELECT id, external_service_id
+      SELECT id, external_service_id, price_amount
       FROM services
       WHERE tenant_id = ${TENANT_ID} AND external_provider = ${provider}
     `
-    const serviceMap = Object.fromEntries(serviceRows.map(r => [r.external_service_id, r.id]))
+    const serviceMap = Object.fromEntries(serviceRows.map(r => [r.external_service_id, { id: r.id, price: r.price_amount }]))
 
     // ── Step 2: Sync clients → customers ──────────────────────────────────
     // getClientList(searchString, limit) — no pagination, fetch up to 500
@@ -303,7 +303,10 @@ async function runSync(event) {
         const externalServiceId = String(bk.event_id ?? bk.service_id ?? '')
 
         const customerId = clientMap[externalClientId] ?? null
-        const serviceId = serviceMap[externalServiceId] ?? null
+        const serviceEntry = serviceMap[externalServiceId] ?? null
+        const serviceId = serviceEntry?.id ?? null
+        const servicePrice = serviceEntry?.price ?? null
+        if (!serviceId) console.warn(`sync: booking ${externalBookingId} — no service match for event_id="${externalServiceId}" (keys in bk: event_id=${bk.event_id}, service_id=${bk.service_id})`)
 
         // start_date / end_date already contain "YYYY-MM-DD HH:MM:SS" in company local time
         const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
@@ -326,11 +329,12 @@ async function runSync(event) {
           : 'confirmed'
 
         // payed_amount is SimplyBook's field name (their typo)
+        // Fall back to the service's stored price if SimplyBook doesn't send an amount
         const totalAmount = bk.invoice_amount != null ? parseFloat(bk.invoice_amount)
           : bk.event_price != null ? parseFloat(bk.event_price)
           : bk.total_amount_due != null ? parseFloat(bk.total_amount_due)
           : bk.total_price != null ? parseFloat(bk.total_price)
-          : null
+          : servicePrice
         const paidAmount = bk.payed_amount != null ? parseFloat(bk.payed_amount)
           : bk.paid_amount != null ? parseFloat(bk.paid_amount) : 0
         const paymentStatus =
@@ -433,8 +437,8 @@ async function runSync(event) {
               `
               if (!existingItem.length) {
                 await sql`
-                  INSERT INTO order_items (order_id, service_id, qty, unit_price)
-                  VALUES (${orderId}, ${effectiveServiceId}, 1, ${totalAmount ?? 0})
+                  INSERT INTO order_items (order_id, product_id, service_id, qty, unit_price)
+                  VALUES (${orderId}, ${effectiveServiceId}, ${effectiveServiceId}, 1, ${totalAmount ?? 0})
                 `
               }
             }
@@ -472,6 +476,15 @@ async function runSync(event) {
           }
         }
       }
+
+    // ── Backfill: set product_id = service_id for items that missed it ──────
+    await sql`
+      UPDATE order_items oi
+      SET product_id = oi.service_id
+      WHERE oi.service_id IS NOT NULL
+        AND oi.product_id IS NULL
+        AND EXISTS (SELECT 1 FROM products p WHERE p.id = oi.service_id AND p.tenant_id = ${TENANT_ID})
+    `
 
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
     // Cancel queued message_jobs for bookings that are now canceled.
