@@ -381,26 +381,24 @@ export default function NewBookingPage() {
             </div>
 
             {/* Connect to existing order */}
-            {billingOrders.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <label>{t('newBooking.connectOrder', 'Connect to existing order')}</label>
-                <select
-                  value={linkOrderId}
-                  onChange={e => { setLinkOrderId(e.target.value); if (e.target.value) setLinkPaymentId('') }}
-                  style={{ width: '100%' }}
-                >
-                  <option value="">{t('newBooking.newOrder', 'Create new order')}</option>
-                  {billingOrders.map(o => (
-                    <option key={o.id} value={o.id}>
-                      #{o.order_no} · {o.product_name || t('newBooking.order', 'Order')} · {t('newBooking.balanceDue', 'Due')}: ${Number(o.balance).toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div style={{ marginBottom: 12 }}>
+              <label>{t('newBooking.connectOrder', 'Connect to existing order')}</label>
+              <select
+                value={linkOrderId}
+                onChange={e => { setLinkOrderId(e.target.value); if (e.target.value) setLinkPaymentId('') }}
+                style={{ width: '100%' }}
+              >
+                <option value="">{t('newBooking.newOrder', 'Create new order')}</option>
+                {billingOrders.map(o => (
+                  <option key={o.id} value={o.id}>
+                    #{o.order_no} · {o.product_name || t('newBooking.order', 'Order')} · {t('newBooking.balanceDue', 'Due')}: ${Number(o.balance).toFixed(2)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Connect to advance payment */}
-            {billingPayments.length > 0 && !linkOrderId && (
+            {!linkOrderId && (
               <div style={{ marginBottom: 12 }}>
                 <label>{t('newBooking.connectPayment', 'Connect to advance payment')}</label>
                 <select
