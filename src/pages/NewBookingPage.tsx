@@ -56,8 +56,12 @@ export default function NewBookingPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [startTime, setStartTime] = useState('09:00')
+  const [endTimeOverride, setEndTimeOverride] = useState<string | null>(null)
   const [priceStr, setPriceStr] = useState('')
   const [notes, setNotes] = useState('')
+  const [showDayBookings, setShowDayBookings] = useState(false)
+  const [dayBookings, setDayBookings] = useState<{ id: string; start_at: string; customer_name: string | null; service_name: string | null }[]>([])
+  const [dayBookingsLoading, setDayBookingsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [calMonth, setCalMonth] = useState<Date>(() => {
@@ -113,16 +117,35 @@ export default function NewBookingPage() {
     [services, selectedServiceId]
   )
 
-  const endTime = useMemo(() => {
-    if (!startTime || !selectedService?.duration_minutes) return null
+  const endTimeAuto = useMemo(() => {
+    if (!startTime || !selectedService?.duration_minutes) return ''
     return addMinutes(startTime, selectedService.duration_minutes)
   }, [startTime, selectedService])
 
+  const endTime = endTimeOverride ?? endTimeAuto
+
   function handleDateClick(dateStr: string) {
     setSelectedDate(dateStr)
+    setShowDayBookings(false)
+    setDayBookings([])
+    setEndTimeOverride(null)
     requestAnimationFrame(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
+  }
+
+  async function toggleDayBookings(dateStr: string) {
+    if (showDayBookings) { setShowDayBookings(false); return }
+    setDayBookingsLoading(true)
+    setShowDayBookings(true)
+    try {
+      const res = await fetch(`${apiBase()}/api/get-booking-calendar-date?date=${dateStr}`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const json = await res.json()
+      setDayBookings(json.bookings || [])
+    } catch { /* ignore */ } finally {
+      setDayBookingsLoading(false)
+    }
   }
 
   async function save() {
@@ -260,7 +283,38 @@ export default function NewBookingPage() {
           <p className="helper">{t('newBooking.pickDate')}</p>
         ) : (
           <>
-            <h4 style={{ marginBottom: 16 }}>{dateLabel}</h4>
+            <h4 style={{ marginBottom: 8 }}>{dateLabel}</h4>
+
+            {/* Toggle existing bookings for this date */}
+            <button
+              onClick={() => toggleDayBookings(selectedDate!)}
+              style={{ background: 'none', border: 'none', padding: 0, marginBottom: 16, cursor: 'pointer', color: '#10b981', fontSize: 13, fontWeight: 600 }}
+            >
+              {showDayBookings ? t('newBooking.hideDayBookings', 'Hide bookings for this date') : t('newBooking.showDayBookings', 'See current bookings this date')}
+            </button>
+
+            {showDayBookings && (
+              <div style={{ marginBottom: 16 }}>
+                {dayBookingsLoading ? (
+                  <p className="helper">{t('loading')}</p>
+                ) : dayBookings.length === 0 ? (
+                  <p className="helper">{t('newBooking.noDayBookings', 'No bookings for this date.')}</p>
+                ) : (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {dayBookings.map(bk => {
+                      const time = new Date(bk.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+                      return (
+                        <div key={bk.id} style={{ fontSize: 13, padding: '6px 10px', borderRadius: 6, background: 'var(--card-bg, rgba(255,255,255,0.04))', border: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 600 }}>{time}</span>
+                          {bk.service_name && <span> · {bk.service_name}</span>}
+                          {bk.customer_name && <span className="helper"> · {bk.customer_name}</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Customer */}
             <div style={{ marginBottom: 12 }}>
@@ -281,24 +335,24 @@ export default function NewBookingPage() {
 
             {/* Time */}
             <div className="row" style={{ marginBottom: 12 }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label>{t('newBooking.startTime')}</label>
                 <input
                   type="time"
                   value={startTime}
-                  onChange={e => setStartTime(e.target.value)}
-                  style={{ width: '100%' }}
+                  onChange={e => { setStartTime(e.target.value); setEndTimeOverride(null) }}
+                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label>{t('newBooking.endTime')}</label>
                 <input
-                  type="text"
-                  readOnly
-                  value={endTime ?? '—'}
-                  style={{ width: '100%', background: 'var(--input-bg, #f5f5f5)', color: 'var(--muted)' }}
+                  type="time"
+                  value={endTime}
+                  onChange={e => setEndTimeOverride(e.target.value)}
+                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
-                {selectedService?.duration_minutes && (
+                {selectedService?.duration_minutes && !endTimeOverride && (
                   <p className="helper" style={{ marginTop: 4 }}>
                     {t('newBooking.duration', { min: selectedService.duration_minutes })}
                   </p>

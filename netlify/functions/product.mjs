@@ -24,7 +24,7 @@ if (authz.error) return cors(403, { error: authz.error });
 const TENANT_ID = authz.tenantId;
 
     const rows = await sql`
-      SELECT id, name, cost, category
+      SELECT id, name, cost, category, duration_minutes, price_amount, currency
       FROM products
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY category, name
