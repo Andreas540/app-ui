@@ -143,11 +143,11 @@ export default function NewBookingPage() {
     ;(async () => {
       try {
         const res = await fetch(`${apiBase()}/api/customer-billing-options?customer_id=${selectedCustomerId}`, { headers: getAuthHeaders() })
-        if (!res.ok) return
         const json = await res.json()
+        if (!res.ok) { console.error('customer-billing-options error:', json); return }
         setBillingOrders(json.orders || [])
         setBillingPayments(json.payments || [])
-      } catch { /* ignore */ }
+      } catch (e) { console.error('customer-billing-options fetch failed:', e) }
     })()
   }, [selectedCustomerId])
 

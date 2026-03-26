@@ -47,8 +47,10 @@ async function create(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     let body;
-    try { body = JSON.parse(event.body || '{}'); }
-    catch { return cors(400, { error: 'Invalid JSON body' }); }
+    try {
+      const rawBody = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString('utf-8') : event.body
+      body = JSON.parse(rawBody || '{}')
+    } catch { return cors(400, { error: 'Invalid JSON body' }); }
 
     const {
       customer_id,
