@@ -25,7 +25,7 @@ async function createBooking(event) {
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
       : event.body
     const body = JSON.parse(rawBody || '{}')
-    const { service_id, customer_id, date, start_time, total_amount, notes } = body
+    const { service_id, customer_id, date, start_time, total_amount, notes, link_order_id, link_payment_id } = body
 
     if (!service_id)  return cors(400, { error: 'service_id is required' })
     if (!customer_id) return cors(400, { error: 'customer_id is required' })
@@ -78,30 +78,50 @@ async function createBooking(event) {
     `
     const bookingId = bkRow[0].id
 
-    // Create linked order
-    const counterRow = await sql`
-      INSERT INTO tenant_order_counters (tenant_id, last_order_no)
-      VALUES (
-        ${TENANT_ID},
-        (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${TENANT_ID})
-      )
-      ON CONFLICT (tenant_id) DO UPDATE
-        SET last_order_no = tenant_order_counters.last_order_no + 1
-      RETURNING last_order_no
-    `
-    const orderNo = counterRow[0].last_order_no
+    let orderId
 
-    const orderRow = await sql`
-      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-      VALUES (${TENANT_ID}, ${customer_id}, ${orderNo}, ${date}, TRUE, ${bookingId})
-      RETURNING id
-    `
-    const orderId = orderRow[0].id
+    if (link_order_id) {
+      // Attach to existing order — verify it belongs to this tenant + customer
+      const existing = await sql`
+        SELECT id FROM orders
+        WHERE id = ${link_order_id} AND tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
+        LIMIT 1
+      `
+      if (!existing.length) return cors(400, { error: 'Order not found or does not belong to this customer' })
+      orderId = link_order_id
+    } else {
+      // Create a new order
+      const counterRow = await sql`
+        INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+        VALUES (
+          ${TENANT_ID},
+          (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${TENANT_ID})
+        )
+        ON CONFLICT (tenant_id) DO UPDATE
+          SET last_order_no = tenant_order_counters.last_order_no + 1
+        RETURNING last_order_no
+      `
+      const orderRow = await sql`
+        INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+        VALUES (${TENANT_ID}, ${customer_id}, ${counterRow[0].last_order_no}, ${date}, TRUE, ${bookingId})
+        RETURNING id
+      `
+      orderId = orderRow[0].id
+
+      // If an advance payment is being linked, attach it to the new order
+      if (link_payment_id) {
+        await sql`
+          UPDATE payments
+          SET order_id = ${orderId}
+          WHERE id = ${link_payment_id} AND tenant_id = ${TENANT_ID} AND customer_id = ${customer_id} AND order_id IS NULL
+        `
+      }
+    }
 
     // Link booking → order
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
 
-    // Create order item
+    // Add order item (always — each booking is one line on the order)
     await sql`
       INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
       VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})

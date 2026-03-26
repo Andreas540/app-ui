@@ -88,6 +88,10 @@ export default function NewBookingPage() {
   const [dayBookings, setDayBookings] = useState<{ id: string; start_at: string; customer_name: string | null; service_name: string | null }[]>([])
   const [dayBookingsLoading, setDayBookingsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [linkOrderId, setLinkOrderId] = useState('')
+  const [linkPaymentId, setLinkPaymentId] = useState('')
+  const [billingOrders, setBillingOrders] = useState<{ id: string; order_no: number; order_date: string; product_name: string | null; balance: number }[]>([])
+  const [billingPayments, setBillingPayments] = useState<{ id: string; amount: number; payment_date: string; notes: string | null }[]>([])
 
   const [calMonth, setCalMonth] = useState<Date>(() => {
     const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d
@@ -130,6 +134,22 @@ export default function NewBookingPage() {
       } catch { /* ignore */ }
     })()
   }, [calMonth])
+
+  // Fetch open orders + advance payments when customer changes
+  useEffect(() => {
+    if (!selectedCustomerId) { setBillingOrders([]); setBillingPayments([]); return }
+    setLinkOrderId('')
+    setLinkPaymentId('')
+    ;(async () => {
+      try {
+        const res = await fetch(`${apiBase()}/api/customer-billing-options?customer_id=${selectedCustomerId}`, { headers: getAuthHeaders() })
+        if (!res.ok) return
+        const json = await res.json()
+        setBillingOrders(json.orders || [])
+        setBillingPayments(json.payments || [])
+      } catch { /* ignore */ }
+    })()
+  }, [selectedCustomerId])
 
   // When service changes, pre-fill price
   useEffect(() => {
@@ -193,6 +213,8 @@ export default function NewBookingPage() {
           start_time: startTime,
           total_amount: price,
           notes: notes.trim() || null,
+          ...(linkOrderId   ? { link_order_id:   linkOrderId }   : {}),
+          ...(linkPaymentId ? { link_payment_id: linkPaymentId } : {}),
         }),
       })
       const json = await res.json()
@@ -357,6 +379,44 @@ export default function NewBookingPage() {
                 ))}
               </select>
             </div>
+
+            {/* Connect to existing order */}
+            {billingOrders.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('newBooking.connectOrder', 'Connect to existing order')}</label>
+                <select
+                  value={linkOrderId}
+                  onChange={e => { setLinkOrderId(e.target.value); if (e.target.value) setLinkPaymentId('') }}
+                  style={{ width: '100%' }}
+                >
+                  <option value="">{t('newBooking.newOrder', 'Create new order')}</option>
+                  {billingOrders.map(o => (
+                    <option key={o.id} value={o.id}>
+                      #{o.order_no} · {o.product_name || t('newBooking.order', 'Order')} · {t('newBooking.balanceDue', 'Due')}: ${Number(o.balance).toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Connect to advance payment */}
+            {billingPayments.length > 0 && !linkOrderId && (
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('newBooking.connectPayment', 'Connect to advance payment')}</label>
+                <select
+                  value={linkPaymentId}
+                  onChange={e => setLinkPaymentId(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="">{t('newBooking.noAdvancePayment', 'None')}</option>
+                  {billingPayments.map(p => (
+                    <option key={p.id} value={p.id}>
+                      ${Number(p.amount).toFixed(2)} · {p.payment_date}{p.notes ? ` · ${p.notes}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Time */}
             <div className="row" style={{ marginBottom: 12 }}>
