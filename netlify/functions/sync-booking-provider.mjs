@@ -409,7 +409,10 @@ async function runSync(event) {
                   (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${TENANT_ID})
                 )
                 ON CONFLICT (tenant_id) DO UPDATE
-                  SET last_order_no = tenant_order_counters.last_order_no + 1
+                  SET last_order_no = GREATEST(
+                    EXCLUDED.last_order_no,
+                    tenant_order_counters.last_order_no + 1
+                  )
                 RETURNING last_order_no
               `
               const orderNo = counterRow[0].last_order_no
