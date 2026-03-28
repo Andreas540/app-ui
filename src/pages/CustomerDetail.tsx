@@ -6,9 +6,13 @@ import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders } from '../lib
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function CustomerDetailPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
@@ -309,10 +313,11 @@ export default function CustomerDetailPage() {
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
               // NOTE: server should provide product_name, qty, unit_price, partner_amount
+              const orderNoPrefix = config.ui.showOrderNumberInList ? `#${(o as any).order_no} ` : ''
               const middle =
                 (o as any).product_name && (o as any).qty != null
-                  ? `${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / ${fmtMoney((o as any).unit_price ?? 0)}`
-                  : t('customerDetail.orderLines', { count: o.lines })
+                  ? `${orderNoPrefix}${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / ${fmtMoney((o as any).unit_price ?? 0)}`
+                  : `${orderNoPrefix}${t('customerDetail.orderLines', { count: o.lines })}`
 
               const withPartner = isPartnerCustomer && (o as any).partner_amount != null
                 ? `${middle} / ${fmtIntMoney((o as any).partner_amount)}`

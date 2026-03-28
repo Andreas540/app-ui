@@ -17,6 +17,7 @@ export interface TenantConfig {
   ui: {
     showCostEffectiveness: boolean
     requiresApproval: boolean
+    showOrderNumberInList: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -47,6 +48,7 @@ const defaultConfig: TenantConfig = {
   ui: {
     showCostEffectiveness: true,
     requiresApproval: false,
+    showOrderNumberInList: true,
   },
   booking: {
     serviceTypeLabel: 'Session',
@@ -65,6 +67,9 @@ const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
     },
     labels: {
       directCustomerGroup: 'BLV customers'
+    },
+    ui: {
+      showOrderNumberInList: false,
     }
   },
   // Add tenant-specific overrides here keyed by tenantId
