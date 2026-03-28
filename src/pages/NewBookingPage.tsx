@@ -142,12 +142,12 @@ export default function NewBookingPage() {
     setLinkPaymentId('')
     ;(async () => {
       try {
-        const res = await fetch(`${apiBase()}/api/customer-billing-options?customer_id=${selectedCustomerId}`, { headers: getAuthHeaders() })
+        const res = await fetch(`${apiBase()}/api/booking-link-options?customer_id=${selectedCustomerId}`, { headers: getAuthHeaders() })
         const json = await res.json()
-        if (!res.ok) { console.error('customer-billing-options error:', json); return }
+        if (!res.ok) { console.error('booking-link-options error:', json); return }
         setBillingOrders(json.orders || [])
         setBillingPayments(json.payments || [])
-      } catch (e) { console.error('customer-billing-options fetch failed:', e) }
+      } catch (e) { console.error('booking-link-options fetch failed:', e) }
     })()
   }, [selectedCustomerId])
 

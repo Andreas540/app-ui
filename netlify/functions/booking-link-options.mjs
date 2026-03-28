@@ -1,6 +1,6 @@
-// netlify/functions/customer-billing-options.mjs
-// GET /api/customer-billing-options?customer_id=X
-// Returns open orders and advance payments for a customer, used when creating a manual booking.
+// netlify/functions/booking-link-options.mjs
+// GET /api/booking-link-options?customer_id=X
+// Returns orders and unlinked payments for a customer, used when creating a manual booking.
 
 import { resolveAuthz } from './utils/auth.mjs'
 
@@ -24,7 +24,7 @@ async function getOptions(event) {
     const customer_id = event.queryStringParameters?.customer_id
     if (!customer_id) return cors(400, { error: 'customer_id is required' })
 
-    // Open orders: orders with a positive remaining balance
+    // All orders for the customer, regardless of paid status
     const orders = await sql`
       SELECT
         o.id,
@@ -53,15 +53,6 @@ async function getOptions(event) {
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${customer_id}
       GROUP BY o.id, o.order_no, o.order_date
-      HAVING GREATEST(
-        COALESCE(SUM(oi.qty * oi.unit_price), 0) -
-        COALESCE((
-          SELECT SUM(py.amount) FROM payments py
-          WHERE py.order_id = o.id
-             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
-        ), 0),
-        0
-      ) > 0
       ORDER BY o.order_date DESC, o.order_no DESC
       LIMIT 20
     `
@@ -84,7 +75,7 @@ async function getOptions(event) {
 
     return cors(200, { orders, payments })
   } catch (e) {
-    console.error('customer-billing-options error:', e)
+    console.error('booking-link-options error:', e)
     return cors(500, { error: String(e?.message || e) })
   }
 }
