@@ -489,6 +489,62 @@ async function runSync(event) {
         AND EXISTS (SELECT 1 FROM products p WHERE p.id = oi.service_id AND p.tenant_id = ${TENANT_ID})
     `
 
+    // ── Backfill: create orders for bookings that are missing one ───────────
+    // This catches bookings where order creation previously failed (e.g. duplicate key bug)
+    // or bookings synced before order creation logic existed. Runs on every sync so it
+    // self-heals regardless of which date window the sync covers.
+    try {
+      const unlinked = await sql`
+        SELECT b.id, b.customer_id, b.service_id, b.start_at, b.total_amount
+        FROM bookings b
+        WHERE b.tenant_id = ${TENANT_ID}
+          AND b.order_id IS NULL
+          AND b.booking_status != 'canceled'
+          AND b.customer_id IS NOT NULL
+      `
+      for (const b of unlinked) {
+        try {
+          const counterRow = await sql`
+            INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+            VALUES (
+              ${TENANT_ID},
+              (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${TENANT_ID})
+            )
+            ON CONFLICT (tenant_id) DO UPDATE
+              SET last_order_no = GREATEST(
+                EXCLUDED.last_order_no,
+                tenant_order_counters.last_order_no + 1
+              )
+            RETURNING last_order_no
+          `
+          const orderRow = await sql`
+            INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+            VALUES (
+              ${TENANT_ID}, ${b.customer_id}, ${counterRow[0].last_order_no},
+              ${new Date(b.start_at).toISOString().slice(0, 10)},
+              FALSE, ${b.id}
+            )
+            RETURNING id
+          `
+          const orderId = orderRow[0].id
+          await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${b.id}`
+          if (b.service_id) {
+            await sql`
+              INSERT INTO order_items (order_id, product_id, service_id, qty, unit_price)
+              VALUES (${orderId}, ${b.service_id}, ${b.service_id}, 1, ${b.total_amount ?? 0})
+              ON CONFLICT DO NOTHING
+            `
+          }
+          ordersCreated++
+          console.log(`sync: backfilled order for booking ${b.id}`)
+        } catch (err) {
+          console.warn(`sync: backfill order failed for booking ${b.id}:`, err?.message)
+        }
+      }
+    } catch (err) {
+      console.warn('sync: backfill query failed (non-fatal):', err?.message)
+    }
+
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
     // Cancel queued message_jobs for bookings that are now canceled.
     const canceledCleanup = await sql`

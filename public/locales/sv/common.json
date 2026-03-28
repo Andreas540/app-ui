@@ -987,7 +987,9 @@
     "location": "Plats",
     "amount": "Belopp",
     "notes": "Anteckningar",
-    "obligations": "Betalningsskyldigheter"
+    "obligations": "Betalningsskyldigheter",
+    "deleteBooking": "Radera bokning",
+    "confirmDelete": "Radera den här bokningen?"
   },
   "remindersPage": {
     "title": "Påminnelser",

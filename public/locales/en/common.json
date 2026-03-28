@@ -987,7 +987,9 @@
     "location": "Location",
     "amount": "Amount",
     "notes": "Notes",
-    "obligations": "Payment obligations"
+    "obligations": "Payment obligations",
+    "deleteBooking": "Delete booking",
+    "confirmDelete": "Delete this booking?"
   },
   "remindersPage": {
     "title": "Reminders",

@@ -312,7 +312,8 @@ const TENANT_ID = authz.tenantId
     // Delete associated records first
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     await sql`DELETE FROM order_partners WHERE order_id = ${id}`
-    
+    await sql`DELETE FROM bookings WHERE order_id = ${id} AND tenant_id = ${TENANT_ID}`
+
     // Delete order
     await sql`
       DELETE FROM orders

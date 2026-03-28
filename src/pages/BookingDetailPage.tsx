@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
@@ -104,6 +104,8 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [deleting, setDeleting] = useState(false)
 
   const [booking, setBooking] = useState<BookingDetail | null>(null)
   const [obligations, setObligations] = useState<Obligation[]>([])
@@ -122,6 +124,28 @@ export default function BookingDetailPage() {
       .catch(e => setError(e.message || 'Failed to load booking'))
       .finally(() => setLoading(false))
   }, [id])
+
+  async function handleDelete() {
+    if (!confirm(t('bookingDetail.confirmDelete', 'Delete this booking?'))) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`${apiBase()}/api/delete-booking`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete')
+      if (data.order_deleted && booking?.customer_id) {
+        navigate(`/customers/${booking.customer_id}`)
+      } else {
+        navigate('/bookings/list')
+      }
+    } catch (e: any) {
+      alert(e.message)
+      setDeleting(false)
+    }
+  }
 
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
   if (error) return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
@@ -199,6 +223,17 @@ export default function BookingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Delete */}
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          style={{ backgroundColor: 'salmon', color: 'white', border: 'none' }}
+        >
+          {deleting ? t('deleting', 'Deleting…') : t('bookingDetail.deleteBooking', 'Delete booking')}
+        </button>
+      </div>
 
       {/* Provider info */}
       {booking.external_booking_id && (

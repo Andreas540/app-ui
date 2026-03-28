@@ -987,7 +987,9 @@
     "location": "Ubicación",
     "amount": "Importe",
     "notes": "Notas",
-    "obligations": "Obligaciones de pago"
+    "obligations": "Obligaciones de pago",
+    "deleteBooking": "Eliminar reserva",
+    "confirmDelete": "¿Eliminar esta reserva?"
   },
   "remindersPage": {
     "title": "Recordatorios",
