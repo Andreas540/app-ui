@@ -5,6 +5,7 @@
 export interface TenantConfig {
   payments: {
     showOrderSelection: boolean
+    showAdvancePayment: boolean
   }
   labels: {
     customer: string        // "Customer" | "Client" | "Member" etc
@@ -33,7 +34,8 @@ export interface TenantConfig {
 
 const defaultConfig: TenantConfig = {
   payments: {
-    showOrderSelection: true
+    showOrderSelection: true,
+    showAdvancePayment: true,
   },
   labels: {
     customer: 'Customer',
@@ -58,7 +60,8 @@ const defaultConfig: TenantConfig = {
 const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
   'c00e0058-3dec-4300-829d-cca7e3033ca6': {
     payments: {
-      showOrderSelection: false
+      showOrderSelection: false,
+      showAdvancePayment: false,
     },
     labels: {
       directCustomerGroup: 'BLV customers'

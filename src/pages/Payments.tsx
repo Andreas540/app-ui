@@ -536,7 +536,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 }}
                 style={{ height: CONTROL_H }}
               >
-                {PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                {PAYMENT_TYPES.filter(type => type !== 'Advance Payment' || config.payments.showAdvancePayment).map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
             <div>

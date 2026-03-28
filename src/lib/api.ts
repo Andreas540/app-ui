@@ -116,6 +116,7 @@ export type PaymentType =
   | 'Partner credit'
   | 'Loan/Deposit'
   | 'Repayment'
+  | 'Advance Payment'
 
 export const PAYMENT_TYPES: PaymentType[] = [
   'Cash payment',
@@ -124,7 +125,8 @@ export const PAYMENT_TYPES: PaymentType[] = [
   'Zelle payment',
   'Partner credit',
   'Loan/Deposit',
-  'Repayment'
+  'Repayment',
+  'Advance Payment'
 ]
 
 export type NewPaymentInput = {
