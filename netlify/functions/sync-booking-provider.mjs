@@ -545,6 +545,25 @@ async function runSync(event) {
       console.warn('sync: backfill query failed (non-fatal):', err?.message)
     }
 
+    // ── Cleanup: delete bookings still without an order after backfill ──────
+    // These are bookings whose order was manually deleted, or where order creation
+    // failed repeatedly. The backfill above already attempted to create orders, so
+    // anything still orphaned here should be removed.
+    try {
+      const deleted = await sql`
+        DELETE FROM bookings
+        WHERE tenant_id = ${TENANT_ID}
+          AND order_id IS NULL
+          AND booking_status != 'canceled'
+        RETURNING id
+      `
+      if (deleted.length > 0) {
+        console.log(`sync: deleted ${deleted.length} orphaned booking(s) with no order`)
+      }
+    } catch (err) {
+      console.warn('sync: orphan cleanup failed (non-fatal):', err?.message)
+    }
+
     // ── Job cleanup: canceled and rescheduled bookings ─────────────────────
     // Cancel queued message_jobs for bookings that are now canceled.
     const canceledCleanup = await sql`
