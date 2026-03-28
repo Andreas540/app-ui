@@ -741,6 +741,7 @@
     "unitPrice": "Enhetspris",
     "partnerAmount": "Partnerbelopp",
     "loadingPartner": "Laddar partnerinformation...",
+    "linkedBookings": "Kopplade bokningar",
     "discount": "Rabatt",
     "editOrder": "Redigera beställning",
     "deliveredInFull": "Levererad i sin helhet",

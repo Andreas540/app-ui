@@ -66,12 +66,30 @@ JOIN orders o ON o.id = oi.order_id
 LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
 WHERE oi.order_id = ${id}
   AND o.tenant_id = ${TENANT_ID}
-      LIMIT 1
+ORDER BY oi.created_at ASC NULLS LAST
     `
 
     if (items.length > 0) {
       Object.assign(order, items[0])
     }
+
+    // Get bookings linked to this order
+    const bookings = await sql`
+      SELECT
+        b.id,
+        b.start_at,
+        b.end_at,
+        b.booking_status,
+        b.total_amount,
+        b.currency,
+        b.notes,
+        p.name AS service_name
+      FROM bookings b
+      LEFT JOIN products p ON p.id = b.service_id AND p.tenant_id = ${TENANT_ID}
+      WHERE b.order_id = ${id}
+        AND b.tenant_id = ${TENANT_ID}
+      ORDER BY b.start_at ASC
+    `
 
     // Get partner splits for this order
     const partnerSplits = await sql`
@@ -126,13 +144,15 @@ WHERE oi.order_id = ${id}
       profitPercent = (profit / orderValue) * 100
     }
 
-    return cors(200, { 
+    return cors(200, {
       order: {
         ...order,
         profit,
         profitPercent
-      }, 
-      partner_splits: partnerSplits 
+      },
+      items,
+      bookings,
+      partner_splits: partnerSplits
     })
   } catch (e) {
     console.error('getOrder error:', e)

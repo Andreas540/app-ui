@@ -741,6 +741,7 @@
     "unitPrice": "Unit Price",
     "partnerAmount": "Partner Amount",
     "loadingPartner": "Loading partner info...",
+    "linkedBookings": "Linked Bookings",
     "discount": "Discount",
     "editOrder": "Edit Order",
     "deliveredInFull": "Delivered in full",

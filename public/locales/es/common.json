@@ -741,6 +741,7 @@
     "unitPrice": "Precio Unitario",
     "partnerAmount": "Monto del Socio",
     "loadingPartner": "Cargando información del socio...",
+    "linkedBookings": "Reservas vinculadas",
     "discount": "Descuento",
     "editOrder": "Editar Pedido",
     "deliveredInFull": "Entregado completo",
