@@ -946,7 +946,10 @@
   },
   "bookingsList": {
     "title": "All Bookings",
+    "allCustomers": "All customers",
     "allStatuses": "All statuses",
+    "fromDate": "From date",
+    "toDate": "To date",
     "clearFilters": "Clear",
     "results": "results",
     "noBookings": "No bookings found."

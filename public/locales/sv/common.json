@@ -946,7 +946,10 @@
   },
   "bookingsList": {
     "title": "Alla bokningar",
+    "allCustomers": "Alla kunder",
     "allStatuses": "Alla statusar",
+    "fromDate": "Från datum",
+    "toDate": "Till datum",
     "clearFilters": "Rensa",
     "results": "resultat",
     "noBookings": "Inga bokningar hittades."

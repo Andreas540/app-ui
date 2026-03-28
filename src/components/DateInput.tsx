@@ -10,7 +10,7 @@ interface DateInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement
   onChange: (value: string) => void
 }
 
-export function DateInput({ value, onChange, style, className, disabled, ...rest }: DateInputProps) {
+export function DateInput({ value, onChange, style, className, disabled, placeholder = '—', ...rest }: DateInputProps) {
   const { locale } = useLocale()
   const nativeRef = useRef<HTMLInputElement>(null)
 
@@ -41,7 +41,7 @@ export function DateInput({ value, onChange, style, className, disabled, ...rest
         type="text"
         readOnly
         value={displayValue}
-        placeholder="—"
+        placeholder={placeholder}
         onClick={openPicker}
         disabled={disabled}
         style={{ cursor: disabled ? 'not-allowed' : 'pointer', ...style }}

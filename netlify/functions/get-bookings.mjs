@@ -26,6 +26,7 @@ async function getBookings(event) {
     const status = params.status || null
     const dateFrom = params.date_from || null
     const dateTo = params.date_to || null
+    const customerId = params.customer_id || null
     const page = Math.max(1, parseInt(params.page || '1', 10))
     const perPage = 50
     const offset = (page - 1) * perPage
@@ -46,6 +47,7 @@ async function getBookings(event) {
         AND (${status}::text IS NULL OR b.booking_status = ${status})
         AND (${dateFrom}::date IS NULL OR b.start_at >= ${dateFrom}::date)
         AND (${dateTo}::date IS NULL   OR b.start_at <  (${dateTo}::date + interval '1 day'))
+        AND (${customerId}::uuid IS NULL OR b.customer_id = ${customerId}::uuid)
       ORDER BY b.start_at DESC
       LIMIT ${perPage} OFFSET ${offset}
     `
@@ -57,6 +59,16 @@ async function getBookings(event) {
         AND (${status}::text IS NULL OR b.booking_status = ${status})
         AND (${dateFrom}::date IS NULL OR b.start_at >= ${dateFrom}::date)
         AND (${dateTo}::date IS NULL   OR b.start_at <  (${dateTo}::date + interval '1 day'))
+        AND (${customerId}::uuid IS NULL OR b.customer_id = ${customerId}::uuid)
+    `
+
+    const customerRows = await sql`
+      SELECT DISTINCT c.id, c.name
+      FROM bookings b
+      JOIN customers c ON c.id = b.customer_id
+      WHERE b.tenant_id = ${TENANT_ID}
+        AND c.name IS NOT NULL
+      ORDER BY c.name ASC
     `
 
     return cors(200, {
@@ -64,6 +76,7 @@ async function getBookings(event) {
       total: countRows[0].total,
       page,
       per_page: perPage,
+      booking_customers: customerRows,
     })
   } catch (e) {
     console.error(e)

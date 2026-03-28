@@ -85,10 +85,12 @@ export default function BookingsPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterCustomerId, setFilterCustomerId] = useState('')
+  const [bookingCustomers, setBookingCustomers] = useState<{ id: string; name: string }[]>([])
 
   useEffect(() => {
     fetchBookings()
-  }, [page, filterStatus, filterDateFrom, filterDateTo])
+  }, [page, filterStatus, filterDateFrom, filterDateTo, filterCustomerId])
 
   async function fetchBookings() {
     try {
@@ -98,6 +100,7 @@ export default function BookingsPage() {
       if (filterStatus) params.set('status', filterStatus)
       if (filterDateFrom) params.set('date_from', filterDateFrom)
       if (filterDateTo) params.set('date_to', filterDateTo)
+      if (filterCustomerId) params.set('customer_id', filterCustomerId)
 
       const res = await fetch(`${apiBase()}/api/get-bookings?${params}`, {
         headers: getAuthHeaders(),
@@ -106,6 +109,7 @@ export default function BookingsPage() {
       const data = await res.json()
       setBookings(data.bookings || [])
       setTotal(data.total || 0)
+      if (data.booking_customers) setBookingCustomers(data.booking_customers)
     } catch (e: any) {
       setError(e.message || 'Failed to load bookings')
     } finally {
@@ -121,34 +125,46 @@ export default function BookingsPage() {
       <h3 style={{ marginBottom: 20 }}>{t('bookingsList.title', 'All Bookings')}</h3>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+        <select
+          value={filterCustomerId}
+          onChange={e => { setFilterCustomerId(e.target.value); setPage(1) }}
+        >
+          <option value="">{t('bookingsList.allCustomers', 'All customers')}</option>
+          {bookingCustomers.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
         <select
           value={filterStatus}
           onChange={e => { setFilterStatus(e.target.value); setPage(1) }}
-          style={{ minWidth: 140 }}
         >
           <option value="">{t('bookingsList.allStatuses', 'All statuses')}</option>
           {BOOKING_STATUSES.map(s => (
             <option key={s} value={s}>{s.replace('_', ' ')}</option>
           ))}
         </select>
-        <DateInput
-          value={filterDateFrom}
-          onChange={v => { setFilterDateFrom(v); setPage(1) }}
-          style={{ minWidth: 130 }}
-        />
-        <DateInput
-          value={filterDateTo}
-          onChange={v => { setFilterDateTo(v); setPage(1) }}
-          style={{ minWidth: 130 }}
-        />
-        {(filterStatus || filterDateFrom || filterDateTo) && (
-          <button onClick={() => { setFilterStatus(''); setFilterDateFrom(''); setFilterDateTo(''); setPage(1) }}>
-            {t('bookingsList.clearFilters', 'Clear')}
-          </button>
-        )}
-        <div className="helper" style={{ alignSelf: 'center', marginLeft: 'auto' }}>
-          {total} {t('bookingsList.results', 'results')}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <DateInput
+            value={filterDateFrom}
+            onChange={v => { setFilterDateFrom(v); setPage(1) }}
+            placeholder={t('bookingsList.fromDate', 'From date')}
+          />
+          <DateInput
+            value={filterDateTo}
+            onChange={v => { setFilterDateTo(v); setPage(1) }}
+            placeholder={t('bookingsList.toDate', 'To date')}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {(filterCustomerId || filterStatus || filterDateFrom || filterDateTo) && (
+            <button onClick={() => { setFilterCustomerId(''); setFilterStatus(''); setFilterDateFrom(''); setFilterDateTo(''); setPage(1) }}>
+              {t('bookingsList.clearFilters', 'Clear')}
+            </button>
+          )}
+          <div className="helper" style={{ marginLeft: 'auto' }}>
+            {total} {t('bookingsList.results', 'results')}
+          </div>
         </div>
       </div>
 

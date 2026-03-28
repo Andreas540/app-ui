@@ -946,7 +946,10 @@
   },
   "bookingsList": {
     "title": "Todas las reservas",
+    "allCustomers": "Todos los clientes",
     "allStatuses": "Todos los estados",
+    "fromDate": "Desde fecha",
+    "toDate": "Hasta fecha",
     "clearFilters": "Limpiar",
     "results": "resultados",
     "noBookings": "No se encontraron reservas."
