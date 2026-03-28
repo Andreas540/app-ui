@@ -107,7 +107,7 @@ async function createBooking(event) {
       `
       const orderRow = await sql`
         INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-        VALUES (${TENANT_ID}, ${customer_id}, ${counterRow[0].last_order_no}, ${date}, TRUE, ${bookingId})
+        VALUES (${TENANT_ID}, ${customer_id}, ${counterRow[0].last_order_no}, ${date}, FALSE, ${bookingId})
         RETURNING id
       `
       orderId = orderRow[0].id

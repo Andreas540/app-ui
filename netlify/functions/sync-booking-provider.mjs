@@ -422,7 +422,7 @@ async function runSync(event) {
                 VALUES (
                   ${TENANT_ID}, ${customerId}, ${orderNo},
                   ${startAt.toISOString().slice(0, 10)},
-                  TRUE, ${bookingId}
+                  FALSE, ${bookingId}
                 )
                 RETURNING id
               `
