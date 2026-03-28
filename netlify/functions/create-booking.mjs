@@ -81,7 +81,8 @@ async function createBooking(event) {
     let orderId
 
     if (link_order_id) {
-      // Attach to existing order — verify it belongs to this tenant + customer
+      // Attach booking to an existing order — just link, do NOT add an order_item.
+      // The order's value is already defined; the booking is a delivery event, not a revenue event.
       const existing = await sql`
         SELECT id FROM orders
         WHERE id = ${link_order_id} AND tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
@@ -90,7 +91,7 @@ async function createBooking(event) {
       if (!existing.length) return cors(400, { error: 'Order not found or does not belong to this customer' })
       orderId = link_order_id
     } else {
-      // Create a new order
+      // Create a new order with a single line item for this booking
       const counterRow = await sql`
         INSERT INTO tenant_order_counters (tenant_id, last_order_no)
         VALUES (
@@ -108,24 +109,42 @@ async function createBooking(event) {
       `
       orderId = orderRow[0].id
 
-      // If an advance payment is being linked, attach it to the new order
+      // Add order item for the new order only
+      await sql`
+        INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
+        VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
+      `
+
+      // Handle advance payment allocation
       if (link_payment_id) {
-        await sql`
-          UPDATE payments
-          SET order_id = ${orderId}
+        const advRows = await sql`
+          SELECT id, amount FROM payments
           WHERE id = ${link_payment_id} AND tenant_id = ${TENANT_ID} AND customer_id = ${customer_id} AND order_id IS NULL
+          LIMIT 1
         `
+        if (advRows.length) {
+          const advAmount = Number(advRows[0].amount)
+          if (advAmount <= price) {
+            // Advance covers this booking or less — link entire advance to this order
+            await sql`UPDATE payments SET order_id = ${orderId} WHERE id = ${link_payment_id}`
+          } else {
+            // Advance exceeds booking amount — split:
+            // 1. Reduce the advance payment by the booking amount (remainder stays unlinked)
+            await sql`UPDATE payments SET amount = ${advAmount - price} WHERE id = ${link_payment_id}`
+            // 2. Create a new payment for exactly the booking amount, linked to the new order
+            await sql`
+              INSERT INTO payments (tenant_id, customer_id, payment_type, amount, payment_date, order_id, notes)
+              SELECT tenant_id, customer_id, payment_type, ${price}, payment_date, ${orderId},
+                     'Allocated from advance payment'
+              FROM payments WHERE id = ${link_payment_id}
+            `
+          }
+        }
       }
     }
 
     // Link booking → order
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
-
-    // Add order item (always — each booking is one line on the order)
-    await sql`
-      INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-      VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
-    `
 
     return cors(201, { ok: true, booking_id: bookingId, order_id: orderId })
   } catch (e) {

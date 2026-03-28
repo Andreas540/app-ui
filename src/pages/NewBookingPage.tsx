@@ -407,11 +407,17 @@ export default function NewBookingPage() {
                   style={{ width: '100%' }}
                 >
                   <option value="">{t('newBooking.noAdvancePayment', 'None')}</option>
-                  {billingPayments.map(p => (
-                    <option key={p.id} value={p.id}>
-                      ${Number(p.amount).toFixed(2)} · {p.payment_date}{p.notes ? ` · ${p.notes}` : ''}
-                    </option>
-                  ))}
+                  {billingPayments.map(p => {
+                    const amt = Number(p.amount)
+                    const price = Number((priceStr || '0').replace(',', '.'))
+                    const remaining = amt - price
+                    const remainingStr = remaining > 0 ? ` → $${remaining.toFixed(2)} remaining` : ''
+                    return (
+                      <option key={p.id} value={p.id}>
+                        ${amt.toFixed(2)} · {p.payment_date}{p.notes ? ` · ${p.notes}` : ''}{remainingStr}
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
             )}
