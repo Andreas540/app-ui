@@ -45,6 +45,7 @@ async function getOptions(event) {
           ), 0),
           0
         )::numeric(12,2) AS balance,
+        GREATEST(COALESCE(SUM(oi.qty), 0) - COALESCE(o.delivered_quantity, 0), 0)::int AS remaining_qty,
         COALESCE(MAX(p.name), MAX(s.name)) AS product_name
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id

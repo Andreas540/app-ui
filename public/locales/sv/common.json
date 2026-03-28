@@ -1060,7 +1060,7 @@
     "connectOrder": "Koppla till befintlig order",
     "newOrder": "Skapa ny order",
     "order": "Order",
-    "balanceDue": "Kvar att betala",
+    "remainingQty": "Återstående",
     "connectPayment": "Koppla till förskottsbetalning",
     "noAdvancePayment": "Ingen",
     "showDayBookings": "Visa bokningar för detta datum",

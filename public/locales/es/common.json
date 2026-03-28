@@ -1060,7 +1060,7 @@
     "connectOrder": "Conectar a pedido existente",
     "newOrder": "Crear nuevo pedido",
     "order": "Pedido",
-    "balanceDue": "Pendiente",
+    "remainingQty": "Restante",
     "connectPayment": "Conectar a pago anticipado",
     "noAdvancePayment": "Ninguno",
     "showDayBookings": "Ver reservas actuales en esta fecha",

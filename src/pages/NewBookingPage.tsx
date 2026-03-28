@@ -90,7 +90,7 @@ export default function NewBookingPage() {
   const [saving, setSaving] = useState(false)
   const [linkOrderId, setLinkOrderId] = useState('')
   const [linkPaymentId, setLinkPaymentId] = useState('')
-  const [billingOrders, setBillingOrders] = useState<{ id: string; order_no: number; order_date: string; product_name: string | null; balance: number }[]>([])
+  const [billingOrders, setBillingOrders] = useState<{ id: string; order_no: number; order_date: string; product_name: string | null; balance: number; remaining_qty: number }[]>([])
   const [billingPayments, setBillingPayments] = useState<{ id: string; amount: number; payment_date: string; notes: string | null }[]>([])
 
   const [calMonth, setCalMonth] = useState<Date>(() => {
@@ -391,7 +391,7 @@ export default function NewBookingPage() {
                 <option value="">{t('newBooking.newOrder', 'Create new order')}</option>
                 {billingOrders.map(o => (
                   <option key={o.id} value={o.id}>
-                    #{o.order_no} · {o.product_name || t('newBooking.order', 'Order')} · {t('newBooking.balanceDue', 'Due')}: ${Number(o.balance).toFixed(2)}
+                    #{o.order_no} · {o.product_name || t('newBooking.order', 'Order')} · {t('newBooking.remainingQty', 'Remaining')}: {o.remaining_qty}
                   </option>
                 ))}
               </select>

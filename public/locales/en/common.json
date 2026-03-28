@@ -1055,7 +1055,7 @@
     "connectOrder": "Connect to existing order",
     "newOrder": "Create new order",
     "order": "Order",
-    "balanceDue": "Due",
+    "remainingQty": "Remaining",
     "connectPayment": "Connect to advance payment",
     "noAdvancePayment": "None",
     "showDayBookings": "See current bookings this date",
