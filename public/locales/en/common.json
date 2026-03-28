@@ -323,7 +323,7 @@
     "toSupplier": "To supplier",
     "title": "Payments",
     "paymentDate": "Payment date",
-    "orderOptional": "Order (optional)",
+    "orderOptional": "Connect payment to order (optional)",
     "chooseOrder": "Choose order",
     "paymentType": "Payment Type",
     "amountUSD": "Amount (USD)",

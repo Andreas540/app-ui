@@ -323,7 +323,7 @@
     "toSupplier": "Till leverantör",
     "title": "Betalningar",
     "paymentDate": "Betalningsdatum",
-    "orderOptional": "Beställning (valfritt)",
+    "orderOptional": "Koppla betalning till order (valfritt)",
     "chooseOrder": "Välj beställning",
     "paymentType": "Betalningstyp",
     "amountUSD": "Belopp (USD)",

@@ -323,7 +323,7 @@
     "toSupplier": "A proveedor",
     "title": "Pagos",
     "paymentDate": "Fecha de pago",
-    "orderOptional": "Pedido (opcional)",
+    "orderOptional": "Conectar pago a pedido (opcional)",
     "chooseOrder": "Elegir pedido",
     "paymentType": "Tipo de pago",
     "amountUSD": "Monto (USD)",
