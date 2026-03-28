@@ -1,6 +1,6 @@
 // src/pages/NewBookingPage.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders, listProducts } from '../lib/api'
 import { useLocale } from '../contexts/LocaleContext'
@@ -71,7 +71,9 @@ function TimePicker({ value, onChange }: { value: string; onChange: (v: string) 
 export default function NewBookingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { locale, timezone } = useLocale()
+  const prefilledCustomerId = searchParams.get('customer_id') || ''
 
   const [services, setServices] = useState<ServiceOption[]>([])
   const [customers, setCustomers] = useState<CustomerOption[]>([])
@@ -117,8 +119,10 @@ export default function NewBookingPage() {
               currency: (p as any).currency ?? null,
             }))
         )
-        setCustomers((bootstrap.customers as any[]).map(c => ({ id: c.id, name: c.name })))
-        if (bootstrap.customers.length) setSelectedCustomerId((bootstrap.customers[0] as any).id)
+        const customerList = (bootstrap.customers as any[]).map(c => ({ id: c.id, name: c.name }))
+        setCustomers(customerList)
+        const initialId = prefilledCustomerId || (customerList.length ? customerList[0].id : '')
+        setSelectedCustomerId(initialId)
       } catch { /* silent */ }
     })()
   }, [])

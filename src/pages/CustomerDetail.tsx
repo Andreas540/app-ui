@@ -11,7 +11,7 @@ import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function CustomerDetailPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, hasFeature } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
@@ -230,6 +230,26 @@ export default function CustomerDetailPage() {
             {t('newPayment')}
           </button>
         </Link>
+
+        {hasFeature('new-booking') && (
+          <Link
+            to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button
+              className="primary"
+              style={{
+                height: 28,
+                fontSize: 12,
+                padding: '0 10px',
+                borderRadius: 6,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t('newBooking.title', 'New Booking')}
+            </button>
+          </Link>
+        )}
       </div>
 
       {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
