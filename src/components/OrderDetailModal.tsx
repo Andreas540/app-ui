@@ -39,14 +39,12 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
-  const [items, setItems] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
 
   // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
     setOrder(initialOrder)
     setPartnerSplits([])
-    setItems([])
     setBookings([])
   }, [initialOrder])
 
@@ -68,7 +66,6 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
         // Update order with profit data
         setOrder({ ...initialOrder, ...data.order })
-        setItems(data.items || [])
         setBookings(data.bookings || [])
 
         // Handle partner splits
@@ -228,50 +225,29 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         {/* Separator line */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
 
-        {/* Order line items */}
-        {items.length > 0 ? (
-          <div>
-            <div className="helper" style={{ marginBottom: 6 }}>{t('orderModal.orderLines')}</div>
-            {items.map((item: any, idx: number) => (
-              <div key={idx} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '6px 0',
-                borderBottom: idx < items.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none'
-              }}>
-                <div style={{ fontWeight: 600 }}>{item.product_name || '—'}</div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ color: 'var(--text-secondary)', marginRight: 8 }}>
-                    {intFmt.format(item.qty)} × {fmtMoney(item.unit_price)}
-                  </span>
-                  <span style={{ fontWeight: 600 }}>{fmtMoney(item.qty * item.unit_price)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          /* Fallback: single-item display for older data */
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            {order.product_name && (
-              <div>
-                <div className="helper" style={fieldStyle}>{t('product')}</div>
-                <div style={{ fontWeight: 600 }}>{order.product_name}</div>
-              </div>
-            )}
-            {order.qty && (
-              <div style={{ textAlign: 'right' }}>
-                <div className="helper" style={fieldStyle}>{t('quantity')}</div>
-                <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
-              </div>
-            )}
-            {order.unit_price && (
-              <div style={{ textAlign: 'right' }}>
-                <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
-                <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Second Row: Product, Quantity, Unit Price */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          {order.product_name && (
+            <div>
+              <div className="helper" style={fieldStyle}>{t('product')}</div>
+              <div style={{ fontWeight: 600 }}>{order.product_name}</div>
+            </div>
+          )}
+
+          {order.qty && (
+            <div style={{ textAlign: 'right' }}>
+              <div className="helper" style={fieldStyle}>{t('quantity')}</div>
+              <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
+            </div>
+          )}
+
+          {order.unit_price && (
+            <div style={{ textAlign: 'right' }}>
+              <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
+              <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
+            </div>
+          )}
+        </div>
 
         {/* Linked bookings */}
         {bookings.length > 0 && (
