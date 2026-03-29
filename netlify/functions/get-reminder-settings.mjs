@@ -26,6 +26,7 @@ async function getSettings(event) {
       SELECT
         r.id, r.rule_name, r.trigger_event, r.minutes_offset,
         r.channel, r.template_key, r.active, r.created_at,
+        r.service_id,
         s.name AS service_name
       FROM reminder_rules r
       LEFT JOIN services s ON s.id = r.service_id AND s.tenant_id = ${TENANT_ID}

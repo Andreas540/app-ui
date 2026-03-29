@@ -10,6 +10,7 @@ interface ReminderRule {
   channel: string
   template_key: string
   active: boolean
+  service_id: string | null
   service_name: string | null
 }
 
@@ -31,7 +32,15 @@ function apiBase() {
 }
 
 const TEMPLATE_VARS = '{{customer_name}}, {{service_name}}, {{start_date}}, {{start_time}}, {{staff_name}}'
-const BLANK_RULE = { rule_name: '', trigger_event: 'before_start', minutes_offset: -1440, channel: 'sms', template_key: '', service_id: '' }
+
+const BLANK_RULE_FORM = {
+  rule_name: '',
+  trigger_event: 'before_start',
+  offset_hours: 24,
+  channel: 'sms',
+  template_key: '',
+  service_id: '',
+}
 
 export default function BookingRemindersPage() {
   const { t } = useTranslation()
@@ -42,9 +51,12 @@ export default function BookingRemindersPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const [showAddRule, setShowAddRule] = useState(false)
-  const [newRule, setNewRule] = useState({ ...BLANK_RULE })
+  // Rule form state
+  const [showRuleForm, setShowRuleForm] = useState(false)
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
+  const [ruleForm, setRuleForm] = useState({ ...BLANK_RULE_FORM })
 
+  // Template editor state
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
   const [showAddTemplate, setShowAddTemplate] = useState(false)
   const [tmplKey, setTmplKey] = useState('')
@@ -92,11 +104,48 @@ export default function BookingRemindersPage() {
     }
   }
 
-  async function handleAddRule(e: React.FormEvent) {
+  function openAddRule() {
+    setRuleForm({ ...BLANK_RULE_FORM })
+    setEditingRuleId(null)
+    setShowRuleForm(true)
+  }
+
+  function openEditRule(rule: ReminderRule) {
+    setRuleForm({
+      rule_name: rule.rule_name,
+      trigger_event: rule.trigger_event,
+      offset_hours: Math.round(Math.abs(rule.minutes_offset) / 60),
+      channel: rule.channel,
+      template_key: rule.template_key,
+      service_id: rule.service_id ?? '',
+    })
+    setEditingRuleId(rule.id)
+    setShowRuleForm(true)
+  }
+
+  function closeRuleForm() {
+    setShowRuleForm(false)
+    setEditingRuleId(null)
+    setRuleForm({ ...BLANK_RULE_FORM })
+  }
+
+  async function handleSaveRule(e: React.FormEvent) {
     e.preventDefault()
-    await callSave({ action: 'create_rule', ...newRule, service_id: newRule.service_id || null })
-    setNewRule({ ...BLANK_RULE })
-    setShowAddRule(false)
+    const minutes_offset = ruleForm.trigger_event === 'before_start'
+      ? -(ruleForm.offset_hours * 60)
+      : ruleForm.offset_hours * 60
+    const payload = {
+      action: editingRuleId ? 'update_rule' : 'create_rule',
+      ...(editingRuleId ? { id: editingRuleId } : {}),
+      rule_name: ruleForm.rule_name,
+      trigger_event: ruleForm.trigger_event,
+      minutes_offset,
+      channel: ruleForm.channel,
+      template_key: ruleForm.template_key,
+      service_id: ruleForm.service_id || null,
+    }
+    await callSave(payload)
+    closeRuleForm()
   }
 
   function openTemplateEditor(templateKey: string, channel: string) {
@@ -144,27 +193,11 @@ export default function BookingRemindersPage() {
     }
   }
 
-  function offsetLabel(minutes: number, trigger: string) {
-    const abs = Math.abs(minutes)
-    const h = Math.floor(abs / 60)
-    const m = abs % 60
-    const parts: string[] = []
-    if (h) parts.push(`${h}h`)
-    if (m) parts.push(`${m}m`)
-    const duration = parts.join(' ') || '0m'
-    if (trigger === 'before_start') return minutes < 0
-      ? t('remindersPage.offsetBefore', { duration })
-      : t('remindersPage.offsetAfter', { duration })
-    if (trigger === 'booking_confirmed') return t('remindersPage.offsetAfterConfirm', { duration })
-    return t('remindersPage.offsetAfterStart', { duration })
-  }
-
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
 
   const TRIGGER_EVENTS = [
-    { value: 'before_start',      label: t('remindersPage.triggerBeforeStart') },
-    { value: 'booking_confirmed', label: t('remindersPage.triggerAfterConfirmed') },
-    { value: 'unpaid_balance',    label: t('remindersPage.triggerUnpaid') },
+    { value: 'before_start',   label: t('remindersPage.triggerBeforeStart') },
+    { value: 'unpaid_balance', label: t('remindersPage.triggerUnpaid') },
   ]
 
   const CHANNELS = [
@@ -172,19 +205,23 @@ export default function BookingRemindersPage() {
     { value: 'email', label: t('remindersPage.channelEmail') },
   ]
 
+  const triggerLabel = (rule: ReminderRule) => {
+    const hours = Math.round(Math.abs(rule.minutes_offset) / 60)
+    if (rule.trigger_event === 'before_start') return t('remindersPage.offsetBefore', { duration: `${hours}h` })
+    return t('remindersPage.offsetAfterStart', { duration: `${hours}h` })
+  }
+
   return (
     <div className="card" style={{ maxWidth: 800 }}>
       <h3 style={{ marginBottom: 8 }}>{t('remindersPage.title')}</h3>
-      <p className="helper" style={{ marginBottom: 24 }}>
-        {t('remindersPage.subtitle')}
-      </p>
+      <p className="helper" style={{ marginBottom: 24 }}>{t('remindersPage.subtitle')}</p>
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
 
-      {/* ── Message templates ─────────────────────────────────────── */}
+      {/* ── 1. Create message ─────────────────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>{t('remindersPage.messageTemplates')}</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'nowrap' }}>
+          <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('remindersPage.sectionTemplates')}</h3>
           {!editingTemplate && (
             <button onClick={openNewTemplate} disabled={saving}>{t('remindersPage.addTemplate')}</button>
           )}
@@ -213,7 +250,6 @@ export default function BookingRemindersPage() {
           </div>
         )}
 
-        {/* Inline template editor */}
         {editingTemplate && (
           <form onSubmit={handleSaveTemplate} className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
             <div style={{ fontWeight: 600 }}>
@@ -260,45 +296,58 @@ export default function BookingRemindersPage() {
         )}
       </div>
 
-      {/* ── Rules ────────────────────────────────────────────────── */}
+      {/* ── 2. Set rule for when to send ─────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>{t('remindersPage.rules')}</h3>
-          <button onClick={() => setShowAddRule(v => !v)} disabled={saving}>{t('remindersPage.addRule')}</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'nowrap' }}>
+          <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('remindersPage.sectionRules')}</h3>
+          {!showRuleForm && (
+            <button onClick={openAddRule} disabled={saving}>{t('remindersPage.addRule')}</button>
+          )}
         </div>
 
-        {showAddRule && (
-          <form onSubmit={handleAddRule} className="card" style={{ padding: 20, marginBottom: 12, display: 'grid', gap: 12 }}>
+        {showRuleForm && (
+          <form onSubmit={handleSaveRule} className="card" style={{ padding: 20, marginBottom: 12, display: 'grid', gap: 12 }}>
+            <div style={{ fontWeight: 600 }}>
+              {editingRuleId ? t('remindersPage.editRuleTitle') : t('remindersPage.addRuleTitle')}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
+              <div style={{ gridColumn: '1 / -1' }}>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.ruleName')}</label>
-                <input value={newRule.rule_name} onChange={e => setNewRule(r => ({ ...r, rule_name: e.target.value }))} placeholder={t('remindersPage.ruleNamePlaceholder')} required style={{ width: '100%' }} />
+                <input value={ruleForm.rule_name} onChange={e => setRuleForm(r => ({ ...r, rule_name: e.target.value }))} placeholder={t('remindersPage.ruleNamePlaceholder')} required style={{ width: '100%' }} />
               </div>
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.trigger')}</label>
-                <select value={newRule.trigger_event} onChange={e => setNewRule(r => ({ ...r, trigger_event: e.target.value }))} style={{ width: '100%' }}>
+                <select value={ruleForm.trigger_event} onChange={e => setRuleForm(r => ({ ...r, trigger_event: e.target.value }))} style={{ width: '100%' }}>
                   {TRIGGER_EVENTS.map(te => <option key={te.value} value={te.value}>{te.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.offsetMinutes')}</label>
-                <input type="number" value={newRule.minutes_offset} onChange={e => setNewRule(r => ({ ...r, minutes_offset: parseInt(e.target.value, 10) || 0 }))} style={{ width: '100%' }} />
-                <div className="helper" style={{ marginTop: 4 }}>{offsetLabel(newRule.minutes_offset, newRule.trigger_event)}</div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
+                  {ruleForm.trigger_event === 'before_start'
+                    ? t('remindersPage.hoursBefore')
+                    : t('remindersPage.hoursAfter')}
+                </label>
+                <input
+                  type="number" min={1}
+                  value={ruleForm.offset_hours}
+                  onChange={e => setRuleForm(r => ({ ...r, offset_hours: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+                  style={{ width: '100%' }}
+                />
               </div>
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
-                <select value={newRule.channel} onChange={e => setNewRule(r => ({ ...r, channel: e.target.value }))} style={{ width: '100%' }}>
+                <select value={ruleForm.channel} onChange={e => setRuleForm(r => ({ ...r, channel: e.target.value, template_key: '' }))} style={{ width: '100%' }}>
                   {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
                 </select>
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
+              <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.messageTemplate')}</label>
-                {templates.filter(tmpl => tmpl.channel === newRule.channel).length === 0 ? (
-                  <div className="helper" style={{ color: 'salmon' }}>{t('remindersPage.noTemplatesForChannel')}</div>
+                {templates.filter(tmpl => tmpl.channel === ruleForm.channel).length === 0 ? (
+                  <div className="helper" style={{ color: 'salmon', fontSize: 12 }}>{t('remindersPage.noTemplatesForChannel')}</div>
                 ) : (
-                  <select value={newRule.template_key} onChange={e => setNewRule(r => ({ ...r, template_key: e.target.value }))} required style={{ width: '100%' }}>
+                  <select value={ruleForm.template_key} onChange={e => setRuleForm(r => ({ ...r, template_key: e.target.value }))} required style={{ width: '100%' }}>
                     <option value="">{t('remindersPage.selectTemplate')}</option>
-                    {templates.filter(tmpl => tmpl.channel === newRule.channel).map(tmpl => (
+                    {templates.filter(tmpl => tmpl.channel === ruleForm.channel).map(tmpl => (
                       <option key={tmpl.id} value={tmpl.template_key}>
                         {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
                       </option>
@@ -308,7 +357,7 @@ export default function BookingRemindersPage() {
               </div>
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.service')}</label>
-                <select value={newRule.service_id} onChange={e => setNewRule(r => ({ ...r, service_id: e.target.value }))} style={{ width: '100%' }}>
+                <select value={ruleForm.service_id} onChange={e => setRuleForm(r => ({ ...r, service_id: e.target.value }))} style={{ width: '100%' }}>
                   <option value="">{t('remindersPage.allServices')}</option>
                   {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -316,7 +365,7 @@ export default function BookingRemindersPage() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveRule')}</button>
-              <button type="button" onClick={() => setShowAddRule(false)}>{t('cancel')}</button>
+              <button type="button" onClick={closeRuleForm}>{t('cancel')}</button>
             </div>
           </form>
         )}
@@ -331,11 +380,12 @@ export default function BookingRemindersPage() {
                   <div style={{ fontWeight: 600 }}>{rule.rule_name}</div>
                   <div className="helper">
                     {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
-                    {' · '}{offsetLabel(rule.minutes_offset, rule.trigger_event)}
+                    {' · '}{triggerLabel(rule)}
                     {' · '}{rule.channel.toUpperCase()}
                     {rule.service_name ? ` · ${rule.service_name}` : ''}
                   </div>
                 </div>
+                <button onClick={() => openEditRule(rule)} style={{ fontSize: 12 }}>{t('edit')}</button>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
                   <input type="checkbox" checked={rule.active} onChange={() => callSave({ action: 'toggle_rule', id: rule.id, active: !rule.active })} />
                   {rule.active ? t('remindersPage.active') : t('remindersPage.paused')}
@@ -352,12 +402,10 @@ export default function BookingRemindersPage() {
         )}
       </div>
 
-      {/* ── Generate reminders ────────────────────────────────────── */}
+      {/* ── Schedule reminders ────────────────────────────────────── */}
       <div className="card" style={{ padding: 20 }}>
         <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('remindersPage.scheduleNowTitle')}</div>
-        <div className="helper" style={{ marginBottom: 12 }}>
-          {t('remindersPage.scheduleNowHelp')}
-        </div>
+        <div className="helper" style={{ marginBottom: 12 }}>{t('remindersPage.scheduleNowHelp')}</div>
         {generateResult && (
           <div style={{ marginBottom: 12, fontSize: 14, color: generateResult.startsWith(t('error')) ? 'salmon' : '#10b981' }}>
             {generateResult}
