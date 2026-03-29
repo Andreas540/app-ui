@@ -84,7 +84,7 @@ async function getSettings(event) {
     const simplybookConn = await sql`
       SELECT id, simplybook_sms_confirmation
       FROM provider_connections
-      WHERE tenant_id = ${TENANT_ID} AND provider = 'simplybook' AND connection_status = 'active'
+      WHERE tenant_id = ${TENANT_ID} AND provider = 'simplybook' AND connection_status = 'connected'
       LIMIT 1
     `
     const has_simplybook = simplybookConn.length > 0

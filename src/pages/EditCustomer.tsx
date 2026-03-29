@@ -203,10 +203,6 @@ setCustomerType(
         <div>
           <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={smsConsent} onChange={e => setSmsConsent(e.target.checked)} />
-            {t('customers.smsConsent')}
-          </label>
         </div>
         <div>
           <label>{t('addressLine1')}</label>
@@ -237,6 +233,16 @@ setCustomerType(
           <input value={postal} onChange={e=>setPostal(e.target.value)} />
         </div>
       </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={smsConsent}
+          onChange={e => setSmsConsent(e.target.checked)}
+          style={{ width: 16, height: 16, flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 14 }}>{t('customers.smsConsent')}</span>
+      </label>
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save}>{t('saveChanges')}</button>
