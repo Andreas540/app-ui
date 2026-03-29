@@ -84,8 +84,6 @@ export default function BookingSmsUsagePage() {
   // Settings form
   const [editSettings, setEditSettings] = useState(false)
   const [capAmount, setCapAmount] = useState('')
-  const [pricePerUnit, setPricePerUnit] = useState('')
-  const [stripeItemId, setStripeItemId] = useState('')
   const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => { loadUsage() }, [])
@@ -111,8 +109,6 @@ export default function BookingSmsUsagePage() {
       setHistory(data.history || [])
       setJobs(data.recent_jobs || [])
       setCapAmount(String(data.settings?.sms_monthly_cap_amount ?? 25))
-      setPricePerUnit(String(data.settings?.sms_price_per_unit ?? 0.02))
-      setStripeItemId(data.settings?.stripe_sms_subscription_item_id ?? '')
     } catch (e: any) {
       setError(e.message || t('smsUsagePage.loadFailed'))
     } finally {
@@ -129,8 +125,6 @@ export default function BookingSmsUsagePage() {
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sms_monthly_cap_amount: parseFloat(capAmount),
-          sms_price_per_unit: parseFloat(pricePerUnit),
-          stripe_sms_subscription_item_id: stripeItemId.trim() || null,
         }),
       })
       const data = await res.json()
@@ -221,21 +215,10 @@ export default function BookingSmsUsagePage() {
 
           {editSettings ? (
             <form onSubmit={handleSaveSettings} style={{ display: 'grid', gap: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('smsUsagePage.monthlyCap')}</label>
-                  <input type="number" step="0.01" min="0" value={capAmount} onChange={e => setCapAmount(e.target.value)} style={{ width: '100%' }} required />
-                  <div className="helper" style={{ marginTop: 4 }}>{t('smsUsagePage.monthlyCapHelp')}</div>
-                </div>
-                <div>
-                  <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('smsUsagePage.pricePerSms')}</label>
-                  <input type="number" step="0.0001" min="0" value={pricePerUnit} onChange={e => setPricePerUnit(e.target.value)} style={{ width: '100%' }} required />
-                </div>
-              </div>
               <div>
-                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('smsUsagePage.stripeItemId')}</label>
-                <input type="text" value={stripeItemId} onChange={e => setStripeItemId(e.target.value)} placeholder="si_xxxxxxxxxxxx" style={{ width: '100%' }} />
-                <div className="helper" style={{ marginTop: 4 }}>{t('smsUsagePage.stripeItemHelp')}</div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('smsUsagePage.monthlyCap')}</label>
+                <input type="number" step="0.01" min="0" value={capAmount} onChange={e => setCapAmount(e.target.value)} style={{ width: '100%', maxWidth: 200 }} required />
+                <div className="helper" style={{ marginTop: 4 }}>{t('smsUsagePage.monthlyCapHelp')}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="submit" className="primary" disabled={savingSettings}>{t('save')}</button>
@@ -246,10 +229,6 @@ export default function BookingSmsUsagePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
               <div><div className="helper">{t('smsUsagePage.monthlyCap')}</div><div style={{ fontWeight: 600 }}>{fmtCurrency(Number(settings.sms_monthly_cap_amount))}</div></div>
               <div><div className="helper">{t('smsUsagePage.pricePerSms')}</div><div style={{ fontWeight: 600 }}>{fmtCurrency(Number(settings.sms_price_per_unit))}</div></div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div className="helper">{t('smsUsagePage.stripeItemId')}</div>
-                <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: 13 }}>{settings.stripe_sms_subscription_item_id || '—'}</div>
-              </div>
             </div>
           )}
         </div>
@@ -286,15 +265,15 @@ export default function BookingSmsUsagePage() {
         ) : (
           <div style={{ display: 'grid', gap: 6 }}>
             {jobs.map(job => (
-              <div key={job.id} className="card" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ minWidth: 75, fontSize: 12, color: 'var(--muted)' }}>{fmtDate(job.sent_at ?? job.scheduled_for)}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div key={job.id} className="card" style={{ padding: '10px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {job.customer_name ?? '—'}
                   </div>
-                  <div className="helper" style={{ fontSize: 11 }}><code>{job.template_key}</code></div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{fmtDate(job.sent_at ?? job.scheduled_for)}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <div className="helper" style={{ fontSize: 11, marginTop: 2 }}><code>{job.template_key}</code></div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 6 }}>
                   <span style={{
                     display: 'inline-block', padding: '2px 8px', borderRadius: 12,
                     fontSize: 11, fontWeight: 600,
@@ -309,7 +288,7 @@ export default function BookingSmsUsagePage() {
                     </span>
                   )}
                   {job.error_message && (
-                    <span className="helper" style={{ fontSize: 11, color: '#ef4444', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={job.error_message}>
+                    <span style={{ fontSize: 11, color: '#ef4444' }} title={job.error_message}>
                       {job.error_message}
                     </span>
                   )}

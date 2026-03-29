@@ -116,6 +116,8 @@ export default function SuperAdmin() {
   const [managingStripeId, setManagingStripeId] = useState<string | null>(null)
   const [managingStripeName, setManagingStripeName] = useState('')
   const [editingStripeCustomerId, setEditingStripeCustomerId] = useState('')
+  const [editingSmsPricePerUnit, setEditingSmsPricePerUnit] = useState('')
+  const [editingStripeItemId, setEditingStripeItemId] = useState('')
   const [savingStripeCustomerId, setSavingStripeCustomerId] = useState(false)
 
   // Subscription quota management
@@ -424,10 +426,23 @@ export default function SuperAdmin() {
     }
   }
 
-  function openManageStripe(tenant: Tenant) {
+  async function openManageStripe(tenant: Tenant) {
     setManagingStripeId(tenant.id)
     setManagingStripeName(tenant.name)
     setEditingStripeCustomerId(tenant.stripe_customer_id || '')
+    setEditingSmsPricePerUnit('')
+    setEditingStripeItemId('')
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/get-sms-usage`, {
+        headers: { ...getAuthHeaders(), 'x-active-tenant': tenant.id },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setEditingSmsPricePerUnit(String(data.settings?.sms_price_per_unit ?? '0.02'))
+        setEditingStripeItemId(data.settings?.stripe_sms_subscription_item_id ?? '')
+      }
+    } catch {}
   }
 
   function openManageGeo(tenant: Tenant) {
@@ -486,6 +501,15 @@ async function handleSaveStripeCustomerId() {
       const data = await res.json()
       throw new Error(data.error || 'Failed to save')
     }
+    // Save SMS billing settings (price per SMS + Stripe subscription item ID)
+    await fetch(`${base}/api/save-billing-settings`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json', 'x-active-tenant': managingStripeId },
+      body: JSON.stringify({
+        sms_price_per_unit: editingSmsPricePerUnit ? parseFloat(editingSmsPricePerUnit) : undefined,
+        stripe_sms_subscription_item_id: editingStripeItemId.trim() || null,
+      }),
+    })
     alert(t('superAdmin.stripeSaved'))
     setManagingStripeId(null)
     await loadData()
@@ -1652,9 +1676,6 @@ const available = max - used
       onClick={(e) => e.stopPropagation()}
     >
       <h3 style={{ marginTop: 0 }}>Stripe: {managingStripeName}</h3>
-      <p className="helper" style={{ marginTop: 8 }}>
-        Paste the Stripe customer ID from Email 1 (starts with cus_)
-      </p>
       <div style={{ marginTop: 16 }}>
         <label>{t('superAdmin.stripeCustomerId')}</label>
         <input
@@ -1663,6 +1684,28 @@ const available = max - used
           onChange={(e) => setEditingStripeCustomerId(e.target.value)}
           placeholder="cus_xxxxxxxxxxxxxxx"
           style={{ height: CONTROL_H, marginTop: 6, fontFamily: 'monospace' }}
+        />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label>SMS Subscription Item ID</label>
+        <input
+          type="text"
+          value={editingStripeItemId}
+          onChange={(e) => setEditingStripeItemId(e.target.value)}
+          placeholder="si_xxxxxxxxxxxx"
+          style={{ height: CONTROL_H, marginTop: 6, fontFamily: 'monospace' }}
+        />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label>Price per SMS</label>
+        <input
+          type="number"
+          step="0.0001"
+          min="0"
+          value={editingSmsPricePerUnit}
+          onChange={(e) => setEditingSmsPricePerUnit(e.target.value)}
+          placeholder="0.0200"
+          style={{ height: CONTROL_H, marginTop: 6 }}
         />
       </div>
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
