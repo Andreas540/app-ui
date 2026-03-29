@@ -249,7 +249,6 @@ async function createBooking(event) {
               ${now}, ${jobStatus}, ${jobStatus === 'sent'}, false,
               ${twilioData.sid ?? null}, ${jobStatus === 'sent' ? 'twilio' : null}, ${jobStatus === 'sent' ? now : null}
             )
-            ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for) DO NOTHING
           `
           continue
         }
@@ -276,8 +275,6 @@ async function createBooking(event) {
             ${rule.channel}, ${rule.template_key},
             ${scheduledFor.toISOString()}, 'queued', false, false
           )
-          ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for)
-            DO NOTHING
         `
       }
     } catch (reminderErr) {
