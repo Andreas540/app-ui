@@ -5,7 +5,7 @@
 // remain available alongside this scheduled sync.
 
 export const config = {
-  schedule: '25,55 * * * *',
+  schedule: '*/5 * * * *',
 }
 
 // ── SimplyBook JSON-RPC helpers ───────────────────────────────────────────────

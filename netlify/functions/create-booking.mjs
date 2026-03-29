@@ -149,6 +149,44 @@ async function createBooking(event) {
     // Link booking → order
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
 
+    // Schedule reminders for this booking (best effort, non-fatal)
+    try {
+      const activeRules = await sql`
+        SELECT trigger_event, minutes_offset, channel, template_key, service_id
+        FROM reminder_rules
+        WHERE tenant_id = ${TENANT_ID} AND active = true
+      `
+      const nowMs = Date.now()
+      for (const rule of activeRules) {
+        if (rule.service_id && rule.service_id !== service_id) continue
+        let scheduledFor
+        if (rule.trigger_event === 'before_start') {
+          scheduledFor = new Date(startAt.getTime() + rule.minutes_offset * 60000)
+        } else if (rule.trigger_event === 'booking_confirmed') {
+          scheduledFor = new Date(Date.now() + rule.minutes_offset * 60000)
+        } else if (rule.trigger_event === 'unpaid_balance') {
+          scheduledFor = new Date(startAt.getTime() + rule.minutes_offset * 60000)
+        } else {
+          continue
+        }
+        if (scheduledFor.getTime() <= nowMs) continue
+        await sql`
+          INSERT INTO message_jobs (
+            tenant_id, booking_id, customer_id, channel, template_key,
+            scheduled_for, status, billable, stripe_reported
+          ) VALUES (
+            ${TENANT_ID}, ${bookingId}, ${customer_id},
+            ${rule.channel}, ${rule.template_key},
+            ${scheduledFor.toISOString()}, 'queued', false, false
+          )
+          ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for)
+            DO NOTHING
+        `
+      }
+    } catch (reminderErr) {
+      console.warn('Reminder scheduling failed (non-fatal):', reminderErr?.message)
+    }
+
     return cors(201, { ok: true, booking_id: bookingId, order_id: orderId })
   } catch (e) {
     console.error('create-booking error:', e)

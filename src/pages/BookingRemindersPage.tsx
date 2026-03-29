@@ -131,9 +131,11 @@ export default function BookingRemindersPage() {
 
   async function handleSaveRule(e: React.FormEvent) {
     e.preventDefault()
-    const minutes_offset = ruleForm.trigger_event === 'before_start'
-      ? -(ruleForm.offset_hours * 60)
-      : ruleForm.offset_hours * 60
+    const minutes_offset = ruleForm.trigger_event === 'booking_confirmed'
+      ? 0
+      : ruleForm.trigger_event === 'before_start'
+        ? -(ruleForm.offset_hours * 60)
+        : ruleForm.offset_hours * 60
     const payload = {
       action: editingRuleId ? 'update_rule' : 'create_rule',
       ...(editingRuleId ? { id: editingRuleId } : {}),
@@ -196,8 +198,9 @@ export default function BookingRemindersPage() {
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
 
   const TRIGGER_EVENTS = [
-    { value: 'before_start',   label: t('remindersPage.triggerBeforeStart') },
-    { value: 'unpaid_balance', label: t('remindersPage.triggerUnpaid') },
+    { value: 'booking_confirmed', label: t('remindersPage.triggerBookingCreated') },
+    { value: 'before_start',      label: t('remindersPage.triggerBeforeStart') },
+    { value: 'unpaid_balance',    label: t('remindersPage.triggerUnpaid') },
   ]
 
   const CHANNELS = [
@@ -206,6 +209,10 @@ export default function BookingRemindersPage() {
   ]
 
   const triggerLabel = (rule: ReminderRule) => {
+    if (rule.trigger_event === 'booking_confirmed') {
+      const hours = Math.round(rule.minutes_offset / 60)
+      return hours === 0 ? t('remindersPage.immediately') : t('remindersPage.hoursAfterCreated', { hours })
+    }
     const hours = Math.round(Math.abs(rule.minutes_offset) / 60)
     if (rule.trigger_event === 'before_start') return t('remindersPage.offsetBefore', { duration: `${hours}h` })
     return t('remindersPage.offsetAfterStart', { duration: `${hours}h` })
@@ -321,19 +328,21 @@ export default function BookingRemindersPage() {
                   {TRIGGER_EVENTS.map(te => <option key={te.value} value={te.value}>{te.label}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
-                  {ruleForm.trigger_event === 'before_start'
-                    ? t('remindersPage.hoursBefore')
-                    : t('remindersPage.hoursAfter')}
-                </label>
-                <input
-                  type="number" min={1}
-                  value={ruleForm.offset_hours}
-                  onChange={e => setRuleForm(r => ({ ...r, offset_hours: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
-                  style={{ width: '100%' }}
-                />
-              </div>
+              {ruleForm.trigger_event !== 'booking_confirmed' && (
+                <div>
+                  <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
+                    {ruleForm.trigger_event === 'before_start'
+                      ? t('remindersPage.hoursBefore')
+                      : t('remindersPage.hoursAfter')}
+                  </label>
+                  <input
+                    type="number" min={1}
+                    value={ruleForm.offset_hours}
+                    onChange={e => setRuleForm(r => ({ ...r, offset_hours: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              )}
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
                 <select value={ruleForm.channel} onChange={e => setRuleForm(r => ({ ...r, channel: e.target.value, template_key: '' }))} style={{ width: '100%' }}>
