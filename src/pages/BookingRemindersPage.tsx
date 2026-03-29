@@ -46,7 +46,7 @@ const BLANK_RULE_FORM = {
 
 const sectionLabel: React.CSSProperties = {
   fontWeight: 600,
-  fontSize: 14,
+  fontSize: 16,
   marginBottom: 12,
 }
 
@@ -366,21 +366,6 @@ export default function BookingRemindersPage() {
           )}
         </div>
 
-        {hasSimplybook && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer', fontSize: 13 }}>
-            <input
-              type="checkbox"
-              checked={simplybookSmsConfirmation}
-              onChange={async e => {
-                const val = e.target.checked
-                setSimplybookSmsConfirmation(val)
-                await callSave({ action: 'update_simplybook_setting', simplybook_sms_confirmation: val })
-              }}
-            />
-            {t('remindersPage.simplybookSmsConfirmation')}
-          </label>
-        )}
-
         {showRuleForm && (
           <form onSubmit={handleSaveRule} className="card" style={{ padding: 20, marginBottom: 12, display: 'grid', gap: 12 }}>
             <div style={{ fontWeight: 600 }}>
@@ -453,7 +438,7 @@ export default function BookingRemindersPage() {
             {rules.map(rule => (
               <div key={rule.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{rule.rule_name}</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{rule.rule_name}</div>
                   <div className="helper">
                     {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
                     {' · '}{triggerLabel(rule)}
@@ -491,6 +476,22 @@ export default function BookingRemindersPage() {
           </button>
         </div>
       </div>
+
+      {hasSimplybook && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 24, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={simplybookSmsConfirmation}
+            onChange={async e => {
+              const val = e.target.checked
+              setSimplybookSmsConfirmation(val)
+              await callSave({ action: 'update_simplybook_setting', simplybook_sms_confirmation: val })
+            }}
+            style={{ width: 16, height: 16, flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 14 }}>{t('remindersPage.simplybookSmsConfirmation')}</span>
+        </label>
+      )}
     </div>
   )
 }
