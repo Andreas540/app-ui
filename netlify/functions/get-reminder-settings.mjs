@@ -23,16 +23,20 @@ async function getSettings(event) {
     const TENANT_ID = authz.tenantId
 
     // Seed default booking confirmation template if none exists for this tenant
-    await sql`
-      INSERT INTO message_templates (tenant_id, template_key, channel, body)
-      VALUES (
-        ${TENANT_ID},
-        'booking_confirmation',
-        'sms',
-        'Hi {{customer_name}}, your booking for {{service_name}} on {{start_date}} at {{start_time}} is confirmed. See you then!'
-      )
-      ON CONFLICT (tenant_id, template_key, channel) DO NOTHING
+    const existingTmpl = await sql`
+      SELECT id FROM message_templates
+      WHERE tenant_id = ${TENANT_ID} AND template_key = 'booking_confirmation' AND channel = 'sms'
+      LIMIT 1
     `
+    if (!existingTmpl.length) {
+      await sql`
+        INSERT INTO message_templates (tenant_id, template_key, channel, body)
+        VALUES (
+          ${TENANT_ID}, 'booking_confirmation', 'sms',
+          'Hi {{customer_name}}, your booking for {{service_name}} on {{start_date}} at {{start_time}} is confirmed. See you then!'
+        )
+      `
+    }
 
     // Seed default booking confirmation rule if no booking_confirmed rule exists yet
     const existingConfirmRule = await sql`
