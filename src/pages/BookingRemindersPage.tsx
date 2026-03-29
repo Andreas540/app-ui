@@ -281,22 +281,22 @@ export default function BookingRemindersPage() {
         {!editingTemplate && templates.length > 0 && (
           <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
             {templates.map(tmpl => (
-              <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
-                    <span style={{ fontSize: 11, fontWeight: 400, background: 'var(--line)', borderRadius: 4, padding: '1px 6px' }}>
-                      {tmpl.channel.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
+              <div key={tmpl.id} className="card" style={{ padding: '12px 16px' }}>
+                <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
+                  <span style={{ fontSize: 11, fontWeight: 400, background: 'var(--line)', borderRadius: 4, padding: '1px 6px' }}>
+                    {tmpl.channel.toUpperCase()}
+                  </span>
                 </div>
-                <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>{t('edit')}</button>
-                <button
-                  onClick={() => handleDeleteTemplate(tmpl)}
-                  disabled={saving}
-                  style={{ fontSize: 12, flexShrink: 0, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
-                >{t('delete')}</button>
+                <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12 }}>{t('edit')}</button>
+                  <button
+                    onClick={() => handleDeleteTemplate(tmpl)}
+                    disabled={saving}
+                    style={{ fontSize: 12, color: 'salmon' }}
+                  >{t('delete')}</button>
+                </div>
               </div>
             ))}
           </div>
@@ -436,25 +436,25 @@ export default function BookingRemindersPage() {
         ) : (
           <div style={{ display: 'grid', gap: 6 }}>
             {rules.map(rule => (
-              <div key={rule.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{rule.rule_name}</div>
-                  <div className="helper">
-                    {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
-                    {' · '}{triggerLabel(rule)}
-                    {' · '}{rule.channel.toUpperCase()}
-                    {rule.service_name ? ` · ${rule.service_name}` : ''}
-                  </div>
+              <div key={rule.id} className="card" style={{ padding: '12px 16px' }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{rule.rule_name}</div>
+                <div className="helper" style={{ marginTop: 4 }}>
+                  {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
+                  {' · '}{triggerLabel(rule)}
+                  {' · '}{rule.channel.toUpperCase()}
+                  {rule.service_name ? ` · ${rule.service_name}` : ''}
                 </div>
-                <button onClick={() => openEditRule(rule)} style={{ fontSize: 12 }}>{t('edit')}</button>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                  <input type="checkbox" checked={rule.active} onChange={() => callSave({ action: 'toggle_rule', id: rule.id, active: !rule.active })} />
-                  {rule.active ? t('remindersPage.active') : t('remindersPage.paused')}
-                </label>
-                <button
-                  onClick={() => { if (confirm(t('remindersPage.deleteConfirm', { name: rule.rule_name }))) callSave({ action: 'delete_rule', id: rule.id }) }}
-                  style={{ fontSize: 12, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
-                >{t('delete')}</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                  <button onClick={() => openEditRule(rule)} style={{ fontSize: 12 }}>{t('edit')}</button>
+                  <button
+                    onClick={() => { if (confirm(t('remindersPage.deleteConfirm', { name: rule.rule_name }))) callSave({ action: 'delete_rule', id: rule.id }) }}
+                    style={{ fontSize: 12, color: 'salmon' }}
+                  >{t('delete')}</button>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 12, marginLeft: 'auto' }}>
+                    <input type="checkbox" checked={rule.active} onChange={() => callSave({ action: 'toggle_rule', id: rule.id, active: !rule.active })} style={{ width: 13, height: 13 }} />
+                    {rule.active ? t('remindersPage.active') : t('remindersPage.paused')}
+                  </label>
+                </div>
               </div>
             ))}
           </div>
