@@ -1011,6 +1011,7 @@
     "channelEmail": "E-post",
     "messageTemplate": "Meddelandemall",
     "selectTemplate": "Välj mall…",
+    "noTemplatesForChannel": "Inga mallar för den här kanalen ännu. Lägg till en ovan först.",
     "service": "Tjänst (valfri)",
     "allServices": "Alla tjänster",
     "saveRule": "Spara regel",

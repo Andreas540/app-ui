@@ -1011,6 +1011,7 @@
     "channelEmail": "Correo",
     "messageTemplate": "Plantilla de mensaje",
     "selectTemplate": "Seleccionar plantilla…",
+    "noTemplatesForChannel": "Sin plantillas para este canal. Añade una arriba primero.",
     "service": "Servicio (opcional)",
     "allServices": "Todos los servicios",
     "saveRule": "Guardar regla",

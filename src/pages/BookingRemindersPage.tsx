@@ -181,172 +181,176 @@ export default function BookingRemindersPage() {
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
 
-      {/* ── Rules ────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>{t('remindersPage.rules')}</h3>
-        <button onClick={() => setShowAddRule(v => !v)} disabled={saving}>{t('remindersPage.addRule')}</button>
-      </div>
+      {/* ── Message templates ─────────────────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>{t('remindersPage.messageTemplates')}</h3>
+          {!editingTemplate && (
+            <button onClick={openNewTemplate} disabled={saving}>{t('remindersPage.addTemplate')}</button>
+          )}
+        </div>
 
-      {showAddRule && (
-        <form onSubmit={handleAddRule} className="card" style={{ padding: 20, marginBottom: 16, display: 'grid', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.ruleName')}</label>
-              <input value={newRule.rule_name} onChange={e => setNewRule(r => ({ ...r, rule_name: e.target.value }))} placeholder={t('remindersPage.ruleNamePlaceholder')} required style={{ width: '100%' }} />
-            </div>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.trigger')}</label>
-              <select value={newRule.trigger_event} onChange={e => setNewRule(r => ({ ...r, trigger_event: e.target.value }))} style={{ width: '100%' }}>
-                {TRIGGER_EVENTS.map(te => <option key={te.value} value={te.value}>{te.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.offsetMinutes')}</label>
-              <input type="number" value={newRule.minutes_offset} onChange={e => setNewRule(r => ({ ...r, minutes_offset: parseInt(e.target.value, 10) || 0 }))} style={{ width: '100%' }} />
-              <div className="helper" style={{ marginTop: 4 }}>{offsetLabel(newRule.minutes_offset, newRule.trigger_event)}</div>
-            </div>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
-              <select value={newRule.channel} onChange={e => setNewRule(r => ({ ...r, channel: e.target.value }))} style={{ width: '100%' }}>
-                {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.messageTemplate')}</label>
-              <select value={newRule.template_key} onChange={e => setNewRule(r => ({ ...r, template_key: e.target.value }))} required style={{ width: '100%' }}>
-                <option value="">{t('remindersPage.selectTemplate')}</option>
-                {templates.filter(tmpl => tmpl.channel === newRule.channel).map(tmpl => (
-                  <option key={tmpl.id} value={tmpl.template_key}>
-                    {tmpl.subject || tmpl.body.slice(0, 60)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.service')}</label>
-              <select value={newRule.service_id} onChange={e => setNewRule(r => ({ ...r, service_id: e.target.value }))} style={{ width: '100%' }}>
-                <option value="">{t('remindersPage.allServices')}</option>
-                {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveRule')}</button>
-            <button type="button" onClick={() => setShowAddRule(false)}>{t('cancel')}</button>
-          </div>
-        </form>
-      )}
+        {templates.length === 0 && !editingTemplate && (
+          <div className="helper" style={{ marginBottom: 12 }}>{t('remindersPage.noTemplates')}</div>
+        )}
 
-      {rules.length === 0 ? (
-        <div className="helper" style={{ marginBottom: 24 }}>{t('remindersPage.noRules')}</div>
-      ) : (
-        <div style={{ display: 'grid', gap: 6, marginBottom: 24 }}>
-          {rules.map(rule => (
-            <div key={rule.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{rule.rule_name}</div>
-                <div className="helper">
-                  {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
-                  {' · '}{offsetLabel(rule.minutes_offset, rule.trigger_event)}
-                  {' · '}{rule.channel.toUpperCase()}
-                  {' · '}{rule.service_name ?? t('remindersPage.allServices')}
+        {!editingTemplate && templates.length > 0 && (
+          <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
+            {templates.map(tmpl => (
+              <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
+                    <span style={{ fontSize: 11, fontWeight: 400, background: 'var(--line)', borderRadius: 4, padding: '1px 6px' }}>
+                      {tmpl.channel.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
+                </div>
+                <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>{t('edit')}</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Inline template editor */}
+        {editingTemplate && (
+          <form onSubmit={handleSaveTemplate} className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
+            <div style={{ fontWeight: 600 }}>
+              {showAddTemplate ? t('remindersPage.newTemplate') : `${t('remindersPage.editTemplate')} · ${tmplChannel.toUpperCase()}`}
+            </div>
+            {showAddTemplate && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.templateName')}</label>
+                  <input value={tmplKey} onChange={e => setTmplKey(e.target.value.toLowerCase().replace(/\s+/g, '_'))} required placeholder={t('remindersPage.templateNamePlaceholder')} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
+                  <select value={tmplChannel} onChange={e => setTmplChannel(e.target.value)} style={{ width: '100%' }}>
+                    {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
+                  </select>
                 </div>
               </div>
-              <button onClick={() => openTemplateEditor(rule.template_key, rule.channel)} style={{ fontSize: 12 }}>
-                {t('remindersPage.editTemplate')}
-              </button>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                <input type="checkbox" checked={rule.active} onChange={() => callSave({ action: 'toggle_rule', id: rule.id, active: !rule.active })} />
-                {rule.active ? t('remindersPage.active') : t('remindersPage.paused')}
-              </label>
-              <button
-                onClick={() => { if (confirm(t('remindersPage.deleteConfirm', { name: rule.rule_name }))) callSave({ action: 'delete_rule', id: rule.id }) }}
-                style={{ fontSize: 12, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
-              >
-                {t('delete')}
-              </button>
+            )}
+            {tmplChannel === 'email' && (
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.subject')}</label>
+                <input value={tmplSubject} onChange={e => setTmplSubject(e.target.value)} style={{ width: '100%' }} placeholder={t('remindersPage.subjectPlaceholder')} />
+              </div>
+            )}
+            <div>
+              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.body')}</label>
+              <textarea
+                value={tmplBody}
+                onChange={e => setTmplBody(e.target.value)}
+                required rows={5}
+                style={{ width: '100%', fontFamily: 'monospace', fontSize: 13 }}
+                placeholder={t('remindersPage.bodyPlaceholder')}
+              />
+              <div className="helper" style={{ marginTop: 4 }}>
+                {t('remindersPage.variables')}: <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{TEMPLATE_VARS}</span>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveTemplate')}</button>
+              <button type="button" onClick={() => { setEditingTemplate(null); setShowAddTemplate(false) }}>{t('cancel')}</button>
+            </div>
+          </form>
+        )}
+      </div>
 
-      {/* ── Template editor ───────────────────────────────────────── */}
-      {editingTemplate && (
-        <form onSubmit={handleSaveTemplate} className="card" style={{ padding: 20, marginBottom: 24, display: 'grid', gap: 12 }}>
-          <h3 style={{ marginTop: 0 }}>
-            {showAddTemplate
-              ? t('remindersPage.newTemplate')
-              : <>{t('remindersPage.editTemplate')} · {tmplChannel.toUpperCase()}</>}
-          </h3>
-          {showAddTemplate && (
+      {/* ── Rules ────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>{t('remindersPage.rules')}</h3>
+          <button onClick={() => setShowAddRule(v => !v)} disabled={saving}>{t('remindersPage.addRule')}</button>
+        </div>
+
+        {showAddRule && (
+          <form onSubmit={handleAddRule} className="card" style={{ padding: 20, marginBottom: 12, display: 'grid', gap: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.templateName')}</label>
-                <input value={tmplKey} onChange={e => setTmplKey(e.target.value.toLowerCase().replace(/\s+/g, '_'))} required placeholder={t('remindersPage.templateNamePlaceholder')} style={{ width: '100%' }} />
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.ruleName')}</label>
+                <input value={newRule.rule_name} onChange={e => setNewRule(r => ({ ...r, rule_name: e.target.value }))} placeholder={t('remindersPage.ruleNamePlaceholder')} required style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.trigger')}</label>
+                <select value={newRule.trigger_event} onChange={e => setNewRule(r => ({ ...r, trigger_event: e.target.value }))} style={{ width: '100%' }}>
+                  {TRIGGER_EVENTS.map(te => <option key={te.value} value={te.value}>{te.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.offsetMinutes')}</label>
+                <input type="number" value={newRule.minutes_offset} onChange={e => setNewRule(r => ({ ...r, minutes_offset: parseInt(e.target.value, 10) || 0 }))} style={{ width: '100%' }} />
+                <div className="helper" style={{ marginTop: 4 }}>{offsetLabel(newRule.minutes_offset, newRule.trigger_event)}</div>
               </div>
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
-                <select value={tmplChannel} onChange={e => setTmplChannel(e.target.value)} style={{ width: '100%' }}>
+                <select value={newRule.channel} onChange={e => setNewRule(r => ({ ...r, channel: e.target.value }))} style={{ width: '100%' }}>
                   {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
                 </select>
               </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.messageTemplate')}</label>
+                {templates.filter(tmpl => tmpl.channel === newRule.channel).length === 0 ? (
+                  <div className="helper" style={{ color: 'salmon' }}>{t('remindersPage.noTemplatesForChannel')}</div>
+                ) : (
+                  <select value={newRule.template_key} onChange={e => setNewRule(r => ({ ...r, template_key: e.target.value }))} required style={{ width: '100%' }}>
+                    <option value="">{t('remindersPage.selectTemplate')}</option>
+                    {templates.filter(tmpl => tmpl.channel === newRule.channel).map(tmpl => (
+                      <option key={tmpl.id} value={tmpl.template_key}>
+                        {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.service')}</label>
+                <select value={newRule.service_id} onChange={e => setNewRule(r => ({ ...r, service_id: e.target.value }))} style={{ width: '100%' }}>
+                  <option value="">{t('remindersPage.allServices')}</option>
+                  {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
             </div>
-          )}
-          {tmplChannel === 'email' && (
-            <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.subject')}</label>
-              <input value={tmplSubject} onChange={e => setTmplSubject(e.target.value)} style={{ width: '100%' }} placeholder={t('remindersPage.subjectPlaceholder')} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveRule')}</button>
+              <button type="button" onClick={() => setShowAddRule(false)}>{t('cancel')}</button>
             </div>
-          )}
-          <div>
-            <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.body')}</label>
-            <textarea
-              value={tmplBody}
-              onChange={e => setTmplBody(e.target.value)}
-              required rows={5}
-              style={{ width: '100%', fontFamily: 'monospace', fontSize: 13 }}
-              placeholder={t('remindersPage.bodyPlaceholder')}
-            />
-            <div className="helper" style={{ marginTop: 4 }}>
-              {t('remindersPage.variables')}: <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{TEMPLATE_VARS}</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveTemplate')}</button>
-            <button type="button" onClick={() => { setEditingTemplate(null); setShowAddTemplate(false) }}>{t('cancel')}</button>
-          </div>
-        </form>
-      )}
+          </form>
+        )}
 
-      {/* ── Templates list ────────────────────────────────────────── */}
-      {!editingTemplate && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ margin: 0 }}>{t('remindersPage.messageTemplates')}</h3>
-            <button onClick={openNewTemplate} disabled={saving}>{t('remindersPage.addTemplate')}</button>
-          </div>
-          {templates.length === 0 ? (
-            <div className="helper">{t('remindersPage.noTemplates')}</div>
-          ) : (
-            <div style={{ display: 'grid', gap: 6 }}>
-              {templates.map(tmpl => (
-                <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
-                      <span style={{ fontSize: 11, fontWeight: 400, background: 'var(--line)', borderRadius: 4, padding: '1px 6px' }}>
-                        {tmpl.channel.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
+        {rules.length === 0 ? (
+          <div className="helper">{t('remindersPage.noRules')}</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 6 }}>
+            {rules.map(rule => (
+              <div key={rule.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{rule.rule_name}</div>
+                  <div className="helper">
+                    {TRIGGER_EVENTS.find(te => te.value === rule.trigger_event)?.label}
+                    {' · '}{offsetLabel(rule.minutes_offset, rule.trigger_event)}
+                    {' · '}{rule.channel.toUpperCase()}
+                    {rule.service_name ? ` · ${rule.service_name}` : ''}
                   </div>
-                  <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>{t('edit')}</button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                  <input type="checkbox" checked={rule.active} onChange={() => callSave({ action: 'toggle_rule', id: rule.id, active: !rule.active })} />
+                  {rule.active ? t('remindersPage.active') : t('remindersPage.paused')}
+                </label>
+                <button
+                  onClick={() => { if (confirm(t('remindersPage.deleteConfirm', { name: rule.rule_name }))) callSave({ action: 'delete_rule', id: rule.id }) }}
+                  style={{ fontSize: 12, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
+                >
+                  {t('delete')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Generate reminders ────────────────────────────────────── */}
       <div className="card" style={{ padding: 20 }}>

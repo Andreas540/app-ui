@@ -1011,6 +1011,7 @@
     "channelEmail": "Email",
     "messageTemplate": "Message template",
     "selectTemplate": "Select a template…",
+    "noTemplatesForChannel": "No templates for this channel yet. Add one above first.",
     "service": "Service (optional)",
     "allServices": "All services",
     "saveRule": "Save rule",
