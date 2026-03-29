@@ -75,7 +75,22 @@ async function getSettings(event) {
       ORDER BY name
     `
 
-    return cors(200, { rules, templates, services })
+    // Check for active SimplyBook connection and its SMS confirmation setting
+    await sql`
+      ALTER TABLE provider_connections
+      ADD COLUMN IF NOT EXISTS simplybook_sms_confirmation BOOLEAN DEFAULT TRUE
+    `.catch(() => {}) // ignore if already exists or no permission
+
+    const simplybookConn = await sql`
+      SELECT id, simplybook_sms_confirmation
+      FROM provider_connections
+      WHERE tenant_id = ${TENANT_ID} AND provider = 'simplybook' AND connection_status = 'active'
+      LIMIT 1
+    `
+    const has_simplybook = simplybookConn.length > 0
+    const simplybook_sms_confirmation = simplybookConn[0]?.simplybook_sms_confirmation ?? true
+
+    return cors(200, { rules, templates, services, has_simplybook, simplybook_sms_confirmation })
   } catch (e) {
     console.error(e)
     return cors(500, { error: String(e?.message || e) })

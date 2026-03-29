@@ -284,6 +284,7 @@ export type NewCustomerInput = {
   apply_to_history?: boolean
   company_name?: string | null
   phone?: string | null
+  sms_consent?: boolean | null
   address1?: string | null
   address2?: string | null
   city?: string | null
@@ -328,6 +329,7 @@ export type CustomerDetail = {
     shipping_cost?: number | null
     company_name?: string | null
     phone?: string | null
+    sms_consent?: boolean | null
     address1?: string | null
     address2?: string | null
     city?: string | null

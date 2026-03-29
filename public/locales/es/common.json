@@ -266,6 +266,7 @@
     "days": "{{n}} días"
   },
   "customers": {
+    "smsConsent": "Ha dado consentimiento por SMS",
     "searchPlaceholder": "Buscar cliente",
     "createNew": "Crear Nuevo Cliente",
     "allFilter": "Todos",
@@ -992,7 +993,7 @@
     "confirmDelete": "¿Eliminar esta reserva?"
   },
   "remindersPage": {
-    "title": "Recordatorios",
+    "title": "Recordatorios y Confirmaciones",
     "subtitle": "Recordatorios SMS automáticos enviados a los clientes antes de su reserva.",
     "sectionTemplates": "1. Crear mensaje",
     "sectionRules": "2. Establecer regla de envío",
@@ -1036,6 +1037,11 @@
     "messageTemplates": "Mensajes",
     "addTemplate": "+ Añadir mensaje",
     "noTemplates": "Sin mensajes aún.",
+    "sectionApply": "3. Aplicar actualizaciones",
+    "simplybookSmsConfirmation": "Enviar confirmación SMS para reservas de SimplyBook",
+    "templateInUse": "Este mensaje es usado por la regla: {{rules}}. Elimina la regla primero.",
+    "deleteTemplateConfirm": "¿Eliminar este mensaje?",
+    "variablesClickHint": "Haz clic para insertar en tu mensaje",
     "scheduleNowTitle": "Aplicar reglas a reservas próximas",
     "scheduleNowHelp": "Programa recordatorios para todas las reservas próximas según las reglas activas. Ejecuta esto después de añadir o cambiar reglas.",
     "scheduleNow": "Aplicar ahora",
@@ -1057,7 +1063,7 @@
     "price": "Precio",
     "notes": "Notas (opcional)",
     "sendSms": "Enviar confirmación por SMS",
-    "sendSmsComingSoon": "Confirmación por SMS — próximamente",
+    "sendConfirmationSms": "Enviar SMS de confirmación de reserva",
     "save": "Crear reserva",
     "saving": "Creando…",
     "saved": "Reserva creada",

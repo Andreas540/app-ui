@@ -25,16 +25,16 @@ async function createBooking(event) {
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
       : event.body
     const body = JSON.parse(rawBody || '{}')
-    const { service_id, customer_id, date, start_time, total_amount, notes, link_order_id, link_payment_id } = body
+    const { service_id, customer_id, date, start_time, total_amount, notes, link_order_id, link_payment_id, send_confirmation = true } = body
 
     if (!service_id)  return cors(400, { error: 'service_id is required' })
     if (!customer_id) return cors(400, { error: 'customer_id is required' })
     if (!date)        return cors(400, { error: 'date is required' })
     if (!start_time)  return cors(400, { error: 'start_time is required' })
 
-    // Fetch service details (duration, price, currency)
+    // Fetch service details (duration, price, currency, name)
     const svcRows = await sql`
-      SELECT id, duration_minutes, price_amount, currency
+      SELECT id, name, duration_minutes, price_amount, currency
       FROM services
       WHERE id = ${service_id} AND tenant_id = ${TENANT_ID}
       LIMIT 1
@@ -149,7 +149,7 @@ async function createBooking(event) {
     // Link booking → order
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
 
-    // Schedule reminders for this booking (best effort, non-fatal)
+    // Schedule reminders and send immediate confirmations (best effort, non-fatal)
     try {
       const activeRules = await sql`
         SELECT trigger_event, minutes_offset, channel, template_key, service_id
@@ -157,19 +157,76 @@ async function createBooking(event) {
         WHERE tenant_id = ${TENANT_ID} AND active = true
       `
       const nowMs = Date.now()
+
       for (const rule of activeRules) {
         if (rule.service_id && rule.service_id !== service_id) continue
+
+        // ── Booking confirmation: send immediately via Twilio, bypass queue ──
+        if (rule.trigger_event === 'booking_confirmed' && rule.channel === 'sms') {
+          if (!send_confirmation) continue
+
+          const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER } = process.env
+          if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) continue
+
+          const [custRows, tmplRows] = await Promise.all([
+            sql`SELECT phone, sms_consent, name FROM customers WHERE id = ${customer_id} AND tenant_id = ${TENANT_ID} LIMIT 1`,
+            sql`SELECT body FROM message_templates WHERE tenant_id = ${TENANT_ID} AND template_key = ${rule.template_key} AND channel = 'sms' LIMIT 1`,
+          ])
+          const cust = custRows[0]
+          if (!cust?.phone || !cust?.sms_consent || !tmplRows[0]) continue
+
+          const startDate = startAt.toLocaleDateString()
+          const startTime = startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          const messageBody = tmplRows[0].body
+            .replace(/{{customer_name}}/g, cust.name || '')
+            .replace(/{{service_name}}/g,  svc.name  || '')
+            .replace(/{{start_date}}/g,    startDate)
+            .replace(/{{start_time}}/g,    startTime)
+            .replace(/{{staff_name}}/g,    '')
+
+          const twilioRes = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+              },
+              body: new URLSearchParams({ From: TWILIO_FROM_NUMBER, To: cust.phone, Body: messageBody }).toString(),
+            }
+          )
+          const twilioData = await twilioRes.json()
+          const jobStatus = twilioRes.ok && twilioData.sid ? 'sent' : 'failed'
+          const now = new Date().toISOString()
+
+          await sql`
+            INSERT INTO message_jobs (
+              tenant_id, booking_id, customer_id, channel, template_key,
+              scheduled_for, status, billable, stripe_reported,
+              provider_message_id, provider_name, sent_at
+            ) VALUES (
+              ${TENANT_ID}, ${bookingId}, ${customer_id}, 'sms', ${rule.template_key},
+              ${now}, ${jobStatus}, ${jobStatus === 'sent'}, false,
+              ${twilioData.sid ?? null}, ${jobStatus === 'sent' ? 'twilio' : null}, ${jobStatus === 'sent' ? now : null}
+            )
+            ON CONFLICT (tenant_id, booking_id, template_key, channel, scheduled_for) DO NOTHING
+          `
+          continue
+        }
+
+        // ── Future reminders: queue for scheduled sender ──
         let scheduledFor
         if (rule.trigger_event === 'before_start') {
           scheduledFor = new Date(startAt.getTime() + rule.minutes_offset * 60000)
         } else if (rule.trigger_event === 'booking_confirmed') {
-          scheduledFor = new Date(Date.now() + rule.minutes_offset * 60000)
+          scheduledFor = new Date(nowMs + rule.minutes_offset * 60000)
         } else if (rule.trigger_event === 'unpaid_balance') {
           scheduledFor = new Date(startAt.getTime() + rule.minutes_offset * 60000)
         } else {
           continue
         }
         if (scheduledFor.getTime() <= nowMs) continue
+
         await sql`
           INSERT INTO message_jobs (
             tenant_id, booking_id, customer_id, channel, template_key,

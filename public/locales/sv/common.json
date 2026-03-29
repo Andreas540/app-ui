@@ -266,6 +266,7 @@
     "days": "{{n}} dagar"
   },
   "customers": {
+    "smsConsent": "Har gett SMS-samtycke",
     "searchPlaceholder": "Sök kund",
     "createNew": "Skapa ny kund",
     "allFilter": "Alla",
@@ -992,7 +993,7 @@
     "confirmDelete": "Radera den här bokningen?"
   },
   "remindersPage": {
-    "title": "Påminnelser",
+    "title": "Påminnelser och Bekräftelser",
     "subtitle": "Automatiska SMS-påminnelser skickas till kunder inför deras bokning.",
     "sectionTemplates": "1. Skapa meddelande",
     "sectionRules": "2. Ange regel för när det ska skickas",
@@ -1036,6 +1037,11 @@
     "messageTemplates": "Meddelanden",
     "addTemplate": "+ Lägg till meddelande",
     "noTemplates": "Inga meddelanden ännu.",
+    "sectionApply": "3. Tillämpa uppdateringar",
+    "simplybookSmsConfirmation": "Skicka SMS-bekräftelse för SimplyBook-bokningar",
+    "templateInUse": "Det här meddelandet används av regeln: {{rules}}. Ta bort regeln först.",
+    "deleteTemplateConfirm": "Ta bort det här meddelandet?",
+    "variablesClickHint": "Klicka för att infoga i ditt meddelande",
     "scheduleNowTitle": "Tillämpa regler på kommande bokningar",
     "scheduleNowHelp": "Schemalägger påminnelser för alla kommande bokningar baserat på aktiva regler. Kör detta efter att du lagt till eller ändrat regler.",
     "scheduleNow": "Tillämpa nu",
@@ -1057,7 +1063,7 @@
     "price": "Pris",
     "notes": "Anteckningar (valfritt)",
     "sendSms": "Skicka SMS-bekräftelse",
-    "sendSmsComingSoon": "SMS-bekräftelse — kommer snart",
+    "sendConfirmationSms": "Skicka bokningsbekräftelse via SMS",
     "save": "Skapa bokning",
     "saving": "Skapar…",
     "saved": "Bokning skapad",

@@ -93,6 +93,34 @@ async function saveSettings(event) {
       return cors(200, { ok: true })
     }
 
+    if (action === 'delete_template') {
+      const { template_key, channel } = body
+      if (!template_key || !channel) return cors(400, { error: 'template_key and channel are required' })
+      // Safety check: refuse if any rule references this template
+      const using = await sql`
+        SELECT id, rule_name FROM reminder_rules
+        WHERE tenant_id = ${TENANT_ID} AND template_key = ${template_key} AND channel = ${channel}
+      `
+      if (using.length) {
+        return cors(409, { error: 'Template is in use', rules: using.map(r => r.rule_name) })
+      }
+      await sql`
+        DELETE FROM message_templates
+        WHERE tenant_id = ${TENANT_ID} AND template_key = ${template_key} AND channel = ${channel}
+      `
+      return cors(200, { ok: true })
+    }
+
+    if (action === 'update_simplybook_setting') {
+      const { simplybook_sms_confirmation } = body
+      await sql`
+        UPDATE provider_connections
+        SET simplybook_sms_confirmation = ${!!simplybook_sms_confirmation}, updated_at = now()
+        WHERE tenant_id = ${TENANT_ID} AND provider = 'simplybook'
+      `
+      return cors(200, { ok: true })
+    }
+
     return cors(400, { error: `Unknown action: ${action}` })
   } catch (e) {
     console.error(e)

@@ -30,6 +30,7 @@ export default function EditCustomer() {
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [companyName, setCompanyName] = useState('')
   const [phone, setPhone] = useState('')
+  const [smsConsent, setSmsConsent] = useState(false)
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
   const [city, setCity] = useState('')
@@ -51,6 +52,7 @@ setCustomerType(
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
+        setSmsConsent(c.sms_consent ?? false)
         setAddress1(c.address1 || '')
         setAddress2(c.address2 || '')
         setCity(c.city || '')
@@ -88,6 +90,7 @@ setCustomerType(
         effective_date: costOption === 'specific' ? specificDate : undefined,
         company_name: companyName.trim() || null,
         phone: phone.trim() || null,
+        sms_consent: smsConsent,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
         city: city.trim() || null,
@@ -200,6 +203,10 @@ setCustomerType(
         <div>
           <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={smsConsent} onChange={e => setSmsConsent(e.target.checked)} />
+            {t('customers.smsConsent')}
+          </label>
         </div>
         <div>
           <label>{t('addressLine1')}</label>

@@ -266,6 +266,7 @@
     "days": "{{n}} days"
   },
   "customers": {
+    "smsConsent": "Has given SMS consent",
     "searchPlaceholder": "Search customer",
     "createNew": "Create New Customer",
     "allFilter": "All",
@@ -992,7 +993,7 @@
     "confirmDelete": "Delete this booking?"
   },
   "remindersPage": {
-    "title": "Reminders",
+    "title": "Reminders and Confirmations",
     "subtitle": "Automatic SMS reminders sent to customers before their booking.",
     "sectionTemplates": "1. Create message",
     "sectionRules": "2. Set rule for when to send",
@@ -1036,6 +1037,11 @@
     "messageTemplates": "Messages",
     "addTemplate": "+ Add message",
     "noTemplates": "No messages yet.",
+    "sectionApply": "3. Apply updates",
+    "simplybookSmsConfirmation": "Send SMS confirmation for SimplyBook bookings",
+    "templateInUse": "This message is used by rule: {{rules}}. Remove the rule first.",
+    "deleteTemplateConfirm": "Delete this message?",
+    "variablesClickHint": "Click to insert into your message",
     "scheduleNowTitle": "Apply rules to upcoming bookings",
     "scheduleNowHelp": "Queues reminders for all upcoming bookings based on active rules. Run this after adding or changing rules.",
     "scheduleNow": "Apply now",
@@ -1057,7 +1063,7 @@
     "price": "Price",
     "notes": "Notes (optional)",
     "sendSms": "Send SMS confirmation",
-    "sendSmsComingSoon": "SMS confirmation — coming soon",
+    "sendConfirmationSms": "Send booking confirmation SMS",
     "save": "Create booking",
     "saving": "Creating…",
     "saved": "Booking created",

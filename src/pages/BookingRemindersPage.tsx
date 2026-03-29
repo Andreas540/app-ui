@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
@@ -31,7 +31,9 @@ function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
-const TEMPLATE_VARS = '{{customer_name}}, {{service_name}}, {{start_date}}, {{start_time}}, {{staff_name}}'
+const TEMPLATE_VAR_LIST = [
+  '{{customer_name}}', '{{service_name}}', '{{start_date}}', '{{start_time}}', '{{staff_name}}',
+]
 
 const BLANK_RULE_FORM = {
   rule_name: '',
@@ -42,6 +44,12 @@ const BLANK_RULE_FORM = {
   service_id: '',
 }
 
+const sectionLabel: React.CSSProperties = {
+  fontWeight: 600,
+  fontSize: 14,
+  marginBottom: 12,
+}
+
 export default function BookingRemindersPage() {
   const { t } = useTranslation()
   const [rules, setRules] = useState<ReminderRule[]>([])
@@ -50,6 +58,10 @@ export default function BookingRemindersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // SimplyBook setting
+  const [hasSimplybook, setHasSimplybook] = useState(false)
+  const [simplybookSmsConfirmation, setSimplybookSmsConfirmation] = useState(true)
 
   // Rule form state
   const [showRuleForm, setShowRuleForm] = useState(false)
@@ -63,6 +75,7 @@ export default function BookingRemindersPage() {
   const [tmplBody, setTmplBody] = useState('')
   const [tmplSubject, setTmplSubject] = useState('')
   const [tmplChannel, setTmplChannel] = useState('sms')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [generating, setGenerating] = useState(false)
   const [generateResult, setGenerateResult] = useState<string | null>(null)
@@ -79,6 +92,8 @@ export default function BookingRemindersPage() {
       setRules(data.rules || [])
       setTemplates(data.templates || [])
       setServices(data.services || [])
+      setHasSimplybook(!!data.has_simplybook)
+      setSimplybookSmsConfirmation(data.simplybook_sms_confirmation ?? true)
     } catch (e: any) {
       setError(e.message || t('remindersPage.loadFailed'))
     } finally {
@@ -136,7 +151,7 @@ export default function BookingRemindersPage() {
       : ruleForm.trigger_event === 'before_start'
         ? -(ruleForm.offset_hours * 60)
         : ruleForm.offset_hours * 60
-    const payload = {
+    await callSave({
       action: editingRuleId ? 'update_rule' : 'create_rule',
       ...(editingRuleId ? { id: editingRuleId } : {}),
       rule_name: ruleForm.rule_name,
@@ -145,8 +160,7 @@ export default function BookingRemindersPage() {
       channel: ruleForm.channel,
       template_key: ruleForm.template_key,
       service_id: ruleForm.service_id || null,
-    }
-    await callSave(payload)
+    })
     closeRuleForm()
   }
 
@@ -174,6 +188,32 @@ export default function BookingRemindersPage() {
     await callSave({ action: 'upsert_template', template_key: tmplKey, channel: tmplChannel, subject: tmplSubject || null, body: tmplBody })
     setEditingTemplate(null)
     setShowAddTemplate(false)
+  }
+
+  async function handleDeleteTemplate(tmpl: MessageTemplate) {
+    const using = rules.filter(r => r.template_key === tmpl.template_key && r.channel === tmpl.channel)
+    if (using.length) {
+      alert(t('remindersPage.templateInUse', { rules: using.map(r => r.rule_name).join(', ') }))
+      return
+    }
+    if (!confirm(t('remindersPage.deleteTemplateConfirm'))) return
+    await callSave({ action: 'delete_template', template_key: tmpl.template_key, channel: tmpl.channel })
+  }
+
+  function insertVariable(variable: string) {
+    const el = textareaRef.current
+    if (!el) {
+      setTmplBody(b => b + variable)
+      return
+    }
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const newValue = tmplBody.slice(0, start) + variable + tmplBody.slice(end)
+    setTmplBody(newValue)
+    setTimeout(() => {
+      el.focus()
+      el.setSelectionRange(start + variable.length, start + variable.length)
+    }, 0)
   }
 
   async function handleGenerateReminders() {
@@ -228,7 +268,7 @@ export default function BookingRemindersPage() {
       {/* ── 1. Create message ─────────────────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'nowrap' }}>
-          <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('remindersPage.sectionTemplates')}</h3>
+          <div style={sectionLabel}>{t('remindersPage.sectionTemplates')}</div>
           {!editingTemplate && (
             <button onClick={openNewTemplate} disabled={saving}>{t('remindersPage.addTemplate')}</button>
           )}
@@ -252,6 +292,11 @@ export default function BookingRemindersPage() {
                   <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
                 </div>
                 <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>{t('edit')}</button>
+                <button
+                  onClick={() => handleDeleteTemplate(tmpl)}
+                  disabled={saving}
+                  style={{ fontSize: 12, flexShrink: 0, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
+                >{t('delete')}</button>
               </div>
             ))}
           </div>
@@ -285,14 +330,23 @@ export default function BookingRemindersPage() {
             <div>
               <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.body')}</label>
               <textarea
+                ref={textareaRef}
                 value={tmplBody}
                 onChange={e => setTmplBody(e.target.value)}
                 required rows={5}
                 style={{ width: '100%', fontFamily: 'monospace', fontSize: 13 }}
                 placeholder={t('remindersPage.bodyPlaceholder')}
               />
-              <div className="helper" style={{ marginTop: 4 }}>
-                {t('remindersPage.variables')}: <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{TEMPLATE_VARS}</span>
+              <div className="helper" style={{ marginTop: 6 }}>{t('remindersPage.variablesClickHint')}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                {TEMPLATE_VAR_LIST.map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => insertVariable(v)}
+                    style={{ fontSize: 11, fontFamily: 'monospace', padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}
+                  >{v}</button>
+                ))}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -306,11 +360,26 @@ export default function BookingRemindersPage() {
       {/* ── 2. Set rule for when to send ─────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'nowrap' }}>
-          <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('remindersPage.sectionRules')}</h3>
+          <div style={sectionLabel}>{t('remindersPage.sectionRules')}</div>
           {!showRuleForm && (
             <button onClick={openAddRule} disabled={saving}>{t('remindersPage.addRule')}</button>
           )}
         </div>
+
+        {hasSimplybook && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer', fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={simplybookSmsConfirmation}
+              onChange={async e => {
+                const val = e.target.checked
+                setSimplybookSmsConfirmation(val)
+                await callSave({ action: 'update_simplybook_setting', simplybook_sms_confirmation: val })
+              }}
+            />
+            {t('remindersPage.simplybookSmsConfirmation')}
+          </label>
+        )}
 
         {showRuleForm && (
           <form onSubmit={handleSaveRule} className="card" style={{ padding: 20, marginBottom: 12, display: 'grid', gap: 12 }}>
@@ -331,9 +400,7 @@ export default function BookingRemindersPage() {
               {ruleForm.trigger_event !== 'booking_confirmed' && (
                 <div>
                   <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
-                    {ruleForm.trigger_event === 'before_start'
-                      ? t('remindersPage.hoursBefore')
-                      : t('remindersPage.hoursAfter')}
+                    {ruleForm.trigger_event === 'before_start' ? t('remindersPage.hoursBefore') : t('remindersPage.hoursAfter')}
                   </label>
                   <input
                     type="number" min={1}
@@ -402,27 +469,27 @@ export default function BookingRemindersPage() {
                 <button
                   onClick={() => { if (confirm(t('remindersPage.deleteConfirm', { name: rule.rule_name }))) callSave({ action: 'delete_rule', id: rule.id }) }}
                   style={{ fontSize: 12, color: 'salmon', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
-                >
-                  {t('delete')}
-                </button>
+                >{t('delete')}</button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* ── Schedule reminders ────────────────────────────────────── */}
-      <div className="card" style={{ padding: 20 }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('remindersPage.scheduleNowTitle')}</div>
-        <div className="helper" style={{ marginBottom: 12 }}>{t('remindersPage.scheduleNowHelp')}</div>
-        {generateResult && (
-          <div style={{ marginBottom: 12, fontSize: 14, color: generateResult.startsWith(t('error')) ? 'salmon' : '#10b981' }}>
-            {generateResult}
-          </div>
-        )}
-        <button onClick={handleGenerateReminders} disabled={generating}>
-          {generating ? t('remindersPage.scheduling') : t('remindersPage.scheduleNow')}
-        </button>
+      {/* ── 3. Apply updates ─────────────────────────────────────── */}
+      <div style={{ marginBottom: 0 }}>
+        <div style={{ ...sectionLabel, marginBottom: 12 }}>{t('remindersPage.sectionApply')}</div>
+        <div className="card" style={{ padding: 20 }}>
+          <div className="helper" style={{ marginBottom: 12 }}>{t('remindersPage.scheduleNowHelp')}</div>
+          {generateResult && (
+            <div style={{ marginBottom: 12, fontSize: 14, color: generateResult.startsWith(t('error')) ? 'salmon' : '#10b981' }}>
+              {generateResult}
+            </div>
+          )}
+          <button onClick={handleGenerateReminders} disabled={generating}>
+            {generating ? t('remindersPage.scheduling') : t('remindersPage.scheduleNow')}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -50,7 +50,8 @@ export async function handler() {
 
     const connections = await sql`
       SELECT id, tenant_id, provider,
-             external_account_id, refresh_token_encrypted, user_login
+             external_account_id, refresh_token_encrypted, user_login,
+             COALESCE(simplybook_sms_confirmation, true) AS simplybook_sms_confirmation
       FROM provider_connections
       WHERE connection_status = 'connected'
         AND provider = 'simplybook'
@@ -64,7 +65,7 @@ export async function handler() {
     console.log(`scheduled-sync: syncing ${connections.length} tenant(s)`)
 
     for (const conn of connections) {
-      await syncTenant(sql, conn)
+      await syncTenant(sql, conn, conn.simplybook_sms_confirmation)
     }
 
     return { statusCode: 200 }
@@ -74,7 +75,7 @@ export async function handler() {
   }
 }
 
-async function syncTenant(sql, conn) {
+async function syncTenant(sql, conn, simplybookSmsConfirmation = true) {
   const TENANT_ID = conn.tenant_id
   const provider = conn.provider
   const companyLogin = conn.external_account_id
@@ -191,9 +192,10 @@ async function syncTenant(sql, conn) {
         } else {
           const name = (client.name || client.full_name || 'Unknown').trim()
           const phone = client.phone || client.phone1 || null
+          const grantConsent = simplybookSmsConfirmation && !!phone
           const newCust = await sql`
             INSERT INTO customers (tenant_id, name, customer_type, phone, sms_consent, sms_consent_at)
-            VALUES (${TENANT_ID}, ${name}, 'Direct', ${phone}, false, null)
+            VALUES (${TENANT_ID}, ${name}, 'Direct', ${phone}, ${grantConsent}, ${grantConsent ? sql`now()` : null})
             RETURNING id
           `
           const customerId = newCust[0].id
@@ -350,6 +352,7 @@ async function syncTenant(sql, conn) {
             if (rule.trigger_event === 'before_start') {
               scheduledFor = new Date(new Date(booking.start_at).getTime() + rule.minutes_offset * 60000)
             } else if (rule.trigger_event === 'booking_confirmed') {
+              if (!simplybookSmsConfirmation) continue
               scheduledFor = new Date(nowMs + rule.minutes_offset * 60000)
             } else if (rule.trigger_event === 'unpaid_balance') {
               if (booking.payment_status === 'paid') continue
