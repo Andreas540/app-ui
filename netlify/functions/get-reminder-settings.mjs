@@ -75,6 +75,13 @@ async function getSettings(event) {
       ORDER BY name
     `
 
+    // One-time migration: default all existing customers to sms_consent = true
+    // (column was added with DEFAULT FALSE; sms_consent_at IS NULL means never explicitly set)
+    await sql`
+      UPDATE customers SET sms_consent = true
+      WHERE tenant_id = ${TENANT_ID} AND sms_consent = false AND sms_consent_at IS NULL
+    `.catch(() => {})
+
     // Check for active SimplyBook connection and its SMS confirmation setting
     await sql`
       ALTER TABLE provider_connections
