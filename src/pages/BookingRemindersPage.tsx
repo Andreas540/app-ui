@@ -176,7 +176,7 @@ export default function BookingRemindersPage() {
     <div className="card" style={{ maxWidth: 800 }}>
       <h3 style={{ marginBottom: 8 }}>{t('remindersPage.title')}</h3>
       <p className="helper" style={{ marginBottom: 24 }}>
-        {t('remindersPage.subtitle')} <code style={{ fontSize: 12 }}>{TEMPLATE_VARS}</code>
+        {t('remindersPage.subtitle')}
       </p>
 
       {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
@@ -212,9 +212,15 @@ export default function BookingRemindersPage() {
               </select>
             </div>
             <div>
-              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.templateKey')}</label>
-              <input value={newRule.template_key} onChange={e => setNewRule(r => ({ ...r, template_key: e.target.value }))} placeholder={t('remindersPage.templateKeyPlaceholder')} required style={{ width: '100%' }} />
-              <div className="helper" style={{ marginTop: 4 }}>{t('remindersPage.templateKeyHelp')}</div>
+              <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.messageTemplate')}</label>
+              <select value={newRule.template_key} onChange={e => setNewRule(r => ({ ...r, template_key: e.target.value }))} required style={{ width: '100%' }}>
+                <option value="">{t('remindersPage.selectTemplate')}</option>
+                {templates.filter(tmpl => tmpl.channel === newRule.channel).map(tmpl => (
+                  <option key={tmpl.id} value={tmpl.template_key}>
+                    {tmpl.subject || tmpl.body.slice(0, 60)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.service')}</label>
@@ -270,14 +276,13 @@ export default function BookingRemindersPage() {
           <h3 style={{ marginTop: 0 }}>
             {showAddTemplate
               ? t('remindersPage.newTemplate')
-              : <>{t('remindersPage.templateLabel')}: <code style={{ fontSize: 13 }}>{tmplKey}</code> · {tmplChannel.toUpperCase()}</>}
+              : <>{t('remindersPage.editTemplate')} · {tmplChannel.toUpperCase()}</>}
           </h3>
           {showAddTemplate && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.templateKey')}</label>
-                <input value={tmplKey} onChange={e => setTmplKey(e.target.value)} required placeholder={t('remindersPage.templateKeyPlaceholder')} style={{ width: '100%' }} />
-                <div className="helper" style={{ marginTop: 4 }}>{t('remindersPage.templateKeyHelp')}</div>
+                <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.templateName')}</label>
+                <input value={tmplKey} onChange={e => setTmplKey(e.target.value.toLowerCase().replace(/\s+/g, '_'))} required placeholder={t('remindersPage.templateNamePlaceholder')} style={{ width: '100%' }} />
               </div>
               <div>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>{t('remindersPage.channel')}</label>
@@ -302,7 +307,9 @@ export default function BookingRemindersPage() {
               style={{ width: '100%', fontFamily: 'monospace', fontSize: 13 }}
               placeholder={t('remindersPage.bodyPlaceholder')}
             />
-            <div className="helper" style={{ marginTop: 4 }}>{t('remindersPage.variables')}: {TEMPLATE_VARS}</div>
+            <div className="helper" style={{ marginTop: 4 }}>
+              {t('remindersPage.variables')}: <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{TEMPLATE_VARS}</span>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="submit" className="primary" disabled={saving}>{t('remindersPage.saveTemplate')}</button>
@@ -325,10 +332,12 @@ export default function BookingRemindersPage() {
               {templates.map(tmpl => (
                 <div key={tmpl.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>
-                      <code>{tmpl.template_key}</code> · {tmpl.channel.toUpperCase()}
+                    <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {tmpl.subject || tmpl.template_key.replace(/_/g, ' ')}
+                      <span style={{ fontSize: 11, fontWeight: 400, background: 'var(--line)', borderRadius: 4, padding: '1px 6px' }}>
+                        {tmpl.channel.toUpperCase()}
+                      </span>
                     </div>
-                    {tmpl.subject && <div className="helper">{t('remindersPage.subjectLabel')}: {tmpl.subject}</div>}
                     <div className="helper" style={{ marginTop: 4, fontSize: 12, whiteSpace: 'pre-wrap' }}>{tmpl.body}</div>
                   </div>
                   <button onClick={() => openTemplateEditor(tmpl.template_key, tmpl.channel)} style={{ fontSize: 12, flexShrink: 0 }}>{t('edit')}</button>

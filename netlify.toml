@@ -36,3 +36,15 @@
   # Scheduled function to update employee salaries hourly
 [functions."scheduled-update-employee-salaries"]
   schedule = "0 * * * *"
+
+  # Scheduled function to process and send booking reminders (every 15 min)
+[functions."scheduled-process-reminders"]
+  schedule = "*/15 * * * *"
+
+  # Scheduled function to retry failed reminder sends (hourly)
+[functions."retry-failed-reminders"]
+  schedule = "0 * * * *"
+
+  # Scheduled function to sync Stripe SMS usage (hourly)
+[functions."sync-stripe-sms-usage"]
+  schedule = "0 * * * *"
