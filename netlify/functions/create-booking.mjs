@@ -213,7 +213,15 @@ async function createBooking(event) {
             sql`SELECT body FROM message_templates WHERE tenant_id = ${TENANT_ID} AND template_key = ${rule.template_key} AND channel = 'sms' LIMIT 1`,
           ])
           const cust = custRows[0]
-          if (!cust?.phone || !cust?.sms_consent || !tmplRows[0]) continue
+          if (!cust?.phone || !cust?.sms_consent || !tmplRows[0]) {
+            console.warn('SMS confirmation skipped:', {
+              hasPhone: !!cust?.phone,
+              smsConsent: cust?.sms_consent,
+              hasTemplate: !!tmplRows[0],
+              customerId: customer_id,
+            })
+            continue
+          }
 
           const startDate = startAt.toLocaleDateString()
           const startTime = startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
