@@ -163,7 +163,8 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
       deliveryDate,
       paymentMethod,
       customer: selectedCustomer,
-      orders: confirmedOrders
+      orders: confirmedOrders,
+      companyInfo: invoiceConfig,
     }
 
     navigate('/invoices/preview', { state: invoiceData })

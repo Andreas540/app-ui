@@ -3,6 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+type CompanyInfo = {
+  autoInvoiceNumber: boolean
+  companyName: string | null
+  companyAddress1: string | null
+  companyAddress2: string | null
+  companyPhone: string | null
+  contactName: string | null
+  bankName: string | null
+  bankAccountName: string | null
+  bankAccountNumber: string | null
+  bankRoutingNumber: string | null
+}
+
 type InvoiceData = {
   invoiceNo: string
   invoiceDate: string
@@ -24,6 +37,7 @@ type InvoiceData = {
     unit_price: number
     amount: number
   }>
+  companyInfo?: CompanyInfo | null
 }
 
 export default function InvoicePreview() {
@@ -342,17 +356,19 @@ useEffect(() => {
               }}
             >
               <div style={{ width: 100, height: 100 }}>
-  <img
-    src="/icons/icon-192.png"
-    alt="BLV Logo"
-    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-  />
-</div>
+                <img
+                  src="/icons/icon-192.png"
+                  alt="Company Logo"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              </div>
               <div style={{ fontSize: 14 }}>
-                <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>BLV Pack Design LLC</div>
-                <div>13967 SW 119th Ave</div>
-                <div>Miami, FL 33186</div>
-                <div style={{ marginTop: 8 }}>(305) 798-3317</div>
+                {invoiceData.companyInfo?.companyName && (
+                  <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>{invoiceData.companyInfo.companyName}</div>
+                )}
+                {invoiceData.companyInfo?.companyAddress1 && <div>{invoiceData.companyInfo.companyAddress1}</div>}
+                {invoiceData.companyInfo?.companyAddress2 && <div>{invoiceData.companyInfo.companyAddress2}</div>}
+                {invoiceData.companyInfo?.companyPhone && <div style={{ marginTop: 8 }}>{invoiceData.companyInfo.companyPhone}</div>}
               </div>
 
               {/* Right panel: labels left, values right */}
@@ -397,27 +413,43 @@ useEffect(() => {
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.paymentMethod')}</div>
                 <div style={{ marginBottom: 16 }}>{invoiceData.paymentMethod}</div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.ourContact')}</div>
-                <div>Julian de Armas</div>
+                {invoiceData.companyInfo?.contactName && <div>{invoiceData.companyInfo.contactName}</div>}
               </div>
 
               {/* Wire instructions: labels left, values right */}
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.wireInstructions')}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
-                  <div>{t('invoice.companyName')}</div>
-                  <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
-
-                  <div>{t('invoice.bankName')}</div>
-                  <div style={{ textAlign: 'right' }}>Bank of America</div>
-
-                  <div>{t('invoice.accountName')}</div>
-                  <div style={{ textAlign: 'right' }}>BLV Pack Design LLC</div>
-
-                  <div>{t('invoice.accountNumber')}</div>
-                  <div style={{ textAlign: 'right' }}>898161854242</div>
-
-                  <div style={{ whiteSpace: 'nowrap' }}>{t('invoice.routingNumber')}</div>
-                  <div style={{ textAlign: 'right' }}>026009593</div>
+                  {invoiceData.companyInfo?.companyName && (
+                    <>
+                      <div>{t('invoice.companyName')}</div>
+                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.companyName}</div>
+                    </>
+                  )}
+                  {invoiceData.companyInfo?.bankName && (
+                    <>
+                      <div>{t('invoice.bankName')}</div>
+                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankName}</div>
+                    </>
+                  )}
+                  {invoiceData.companyInfo?.bankAccountName && (
+                    <>
+                      <div>{t('invoice.accountName')}</div>
+                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountName}</div>
+                    </>
+                  )}
+                  {invoiceData.companyInfo?.bankAccountNumber && (
+                    <>
+                      <div>{t('invoice.accountNumber')}</div>
+                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountNumber}</div>
+                    </>
+                  )}
+                  {invoiceData.companyInfo?.bankRoutingNumber && (
+                    <>
+                      <div style={{ whiteSpace: 'nowrap' }}>{t('invoice.routingNumber')}</div>
+                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankRoutingNumber}</div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
