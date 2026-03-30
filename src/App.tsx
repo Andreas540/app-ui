@@ -225,7 +225,7 @@ function MainApp() {
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
 
-  const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; role: string }>>([])
+  const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem('nav_collapsed') || '{}') } catch { return {} }
@@ -431,7 +431,7 @@ useEffect(() => {
   }
 
   const currentTenant = availableTenants.find(t => t.id === activeTenantId)
-  const currentTenantName = currentTenant?.name || user?.tenantName || 'My Biz'
+  const currentTenantName = currentTenant?.display_name || currentTenant?.name || user?.tenantName || 'My Biz'
 
   return (
     <div className="app"> 

@@ -385,6 +385,14 @@ if (action === 'updateStripeCustomerId') {
       return cors(200, { success: true })
     }
 
+    if (action === 'updateTenantName') {
+      const { tenantId, name } = body
+      if (!tenantId) return cors(400, { error: 'tenantId is required' })
+      if (!name?.trim()) return cors(400, { error: 'name is required' })
+      await sql`UPDATE tenants SET name = ${name.trim()} WHERE id = ${tenantId}`
+      return cors(200, { success: true })
+    }
+
     if (action === 'updateTenantGeo') {
       const { tenantId, language, currency, timezone } = body
       if (!tenantId) return cors(400, { error: 'tenantId is required' })

@@ -34,9 +34,10 @@ async function getUserTenants(event) {
 
     // Get all tenants this user has access to
     const tenants = await sql`
-      SELECT 
+      SELECT
         t.id,
         t.name,
+        COALESCE(t.app_name, t.name) AS display_name,
         tm.role
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id

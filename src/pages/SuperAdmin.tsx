@@ -80,6 +80,8 @@ export default function SuperAdmin() {
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [editingAppName, setEditingAppName] = useState('')
   const [savingAppName, setSavingAppName] = useState(false)
+  const [editingTenantName, setEditingTenantName] = useState('')
+  const [savingTenantName, setSavingTenantName] = useState(false)
   
   // Create user form
   const [newUserEmail, setNewUserEmail] = useState('')
@@ -587,6 +589,7 @@ async function handleSaveStripeCustomerId() {
       const data = await res.json()
       setManagingIconsTenant(data)
       setManagingIconsTenantId(tenant.id)
+      setEditingTenantName(data.name || '')
       setEditingAppName(data.app_name || data.name || '')
     } catch (e: any) {
       alert(e?.message || 'Failed to load icons')
@@ -624,6 +627,26 @@ async function handleSaveStripeCustomerId() {
       alert(e?.message || 'Failed to save app name')
     } finally {
       setSavingAppName(false)
+    }
+  }
+
+  async function handleSaveTenantName() {
+    if (!managingIconsTenantId) return
+    try {
+      setSavingTenantName(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateTenantName', tenantId: managingIconsTenantId, name: editingTenantName }),
+      })
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Failed to save') }
+      await loadData()
+      await openManageIcons({ id: managingIconsTenantId } as Tenant)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save tenant name')
+    } finally {
+      setSavingTenantName(false)
     }
   }
 
@@ -1380,6 +1403,31 @@ async function handleSaveStripeCustomerId() {
             <p className="helper" style={{ marginTop: 8 }}>
               Customize app name and icons for this tenant
             </p>
+
+            {/* Tenant Name Section */}
+            <div style={{ marginTop: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 12 }}>Tenant Name</div>
+              <div className="helper" style={{ fontSize: 12, marginBottom: 12 }}>
+                The tenant's account name — shown in the welcome message and throughout the app
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={editingTenantName}
+                  onChange={(e) => setEditingTenantName(e.target.value)}
+                  placeholder="e.g., Acme Corp"
+                  style={{ flex: 1, height: 44 }}
+                />
+                <button
+                  onClick={handleSaveTenantName}
+                  disabled={savingTenantName || !editingTenantName.trim() || editingTenantName.trim() === managingIconsTenant.name}
+                  className="primary"
+                  style={{ height: 44, padding: '0 20px', fontSize: 14 }}
+                >
+                  {savingTenantName ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
 
             {/* App Name Section */}
             <div style={{
