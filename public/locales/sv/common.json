@@ -600,6 +600,7 @@
     "paymentMethod": "Betalningsmetod",
     "wireTransfer": "Banköverföring",
     "invoiceNo": "Fakturanr",
+    "companyInfo": "Företagsinfo:",
     "ourContact": "Vår kontakt:",
     "wireInstructions": "Instruktioner för banköverföring:",
     "companyName": "Företagsnamn:",

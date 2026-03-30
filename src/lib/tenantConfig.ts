@@ -25,6 +25,18 @@ export interface TenantConfig {
     smsRemindersEnabled: boolean     // show/hide reminder settings UI
     showBookingParticipants: boolean // show participant management for group bookings
   }
+  invoice: {
+    autoInvoiceNumber: boolean       // generate invoice number from dates + customer initials
+    companyName: string | null
+    companyAddress1: string | null
+    companyAddress2: string | null
+    companyPhone: string | null
+    contactName: string | null
+    bankName: string | null
+    bankAccountName: string | null
+    bankAccountNumber: string | null
+    bankRoutingNumber: string | null
+  }
   pages: {
     [pageKey: string]: {
       hiddenFields?: string[]
@@ -56,6 +68,18 @@ const defaultConfig: TenantConfig = {
     smsRemindersEnabled: false,
     showBookingParticipants: false,
   },
+  invoice: {
+    autoInvoiceNumber: false,
+    companyName: null,
+    companyAddress1: null,
+    companyAddress2: null,
+    companyPhone: null,
+    contactName: null,
+    bankName: null,
+    bankAccountName: null,
+    bankAccountNumber: null,
+    bankRoutingNumber: null,
+  },
   pages: {}
 }
 
@@ -70,7 +94,19 @@ const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
     },
     ui: {
       showOrderNumberInList: false,
-    }
+    },
+    invoice: {
+      autoInvoiceNumber: true,
+      companyName: 'BLV Pack Design LLC',
+      companyAddress1: '13967 SW 119th Ave',
+      companyAddress2: 'Miami, FL 33186',
+      companyPhone: '(305) 798-3317',
+      contactName: 'Julian de Armas',
+      bankName: 'Bank of America',
+      bankAccountName: 'BLV Pack Design LLC',
+      bankAccountNumber: '898161854242',
+      bankRoutingNumber: '026009593',
+    },
   },
   // Add tenant-specific overrides here keyed by tenantId
   // 'uuid-here': {

@@ -600,6 +600,7 @@
     "paymentMethod": "Método de pago",
     "wireTransfer": "Transferencia bancaria",
     "invoiceNo": "N° de factura",
+    "companyInfo": "Información de la empresa:",
     "ourContact": "Nuestro contacto:",
     "wireInstructions": "Instrucciones de transferencia:",
     "companyName": "Nombre de empresa:",

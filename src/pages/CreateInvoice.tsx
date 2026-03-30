@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type Customer = {
   id: string
@@ -28,6 +30,8 @@ type Order = {
 export default function CreateInvoicePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const invoiceConfig = getTenantConfig(user?.tenantId).invoice
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -104,7 +108,8 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     })()
   }, [selectedCustomerId])
 
-    useEffect(() => {
+  useEffect(() => {
+    if (!invoiceConfig.autoInvoiceNumber) return
     if (invoiceDate && dueDate && deliveryDate && selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId)
       if (!customer) return
@@ -123,7 +128,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     } else {
       setInvoiceNo('')
     }
-  }, [invoiceDate, dueDate, deliveryDate, selectedCustomerId, customers])
+  }, [invoiceDate, dueDate, deliveryDate, selectedCustomerId, customers, invoiceConfig.autoInvoiceNumber])
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId)
 
@@ -433,36 +438,40 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                         </div>
                       </div>
 
-                      {invoiceNo && (
+                      {(invoiceConfig.autoInvoiceNumber ? invoiceNo : invoiceDate && dueDate && deliveryDate) && (
                         <div style={{ marginTop: 16 }}>
                           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.invoiceNo')}
                           </label>
-                          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
-                            {invoiceNo}
-                          </div>
+                          {invoiceConfig.autoInvoiceNumber ? (
+                            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
+                              {invoiceNo}
+                            </div>
+                          ) : (
+                            <div style={{ marginBottom: 20 }} />
+                          )}
 
                           <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
                             <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>BLV company info:</div>
-                              <div>BLV Pack Design LLC</div>
-                              <div>13967 SW 119th Ave</div>
-                              <div>Miami, FL 33186</div>
-                              <div>(305) 798-3317</div>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.companyInfo')}</div>
+                              {invoiceConfig.companyName && <div>{invoiceConfig.companyName}</div>}
+                              {invoiceConfig.companyAddress1 && <div>{invoiceConfig.companyAddress1}</div>}
+                              {invoiceConfig.companyAddress2 && <div>{invoiceConfig.companyAddress2}</div>}
+                              {invoiceConfig.companyPhone && <div>{invoiceConfig.companyPhone}</div>}
                             </div>
 
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.ourContact')}</div>
-                              <div>Julian de Armas</div>
+                              {invoiceConfig.contactName && <div>{invoiceConfig.contactName}</div>}
                             </div>
 
                             <div>
                               <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
-                              <div>{t('invoice.companyName')} BLV Pack Design LLC</div>
-                              <div>{t('invoice.bankName')} Bank of America</div>
-                              <div>{t('invoice.accountName')} BLV Pack Design LLC</div>
-                              <div>{t('invoice.accountNumber')} 898161854242</div>
-                              <div>{t('invoice.routingNumber')} 026009593</div>
+                              {invoiceConfig.companyName && <div>{t('invoice.companyName')} {invoiceConfig.companyName}</div>}
+                              {invoiceConfig.bankName && <div>{t('invoice.bankName')} {invoiceConfig.bankName}</div>}
+                              {invoiceConfig.bankAccountName && <div>{t('invoice.accountName')} {invoiceConfig.bankAccountName}</div>}
+                              {invoiceConfig.bankAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.bankAccountNumber}</div>}
+                              {invoiceConfig.bankRoutingNumber && <div>{t('invoice.routingNumber')} {invoiceConfig.bankRoutingNumber}</div>}
                             </div>
                           </div>
 

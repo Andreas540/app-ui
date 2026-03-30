@@ -600,6 +600,7 @@
     "paymentMethod": "Payment method",
     "wireTransfer": "Wire Transfer",
     "invoiceNo": "Invoice no",
+    "companyInfo": "Company info:",
     "ourContact": "Our contact:",
     "wireInstructions": "Wire Transfer Instructions:",
     "companyName": "Company Name:",
