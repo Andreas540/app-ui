@@ -439,7 +439,7 @@ export default function SuperAdmin() {
       })
       if (res.ok) {
         const data = await res.json()
-        setEditingSmsPricePerUnit(String(data.settings?.sms_price_per_unit ?? '0.02'))
+        setEditingSmsPricePerUnit(String(data.settings?.sms_price_per_unit ?? '0.03'))
         setEditingStripeItemId(data.settings?.stripe_sms_subscription_item_id ?? '')
       }
     } catch {}

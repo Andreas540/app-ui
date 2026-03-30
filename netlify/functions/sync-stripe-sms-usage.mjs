@@ -11,31 +11,39 @@ export const config = {
 export async function handler() {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, STRIPE_SECRET_KEY } = process.env
+    const { DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_SMS_METER_EVENT_NAME } = process.env
 
     if (!DATABASE_URL) { console.error('DATABASE_URL missing'); return { statusCode: 500 } }
     if (!STRIPE_SECRET_KEY) {
       console.log('STRIPE_SECRET_KEY not set — Stripe usage sync skipped')
       return { statusCode: 200 }
     }
+    if (!STRIPE_SMS_METER_EVENT_NAME) {
+      console.log('STRIPE_SMS_METER_EVENT_NAME not set — Stripe usage sync skipped')
+      return { statusCode: 200 }
+    }
 
     const sql = neon(DATABASE_URL)
 
-    // Find tenants with Stripe item configured that have unreported billable jobs
+    // Find tenants with Stripe SMS configured that have unreported billable jobs
+    // stripe_sms_subscription_item_id acts as the "SMS billing enabled" flag
+    // stripe_customer_id is used to report meter events (new Stripe Meters API)
     const tenants = await sql`
       SELECT
         tbs.tenant_id,
-        tbs.stripe_sms_subscription_item_id,
         tbs.sms_price_per_unit,
+        t.stripe_customer_id,
         COUNT(mj.id)::int AS pending_count
       FROM tenant_billing_settings tbs
+      INNER JOIN tenants t ON t.id = tbs.tenant_id::uuid
       INNER JOIN message_jobs mj
         ON mj.tenant_id = tbs.tenant_id
         AND mj.billable = true
         AND mj.stripe_reported = false
         AND mj.status IN ('accepted', 'sent', 'delivered')
       WHERE tbs.stripe_sms_subscription_item_id IS NOT NULL
-      GROUP BY tbs.tenant_id, tbs.stripe_sms_subscription_item_id, tbs.sms_price_per_unit
+        AND t.stripe_customer_id IS NOT NULL
+      GROUP BY tbs.tenant_id, tbs.sms_price_per_unit, t.stripe_customer_id
     `
 
     if (!tenants.length) {
@@ -46,18 +54,21 @@ export async function handler() {
     let totalReported = 0
 
     for (const tenant of tenants) {
-      const { tenant_id, stripe_sms_subscription_item_id, pending_count, sms_price_per_unit } = tenant
+      const { tenant_id, pending_count, sms_price_per_unit, stripe_customer_id } = tenant
 
       try {
-        // Report batch quantity to Stripe metered subscription item
+        // Report total cost in cents via Stripe Meters API.
+        // Stripe price is $0.01/unit — reporting cents gives the correct dollar total
+        // from the app-controlled price per SMS, no per-tenant price config needed in Stripe.
+        const quantityInCents = Math.round(pending_count * Number(sms_price_per_unit) * 100)
         const stripeBody = new URLSearchParams({
-          quantity: String(pending_count),
-          timestamp: String(Math.floor(Date.now() / 1000)),
-          action: 'increment',
+          event_name: STRIPE_SMS_METER_EVENT_NAME,
+          'payload[stripe_customer_id]': stripe_customer_id,
+          'payload[value]': String(quantityInCents),
         })
 
         const stripeRes = await fetch(
-          `https://api.stripe.com/v1/subscription_items/${stripe_sms_subscription_item_id}/usage_records`,
+          'https://api.stripe.com/v1/billing/meter_events',
           {
             method: 'POST',
             headers: {

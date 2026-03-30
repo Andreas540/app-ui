@@ -50,7 +50,7 @@ async function getUsage(event) {
       LIMIT 1
     `
     const settings = settingsRows[0] ?? {
-      sms_price_per_unit: 0.02,
+      sms_price_per_unit: 0.03,
       sms_monthly_cap_amount: 25.00,
       stripe_sms_subscription_item_id: null,
       stripe_subscription_id: null,

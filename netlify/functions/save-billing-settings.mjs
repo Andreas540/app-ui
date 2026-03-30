@@ -48,7 +48,7 @@ async function saveSettings(event) {
         ) VALUES (
           ${TENANT_ID},
           ${cap ?? 25.00},
-          ${sms_price_per_unit != null ? Number(sms_price_per_unit) : 0.0200},
+          ${sms_price_per_unit != null ? Number(sms_price_per_unit) : 0.0300},
           ${stripe_sms_subscription_item_id ?? null},
           now()
         )
