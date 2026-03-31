@@ -346,6 +346,9 @@ function MainApp() {
   // ── Page-view logging ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) return
+    // Skip logging if the user is about to be redirected away from this page
+    // (e.g. navigating to "/" without dashboard access triggers an auto-redirect)
+    if (location.pathname === '/' && !hasFeature('dashboard')) return
     const action = pathnameToAction(location.pathname)
     if (!action) return
     const base = apiBase()
@@ -354,7 +357,7 @@ function MainApp() {
       headers: getAuthHeaders(),
       body: JSON.stringify({ action }),
     }).catch(() => {})
-  }, [location.pathname, isLoggedIn])
+  }, [location.pathname, isLoggedIn, hasFeature])
 
   // Auto-redirect from / if user doesn't have dashboard access
 useEffect(() => {
