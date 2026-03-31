@@ -19,6 +19,47 @@ import {
 const fmtK1  = (n: number) => `${(n / 1000).toFixed(1)}K`
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
+// ── Month picker (two selects: month + year — works on all browsers) ──────────
+
+const MONTH_OPTIONS = [
+  { v: '01', label: 'Jan' }, { v: '02', label: 'Feb' }, { v: '03', label: 'Mar' },
+  { v: '04', label: 'Apr' }, { v: '05', label: 'May' }, { v: '06', label: 'Jun' },
+  { v: '07', label: 'Jul' }, { v: '08', label: 'Aug' }, { v: '09', label: 'Sep' },
+  { v: '10', label: 'Oct' }, { v: '11', label: 'Nov' }, { v: '12', label: 'Dec' },
+]
+
+function MonthPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parts = value ? value.split('-') : ['', '']
+  const selYear = parts[0] || ''
+  const selMon  = parts[1] || ''
+  const curYear = new Date().getFullYear()
+  const years   = Array.from({ length: 6 }, (_, i) => curYear - 4 + i)
+
+  function update(year: string, mon: string) {
+    if (year && mon) onChange(`${year}-${mon}`)
+    else onChange('')
+  }
+
+  const sel: React.CSSProperties = {
+    height: 34, padding: '0 6px', fontSize: 13,
+    borderRadius: 6, border: '1px solid var(--border)',
+    background: 'var(--input, var(--card))', color: 'var(--text)',
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={selMon} onChange={e => update(selYear || String(curYear), e.target.value)} style={sel}>
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map(m => <option key={m.v} value={m.v}>{m.label}</option>)}
+      </select>
+      <select value={selYear} onChange={e => update(e.target.value, selMon)} style={sel}>
+        <option value="">Year</option>
+        {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
+      </select>
+    </div>
+  )
+}
+
 type RpsPoint = {
   month: string
   revenue: number
@@ -107,7 +148,7 @@ function ChartSlide({ data, bar1Key, bar2Key, lineKey, computePct }: ChartSlideP
           </Bar>
           <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
             strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-            <LabelList dataKey={lineKey} position="top" offset={12}
+            <LabelList dataKey={lineKey} position="bottom" offset={10}
               formatter={(v: any) => fmtPct1(Number(v))} fill="#fff"
               style={{ fontSize: 12, fontWeight: 700 }} />
           </Line>
@@ -291,24 +332,14 @@ export default function ReportsPage() {
         </div>
 
         {/* ── Period picker ─────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>From</div>
-            <input
-              type="month"
-              value={fromMonth}
-              onChange={e => setFromMonth(e.target.value)}
-              style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6 }}
-            />
+            <MonthPicker value={fromMonth} onChange={setFromMonth} />
           </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>To</div>
-            <input
-              type="month"
-              value={toMonth}
-              onChange={e => setToMonth(e.target.value)}
-              style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6 }}
-            />
+            <MonthPicker value={toMonth} onChange={setToMonth} />
           </div>
           {(fromMonth || toMonth) && (
             <button
