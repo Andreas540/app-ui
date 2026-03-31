@@ -30,9 +30,12 @@ type RpsPoint = {
   surplusPct: number
 }
 
-async function fetchRpsMonthly(months = 6): Promise<RpsPoint[]> {
+async function fetchRpsData(from?: string, to?: string): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const res = await fetch(`${base}/api/rps/monthly?months=${months}`, {
+  const params = (from && to)
+    ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    : 'months=3'
+  const res = await fetch(`${base}/api/rps/monthly?${params}`, {
     cache: 'no-store',
     headers: getAuthHeaders(),
   })
@@ -185,15 +188,19 @@ export default function ReportsPage() {
   const [visible,      setVisible]      = useState<string[]>(loadVisible)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [infoOpen, setInfoOpen]         = useState<string | null>(null)
+  const [fromMonth, setFromMonth]       = useState('')
+  const [toMonth, setToMonth]           = useState('')
   const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let stop = false
-    fetchRpsMonthly(6)
-      .then(rows => { if (!stop) { setRpsData(rows); setLoading(false) } })
-      .catch(e   => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
+    setLoading(true)
+    setErr(null)
+    fetchRpsData(fromMonth || undefined, toMonth || undefined)
+      .then((rows: RpsPoint[]) => { if (!stop) { setRpsData(rows); setLoading(false) } })
+      .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
-  }, [])
+  }, [fromMonth, toMonth])
 
   function toggleVisible(id: string) {
     setVisible(v => {
@@ -281,6 +288,36 @@ export default function ReportsPage() {
               )
             })()}
           </div>
+        </div>
+
+        {/* ── Period picker ─────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>From</div>
+            <input
+              type="month"
+              value={fromMonth}
+              onChange={e => setFromMonth(e.target.value)}
+              style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6 }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>To</div>
+            <input
+              type="month"
+              value={toMonth}
+              onChange={e => setToMonth(e.target.value)}
+              style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6 }}
+            />
+          </div>
+          {(fromMonth || toMonth) && (
+            <button
+              onClick={() => { setFromMonth(''); setToMonth('') }}
+              style={{ height: 34, padding: '0 12px', fontSize: 12, borderRadius: 6 }}
+            >
+              {t('clear')}
+            </button>
+          )}
         </div>
       </div>
 
