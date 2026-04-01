@@ -53,7 +53,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -71,6 +71,21 @@ export default function TenantAdmin() {
     bankRoutingNumber: '',
   })
   const [savingInvoice, setSavingInvoice] = useState(false)
+
+  // Accounting — exports
+  type ExportRow = {
+    id: string; order_no: string | null; order_date: string
+    customer_name: string; order_amount: number
+    partner_name: string | null; partner_amount: number
+  }
+  const currentYear = new Date().getFullYear()
+  const [accYear,  setAccYear]  = useState(String(currentYear))
+  const [accMonth, setAccMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
+  const [accRows,  setAccRows]  = useState<ExportRow[]>([])
+  const [accLoading, setAccLoading] = useState(false)
+  const [accSortBy,  setAccSortBy]  = useState<'order_date' | 'customer_name'>('order_date')
+  const [accSortDir, setAccSortDir] = useState<'asc' | 'desc'>('asc')
+  const [showAccPreview, setShowAccPreview] = useState(false)
 
   // Tenant geo defaults
   const [tenantGeo, setTenantGeo] = useState<TenantGeo>({
@@ -273,6 +288,87 @@ export default function TenantAdmin() {
       setTogglingUserId(null)
     }
   }
+  // ── Accounting helpers ────────────────────────────────────────────────────
+
+  async function fetchAccOrders() {
+    const month = `${accYear}-${accMonth}`
+    setAccLoading(true)
+    setAccRows([])
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      const res = await fetch(`${base}/api/accounting-export?month=${month}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Tenant-Id': activeTenantId } : {}),
+        },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch orders')
+      setAccRows(data.rows || [])
+      setShowAccPreview(true)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to fetch orders')
+    } finally {
+      setAccLoading(false)
+    }
+  }
+
+  function sortedAccRows(rows: ExportRow[]) {
+    return [...rows].sort((a, b) => {
+      const va = accSortBy === 'order_date' ? a.order_date : a.customer_name
+      const vb = accSortBy === 'order_date' ? b.order_date : b.customer_name
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0
+      return accSortDir === 'asc' ? cmp : -cmp
+    })
+  }
+
+  function exportCSV(rows: ExportRow[]) {
+    const headers = [
+      t('tenantAdmin.colCustomer'), t('tenantAdmin.colOrderNo'), t('tenantAdmin.colOrderDate'),
+      t('tenantAdmin.colAmount'), t('tenantAdmin.colPartner'), t('tenantAdmin.colPartnerAmount'),
+    ]
+    const escape = (v: any) => {
+      const s = v == null ? '' : String(v)
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const lines = [
+      headers.map(escape).join(','),
+      ...rows.map(r => [
+        r.customer_name, r.order_no ?? '', r.order_date,
+        Number(r.order_amount).toFixed(2),
+        r.partner_name ?? '', r.partner_amount > 0 ? Number(r.partner_amount).toFixed(2) : '',
+      ].map(escape).join(',')),
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders-${accYear}-${accMonth}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function exportExcel(rows: ExportRow[]) {
+    try {
+      const XLSX = await import('xlsx')
+      const ws = XLSX.utils.json_to_sheet(rows.map(r => ({
+        [t('tenantAdmin.colCustomer')]:     r.customer_name,
+        [t('tenantAdmin.colOrderNo')]:      r.order_no ?? '',
+        [t('tenantAdmin.colOrderDate')]:    r.order_date,
+        [t('tenantAdmin.colAmount')]:       Number(r.order_amount),
+        [t('tenantAdmin.colPartner')]:      r.partner_name ?? '',
+        [t('tenantAdmin.colPartnerAmount')]: r.partner_amount > 0 ? Number(r.partner_amount) : '',
+      })))
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Orders')
+      XLSX.writeFile(wb, `orders-${accYear}-${accMonth}.xlsx`)
+    } catch (e: any) {
+      alert(e?.message || 'Excel export failed')
+    }
+  }
+
   async function loadInvoiceConfig() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -533,14 +629,16 @@ export default function TenantAdmin() {
 
         {/* Tab row */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {(['team', 'invoicing'] as const).map(tab => (
+          {(['team', 'invoicing', 'accounting'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={activeTab === tab ? 'primary' : ''}
               style={{ height: 36, padding: '0 20px', fontSize: 14 }}
             >
-              {tab === 'team' ? t('tenantAdmin.teamMembers') : t('tenantAdmin.invoicingTab')}
+              {tab === 'team' ? t('tenantAdmin.teamMembers')
+                : tab === 'invoicing' ? t('tenantAdmin.invoicingTab')
+                : t('tenantAdmin.accountingTab')}
             </button>
           ))}
         </div>
@@ -772,7 +870,147 @@ export default function TenantAdmin() {
           </>)
         })()}
 
+        {/* ── Accounting tab ── */}
+        {activeTab === 'accounting' && (<>
+
+          <h4 style={{ margin: '0 0 16px' }}>{t('tenantAdmin.exportsSection')}</h4>
+
+          {/* Period selector + fetch button */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+            <div>
+              <label>{t('tenantAdmin.selectYear')}</label>
+              <select value={accYear} onChange={e => setAccYear(e.target.value)} style={{ marginTop: 4, width: 100 }}>
+                {Array.from({ length: 6 }, (_, i) => currentYear - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label>{t('tenantAdmin.selectMonth')}</label>
+              <select value={accMonth} onChange={e => setAccMonth(e.target.value)} style={{ marginTop: 4, width: 140 }}>
+                {[
+                  ['01','January'],['02','February'],['03','March'],['04','April'],
+                  ['05','May'],['06','June'],['07','July'],['08','August'],
+                  ['09','September'],['10','October'],['11','November'],['12','December'],
+                ].map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              className="primary"
+              onClick={fetchAccOrders}
+              disabled={accLoading}
+              style={{ height: CONTROL_H, padding: '0 24px' }}
+            >
+              {accLoading ? t('loadingDots') : t('tenantAdmin.allOrdersButton')}
+            </button>
+          </div>
+
+        </>)}
+
       </div>{/* end tabbed card */}
+
+      {/* ── Accounting preview modal ── */}
+      {showAccPreview && (() => {
+        const sorted = sortedAccRows(accRows)
+        const preview = sorted.slice(0, 20)
+        const money = (n: number) => Number(n).toFixed(2)
+        const monthLabel = `${accYear}-${accMonth}`
+
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+            onClick={() => setShowAccPreview(false)}
+          >
+            <div
+              className="card"
+              style={{ maxWidth: 860, width: '100%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>{t('tenantAdmin.previewTitle', { month: monthLabel })}</h3>
+                  <p className="helper" style={{ marginTop: 4 }}>
+                    {accRows.length > 20
+                      ? t('tenantAdmin.previewShowing', { count: 20, total: accRows.length })
+                      : t('tenantAdmin.previewAllRows', { total: accRows.length })}
+                  </p>
+                </div>
+                <button onClick={() => setShowAccPreview(false)} style={{ height: 36, padding: '0 16px' }}>{t('close')}</button>
+              </div>
+
+              {/* Sort controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tenantAdmin.sortLabel')}</span>
+                {(['order_date', 'customer_name'] as const).map(field => (
+                  <button
+                    key={field}
+                    onClick={() => {
+                      if (accSortBy === field) setAccSortDir(d => d === 'asc' ? 'desc' : 'asc')
+                      else { setAccSortBy(field); setAccSortDir('asc') }
+                    }}
+                    className={accSortBy === field ? 'primary' : ''}
+                    style={{ height: 32, padding: '0 14px', fontSize: 13 }}
+                  >
+                    {field === 'order_date' ? t('tenantAdmin.sortByDate') : t('tenantAdmin.sortByCustomer')}
+                    {accSortBy === field && (accSortDir === 'asc' ? ' ↑' : ' ↓')}
+                  </button>
+                ))}
+              </div>
+
+              {/* Table */}
+              {accRows.length === 0 ? (
+                <p className="helper">{t('tenantAdmin.noDataForPeriod')}</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
+                        {[
+                          t('tenantAdmin.colCustomer'), t('tenantAdmin.colOrderNo'),
+                          t('tenantAdmin.colOrderDate'), t('tenantAdmin.colAmount'),
+                          t('tenantAdmin.colPartner'), t('tenantAdmin.colPartnerAmount'),
+                        ].map(h => (
+                          <th key={h} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.map((r, i) => (
+                        <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                          <td style={{ padding: '8px 10px' }}>{r.customer_name}</td>
+                          <td style={{ padding: '8px 10px' }}>{r.order_no ?? '—'}</td>
+                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.order_date}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{money(r.order_amount)}</td>
+                          <td style={{ padding: '8px 10px' }}>{r.partner_name ?? '—'}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.partner_amount > 0 ? money(r.partner_amount) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Export buttons */}
+              {accRows.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 4 }}>
+                  <button onClick={() => exportCSV(sorted)} style={{ height: 36, padding: '0 20px' }}>
+                    {t('tenantAdmin.exportCSV')}
+                  </button>
+                  <button onClick={() => exportExcel(sorted)} style={{ height: 36, padding: '0 20px' }}>
+                    {t('tenantAdmin.exportExcel')}
+                  </button>
+                  <span className="helper" style={{ alignSelf: 'center', fontSize: 12 }}>
+                    {t('tenantAdmin.googleSheetsHint')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Create User Modal */}
       {showCreateUser && (
