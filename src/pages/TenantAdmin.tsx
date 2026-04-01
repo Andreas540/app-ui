@@ -614,6 +614,12 @@ export default function TenantAdmin() {
 
   const CONTROL_H = 44
 
+  // Accounting preview derived values (computed at component level to avoid IIFE render issues)
+  const accSorted  = sortedAccRows(accRows)
+  const accPreview = accSorted.slice(0, 20)
+  const accMoney   = (n: number) => Number(n).toFixed(2)
+  const accMonthLabel = `${accYear}-${accMonth}`
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div className="card" style={{ marginBottom: 20 }}>
@@ -926,108 +932,101 @@ export default function TenantAdmin() {
       </div>{/* end tabbed card */}
 
       {/* ── Accounting preview modal ── */}
-      {showAccPreview && (() => {
-        const sorted = sortedAccRows(accRows)
-        const preview = sorted.slice(0, 20)
-        const money = (n: number) => Number(n).toFixed(2)
-        const monthLabel = `${accYear}-${accMonth}`
-
-        return (
+      {showAccPreview && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setShowAccPreview(false)}
+        >
           <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-            onClick={() => setShowAccPreview(false)}
+            className="card"
+            style={{ maxWidth: 860, width: '100%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+            onClick={e => e.stopPropagation()}
           >
-            <div
-              className="card"
-              style={{ maxWidth: 860, width: '100%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}
-              onClick={e => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>{t('tenantAdmin.previewTitle', { month: monthLabel })}</h3>
-                  <p className="helper" style={{ marginTop: 4 }}>
-                    {accRows.length > 20
-                      ? t('tenantAdmin.previewShowing', { count: 20, total: accRows.length })
-                      : t('tenantAdmin.previewAllRows', { total: accRows.length })}
-                  </p>
-                </div>
-                <button onClick={() => setShowAccPreview(false)} style={{ height: 36, padding: '0 16px' }}>{t('close')}</button>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>{t('tenantAdmin.previewTitle', { month: accMonthLabel })}</h3>
+                <p className="helper" style={{ marginTop: 4 }}>
+                  {accRows.length > 20
+                    ? t('tenantAdmin.previewShowing', { count: 20, total: accRows.length })
+                    : t('tenantAdmin.previewAllRows', { total: accRows.length })}
+                </p>
               </div>
-
-              {/* Sort controls */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tenantAdmin.sortLabel')}</span>
-                {([
-                  ['order_no',       t('tenantAdmin.colOrderNo')],
-                  ['order_date',     t('tenantAdmin.sortByDate')],
-                  ['customer_name',  t('tenantAdmin.sortByCustomer')],
-                ] as const).map(([field, label]) => (
-                  <button
-                    key={field}
-                    onClick={() => {
-                      if (accSortBy === field) setAccSortDir(d => d === 'asc' ? 'desc' : 'asc')
-                      else { setAccSortBy(field); setAccSortDir('asc') }
-                    }}
-                    className={accSortBy === field ? 'primary' : ''}
-                    style={{ height: 32, padding: '0 14px', fontSize: 13 }}
-                  >
-                    {label}{accSortBy === field && (accSortDir === 'asc' ? ' ↑' : ' ↓')}
-                  </button>
-                ))}
-              </div>
-
-              {/* Table */}
-              {accRows.length === 0 ? (
-                <p className="helper">{t('tenantAdmin.noDataForPeriod')}</p>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
-                        {[
-                          t('tenantAdmin.colCustomer'), t('tenantAdmin.colOrderNo'),
-                          t('tenantAdmin.colOrderDate'), t('tenantAdmin.colAmount'),
-                          t('tenantAdmin.colPartner'), t('tenantAdmin.colPartnerAmount'),
-                        ].map(h => (
-                          <th key={h} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.map((r, i) => (
-                        <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                          <td style={{ padding: '8px 10px' }}>{r.customer_name}</td>
-                          <td style={{ padding: '8px 10px' }}>{r.order_no ?? '—'}</td>
-                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.order_date)}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{money(r.order_amount)}</td>
-                          <td style={{ padding: '8px 10px' }}>{r.partner_name ?? '—'}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.partner_amount > 0 ? money(r.partner_amount) : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Export buttons */}
-              {accRows.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 4 }}>
-                  <button onClick={() => exportCSV(sorted)} style={{ height: 36, padding: '0 20px' }}>
-                    {t('tenantAdmin.exportCSV')}
-                  </button>
-                  <button onClick={() => exportExcel(sorted)} style={{ height: 36, padding: '0 20px' }}>
-                    {t('tenantAdmin.exportExcel')}
-                  </button>
-                  <span className="helper" style={{ alignSelf: 'center', fontSize: 12 }}>
-                    {t('tenantAdmin.googleSheetsHint')}
-                  </span>
-                </div>
-              )}
+              <button onClick={() => setShowAccPreview(false)} style={{ height: 36, padding: '0 16px' }}>{t('close')}</button>
             </div>
+
+            {/* Sort controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tenantAdmin.sortLabel')}</span>
+              {([
+                ['order_no',       t('tenantAdmin.colOrderNo')],
+                ['order_date',     t('tenantAdmin.sortByDate')],
+                ['customer_name',  t('tenantAdmin.sortByCustomer')],
+              ] as const).map(([field, label]) => (
+                <button
+                  key={field}
+                  onClick={() => {
+                    if (accSortBy === field) setAccSortDir(d => d === 'asc' ? 'desc' : 'asc')
+                    else { setAccSortBy(field); setAccSortDir('asc') }
+                  }}
+                  className={accSortBy === field ? 'primary' : ''}
+                  style={{ height: 32, padding: '0 14px', fontSize: 13 }}
+                >
+                  {label}{accSortBy === field && (accSortDir === 'asc' ? ' ↑' : ' ↓')}
+                </button>
+              ))}
+            </div>
+
+            {/* Table */}
+            {accRows.length === 0 ? (
+              <p className="helper">{t('tenantAdmin.noDataForPeriod')}</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
+                      {[
+                        t('tenantAdmin.colCustomer'), t('tenantAdmin.colOrderNo'),
+                        t('tenantAdmin.colOrderDate'), t('tenantAdmin.colAmount'),
+                        t('tenantAdmin.colPartner'), t('tenantAdmin.colPartnerAmount'),
+                      ].map(h => (
+                        <th key={h} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accPreview.map((r, i) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                        <td style={{ padding: '8px 10px' }}>{r.customer_name}</td>
+                        <td style={{ padding: '8px 10px' }}>{r.order_no ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.order_date)}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{accMoney(r.order_amount)}</td>
+                        <td style={{ padding: '8px 10px' }}>{r.partner_name ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.partner_amount > 0 ? accMoney(r.partner_amount) : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Export buttons */}
+            {accRows.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 4 }}>
+                <button onClick={() => exportCSV(accSorted)} style={{ height: 36, padding: '0 20px' }}>
+                  {t('tenantAdmin.exportCSV')}
+                </button>
+                <button onClick={() => exportExcel(accSorted)} style={{ height: 36, padding: '0 20px' }}>
+                  {t('tenantAdmin.exportExcel')}
+                </button>
+                <span className="helper" style={{ alignSelf: 'center', fontSize: 12 }}>
+                  {t('tenantAdmin.googleSheetsHint')}
+                </span>
+              </div>
+            )}
           </div>
-        )
-      })()}
+        </div>
+      )}
 
       {/* Create User Modal */}
       {showCreateUser && (
