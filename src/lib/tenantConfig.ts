@@ -84,34 +84,8 @@ export const defaultConfig: TenantConfig = {
 }
 
 const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
-  'c00e0058-3dec-4300-829d-cca7e3033ca6': {
-    payments: {
-      showOrderSelection: false,
-      showAdvancePayment: false,
-    },
-    labels: {
-      directCustomerGroup: 'BLV customers'
-    },
-    ui: {
-      showOrderNumberInList: false,
-    },
-    invoice: {
-      autoInvoiceNumber: true,
-      companyName: 'BLV Pack Design LLC',
-      companyAddress1: '13967 SW 119th Ave',
-      companyAddress2: 'Miami, FL 33186',
-      companyPhone: '(305) 798-3317',
-      contactName: 'Julian de Armas',
-      bankName: 'Bank of America',
-      bankAccountName: 'BLV Pack Design LLC',
-      bankAccountNumber: '898161854242',
-      bankRoutingNumber: '026009593',
-    },
-  },
-  // Add tenant-specific overrides here keyed by tenantId
-  // 'uuid-here': {
-  //   labels: { customer: 'Client', customers: 'Clients' }
-  // }
+  // Tenant-specific overrides are now managed via DB (ui_config column on tenants table)
+  // and edited through the UI Customization page in SuperAdmin.
 }
 
 export function getTenantConfig(tenantId: string | null | undefined): TenantConfig {
