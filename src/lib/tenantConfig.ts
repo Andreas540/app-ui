@@ -45,7 +45,7 @@ export interface TenantConfig {
   }
 }
 
-const defaultConfig: TenantConfig = {
+export const defaultConfig: TenantConfig = {
   payments: {
     showOrderSelection: true,
     showAdvancePayment: true,
@@ -116,9 +116,23 @@ const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {
 
 export function getTenantConfig(tenantId: string | null | undefined): TenantConfig {
   if (!tenantId) return defaultConfig
-  const overrides = tenantOverrides[tenantId]
-  if (!overrides) return defaultConfig
-  return deepMerge(defaultConfig, overrides)
+
+  // Code-level overrides (backwards compat — removed once fully migrated to DB)
+  const codeOverrides = tenantOverrides[tenantId]
+
+  // DB overrides stored in userData after login (synchronous localStorage read)
+  let dbOverrides: DeepPartial<TenantConfig> = {}
+  try {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+    if (userData.uiConfig && typeof userData.uiConfig === 'object') {
+      dbOverrides = userData.uiConfig
+    }
+  } catch { /* ignore */ }
+
+  let result = defaultConfig
+  if (codeOverrides) result = deepMerge(result, codeOverrides)
+  if (Object.keys(dbOverrides).length > 0) result = deepMerge(result, dbOverrides)
+  return result
 }
 
 // ---- Utility types and functions ----

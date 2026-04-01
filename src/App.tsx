@@ -39,6 +39,7 @@ import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
+import TenantCustomization from './pages/TenantCustomization'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
@@ -740,6 +741,11 @@ useEffect(() => {
                   </NavLink>
                 )}
                 {user?.role === 'super_admin' && (
+                  <NavLink to="/tenant-customization" onClick={() => setNavOpen(false)}>
+                    {t('tenantCustomization')}
+                  </NavLink>
+                )}
+                {user?.role === 'super_admin' && (
                   <NavLink to="/stats-logs" onClick={() => setNavOpen(false)}>
                     Stats &amp; Logs
                   </NavLink>
@@ -842,6 +848,7 @@ useEffect(() => {
                   <Route path="/admin" element={<TenantAdmin />} />
                 )}
                 {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
+                {user?.role === 'super_admin' && <Route path="/tenant-customization" element={<TenantCustomization />} />}
                 {user?.role === 'super_admin' && <Route path="/messages" element={<Messages />} />}
                 {user?.role === 'super_admin' && <Route path="/stats-logs" element={<StatsLogs />} />}
                 {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}

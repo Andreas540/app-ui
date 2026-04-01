@@ -25,6 +25,7 @@
   "accountAdmin": "Admin de Cuenta",
   "settings": "Configuración",
   "superAdmin": "Super Admin",
+  "tenantCustomization": "Personalización UI",
   "messages": "Mensajes",
   "logout": "Cerrar sesión",
   "welcome": "¡Bienvenido {{name}}!",

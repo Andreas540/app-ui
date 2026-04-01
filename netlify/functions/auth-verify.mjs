@@ -70,7 +70,8 @@ async function handleVerify(event) {
             default_locale as tenant_default_locale,
             available_languages as tenant_available_languages,
             default_currency as tenant_default_currency,
-            default_timezone as tenant_default_timezone
+            default_timezone as tenant_default_timezone,
+            ui_config
           FROM tenants
           WHERE id = ${activeTenantId}::uuid
           LIMIT 1
@@ -124,6 +125,7 @@ async function handleVerify(event) {
             tenant_available_languages: tenant.tenant_available_languages,
             tenant_default_currency: tenant.tenant_default_currency,
             tenant_default_timezone: tenant.tenant_default_timezone,
+            uiConfig: tenant.ui_config || {},
           }
         })
       }
@@ -175,7 +177,7 @@ async function handleVerify(event) {
     if (activeTenantId) {
       // Verify user has access to this tenant
       const membership = await sql`
-        SELECT 
+        SELECT
           tm.tenant_id,
           tm.role,
           tm.features as user_features,
@@ -186,7 +188,8 @@ async function handleVerify(event) {
           t.default_locale as tenant_default_locale,
           t.available_languages as tenant_available_languages,
           t.default_currency as tenant_default_currency,
-          t.default_timezone as tenant_default_timezone
+          t.default_timezone as tenant_default_timezone,
+          t.ui_config
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
         WHERE tm.user_id = ${decoded.userId}::uuid
@@ -262,6 +265,7 @@ async function handleVerify(event) {
           tenant_available_languages: membership[0].tenant_available_languages,
           tenant_default_currency: membership[0].tenant_default_currency,
           tenant_default_timezone: membership[0].tenant_default_timezone,
+          uiConfig: membership[0].ui_config || {},
         }
       })
     }
@@ -287,7 +291,8 @@ async function handleVerify(event) {
         t.default_locale as tenant_default_locale,
         t.available_languages as tenant_available_languages,
         t.default_currency as tenant_default_currency,
-        t.default_timezone as tenant_default_timezone
+        t.default_timezone as tenant_default_timezone,
+        t.ui_config
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ${decoded.userId}
@@ -349,6 +354,7 @@ async function handleVerify(event) {
         tenant_available_languages: user.tenant_available_languages,
         tenant_default_currency: user.tenant_default_currency,
         tenant_default_timezone: user.tenant_default_timezone,
+        uiConfig: user.ui_config || {},
       }
     })
 

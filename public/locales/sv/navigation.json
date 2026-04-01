@@ -25,6 +25,7 @@
   "accountAdmin": "Kontoadmin",
   "settings": "Inställningar",
   "superAdmin": "Super Admin",
+  "tenantCustomization": "UI-anpassning",
   "messages": "Meddelanden",
   "logout": "Logga ut",
   "welcome": "Välkommen {{name}}!",

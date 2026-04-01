@@ -107,6 +107,14 @@ async function handleGet(event) {
       })
     }
 
+    if (action === 'getUiConfig') {
+      const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
+      if (!tenantId) return cors(400, { error: 'tenantId required' })
+      const rows = await sql`SELECT ui_config FROM tenants WHERE id = ${tenantId}`
+      if (rows.length === 0) return cors(404, { error: 'Tenant not found' })
+      return cors(200, { uiConfig: rows[0].ui_config || {} })
+    }
+
     if (action === 'getSubscriptionQuotas') {
       const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
       if (!tenantId) return cors(400, { error: 'tenantId required' })
@@ -382,6 +390,14 @@ if (action === 'updateStripeCustomerId') {
         WHERE id = ${tenantId}
       `
 
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateUiConfig') {
+      const { tenantId, uiConfig } = body
+      if (!tenantId) return cors(400, { error: 'tenantId is required' })
+      if (typeof uiConfig !== 'object' || uiConfig === null) return cors(400, { error: 'uiConfig must be an object' })
+      await sql`UPDATE tenants SET ui_config = ${JSON.stringify(uiConfig)}::jsonb WHERE id = ${tenantId}`
       return cors(200, { success: true })
     }
 

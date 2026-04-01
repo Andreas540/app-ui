@@ -25,6 +25,7 @@
   "accountAdmin": "Account Admin",
   "settings": "Settings",
   "superAdmin": "Super Admin",
+  "tenantCustomization": "UI Customization",
   "messages": "Messages",
   "logout": "Log out",
   "welcome": "Welcome {{name}}!",
