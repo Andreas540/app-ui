@@ -301,7 +301,7 @@ export default function TenantAdmin() {
       const res = await fetch(`${base}/api/accounting-export?month=${month}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(activeTenantId ? { 'X-Tenant-Id': activeTenantId } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
         },
       })
       const data = await res.json()
