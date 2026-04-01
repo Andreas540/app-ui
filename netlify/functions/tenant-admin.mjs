@@ -36,7 +36,7 @@ async function handleGet(event) {
     if (action === 'getTenantUsers') {
       // Get tenant's available features and geo defaults
       const tenant = await sql`
-        SELECT features, default_language, default_currency, default_timezone, default_locale
+        SELECT features, default_language, default_currency, default_timezone, default_locale, invoice_config
         FROM tenants
         WHERE id = ${tenantId}
         LIMIT 1
@@ -70,8 +70,16 @@ async function handleGet(event) {
           default_currency: tenant[0]?.default_currency || 'USD',
           default_timezone: tenant[0]?.default_timezone || 'UTC',
           default_locale:   tenant[0]?.default_locale   || 'en-US',
-        }
+        },
+        invoiceConfig: tenant[0]?.invoice_config || null,
       })
+    }
+
+    if (action === 'getInvoiceConfig') {
+      const tenant = await sql`
+        SELECT invoice_config FROM tenants WHERE id = ${tenantId} LIMIT 1
+      `
+      return cors(200, { invoiceConfig: tenant[0]?.invoice_config || null })
     }
 
     return cors(400, { error: 'Invalid action' })
@@ -279,6 +287,19 @@ if (action === 'toggleUserStatus') {
 
   return cors(200, { success: true, isActive: isActiveBoolean })
 }
+
+    if (action === 'updateInvoiceConfig') {
+      const { invoiceConfig } = body
+      if (!invoiceConfig || typeof invoiceConfig !== 'object' || Array.isArray(invoiceConfig)) {
+        return cors(400, { error: 'invoiceConfig must be an object' })
+      }
+      await sql`
+        UPDATE tenants
+        SET invoice_config = ${JSON.stringify(invoiceConfig)}::jsonb
+        WHERE id = ${tenantId}
+      `
+      return cors(200, { success: true })
+    }
 
     if (action === 'updateUserGeo') {
       const { userId: targetUserId, language, currency, timezone } = body

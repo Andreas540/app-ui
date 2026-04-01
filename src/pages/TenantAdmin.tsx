@@ -52,6 +52,25 @@ export default function TenantAdmin() {
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
   const [loadingPortal, setLoadingPortal] = useState(false)
 
+  // Tab
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing'>('team')
+
+  // Invoice config
+  const [invoiceCfg, setInvoiceCfg] = useState({
+    autoInvoiceNumber: false,
+    companyName: '',
+    companyAddress1: '',
+    companyAddress2: '',
+    companyPhone: '',
+    contactName: '',
+    enabledPaymentMethods: [] as string[],
+    bankName: '',
+    bankAccountName: '',
+    bankAccountNumber: '',
+    bankRoutingNumber: '',
+  })
+  const [savingInvoice, setSavingInvoice] = useState(false)
+
   // Tenant geo defaults
   const [tenantGeo, setTenantGeo] = useState<TenantGeo>({
     default_language: 'en', default_currency: 'USD',
@@ -98,6 +117,22 @@ export default function TenantAdmin() {
       setUsers(data.users || [])
       setTenantFeatures(data.tenantFeatures || [])
       if (data.tenantGeo) setTenantGeo(data.tenantGeo)
+      if (data.invoiceConfig) {
+        const ic = data.invoiceConfig
+        setInvoiceCfg({
+          autoInvoiceNumber: ic.autoInvoiceNumber ?? false,
+          companyName: ic.companyName ?? '',
+          companyAddress1: ic.companyAddress1 ?? '',
+          companyAddress2: ic.companyAddress2 ?? '',
+          companyPhone: ic.companyPhone ?? '',
+          contactName: ic.contactName ?? '',
+          enabledPaymentMethods: ic.enabledPaymentMethods ?? [],
+          bankName: ic.bankName ?? '',
+          bankAccountName: ic.bankAccountName ?? '',
+          bankAccountNumber: ic.bankAccountNumber ?? '',
+          bankRoutingNumber: ic.bankRoutingNumber ?? '',
+        })
+      }
 
     } catch (e: any) {
       setError(e?.message || 'Failed to load data')
@@ -249,6 +284,33 @@ export default function TenantAdmin() {
       setTogglingUserId(null)
     }
   }
+  async function handleSaveInvoiceConfig() {
+    setSavingInvoice(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+        },
+        body: JSON.stringify({ action: 'updateInvoiceConfig', invoiceConfig: invoiceCfg }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      alert('Invoice configuration saved!')
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save invoice configuration')
+    } finally {
+      setSavingInvoice(false)
+    }
+  }
+
   async function handleManageSubscription() {
     try {
       setLoadingPortal(true)
@@ -443,25 +505,41 @@ export default function TenantAdmin() {
 </p>
       </div>
 
-      {/* Users List */}
+      {/* Tabbed card: Team Members | Invoicing */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>{t('tenantAdmin.teamMembers')}</h3>
-          <button
-            className="primary"
-            onClick={openCreateUser}
-            disabled={true}
-            style={{ height: 36, padding: '0 16px', fontSize: 13, opacity: 0.4, cursor: 'not-allowed' }}
-          >
-            {t('tenantAdmin.createUserButton')}
-          </button>
+
+        {/* Tab row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          {(['team', 'invoicing'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={activeTab === tab ? 'primary' : ''}
+              style={{ height: 36, padding: '0 20px', fontSize: 14 }}
+            >
+              {tab === 'team' ? t('tenantAdmin.teamMembers') : 'Invoicing'}
+            </button>
+          ))}
         </div>
 
-        {users.length === 0 ? (
-          <p className="helper">{t('tenantAdmin.noUsers')}</p>
-        ) : (
-          <div style={{ marginTop: 16 }}>
-            {users.map((u) => (
+        {/* ── Team Members tab ── */}
+        {activeTab === 'team' && (<>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <button
+              className="primary"
+              onClick={openCreateUser}
+              disabled={true}
+              style={{ height: 36, padding: '0 16px', fontSize: 13, opacity: 0.4, cursor: 'not-allowed' }}
+            >
+              {t('tenantAdmin.createUserButton')}
+            </button>
+          </div>
+
+          {users.length === 0 ? (
+            <p className="helper">{t('tenantAdmin.noUsers')}</p>
+          ) : (
+            <div style={{ marginTop: 4 }}>
+              {users.map((u) => (
               <div
                 key={u.id}
                 style={{
@@ -530,7 +608,122 @@ export default function TenantAdmin() {
             ))}
           </div>
         )}
-      </div>
+        </>)}
+
+        {/* ── Invoicing tab ── */}
+        {activeTab === 'invoicing' && (<>
+
+          {/* Auto invoice number */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={invoiceCfg.autoInvoiceNumber}
+                onChange={e => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: e.target.checked }))}
+                style={{ width: 18, height: 18 }}
+              />
+              <span style={{ fontWeight: 600 }}>Auto-generate invoice number</span>
+            </label>
+            <p className="helper" style={{ marginTop: 4, marginLeft: 28 }}>
+              Generates a number from invoice date, due date, delivery date and customer initials.
+            </p>
+          </div>
+
+          {/* Company info */}
+          <h4 style={{ margin: '0 0 12px' }}>Company Info</h4>
+          <div style={{ marginBottom: 12 }}>
+            <label>Company Name</label>
+            <input value={invoiceCfg.companyName} onChange={e => setInvoiceCfg(c => ({ ...c, companyName: e.target.value }))} placeholder="Your company name" style={{ marginTop: 4 }} />
+          </div>
+          <div className="row" style={{ marginBottom: 12 }}>
+            <div>
+              <label>Address Line 1</label>
+              <input value={invoiceCfg.companyAddress1} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress1: e.target.value }))} placeholder="123 Main St" style={{ marginTop: 4 }} />
+            </div>
+            <div>
+              <label>Address Line 2</label>
+              <input value={invoiceCfg.companyAddress2} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress2: e.target.value }))} placeholder="City, State ZIP" style={{ marginTop: 4 }} />
+            </div>
+          </div>
+          <div className="row" style={{ marginBottom: 20 }}>
+            <div>
+              <label>Phone</label>
+              <input value={invoiceCfg.companyPhone} onChange={e => setInvoiceCfg(c => ({ ...c, companyPhone: e.target.value }))} placeholder="(000) 000-0000" style={{ marginTop: 4 }} />
+            </div>
+            <div>
+              <label>Invoice Contact Name</label>
+              <input value={invoiceCfg.contactName} onChange={e => setInvoiceCfg(c => ({ ...c, contactName: e.target.value }))} placeholder="Full name" style={{ marginTop: 4 }} />
+            </div>
+          </div>
+
+          {/* Payment methods */}
+          <h4 style={{ margin: '0 0 12px' }}>Payment Options</h4>
+          <p className="helper" style={{ marginBottom: 12 }}>Select which payment methods to offer on invoices. Fields shown on the invoice depend on which methods are enabled.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {[
+              { id: 'wire_transfer', label: 'Wire Transfer', available: true },
+              { id: 'ach', label: 'ACH', available: false },
+            ].map(pm => (
+              <label
+                key={pm.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, cursor: pm.available ? 'pointer' : 'not-allowed',
+                  opacity: pm.available ? 1 : 0.45, margin: 0,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  disabled={!pm.available}
+                  checked={invoiceCfg.enabledPaymentMethods.includes(pm.id)}
+                  onChange={e => setInvoiceCfg(c => ({
+                    ...c,
+                    enabledPaymentMethods: e.target.checked
+                      ? [...c.enabledPaymentMethods, pm.id]
+                      : c.enabledPaymentMethods.filter(m => m !== pm.id),
+                  }))}
+                  style={{ width: 18, height: 18 }}
+                />
+                <span style={{ fontWeight: 600 }}>{pm.label}</span>
+                {!pm.available && <span className="helper" style={{ fontSize: 12 }}>(coming soon)</span>}
+              </label>
+            ))}
+          </div>
+
+          {/* Wire Transfer fields — shown when wire_transfer is enabled */}
+          {invoiceCfg.enabledPaymentMethods.includes('wire_transfer') && (<>
+            <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>Wire Transfer Details</h4>
+            <div style={{ marginBottom: 12 }}>
+              <label>Bank Name</label>
+              <input value={invoiceCfg.bankName} onChange={e => setInvoiceCfg(c => ({ ...c, bankName: e.target.value }))} placeholder="Bank of America" style={{ marginTop: 4 }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Account Name</label>
+              <input value={invoiceCfg.bankAccountName} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountName: e.target.value }))} placeholder="Your company name" style={{ marginTop: 4 }} />
+            </div>
+            <div className="row" style={{ marginBottom: 20 }}>
+              <div>
+                <label>Account Number</label>
+                <input value={invoiceCfg.bankAccountNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountNumber: e.target.value }))} placeholder="000000000000" style={{ marginTop: 4 }} />
+              </div>
+              <div>
+                <label>Routing Number</label>
+                <input value={invoiceCfg.bankRoutingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankRoutingNumber: e.target.value }))} placeholder="000000000" style={{ marginTop: 4 }} />
+              </div>
+            </div>
+          </>)}
+
+          <button
+            className="primary"
+            onClick={handleSaveInvoiceConfig}
+            disabled={savingInvoice}
+            style={{ height: CONTROL_H, padding: '0 32px' }}
+          >
+            {savingInvoice ? t('saving') : t('save')}
+          </button>
+
+        </>)}
+
+      </div>{/* end tabbed card */}
 
       {/* Create User Modal */}
       {showCreateUser && (

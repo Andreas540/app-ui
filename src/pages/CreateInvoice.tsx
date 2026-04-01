@@ -31,7 +31,8 @@ export default function CreateInvoicePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const invoiceConfig = getTenantConfig(user?.tenantId).invoice
+  const fallbackConfig = getTenantConfig(user?.tenantId).invoice
+  const [invoiceConfig, setInvoiceConfig] = useState(fallbackConfig)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -46,6 +47,31 @@ export default function CreateInvoicePage() {
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Load invoice config from DB; fall back to tenantConfig.ts if absent
+  useEffect(() => {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/api/tenant-admin?action=getInvoiceConfig`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.invoiceConfig) {
+          const ic = data.invoiceConfig
+          setInvoiceConfig({
+            autoInvoiceNumber: ic.autoInvoiceNumber ?? fallbackConfig.autoInvoiceNumber,
+            companyName: ic.companyName || fallbackConfig.companyName,
+            companyAddress1: ic.companyAddress1 || fallbackConfig.companyAddress1,
+            companyAddress2: ic.companyAddress2 || fallbackConfig.companyAddress2,
+            companyPhone: ic.companyPhone || fallbackConfig.companyPhone,
+            contactName: ic.contactName || fallbackConfig.contactName,
+            bankName: ic.bankName || fallbackConfig.bankName,
+            bankAccountName: ic.bankAccountName || fallbackConfig.bankAccountName,
+            bankAccountNumber: ic.bankAccountNumber || fallbackConfig.bankAccountNumber,
+            bankRoutingNumber: ic.bankRoutingNumber || fallbackConfig.bankRoutingNumber,
+          })
+        }
+      })
+      .catch(() => {}) // keep fallback silently
+  }, [])
 
   useEffect(() => {
     (async () => {
