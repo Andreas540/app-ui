@@ -58,6 +58,7 @@ export default function TenantAdmin() {
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
     autoInvoiceNumber: false,
+    billingCountry: '',
     companyName: '',
     companyAddress1: '',
     companyAddress2: '',
@@ -290,6 +291,7 @@ export default function TenantAdmin() {
         const ic = data.invoiceConfig
         setInvoiceCfg({
           autoInvoiceNumber: ic.autoInvoiceNumber ?? false,
+          billingCountry: ic.billingCountry ?? '',
           companyName: ic.companyName ?? '',
           companyAddress1: ic.companyAddress1 ?? '',
           companyAddress2: ic.companyAddress2 ?? '',
@@ -538,7 +540,7 @@ export default function TenantAdmin() {
               className={activeTab === tab ? 'primary' : ''}
               style={{ height: 36, padding: '0 20px', fontSize: 14 }}
             >
-              {tab === 'team' ? t('tenantAdmin.teamMembers') : 'Invoicing'}
+              {tab === 'team' ? t('tenantAdmin.teamMembers') : t('tenantAdmin.invoicingTab')}
             </button>
           ))}
         </div>
@@ -632,117 +634,143 @@ export default function TenantAdmin() {
         </>)}
 
         {/* ── Invoicing tab ── */}
-        {activeTab === 'invoicing' && (<>
+        {activeTab === 'invoicing' && (() => {
+          // Payment methods available per billing country
+          const pmByCountry: Record<string, Array<{ id: string; labelKey: string; available: boolean }>> = {
+            US: [
+              { id: 'wire_transfer', labelKey: 'wireTransfer', available: true },
+              { id: 'ach',           labelKey: 'ach',          available: false },
+            ],
+          }
+          const availablePMs = pmByCountry[invoiceCfg.billingCountry] ?? null
 
-          {/* Auto invoice number */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
-              <input
-                type="checkbox"
-                checked={invoiceCfg.autoInvoiceNumber}
-                onChange={e => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: e.target.checked }))}
-                style={{ width: 18, height: 18 }}
-              />
-              <span style={{ fontWeight: 600 }}>Auto-generate invoice number</span>
-            </label>
-            <p className="helper" style={{ marginTop: 4, marginLeft: 28 }}>
-              Generates a number from invoice date, due date, delivery date and customer initials.
-            </p>
-          </div>
+          return (<>
 
-          {/* Company info */}
-          <h4 style={{ margin: '0 0 12px' }}>Company Info</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label>Company Name</label>
-            <input value={invoiceCfg.companyName} onChange={e => setInvoiceCfg(c => ({ ...c, companyName: e.target.value }))} placeholder="Your company name" style={{ marginTop: 4 }} />
-          </div>
-          <div className="row" style={{ marginBottom: 12 }}>
-            <div>
-              <label>Address Line 1</label>
-              <input value={invoiceCfg.companyAddress1} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress1: e.target.value }))} placeholder="123 Main St" style={{ marginTop: 4 }} />
-            </div>
-            <div>
-              <label>Address Line 2</label>
-              <input value={invoiceCfg.companyAddress2} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress2: e.target.value }))} placeholder="City, State ZIP" style={{ marginTop: 4 }} />
-            </div>
-          </div>
-          <div className="row" style={{ marginBottom: 20 }}>
-            <div>
-              <label>Phone</label>
-              <input value={invoiceCfg.companyPhone} onChange={e => setInvoiceCfg(c => ({ ...c, companyPhone: e.target.value }))} placeholder="(000) 000-0000" style={{ marginTop: 4 }} />
-            </div>
-            <div>
-              <label>Invoice Contact Name</label>
-              <input value={invoiceCfg.contactName} onChange={e => setInvoiceCfg(c => ({ ...c, contactName: e.target.value }))} placeholder="Full name" style={{ marginTop: 4 }} />
-            </div>
-          </div>
-
-          {/* Payment methods */}
-          <h4 style={{ margin: '0 0 12px' }}>Payment Options</h4>
-          <p className="helper" style={{ marginBottom: 12 }}>Select which payment methods to offer on invoices. Fields shown on the invoice depend on which methods are enabled.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            {[
-              { id: 'wire_transfer', label: 'Wire Transfer', available: true },
-              { id: 'ach', label: 'ACH', available: false },
-            ].map(pm => (
-              <label
-                key={pm.id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, cursor: pm.available ? 'pointer' : 'not-allowed',
-                  opacity: pm.available ? 1 : 0.45, margin: 0,
-                }}
-              >
+            {/* Auto invoice number */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
-                  disabled={!pm.available}
-                  checked={invoiceCfg.enabledPaymentMethods.includes(pm.id)}
-                  onChange={e => setInvoiceCfg(c => ({
-                    ...c,
-                    enabledPaymentMethods: e.target.checked
-                      ? [...c.enabledPaymentMethods, pm.id]
-                      : c.enabledPaymentMethods.filter(m => m !== pm.id),
-                  }))}
+                  checked={invoiceCfg.autoInvoiceNumber}
+                  onChange={e => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: e.target.checked }))}
                   style={{ width: 18, height: 18 }}
                 />
-                <span style={{ fontWeight: 600 }}>{pm.label}</span>
-                {!pm.available && <span className="helper" style={{ fontSize: 12 }}>(coming soon)</span>}
+                <span style={{ fontWeight: 600 }}>{t('tenantAdmin.autoInvoiceNumber')}</span>
               </label>
-            ))}
-          </div>
+              <p className="helper" style={{ marginTop: 4, marginLeft: 28 }}>
+                {t('tenantAdmin.autoInvoiceNumberHelp')}
+              </p>
+            </div>
 
-          {/* Wire Transfer fields — shown when wire_transfer is enabled */}
-          {invoiceCfg.enabledPaymentMethods.includes('wire_transfer') && (<>
-            <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>Wire Transfer Details</h4>
+            {/* Company info */}
+            <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.companyInfoSection')}</h4>
             <div style={{ marginBottom: 12 }}>
-              <label>Bank Name</label>
-              <input value={invoiceCfg.bankName} onChange={e => setInvoiceCfg(c => ({ ...c, bankName: e.target.value }))} placeholder="Bank of America" style={{ marginTop: 4 }} />
+              <label>{t('invoice.companyName')}</label>
+              <input value={invoiceCfg.companyName} onChange={e => setInvoiceCfg(c => ({ ...c, companyName: e.target.value }))} placeholder="Acme Corp" style={{ marginTop: 4 }} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label>Account Name</label>
-              <input value={invoiceCfg.bankAccountName} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountName: e.target.value }))} placeholder="Your company name" style={{ marginTop: 4 }} />
-            </div>
-            <div className="row" style={{ marginBottom: 20 }}>
+            <div className="row" style={{ marginBottom: 12 }}>
               <div>
-                <label>Account Number</label>
-                <input value={invoiceCfg.bankAccountNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountNumber: e.target.value }))} placeholder="000000000000" style={{ marginTop: 4 }} />
+                <label>{t('tenantAdmin.addressLine1')}</label>
+                <input value={invoiceCfg.companyAddress1} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress1: e.target.value }))} placeholder="123 Main St" style={{ marginTop: 4 }} />
               </div>
               <div>
-                <label>Routing Number</label>
-                <input value={invoiceCfg.bankRoutingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankRoutingNumber: e.target.value }))} placeholder="000000000" style={{ marginTop: 4 }} />
+                <label>{t('tenantAdmin.addressLine2')}</label>
+                <input value={invoiceCfg.companyAddress2} onChange={e => setInvoiceCfg(c => ({ ...c, companyAddress2: e.target.value }))} placeholder="City, State ZIP" style={{ marginTop: 4 }} />
               </div>
             </div>
-          </>)}
+            <div className="row" style={{ marginBottom: 24 }}>
+              <div>
+                <label>{t('phone')}</label>
+                <input value={invoiceCfg.companyPhone} onChange={e => setInvoiceCfg(c => ({ ...c, companyPhone: e.target.value }))} placeholder="(000) 000-0000" style={{ marginTop: 4 }} />
+              </div>
+              <div>
+                <label>{t('tenantAdmin.invoiceContactName')}</label>
+                <input value={invoiceCfg.contactName} onChange={e => setInvoiceCfg(c => ({ ...c, contactName: e.target.value }))} placeholder="Full name" style={{ marginTop: 4 }} />
+              </div>
+            </div>
 
-          <button
-            className="primary"
-            onClick={handleSaveInvoiceConfig}
-            disabled={savingInvoice}
-            style={{ height: CONTROL_H, padding: '0 32px' }}
-          >
-            {savingInvoice ? t('saving') : t('save')}
-          </button>
+            {/* Billing country */}
+            <h4 style={{ margin: '0 0 8px' }}>{t('tenantAdmin.paymentOptions')}</h4>
+            <div style={{ marginBottom: 8 }}>
+              <label>{t('tenantAdmin.billingCountry')}</label>
+              <select
+                value={invoiceCfg.billingCountry}
+                onChange={e => setInvoiceCfg(c => ({ ...c, billingCountry: e.target.value, enabledPaymentMethods: [] }))}
+                style={{ marginTop: 4 }}
+              >
+                <option value="">{t('tenantAdmin.selectBillingCountry')}</option>
+                <option value="US">{t('tenantAdmin.countryUS')}</option>
+                <option value="SE">{t('tenantAdmin.countrySweden')}</option>
+                <option value="EU">{t('tenantAdmin.countryEU')}</option>
+                <option value="GB">{t('tenantAdmin.countryUK')}</option>
+              </select>
+            </div>
+            <p className="helper" style={{ marginBottom: 16 }}>{t('tenantAdmin.billingCountryHelp')}</p>
 
-        </>)}
+            {/* Payment method checkboxes — driven by billing country */}
+            {invoiceCfg.billingCountry === '' ? null : availablePMs ? (<>
+              <p className="helper" style={{ marginBottom: 10 }}>{t('tenantAdmin.paymentOptionsHelp')}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                {availablePMs.map(pm => (
+                  <label
+                    key={pm.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: pm.available ? 'pointer' : 'not-allowed', opacity: pm.available ? 1 : 0.45, margin: 0 }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!pm.available}
+                      checked={invoiceCfg.enabledPaymentMethods.includes(pm.id)}
+                      onChange={e => setInvoiceCfg(c => ({
+                        ...c,
+                        enabledPaymentMethods: e.target.checked
+                          ? [...c.enabledPaymentMethods, pm.id]
+                          : c.enabledPaymentMethods.filter(m => m !== pm.id),
+                      }))}
+                      style={{ width: 18, height: 18 }}
+                    />
+                    <span style={{ fontWeight: 600 }}>{t(`tenantAdmin.${pm.labelKey}`)}</span>
+                    {!pm.available && <span className="helper" style={{ fontSize: 12 }}>{t('tenantAdmin.comingSoon')}</span>}
+                  </label>
+                ))}
+              </div>
+            </>) : (
+              <p className="helper" style={{ marginBottom: 20 }}>{t('tenantAdmin.paymentMethodsComingSoon')}</p>
+            )}
+
+            {/* Wire Transfer detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('wire_transfer') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.wireTransferDetails')}</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.bankName')}</label>
+                <input value={invoiceCfg.bankName} onChange={e => setInvoiceCfg(c => ({ ...c, bankName: e.target.value }))} placeholder="Bank of America" style={{ marginTop: 4 }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.accountName')}</label>
+                <input value={invoiceCfg.bankAccountName} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountName: e.target.value }))} placeholder="Acme Corp" style={{ marginTop: 4 }} />
+              </div>
+              <div className="row" style={{ marginBottom: 24 }}>
+                <div>
+                  <label>{t('tenantAdmin.accountNumber')}</label>
+                  <input value={invoiceCfg.bankAccountNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankAccountNumber: e.target.value }))} placeholder="000000000000" style={{ marginTop: 4 }} />
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.routingNumber')}</label>
+                  <input value={invoiceCfg.bankRoutingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankRoutingNumber: e.target.value }))} placeholder="000000000" style={{ marginTop: 4 }} />
+                </div>
+              </div>
+            </>)}
+
+            <button
+              className="primary"
+              onClick={handleSaveInvoiceConfig}
+              disabled={savingInvoice}
+              style={{ height: CONTROL_H, padding: '0 32px' }}
+            >
+              {savingInvoice ? t('saving') : t('save')}
+            </button>
+
+          </>)
+        })()}
 
       </div>{/* end tabbed card */}
 
