@@ -83,7 +83,7 @@ export default function TenantAdmin() {
   const [accMonth, setAccMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
   const [accRows,  setAccRows]  = useState<ExportRow[]>([])
   const [accLoading, setAccLoading] = useState(false)
-  const [accSortBy,  setAccSortBy]  = useState<'order_date' | 'customer_name'>('order_date')
+  const [accSortBy,  setAccSortBy]  = useState<'order_no' | 'order_date' | 'customer_name'>('order_no')
   const [accSortDir, setAccSortDir] = useState<'asc' | 'desc'>('asc')
   const [showAccPreview, setShowAccPreview] = useState(false)
 
@@ -317,11 +317,25 @@ export default function TenantAdmin() {
 
   function sortedAccRows(rows: ExportRow[]) {
     return [...rows].sort((a, b) => {
-      const va = accSortBy === 'order_date' ? a.order_date : a.customer_name
-      const vb = accSortBy === 'order_date' ? b.order_date : b.customer_name
+      const va = accSortBy === 'order_date' ? a.order_date
+               : accSortBy === 'customer_name' ? a.customer_name
+               : (a.order_no ?? '')
+      const vb = accSortBy === 'order_date' ? b.order_date
+               : accSortBy === 'customer_name' ? b.customer_name
+               : (b.order_no ?? '')
       const cmp = va < vb ? -1 : va > vb ? 1 : 0
       return accSortDir === 'asc' ? cmp : -cmp
     })
+  }
+
+  function formatAccDate(dateStr: string): string {
+    if (!dateStr) return ''
+    // Build from parts to avoid any UTC-shift on a DATE-only value
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const d = new Date(year, month - 1, day)
+    return new Intl.DateTimeFormat(tenantGeo.default_locale || 'en-US', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d)
   }
 
   function exportCSV(rows: ExportRow[]) {
@@ -336,7 +350,7 @@ export default function TenantAdmin() {
     const lines = [
       headers.map(escape).join(','),
       ...rows.map(r => [
-        r.customer_name, r.order_no ?? '', r.order_date,
+        r.customer_name, r.order_no ?? '', formatAccDate(r.order_date),
         Number(r.order_amount).toFixed(2),
         r.partner_name ?? '', r.partner_amount > 0 ? Number(r.partner_amount).toFixed(2) : '',
       ].map(escape).join(',')),
@@ -356,7 +370,7 @@ export default function TenantAdmin() {
       const ws = XLSX.utils.json_to_sheet(rows.map(r => ({
         [t('tenantAdmin.colCustomer')]:     r.customer_name,
         [t('tenantAdmin.colOrderNo')]:      r.order_no ?? '',
-        [t('tenantAdmin.colOrderDate')]:    r.order_date,
+        [t('tenantAdmin.colOrderDate')]:    formatAccDate(r.order_date),
         [t('tenantAdmin.colAmount')]:       Number(r.order_amount),
         [t('tenantAdmin.colPartner')]:      r.partner_name ?? '',
         [t('tenantAdmin.colPartnerAmount')]: r.partner_amount > 0 ? Number(r.partner_amount) : '',
@@ -944,7 +958,11 @@ export default function TenantAdmin() {
               {/* Sort controls */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tenantAdmin.sortLabel')}</span>
-                {(['order_date', 'customer_name'] as const).map(field => (
+                {([
+                  ['order_no',       t('tenantAdmin.colOrderNo')],
+                  ['order_date',     t('tenantAdmin.sortByDate')],
+                  ['customer_name',  t('tenantAdmin.sortByCustomer')],
+                ] as const).map(([field, label]) => (
                   <button
                     key={field}
                     onClick={() => {
@@ -954,8 +972,7 @@ export default function TenantAdmin() {
                     className={accSortBy === field ? 'primary' : ''}
                     style={{ height: 32, padding: '0 14px', fontSize: 13 }}
                   >
-                    {field === 'order_date' ? t('tenantAdmin.sortByDate') : t('tenantAdmin.sortByCustomer')}
-                    {accSortBy === field && (accSortDir === 'asc' ? ' ↑' : ' ↓')}
+                    {label}{accSortBy === field && (accSortDir === 'asc' ? ' ↑' : ' ↓')}
                   </button>
                 ))}
               </div>
@@ -982,7 +999,7 @@ export default function TenantAdmin() {
                         <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                           <td style={{ padding: '8px 10px' }}>{r.customer_name}</td>
                           <td style={{ padding: '8px 10px' }}>{r.order_no ?? '—'}</td>
-                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.order_date}</td>
+                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.order_date)}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right' }}>{money(r.order_amount)}</td>
                           <td style={{ padding: '8px 10px' }}>{r.partner_name ?? '—'}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.partner_amount > 0 ? money(r.partner_amount) : '—'}</td>

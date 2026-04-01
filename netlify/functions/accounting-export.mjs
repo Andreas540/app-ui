@@ -38,7 +38,12 @@ export const handler = async (event) => {
           FROM order_items oi
           WHERE oi.order_id = o.id
         ), 0)::numeric(12,2)                                            AS order_amount,
-        p.name                                                          AS partner_name,
+        (
+          SELECT p2.name FROM order_partners op
+          JOIN partners p2 ON p2.id = op.partner_id
+          WHERE op.order_id = o.id
+          LIMIT 1
+        )                                                               AS partner_name,
         COALESCE((
           SELECT SUM(op.amount + COALESCE(op.from_customer_amount, 0))
           FROM order_partners op
@@ -46,7 +51,6 @@ export const handler = async (event) => {
         ), 0)::numeric(12,2)                                            AS partner_amount
       FROM orders o
       JOIN customers c ON c.id = o.customer_id
-      LEFT JOIN partners p ON p.id = c.partner_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.order_date >= ${fromDate}::date
         AND o.order_date <  ${toDate}::date
