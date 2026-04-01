@@ -924,7 +924,7 @@
     "requiresApproval": "Requires approval",
     "requiresApprovalHelp": "Time entries require manager approval before being finalized.",
     "serviceTypeLabel": "Service type label",
-    "serviceTypeLabelHelp": "What a single booking service is called, e.g. "Session", "Lesson".",
+    "serviceTypeLabelHelp": "What a single booking service is called, e.g. \"Session\", \"Lesson\".",
     "bookingProviderName": "Booking provider name",
     "bookingProviderNameHelp": "Display name of the connected booking provider.",
     "bookingProviderNamePlaceholder": "e.g. SimplyBook",
