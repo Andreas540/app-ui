@@ -1,17 +1,48 @@
 /* ===================== CSS Variables ===================== */
+
+/* Layout & brand — never change with theme */
 :root {
   --topbar-h: 52px;
   --control-h: 44px;
-  --bg: #0b1020;
-  --panel: #0f1630;
-  --line: #1f2747;
-  --text: #e6e9ef;
-  --muted: #aab2d5;
   --brand-blue: #3b82f6;
   --brand-blue-hover: #2563eb;
   --brand-blue-active: #1d4ed8;
   --brand-contrast: #ffffff;
   --primary: #3b82f6;
+  --accent: #3b82f6;
+  --danger: #ef4444;
+}
+
+/* ── Dark theme (default) ─────────────────────────────── */
+html[data-theme="dark"] {
+  --bg:            #0b1020;
+  --panel:         #0f1630;
+  --card:          #0f1630;
+  --line:          #1f2747;
+  --border:        #2b355e;
+  --text:          #e6e9ef;
+  --text-secondary:#aab2d5;
+  --muted:         #aab2d5;
+  --input-bg:      #0b1026;
+  --btn-bg:        #141c3c;
+  --nav-active:    #1a2347;
+  --shadow:        0 1px 0 rgba(0,0,0,0.3);
+}
+
+/* ── Light theme ──────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg:            #eef1f8;
+  --panel:         #ffffff;
+  --card:          #ffffff;
+  --line:          #dce1ef;
+  --border:        #c4cce0;
+  --text:          #1a2440;
+  --text-secondary:#5a6a90;
+  --muted:         #5a6a90;
+  --input-bg:      #f4f6fc;
+  --btn-bg:        #edf0f8;
+  --nav-active:    #dde4f5;
+  --shadow:        0 1px 3px rgba(0,0,0,0.08);
 }
 
 /* ===================== Base Reset ===================== */
@@ -112,7 +143,7 @@ a {
 }
 
 .nav a.active {
-  background: #1a2347;
+  background: var(--nav-active);
 }
 
 /* ===================== Main Content (Scrollable) ===================== */
@@ -162,8 +193,8 @@ input, select, textarea {
   font-size: 16px; /* Prevents iOS zoom */
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #2b355e;
-  background: #0b1026;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--text);
 }
 
@@ -205,8 +236,8 @@ input[type="number"]::-webkit-inner-spin-button {
 button {
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid #2b355e;
-  background: #141c3c;
+  border: 1px solid var(--border);
+  background: var(--btn-bg);
   color: var(--text);
   cursor: pointer;
 }
@@ -299,7 +330,7 @@ button.primary:focus-visible,
   grid-template-columns: 1fr auto;
   gap: 8px;
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--line);
   color: inherit;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;

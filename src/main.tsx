@@ -7,6 +7,7 @@ import { LocaleProvider } from './contexts/LocaleContext.tsx'
 import App from './App.tsx'
 import './styles.css'
 import './i18n/config'
+import './lib/theme' // applies saved theme to <html> before first paint
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

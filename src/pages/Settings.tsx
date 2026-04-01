@@ -4,6 +4,7 @@ import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { type FeatureId } from '../lib/features'
 import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS } from '../lib/shortcuts'
+import { useTheme } from '../lib/theme'
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -15,6 +16,8 @@ export default function Settings() {
   const [selectedShortcuts, setSelectedShortcuts] = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
+
+  const { theme, setTheme } = useTheme()
 
   const [currentPassword, setCurrentPassword]   = useState('')
   const [newPassword, setNewPassword]           = useState('')
@@ -248,8 +251,29 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Appearance */}
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+        <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setTheme('dark')}
+            className={theme === 'dark' ? 'primary' : ''}
+            style={{ flex: 1 }}
+          >
+            Dark
+          </button>
+          <button
+            onClick={() => setTheme('light')}
+            className={theme === 'light' ? 'primary' : ''}
+            style={{ flex: 1 }}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+
       {/* Password Change */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
         <input
           type="text" name="username" autoComplete="username"
           value={localStorage.getItem('userEmail') || ''}
