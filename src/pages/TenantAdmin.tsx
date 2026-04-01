@@ -89,6 +89,10 @@ export default function TenantAdmin() {
     loadData()
   }, [])
 
+  useEffect(() => {
+    if (activeTab === 'invoicing') loadInvoiceConfig()
+  }, [activeTab])
+
   async function loadData() {
     try {
       setLoading(true)
@@ -117,22 +121,6 @@ export default function TenantAdmin() {
       setUsers(data.users || [])
       setTenantFeatures(data.tenantFeatures || [])
       if (data.tenantGeo) setTenantGeo(data.tenantGeo)
-      if (data.invoiceConfig) {
-        const ic = data.invoiceConfig
-        setInvoiceCfg({
-          autoInvoiceNumber: ic.autoInvoiceNumber ?? false,
-          companyName: ic.companyName ?? '',
-          companyAddress1: ic.companyAddress1 ?? '',
-          companyAddress2: ic.companyAddress2 ?? '',
-          companyPhone: ic.companyPhone ?? '',
-          contactName: ic.contactName ?? '',
-          enabledPaymentMethods: ic.enabledPaymentMethods ?? [],
-          bankName: ic.bankName ?? '',
-          bankAccountName: ic.bankAccountName ?? '',
-          bankAccountNumber: ic.bankAccountNumber ?? '',
-          bankRoutingNumber: ic.bankRoutingNumber ?? '',
-        })
-      }
 
     } catch (e: any) {
       setError(e?.message || 'Failed to load data')
@@ -284,6 +272,39 @@ export default function TenantAdmin() {
       setTogglingUserId(null)
     }
   }
+  async function loadInvoiceConfig() {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      const res = await fetch(`${base}/api/tenant-admin?action=getInvoiceConfig`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+        },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.invoiceConfig) {
+        const ic = data.invoiceConfig
+        setInvoiceCfg({
+          autoInvoiceNumber: ic.autoInvoiceNumber ?? false,
+          companyName: ic.companyName ?? '',
+          companyAddress1: ic.companyAddress1 ?? '',
+          companyAddress2: ic.companyAddress2 ?? '',
+          companyPhone: ic.companyPhone ?? '',
+          contactName: ic.contactName ?? '',
+          enabledPaymentMethods: ic.enabledPaymentMethods ?? [],
+          bankName: ic.bankName ?? '',
+          bankAccountName: ic.bankAccountName ?? '',
+          bankAccountNumber: ic.bankAccountNumber ?? '',
+          bankRoutingNumber: ic.bankRoutingNumber ?? '',
+        })
+      }
+    } catch { /* silently ignore — form starts empty */ }
+  }
+
   async function handleSaveInvoiceConfig() {
     setSavingInvoice(true)
     try {

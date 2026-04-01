@@ -36,7 +36,7 @@ async function handleGet(event) {
     if (action === 'getTenantUsers') {
       // Get tenant's available features and geo defaults
       const tenant = await sql`
-        SELECT features, default_language, default_currency, default_timezone, default_locale, invoice_config
+        SELECT features, default_language, default_currency, default_timezone, default_locale
         FROM tenants
         WHERE id = ${tenantId}
         LIMIT 1
@@ -71,7 +71,6 @@ async function handleGet(event) {
           default_timezone: tenant[0]?.default_timezone || 'UTC',
           default_locale:   tenant[0]?.default_locale   || 'en-US',
         },
-        invoiceConfig: tenant[0]?.invoice_config || null,
       })
     }
 
