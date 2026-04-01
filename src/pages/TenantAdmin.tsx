@@ -74,7 +74,7 @@ export default function TenantAdmin() {
 
   // Accounting — exports
   type ExportRow = {
-    id: string; order_no: string | null; order_date: string
+    id: string; order_no: string | null; order_date: string | Date
     customer_name: string; order_amount: number
     partner_name: string | null; partner_amount: number
   }
@@ -317,10 +317,12 @@ export default function TenantAdmin() {
 
   function sortedAccRows(rows: ExportRow[]) {
     return [...rows].sort((a, b) => {
-      const va = accSortBy === 'order_date' ? a.order_date
+      // Normalize order_date (may be Date object or string) to ISO string for comparison
+      const dateStr = (v: string | Date) => v instanceof Date ? v.toISOString() : String(v)
+      const va = accSortBy === 'order_date' ? dateStr(a.order_date)
                : accSortBy === 'customer_name' ? a.customer_name
                : (a.order_no ?? '')
-      const vb = accSortBy === 'order_date' ? b.order_date
+      const vb = accSortBy === 'order_date' ? dateStr(b.order_date)
                : accSortBy === 'customer_name' ? b.customer_name
                : (b.order_no ?? '')
       const cmp = va < vb ? -1 : va > vb ? 1 : 0
@@ -328,10 +330,19 @@ export default function TenantAdmin() {
     })
   }
 
-  function formatAccDate(dateStr: string): string {
-    if (!dateStr) return ''
-    // Build from parts to avoid any UTC-shift on a DATE-only value
-    const [year, month, day] = dateStr.split('-').map(Number)
+  function formatAccDate(val: string | Date): string {
+    if (!val) return ''
+    let year: number, month: number, day: number
+    if (val instanceof Date) {
+      // Neon returns DATE columns as JS Date objects at UTC midnight
+      year = val.getUTCFullYear(); month = val.getUTCMonth() + 1; day = val.getUTCDate()
+    } else {
+      // Take only the date part (handles "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ssZ")
+      const [y, mo, d] = String(val).substring(0, 10).split('-').map(Number)
+      year = y; month = mo; day = d
+    }
+    if (!year) return String(val)
+    // Use local Date constructor so the formatter doesn't shift the date
     const d = new Date(year, month - 1, day)
     return new Intl.DateTimeFormat(tenantGeo.default_locale || 'en-US', {
       year: 'numeric', month: '2-digit', day: '2-digit',
