@@ -38,6 +38,7 @@ type InvoiceData = {
     amount: number
   }>
   companyInfo?: CompanyInfo | null
+  logoDataUrl?: string | null
 }
 
 export default function InvoicePreview() {
@@ -357,7 +358,7 @@ useEffect(() => {
             >
               <div style={{ width: 100, height: 100 }}>
                 <img
-                  src="/icons/icon-192.png"
+                  src={invoiceData.logoDataUrl || '/icons/icon-192.png'}
                   alt="Company Logo"
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />

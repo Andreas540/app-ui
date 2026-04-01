@@ -153,8 +153,28 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     setSelectedOrders(new Set())
   }
 
-  const handlePreviewInvoice = () => {
+  const handlePreviewInvoice = async () => {
     if (!selectedCustomer) return
+
+    // Pre-fetch the tenant icon as a data URL so html-to-image can embed it
+    let logoDataUrl: string | null = null
+    if (user?.tenantId) {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/.netlify/functions/serve-icon?tenant_id=${user.tenantId}&type=192`)
+        if (res.ok) {
+          const blob = await res.blob()
+          logoDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+        }
+      } catch {
+        // Fall back to default icon silently
+      }
+    }
 
     const invoiceData = {
       invoiceNo,
@@ -165,6 +185,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
       customer: selectedCustomer,
       orders: confirmedOrders,
       companyInfo: invoiceConfig,
+      logoDataUrl,
     }
 
     navigate('/invoices/preview', { state: invoiceData })
