@@ -1,0 +1,21 @@
+{
+  "pageTitle": "Sales & Profit",
+  "showProfitPct": "Show Profit %",
+  "hideProfitPct": "Hide Profit %",
+  "noReportsSelected": "No reports selected. Use the Reports button above to choose which reports to show.",
+  "moveLeft": "Move left",
+  "moveRight": "Move right",
+  "aboutReport": "About this report",
+  "revenue_gross_profit": {
+    "title": "Revenue & Gross Profit",
+    "description_revenue": "Revenue: The total value of all orders registered in the period.",
+    "description_profit": "Profit: Total revenue minus total product cost and minus total shipping cost.",
+    "description_note": "Product cost is registered, per unit, on the Products page. Shipping cost is registered, per unit, for each individual customer."
+  },
+  "revenue_operating_profit": {
+    "title": "Revenue & Operating Profit",
+    "description_revenue": "Revenue: The total value of all orders registered in the period.",
+    "description_profit": "Profit: Total revenue minus total product cost and minus total shipping cost, minus any costs registered as recurring or non-recurring business costs on the New Cost page.",
+    "description_note": "Product cost is registered, per unit, on the Products page. Shipping cost is registered, per unit, for each individual customer."
+  }
+}

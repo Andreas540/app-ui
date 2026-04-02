@@ -1,0 +1,21 @@
+{
+  "pageTitle": "Ventas & Beneficios",
+  "showProfitPct": "Mostrar % beneficio",
+  "hideProfitPct": "Ocultar % beneficio",
+  "noReportsSelected": "No hay informes seleccionados. Use el botón Informes arriba para elegir qué informes mostrar.",
+  "moveLeft": "Mover a la izquierda",
+  "moveRight": "Mover a la derecha",
+  "aboutReport": "Sobre este informe",
+  "revenue_gross_profit": {
+    "title": "Ingresos & Beneficio Bruto",
+    "description_revenue": "Ingresos: El valor total de todos los pedidos registrados en el período.",
+    "description_profit": "Beneficio: Ingresos totales menos el costo total de productos y menos el costo total de envío.",
+    "description_note": "El costo del producto se registra, por unidad, en la página Productos. El costo de envío se registra, por unidad, para cada cliente individual."
+  },
+  "revenue_operating_profit": {
+    "title": "Ingresos & Beneficio Operativo",
+    "description_revenue": "Ingresos: El valor total de todos los pedidos registrados en el período.",
+    "description_profit": "Beneficio: Ingresos totales menos el costo total de productos y menos el costo total de envío, menos cualquier costo registrado como gasto empresarial recurrente o no recurrente en la página Nuevo Costo.",
+    "description_note": "El costo del producto se registra, por unidad, en la página Productos. El costo de envío se registra, por unidad, para cada cliente individual."
+  }
+}

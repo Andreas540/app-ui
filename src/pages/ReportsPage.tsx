@@ -156,7 +156,7 @@ function ChartSlide({
             cursor: 'pointer',
           }}
         >
-          {showPct ? 'Hide %' : 'Show %'}
+          {showPct ? 'Hide Profit %' : 'Show Profit %'}
         </button>
       </div>
 
@@ -252,8 +252,6 @@ function ChartSlide({
 
 type ReportDef = {
   id: string
-  title: string
-  description: string
   bar1Key: string
   bar1Label: string
   bar2Key: string
@@ -264,16 +262,12 @@ type ReportDef = {
 const ALL_REPORTS: ReportDef[] = [
   {
     id: 'revenue_gross_profit',
-    title: 'Revenue & Gross Profit',
-    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
     bar1Key: 'revenue',      bar1Label: 'Revenue',
     bar2Key: 'gross_profit', bar2Label: 'Gross Profit',
     lineKey: 'grossPct',
   },
   {
     id: 'revenue_operating_profit',
-    title: 'Revenue & Operating Profit',
-    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.',
     bar1Key: 'revenue',          bar1Label: 'Revenue',
     bar2Key: 'operating_profit', bar2Label: 'Operating Profit',
     lineKey: 'operatingPct',
@@ -312,7 +306,8 @@ const VISIBLE_MOBILE  = 3
 const VISIBLE_DESKTOP = 6
 
 export default function ReportsPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation('reports')
+  const { t: tc } = useTranslation()
   const [rpsData,      setRpsData]      = useState<RpsPoint[]>([])
   const [loading,      setLoading]      = useState(true)
   const [err,          setErr]          = useState<string | null>(null)
@@ -351,7 +346,7 @@ export default function ReportsPage() {
         const start = Math.max(0, rows.length - visibleCount)
         setVisibleStart(start)
         // Flash swipe hint on mobile when there's more data than fits
-        if (rows.length > visibleCount) {
+        if (rows.length > visibleCount && isMobile) {
           setShowHint(true)
           if (hintTimer.current) clearTimeout(hintTimer.current)
           hintTimer.current = setTimeout(() => setShowHint(false), 2500)
@@ -449,7 +444,7 @@ export default function ReportsPage() {
                           onChange={() => toggleVisible(r.id)}
                           style={{ width: 14, height: 14, flexShrink: 0 }}
                         />
-                        <span style={{ fontSize: 13 }}>{r.title}</span>
+                        <span style={{ fontSize: 13 }}>{t(`${r.id}.title`)}</span>
                       </label>
                     ))}
                   </div>
@@ -474,7 +469,7 @@ export default function ReportsPage() {
               onClick={() => { setFromMonth(''); setToMonth('') }}
               style={{ height: 34, padding: '0 12px', fontSize: 12, borderRadius: 6 }}
             >
-              {t('clear')}
+              {tc('clear')}
             </button>
           )}
         </div>
@@ -486,7 +481,7 @@ export default function ReportsPage() {
 
       {!loading && orderedVisible.length === 0 && (
         <div className="card">
-          <p className="helper">No reports selected. Use the Reports button above to choose which reports to show.</p>
+          <p className="helper">{t('noReportsSelected')}</p>
         </div>
       )}
 
@@ -511,15 +506,17 @@ export default function ReportsPage() {
                     display: 'flex', flexDirection: 'column', gap: 10,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{report.title}</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</div>
                       <button
                         onClick={() => setInfoOpen(null)}
                         style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
                       >✕</button>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                      {report.description}
-                    </p>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {['description_revenue', 'description_profit', 'description_note'].map((key: string) => (
+                        <p key={key} style={{ margin: 0 }}>{t(`${report.id}.${key}`)}</p>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
@@ -527,7 +524,7 @@ export default function ReportsPage() {
               {/* Card header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{report.title}</span>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</span>
                   <button
                     onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
                     title="About this report"
@@ -546,18 +543,20 @@ export default function ReportsPage() {
                     onClick={() => move(report.id, -1)} disabled={idx === 0}
                     title="Move left"
                     style={{
-                      width: 28, height: 28, padding: 0, fontSize: 16, fontWeight: 700,
-                      color: '#fff', opacity: idx === 0 ? 0.2 : 1,
-                      background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
+                      width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
+                      color: 'var(--text-secondary)', opacity: idx === 0 ? 0.25 : 1,
+                      background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >←</button>
                   <button
                     onClick={() => move(report.id, 1)} disabled={idx === orderedVisible.length - 1}
                     title="Move right"
                     style={{
-                      width: 28, height: 28, padding: 0, fontSize: 16, fontWeight: 700,
-                      color: '#fff', opacity: idx === orderedVisible.length - 1 ? 0.2 : 1,
-                      background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
+                      width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
+                      color: 'var(--text-secondary)', opacity: idx === orderedVisible.length - 1 ? 0.25 : 1,
+                      background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >→</button>
                 </div>

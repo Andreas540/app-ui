@@ -1,0 +1,21 @@
+{
+  "pageTitle": "Försäljning & Vinst",
+  "showProfitPct": "Visa vinstprocent",
+  "hideProfitPct": "Dölj vinstprocent",
+  "noReportsSelected": "Inga rapporter valda. Använd knappen Rapporter ovan för att välja vilka rapporter som ska visas.",
+  "moveLeft": "Flytta vänster",
+  "moveRight": "Flytta höger",
+  "aboutReport": "Om den här rapporten",
+  "revenue_gross_profit": {
+    "title": "Intäkter & Bruttovinst",
+    "description_revenue": "Intäkter: Det totala värdet av alla beställningar registrerade under perioden.",
+    "description_profit": "Vinst: Totala intäkter minus totala produktkostnader och minus totala fraktkostnader.",
+    "description_note": "Produktkostnad registreras, per enhet, på sidan Produkter. Fraktkostnad registreras, per enhet, för varje enskild kund."
+  },
+  "revenue_operating_profit": {
+    "title": "Intäkter & Rörelsevinst",
+    "description_revenue": "Intäkter: Det totala värdet av alla beställningar registrerade under perioden.",
+    "description_profit": "Vinst: Totala intäkter minus totala produktkostnader och minus totala fraktkostnader, minus eventuella kostnader registrerade som återkommande eller icke-återkommande affärskostnader på sidan Ny kostnad.",
+    "description_note": "Produktkostnad registreras, per enhet, på sidan Produkter. Fraktkostnad registreras, per enhet, för varje enskild kund."
+  }
+}
