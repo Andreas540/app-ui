@@ -655,7 +655,7 @@ export default function TenantAdmin() {
 </p>
       </div>
 
-      {/* Tabbed card: Team Members | Invoicing */}
+      {/* Tabbed card: Users | Invoicing | Data */}
       <div className="card">
 
         {/* Tab row */}
@@ -665,11 +665,11 @@ export default function TenantAdmin() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={activeTab === tab ? 'primary' : ''}
-              style={{ height: 36, padding: '0 20px', fontSize: 14 }}
+              style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
-              {tab === 'team' ? t('tenantAdmin.teamMembers')
+              {tab === 'team' ? t('tenantAdmin.tabUsers')
                 : tab === 'invoicing' ? t('tenantAdmin.invoicingTab')
-                : t('tenantAdmin.accountingTab')}
+                : t('tenantAdmin.tabData')}
             </button>
           ))}
         </div>

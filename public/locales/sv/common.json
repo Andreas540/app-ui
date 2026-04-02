@@ -818,6 +818,8 @@
     "manageSubscription": "Hantera prenumeration",
     "changeModulesInfo": "För att ändra moduler eller antal användare, skicka ett meddelande via kontaktsidan.",
     "teamMembers": "Teammedlemmar",
+    "tabUsers": "Användare",
+    "tabData": "Data",
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",

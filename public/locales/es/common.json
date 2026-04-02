@@ -818,6 +818,8 @@
     "manageSubscription": "Gestionar Suscripción",
     "changeModulesInfo": "Para cambiar módulos o número de usuarios, envía un mensaje a través de la página de Contacto.",
     "teamMembers": "Miembros del Equipo",
+    "tabUsers": "Usuarios",
+    "tabData": "Datos",
     "createUserButton": "+ Crear Usuario",
     "noUsers": "Sin usuarios aún",
     "roleLabel": "Rol:",

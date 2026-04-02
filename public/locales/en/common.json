@@ -818,6 +818,8 @@
     "manageSubscription": "Manage Subscription",
     "changeModulesInfo": "To change modules or number of users, please send a message through the Contact page.",
     "teamMembers": "Team Members",
+    "tabUsers": "Users",
+    "tabData": "Data",
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",
