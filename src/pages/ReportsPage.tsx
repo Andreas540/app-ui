@@ -114,6 +114,7 @@ function ChartSlide({
   data, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, computePct,
   needsScroll, canPrev, canNext, onPrev, onNext, showHint,
 }: ChartSlideProps) {
+  const { t } = useTranslation('reports')
   const [showPct, setShowPct] = useState(false)
   const touchStartX = useRef<number | null>(null)
 
@@ -156,7 +157,7 @@ function ChartSlide({
             cursor: 'pointer',
           }}
         >
-          {showPct ? 'Hide Profit %' : 'Show Profit %'}
+          {showPct ? t('hideProfitPct') : t('showProfitPct')}
         </button>
       </div>
 
@@ -262,14 +263,14 @@ type ReportDef = {
 const ALL_REPORTS: ReportDef[] = [
   {
     id: 'revenue_gross_profit',
-    bar1Key: 'revenue',      bar1Label: 'Revenue',
-    bar2Key: 'gross_profit', bar2Label: 'Gross Profit',
+    bar1Key: 'revenue',      bar1Label: 'label_revenue',
+    bar2Key: 'gross_profit', bar2Label: 'label_gross_profit',
     lineKey: 'grossPct',
   },
   {
     id: 'revenue_operating_profit',
-    bar1Key: 'revenue',          bar1Label: 'Revenue',
-    bar2Key: 'operating_profit', bar2Label: 'Operating Profit',
+    bar1Key: 'revenue',          bar1Label: 'label_revenue',
+    bar2Key: 'operating_profit', bar2Label: 'label_operating_profit',
     lineKey: 'operatingPct',
   },
 ]
@@ -409,7 +410,7 @@ export default function ReportsPage() {
       {/* ── Header card ──────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <h3 style={{ margin: 0 }}>{t('reports.pageTitle')}</h3>
+          <h3 style={{ margin: 0 }}>{t('pageTitle')}</h3>
 
           {/* Report selector dropdown */}
           <div>
@@ -418,7 +419,7 @@ export default function ReportsPage() {
               onClick={() => setDropdownOpen(o => !o)}
               style={{ height: 36, padding: '0 14px', fontSize: 13 }}
             >
-              {t('reports.pageTitle')} ▾
+              {t('pageTitle')} ▾
             </button>
             {dropdownOpen && (() => {
               const rect   = btnRef.current?.getBoundingClientRect()
@@ -457,12 +458,12 @@ export default function ReportsPage() {
         {/* ── Period picker ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>From</div>
-            <MonthPicker value={fromMonth} onChange={handleFromChange} placeholder="From" />
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>{t('from')}</div>
+            <MonthPicker value={fromMonth} onChange={handleFromChange} placeholder={t('from')} />
           </div>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>To</div>
-            <MonthPicker value={toMonth} onChange={setToMonth} placeholder="To" />
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>{t('to')}</div>
+            <MonthPicker value={toMonth} onChange={setToMonth} placeholder={t('to')} />
           </div>
           {(fromMonth || toMonth) && (
             <button
@@ -476,8 +477,8 @@ export default function ReportsPage() {
       </div>
 
       {/* Error / loading */}
-      {err     && <div className="card"><p style={{ color: 'salmon' }}>Error: {err}</p></div>}
-      {loading && <div className="card"><p className="helper">Loading…</p></div>}
+      {err     && <div className="card"><p style={{ color: 'salmon' }}>{tc('error')}: {err}</p></div>}
+      {loading && <div className="card"><p className="helper">{tc('loadingDots')}</p></div>}
 
       {!loading && orderedVisible.length === 0 && (
         <div className="card">
@@ -527,7 +528,7 @@ export default function ReportsPage() {
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</span>
                   <button
                     onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
-                    title="About this report"
+                    title={t('aboutReport')}
                     style={{
                       width: 20, height: 20, padding: 0, flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -541,7 +542,7 @@ export default function ReportsPage() {
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     onClick={() => move(report.id, -1)} disabled={idx === 0}
-                    title="Move left"
+                    title={t('moveLeft')}
                     style={{
                       width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
                       color: 'var(--text-secondary)', opacity: idx === 0 ? 0.25 : 1,
@@ -551,7 +552,7 @@ export default function ReportsPage() {
                   >←</button>
                   <button
                     onClick={() => move(report.id, 1)} disabled={idx === orderedVisible.length - 1}
-                    title="Move right"
+                    title={t('moveRight')}
                     style={{
                       width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
                       color: 'var(--text-secondary)', opacity: idx === orderedVisible.length - 1 ? 0.25 : 1,
@@ -565,8 +566,8 @@ export default function ReportsPage() {
               {/* Chart (legend + Show % toggle now inside ChartSlide) */}
               <ChartSlide
                 data={visibleData}
-                bar1Key={report.bar1Key}   bar1Label={report.bar1Label}
-                bar2Key={report.bar2Key}   bar2Label={report.bar2Label}
+                bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
+                bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
                 lineKey={report.lineKey}
                 needsScroll={needsScroll}
                 canPrev={canPrev}
