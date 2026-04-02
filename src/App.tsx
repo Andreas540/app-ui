@@ -554,9 +554,9 @@ useEffect(() => {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   width: '100%', background: 'transparent', border: 'none', cursor: 'pointer',
-                  fontWeight: 700, color: '#fff', fontSize: 15,
+                  fontWeight: 700, color: 'var(--text)', fontSize: 15,
                   marginTop: first ? 8 : 16, marginBottom: collapsed[id] ? 0 : 8,
-                  paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.2)',
+                  paddingBottom: 8, borderBottom: '1px solid var(--line)',
                   textAlign: 'left', padding: '0 0 8px 0',
                 }}
               >

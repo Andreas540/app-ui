@@ -409,6 +409,14 @@ button.primary:focus-visible,
   outline: none !important;
 }
 
+/* Recharts text inherits theme color */
+.recharts-cartesian-axis-tick-value,
+.recharts-label,
+.recharts-legend-item-text,
+.recharts-text {
+  fill: var(--text) !important;
+}
+
 .recharts-wrapper:focus {
   outline: none !important;
 }
