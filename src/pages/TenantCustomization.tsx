@@ -131,15 +131,13 @@ export default function TenantCustomization() {
 
   function Row({ label, help, customized, children }: { label: string; help?: string; customized: boolean; children: React.ReactNode }) {
     return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
-        <div style={{ flex: '0 0 260px' }}>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>
-            {label}
-            <Badge customized={customized} />
-          </div>
-          {help && <div className="helper" style={{ marginTop: 2, fontSize: 12 }}>{help}</div>}
+      <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+          {label}
+          <Badge customized={customized} />
         </div>
-        <div style={{ flex: 1 }}>{children}</div>
+        {help && <div className="helper" style={{ marginTop: 2, marginBottom: 8, fontSize: 12 }}>{help}</div>}
+        <div>{children}</div>
       </div>
     )
   }
