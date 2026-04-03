@@ -376,6 +376,13 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
   const { partner, totals, orders, payments } = data
 
+  // Compute total paid per order from payments list
+  const paidByOrderId: Record<string, number> = {}
+  for (const p of payments) {
+    const oid = (p as any).order_id
+    if (oid) paidByOrderId[oid] = (paidByOrderId[oid] || 0) + Number(p.amount)
+  }
+
   // Show 5 by default
   const shownOrders   = showAllOrders   ? orders   : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
@@ -718,16 +725,27 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                   </div>
 
                   {/* RIGHT: Partner amount */}
-                  <div 
-                    className="helper" 
-                    onClick={() => handleOrderClick(o)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    style={{textAlign:'right', cursor: 'pointer'}}
-                    title="Partner amount"
-                  >
-                    {fmtMoney(o.partner_amount)}
-                  </div>
+                  {(() => {
+                    const orderTotal = Number(o.partner_amount) || 0
+                    const paid = paidByOrderId[o.id] || 0
+                    const orderColor = paid >= orderTotal && orderTotal > 0
+                      ? '#10b981'
+                      : paid > 0 && paid < orderTotal
+                        ? '#f59e0b'
+                        : undefined
+                    return (
+                      <div
+                        className="helper"
+                        onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}
+                        title="Partner amount"
+                      >
+                        {fmtMoney(orderTotal)}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}

@@ -144,6 +144,13 @@ export default function SupplierDetailPage() {
   const addrLine1 = [supplier.address1, supplier.address2].filter(Boolean).join(', ')
   const addrLine2 = [supplier.city, supplier.state, supplier.postal_code].filter(Boolean).join(' ')
 
+  // Compute total paid per order from payments list
+  const paidByOrderId: Record<string, number> = {}
+  for (const p of payments) {
+    const oid = (p as any).order_id
+    if (oid) paidByOrderId[oid] = (paidByOrderId[oid] || 0) + Number(p.amount)
+  }
+
   // Show 5 by default
   const shownOrders = showAllOrders ? orders : orders.slice(0, 5)
   const shownPayments = showAllPayments ? payments : payments.slice(0, 5)
@@ -364,9 +371,20 @@ export default function SupplierDetailPage() {
                     </div>
 
                     {/* TOTAL COST */}
-                    <div className="helper" style={{textAlign:'right'}}>
-                      {fmtMoney(o.total)}
-                    </div>
+                    {(() => {
+                      const orderTotal = Number(o.total) || 0
+                      const paid = paidByOrderId[o.id] || 0
+                      const orderColor = paid >= orderTotal && orderTotal > 0
+                        ? '#10b981'
+                        : paid > 0 && paid < orderTotal
+                          ? '#f59e0b'
+                          : undefined
+                      return (
+                        <div className="helper" style={{ textAlign: 'right', color: orderColor }}>
+                          {fmtMoney(orderTotal)}
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Product rows */}
