@@ -6,7 +6,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-type Section = 'labels' | 'payments' | 'orders' | 'booking'
+type Section = 'terminology' | 'payments' | 'booking' | 'dashboard' | 'orders'
 
 type UiConfig = {
   payments?: { showOrderSelection?: boolean; showAdvancePayment?: boolean }
@@ -29,7 +29,7 @@ export default function TenantCustomization() {
 
   const [tenants, setTenants]       = useState<Tenant[]>([])
   const [tenantId, setTenantId]     = useState('')
-  const [section, setSection]       = useState<Section>('labels')
+  const [section, setSection]       = useState<Section>('terminology')
   const [cfg, setCfg]               = useState<UiConfig>({})
   const [loading, setLoading]       = useState(false)
   const [saving, setSaving]         = useState(false)
@@ -94,11 +94,26 @@ export default function TenantCustomization() {
   }
 
   function resetSection() {
-    const sectionMap: Record<Section, keyof UiConfig> = {
-      labels: 'labels', payments: 'payments', orders: 'ui', booking: 'booking',
+    if (section === 'terminology') {
+      setCfg(p => { const next = { ...p }; delete next.labels; return next })
+    } else if (section === 'payments') {
+      setCfg(p => { const next = { ...p }; delete next.payments; return next })
+    } else if (section === 'booking') {
+      setCfg(p => { const next = { ...p }; delete next.booking; return next })
+    } else if (section === 'dashboard') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showCostEffectiveness
+        return { ...p, ui }
+      })
+    } else if (section === 'orders') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showOrderNumberInList
+        delete ui.requiresApproval
+        return { ...p, ui }
+      })
     }
-    const key = sectionMap[section]
-    setCfg(p => { const next = { ...p }; delete next[key]; return next })
   }
 
   // ── Sub-components ─────────────────────────────────────────────────────────
@@ -144,80 +159,40 @@ export default function TenantCustomization() {
 
   // ── Sections ───────────────────────────────────────────────────────────────
 
-  function LabelsSection() {
+  // Global > Terminology — only directCustomerGroup is currently wired in the app.
+  // customer/customers/order/orders labels exist in config but have no rendering yet.
+  function TerminologySection() {
     const d = defaultConfig.labels
     const c = cfg.labels || {}
     return (
-      <>
-        <Row label={t('tenantCustom.customerSingular')} customized={c.customer !== undefined && c.customer !== d.customer}>
-          <input value={c.customer ?? d.customer} onChange={e => setLabel('customer', e.target.value)}
-            placeholder={d.customer} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.customerPlural')} customized={c.customers !== undefined && c.customers !== d.customers}>
-          <input value={c.customers ?? d.customers} onChange={e => setLabel('customers', e.target.value)}
-            placeholder={d.customers} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.orderSingular')} customized={c.order !== undefined && c.order !== d.order}>
-          <input value={c.order ?? d.order} onChange={e => setLabel('order', e.target.value)}
-            placeholder={d.order} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.orderPlural')} customized={c.orders !== undefined && c.orders !== d.orders}>
-          <input value={c.orders ?? d.orders} onChange={e => setLabel('orders', e.target.value)}
-            placeholder={d.orders} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
-          customized={c.directCustomerGroup !== undefined && c.directCustomerGroup !== d.directCustomerGroup}>
-          <input value={c.directCustomerGroup ?? d.directCustomerGroup}
-            onChange={e => setLabel('directCustomerGroup', e.target.value)}
-            placeholder={d.directCustomerGroup} style={{ height: H, width: 220 }} />
-        </Row>
-      </>
+      <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
+        customized={c.directCustomerGroup !== undefined && c.directCustomerGroup !== d.directCustomerGroup}>
+        <input value={c.directCustomerGroup ?? d.directCustomerGroup}
+          onChange={e => setLabel('directCustomerGroup', e.target.value)}
+          placeholder={d.directCustomerGroup} style={{ height: H, width: 220 }} />
+      </Row>
     )
   }
 
+  // Modules > Payments
   function PaymentsSection() {
     const d = defaultConfig.payments
     const c = cfg.payments || {}
-    const effSel = c.showOrderSelection ?? d.showOrderSelection
-    const effAdv = c.showAdvancePayment ?? d.showAdvancePayment
     return (
       <>
         <Row label={t('tenantCustom.showOrderSelection')} help={t('tenantCustom.showOrderSelectionHelp')}
           customized={c.showOrderSelection !== undefined && c.showOrderSelection !== d.showOrderSelection}>
-          <Toggle value={effSel} onChange={v => setPayment('showOrderSelection', v)} />
+          <Toggle value={c.showOrderSelection ?? d.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
         </Row>
         <Row label={t('tenantCustom.showAdvancePayment')} help={t('tenantCustom.showAdvancePaymentHelp')}
           customized={c.showAdvancePayment !== undefined && c.showAdvancePayment !== d.showAdvancePayment}>
-          <Toggle value={effAdv} onChange={v => setPayment('showAdvancePayment', v)} />
+          <Toggle value={c.showAdvancePayment ?? d.showAdvancePayment} onChange={v => setPayment('showAdvancePayment', v)} />
         </Row>
       </>
     )
   }
 
-  function OrdersSection() {
-    const d = defaultConfig.ui
-    const c = cfg.ui || {}
-    return (
-      <>
-        <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
-          customized={c.showOrderNumberInList !== undefined && c.showOrderNumberInList !== d.showOrderNumberInList}>
-          <Toggle value={c.showOrderNumberInList ?? d.showOrderNumberInList}
-            onChange={v => setUi('showOrderNumberInList', v)} />
-        </Row>
-        <Row label={t('tenantCustom.showCostEffectiveness')} help={t('tenantCustom.showCostEffectivenessHelp')}
-          customized={c.showCostEffectiveness !== undefined && c.showCostEffectiveness !== d.showCostEffectiveness}>
-          <Toggle value={c.showCostEffectiveness ?? d.showCostEffectiveness}
-            onChange={v => setUi('showCostEffectiveness', v)} />
-        </Row>
-        <Row label={t('tenantCustom.requiresApproval')} help={t('tenantCustom.requiresApprovalHelp')}
-          customized={c.requiresApproval !== undefined && c.requiresApproval !== d.requiresApproval}>
-          <Toggle value={c.requiresApproval ?? d.requiresApproval}
-            onChange={v => setUi('requiresApproval', v)} />
-        </Row>
-      </>
-    )
-  }
-
+  // Modules > Booking
   function BookingSection() {
     const d = defaultConfig.booking
     const c = cfg.booking || {}
@@ -238,13 +213,41 @@ export default function TenantCustomization() {
         </Row>
         <Row label={t('tenantCustom.smsRemindersEnabled')}
           customized={c.smsRemindersEnabled !== undefined && c.smsRemindersEnabled !== d.smsRemindersEnabled}>
-          <Toggle value={c.smsRemindersEnabled ?? d.smsRemindersEnabled}
-            onChange={v => setBookingBool('smsRemindersEnabled', v)} />
+          <Toggle value={c.smsRemindersEnabled ?? d.smsRemindersEnabled} onChange={v => setBookingBool('smsRemindersEnabled', v)} />
         </Row>
         <Row label={t('tenantCustom.showBookingParticipants')} help={t('tenantCustom.showBookingParticipantsHelp')}
           customized={c.showBookingParticipants !== undefined && c.showBookingParticipants !== d.showBookingParticipants}>
-          <Toggle value={c.showBookingParticipants ?? d.showBookingParticipants}
-            onChange={v => setBookingBool('showBookingParticipants', v)} />
+          <Toggle value={c.showBookingParticipants ?? d.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
+        </Row>
+      </>
+    )
+  }
+
+  // Pages > Dashboard
+  function DashboardSection() {
+    const d = defaultConfig.ui
+    const c = cfg.ui || {}
+    return (
+      <Row label={t('tenantCustom.showCostEffectiveness')} help={t('tenantCustom.showCostEffectivenessHelp')}
+        customized={c.showCostEffectiveness !== undefined && c.showCostEffectiveness !== d.showCostEffectiveness}>
+        <Toggle value={c.showCostEffectiveness ?? d.showCostEffectiveness} onChange={v => setUi('showCostEffectiveness', v)} />
+      </Row>
+    )
+  }
+
+  // Pages > Orders
+  function OrdersSection() {
+    const d = defaultConfig.ui
+    const c = cfg.ui || {}
+    return (
+      <>
+        <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
+          customized={c.showOrderNumberInList !== undefined && c.showOrderNumberInList !== d.showOrderNumberInList}>
+          <Toggle value={c.showOrderNumberInList ?? d.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
+        </Row>
+        <Row label={t('tenantCustom.requiresApproval')} help={t('tenantCustom.requiresApprovalHelp')}
+          customized={c.requiresApproval !== undefined && c.requiresApproval !== d.requiresApproval}>
+          <Toggle value={c.requiresApproval ?? d.requiresApproval} onChange={v => setUi('requiresApproval', v)} />
         </Row>
       </>
     )
@@ -252,14 +255,7 @@ export default function TenantCustomization() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const sections: { id: Section; label: string }[] = [
-    { id: 'labels',   label: t('tenantCustom.sectionLabels') },
-    { id: 'payments', label: t('tenantCustom.sectionPayments') },
-    { id: 'orders',   label: t('tenantCustom.sectionOrders') },
-    { id: 'booking',  label: t('tenantCustom.sectionBooking') },
-  ]
-
-  const tenantName = tenants.find(t => t.id === tenantId)?.name
+  const tenantName = tenants.find(ten => ten.id === tenantId)?.name
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -270,7 +266,7 @@ export default function TenantCustomization() {
         <label style={{ fontWeight: 500 }}>{t('tenantCustom.selectTenant')}</label>
         <select value={tenantId} onChange={e => setTenantId(e.target.value)} style={{ height: H, minWidth: 200 }}>
           <option value="">{t('tenantCustom.chooseTenant')}</option>
-          {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {tenants.map(ten => <option key={ten.id} value={ten.id}>{ten.name}</option>)}
         </select>
       </div>
 
@@ -289,15 +285,26 @@ export default function TenantCustomization() {
       {tenantId && !loading && (
         <div className="card">
 
-          {/* Section tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 24, flexWrap: 'wrap' }}>
-            {sections.map(s => (
-              <button key={s.id} className={section === s.id ? 'primary' : ''}
-                onClick={() => setSection(s.id)}
-                style={{ height: H, padding: '0 20px' }}>
-                {s.label}
-              </button>
-            ))}
+          {/* Section selector */}
+          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <label style={{ fontWeight: 500, fontSize: 14 }}>{t('tenantCustom.section')}</label>
+            <select
+              value={section}
+              onChange={e => setSection(e.target.value as Section)}
+              style={{ height: H, minWidth: 220 }}
+            >
+              <optgroup label={t('tenantCustom.groupGlobal')}>
+                <option value="terminology">{t('tenantCustom.sectionTerminology')}</option>
+              </optgroup>
+              <optgroup label={t('tenantCustom.groupModules')}>
+                <option value="payments">{t('tenantCustom.sectionPayments')}</option>
+                <option value="booking">{t('tenantCustom.sectionBooking')}</option>
+              </optgroup>
+              <optgroup label={t('tenantCustom.groupPages')}>
+                <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
+                <option value="orders">{t('tenantCustom.sectionOrders')}</option>
+              </optgroup>
+            </select>
           </div>
 
           <p className="helper" style={{ marginBottom: 16 }}>
@@ -305,10 +312,11 @@ export default function TenantCustomization() {
           </p>
 
           {/* Section content */}
-          {section === 'labels'   && <LabelsSection />}
-          {section === 'payments' && <PaymentsSection />}
-          {section === 'orders'   && <OrdersSection />}
-          {section === 'booking'  && <BookingSection />}
+          {section === 'terminology' && <TerminologySection />}
+          {section === 'payments'    && <PaymentsSection />}
+          {section === 'booking'     && <BookingSection />}
+          {section === 'dashboard'   && <DashboardSection />}
+          {section === 'orders'      && <OrdersSection />}
 
           {/* Footer actions */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 24, flexWrap: 'wrap' }}>
