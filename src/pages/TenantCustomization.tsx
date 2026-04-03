@@ -5,6 +5,7 @@ import { getAuthHeaders } from '../lib/api'
 import { defaultConfig } from '../lib/tenantConfig'
 
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+const H = 40 // control height
 
 type Section = 'terminology' | 'payments' | 'booking' | 'orders'
 
@@ -25,16 +26,59 @@ type UiConfig = {
 
 interface Tenant { id: string; name: string }
 
+// ── Stable sub-components (defined at module level to avoid remount on render) ─
+
+function Badge({ customized }: { customized: boolean }) {
+  const { t } = useTranslation()
+  if (!customized) return null
+  return (
+    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent, #5b8dee)', color: '#fff', marginLeft: 8, verticalAlign: 'middle' }}>
+      {t('tenantCustom.customized')}
+    </span>
+  )
+}
+
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <button className={value ? 'primary' : ''} onClick={() => onChange(true)}
+        style={{ height: H, padding: '0 18px', fontSize: 13 }}>
+        {t('tenantCustom.on')}
+      </button>
+      <button className={!value ? 'primary' : ''} onClick={() => onChange(false)}
+        style={{ height: H, padding: '0 18px', fontSize: 13 }}>
+        {t('tenantCustom.off')}
+      </button>
+    </div>
+  )
+}
+
+function Row({ label, help, customized, children }: { label: string; help?: string; customized: boolean; children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
+      <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+        {label}
+        <Badge customized={customized} />
+      </div>
+      {help && <div className="helper" style={{ marginTop: 2, marginBottom: 8, fontSize: 12 }}>{help}</div>}
+      <div>{children}</div>
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export default function TenantCustomization() {
   const { t } = useTranslation()
 
-  const [tenants, setTenants]       = useState<Tenant[]>([])
-  const [tenantId, setTenantId]     = useState('')
-  const [section, setSection]       = useState<Section>('terminology')
-  const [cfg, setCfg]               = useState<UiConfig>({})
-  const [loading, setLoading]       = useState(false)
-  const [saving, setSaving]         = useState(false)
-  const [saveMsg, setSaveMsg]       = useState('')
+  const [tenants, setTenants]   = useState<Tenant[]>([])
+  const [tenantId, setTenantId] = useState('')
+  const [section, setSection]   = useState<Section>('terminology')
+  const [cfg, setCfg]           = useState<UiConfig>({})
+  const [loading, setLoading]   = useState(false)
+  const [saving, setSaving]     = useState(false)
+  const [saveMsg, setSaveMsg]   = useState('')
 
   useEffect(() => { loadTenants() }, [])
   useEffect(() => { if (tenantId) loadCfg(tenantId) }, [tenantId])
@@ -76,7 +120,7 @@ export default function TenantCustomization() {
     } finally { setSaving(false) }
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Setters ────────────────────────────────────────────────────────────────
 
   function setLabel(key: keyof NonNullable<UiConfig['labels']>, val: string) {
     setCfg(p => ({ ...p, labels: { ...p.labels, [key]: val || undefined } }))
@@ -110,140 +154,17 @@ export default function TenantCustomization() {
     }
   }
 
-  // ── Sub-components ─────────────────────────────────────────────────────────
-
-  const H = 40 // control height
-
-  function Badge({ customized }: { customized: boolean }) {
-    if (!customized) return null
-    return (
-      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent, #5b8dee)', color: '#fff', marginLeft: 8, verticalAlign: 'middle' }}>
-        {t('tenantCustom.customized')}
-      </span>
-    )
-  }
-
-  function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-    return (
-      <div style={{ display: 'flex', gap: 4 }}>
-        <button className={value ? 'primary' : ''} onClick={() => onChange(true)}
-          style={{ height: H, padding: '0 18px', fontSize: 13 }}>
-          {t('tenantCustom.on')}
-        </button>
-        <button className={!value ? 'primary' : ''} onClick={() => onChange(false)}
-          style={{ height: H, padding: '0 18px', fontSize: 13 }}>
-          {t('tenantCustom.off')}
-        </button>
-      </div>
-    )
-  }
-
-  function Row({ label, help, customized, children }: { label: string; help?: string; customized: boolean; children: React.ReactNode }) {
-    return (
-      <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
-          {label}
-          <Badge customized={customized} />
-        </div>
-        {help && <div className="helper" style={{ marginTop: 2, marginBottom: 8, fontSize: 12 }}>{help}</div>}
-        <div>{children}</div>
-      </div>
-    )
-  }
-
-  // ── Sections ───────────────────────────────────────────────────────────────
-
-  // Global > Terminology
-  // directLabel = short label on filter buttons (Customers page)
-  // directCustomerGroup = full group header in dropdowns (Payments page)
-  // customer/customers/order/orders exist in config but have no rendering yet
-  function TerminologySection() {
-    const d = defaultConfig.labels
-    const c = cfg.labels || {}
-    return (
-      <>
-        <Row label={t('tenantCustom.directLabel')} help={t('tenantCustom.directLabelHelp')}
-          customized={c.directLabel !== undefined && c.directLabel !== d.directLabel}>
-          <input value={c.directLabel ?? d.directLabel}
-            onChange={e => setLabel('directLabel', e.target.value)}
-            placeholder={d.directLabel} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
-          customized={c.directCustomerGroup !== undefined && c.directCustomerGroup !== d.directCustomerGroup}>
-          <input value={c.directCustomerGroup ?? d.directCustomerGroup}
-            onChange={e => setLabel('directCustomerGroup', e.target.value)}
-            placeholder={d.directCustomerGroup} style={{ height: H, width: 220 }} />
-        </Row>
-      </>
-    )
-  }
-
-  // Modules > Payments
-  function PaymentsSection() {
-    const d = defaultConfig.payments
-    const c = cfg.payments || {}
-    return (
-      <>
-        <Row label={t('tenantCustom.showOrderSelection')} help={t('tenantCustom.showOrderSelectionHelp')}
-          customized={c.showOrderSelection !== undefined && c.showOrderSelection !== d.showOrderSelection}>
-          <Toggle value={c.showOrderSelection ?? d.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
-        </Row>
-        <Row label={t('tenantCustom.showAdvancePayment')} help={t('tenantCustom.showAdvancePaymentHelp')}
-          customized={c.showAdvancePayment !== undefined && c.showAdvancePayment !== d.showAdvancePayment}>
-          <Toggle value={c.showAdvancePayment ?? d.showAdvancePayment} onChange={v => setPayment('showAdvancePayment', v)} />
-        </Row>
-      </>
-    )
-  }
-
-  // Modules > Booking
-  function BookingSection() {
-    const d = defaultConfig.booking
-    const c = cfg.booking || {}
-    return (
-      <>
-        <Row label={t('tenantCustom.serviceTypeLabel')} help={t('tenantCustom.serviceTypeLabelHelp')}
-          customized={c.serviceTypeLabel !== undefined && c.serviceTypeLabel !== d.serviceTypeLabel}>
-          <input value={c.serviceTypeLabel ?? d.serviceTypeLabel}
-            onChange={e => setBookingText('serviceTypeLabel', e.target.value)}
-            placeholder={d.serviceTypeLabel} style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.bookingProviderName')} help={t('tenantCustom.bookingProviderNameHelp')}
-          customized={c.bookingProviderName !== undefined && c.bookingProviderName !== d.bookingProviderName}>
-          <input value={c.bookingProviderName ?? d.bookingProviderName}
-            onChange={e => setBookingText('bookingProviderName', e.target.value)}
-            placeholder={d.bookingProviderName || t('tenantCustom.bookingProviderNamePlaceholder')}
-            style={{ height: H, width: 220 }} />
-        </Row>
-        <Row label={t('tenantCustom.smsRemindersEnabled')}
-          customized={c.smsRemindersEnabled !== undefined && c.smsRemindersEnabled !== d.smsRemindersEnabled}>
-          <Toggle value={c.smsRemindersEnabled ?? d.smsRemindersEnabled} onChange={v => setBookingBool('smsRemindersEnabled', v)} />
-        </Row>
-        <Row label={t('tenantCustom.showBookingParticipants')} help={t('tenantCustom.showBookingParticipantsHelp')}
-          customized={c.showBookingParticipants !== undefined && c.showBookingParticipants !== d.showBookingParticipants}>
-          <Toggle value={c.showBookingParticipants ?? d.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
-        </Row>
-      </>
-    )
-  }
-
-  // Pages > Orders
-  function OrdersSection() {
-    const d = defaultConfig.ui
-    const c = cfg.ui || {}
-    return (
-      <>
-        <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
-          customized={c.showOrderNumberInList !== undefined && c.showOrderNumberInList !== d.showOrderNumberInList}>
-          <Toggle value={c.showOrderNumberInList ?? d.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
-        </Row>
-      </>
-    )
-  }
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const tenantName = tenants.find(ten => ten.id === tenantId)?.name
+  const dl = defaultConfig.labels
+  const dp = defaultConfig.payments
+  const du = defaultConfig.ui
+  const db = defaultConfig.booking
+  const cl = cfg.labels || {}
+  const cp = cfg.payments || {}
+  const cu = cfg.ui || {}
+  const cb = cfg.booking || {}
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -276,11 +197,7 @@ export default function TenantCustomization() {
           {/* Section selector */}
           <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <label style={{ fontWeight: 500, fontSize: 14 }}>{t('tenantCustom.section')}</label>
-            <select
-              value={section}
-              onChange={e => setSection(e.target.value as Section)}
-              style={{ height: H, minWidth: 220 }}
-            >
+            <select value={section} onChange={e => setSection(e.target.value as Section)} style={{ height: H, minWidth: 220 }}>
               <optgroup label={t('tenantCustom.groupGlobal')}>
                 <option value="terminology">{t('tenantCustom.sectionTerminology')}</option>
               </optgroup>
@@ -298,11 +215,75 @@ export default function TenantCustomization() {
             {t('tenantCustom.editingFor', { tenant: tenantName })}
           </p>
 
-          {/* Section content */}
-          {section === 'terminology' && TerminologySection()}
-          {section === 'payments'    && PaymentsSection()}
-          {section === 'booking'     && BookingSection()}
-          {section === 'orders'      && OrdersSection()}
+          {/* Global > Terminology
+              directLabel = short label on filter buttons (Customers page)
+              directCustomerGroup = full group header in dropdowns (Payments page)
+              customer/customers/order/orders exist in config but have no rendering yet */}
+          {section === 'terminology' && (
+            <>
+              <Row label={t('tenantCustom.directLabel')} help={t('tenantCustom.directLabelHelp')}
+                customized={cl.directLabel !== undefined && cl.directLabel !== dl.directLabel}>
+                <input value={cl.directLabel ?? dl.directLabel}
+                  onChange={e => setLabel('directLabel', e.target.value)}
+                  placeholder={dl.directLabel} style={{ height: H, width: 220 }} />
+              </Row>
+              <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
+                customized={cl.directCustomerGroup !== undefined && cl.directCustomerGroup !== dl.directCustomerGroup}>
+                <input value={cl.directCustomerGroup ?? dl.directCustomerGroup}
+                  onChange={e => setLabel('directCustomerGroup', e.target.value)}
+                  placeholder={dl.directCustomerGroup} style={{ height: H, width: 220 }} />
+              </Row>
+            </>
+          )}
+
+          {/* Modules > Payments */}
+          {section === 'payments' && (
+            <>
+              <Row label={t('tenantCustom.showOrderSelection')} help={t('tenantCustom.showOrderSelectionHelp')}
+                customized={cp.showOrderSelection !== undefined && cp.showOrderSelection !== dp.showOrderSelection}>
+                <Toggle value={cp.showOrderSelection ?? dp.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
+              </Row>
+              <Row label={t('tenantCustom.showAdvancePayment')} help={t('tenantCustom.showAdvancePaymentHelp')}
+                customized={cp.showAdvancePayment !== undefined && cp.showAdvancePayment !== dp.showAdvancePayment}>
+                <Toggle value={cp.showAdvancePayment ?? dp.showAdvancePayment} onChange={v => setPayment('showAdvancePayment', v)} />
+              </Row>
+            </>
+          )}
+
+          {/* Modules > Booking */}
+          {section === 'booking' && (
+            <>
+              <Row label={t('tenantCustom.serviceTypeLabel')} help={t('tenantCustom.serviceTypeLabelHelp')}
+                customized={cb.serviceTypeLabel !== undefined && cb.serviceTypeLabel !== db.serviceTypeLabel}>
+                <input value={cb.serviceTypeLabel ?? db.serviceTypeLabel}
+                  onChange={e => setBookingText('serviceTypeLabel', e.target.value)}
+                  placeholder={db.serviceTypeLabel} style={{ height: H, width: 220 }} />
+              </Row>
+              <Row label={t('tenantCustom.bookingProviderName')} help={t('tenantCustom.bookingProviderNameHelp')}
+                customized={cb.bookingProviderName !== undefined && cb.bookingProviderName !== db.bookingProviderName}>
+                <input value={cb.bookingProviderName ?? db.bookingProviderName}
+                  onChange={e => setBookingText('bookingProviderName', e.target.value)}
+                  placeholder={db.bookingProviderName || t('tenantCustom.bookingProviderNamePlaceholder')}
+                  style={{ height: H, width: 220 }} />
+              </Row>
+              <Row label={t('tenantCustom.smsRemindersEnabled')}
+                customized={cb.smsRemindersEnabled !== undefined && cb.smsRemindersEnabled !== db.smsRemindersEnabled}>
+                <Toggle value={cb.smsRemindersEnabled ?? db.smsRemindersEnabled} onChange={v => setBookingBool('smsRemindersEnabled', v)} />
+              </Row>
+              <Row label={t('tenantCustom.showBookingParticipants')} help={t('tenantCustom.showBookingParticipantsHelp')}
+                customized={cb.showBookingParticipants !== undefined && cb.showBookingParticipants !== db.showBookingParticipants}>
+                <Toggle value={cb.showBookingParticipants ?? db.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
+              </Row>
+            </>
+          )}
+
+          {/* Pages > Orders */}
+          {section === 'orders' && (
+            <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
+              customized={cu.showOrderNumberInList !== undefined && cu.showOrderNumberInList !== du.showOrderNumberInList}>
+              <Toggle value={cu.showOrderNumberInList ?? du.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
+            </Row>
+          )}
 
           {/* Footer actions */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 24, flexWrap: 'wrap' }}>
