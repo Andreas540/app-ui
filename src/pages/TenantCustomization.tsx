@@ -299,10 +299,10 @@ export default function TenantCustomization() {
           </p>
 
           {/* Section content */}
-          {section === 'terminology' && <TerminologySection />}
-          {section === 'payments'    && <PaymentsSection />}
-          {section === 'booking'     && <BookingSection />}
-          {section === 'orders'      && <OrdersSection />}
+          {section === 'terminology' && TerminologySection()}
+          {section === 'payments'    && PaymentsSection()}
+          {section === 'booking'     && BookingSection()}
+          {section === 'orders'      && OrdersSection()}
 
           {/* Footer actions */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 24, flexWrap: 'wrap' }}>
