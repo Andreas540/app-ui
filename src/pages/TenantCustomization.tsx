@@ -10,7 +10,7 @@ const H = 40 // control height
 type Section = 'terminology' | 'payments' | 'booking' | 'orders'
 
 type UiConfig = {
-  payments?: { showOrderSelection?: boolean; showAdvancePayment?: boolean }
+  payments?: { showOrderSelection?: boolean; showAdvancePayment?: boolean; showPartnerTransfer?: boolean }
   labels?: {
     customer?: string; customers?: string
     order?: string; orders?: string
@@ -246,6 +246,10 @@ export default function TenantCustomization() {
               <Row label={t('tenantCustom.showAdvancePayment')} help={t('tenantCustom.showAdvancePaymentHelp')}
                 customized={cp.showAdvancePayment !== undefined && cp.showAdvancePayment !== dp.showAdvancePayment}>
                 <Toggle value={cp.showAdvancePayment ?? dp.showAdvancePayment} onChange={v => setPayment('showAdvancePayment', v)} />
+              </Row>
+              <Row label={t('tenantCustom.showPartnerTransfer')} help={t('tenantCustom.showPartnerTransferHelp')}
+                customized={cp.showPartnerTransfer !== undefined && cp.showPartnerTransfer !== dp.showPartnerTransfer}>
+                <Toggle value={cp.showPartnerTransfer ?? dp.showPartnerTransfer} onChange={v => setPayment('showPartnerTransfer', v)} />
               </Row>
             </>
           )}

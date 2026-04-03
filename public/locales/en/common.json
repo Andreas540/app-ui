@@ -927,6 +927,8 @@
     "showOrderSelectionHelp": "Allow linking a payment to a specific order.",
     "showAdvancePayment": "Show advance payment",
     "showAdvancePaymentHelp": "Show advance payment as a payment type option.",
+    "showPartnerTransfer": "Show P to P transfer & payment",
+    "showPartnerTransferHelp": "Show Partner-to-Partner transfer and debt payment buttons on the Partner detail page. Off by default.",
     "showOrderNumber": "Show order number in list",
     "showOrderNumberHelp": "Display the order number column in the orders list.",
     "showCostEffectiveness": "Show cost effectiveness",

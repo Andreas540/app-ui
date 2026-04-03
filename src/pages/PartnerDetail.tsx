@@ -9,6 +9,8 @@ import PrintDialog from '../components/PrintDialog'
 import { PrintManager } from '../lib/printManager'
 import type { PrintOptions } from '../lib/printManager'
 import { getAuthHeaders } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type PartnerDetail = {
   partner: {
@@ -64,6 +66,9 @@ type Partner = {
 export default function PartnerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
+  const showPartnerTransfer = config.payments.showPartnerTransfer
   const [data, setData] = useState<PartnerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -416,46 +421,47 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       </div>
 
       {/* P to P Transfer and P to P Payment buttons */}
-      <div style={{ display:'flex', gap:8, marginTop: 8 }}>
-        <button
-          className="primary"
-          onClick={() => {
-            setShowTransferForm(v => !v)
-            if (showPaymentForm) setShowPaymentForm(false)
-          }}
-          style={{
-            width: 110,
-            height: 28,
-            fontSize: 12,
-            padding: '0 10px',
-            borderRadius: 6,
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {t('partners.partnerToPartnerTransfer')}
-        </button>
-        <button
-          className="primary"
-          onClick={() => {
-            setShowPaymentForm(v => !v)
-            if (showTransferForm) setShowTransferForm(false)
-          }}
-          disabled={!hasCreditors}
-          style={{
-            width: 110,
-            height: 28,
-            fontSize: 12,
-            padding: '0 10px',
-            borderRadius: 6,
-            whiteSpace: 'nowrap',
-            opacity: hasCreditors ? 1 : 0.4,
-            cursor: hasCreditors ? 'pointer' : 'not-allowed'
-          }}
-          title={hasCreditors ? 'Make a debt payment to another partner' : t('partners.noDebtToOthers')}
-        >
-          {t('partners.partnerToPartnerPayment')}
-        </button>
-      </div>
+      {showPartnerTransfer && (<>
+        <div style={{ display:'flex', gap:8, marginTop: 8 }}>
+          <button
+            className="primary"
+            onClick={() => {
+              setShowTransferForm(v => !v)
+              if (showPaymentForm) setShowPaymentForm(false)
+            }}
+            style={{
+              width: 110,
+              height: 28,
+              fontSize: 12,
+              padding: '0 10px',
+              borderRadius: 6,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {t('partners.partnerToPartnerTransfer')}
+          </button>
+          <button
+            className="primary"
+            onClick={() => {
+              setShowPaymentForm(v => !v)
+              if (showTransferForm) setShowTransferForm(false)
+            }}
+            disabled={!hasCreditors}
+            style={{
+              width: 110,
+              height: 28,
+              fontSize: 12,
+              padding: '0 10px',
+              borderRadius: 6,
+              whiteSpace: 'nowrap',
+              opacity: hasCreditors ? 1 : 0.4,
+              cursor: hasCreditors ? 'pointer' : 'not-allowed'
+            }}
+            title={hasCreditors ? 'Make a debt payment to another partner' : t('partners.noDebtToOthers')}
+          >
+            {t('partners.partnerToPartnerPayment')}
+          </button>
+        </div>
 
       {/* Transfer Form (collapsible) */}
       {showTransferForm && (
@@ -568,6 +574,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           </div>
         </div>
       )}
+      </>)}
 
       {/* Partner Info + Owed to partner (right) */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>

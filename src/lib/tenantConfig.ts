@@ -6,6 +6,7 @@ export interface TenantConfig {
   payments: {
     showOrderSelection: boolean
     showAdvancePayment: boolean
+    showPartnerTransfer: boolean
   }
   labels: {
     customer: string        // "Customer" | "Client" | "Member" etc
@@ -50,6 +51,7 @@ export const defaultConfig: TenantConfig = {
   payments: {
     showOrderSelection: true,
     showAdvancePayment: true,
+    showPartnerTransfer: false,
   },
   labels: {
     customer: 'Customer',

@@ -927,6 +927,8 @@
     "showOrderSelectionHelp": "Permitir vincular un pago a un pedido específico.",
     "showAdvancePayment": "Mostrar pago anticipado",
     "showAdvancePaymentHelp": "Mostrar pago anticipado como tipo de pago.",
+    "showPartnerTransfer": "Mostrar transferencia y pago P a P",
+    "showPartnerTransferHelp": "Mostrar botones de transferencia y pago de deuda entre socios en la página de detalle del socio. Desactivado por defecto.",
     "showOrderNumber": "Mostrar número de pedido en lista",
     "showOrderNumberHelp": "Mostrar la columna de número de pedido en la lista de pedidos.",
     "showCostEffectiveness": "Mostrar rentabilidad",

@@ -927,6 +927,8 @@
     "showOrderSelectionHelp": "Tillåt att koppla en betalning till en specifik beställning.",
     "showAdvancePayment": "Visa förskottsbetalning",
     "showAdvancePaymentHelp": "Visa förskottsbetalning som betalningstyp.",
+    "showPartnerTransfer": "Visa P till P-överföring & betalning",
+    "showPartnerTransferHelp": "Visa knappar för partner-till-partner-överföring och skuldbetalning på partnersidan. Av som standard.",
     "showOrderNumber": "Visa beställningsnummer i lista",
     "showOrderNumberHelp": "Visa kolumnen för beställningsnummer i beställningslistan.",
     "showCostEffectiveness": "Visa kostnadseffektivitet",
