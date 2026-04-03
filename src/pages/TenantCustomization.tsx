@@ -6,13 +6,14 @@ import { defaultConfig } from '../lib/tenantConfig'
 
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-type Section = 'terminology' | 'payments' | 'booking' | 'dashboard' | 'orders'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders'
 
 type UiConfig = {
   payments?: { showOrderSelection?: boolean; showAdvancePayment?: boolean }
   labels?: {
     customer?: string; customers?: string
     order?: string; orders?: string
+    directLabel?: string
     directCustomerGroup?: string
   }
   ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean }
@@ -100,17 +101,10 @@ export default function TenantCustomization() {
       setCfg(p => { const next = { ...p }; delete next.payments; return next })
     } else if (section === 'booking') {
       setCfg(p => { const next = { ...p }; delete next.booking; return next })
-    } else if (section === 'dashboard') {
-      setCfg(p => {
-        const ui = { ...p.ui }
-        delete ui.showCostEffectiveness
-        return { ...p, ui }
-      })
     } else if (section === 'orders') {
       setCfg(p => {
         const ui = { ...p.ui }
         delete ui.showOrderNumberInList
-        delete ui.requiresApproval
         return { ...p, ui }
       })
     }
@@ -159,18 +153,28 @@ export default function TenantCustomization() {
 
   // ── Sections ───────────────────────────────────────────────────────────────
 
-  // Global > Terminology — only directCustomerGroup is currently wired in the app.
-  // customer/customers/order/orders labels exist in config but have no rendering yet.
+  // Global > Terminology
+  // directLabel = short label on filter buttons (Customers page)
+  // directCustomerGroup = full group header in dropdowns (Payments page)
+  // customer/customers/order/orders exist in config but have no rendering yet
   function TerminologySection() {
     const d = defaultConfig.labels
     const c = cfg.labels || {}
     return (
-      <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
-        customized={c.directCustomerGroup !== undefined && c.directCustomerGroup !== d.directCustomerGroup}>
-        <input value={c.directCustomerGroup ?? d.directCustomerGroup}
-          onChange={e => setLabel('directCustomerGroup', e.target.value)}
-          placeholder={d.directCustomerGroup} style={{ height: H, width: 220 }} />
-      </Row>
+      <>
+        <Row label={t('tenantCustom.directLabel')} help={t('tenantCustom.directLabelHelp')}
+          customized={c.directLabel !== undefined && c.directLabel !== d.directLabel}>
+          <input value={c.directLabel ?? d.directLabel}
+            onChange={e => setLabel('directLabel', e.target.value)}
+            placeholder={d.directLabel} style={{ height: H, width: 220 }} />
+        </Row>
+        <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
+          customized={c.directCustomerGroup !== undefined && c.directCustomerGroup !== d.directCustomerGroup}>
+          <input value={c.directCustomerGroup ?? d.directCustomerGroup}
+            onChange={e => setLabel('directCustomerGroup', e.target.value)}
+            placeholder={d.directCustomerGroup} style={{ height: H, width: 220 }} />
+        </Row>
+      </>
     )
   }
 
@@ -223,18 +227,6 @@ export default function TenantCustomization() {
     )
   }
 
-  // Pages > Dashboard
-  function DashboardSection() {
-    const d = defaultConfig.ui
-    const c = cfg.ui || {}
-    return (
-      <Row label={t('tenantCustom.showCostEffectiveness')} help={t('tenantCustom.showCostEffectivenessHelp')}
-        customized={c.showCostEffectiveness !== undefined && c.showCostEffectiveness !== d.showCostEffectiveness}>
-        <Toggle value={c.showCostEffectiveness ?? d.showCostEffectiveness} onChange={v => setUi('showCostEffectiveness', v)} />
-      </Row>
-    )
-  }
-
   // Pages > Orders
   function OrdersSection() {
     const d = defaultConfig.ui
@@ -244,10 +236,6 @@ export default function TenantCustomization() {
         <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
           customized={c.showOrderNumberInList !== undefined && c.showOrderNumberInList !== d.showOrderNumberInList}>
           <Toggle value={c.showOrderNumberInList ?? d.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
-        </Row>
-        <Row label={t('tenantCustom.requiresApproval')} help={t('tenantCustom.requiresApprovalHelp')}
-          customized={c.requiresApproval !== undefined && c.requiresApproval !== d.requiresApproval}>
-          <Toggle value={c.requiresApproval ?? d.requiresApproval} onChange={v => setUi('requiresApproval', v)} />
         </Row>
       </>
     )
@@ -301,7 +289,6 @@ export default function TenantCustomization() {
                 <option value="booking">{t('tenantCustom.sectionBooking')}</option>
               </optgroup>
               <optgroup label={t('tenantCustom.groupPages')}>
-                <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
               </optgroup>
             </select>
@@ -315,7 +302,6 @@ export default function TenantCustomization() {
           {section === 'terminology' && <TerminologySection />}
           {section === 'payments'    && <PaymentsSection />}
           {section === 'booking'     && <BookingSection />}
-          {section === 'dashboard'   && <DashboardSection />}
           {section === 'orders'      && <OrdersSection />}
 
           {/* Footer actions */}

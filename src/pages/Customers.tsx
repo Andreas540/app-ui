@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
-
-const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 // Mirrors the backend helper — both 'BLV' and 'Direct' are direct customer types
 function isDirectType(customerType: string | null | undefined) {
@@ -21,9 +20,8 @@ function fmtIntMoney(n: number) {
 export default function Customers() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
-  const directValue = isBLVTenant ? 'BLV' : 'Direct'
-  const directLabel = isBLVTenant ? 'BLV' : 'Direct'
+  const config = getTenantConfig(user?.tenantId)
+  const directLabel = config.labels.directLabel
 
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
@@ -31,7 +29,7 @@ export default function Customers() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
-  const [filterType, setFilterType] = useState<'All' | 'Direct' | 'BLV' | 'Partner'>('All')
+  const [filterType, setFilterType] = useState<'All' | 'Direct' | 'Partner'>('All')
   const [sortBy, setSortBy] = useState<'owed' | 'name'>('owed')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -103,7 +101,7 @@ export default function Customers() {
   // Apply customer_type filter locally
   const visible = useMemo(() => {
     if (filterType === 'All') return customers
-    if (filterType === 'Direct' || filterType === 'BLV') {
+    if (filterType === 'Direct') {
       // Catch both 'Direct' and legacy 'BLV' records on any tenant
       return customers.filter(c => isDirectType((c as any).customer_type))
     }
@@ -133,11 +131,11 @@ export default function Customers() {
 
   // Owed to partners: exclude JJ Boston; direct filter shows 0
   const filteredPartnerNet = useMemo(() => {
-    if (filterType === directValue) return 0
+    if (filterType === 'Direct') return 0
     const net = Number(partnerTotals.net) || 0
     const adjusted = net - (Number(jjNet) || 0)
     return adjusted < 0 ? 0 : adjusted
-  }, [partnerTotals.net, filterType, jjNet, directValue])
+  }, [partnerTotals.net, filterType, jjNet])
 
   // "My $" = Total owed to me (filtered) - Owed to partners (filtered), never below 0
   const myDollars = useMemo(
@@ -219,7 +217,7 @@ export default function Customers() {
         }}
       >
         <button className="primary" onClick={() => setFilterType('All')}        aria-pressed={filterType === 'All'}        style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.allFilter')}</button>
-        <button className="primary" onClick={() => setFilterType(directValue)}  aria-pressed={filterType === directValue}  style={{ height: 'calc(var(--control-h) * 0.67)' }}>{directLabel}</button>
+        <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: 'calc(var(--control-h) * 0.67)' }}>{directLabel}</button>
         <button className="primary" onClick={() => setFilterType('Partner')}    aria-pressed={filterType === 'Partner'}    style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.partnerFilter')}</button>
       </div>
 
