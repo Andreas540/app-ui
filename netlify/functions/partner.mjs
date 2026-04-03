@@ -156,11 +156,13 @@ async function getPartner(event) {
 
     // Payments to this partner
     const payments = await sql`
-      SELECT id, payment_date, payment_type, amount, notes
-      FROM partner_payments
-      WHERE tenant_id = ${TENANT_ID}
-        AND partner_id = ${id}
-      ORDER BY payment_date DESC
+      SELECT pp.id, pp.payment_date, pp.payment_type, pp.amount, pp.notes,
+             pp.order_id, o.order_no
+      FROM partner_payments pp
+      LEFT JOIN orders o ON o.id = pp.order_id
+      WHERE pp.tenant_id = ${TENANT_ID}
+        AND pp.partner_id = ${id}
+      ORDER BY pp.payment_date DESC
       LIMIT 100
     `;
 

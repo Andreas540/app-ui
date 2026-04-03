@@ -29,9 +29,11 @@ async function getPartnerPayment(event) {
 
     const payments = await sql`
       SELECT pp.id, pp.partner_id, pp.payment_type, pp.amount, pp.payment_date, pp.notes,
+             pp.order_id, o.order_no,
              p.name AS partner_name
       FROM partner_payments pp
       JOIN partners p ON p.id = pp.partner_id
+      LEFT JOIN orders o ON o.id = pp.order_id
       WHERE pp.tenant_id = ${TENANT_ID} AND pp.id = ${id}
       LIMIT 1
     `;
@@ -52,7 +54,7 @@ async function createPartnerPayment(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
-    const { partner_id, payment_type, amount, payment_date, notes } = body || {};
+    const { partner_id, payment_type, amount, payment_date, notes, order_id } = body || {};
 
     if (!partner_id || typeof partner_id !== 'string') {
       return cors(400, { error: 'partner_id is required' });
@@ -87,8 +89,8 @@ async function createPartnerPayment(event) {
 
     // Insert partner payment
     const result = await sql`
-      INSERT INTO partner_payments (tenant_id, partner_id, payment_type, amount, payment_date, notes)
-      VALUES (${TENANT_ID}, ${partner_id}, ${payment_type}, ${amtNum}, ${payment_date}, ${notes || null})
+      INSERT INTO partner_payments (tenant_id, partner_id, payment_type, amount, payment_date, notes, order_id)
+      VALUES (${TENANT_ID}, ${partner_id}, ${payment_type}, ${amtNum}, ${payment_date}, ${notes || null}, ${order_id || null})
       RETURNING id
     `;
 
@@ -106,7 +108,7 @@ async function updatePartnerPayment(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
-    const { id, partner_id, payment_type, amount, payment_date, notes } = body;
+    const { id, partner_id, payment_type, amount, payment_date, notes, order_id } = body;
 
     if (!id) return cors(400, { error: 'id is required' });
     if (!partner_id) return cors(400, { error: 'partner_id is required' });
@@ -133,7 +135,8 @@ async function updatePartnerPayment(event) {
           payment_type = ${payment_type},
           amount = ${amountNum},
           payment_date = ${payment_date},
-          notes = ${notes || null}
+          notes = ${notes || null},
+          order_id = ${order_id || null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `;
 

@@ -22,39 +22,101 @@ async function getOrders(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    const customerId = event.queryStringParameters?.customer_id || null;
-    if (!customerId) return cors(400, { error: 'customer_id required' });
+    const customerId  = event.queryStringParameters?.customer_id  || null;
+    const partnerId   = event.queryStringParameters?.partner_id   || null;
+    const supplierId  = event.queryStringParameters?.supplier_id  || null;
 
-    const orders = await sql`
-      SELECT
-        o.id,
-        o.order_no,
-        o.order_date,
-        COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
-        COALESCE(MAX(p.name), MAX(s.name), 'Service') AS product_name,
-        COALESCE((
-          SELECT SUM(py.amount) FROM payments py
-          WHERE py.order_id = o.id
-             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
-        ), 0)::numeric(12,2) AS paid_amount,
-        GREATEST(
-          COALESCE(SUM(oi.qty * oi.unit_price), 0) -
+    if (!customerId && !partnerId && !supplierId) {
+      return cors(400, { error: 'customer_id, partner_id, or supplier_id required' });
+    }
+
+    let orders;
+
+    if (customerId) {
+      orders = await sql`
+        SELECT
+          o.id,
+          o.order_no,
+          o.order_date,
+          COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
+          COALESCE(MAX(p.name), MAX(s.name), 'Service') AS product_name,
           COALESCE((
             SELECT SUM(py.amount) FROM payments py
             WHERE py.order_id = o.id
                OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
-          ), 0),
-          0
-        )::numeric(12,2) AS balance
-      FROM orders o
-      LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
-      LEFT JOIN services s ON s.id = oi.service_id
-      WHERE o.tenant_id = ${TENANT_ID}
-        AND o.customer_id = ${customerId}
-      GROUP BY o.id, o.order_no, o.order_date
-      ORDER BY o.order_date DESC, o.order_no DESC
-    `;
+          ), 0)::numeric(12,2) AS paid_amount,
+          GREATEST(
+            COALESCE(SUM(oi.qty * oi.unit_price), 0) -
+            COALESCE((
+              SELECT SUM(py.amount) FROM payments py
+              WHERE py.order_id = o.id
+                 OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+            ), 0),
+            0
+          )::numeric(12,2) AS balance
+        FROM orders o
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+        LEFT JOIN services s ON s.id = oi.service_id
+        WHERE o.tenant_id = ${TENANT_ID}
+          AND o.customer_id = ${customerId}
+        GROUP BY o.id, o.order_no, o.order_date
+        ORDER BY o.order_date DESC, o.order_no DESC
+      `;
+    } else if (partnerId) {
+      // Orders involving this partner — amount/balance relative to partner's share
+      orders = await sql`
+        SELECT
+          o.id,
+          o.order_no,
+          o.order_date,
+          COALESCE(MAX(pr.name), MAX(s.name), 'Service') AS product_name,
+          op.amount::numeric(12,2) AS amount,
+          GREATEST(
+            op.amount - COALESCE((
+              SELECT SUM(pp.amount) FROM partner_payments pp
+              WHERE pp.order_id = o.id
+                AND pp.partner_id = ${partnerId}
+                AND pp.tenant_id = ${TENANT_ID}
+            ), 0),
+            0
+          )::numeric(12,2) AS balance
+        FROM orders o
+        JOIN order_partners op ON op.order_id = o.id AND op.partner_id = ${partnerId}
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products pr ON pr.id = oi.product_id AND pr.tenant_id = o.tenant_id
+        LEFT JOIN services s ON s.id = oi.service_id
+        WHERE o.tenant_id = ${TENANT_ID}
+        GROUP BY o.id, o.order_no, o.order_date, op.amount
+        ORDER BY o.order_date DESC, o.order_no DESC
+      `;
+    } else {
+      // Supplier orders from orders_suppliers table
+      orders = await sql`
+        SELECT
+          os.id,
+          os.order_no,
+          os.order_date,
+          COALESCE(MAX(p.name), 'Supply order') AS product_name,
+          COALESCE(SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost), 0)::numeric(12,2) AS amount,
+          GREATEST(
+            COALESCE(SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost), 0) -
+            COALESCE((
+              SELECT SUM(sp.amount) FROM supplier_payments sp
+              WHERE sp.order_id = os.id
+                AND sp.tenant_id = ${TENANT_ID}
+            ), 0),
+            0
+          )::numeric(12,2) AS balance
+        FROM orders_suppliers os
+        LEFT JOIN order_items_suppliers ois ON ois.order_id = os.id
+        LEFT JOIN products p ON p.id = ois.product_id
+        WHERE os.tenant_id = ${TENANT_ID}
+          AND os.supplier_id = ${supplierId}
+        GROUP BY os.id, os.order_no, os.order_date
+        ORDER BY os.order_date DESC, os.order_no DESC
+      `;
+    }
 
     return cors(200, { orders });
   } catch (e) {

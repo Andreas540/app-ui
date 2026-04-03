@@ -55,6 +55,7 @@ type PartnerDetail = {
     payment_type: string
     amount: number
     notes?: string | null
+    order_no?: number | null
   }>
 }
 
@@ -69,6 +70,7 @@ export default function PartnerDetailPage() {
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const showPartnerTransfer = config.payments.showPartnerTransfer
+  const showOrderNumber = config.ui.showOrderNumberInList
   const [data, setData] = useState<PartnerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -706,7 +708,10 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     style={{ cursor: 'pointer' }}
                   >
-                    <div><strong data-customer={o.customer_name}>{o.customer_name}</strong></div>
+                    <div>
+                      {showOrderNumber && <span className="helper" style={{ marginRight: 6 }}>#{o.order_no}</span>}
+                      <strong data-customer={o.customer_name}>{o.customer_name}</strong>
+                    </div>
                     <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
                       {middleLine2}
                     </div>
@@ -792,6 +797,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                     style={{ cursor: 'pointer' }}
                   >
                     <div>{mainLine}</div>
+                    {showOrderNumber && p.order_no && (
+                      <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>#{p.order_no}</div>
+                    )}
                     {!isOther && notes && (
                       <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
                         {notes}

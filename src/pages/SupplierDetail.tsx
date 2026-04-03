@@ -4,6 +4,8 @@ import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 
@@ -51,6 +53,7 @@ interface Payment {
   payment_type: string
   amount: number
   notes?: string | null
+  order_no?: string | null
 }
 
 interface Totals {
@@ -81,6 +84,9 @@ async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
 export default function SupplierDetailPage() {
   // --- Hooks (fixed, stable order) ---
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
+  const showOrderNumber = config.ui.showOrderNumberInList
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<SupplierDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -480,14 +486,17 @@ export default function SupplierDetailPage() {
                     <div></div>
 
                     {/* TYPE */}
-                    <div 
-                      className="helper" 
+                    <div
+                      className="helper"
                       onClick={() => handlePaymentClick(p)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ lineHeight: '1.4', cursor: 'pointer' }}
                     >
-                      {p.payment_type}
+                      <div>{p.payment_type}</div>
+                      {showOrderNumber && p.order_no && (
+                        <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>#{p.order_no}</div>
+                      )}
                     </div>
 
                     {/* AMOUNT: "-$..." except Add to debt */}

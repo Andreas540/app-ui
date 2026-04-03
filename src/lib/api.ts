@@ -181,6 +181,7 @@ export type NewPartnerPaymentInput = {
   amount: number
   payment_date: string
   notes?: string | null
+  order_id?: string | null
 }
 
 export async function createPartnerPayment(input: NewPartnerPaymentInput) {
@@ -215,6 +216,7 @@ export type NewSupplierPaymentInput = {
   amount: number
   payment_date: string
   notes?: string | null
+  order_id?: string | null
 }
 
 export async function createSupplierPayment(input: NewSupplierPaymentInput) {

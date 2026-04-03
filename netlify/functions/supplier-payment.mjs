@@ -25,15 +25,15 @@ async function createSupplierPayment(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    const { supplier_id, payment_type, amount, payment_date, notes } = JSON.parse(event.body);
-    
+    const { supplier_id, payment_type, amount, payment_date, notes, order_id } = JSON.parse(event.body);
+
     if (!supplier_id || !payment_type || amount == null || !payment_date) {
       return cors(400, { error: 'Missing required fields' });
     }
 
     const result = await sql`
-      INSERT INTO supplier_payments (tenant_id, supplier_id, payment_type, amount, payment_date, notes)
-      VALUES (${TENANT_ID}, ${supplier_id}, ${payment_type}, ${amount}, ${payment_date}, ${notes || null})
+      INSERT INTO supplier_payments (tenant_id, supplier_id, payment_type, amount, payment_date, notes, order_id)
+      VALUES (${TENANT_ID}, ${supplier_id}, ${payment_type}, ${amount}, ${payment_date}, ${notes || null}, ${order_id || null})
       RETURNING id
     `;
 
@@ -61,17 +61,20 @@ async function getSupplierPayment(event) {
     const TENANT_ID = authz.tenantId;
 
     const result = await sql`
-      SELECT 
+      SELECT
         sp.id,
         sp.supplier_id,
         sp.payment_type,
         sp.amount,
         sp.payment_date,
         sp.notes,
+        sp.order_id,
         sp.created_at,
-        s.name AS supplier_name
+        s.name AS supplier_name,
+        os.order_no
       FROM supplier_payments sp
       JOIN suppliers s ON s.id = sp.supplier_id
+      LEFT JOIN orders_suppliers os ON os.id = sp.order_id
       WHERE sp.tenant_id = ${TENANT_ID} AND sp.id = ${id}
       LIMIT 1
     `;
@@ -98,20 +101,21 @@ async function updateSupplierPayment(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    const { id, supplier_id, payment_type, amount, payment_date, notes } = JSON.parse(event.body);
-    
+    const { id, supplier_id, payment_type, amount, payment_date, notes, order_id } = JSON.parse(event.body);
+
     if (!id || !supplier_id || !payment_type || amount == null || !payment_date) {
       return cors(400, { error: 'Missing required fields' });
     }
 
     const result = await sql`
-      UPDATE supplier_payments 
-      SET 
+      UPDATE supplier_payments
+      SET
         supplier_id = ${supplier_id},
         payment_type = ${payment_type},
         amount = ${amount},
         payment_date = ${payment_date},
-        notes = ${notes || null}
+        notes = ${notes || null},
+        order_id = ${order_id || null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       RETURNING id
     `;

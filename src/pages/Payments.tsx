@@ -53,6 +53,8 @@ export default function Payments() {
 
   // form - partner payments
   const [partnerId, setPartnerId] = useState('')
+  const [partnerOrders, setPartnerOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
+  const [selectedPartnerOrderId, setSelectedPartnerOrderId] = useState('')
   const [partnerPaymentType, setPartnerPaymentType] = useState<PartnerPaymentType>('Cash')
   const [partnerAmountStr, setPartnerAmountStr] = useState('')
   const [partnerDate, setPartnerDate] = useState<string>(todayYMD())
@@ -60,6 +62,8 @@ export default function Payments() {
 
   // form - supplier payments
   const [supplierId, setSupplierId] = useState('')
+  const [supplierOrders, setSupplierOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
+  const [selectedSupplierOrderId, setSelectedSupplierOrderId] = useState('')
   const [supplierPaymentType, setSupplierPaymentType] = useState<SupplierPaymentType>('Cash')
   const [supplierAmountStr, setSupplierAmountStr] = useState('')
   const [supplierDate, setSupplierDate] = useState<string>(todayYMD())
@@ -117,10 +121,7 @@ useEffect(() => {
     ;(async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const res = await fetch(
-          `${base}/api/orders?customer_id=${entityId}`,
-          { headers: getAuthHeaders() }
-        )
+        const res = await fetch(`${base}/api/orders?customer_id=${entityId}`, { headers: getAuthHeaders() })
         if (!res.ok) return
         const data = await res.json()
         setOrders(data.orders || [])
@@ -129,6 +130,42 @@ useEffect(() => {
       } catch { /* silent */ }
     })()
   }, [entityId, config.payments.showOrderSelection])
+
+  useEffect(() => {
+    if (!partnerId || !config.payments.showOrderSelection) {
+      setPartnerOrders([])
+      setSelectedPartnerOrderId('')
+      return
+    }
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/orders?partner_id=${partnerId}`, { headers: getAuthHeaders() })
+        if (!res.ok) return
+        const data = await res.json()
+        setPartnerOrders(data.orders || [])
+        setSelectedPartnerOrderId('')
+      } catch { /* silent */ }
+    })()
+  }, [partnerId, config.payments.showOrderSelection])
+
+  useEffect(() => {
+    if (!supplierId || !config.payments.showOrderSelection) {
+      setSupplierOrders([])
+      setSelectedSupplierOrderId('')
+      return
+    }
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/orders?supplier_id=${supplierId}`, { headers: getAuthHeaders() })
+        if (!res.ok) return
+        const data = await res.json()
+        setSupplierOrders(data.orders || [])
+        setSelectedSupplierOrderId('')
+      } catch { /* silent */ }
+    })()
+  }, [supplierId, config.payments.showOrderSelection])
 
   const customer = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const partner = useMemo(() => partners.find(p => p.id === partnerId), [partners, partnerId])
@@ -376,11 +413,13 @@ useEffect(() => {
         amount: amountNum,
         payment_date: partnerDate,
         notes: partnerNotes.trim() || null,
+        order_id: selectedPartnerOrderId || null,
       })
       alert(t('payments.partnerSaved'))
       setPartnerAmountStr('')
       setPartnerPaymentType('Cash')
       setPartnerNotes('')
+      setSelectedPartnerOrderId('')
     } catch (e:any) {
       alert(e?.message || t('payments.alertSaveFailed'))
     }
@@ -400,6 +439,7 @@ useEffect(() => {
       amount: amountNum,
       payment_date: supplierDate,
       notes: supplierNotes.trim() || null,
+      order_id: selectedSupplierOrderId || null,
     })
     alert(t('payments.supplierSaved'))
     
@@ -415,6 +455,7 @@ useEffect(() => {
     setSupplierAmountStr('')
     setSupplierPaymentType('Cash')
     setSupplierNotes('')
+    setSelectedSupplierOrderId('')
   } catch (e:any) {
     alert(e?.message || t('payments.alertSaveFailed'))
   }
@@ -625,6 +666,38 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 </div>
               </div>
 
+              {config.payments.showOrderSelection && (
+                <div className="row" style={{ marginTop: 12 }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label>{t('payments.orderOptional')}</label>
+                    <select
+                      value={selectedPartnerOrderId}
+                      onChange={e => {
+                        const orderId = e.target.value
+                        setSelectedPartnerOrderId(orderId)
+                        if (orderId) {
+                          const order = partnerOrders.find(o => o.id === orderId)
+                          if (order) {
+                            const fill = Number(order.balance) > 0 ? order.balance : order.amount
+                            setPartnerAmountStr(String(fill))
+                          }
+                        } else {
+                          setPartnerAmountStr('')
+                        }
+                      }}
+                      style={{ height: CONTROL_H }}
+                    >
+                      <option value="">{t('payments.chooseOrder')}</option>
+                      {partnerOrders.map(o => (
+                        <option key={o.id} value={o.id}>
+                          #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
                   <label>{t('payments.paymentType')}</label>
@@ -662,7 +735,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
               <div style={{marginTop:16, display:'flex', gap:8}}>
                 <button className="primary" onClick={savePartnerPayment} style={{ height: CONTROL_H }}>{t('payments.savePayment')}</button>
-                <button onClick={()=>{ setPartnerAmountStr(''); setPartnerPaymentType('Cash'); setPartnerNotes(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
+                <button onClick={()=>{ setPartnerAmountStr(''); setPartnerPaymentType('Cash'); setPartnerNotes(''); setSelectedPartnerOrderId(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
               </div>
             </>
           )}
@@ -687,6 +760,38 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <DateInput value={supplierDate} onChange={v => setSupplierDate(v)} style={{ height: CONTROL_H }} />
                 </div>
               </div>
+
+              {config.payments.showOrderSelection && (
+                <div className="row" style={{ marginTop: 12 }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label>{t('payments.orderOptional')}</label>
+                    <select
+                      value={selectedSupplierOrderId}
+                      onChange={e => {
+                        const orderId = e.target.value
+                        setSelectedSupplierOrderId(orderId)
+                        if (orderId) {
+                          const order = supplierOrders.find(o => o.id === orderId)
+                          if (order) {
+                            const fill = Number(order.balance) > 0 ? order.balance : order.amount
+                            setSupplierAmountStr(String(fill))
+                          }
+                        } else {
+                          setSupplierAmountStr('')
+                        }
+                      }}
+                      style={{ height: CONTROL_H }}
+                    >
+                      <option value="">{t('payments.chooseOrder')}</option>
+                      {supplierOrders.map(o => (
+                        <option key={o.id} value={o.id}>
+                          #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               <div className="row row-2col-mobile" style={{marginTop:12}}>
                 <div>
@@ -725,7 +830,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
               <div style={{marginTop:16, display:'flex', gap:8}}>
                 <button className="primary" onClick={saveSupplierPayment} style={{ height: CONTROL_H }}>{t('payments.savePayment')}</button>
-                <button onClick={()=>{ setSupplierAmountStr(''); setSupplierPaymentType('Cash'); setSupplierNotes(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
+                <button onClick={()=>{ setSupplierAmountStr(''); setSupplierPaymentType('Cash'); setSupplierNotes(''); setSelectedSupplierOrderId(''); }} style={{ height: CONTROL_H }}>{t('clear')}</button>
               </div>
             </>
           )}

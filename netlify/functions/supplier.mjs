@@ -117,15 +117,18 @@ async function getSupplier(event) {
     // Get payments to supplier
     const payments = await sql`
       SELECT
-        id,
-        payment_date,
-        payment_type,
-        amount,
-        notes
-      FROM supplier_payments
-      WHERE tenant_id = ${TENANT_ID}
-        AND supplier_id = ${id}
-      ORDER BY payment_date DESC, created_at DESC
+        sp.id,
+        sp.payment_date,
+        sp.payment_type,
+        sp.amount,
+        sp.notes,
+        sp.order_id,
+        os.order_no
+      FROM supplier_payments sp
+      LEFT JOIN orders_suppliers os ON os.id = sp.order_id
+      WHERE sp.tenant_id = ${TENANT_ID}
+        AND sp.supplier_id = ${id}
+      ORDER BY sp.payment_date DESC, sp.created_at DESC
       LIMIT 100
     `
 
