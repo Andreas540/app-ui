@@ -324,7 +324,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               borderBottom: '1px solid #eee',
                               alignItems: 'flex-start',
                               fontSize: 14,
-                              color: '#fff'
+                              color: 'var(--text, inherit)'
                             }}
                           >
                             <input
