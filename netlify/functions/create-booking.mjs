@@ -41,6 +41,19 @@ async function createBooking(event) {
     `
     if (!svcRows.length) return cors(400, { error: 'Service not found' })
     const svc = svcRows[0]
+
+    // Ensure the service exists in the services table (required by FK on bookings).
+    // Manual services (no external_service_id) may only exist in products.
+    await sql`
+      INSERT INTO services (id, tenant_id, name, service_type, duration_minutes, price_amount, currency)
+      VALUES (
+        ${svc.id}, ${TENANT_ID}, ${svc.name}, 'manual',
+        ${svc.duration_minutes || 60},
+        ${svc.price_amount ?? 0},
+        ${svc.currency || 'USD'}
+      )
+      ON CONFLICT (id) DO NOTHING
+    `
     const durationMin = svc.duration_minutes || 60
     const price = total_amount != null ? Number(total_amount) : Number(svc.price_amount ?? 0)
     const currency = svc.currency || 'USD'
