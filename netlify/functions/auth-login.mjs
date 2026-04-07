@@ -65,12 +65,16 @@ async function handleLogin(event) {
     console.log('Searching for email:', emailSearch)
 
     const users = await sql`
-      SELECT 
+      SELECT
         u.id,
         u.email,
         u.name,
         u.password_hash,
-        u.active
+        u.active,
+        u.preferred_language,
+        u.preferred_locale,
+        u.preferred_currency,
+        u.preferred_timezone
       FROM users u
       WHERE u.email = ${emailSearch}
       LIMIT 1
@@ -220,7 +224,8 @@ async function handleLogin(event) {
         tm.features as user_features,
         t.name as tenant_name,
         t.business_type,
-        t.features as tenant_features
+        t.features as tenant_features,
+        t.default_language as tenant_default_language
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
       WHERE tm.user_id = ${user.id}::uuid
@@ -266,7 +271,12 @@ async function handleLogin(event) {
         tenantId: primaryMembership.tenant_id,
         tenantName: primaryMembership.tenant_name,
         businessType: primaryMembership.business_type,
-        features: effectiveFeatures
+        features: effectiveFeatures,
+        preferred_language: user.preferred_language,
+        preferred_locale: user.preferred_locale,
+        preferred_currency: user.preferred_currency,
+        preferred_timezone: user.preferred_timezone,
+        tenant_default_language: primaryMembership.tenant_default_language
       },
       // Also return all memberships for multi-tenant switching
       memberships: memberships.map(m => ({
