@@ -412,6 +412,8 @@
     "newProductTitle": "Ny produkt",
     "editProductsButton": "Redigera produkt(er)",
     "productName": "Produktnamn",
+    "serviceName": "Tjänstnamn",
+    "editServicesButton": "Redigera tjänst(er)",
     "productCostUSD": "Produktionskostnad per enhet",
     "directServiceCost": "Direkt servicekostnad",
     "saveProduct": "Spara produkt",

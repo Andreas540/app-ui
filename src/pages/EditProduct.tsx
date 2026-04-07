@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
 import { todayYMD } from '../lib/time'
@@ -6,6 +7,7 @@ import { DateInput } from '../components/DateInput'
 
 export default function EditProduct() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -65,7 +67,7 @@ export default function EditProduct() {
       setSaving(true)
       const res = await updateProduct({
         id: selected.id,
-        name: selected.category === 'service' ? undefined : name,
+        name: selected.category === 'service' && !!selected.external_service_id ? undefined : name,
         cost: costNum,
         apply_to_history: costOption === 'history',
         effective_date: costOption === 'specific' ? specificDate : undefined,
@@ -79,13 +81,7 @@ export default function EditProduct() {
       }
 
       alert(message)
-      
-      // refresh the list to reflect any name/cost changes
-      const { products } = await listProducts()
-      setProducts(products)
-      setSelectedId(res.product.id)
-      setCostOption('next')
-      setSpecificDate(todayYMD())
+      navigate('/products/new')
     } catch (e:any) {
       alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
@@ -124,10 +120,10 @@ export default function EditProduct() {
             placeholder="e.g. ACE Ultra"
             value={newName}
             onChange={e=>setNewName(e.target.value)}
-            disabled={selected?.category === 'service'}
-            title={selected?.category === 'service' ? 'Name is managed by SimplyBook' : undefined}
+            disabled={selected?.category === 'service' && !!selected?.external_service_id}
+            title={selected?.category === 'service' && !!selected?.external_service_id ? 'Name is managed by SimplyBook' : undefined}
           />
-          {selected?.category === 'service' && (
+          {selected?.category === 'service' && !!selected?.external_service_id && (
             <p className="helper" style={{ marginTop: 4 }}>Name is synced from SimplyBook and cannot be edited here.</p>
           )}
         </div>

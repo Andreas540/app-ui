@@ -131,7 +131,9 @@ export default function NewProduct() {
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
         <h3 style={{ margin:0 }}>{t('products.newProductTitle')}</h3>
         <Link to="/products/edit">
-          <button className="primary" style={{ height: BTN_H }}>{t('products.editProductsButton')}</button>
+          <button className="primary" style={{ height: BTN_H }}>
+            {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
+          </button>
         </Link>
       </div>
 
@@ -157,7 +159,7 @@ export default function NewProduct() {
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
-          <label>{t('products.productName')}</label>
+          <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
           <input
             type="text"
             placeholder=""

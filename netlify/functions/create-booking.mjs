@@ -35,8 +35,8 @@ async function createBooking(event) {
     // Fetch service details (duration, price, currency, name)
     const svcRows = await sql`
       SELECT id, name, duration_minutes, price_amount, currency
-      FROM services
-      WHERE id = ${service_id} AND tenant_id = ${TENANT_ID}
+      FROM products
+      WHERE id = ${service_id} AND tenant_id = ${TENANT_ID} AND category = 'service'
       LIMIT 1
     `
     if (!svcRows.length) return cors(400, { error: 'Service not found' })
