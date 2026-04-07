@@ -603,7 +603,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 }}
                 style={{ height: CONTROL_H }}
               >
-                {activePaymentTypes.filter(type => type !== 'Advance Payment' || config.payments.showAdvancePayment).map(type => <option key={type} value={type}>{type}</option>)}
+                {activePaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
             <div>
@@ -728,7 +728,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={partnerPaymentType} onChange={e=>setPartnerPaymentType(e.target.value as PartnerPaymentType)} style={{ height: CONTROL_H }}>
-                    {activePartnerPaymentTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    {activePartnerPaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
@@ -823,7 +823,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={supplierPaymentType} onChange={e=>setSupplierPaymentType(e.target.value as SupplierPaymentType)} style={{ height: CONTROL_H }}>
-                    {activeSupplierPaymentTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    {activeSupplierPaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>

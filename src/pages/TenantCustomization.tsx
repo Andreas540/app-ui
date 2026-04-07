@@ -1,7 +1,12 @@
 // src/pages/TenantCustomization.tsx
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getAuthHeaders } from '../lib/api'
+import {
+  getAuthHeaders,
+  PAYMENT_TYPES, PAYMENT_TYPES_COP,
+  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_COP,
+  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_COP,
+} from '../lib/api'
 import { defaultConfig } from '../lib/tenantConfig'
 
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -10,7 +15,7 @@ const H = 40 // control height
 type Section = 'terminology' | 'payments' | 'booking' | 'orders'
 
 type UiConfig = {
-  payments?: { showOrderSelection?: boolean; showAdvancePayment?: boolean; showPartnerTransfer?: boolean }
+  payments?: { showOrderSelection?: boolean; visiblePaymentTypes?: string[] | null; showPartnerTransfer?: boolean }
   labels?: {
     customer?: string; customers?: string
     order?: string; orders?: string
@@ -24,7 +29,7 @@ type UiConfig = {
   }
 }
 
-interface Tenant { id: string; name: string }
+interface Tenant { id: string; name: string; default_currency?: string | null }
 
 // ── Stable sub-components (defined at module level to avoid remount on render) ─
 
@@ -125,8 +130,12 @@ export default function TenantCustomization() {
   function setLabel(key: keyof NonNullable<UiConfig['labels']>, val: string) {
     setCfg(p => ({ ...p, labels: { ...p.labels, [key]: val || undefined } }))
   }
-  function setPayment(key: keyof NonNullable<UiConfig['payments']>, val: boolean) {
+  function setPayment(key: 'showOrderSelection' | 'showPartnerTransfer', val: boolean) {
     setCfg(p => ({ ...p, payments: { ...p.payments, [key]: val } }))
+  }
+  function setVisiblePaymentTypes(types: string[], allTypes: string[]) {
+    const val = types.length === allTypes.length ? null : types
+    setCfg(p => ({ ...p, payments: { ...p.payments, visiblePaymentTypes: val } }))
   }
   function setUi(key: keyof NonNullable<UiConfig['ui']>, val: boolean) {
     setCfg(p => ({ ...p, ui: { ...p.ui, [key]: val } }))
@@ -243,10 +252,37 @@ export default function TenantCustomization() {
                 customized={cp.showOrderSelection !== undefined && cp.showOrderSelection !== dp.showOrderSelection}>
                 <Toggle value={cp.showOrderSelection ?? dp.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
               </Row>
-              <Row label={t('tenantCustom.showAdvancePayment')} help={t('tenantCustom.showAdvancePaymentHelp')}
-                customized={cp.showAdvancePayment !== undefined && cp.showAdvancePayment !== dp.showAdvancePayment}>
-                <Toggle value={cp.showAdvancePayment ?? dp.showAdvancePayment} onChange={v => setPayment('showAdvancePayment', v)} />
-              </Row>
+              {(() => {
+                const tenantCurrency = tenants.find(t => t.id === tenantId)?.default_currency || 'USD'
+                const isCOP = tenantCurrency === 'COP'
+                const allTypes = [...new Set([
+                  ...(isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES),
+                  ...(isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES),
+                  ...(isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES),
+                ])]
+                const visible = new Set(cp.visiblePaymentTypes ?? allTypes)
+                return (
+                  <Row label={t('tenantCustom.visiblePaymentTypes')} help={t('tenantCustom.visiblePaymentTypesHelp')}
+                    customized={cp.visiblePaymentTypes != null}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                      {allTypes.map(type => (
+                        <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={visible.has(type)}
+                            onChange={() => {
+                              const next = new Set(visible)
+                              next.has(type) ? next.delete(type) : next.add(type)
+                              setVisiblePaymentTypes([...next], allTypes)
+                            }}
+                          />
+                          {type}
+                        </label>
+                      ))}
+                    </div>
+                  </Row>
+                )
+              })()}
               <Row label={t('tenantCustom.showPartnerTransfer')} help={t('tenantCustom.showPartnerTransferHelp')}
                 customized={cp.showPartnerTransfer !== undefined && cp.showPartnerTransfer !== dp.showPartnerTransfer}>
                 <Toggle value={cp.showPartnerTransfer ?? dp.showPartnerTransfer} onChange={v => setPayment('showPartnerTransfer', v)} />

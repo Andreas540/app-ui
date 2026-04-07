@@ -5,7 +5,7 @@
 export interface TenantConfig {
   payments: {
     showOrderSelection: boolean
-    showAdvancePayment: boolean
+    visiblePaymentTypes: string[] | null  // null = all visible (default)
     showPartnerTransfer: boolean
   }
   labels: {
@@ -50,7 +50,7 @@ export interface TenantConfig {
 export const defaultConfig: TenantConfig = {
   payments: {
     showOrderSelection: true,
-    showAdvancePayment: true,
+    visiblePaymentTypes: null,
     showPartnerTransfer: false,
   },
   labels: {
