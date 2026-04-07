@@ -67,6 +67,15 @@ const TENANT_ID = authz.tenantId;
     `;
     const product = rows[0];
 
+    // For services, also mirror into services table (bookings.service_id FK references services.id)
+    if (category === 'service') {
+      await sql`
+        INSERT INTO services (id, tenant_id, name, service_type, duration_minutes, price_amount, currency)
+        VALUES (${product.id}, ${TENANT_ID}, ${name}, 'manual', 60, ${costNum}, 'USD')
+        ON CONFLICT (id) DO NOTHING
+      `
+    }
+
     // Seed history at "now"
     await sql`
   INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
@@ -116,16 +125,17 @@ const TENANT_ID = authz.tenantId;
 
     // Get current record
     const current = await sql`
-      SELECT cost, category
+      SELECT cost, category, external_service_id
       FROM products
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       LIMIT 1
     `;
     if (current.length === 0) return cors(404, { error: 'Product not found' });
 
-    // Services have their name managed by SimplyBook sync — never overwrite it
+    // Only SimplyBook-synced services have their name locked
     const isService = current[0].category === 'service';
-    const effectiveName = isService ? undefined : name;
+    const isSyncedService = isService && !!current[0].external_service_id;
+    const effectiveName = isSyncedService ? undefined : name;
 
     const currentCost = Number(current[0].cost);
     const costChanged = newCostNum !== undefined && newCostNum !== currentCost;
@@ -161,6 +171,16 @@ const TENANT_ID = authz.tenantId;
   RETURNING id, name, cost
 `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
+
+    // Keep services table in sync for manual services (SimplyBook-synced services are updated by the sync job)
+    if (isService && !isSyncedService) {
+      await sql`
+        UPDATE services
+        SET name         = COALESCE(${effectiveName ?? null}, name),
+            price_amount = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE price_amount END
+        WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+      `
+    }
 
     // Handle history updates
     // IMPORTANT: applyToHistory should work even if cost didn't change

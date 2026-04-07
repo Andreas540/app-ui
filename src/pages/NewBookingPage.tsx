@@ -90,7 +90,7 @@ export default function NewBookingPage() {
   const [dayBookings, setDayBookings] = useState<{ id: string; start_at: string; customer_name: string | null; service_name: string | null }[]>([])
   const [dayBookingsLoading, setDayBookingsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [sendConfirmation, setSendConfirmation] = useState(true)
+  const [sendConfirmation] = useState(false)
   const [linkOrderId, setLinkOrderId] = useState('')
   const [linkPaymentId, setLinkPaymentId] = useState('')
   const [billingOrders, setBillingOrders] = useState<{ id: string; order_no: number; order_date: string; product_name: string | null; balance: number; remaining_qty: number }[]>([])
@@ -472,14 +472,15 @@ export default function NewBookingPage() {
 
             {/* SMS confirmation */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'not-allowed', opacity: 0.45 }}>
                 <input
                   type="checkbox"
                   checked={sendConfirmation}
-                  onChange={e => setSendConfirmation(e.target.checked)}
+                  onChange={() => {}}
+                  disabled
                   style={{ width: 16, height: 16 }}
                 />
-                <span>{t('newBooking.sendConfirmationSms')}</span>
+                <span>{t('newBooking.sendConfirmationSms')} (coming soon)</span>
               </label>
             </div>
 
