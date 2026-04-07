@@ -117,6 +117,10 @@ export type PaymentType =
   | 'Loan/Deposit'
   | 'Repayment'
   | 'Advance Payment'
+  | 'Transferencias Bancarias / ACH'
+  | 'Pagos Seguros en Línea / PSE'
+  | 'Efectivo'
+  | 'Cheques'
 
 export const PAYMENT_TYPES: PaymentType[] = [
   'Advance Payment',
@@ -127,6 +131,17 @@ export const PAYMENT_TYPES: PaymentType[] = [
   'Repayment',
   'Wire Transfer',
   'Zelle payment',
+]
+
+export const PAYMENT_TYPES_COP: PaymentType[] = [
+  'Transferencias Bancarias / ACH',
+  'Pagos Seguros en Línea / PSE',
+  'Efectivo',
+  'Cheques',
+  'Partner credit',
+  'Loan/Deposit',
+  'Repayment',
+  'Advance Payment',
 ]
 
 export type NewPaymentInput = {
@@ -171,9 +186,26 @@ export async function listPayments(limit = 20) {
 }
 
 // ---- Partner Payments API (to partners) ----
-export type PartnerPaymentType = 'Cash' | 'Cash app' | 'Other' | 'Add to debt'
+export type PartnerPaymentType =
+  | 'Cash'
+  | 'Cash app'
+  | 'Other'
+  | 'Add to debt'
+  | 'Transferencias Bancarias / ACH'
+  | 'Pagos Seguros en Línea / PSE'
+  | 'Efectivo'
+  | 'Cheques'
 
 export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = ['Cash', 'Cash app', 'Other', 'Add to debt']
+
+export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = [
+  'Transferencias Bancarias / ACH',
+  'Pagos Seguros en Línea / PSE',
+  'Efectivo',
+  'Cheques',
+  'Other',
+  'Add to debt',
+]
 
 export type NewPartnerPaymentInput = {
   partner_id: string
@@ -198,7 +230,18 @@ export async function createPartnerPayment(input: NewPartnerPaymentInput) {
 }
 
 // ---- Supplier Payments API (to suppliers) ----
-export type SupplierPaymentType = 'Cash' | 'Bank transfer' | 'Check' | 'Credit card' | 'Add to debt' | 'Prepayment' | 'Other'
+export type SupplierPaymentType =
+  | 'Cash'
+  | 'Bank transfer'
+  | 'Check'
+  | 'Credit card'
+  | 'Add to debt'
+  | 'Prepayment'
+  | 'Other'
+  | 'Transferencias Bancarias / ACH'
+  | 'Pagos Seguros en Línea / PSE'
+  | 'Efectivo'
+  | 'Cheques'
 
 export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
   'Cash',
@@ -208,6 +251,16 @@ export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
   'Add to debt',
   'Prepayment',
   'Other'
+]
+
+export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = [
+  'Transferencias Bancarias / ACH',
+  'Pagos Seguros en Línea / PSE',
+  'Efectivo',
+  'Cheques',
+  'Add to debt',
+  'Prepayment',
+  'Other',
 ]
 
 export type NewSupplierPaymentInput = {

@@ -7,8 +7,11 @@ import {
   fetchBootstrap,
   getAuthHeaders,
   PAYMENT_TYPES,
+  PAYMENT_TYPES_COP,
   PARTNER_PAYMENT_TYPES,
+  PARTNER_PAYMENT_TYPES_COP,
   SUPPLIER_PAYMENT_TYPES,
+  SUPPLIER_PAYMENT_TYPES_COP,
   type PaymentType,
   type PartnerPaymentType,
   type SupplierPaymentType,
@@ -19,6 +22,7 @@ import {
 import { todayYMD } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useLocale } from '../contexts/LocaleContext'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Direct' | 'Partner' }
 type PartnerLite = { id: string; name: string }
@@ -30,6 +34,21 @@ export default function Payments() {
   const location = useLocation()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
+  const { currency } = useLocale()
+  const isCOP = currency === 'COP'
+
+  const activePaymentTypes = useMemo(
+    () => isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES,
+    [isCOP]
+  )
+  const activePartnerPaymentTypes = useMemo(
+    () => isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES,
+    [isCOP]
+  )
+  const activeSupplierPaymentTypes = useMemo(
+    () => isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES,
+    [isCOP]
+  )
 
   const [people, setPeople] = useState<CustomerLite[]>([])
   const [partners, setPartners] = useState<PartnerLite[]>([])
@@ -69,7 +88,14 @@ export default function Payments() {
   const [supplierDate, setSupplierDate] = useState<string>(todayYMD())
   const [supplierNotes, setSupplierNotes] = useState('')
 
-  // In Payments.tsx, update the useEffect that handles preselection:
+  // Reset payment type defaults when currency changes
+  useEffect(() => {
+    setPaymentType(activePaymentTypes[0])
+    setPartnerPaymentType(activePartnerPaymentTypes[0])
+    setSupplierPaymentType(activeSupplierPaymentTypes[0])
+  }, [currency]) // eslint-disable-line react-hooks/exhaustive-deps
+
+
 
 useEffect(() => {
   (async () => {
@@ -577,7 +603,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 }}
                 style={{ height: CONTROL_H }}
               >
-                {PAYMENT_TYPES.filter(type => type !== 'Advance Payment' || config.payments.showAdvancePayment).map(type => <option key={type} value={type}>{type}</option>)}
+                {activePaymentTypes.filter(type => type !== 'Advance Payment' || config.payments.showAdvancePayment).map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
             <div>
@@ -702,7 +728,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={partnerPaymentType} onChange={e=>setPartnerPaymentType(e.target.value as PartnerPaymentType)} style={{ height: CONTROL_H }}>
-                    {PARTNER_PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                    {activePartnerPaymentTypes.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
@@ -797,7 +823,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={supplierPaymentType} onChange={e=>setSupplierPaymentType(e.target.value as SupplierPaymentType)} style={{ height: CONTROL_H }}>
-                    {SUPPLIER_PAYMENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                    {activeSupplierPaymentTypes.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
