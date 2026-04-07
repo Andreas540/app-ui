@@ -17,19 +17,23 @@ export default function NewProduct() {
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
   const [saving, setSaving] = useState(false)
+  const [category, setCategory] = useState<'product' | 'service'>('product')
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
-  
+
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
 
-  // Filter out specific products from current costs view
+  // Filter out specific products and apply category filter
   const filteredProducts = useMemo(() => {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
-    return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
-  }, [products])
+    return products.filter(p =>
+      !excludedNames.includes(p.name.toLowerCase()) &&
+      (p.category ?? 'product') === category
+    )
+  }, [products, category])
 
   function parseCostInput(s: string) {
     const cleaned = s.replace(/[^\d.,]/g, '')
@@ -96,7 +100,7 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum })
+      await createProduct({ name: nm, cost: costNum, category })
       alert(t('products.created'))
       setName('')
       setCostStr('')
@@ -131,6 +135,26 @@ export default function NewProduct() {
         </Link>
       </div>
 
+      <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+        {(['product', 'service'] as const).map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            style={{
+              padding: '6px 18px',
+              border: 'none',
+              borderRadius: 0,
+              background: category === cat ? 'var(--primary, #2563eb)' : 'transparent',
+              color: category === cat ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              fontWeight: category === cat ? 600 : 400,
+            }}
+          >
+            {cat === 'product' ? 'Product' : 'Service'}
+          </button>
+        ))}
+      </div>
+
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('products.productName')}</label>
@@ -142,7 +166,7 @@ export default function NewProduct() {
           />
         </div>
         <div>
-          <label>{t('products.productCostUSD')}</label>
+          <label>{category === 'service' ? t('products.directServiceCost') : t('products.productCostUSD')}</label>
           <input
             type="text"
             inputMode="decimal"

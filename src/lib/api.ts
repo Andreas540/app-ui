@@ -424,7 +424,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),

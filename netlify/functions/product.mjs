@@ -45,6 +45,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const body = JSON.parse(event.body || '{}');
     const name = (body.name || '').trim();
     const costNum = Number(body.cost);
+    const category = body.category === 'service' ? 'service' : 'product';
 
     if (!name) return cors(400, { error: 'name is required' });
     if (!Number.isFinite(costNum) || costNum < 0) {
@@ -60,9 +61,9 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost)
-      VALUES (${TENANT_ID}, ${name}, ${costNum})
-      RETURNING id, name, cost
+      INSERT INTO products (tenant_id, name, cost, category)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category})
+      RETURNING id, name, cost, category
     `;
     const product = rows[0];
 

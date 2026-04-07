@@ -413,6 +413,7 @@
     "editProductsButton": "Redigera produkt(er)",
     "productName": "Produktnamn",
     "productCostUSD": "Produktionskostnad per enhet",
+    "directServiceCost": "Direkt servicekostnad",
     "saveProduct": "Spara produkt",
     "productCosts": "Produktkostnader",
     "currentCosts": "Aktuella kostnader",

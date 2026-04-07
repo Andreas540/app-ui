@@ -413,6 +413,7 @@
     "editProductsButton": "Editar Producto(s)",
     "productName": "Nombre del producto",
     "productCostUSD": "Costo de producción por unidad",
+    "directServiceCost": "Costo Directo del Servicio",
     "saveProduct": "Guardar producto",
     "productCosts": "Costos del producto",
     "currentCosts": "Costos actuales",
