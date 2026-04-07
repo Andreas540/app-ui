@@ -1381,6 +1381,7 @@ export default function TenantAdmin() {
                 <option value="CAD">CAD – Canadian Dollar</option>
                 <option value="AUD">AUD – Australian Dollar</option>
                 <option value="MXN">MXN – Mexican Peso</option>
+                <option value="COP">COP – Colombian Peso</option>
                 <option value="GHS">GHS – Ghanaian Cedi</option>
                 <option value="BRL">BRL – Brazilian Real</option>
                 <option value="JPY">JPY – Japanese Yen</option>
