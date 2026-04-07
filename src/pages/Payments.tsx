@@ -667,9 +667,6 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
             </button>
           </div>
 
-          <p className="helper" style={{marginTop:12}}>
-            {t('payments.helpText')}
-          </p>
         </>
       ) : paymentDirection === 'partner' ? (
         <>
