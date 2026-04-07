@@ -603,7 +603,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 }}
                 style={{ height: CONTROL_H }}
               >
-                {activePaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
+                {activePaymentTypes.filter(type => !config.payments.visibleCustomerPaymentTypes || config.payments.visibleCustomerPaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
             <div>
@@ -728,7 +728,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={partnerPaymentType} onChange={e=>setPartnerPaymentType(e.target.value as PartnerPaymentType)} style={{ height: CONTROL_H }}>
-                    {activePartnerPaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
+                    {activePartnerPaymentTypes.filter(type => !config.payments.visiblePartnerPaymentTypes || config.payments.visiblePartnerPaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>
@@ -823,7 +823,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                 <div>
                   <label>{t('payments.paymentType')}</label>
                   <select value={supplierPaymentType} onChange={e=>setSupplierPaymentType(e.target.value as SupplierPaymentType)} style={{ height: CONTROL_H }}>
-                    {activeSupplierPaymentTypes.filter(type => !config.payments.visiblePaymentTypes || config.payments.visiblePaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
+                    {activeSupplierPaymentTypes.filter(type => !config.payments.visibleSupplierPaymentTypes || config.payments.visibleSupplierPaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
                 <div>

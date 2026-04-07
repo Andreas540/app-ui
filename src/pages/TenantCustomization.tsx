@@ -15,7 +15,13 @@ const H = 40 // control height
 type Section = 'terminology' | 'payments' | 'booking' | 'orders'
 
 type UiConfig = {
-  payments?: { showOrderSelection?: boolean; visiblePaymentTypes?: string[] | null; showPartnerTransfer?: boolean }
+  payments?: {
+    showOrderSelection?: boolean
+    visibleCustomerPaymentTypes?: string[] | null
+    visiblePartnerPaymentTypes?: string[] | null
+    visibleSupplierPaymentTypes?: string[] | null
+    showPartnerTransfer?: boolean
+  }
   labels?: {
     customer?: string; customers?: string
     order?: string; orders?: string
@@ -55,6 +61,67 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
         style={{ height: H, padding: '0 18px', fontSize: 13 }}>
         {t('tenantCustom.off')}
       </button>
+    </div>
+  )
+}
+
+function CheckboxDropdown({ label, allTypes, visible, onChange }: {
+  label: string
+  allTypes: string[]
+  visible: string[] | null
+  onChange: (v: string[] | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const visibleSet = visible ? new Set(visible) : new Set(allTypes)
+  const checkedCount = allTypes.filter(t => visibleSet.has(t)).length
+  const allChecked = checkedCount === allTypes.length
+
+  function toggle(type: string) {
+    const next = new Set(visibleSet)
+    next.has(type) ? next.delete(type) : next.add(type)
+    onChange(next.size === allTypes.length ? null : [...next])
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', height: H, padding: '0 12px',
+          border: '1px solid var(--line)', borderRadius: 6,
+          background: 'var(--bg, #fff)', cursor: 'pointer', fontSize: 13, textAlign: 'left',
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="helper" style={{ fontSize: 12 }}>
+            {allChecked ? 'All' : `${checkedCount}/${allTypes.length}`}
+          </span>
+          <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+        </span>
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 4, padding: '8px 12px',
+          border: '1px solid var(--line)', borderRadius: 6,
+          background: 'var(--bg, #fff)',
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          {allTypes.map(type => (
+            <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '3px 0', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={visibleSet.has(type)}
+                style={{ width: 14, height: 14, margin: 0, cursor: 'pointer', flexShrink: 0 }}
+                onChange={() => toggle(type)}
+              />
+              {type}
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -133,9 +200,8 @@ export default function TenantCustomization() {
   function setPayment(key: 'showOrderSelection' | 'showPartnerTransfer', val: boolean) {
     setCfg(p => ({ ...p, payments: { ...p.payments, [key]: val } }))
   }
-  function setVisiblePaymentTypes(types: string[], allTypes: string[]) {
-    const val = types.length === allTypes.length ? null : types
-    setCfg(p => ({ ...p, payments: { ...p.payments, visiblePaymentTypes: val } }))
+  function setVisibleTypes(key: 'visibleCustomerPaymentTypes' | 'visiblePartnerPaymentTypes' | 'visibleSupplierPaymentTypes', val: string[] | null) {
+    setCfg(p => ({ ...p, payments: { ...p.payments, [key]: val } }))
   }
   function setUi(key: keyof NonNullable<UiConfig['ui']>, val: boolean) {
     setCfg(p => ({ ...p, ui: { ...p.ui, [key]: val } }))
@@ -253,32 +319,23 @@ export default function TenantCustomization() {
                 <Toggle value={cp.showOrderSelection ?? dp.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
               </Row>
               {(() => {
-                const tenantCurrency = tenants.find(t => t.id === tenantId)?.default_currency || 'USD'
-                const isCOP = tenantCurrency === 'COP'
-                const allTypes = [...new Set([
-                  ...(isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES),
-                  ...(isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES),
-                  ...(isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES),
-                ])]
-                const visible = new Set(cp.visiblePaymentTypes ?? allTypes)
+                const isCOP = (tenants.find(t => t.id === tenantId)?.default_currency || 'USD') === 'COP'
+                const customerTypes = (isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES) as string[]
+                const partnerTypes  = (isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES) as string[]
+                const supplierTypes = (isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES) as string[]
+                const customized = cp.visibleCustomerPaymentTypes != null || cp.visiblePartnerPaymentTypes != null || cp.visibleSupplierPaymentTypes != null
                 return (
-                  <Row label={t('tenantCustom.visiblePaymentTypes')} help={t('tenantCustom.visiblePaymentTypesHelp')}
-                    customized={cp.visiblePaymentTypes != null}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                      {allTypes.map(type => (
-                        <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={visible.has(type)}
-                            onChange={() => {
-                              const next = new Set(visible)
-                              next.has(type) ? next.delete(type) : next.add(type)
-                              setVisiblePaymentTypes([...next], allTypes)
-                            }}
-                          />
-                          {type}
-                        </label>
-                      ))}
+                  <Row label={t('tenantCustom.visiblePaymentTypes')} help={t('tenantCustom.visiblePaymentTypesHelp')} customized={customized}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <CheckboxDropdown label="From customer" allTypes={customerTypes}
+                        visible={cp.visibleCustomerPaymentTypes ?? null}
+                        onChange={v => setVisibleTypes('visibleCustomerPaymentTypes', v)} />
+                      <CheckboxDropdown label="To partner" allTypes={partnerTypes}
+                        visible={cp.visiblePartnerPaymentTypes ?? null}
+                        onChange={v => setVisibleTypes('visiblePartnerPaymentTypes', v)} />
+                      <CheckboxDropdown label="To supplier" allTypes={supplierTypes}
+                        visible={cp.visibleSupplierPaymentTypes ?? null}
+                        onChange={v => setVisibleTypes('visibleSupplierPaymentTypes', v)} />
                     </div>
                   </Row>
                 )
