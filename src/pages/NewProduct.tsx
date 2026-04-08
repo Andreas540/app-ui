@@ -1,6 +1,6 @@
 // src/pages/NewProduct.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
@@ -14,10 +14,13 @@ interface HistoricalCost {
 
 export default function NewProduct() {
   const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
   const [saving, setSaving] = useState(false)
-  const [category, setCategory] = useState<'product' | 'service'>('product')
+  const [category, setCategory] = useState<'product' | 'service'>(
+    searchParams.get('type') === 'service' ? 'service' : 'product'
+  )
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -130,7 +133,7 @@ export default function NewProduct() {
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
         <h3 style={{ margin:0 }}>{category === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}</h3>
-        <Link to="/products/edit">
+        <Link to={`/products/edit?type=${category}`}>
           <button className="primary" style={{ height: BTN_H }}>
             {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
           </button>

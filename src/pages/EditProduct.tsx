@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
 import { todayYMD } from '../lib/time'
@@ -8,6 +8,8 @@ import { DateInput } from '../components/DateInput'
 export default function EditProduct() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const type = searchParams.get('type') === 'service' ? 'service' : 'product'
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -25,8 +27,9 @@ export default function EditProduct() {
         setLoading(true); setErr(null)
         const { products } = await listProducts()
         setProducts(products)
-        // default selection
-        if (products.length) setSelectedId(products[0].id)
+        // default selection — pick first item matching the current type
+        const filtered = products.filter(p => (p.category ?? 'product') === type)
+        if (filtered.length) setSelectedId(filtered[0].id)
       } catch (e:any) {
         setErr(e?.message || String(e))
       } finally {
@@ -81,7 +84,7 @@ export default function EditProduct() {
       }
 
       alert(message)
-      navigate('/products/new')
+      navigate(`/products/new?type=${type}`)
     } catch (e:any) {
       alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
@@ -98,16 +101,16 @@ export default function EditProduct() {
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>{selected?.category === 'service' ? t('products.editServiceTitle') : t('products.editProductTitle')}</h3>
+        <h3 style={{ margin:0 }}>{type === 'service' ? t('products.editServiceTitle') : t('products.editProductTitle')}</h3>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('product')}</label>
           <select value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
-            {products.map(p => (
+            {products.filter(p => (p.category ?? 'product') === type).map(p => (
               <option key={p.id} value={p.id}>
-                {p.name}{p.category === 'service' ? ' [Service]' : ''}
+                {p.name}
               </option>
             ))}
           </select>
