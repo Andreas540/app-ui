@@ -98,7 +98,7 @@ export default function EditProduct() {
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>{t('products.editProductTitle')}</h3>
+        <h3 style={{ margin:0 }}>{selected?.category === 'service' ? t('products.editServiceTitle') : t('products.editProductTitle')}</h3>
       </div>
 
       <div className="row" style={{ marginTop: 12 }}>

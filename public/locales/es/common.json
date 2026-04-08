@@ -410,6 +410,7 @@
   },
   "products": {
     "newProductTitle": "Nuevo Producto",
+    "newServiceTitle": "Nuevo Servicio",
     "editProductsButton": "Editar Producto(s)",
     "productName": "Nombre del producto",
     "serviceName": "Nombre del servicio",
@@ -424,6 +425,7 @@
     "noProducts": "Sin productos aún.",
     "noHistoricalCosts": "Sin costos históricos aún.",
     "editProductTitle": "Editar Producto",
+    "editServiceTitle": "Editar Servicio",
     "newName": "Nuevo nombre",
     "newProductCostUSD": "Nuevo costo de producción por unidad",
     "applyCostToHistory": "Aplicar nuevo costo a todos los pedidos anteriores",

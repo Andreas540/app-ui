@@ -410,6 +410,7 @@
   },
   "products": {
     "newProductTitle": "Ny produkt",
+    "newServiceTitle": "Ny tjänst",
     "editProductsButton": "Redigera produkt(er)",
     "productName": "Produktnamn",
     "serviceName": "Tjänstnamn",
@@ -424,6 +425,7 @@
     "noProducts": "Inga produkter ännu.",
     "noHistoricalCosts": "Inga historiska kostnader ännu.",
     "editProductTitle": "Redigera produkt",
+    "editServiceTitle": "Redigera tjänst",
     "newName": "Nytt namn",
     "newProductCostUSD": "Ny produktionskostnad per enhet",
     "applyCostToHistory": "Tillämpa ny kostnad på alla tidigare beställningar",

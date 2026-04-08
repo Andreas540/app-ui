@@ -129,7 +129,7 @@ export default function NewProduct() {
   return (
     <div className="card" style={{ maxWidth: 720 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>{t('products.newProductTitle')}</h3>
+        <h3 style={{ margin:0 }}>{category === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}</h3>
         <Link to="/products/edit">
           <button className="primary" style={{ height: BTN_H }}>
             {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
