@@ -195,18 +195,21 @@ export default function EditProduct() {
         <button className="primary" onClick={save} disabled={saving} style={{ height: BTN_H }}>
           {saving ? t('saving') : t('saveChanges')}
         </button>
-        <button 
-          onClick={() => { 
-            if (selected) { 
-              setNewName(selected.name); 
-              setCostStr(selected.cost == null ? '' : String(selected.cost)); 
-            } 
-            setCostOption('next'); 
+        <button
+          onClick={() => {
+            if (selected) {
+              setNewName(selected.name);
+              setCostStr(selected.cost == null ? '' : String(selected.cost));
+            }
+            setCostOption('next');
             setSpecificDate(todayYMD());
-          }} 
+          }}
           disabled={saving}
         >
           {t('reset')}
+        </button>
+        <button onClick={() => navigate(`/products/new?type=${type}`)} disabled={saving}>
+          {t('cancel')}
         </button>
       </div>
     </div>
