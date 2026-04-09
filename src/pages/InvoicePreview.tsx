@@ -480,14 +480,18 @@ useEffect(() => {
 
               <div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.paymentMethod')}</div>
-                <div style={{ marginBottom: 16 }}>{invoiceData.paymentMethod}</div>
+                <div style={{ marginBottom: 16 }}>
+                  {invoiceData.paymentMethod === 'wire_transfer' ? 'Wire Transfer'
+                    : invoiceData.paymentMethod === 'ach' ? 'ACH'
+                    : invoiceData.paymentMethod}
+                </div>
                 <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.ourContact')}</div>
                 {invoiceData.companyInfo?.contactName && <div>{invoiceData.companyInfo.contactName}</div>}
               </div>
 
               {/* Payment instructions: wire or ACH */}
               <div>
-                {invoiceData.paymentMethod === 'ACH' ? (
+                {invoiceData.paymentMethod === 'ach' ? (
                   <>
                     <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.achInstructions')}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>

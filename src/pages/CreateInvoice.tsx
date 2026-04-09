@@ -43,7 +43,7 @@ export default function CreateInvoicePage() {
   const [invoiceDate, setInvoiceDate] = useState<string>('')
   const [dueDate, setDueDate] = useState<string>('')
   const [deliveryDate, setDeliveryDate] = useState<string>('')
-  const [paymentMethod, setPaymentMethod] = useState<string>('Wire Transfer')
+  const [paymentMethod, setPaymentMethod] = useState<string>('wire_transfer')
   const [invoiceNo, setInvoiceNo] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
@@ -514,9 +514,11 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                           >
                             {(invoiceConfig.enabledPaymentMethods.length > 0
                               ? invoiceConfig.enabledPaymentMethods
-                              : ['Wire Transfer']
+                              : ['wire_transfer']
                             ).map(method => (
-                              <option key={method} value={method}>{method}</option>
+                              <option key={method} value={method}>
+                                {method === 'wire_transfer' ? 'Wire Transfer' : method === 'ach' ? 'ACH' : method}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -556,12 +558,21 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                             </div>
 
                             <div>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
-                              {invoiceConfig.companyName && <div>{t('invoice.companyName')} {invoiceConfig.companyName}</div>}
-                              {invoiceConfig.bankName && <div>{t('invoice.bankName')} {invoiceConfig.bankName}</div>}
-                              {invoiceConfig.bankAccountName && <div>{t('invoice.accountName')} {invoiceConfig.bankAccountName}</div>}
-                              {invoiceConfig.bankAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.bankAccountNumber}</div>}
-                              {invoiceConfig.bankRoutingNumber && <div>{t('invoice.routingNumber')} {invoiceConfig.bankRoutingNumber}</div>}
+                              {paymentMethod === 'ach' ? (<>
+                                <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.achInstructions')}</div>
+                                {invoiceConfig.achBankName && <div>{t('invoice.bankName')} {invoiceConfig.achBankName}</div>}
+                                {invoiceConfig.achBranch && <div>{t('tenantAdmin.achBranch')}: {invoiceConfig.achBranch}</div>}
+                                {invoiceConfig.achCityState && <div>{t('tenantAdmin.achCityState')}: {invoiceConfig.achCityState}</div>}
+                                {invoiceConfig.achAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.achAccountNumber}</div>}
+                                {invoiceConfig.achAba && <div>{t('tenantAdmin.achAba')}: {invoiceConfig.achAba}</div>}
+                              </>) : (<>
+                                <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
+                                {invoiceConfig.companyName && <div>{t('invoice.companyName')} {invoiceConfig.companyName}</div>}
+                                {invoiceConfig.bankName && <div>{t('invoice.bankName')} {invoiceConfig.bankName}</div>}
+                                {invoiceConfig.bankAccountName && <div>{t('invoice.accountName')} {invoiceConfig.bankAccountName}</div>}
+                                {invoiceConfig.bankAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.bankAccountNumber}</div>}
+                                {invoiceConfig.bankRoutingNumber && <div>{t('invoice.routingNumber')} {invoiceConfig.bankRoutingNumber}</div>}
+                              </>)}
                             </div>
                           </div>
 
