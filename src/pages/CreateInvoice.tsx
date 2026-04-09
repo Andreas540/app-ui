@@ -137,7 +137,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
   useEffect(() => {
     if (!invoiceConfig.autoInvoiceNumber) return
-    if (invoiceDate && dueDate && deliveryDate && selectedCustomerId) {
+    if (invoiceDate && dueDate && selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId)
       if (!customer) return
 
@@ -487,7 +487,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                         </div>
                       </div>
 
-                      {(invoiceConfig.autoInvoiceNumber ? invoiceNo : invoiceDate && dueDate && deliveryDate) && (
+                      {(invoiceConfig.autoInvoiceNumber ? invoiceNo : invoiceDate && dueDate) && (
                         <div style={{ marginTop: 16 }}>
                           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.invoiceNo')}
