@@ -487,7 +487,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                         </div>
                       </div>
 
-                      {(invoiceConfig.autoInvoiceNumber ? invoiceNo : invoiceDate && dueDate) && (
+                      {(invoiceDate && dueDate) && (
                         <div style={{ marginTop: 16 }}>
                           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                             {t('invoice.invoiceNo')}
@@ -497,7 +497,13 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               {invoiceNo}
                             </div>
                           ) : (
-                            <div style={{ marginBottom: 20 }} />
+                            <input
+                              type="text"
+                              value={invoiceNo}
+                              onChange={e => setInvoiceNo(e.target.value)}
+                              placeholder={t('invoice.invoiceNoPlaceholder')}
+                              style={{ marginBottom: 20, fontSize: 16 }}
+                            />
                           )}
 
                           <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>

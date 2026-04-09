@@ -775,20 +775,31 @@ export default function TenantAdmin() {
 
           return (<>
 
-            {/* Auto invoice number */}
+            {/* Invoice number mode */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={invoiceCfg.autoInvoiceNumber}
-                  onChange={e => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: e.target.checked }))}
-                  style={{ width: 18, height: 18 }}
-                />
-                <span style={{ fontWeight: 600 }}>{t('tenantAdmin.autoInvoiceNumber')}</span>
-              </label>
-              <p className="helper" style={{ marginTop: 4, marginLeft: 28 }}>
-                {t('tenantAdmin.autoInvoiceNumberHelp')}
-              </p>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('tenantAdmin.invoiceNumberMode')}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="radio"
+                    name="invoiceNumberMode"
+                    checked={!invoiceCfg.autoInvoiceNumber}
+                    onChange={() => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: false }))}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <span>{t('tenantAdmin.invoiceNumberManual')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="radio"
+                    name="invoiceNumberMode"
+                    checked={invoiceCfg.autoInvoiceNumber}
+                    onChange={() => setInvoiceCfg(c => ({ ...c, autoInvoiceNumber: true }))}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <span>{t('tenantAdmin.invoiceNumberAuto')}</span>
+                </label>
+              </div>
             </div>
 
             {/* Company info */}
