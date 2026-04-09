@@ -505,7 +505,7 @@ export default function SupplyChainOverview() {
     padding: '12px 0',
     borderBottom: '1px solid var(--border)',
     fontWeight: 700,
-    color: 'white',
+    color: 'var(--text, inherit)',
   }
 
   const expandIconStyle: React.CSSProperties = {
@@ -744,7 +744,7 @@ export default function SupplyChainOverview() {
                     borderRadius: '6px',
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    color: 'white',
+                    color: 'var(--text, inherit)',
                     fontSize: 18,
                     fontWeight: 'bold',
                   }}
@@ -776,7 +776,7 @@ export default function SupplyChainOverview() {
                     borderRadius: '6px',
                     padding: '8px 12px',
                     cursor: weekOffset >= 0 ? 'not-allowed' : 'pointer',
-                    color: weekOffset >= 0 ? 'var(--text-secondary)' : 'white',
+                    color: weekOffset >= 0 ? 'var(--text-secondary)' : 'var(--text, inherit)',
                     fontSize: 18,
                     fontWeight: 'bold',
                     opacity: weekOffset >= 0 ? 0.4 : 1,
@@ -921,7 +921,7 @@ export default function SupplyChainOverview() {
         borderRadius: '6px',
         padding: '8px 12px',
         cursor: 'pointer',
-        color: 'white',
+        color: 'var(--text, inherit)',
         fontSize: 18,
         fontWeight: 'bold',
       }}
@@ -953,7 +953,7 @@ export default function SupplyChainOverview() {
         borderRadius: '6px',
         padding: '8px 12px',
         cursor: productionWeekOffset >= 0 ? 'not-allowed' : 'pointer',
-        color: productionWeekOffset >= 0 ? 'var(--text-secondary)' : 'white',
+        color: productionWeekOffset >= 0 ? 'var(--text-secondary)' : 'var(--text, inherit)',
         fontSize: 18,
         fontWeight: 'bold',
         opacity: productionWeekOffset >= 0 ? 0.4 : 1,
@@ -1050,7 +1050,7 @@ export default function SupplyChainOverview() {
                 cursor: 'pointer',
                 fontSize: 20,
                 padding: '4px 8px',
-                color: 'white',
+                color: 'var(--text, inherit)',
               }}
               title={t('supplyChain.printNotDelivered')}
             >
