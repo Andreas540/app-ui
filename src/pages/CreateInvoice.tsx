@@ -129,6 +129,8 @@ const res = await fetch(`${base}/api/create-invoice`, {
   }, [])
 
   useEffect(() => {
+    setConfirmedOrders([])
+    setShowingConfirmed(false)
     if (!selectedCustomerId) {
       setOrders([])
       setSelectedOrders(new Set())
