@@ -39,6 +39,7 @@ export default function CreateCustomer() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
+  const [country, setCountry] = useState('')
 
   const CONTROL_H = 44
 
@@ -66,6 +67,7 @@ export default function CreateCustomer() {
         city: city.trim() || undefined,
         state: state.trim() || undefined,
         postal_code: postal.trim() || undefined,
+        country: country.trim() || undefined,
       })
       alert(t('customers.created'))
       navigate('/customers')
@@ -92,7 +94,7 @@ export default function CreateCustomer() {
         </div>
       </div>
 
-      {/* Row with Shipping Cost, Company name, Phone */}
+      {/* Shipping Cost */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.shippingCost')}</label>
@@ -136,22 +138,21 @@ export default function CreateCustomer() {
             </div>
           )}
         </div>
+      </div>
 
+      {/* Row 1: Contact | Phone */}
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.contact')}</label>
-          <input
-            type="text"
-            value={companyName}
-            onChange={e=>setCompanyName(e.target.value)}
-          />
+          <input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} />
         </div>
-
         <div>
           <label>{t('phone')}</label>
           <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} />
         </div>
       </div>
 
+      {/* Row 2: Address line 1 | Address line 2 */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('addressLine1')}</label>
@@ -163,6 +164,7 @@ export default function CreateCustomer() {
         </div>
       </div>
 
+      {/* Row 3: City | State */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('city')}</label>
@@ -172,9 +174,17 @@ export default function CreateCustomer() {
           <label>{t('state')}</label>
           <input type="text" value={state} onChange={e=>setState(e.target.value)} />
         </div>
+      </div>
+
+      {/* Row 4: Postal code | Country */}
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('zip')}</label>
           <input type="text" value={postal} onChange={e=>setPostal(e.target.value)} />
+        </div>
+        <div>
+          <label>{t('country')}</label>
+          <input type="text" value={country} onChange={e=>setCountry(e.target.value)} />
         </div>
       </div>
 

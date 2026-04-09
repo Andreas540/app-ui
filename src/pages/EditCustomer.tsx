@@ -36,6 +36,7 @@ export default function EditCustomer() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
+  const [country, setCountry] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -58,6 +59,7 @@ setCustomerType(
         setCity(c.city || '')
         setState(c.state || '')
         setPostal(c.postal_code || '')
+        setCountry(c.country || '')
         setCostOption('next')
         setSpecificDate(todayYMD())
       } catch (e:any) {
@@ -96,6 +98,7 @@ setCustomerType(
         city: city.trim() || null,
         state: state.trim() || null,
         postal_code: postal.trim() || null,
+        country: country.trim() || null,
       })
       nav(`/customers/${id}`)
     } catch (e:any) {
@@ -188,49 +191,51 @@ setCustomerType(
         </div>
       </div>
 
-      {/* Company name - full width */}
-      <div style={{ marginTop: 12 }}>
-        <label>{t('customers.contact')}</label>
-        <input
-          value={companyName}
-          onChange={e=>setCompanyName(e.target.value)}
-          placeholder=""
-        />
-      </div>
-
-      {/* Phone | Address line 1 */}
+      {/* Row 1: Contact | Phone */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        <div>
+          <label>{t('customers.contact')}</label>
+          <input value={companyName} onChange={e=>setCompanyName(e.target.value)} />
+        </div>
         <div>
           <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
         </div>
+      </div>
+
+      {/* Row 2: Address line 1 | Address line 2 */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('addressLine1')}</label>
           <input value={address1} onChange={e=>setAddress1(e.target.value)} />
         </div>
-      </div>
-
-      {/* Address line 2 | City */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('addressLine2')}</label>
           <input value={address2} onChange={e=>setAddress2(e.target.value)} />
         </div>
+      </div>
+
+      {/* Row 3: City | State */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('city')}</label>
           <input value={city} onChange={e=>setCity(e.target.value)} />
         </div>
-      </div>
-
-      {/* State | Postal code */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('state')}</label>
           <input value={state} onChange={e=>setState(e.target.value)} />
         </div>
+      </div>
+
+      {/* Row 4: Postal code | Country */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('postalCode')}</label>
           <input value={postal} onChange={e=>setPostal(e.target.value)} />
+        </div>
+        <div>
+          <label>{t('country')}</label>
+          <input value={country} onChange={e=>setCountry(e.target.value)} />
         </div>
       </div>
 

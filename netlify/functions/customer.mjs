@@ -38,7 +38,7 @@ async function getCustomer(event) {
 
     const cust = await sql`
       SELECT id, name, customer_type, shipping_cost, company_name, phone,
-             address1, address2, city, state, postal_code, sms_consent
+             address1, address2, city, state, postal_code, country, sms_consent
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       LIMIT 1
@@ -140,7 +140,7 @@ async function updateCustomer(event) {
     const body = JSON.parse(event.body || '{}')
     const {
       id, name, customer_type, shipping_cost, apply_to_history, effective_date, company_name,
-      phone, sms_consent, address1, address2, city, state, postal_code
+      phone, sms_consent, address1, address2, city, state, postal_code, country
     } = body || {}
 
     if (!id)   return cors(400, { error: 'id is required' })
@@ -209,7 +209,8 @@ async function updateCustomer(event) {
         address2 = ${address2 ?? null},
         city = ${city ?? null},
         state = ${state ?? null},
-        postal_code = ${postal_code ?? null}
+        postal_code = ${postal_code ?? null},
+        country = ${country ?? null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       RETURNING id
     `

@@ -345,6 +345,7 @@ export type NewCustomerInput = {
   city?: string | null
   state?: string | null
   postal_code?: string | null
+  country?: string | null
 }
 
 export async function createCustomer(input: NewCustomerInput) {
@@ -390,6 +391,7 @@ export type CustomerDetail = {
     city?: string | null
     state?: string | null
     postal_code?: string | null
+    country?: string | null
   }
   totals: { total_orders: number; total_payments: number; owed_to_me: number }
   orders: OrderSummary[]

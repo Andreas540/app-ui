@@ -15,6 +15,7 @@ type Customer = {
   city?: string | null
   state?: string | null
   postal_code?: string | null
+  country?: string | null
 }
 
 type Order = {
@@ -282,7 +283,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                         .join(' ')}
                     </div>
                   )}
-                  <div>United States</div>
+                  {selectedCustomer.country && <div>{selectedCustomer.country}</div>}
                   {!selectedCustomer.company_name && !selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
                     <div className="helper">{t('invoice.noAddressOnFile')}</div>
                   )}
