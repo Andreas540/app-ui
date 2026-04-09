@@ -218,7 +218,11 @@
     "alertSaveSuccess": "Data sparad!",
     "quantity": "Antal",
     "notesPlaceholder": "Valfria anteckningar...",
-    "alertSaveFailed": "Misslyckades att spara"
+    "alertSaveFailed": "Misslyckades att spara",
+    "history": "Produktionshistorik",
+    "byDay": "Per dag",
+    "byProduct": "Per produkt",
+    "noHistory": "Inga produktionsposter hittades."
   },
   "reports": {
     "pageTitle": "Försäljning och vinst"

@@ -6,7 +6,7 @@ import { fetchBootstrap, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
-type Product = { id: string; name: string }
+type Product = { id: string; name: string; category?: string }
 
 type ProductEntry = {
   tempId: string // Temporary ID for React keys
@@ -42,6 +42,12 @@ export default function LaborProduction() {
   ])
   const [notes, setNotes] = useState('')
 
+  // History
+  type HistoryRecord = { date: string; product_name: string | null; qty_produced: number | null }
+  const [historyFilter, setHistoryFilter] = useState<'day' | 'product'>('day')
+  const [history, setHistory] = useState<HistoryRecord[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   // Load products on mount
   useEffect(() => {
     (async () => {
@@ -49,14 +55,37 @@ export default function LaborProduction() {
         setLoading(true)
         setErr(null)
         const { products: bootProducts } = await fetchBootstrap()
-        setProducts(bootProducts ?? [])
+        setProducts((bootProducts ?? []).filter(p => p.category !== 'service'))
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
         setLoading(false)
       }
     })()
+    loadHistory()
   }, [])
+
+  async function loadHistory() {
+    try {
+      setHistoryLoading(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const to = todayYMD()
+      const fromDate = new Date()
+      fromDate.setDate(fromDate.getDate() - 90)
+      const from = fromDate.toISOString().split('T')[0]
+      const res = await fetch(`${base}/api/labor-production?from=${from}&to=${to}`, {
+        headers: getAuthHeaders(),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setHistory(data)
+      }
+    } catch (e) {
+      console.error('Load history error:', e)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
 
   // Load data when date changes
   useEffect(() => {
@@ -191,7 +220,8 @@ export default function LaborProduction() {
       }
 
       alert(t('production.alertSaveSuccess'))
-      await loadDataForDate(selectedDate) // Reload to show saved data
+      await loadDataForDate(selectedDate)
+      await loadHistory()
     } catch (e: any) {
       alert(e?.message || t('production.alertSaveFailed'))
     }
@@ -291,7 +321,7 @@ export default function LaborProduction() {
                   border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
                   borderRadius: 4,
                   background: 'transparent',
-                  color: 'white',
+                  color: 'var(--text, inherit)',
                   cursor: 'pointer',
                   fontWeight: isSelected ? 600 : 400
                 }}
@@ -421,8 +451,8 @@ export default function LaborProduction() {
 
       {/* Buttons */}
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button 
-          className="primary" 
+        <button
+          className="primary"
           onClick={handleSave}
           style={{ height: CONTROL_H }}
         >
@@ -440,6 +470,71 @@ export default function LaborProduction() {
         >
           {t('cancel')}
         </button>
+      </div>
+
+      {/* Production History */}
+      <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>{t('production.history')}</h4>
+
+        {/* Filter tabs */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
+          {(['day', 'product'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setHistoryFilter(f)}
+              style={{
+                padding: '6px 18px',
+                fontSize: 13,
+                background: historyFilter === f ? 'var(--primary)' : 'transparent',
+                color: historyFilter === f ? 'white' : 'var(--text, inherit)',
+                border: 'none',
+                cursor: f === 'product' ? 'default' : 'pointer',
+                fontWeight: historyFilter === f ? 600 : 400,
+                opacity: f === 'product' ? 0.5 : 1,
+              }}
+              disabled={f === 'product'}
+            >
+              {f === 'day' ? t('production.byDay') : t('production.byProduct')}
+            </button>
+          ))}
+        </div>
+
+        {historyLoading ? (
+          <p className="helper">{t('loading')}</p>
+        ) : history.length === 0 ? (
+          <p className="helper">{t('production.noHistory')}</p>
+        ) : (() => {
+          // Group by date
+          const byDate = new Map<string, { product_name: string | null; qty_produced: number | null }[]>()
+          for (const r of history) {
+            if (!byDate.has(r.date)) byDate.set(r.date, [])
+            byDate.get(r.date)!.push({ product_name: r.product_name, qty_produced: r.qty_produced })
+          }
+          const dates = Array.from(byDate.keys())
+          return (
+            <div>
+              {dates.map((date, di) => {
+                const rows = byDate.get(date)!.filter(r => r.product_name && r.qty_produced != null)
+                if (rows.length === 0) return null
+                const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                return (
+                  <div key={date} style={{ marginBottom: 0 }}>
+                    {di > 0 && <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />}
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</div>
+                    {rows.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 4 }}>
+                        <span>{r.product_name}</span>
+                        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                          {r.qty_produced?.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

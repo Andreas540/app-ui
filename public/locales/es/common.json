@@ -218,7 +218,11 @@
     "alertSaveSuccess": "¡Datos guardados exitosamente!",
     "quantity": "Cantidad",
     "notesPlaceholder": "Notas opcionales...",
-    "alertSaveFailed": "Error al guardar"
+    "alertSaveFailed": "Error al guardar",
+    "history": "Historial de producción",
+    "byDay": "Por día",
+    "byProduct": "Por producto",
+    "noHistory": "No se encontraron registros de producción."
   },
   "reports": {
     "pageTitle": "Ventas y Beneficios"

@@ -218,7 +218,11 @@
     "alertSaveSuccess": "Data saved successfully!",
     "quantity": "Quantity",
     "notesPlaceholder": "Optional notes...",
-    "alertSaveFailed": "Save failed"
+    "alertSaveFailed": "Save failed",
+    "history": "Production history",
+    "byDay": "By day",
+    "byProduct": "By product",
+    "noHistory": "No production records found."
   },
   "reports": {
     "pageTitle": "Sales & Profit"
