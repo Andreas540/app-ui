@@ -66,8 +66,21 @@ async function listInvoices(event) {
     const TENANT_ID = authz.tenantId
 
     const params = new URLSearchParams(event.queryStringParameters || {})
+    const id   = params.get('id')
     const from = params.get('from')
     const to   = params.get('to')
+
+    // Single invoice fetch (full snapshot)
+    if (id) {
+      const rows = await sql`
+        SELECT id, invoice_no, invoice_date, due_date, customer_name, total_amount, invoice_data, created_at
+        FROM invoices
+        WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+        LIMIT 1
+      `
+      if (rows.length === 0) return cors(404, { error: 'Invoice not found' })
+      return cors(200, rows[0])
+    }
 
     if (!from || !to) return cors(400, { error: 'from and to parameters required (YYYY-MM-DD)' })
 

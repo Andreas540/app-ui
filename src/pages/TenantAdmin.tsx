@@ -1,5 +1,6 @@
 // src/pages/TenantAdmin.tsx
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import type { FeatureId } from '../lib/features'
@@ -28,6 +29,7 @@ interface TenantGeo {
 export default function TenantAdmin() {
   const { user } = useAuth()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [users, setUsers] = useState<TenantUser[]>([])
   const [tenantFeatures, setTenantFeatures] = useState<FeatureId[]>([])
   const [loading, setLoading] = useState(true)
@@ -1080,9 +1082,9 @@ export default function TenantAdmin() {
                     <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
                       {[
                         t('tenantAdmin.colCustomer'), t('tenantAdmin.colInvoiceNo'),
-                        t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'),
-                      ].map(h => (
-                        <th key={h} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                        t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'), '',
+                      ].map((h, i) => (
+                        <th key={i} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1094,6 +1096,31 @@ export default function TenantAdmin() {
                         <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{String(r.invoice_date).slice(0, 10)}</td>
                         <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? String(r.due_date).slice(0, 10) : '—'}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          <button
+                            style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+                            onClick={async () => {
+                              try {
+                                const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+                                const token = localStorage.getItem('authToken')
+                                const activeTenantId = localStorage.getItem('activeTenantId')
+                                const res = await fetch(`${base}/api/invoices?id=${r.id}`, {
+                                  headers: {
+                                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                    ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+                                  },
+                                })
+                                if (!res.ok) throw new Error('Failed to load invoice')
+                                const data = await res.json()
+                                navigate('/invoices/preview', { state: data.invoice_data })
+                              } catch (e: any) {
+                                alert(e?.message || 'Could not open invoice')
+                              }
+                            }}
+                          >
+                            {t('view')}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
