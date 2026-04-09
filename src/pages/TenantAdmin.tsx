@@ -72,6 +72,11 @@ export default function TenantAdmin() {
     bankAccountName: '',
     bankAccountNumber: '',
     bankRoutingNumber: '',
+    achBankName: '',
+    achBranch: '',
+    achCityState: '',
+    achAccountNumber: '',
+    achAba: '',
   })
   const [savingInvoice, setSavingInvoice] = useState(false)
 
@@ -504,6 +509,11 @@ export default function TenantAdmin() {
           bankAccountName: ic.bankAccountName ?? '',
           bankAccountNumber: ic.bankAccountNumber ?? '',
           bankRoutingNumber: ic.bankRoutingNumber ?? '',
+          achBankName: ic.achBankName ?? '',
+          achBranch: ic.achBranch ?? '',
+          achCityState: ic.achCityState ?? '',
+          achAccountNumber: ic.achAccountNumber ?? '',
+          achAba: ic.achAba ?? '',
         })
       }
     } catch { /* silently ignore — form starts empty */ }
@@ -849,7 +859,7 @@ export default function TenantAdmin() {
           const pmByCountry: Record<string, Array<{ id: string; labelKey: string; available: boolean }>> = {
             US: [
               { id: 'wire_transfer', labelKey: 'wireTransfer', available: true },
-              { id: 'ach',           labelKey: 'ach',          available: false },
+              { id: 'ach',           labelKey: 'ach',          available: true },
             ],
           }
           const availablePMs = pmByCountry[invoiceCfg.billingCountry] ?? null
@@ -977,6 +987,60 @@ export default function TenantAdmin() {
                 <div>
                   <label>{t('tenantAdmin.routingNumber')}</label>
                   <input value={invoiceCfg.bankRoutingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankRoutingNumber: e.target.value }))} placeholder="000000000" style={{ marginTop: 4 }} />
+                </div>
+              </div>
+            </>)}
+
+            {/* ACH detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('ach') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.achDetails')}</h4>
+              <div className="row" style={{ marginBottom: 12 }}>
+                <div>
+                  <label>{t('tenantAdmin.bankName')}</label>
+                  <input
+                    value={invoiceCfg.achBankName}
+                    onChange={e => setInvoiceCfg(c => ({ ...c, achBankName: e.target.value }))}
+                    placeholder={invoiceCfg.bankName || 'Bank of America'}
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.achBranch')}</label>
+                  <input
+                    value={invoiceCfg.achBranch}
+                    onChange={e => setInvoiceCfg(c => ({ ...c, achBranch: e.target.value }))}
+                    placeholder="Main Branch"
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.achCityState')}</label>
+                <input
+                  value={invoiceCfg.achCityState}
+                  onChange={e => setInvoiceCfg(c => ({ ...c, achCityState: e.target.value }))}
+                  placeholder={invoiceCfg.companyAddress2 || 'City, State'}
+                  style={{ marginTop: 4 }}
+                />
+              </div>
+              <div className="row" style={{ marginBottom: 24 }}>
+                <div>
+                  <label>{t('tenantAdmin.accountNumber')}</label>
+                  <input
+                    value={invoiceCfg.achAccountNumber}
+                    onChange={e => setInvoiceCfg(c => ({ ...c, achAccountNumber: e.target.value }))}
+                    placeholder={invoiceCfg.bankAccountNumber || '000000000000'}
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.achAba')}</label>
+                  <input
+                    value={invoiceCfg.achAba}
+                    onChange={e => setInvoiceCfg(c => ({ ...c, achAba: e.target.value }))}
+                    placeholder={invoiceCfg.bankRoutingNumber || '000000000'}
+                    style={{ marginTop: 4 }}
+                  />
                 </div>
               </div>
             </>)}
