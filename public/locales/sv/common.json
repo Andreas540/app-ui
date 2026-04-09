@@ -634,6 +634,7 @@
     "invoiceHash": "Faktura #",
     "estDelivery": "Beräknad leverans",
     "invoiceSnapshot": "Fakturaögonblicksbild",
+    "invoicedAs": "Faktura:",
     "saveInvoice": "Spara faktura",
     "saving": "Sparar...",
     "saved": "Sparad ✓",

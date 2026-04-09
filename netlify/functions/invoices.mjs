@@ -66,9 +66,24 @@ async function listInvoices(event) {
     const TENANT_ID = authz.tenantId
 
     const params = new URLSearchParams(event.queryStringParameters || {})
-    const id   = params.get('id')
-    const from = params.get('from')
-    const to   = params.get('to')
+    const id      = params.get('id')
+    const from    = params.get('from')
+    const to      = params.get('to')
+    const invoiced = params.get('invoiced') // returns order_id → invoice_no mapping
+
+    // Invoiced orders map: which order_ids appear in saved invoices
+    if (invoiced) {
+      const rows = await sql`
+        SELECT DISTINCT
+          order_item->>'order_id' AS order_id,
+          invoice_no
+        FROM invoices,
+        LATERAL jsonb_array_elements(invoice_data->'orders') AS order_item
+        WHERE tenant_id = ${TENANT_ID}
+          AND order_item->>'order_id' IS NOT NULL
+      `
+      return cors(200, rows)
+    }
 
     // Single invoice fetch (full snapshot)
     if (id) {

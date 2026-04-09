@@ -634,6 +634,7 @@
     "invoiceHash": "Invoice #",
     "estDelivery": "Est. delivery",
     "invoiceSnapshot": "Invoice Snapshot",
+    "invoicedAs": "Invoice:",
     "saveInvoice": "Save Invoice",
     "saving": "Saving...",
     "saved": "Saved ✓",

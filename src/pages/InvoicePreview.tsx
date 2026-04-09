@@ -344,7 +344,7 @@ useEffect(() => {
         <button
           onClick={() => {
             if (fromSaved) {
-              navigate('/tenant-admin', { state: { openInvoiceModal: true, invYear: returnYear, invMonth: returnMonth } })
+              navigate('/admin', { state: { openInvoiceModal: true, invYear: returnYear, invMonth: returnMonth } })
             } else {
               navigate('/invoices/create')
             }

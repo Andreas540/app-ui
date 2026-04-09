@@ -634,6 +634,7 @@
     "invoiceHash": "Factura #",
     "estDelivery": "Entrega est.",
     "invoiceSnapshot": "Captura de factura",
+    "invoicedAs": "Factura:",
     "saveInvoice": "Guardar factura",
     "saving": "Guardando...",
     "saved": "Guardado ✓",

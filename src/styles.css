@@ -27,6 +27,7 @@ html[data-theme="dark"] {
   --btn-bg:        #141c3c;
   --nav-active:    #1a2347;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
+  --invoiced-row-bg: rgba(99,140,255,0.10);
 }
 
 /* ── Light theme ──────────────────────────────────────── */
@@ -43,6 +44,7 @@ html[data-theme="light"] {
   --btn-bg:        #edf0f8;
   --nav-active:    #dde4f5;
   --shadow:        0 1px 3px rgba(0,0,0,0.08);
+  --invoiced-row-bg: rgba(13,110,253,0.06);
 }
 
 /* ===================== Base Reset ===================== */

@@ -48,6 +48,7 @@ export default function CreateInvoicePage() {
   const [loading, setLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [invoicedOrders, setInvoicedOrders] = useState<Map<string, string>>(new Map()) // order_id → invoice_no
 
   // Load invoice config from DB; fall back to tenantConfig.ts if absent
   useEffect(() => {
@@ -93,6 +94,19 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
         const data = await res.json()
         setCustomers(data.customers)
+
+        // Load invoiced order mapping in background
+        const base2 = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        fetch(`${base2}/api/invoices?invoiced=true`, { headers: getAuthHeaders() })
+          .then(r => r.ok ? r.json() : [])
+          .then((rows: { order_id: string; invoice_no: string | null }[]) => {
+            const map = new Map<string, string>()
+            for (const row of rows) {
+              if (row.order_id) map.set(row.order_id, row.invoice_no ?? '')
+            }
+            setInvoicedOrders(map)
+          })
+          .catch(() => {})
       } catch (e: any) {
         setError(e?.message || String(e))
       } finally {
@@ -315,54 +329,57 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                         overflowY: 'auto',
                         marginBottom: 12
                       }}>
-                        {orders.map(order => (
-                          <div
-                            key={order.item_id}
-                            style={{
-                              display: 'flex',
-                              gap: 12,
-                              padding: '12px 16px',
-                              borderBottom: '1px solid #eee',
-                              alignItems: 'flex-start',
-                              fontSize: 14,
-                              color: 'var(--text, inherit)'
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedOrders.has(order.item_id)}
-                              onChange={() => toggleOrder(order.item_id)}
-                              style={{
-                                cursor: 'pointer',
-                                width: 14,
-                                height: 14,
-                                marginTop: 2,
-                                flexShrink: 0
-                              }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '70px 1fr 80px',
-                                gap: 12,
-                                marginBottom: 4
-                              }}>
-                                <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
-                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
-                                <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                        {orders.map(order => {
+                          const invoiceNo = invoicedOrders.get(order.order_id)
+                          const isInvoiced = invoiceNo !== undefined
+                          return (
+                            <div key={order.item_id}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  gap: 12,
+                                  padding: '12px 16px',
+                                  borderBottom: isInvoiced ? 'none' : '1px solid #eee',
+                                  alignItems: 'flex-start',
+                                  fontSize: 14,
+                                  color: 'var(--text, inherit)',
+                                  background: isInvoiced ? 'var(--invoiced-row-bg, rgba(13,110,253,0.06))' : undefined,
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedOrders.has(order.item_id)}
+                                  onChange={() => toggleOrder(order.item_id)}
+                                  style={{ cursor: 'pointer', width: 14, height: 14, marginTop: 2, flexShrink: 0 }}
+                                />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
+                                    <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
+                                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                                    <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12 }}>
+                                    <div>{order.quantity}</div>
+                                    <div>{fmtMoney(order.unit_price)}</div>
+                                    <div></div>
+                                  </div>
+                                </div>
                               </div>
-                              <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '70px 1fr 80px',
-                                gap: 12
-                              }}>
-                                <div>{order.quantity}</div>
-                                <div>{fmtMoney(order.unit_price)}</div>
-                                <div></div>
-                              </div>
+                              {isInvoiced && (
+                                <div style={{
+                                  padding: '3px 16px 6px 42px',
+                                  fontSize: 11,
+                                  color: 'var(--text-secondary)',
+                                  background: 'var(--invoiced-row-bg, rgba(13,110,253,0.06))',
+                                  borderBottom: '1px solid #eee',
+                                  fontStyle: 'italic',
+                                }}>
+                                  {t('invoice.invoicedAs')} {invoiceNo || '—'}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
 
                       <button
