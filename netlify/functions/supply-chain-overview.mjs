@@ -109,6 +109,7 @@ const warehouse_inventory = await sql`
   FROM base
   JOIN products p ON p.id = base.product_id
   WHERE p.tenant_id = ${TENANT_ID}
+    AND (p.category IS NULL OR p.category != 'service')
     AND LOWER(p.name) NOT LIKE '%refund%'
     AND LOWER(p.name) NOT LIKE '%discount%'
     AND LOWER(p.name) NOT LIKE '%other product%'
