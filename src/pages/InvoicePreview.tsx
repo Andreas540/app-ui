@@ -30,6 +30,7 @@ type InvoiceData = {
     city?: string | null
     state?: string | null
     postal_code?: string | null
+    country?: string | null
   }
   orders: Array<{
     product: string
@@ -408,6 +409,7 @@ useEffect(() => {
                 {invoiceData.customer.address1 && <div>{invoiceData.customer.address1}</div>}
                 {invoiceData.customer.address2 && <div>{invoiceData.customer.address2}</div>}
                 <div>{[invoiceData.customer.city, invoiceData.customer.state, invoiceData.customer.postal_code].filter(Boolean).join(', ')}</div>
+                {invoiceData.customer.country && <div>{invoiceData.customer.country}</div>}
               </div>
 
               <div>

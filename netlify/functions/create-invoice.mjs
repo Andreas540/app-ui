@@ -37,7 +37,7 @@ async function getData(event) {
 
     // Get all customers for dropdown
     const customers = await sql`
-      SELECT id, name, company_name, address1, address2, city, state, postal_code
+      SELECT id, name, company_name, address1, address2, city, state, postal_code, country
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY name ASC
