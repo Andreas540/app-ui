@@ -67,6 +67,21 @@ async function listInvoices(event) {
     const from    = params.get('from')
     const to      = params.get('to')
     const invoiced = params.get('invoiced') // returns order_id → invoice_no mapping
+    const last     = params.get('last')     // returns last saved invoice_no
+
+    // Last saved invoice number
+    if (last) {
+      const rows = await sql`
+        SELECT invoice_no
+        FROM invoices
+        WHERE tenant_id = ${TENANT_ID}
+          AND invoice_no IS NOT NULL
+          AND invoice_no != ''
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      return cors(200, { invoice_no: rows[0]?.invoice_no ?? null })
+    }
 
     // Invoiced orders map: which order_ids appear in saved invoices
     if (invoiced) {

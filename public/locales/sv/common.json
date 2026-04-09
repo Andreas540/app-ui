@@ -610,6 +610,7 @@
     "wireTransfer": "Banköverföring",
     "invoiceNo": "Fakturanr",
     "invoiceNoPlaceholder": "t.ex. FAKT-001",
+    "lastSaved": "Senast sparad",
     "companyInfo": "Företagsinfo:",
     "ourContact": "Vår kontakt:",
     "wireInstructions": "Instruktioner för banköverföring:",

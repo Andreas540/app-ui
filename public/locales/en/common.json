@@ -610,6 +610,7 @@
     "wireTransfer": "Wire Transfer",
     "invoiceNo": "Invoice no",
     "invoiceNoPlaceholder": "e.g. INV-001",
+    "lastSaved": "Last saved",
     "companyInfo": "Company info:",
     "ourContact": "Our contact:",
     "wireInstructions": "Wire Transfer Instructions:",

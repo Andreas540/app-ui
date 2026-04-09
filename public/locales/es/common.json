@@ -610,6 +610,7 @@
     "wireTransfer": "Transferencia bancaria",
     "invoiceNo": "N° de factura",
     "invoiceNoPlaceholder": "p.ej. FAC-001",
+    "lastSaved": "Último guardado",
     "companyInfo": "Información de la empresa:",
     "ourContact": "Nuestro contacto:",
     "wireInstructions": "Instrucciones de transferencia:",

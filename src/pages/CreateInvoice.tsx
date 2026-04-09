@@ -49,6 +49,7 @@ export default function CreateInvoicePage() {
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invoicedOrders, setInvoicedOrders] = useState<Map<string, string>>(new Map()) // order_id → invoice_no
+  const [lastInvoiceNo, setLastInvoiceNo] = useState<string | null>(null)
 
   // Load invoice config from DB; fall back to tenantConfig.ts if absent
   useEffect(() => {
@@ -95,8 +96,12 @@ const res = await fetch(`${base}/api/create-invoice`, {
         const data = await res.json()
         setCustomers(data.customers)
 
-        // Load invoiced order mapping in background
+        // Load last invoice number and invoiced order mapping in background
         const base2 = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        fetch(`${base2}/api/invoices?last=true`, { headers: getAuthHeaders() })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => { if (data?.invoice_no) setLastInvoiceNo(data.invoice_no) })
+          .catch(() => {})
         fetch(`${base2}/api/invoices?invoiced=true`, { headers: getAuthHeaders() })
           .then(r => r.ok ? r.json() : [])
           .then((rows: { order_id: string; invoice_no: string | null }[]) => {
@@ -518,7 +523,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               type="text"
                               value={invoiceNo}
                               onChange={e => setInvoiceNo(e.target.value)}
-                              placeholder={t('invoice.invoiceNoPlaceholder')}
+                              placeholder={lastInvoiceNo ? `${t('invoice.lastSaved')}: ${lastInvoiceNo}` : t('invoice.invoiceNoPlaceholder')}
                               style={{ marginBottom: 20, fontSize: 16 }}
                             />
                           )}
