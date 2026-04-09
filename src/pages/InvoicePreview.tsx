@@ -214,12 +214,11 @@ useEffect(() => {
     setSaving(true)
     try {
       const totalAmount = (invoiceData.orders ?? []).reduce((sum, o) => sum + Number(o.amount), 0)
-      const { logoDataUrl: _logo, ...dataToStore } = invoiceData
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/invoices`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
-        body: JSON.stringify({ invoiceData: dataToStore, totalAmount }),
+        body: JSON.stringify({ invoiceData, totalAmount }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))

@@ -1106,8 +1106,8 @@ export default function TenantAdmin() {
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                         <td style={{ padding: '8px 10px' }}>{r.customer_name ?? '—'}</td>
                         <td style={{ padding: '8px 10px' }}>{r.invoice_no ?? '—'}</td>
-                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{String(r.invoice_date).slice(0, 10)}</td>
-                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? String(r.due_date).slice(0, 10) : '—'}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.invoice_date)}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? formatAccDate(r.due_date) : '—'}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
                         <td style={{ padding: '4px 8px' }}>
                           <button

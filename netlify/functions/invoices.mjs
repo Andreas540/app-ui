@@ -33,16 +33,13 @@ async function saveInvoice(event) {
     const customerName = invoiceData.customer?.name || invoiceData.customer?.company_name || null
     const total        = totalAmount != null ? Number(totalAmount) : null
 
-    // Strip logoDataUrl from stored snapshot — it's large and can be re-fetched
-    const { logoDataUrl: _logo, ...dataToStore } = invoiceData
-
     const result = await sql`
       INSERT INTO invoices (
         tenant_id, invoice_no, invoice_date, due_date,
         customer_id, customer_name, total_amount, invoice_data
       ) VALUES (
         ${TENANT_ID}, ${invoiceNo}, ${invoiceDate}, ${dueDate},
-        ${customerId}, ${customerName}, ${total}, ${JSON.stringify(dataToStore)}
+        ${customerId}, ${customerName}, ${total}, ${JSON.stringify(invoiceData)}
       )
       RETURNING id, created_at
     `
