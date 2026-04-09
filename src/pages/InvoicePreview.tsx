@@ -47,7 +47,15 @@ export default function InvoicePreview() {
   const { t } = useTranslation()
   const { state } = useLocation()
   const navigate = useNavigate()
-  const invoiceData = state as InvoiceData | undefined
+
+  // Strip internal routing flags before treating as invoice data
+  const rawState = state as (InvoiceData & { _fromSaved?: boolean; _returnYear?: string; _returnMonth?: string }) | undefined
+  const fromSaved = rawState?._fromSaved ?? false
+  const returnYear = rawState?._returnYear
+  const returnMonth = rawState?._returnMonth
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _fromSaved: _fs, _returnYear: _ry, _returnMonth: _rm, ...invoiceDataClean } = (rawState ?? {}) as any
+  const invoiceData = rawState ? (invoiceDataClean as InvoiceData) : undefined
 
   // Device hint: treat phones/tablets as mobile
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -314,25 +322,33 @@ useEffect(() => {
           </button>
         )}
 
-        <button
-          onClick={onSaveInvoice}
-          disabled={saving || !!savedId}
-          style={{
-            padding: '12px 16px',
-            border: 'none',
-            borderRadius: 12,
-            background: savedId ? '#6c757d' : '#0d6efd',
-            color: '#fff',
-            fontWeight: 700,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          {savedId ? t('invoice.saved') : saving ? t('invoice.saving') : t('invoice.saveInvoice')}
-        </button>
+        {!fromSaved && (
+          <button
+            onClick={onSaveInvoice}
+            disabled={saving || !!savedId}
+            style={{
+              padding: '12px 16px',
+              border: 'none',
+              borderRadius: 12,
+              background: savedId ? '#6c757d' : '#0d6efd',
+              color: '#fff',
+              fontWeight: 700,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            {savedId ? t('invoice.saved') : saving ? t('invoice.saving') : t('invoice.saveInvoice')}
+          </button>
+        )}
 
         <button
-          onClick={() => navigate('/invoices/create')}
+          onClick={() => {
+            if (fromSaved) {
+              navigate('/tenant-admin', { state: { openInvoiceModal: true, invYear: returnYear, invMonth: returnMonth } })
+            } else {
+              navigate('/invoices/create')
+            }
+          }}
           style={{
             padding: '12px 16px',
             border: 'none',

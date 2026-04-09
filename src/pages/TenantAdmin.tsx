@@ -1,6 +1,6 @@
 // src/pages/TenantAdmin.tsx
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import type { FeatureId } from '../lib/features'
@@ -30,6 +30,7 @@ export default function TenantAdmin() {
   const { user } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const [users, setUsers] = useState<TenantUser[]>([])
   const [tenantFeatures, setTenantFeatures] = useState<FeatureId[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,6 +122,18 @@ export default function TenantAdmin() {
   useEffect(() => {
     if (activeTab === 'invoicing') loadInvoiceConfig()
   }, [activeTab])
+
+  useEffect(() => {
+    const s = location.state as any
+    if (s?.openInvoiceModal) {
+      setActiveTab('accounting')
+      const y = s.invYear as string | undefined
+      const m = s.invMonth as string | undefined
+      if (y) setInvYear(y)
+      if (m) setInvMonth(m)
+      fetchInvoices(y, m)
+    }
+  }, [])
 
   async function loadData() {
     try {
@@ -303,8 +316,8 @@ export default function TenantAdmin() {
   }
   // ── Invoice helpers ───────────────────────────────────────────────────────
 
-  async function fetchInvoices() {
-    const month = `${invYear}-${invMonth}`
+  async function fetchInvoices(yearOverride?: string, monthOverride?: string) {
+    const month = `${yearOverride ?? invYear}-${monthOverride ?? invMonth}`
     setInvLoading(true)
     setInvRows([])
     try {
@@ -1042,7 +1055,7 @@ export default function TenantAdmin() {
             </div>
             <button
               className="primary"
-              onClick={fetchInvoices}
+              onClick={() => fetchInvoices()}
               disabled={invLoading}
               style={{ height: CONTROL_H, padding: '0 24px' }}
             >
@@ -1112,7 +1125,7 @@ export default function TenantAdmin() {
                                 })
                                 if (!res.ok) throw new Error('Failed to load invoice')
                                 const data = await res.json()
-                                navigate('/invoices/preview', { state: data.invoice_data })
+                                navigate('/invoices/preview', { state: { ...data.invoice_data, _fromSaved: true, _returnYear: invYear, _returnMonth: invMonth } })
                               } catch (e: any) {
                                 alert(e?.message || 'Could not open invoice')
                               }
