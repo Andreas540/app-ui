@@ -78,7 +78,7 @@ export default function LaborProduction() {
       })
       if (res.ok) {
         const data = await res.json()
-        setHistory(data)
+        setHistory(data.map((r: HistoryRecord) => ({ ...r, date: String(r.date).slice(0, 10) })))
       }
     } catch (e) {
       console.error('Load history error:', e)
@@ -252,7 +252,10 @@ export default function LaborProduction() {
   for (let i = 0; i < 4; i++) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    recentDates.push(d.toISOString().split('T')[0])
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    recentDates.push(`${y}-${m}-${day}`)
   }
 
   // Format selected date for display
