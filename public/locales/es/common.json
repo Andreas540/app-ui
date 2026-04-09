@@ -639,7 +639,8 @@
     "saveInvoice": "Guardar factura",
     "saving": "Guardando...",
     "saved": "Guardado ✓",
-    "saveFailed": "Error al guardar"
+    "saveFailed": "Error al guardar",
+    "achInstructions": "Instrucciones ACH:"
   },
   "supplierOrders": {
     "newTitle": "Nuevo Pedido (P)",

@@ -639,7 +639,8 @@
     "saveInvoice": "Save Invoice",
     "saving": "Saving...",
     "saved": "Saved ✓",
-    "saveFailed": "Save failed"
+    "saveFailed": "Save failed",
+    "achInstructions": "ACH Instructions:"
   },
   "supplierOrders": {
     "newTitle": "New Order (S)",

@@ -36,10 +36,16 @@ export interface TenantConfig {
     companyAddress2: string | null
     companyPhone: string | null
     contactName: string | null
+    enabledPaymentMethods: string[]
     bankName: string | null
     bankAccountName: string | null
     bankAccountNumber: string | null
     bankRoutingNumber: string | null
+    achBankName: string | null
+    achBranch: string | null
+    achCityState: string | null
+    achAccountNumber: string | null
+    achAba: string | null
   }
   pages: {
     [pageKey: string]: {
@@ -83,10 +89,16 @@ export const defaultConfig: TenantConfig = {
     companyAddress2: null,
     companyPhone: null,
     contactName: null,
+    enabledPaymentMethods: [],
     bankName: null,
     bankAccountName: null,
     bankAccountNumber: null,
     bankRoutingNumber: null,
+    achBankName: null,
+    achBranch: null,
+    achCityState: null,
+    achAccountNumber: null,
+    achAba: null,
   },
   pages: {}
 }

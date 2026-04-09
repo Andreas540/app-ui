@@ -15,6 +15,11 @@ type CompanyInfo = {
   bankAccountName: string | null
   bankAccountNumber: string | null
   bankRoutingNumber: string | null
+  achBankName?: string | null
+  achBranch?: string | null
+  achCityState?: string | null
+  achAccountNumber?: string | null
+  achAba?: string | null
 }
 
 type InvoiceData = {
@@ -480,41 +485,81 @@ useEffect(() => {
                 {invoiceData.companyInfo?.contactName && <div>{invoiceData.companyInfo.contactName}</div>}
               </div>
 
-              {/* Wire instructions: labels left, values right */}
+              {/* Payment instructions: wire or ACH */}
               <div>
-                <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.wireInstructions')}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
-                  {invoiceData.companyInfo?.companyName && (
-                    <>
-                      <div>{t('invoice.companyName')}</div>
-                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.companyName}</div>
-                    </>
-                  )}
-                  {invoiceData.companyInfo?.bankName && (
-                    <>
-                      <div>{t('invoice.bankName')}</div>
-                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankName}</div>
-                    </>
-                  )}
-                  {invoiceData.companyInfo?.bankAccountName && (
-                    <>
-                      <div>{t('invoice.accountName')}</div>
-                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountName}</div>
-                    </>
-                  )}
-                  {invoiceData.companyInfo?.bankAccountNumber && (
-                    <>
-                      <div>{t('invoice.accountNumber')}</div>
-                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountNumber}</div>
-                    </>
-                  )}
-                  {invoiceData.companyInfo?.bankRoutingNumber && (
-                    <>
-                      <div style={{ whiteSpace: 'nowrap' }}>{t('invoice.routingNumber')}</div>
-                      <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankRoutingNumber}</div>
-                    </>
-                  )}
-                </div>
+                {invoiceData.paymentMethod === 'ACH' ? (
+                  <>
+                    <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.achInstructions')}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
+                      {invoiceData.companyInfo?.achBankName && (
+                        <>
+                          <div>{t('invoice.bankName')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.achBankName}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.achBranch && (
+                        <>
+                          <div>{t('tenantAdmin.achBranch')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.achBranch}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.achCityState && (
+                        <>
+                          <div>{t('tenantAdmin.achCityState')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.achCityState}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.achAccountNumber && (
+                        <>
+                          <div>{t('invoice.accountNumber')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.achAccountNumber}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.achAba && (
+                        <>
+                          <div>{t('tenantAdmin.achAba')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.achAba}</div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontWeight: 'bold', color: '#1a4d8f', marginBottom: 8 }}>{t('invoice.wireInstructions')}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px', fontSize: 13 }}>
+                      {invoiceData.companyInfo?.companyName && (
+                        <>
+                          <div>{t('invoice.companyName')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.companyName}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.bankName && (
+                        <>
+                          <div>{t('invoice.bankName')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankName}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.bankAccountName && (
+                        <>
+                          <div>{t('invoice.accountName')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountName}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.bankAccountNumber && (
+                        <>
+                          <div>{t('invoice.accountNumber')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankAccountNumber}</div>
+                        </>
+                      )}
+                      {invoiceData.companyInfo?.bankRoutingNumber && (
+                        <>
+                          <div style={{ whiteSpace: 'nowrap' }}>{t('invoice.routingNumber')}</div>
+                          <div style={{ textAlign: 'right' }}>{invoiceData.companyInfo.bankRoutingNumber}</div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

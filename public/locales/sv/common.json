@@ -639,7 +639,8 @@
     "saveInvoice": "Spara faktura",
     "saving": "Sparar...",
     "saved": "Sparad ✓",
-    "saveFailed": "Kunde inte spara"
+    "saveFailed": "Kunde inte spara",
+    "achInstructions": "ACH-instruktioner:"
   },
   "supplierOrders": {
     "newTitle": "Ny beställning (L)",

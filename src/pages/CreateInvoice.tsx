@@ -59,6 +59,7 @@ export default function CreateInvoicePage() {
       .then(data => {
         if (data?.invoiceConfig) {
           const ic = data.invoiceConfig
+          const enabled: string[] = ic.enabledPaymentMethods ?? fallbackConfig.enabledPaymentMethods
           setInvoiceConfig({
             autoInvoiceNumber: ic.autoInvoiceNumber ?? fallbackConfig.autoInvoiceNumber,
             companyName: ic.companyName || fallbackConfig.companyName,
@@ -66,11 +67,18 @@ export default function CreateInvoicePage() {
             companyAddress2: ic.companyAddress2 || fallbackConfig.companyAddress2,
             companyPhone: ic.companyPhone || fallbackConfig.companyPhone,
             contactName: ic.contactName || fallbackConfig.contactName,
+            enabledPaymentMethods: enabled,
             bankName: ic.bankName || fallbackConfig.bankName,
             bankAccountName: ic.bankAccountName || fallbackConfig.bankAccountName,
             bankAccountNumber: ic.bankAccountNumber || fallbackConfig.bankAccountNumber,
             bankRoutingNumber: ic.bankRoutingNumber || fallbackConfig.bankRoutingNumber,
+            achBankName: ic.achBankName || fallbackConfig.achBankName,
+            achBranch: ic.achBranch || fallbackConfig.achBranch,
+            achCityState: ic.achCityState || fallbackConfig.achCityState,
+            achAccountNumber: ic.achAccountNumber || fallbackConfig.achAccountNumber,
+            achAba: ic.achAba || fallbackConfig.achAba,
           })
+          if (enabled.length > 0) setPaymentMethod(enabled[0])
         }
       })
       .catch(() => {}) // keep fallback silently
@@ -504,7 +512,12 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                               borderRadius: 4,
                             }}
                           >
-                            <option value="Wire Transfer">Wire Transfer</option>
+                            {(invoiceConfig.enabledPaymentMethods.length > 0
+                              ? invoiceConfig.enabledPaymentMethods
+                              : ['Wire Transfer']
+                            ).map(method => (
+                              <option key={method} value={method}>{method}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
