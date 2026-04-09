@@ -451,7 +451,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div>
                           <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.estDeliveryDate')}
+                            {t('invoice.estDeliveryDate')} (optional)
                           </label>
                           <DateInput
                             value={deliveryDate}
