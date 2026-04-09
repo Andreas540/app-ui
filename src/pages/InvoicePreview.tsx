@@ -2,6 +2,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getAuthHeaders } from '../lib/api'
 
 type CompanyInfo = {
   autoInvoiceNumber: boolean
@@ -63,6 +64,9 @@ export default function InvoicePreview() {
   // Mobile snapshot overlay state
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [overlayImg, setOverlayImg] = useState<string | null>(null)
+
+  const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState<string | null>(null)
 
   const recomputeScale = () => {
     const host = viewportRef.current
@@ -197,6 +201,31 @@ useEffect(() => {
     }
   }
 
+  async function onSaveInvoice() {
+    if (!invoiceData) return
+    setSaving(true)
+    try {
+      const totalAmount = (invoiceData.orders ?? []).reduce((sum, o) => sum + Number(o.amount), 0)
+      const { logoDataUrl: _logo, ...dataToStore } = invoiceData
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/invoices`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ invoiceData: dataToStore, totalAmount }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Save failed (${res.status})`)
+      }
+      const data = await res.json()
+      setSavedId(data.id)
+    } catch (e: any) {
+      alert(e?.message || t('invoice.saveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (!invoiceData) {
     return (
       <div style={{ height: '100svh', display: 'grid', placeItems: 'center', background: '#fff' }}>
@@ -284,6 +313,23 @@ useEffect(() => {
             {t('invoice.openImage')}
           </button>
         )}
+
+        <button
+          onClick={onSaveInvoice}
+          disabled={saving || !!savedId}
+          style={{
+            padding: '12px 16px',
+            border: 'none',
+            borderRadius: 12,
+            background: savedId ? '#6c757d' : '#0d6efd',
+            color: '#fff',
+            fontWeight: 700,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {savedId ? t('invoice.saved') : saving ? t('invoice.saving') : t('invoice.saveInvoice')}
+        </button>
 
         <button
           onClick={() => navigate('/invoices/create')}

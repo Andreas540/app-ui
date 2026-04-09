@@ -72,6 +72,17 @@ export default function TenantAdmin() {
   })
   const [savingInvoice, setSavingInvoice] = useState(false)
 
+  // Invoice exports
+  type InvoiceRow = {
+    id: string; invoice_no: string | null; invoice_date: string | Date
+    due_date: string | Date | null; customer_name: string | null; total_amount: number | null
+  }
+  const [invYear,    setInvYear]    = useState(String(new Date().getFullYear()))
+  const [invMonth,   setInvMonth]   = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
+  const [invRows,    setInvRows]    = useState<InvoiceRow[]>([])
+  const [invLoading, setInvLoading] = useState(false)
+  const [showInvPreview, setShowInvPreview] = useState(false)
+
   // Accounting — exports
   type ExportRow = {
     id: string; order_no: string | null; order_date: string | Date
@@ -288,6 +299,61 @@ export default function TenantAdmin() {
       setTogglingUserId(null)
     }
   }
+  // ── Invoice helpers ───────────────────────────────────────────────────────
+
+  async function fetchInvoices() {
+    const month = `${invYear}-${invMonth}`
+    setInvLoading(true)
+    setInvRows([])
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      const [y, m] = month.split('-').map(Number)
+      const from = `${month}-01`
+      const lastDay = new Date(y, m, 0).getDate()
+      const to = `${month}-${String(lastDay).padStart(2, '0')}`
+      const res = await fetch(`${base}/api/invoices?from=${from}&to=${to}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+        },
+      })
+      if (!res.ok) throw new Error('Fetch failed')
+      const data = await res.json()
+      setInvRows(data)
+      setShowInvPreview(true)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to fetch invoices')
+    } finally {
+      setInvLoading(false)
+    }
+  }
+
+  function exportInvoiceCSV(rows: InvoiceRow[]) {
+    const headers = [
+      t('tenantAdmin.colCustomer'), t('tenantAdmin.colInvoiceNo'),
+      t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'),
+    ]
+    const lines = [
+      headers.join(','),
+      ...rows.map(r => [
+        `"${(r.customer_name ?? '').replace(/"/g, '""')}"`,
+        `"${(r.invoice_no ?? '').replace(/"/g, '""')}"`,
+        String(r.invoice_date).slice(0, 10),
+        r.due_date ? String(r.due_date).slice(0, 10) : '',
+        r.total_amount != null ? Number(r.total_amount).toFixed(2) : '',
+      ].join(',')),
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `invoices-${invYear}-${invMonth}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // ── Accounting helpers ────────────────────────────────────────────────────
 
   async function fetchAccOrders() {
@@ -949,9 +1015,102 @@ export default function TenantAdmin() {
             </button>
           </div>
 
+          {/* Invoice export */}
+          <h4 style={{ margin: '24px 0 16px' }}>{t('tenantAdmin.invoiceExportSection')}</h4>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+            <div>
+              <label>{t('tenantAdmin.selectYear')}</label>
+              <select value={invYear} onChange={e => setInvYear(e.target.value)} style={{ marginTop: 4, width: 100 }}>
+                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label>{t('tenantAdmin.selectMonth')}</label>
+              <select value={invMonth} onChange={e => setInvMonth(e.target.value)} style={{ marginTop: 4, width: 140 }}>
+                {[
+                  ['01','January'],['02','February'],['03','March'],['04','April'],
+                  ['05','May'],['06','June'],['07','July'],['08','August'],
+                  ['09','September'],['10','October'],['11','November'],['12','December'],
+                ].map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              className="primary"
+              onClick={fetchInvoices}
+              disabled={invLoading}
+              style={{ height: CONTROL_H, padding: '0 24px' }}
+            >
+              {invLoading ? t('loadingDots') : t('tenantAdmin.allInvoicesButton')}
+            </button>
+          </div>
+
         </>)}
 
       </div>{/* end tabbed card */}
+
+      {/* ── Invoice preview modal ── */}
+      {showInvPreview && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setShowInvPreview(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 720, width: '100%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>{t('tenantAdmin.invoicePreviewTitle', { month: `${invYear}-${invMonth}` })}</h3>
+                <p className="helper" style={{ marginTop: 4 }}>{invRows.length} {invRows.length === 1 ? 'invoice' : 'invoices'}</p>
+              </div>
+              <button onClick={() => setShowInvPreview(false)} style={{ height: 36, padding: '0 16px' }}>{t('close')}</button>
+            </div>
+
+            {invRows.length === 0 ? (
+              <p className="helper">{t('tenantAdmin.noInvoicesForPeriod')}</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
+                      {[
+                        t('tenantAdmin.colCustomer'), t('tenantAdmin.colInvoiceNo'),
+                        t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'),
+                      ].map(h => (
+                        <th key={h} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invRows.map((r, i) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                        <td style={{ padding: '8px 10px' }}>{r.customer_name ?? '—'}</td>
+                        <td style={{ padding: '8px 10px' }}>{r.invoice_no ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{String(r.invoice_date).slice(0, 10)}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? String(r.due_date).slice(0, 10) : '—'}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {invRows.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+                <button onClick={() => exportInvoiceCSV(invRows)} style={{ height: 36, padding: '0 20px' }}>
+                  {t('tenantAdmin.exportCSV')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Accounting preview modal ── */}
       {showAccPreview && (

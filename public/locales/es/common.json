@@ -632,7 +632,11 @@
     "invoiceFor": "Factura para",
     "invoiceHash": "Factura #",
     "estDelivery": "Entrega est.",
-    "invoiceSnapshot": "Captura de factura"
+    "invoiceSnapshot": "Captura de factura",
+    "saveInvoice": "Guardar factura",
+    "saving": "Guardando...",
+    "saved": "Guardado ✓",
+    "saveFailed": "Error al guardar"
   },
   "supplierOrders": {
     "newTitle": "Nuevo Pedido (P)",
@@ -903,6 +907,14 @@
     "exportExcel": "Exportar Excel",
     "googleSheetsHint": "El CSV puede importarse directamente en Google Sheets mediante Archivo → Importar.",
     "noDataForPeriod": "No se encontraron pedidos para este período.",
+    "invoiceExportSection": "Exportar facturas",
+    "allInvoicesButton": "Obtener facturas",
+    "noInvoicesForPeriod": "No se encontraron facturas para este período.",
+    "colInvoiceNo": "Factura #",
+    "colInvoiceDate": "Fecha de factura",
+    "colDueDate": "Fecha de vencimiento",
+    "colTotal": "Total",
+    "invoicePreviewTitle": "Facturas — {{month}}",
     "colCustomer": "Cliente",
     "colOrderNo": "N° pedido",
     "colOrderDate": "Fecha",

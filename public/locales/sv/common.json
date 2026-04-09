@@ -632,7 +632,11 @@
     "invoiceFor": "Faktura till",
     "invoiceHash": "Faktura #",
     "estDelivery": "Beräknad leverans",
-    "invoiceSnapshot": "Fakturaögonblicksbild"
+    "invoiceSnapshot": "Fakturaögonblicksbild",
+    "saveInvoice": "Spara faktura",
+    "saving": "Sparar...",
+    "saved": "Sparad ✓",
+    "saveFailed": "Kunde inte spara"
   },
   "supplierOrders": {
     "newTitle": "Ny beställning (L)",
@@ -903,6 +907,14 @@
     "exportExcel": "Exportera Excel",
     "googleSheetsHint": "CSV kan importeras direkt i Google Kalkylark via Arkiv → Importera.",
     "noDataForPeriod": "Inga ordrar hittades för denna period.",
+    "invoiceExportSection": "Fakturaexport",
+    "allInvoicesButton": "Hämta fakturor",
+    "noInvoicesForPeriod": "Inga fakturor hittades för denna period.",
+    "colInvoiceNo": "Faktura #",
+    "colInvoiceDate": "Fakturadatum",
+    "colDueDate": "Förfallodatum",
+    "colTotal": "Totalt",
+    "invoicePreviewTitle": "Fakturor — {{month}}",
     "colCustomer": "Kund",
     "colOrderNo": "Ordernr",
     "colOrderDate": "Datum",

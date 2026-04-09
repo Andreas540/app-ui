@@ -632,7 +632,11 @@
     "invoiceFor": "Invoice for",
     "invoiceHash": "Invoice #",
     "estDelivery": "Est. delivery",
-    "invoiceSnapshot": "Invoice Snapshot"
+    "invoiceSnapshot": "Invoice Snapshot",
+    "saveInvoice": "Save Invoice",
+    "saving": "Saving...",
+    "saved": "Saved ✓",
+    "saveFailed": "Save failed"
   },
   "supplierOrders": {
     "newTitle": "New Order (S)",
@@ -903,6 +907,14 @@
     "exportExcel": "Export Excel",
     "googleSheetsHint": "CSV can be imported directly into Google Sheets via File → Import.",
     "noDataForPeriod": "No orders found for this period.",
+    "invoiceExportSection": "Invoice Export",
+    "allInvoicesButton": "Fetch Invoices",
+    "noInvoicesForPeriod": "No invoices found for this period.",
+    "colInvoiceNo": "Invoice #",
+    "colInvoiceDate": "Invoice Date",
+    "colDueDate": "Due Date",
+    "colTotal": "Total",
+    "invoicePreviewTitle": "Invoices — {{month}}",
     "colCustomer": "Customer",
     "colOrderNo": "Order #",
     "colOrderDate": "Date",
