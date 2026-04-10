@@ -89,6 +89,7 @@ export default function TenantAdmin() {
   const [invMonth,   setInvMonth]   = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
   const [invRows,    setInvRows]    = useState<InvoiceRow[]>([])
   const [invLoading, setInvLoading] = useState(false)
+  const [showInvPreview, setShowInvPreview] = useState(false)
 
   // Accounting — exports
   type ExportRow = {
@@ -124,11 +125,8 @@ export default function TenantAdmin() {
   }, [])
 
   useEffect(() => {
-    if (activeTab === 'invoicing') {
-      loadInvoiceConfig()
-      if (invRows.length === 0) fetchInvoices()
-    }
-  }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (activeTab === 'invoicing') loadInvoiceConfig()
+  }, [activeTab])
 
   useEffect(() => {
     const s = location.state as any
@@ -347,6 +345,7 @@ export default function TenantAdmin() {
       if (!res.ok) throw new Error('Fetch failed')
       const data = await res.json()
       setInvRows(data)
+      setShowInvPreview(true)
     } catch (e: any) {
       alert(e?.message || 'Failed to fetch invoices')
     } finally {
@@ -870,101 +869,41 @@ export default function TenantAdmin() {
 
           return (<>
 
-            {/* ── Saved invoices (inline, only when data exists) ── */}
-            {invRows.length > 0 && (<>
-              <h4 style={{ margin: '0 0 16px' }}>{t('tenantAdmin.savedInvoices')}</h4>
+            {/* ── Saved invoices ── */}
+            <h4 style={{ margin: '0 0 14px' }}>{t('tenantAdmin.savedInvoices')}</h4>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', alignItems: 'center', marginBottom: 24 }}>
+              <select
+                value={invYear}
+                onChange={e => setInvYear(e.target.value)}
+                style={{ height: CONTROL_H, flex: '0 0 auto', fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
+              >
+                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <select
+                value={invMonth}
+                onChange={e => setInvMonth(e.target.value)}
+                style={{ height: CONTROL_H, flex: '1 1 0', minWidth: 0, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
+              >
+                {[
+                  ['01','January'],['02','February'],['03','March'],['04','April'],
+                  ['05','May'],['06','June'],['07','July'],['08','August'],
+                  ['09','September'],['10','October'],['11','November'],['12','December'],
+                ].map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => fetchInvoices()}
+                disabled={invLoading}
+                style={{ height: CONTROL_H, padding: '0 16px', flex: '0 0 auto', whiteSpace: 'nowrap' }}
+              >
+                {invLoading ? t('loadingDots') : t('tenantAdmin.allInvoicesButton')}
+              </button>
+            </div>
 
-              {/* Period selector + re-fetch */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
-                <div>
-                  <label>{t('tenantAdmin.selectYear')}</label>
-                  <select value={invYear} onChange={e => setInvYear(e.target.value)} style={{ marginTop: 4, width: 100 }}>
-                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label>{t('tenantAdmin.selectMonth')}</label>
-                  <select value={invMonth} onChange={e => setInvMonth(e.target.value)} style={{ marginTop: 4, width: 140 }}>
-                    {[
-                      ['01','January'],['02','February'],['03','March'],['04','April'],
-                      ['05','May'],['06','June'],['07','July'],['08','August'],
-                      ['09','September'],['10','October'],['11','November'],['12','December'],
-                    ].map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={() => fetchInvoices()}
-                  disabled={invLoading}
-                  style={{ height: CONTROL_H, padding: '0 20px' }}
-                >
-                  {invLoading ? t('loadingDots') : t('tenantAdmin.allInvoicesButton')}
-                </button>
-              </div>
-
-              {/* Inline table */}
-              <div style={{ overflowX: 'auto', marginBottom: 12 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
-                      {[
-                        t('tenantAdmin.colCustomer'), t('tenantAdmin.colInvoiceNo'),
-                        t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'), '',
-                      ].map((h, i) => (
-                        <th key={i} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invRows.map((r, i) => (
-                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                        <td style={{ padding: '8px 10px' }}>{r.customer_name ?? '—'}</td>
-                        <td style={{ padding: '8px 10px' }}>{r.invoice_no ?? '—'}</td>
-                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.invoice_date)}</td>
-                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? formatAccDate(r.due_date) : '—'}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
-                        <td style={{ padding: '4px 8px' }}>
-                          <button
-                            style={{ height: 28, padding: '0 12px', fontSize: 12 }}
-                            onClick={async () => {
-                              try {
-                                const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-                                const token = localStorage.getItem('authToken')
-                                const activeTenantId = localStorage.getItem('activeTenantId')
-                                const res = await fetch(`${base}/api/invoices?id=${r.id}`, {
-                                  headers: {
-                                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                                    ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
-                                  },
-                                })
-                                if (!res.ok) throw new Error('Failed to load invoice')
-                                const data = await res.json()
-                                navigate('/invoices/preview', { state: { ...data.invoice_data, _fromSaved: true, _returnYear: invYear, _returnMonth: invMonth } })
-                              } catch (e: any) {
-                                alert(e?.message || 'Could not open invoice')
-                              }
-                            }}
-                          >
-                            {t('view')}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style={{ marginBottom: 8 }}>
-                <button onClick={() => exportInvoiceCSV(invRows)} style={{ height: 32, padding: '0 16px', fontSize: 13 }}>
-                  {t('tenantAdmin.exportCSV')}
-                </button>
-              </div>
-
-              <hr style={{ margin: '24px 0 20px', border: 'none', borderTop: '1px solid var(--line)' }} />
-            </>)}
+            <hr style={{ margin: '0 0 20px', border: 'none', borderTop: '1px solid var(--line)' }} />
 
             <h4 style={{ margin: '0 0 20px' }}>{t('tenantAdmin.manageInvoices')}</h4>
 
@@ -1207,6 +1146,91 @@ export default function TenantAdmin() {
         </>)}
 
       </div>{/* end tabbed card */}
+
+      {/* ── Invoice preview modal ── */}
+      {showInvPreview && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setShowInvPreview(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 720, width: '100%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>{t('tenantAdmin.invoicePreviewTitle', { month: `${invYear}-${invMonth}` })}</h3>
+                <p className="helper" style={{ marginTop: 4 }}>{invRows.length} {invRows.length === 1 ? 'invoice' : 'invoices'}</p>
+              </div>
+              <button onClick={() => setShowInvPreview(false)} style={{ height: 36, padding: '0 16px' }}>{t('close')}</button>
+            </div>
+
+            {invRows.length === 0 ? (
+              <p className="helper">{t('tenantAdmin.noInvoicesForPeriod')}</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
+                      {[
+                        t('tenantAdmin.colCustomer'), t('tenantAdmin.colInvoiceNo'),
+                        t('tenantAdmin.colInvoiceDate'), t('tenantAdmin.colDueDate'), t('tenantAdmin.colTotal'), '',
+                      ].map((h, i) => (
+                        <th key={i} style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invRows.map((r, i) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                        <td style={{ padding: '8px 10px' }}>{r.customer_name ?? '—'}</td>
+                        <td style={{ padding: '8px 10px' }}>{r.invoice_no ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.invoice_date)}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? formatAccDate(r.due_date) : '—'}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          <button
+                            style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+                            onClick={async () => {
+                              try {
+                                const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+                                const token = localStorage.getItem('authToken')
+                                const activeTenantId = localStorage.getItem('activeTenantId')
+                                const res = await fetch(`${base}/api/invoices?id=${r.id}`, {
+                                  headers: {
+                                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                    ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+                                  },
+                                })
+                                if (!res.ok) throw new Error('Failed to load invoice')
+                                const data = await res.json()
+                                navigate('/invoices/preview', { state: { ...data.invoice_data, _fromSaved: true, _returnYear: invYear, _returnMonth: invMonth } })
+                              } catch (e: any) {
+                                alert(e?.message || 'Could not open invoice')
+                              }
+                            }}
+                          >
+                            {t('view')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {invRows.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+                <button onClick={() => exportInvoiceCSV(invRows)} style={{ height: 36, padding: '0 20px' }}>
+                  {t('tenantAdmin.exportCSV')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Accounting preview modal ── */}
       {showAccPreview && (
