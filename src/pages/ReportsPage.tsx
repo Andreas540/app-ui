@@ -320,8 +320,15 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!infoOpen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInfoOpen(null) }
+    const onDown = (e: MouseEvent) => {
+      if (infoOverlayRef.current && !infoOverlayRef.current.contains(e.target as Node)) setInfoOpen(null)
+    }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
   }, [infoOpen])
   const [fromMonth,    setFromMonth]    = useState('')
   const [toMonth,      setToMonth]      = useState('')
@@ -330,6 +337,7 @@ export default function ReportsPage() {
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
   const btnRef = useRef<HTMLButtonElement>(null)
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const infoOverlayRef = useRef<HTMLDivElement | null>(null)
 
   // Track mobile breakpoint
   useEffect(() => {
@@ -504,7 +512,7 @@ export default function ReportsPage() {
             <div key={report.id} className="card" style={{ padding: '12px 16px 16px', position: 'relative' }}>
               {/* Info modal overlay */}
               {infoOpen === report.id && (
-                <div style={{
+                <div ref={infoOverlayRef} style={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                   background: 'var(--card, #1e2130)',
                   border: '1px solid var(--border)', borderRadius: 8,
