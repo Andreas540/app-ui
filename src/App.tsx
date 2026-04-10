@@ -884,6 +884,7 @@ useEffect(() => {
       {/* ── Welcome modal ── */}
       {showWelcomeModal && (() => {
         const linkStyle = { textDecoration: 'underline' } as const
+        const messagePath = user?.role === 'super_admin' ? '/messages' : '/contact'
         const InfoBadge = () => (
           <span style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -923,7 +924,7 @@ useEffect(() => {
                   ns="info"
                   components={{
                     infoIcon:    <InfoBadge />,
-                    messageLink: <Link to="/messages" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    messageLink: <Link to={messagePath} onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
                   }}
                 />
               </p>
@@ -941,7 +942,7 @@ useEffect(() => {
                   i18nKey="welcome.p4"
                   ns="info"
                   components={{
-                    letUsKnowLink: <Link to="/messages" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    letUsKnowLink: <Link to={messagePath} onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
                   }}
                 />
               </p>
