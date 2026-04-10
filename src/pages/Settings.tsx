@@ -156,7 +156,7 @@ export default function Settings() {
           disabled={!hasChanges || saving}
           style={{ opacity: hasChanges ? 1 : 0.5, cursor: hasChanges ? 'pointer' : 'not-allowed' }}
         >
-          {saving ? t('saving') : t('save')}
+          {saving ? t('saving') : t('saveChanges')}
         </button>
       </div>
 
@@ -247,8 +247,8 @@ export default function Settings() {
           })}
         </div>
 
-        <div className="helper" style={{ marginTop: 4 }}>
-          {t('settingsPage.quickAccessCount', { count: selectedShortcuts.length })}
+        <div className="helper" style={{ marginTop: 8 }}>
+          {t('settingsPage.quickAccessCount', { count: selectedShortcuts.length })} · {t('settingsPage.quickAccessHelp')}
         </div>
       </div>
 
