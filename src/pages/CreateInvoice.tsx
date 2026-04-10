@@ -272,7 +272,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setShowInfo(false)} />
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            position: 'absolute', top: 0, left: 0, right: 0,
             background: 'var(--card, #fff)',
             border: '1px solid var(--border)', borderRadius: 8,
             padding: '16px 20px', zIndex: 200,
@@ -311,7 +311,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
           <button
             onClick={() => navigate('/admin', { state: { openInvoicingTab: true } })}
             style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, height: 24 }}
-          >{ti('addInvoiceInfo')}</button>
+          >{ti('manageInvoices')}</button>
         </div>
         <Link to="/" className="helper">{t('back_link')}</Link>
       </div>

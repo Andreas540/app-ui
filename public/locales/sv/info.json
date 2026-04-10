@@ -1,5 +1,5 @@
 {
-  "addInvoiceInfo": "Lägg till fakturainformation",
+  "manageInvoices": "Hantera fakturor",
   "createInvoice": {
     "title": "Skapa en faktura",
     "p1": "Välj en kund i rullgardinsmenyn. Kundens ordrar laddas automatiskt.",
@@ -7,6 +7,6 @@
     "p3": "Ange fakturadatum och förfallodatum. Ange eventuellt ett uppskattat leveransdatum. Välj betalningsmetod — endast de metoder som är aktiverade i Tenant Admin → Fakturering visas.",
     "p4": "Ange eller bekräfta fakturanumret. I manuellt läge visas det senast sparade fakturanumret som vägledning för att fortsätta nummerserien.",
     "p5": "Tryck på «Förhandsgranska faktura» för att granska den slutliga layouten. Från förhandsgranskningen kan du skriva ut, ladda ned som PDF eller spara fakturan i databasen.",
-    "p6": "Sparade fakturor visas på fliken Bokföring i Tenant Admin, där du kan exportera dem som CSV eller öppna dem som PDF."
+    "p6": "Sparade fakturor visas högst upp på fliken Fakturering i Tenant Admin, där du kan exportera dem som CSV eller öppna dem som PDF."
   }
 }
