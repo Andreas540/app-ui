@@ -140,8 +140,7 @@ async function submitForm(event) {
         city         = ${city},
         state        = ${state},
         postal_code  = ${postalCode},
-        country      = ${country},
-        updated_at   = NOW()
+        country      = ${country}
       WHERE id        = ${verified.customerId}::uuid
         AND tenant_id = ${verified.tenantId}::uuid
     `
