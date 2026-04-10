@@ -20,6 +20,7 @@ html[data-theme="dark"] {
   --card:          #0f1630;
   --line:          #1f2747;
   --border:        #2b355e;
+  --separator:     #5a6a9a;
   --text:          #e6e9ef;
   --text-secondary:#aab2d5;
   --muted:         #aab2d5;
@@ -37,6 +38,7 @@ html[data-theme="light"] {
   --card:          #ffffff;
   --line:          #dce1ef;
   --border:        #c4cce0;
+  --separator:     #8898b8;
   --text:          #1a2440;
   --text-secondary:#5a6a90;
   --muted:         #5a6a90;

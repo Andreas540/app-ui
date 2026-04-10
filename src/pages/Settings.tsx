@@ -185,7 +185,7 @@ export default function Settings() {
       </div>
 
       {/* Separator */}
-      <div style={{ marginTop: 20, borderBottom: '3px solid var(--border)' }} />
+      <div style={{ marginTop: 20, borderBottom: '2px solid var(--separator)' }} />
 
       {/* Quick access buttons */}
       <div style={{ marginTop: 20 }}>
@@ -253,7 +253,7 @@ export default function Settings() {
       </div>
 
       {/* Appearance */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '3px solid var(--border)' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--separator)' }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -274,7 +274,7 @@ export default function Settings() {
       </div>
 
       {/* Password Change */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '3px solid var(--border)' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--separator)' }}>
         <input
           type="text" name="username" autoComplete="username"
           value={localStorage.getItem('userEmail') || ''}
