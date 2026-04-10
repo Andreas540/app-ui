@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -35,6 +35,21 @@ export default function CreateInvoicePage() {
   const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
   const [showInfo, setShowInfo] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showInfo) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowInfo(false) }
+    const onDown = (e: MouseEvent) => {
+      if (overlayRef.current && !overlayRef.current.contains(e.target as Node)) setShowInfo(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [showInfo])
   const { user } = useAuth()
   const fallbackConfig = getTenantConfig(user?.tenantId).invoice
   const [invoiceConfig, setInvoiceConfig] = useState(fallbackConfig)
@@ -269,29 +284,44 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
       {/* Info overlay */}
       {showInfo && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setShowInfo(false)} />
-          <div style={{
+        <div
+          ref={overlayRef}
+          style={{
             position: 'absolute', top: 0, left: 0, right: 0,
             background: 'var(--card, #fff)',
             border: '1px solid var(--border)', borderRadius: 8,
             padding: '16px 20px', zIndex: 200,
             display: 'flex', flexDirection: 'column', gap: 10,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('createInvoice.title')}</div>
-              <button
-                onClick={() => setShowInfo(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
-              >✕</button>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {INFO_PARAGRAPHS.map(key => (
-                <p key={key} style={{ margin: 0 }}>{ti(`createInvoice.${key}`)}</p>
-              ))}
-            </div>
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('createInvoice.title')}</div>
+            <button
+              onClick={() => setShowInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
           </div>
-        </>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {INFO_PARAGRAPHS.map(key => (
+              <p key={key} style={{ margin: 0 }}>
+                {key === 'p6' ? (
+                  <Trans
+                    i18nKey="createInvoice.p6"
+                    ns="info"
+                    components={{
+                      adminLink: (
+                        <button
+                          onClick={() => { setShowInfo(false); navigate('/admin', { state: { openInvoicingTab: true } }) }}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}
+                        />
+                      ),
+                    }}
+                  />
+                ) : ti(`createInvoice.${key}`)}
+              </p>
+            ))}
+          </div>
+        </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>

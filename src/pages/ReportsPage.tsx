@@ -316,6 +316,13 @@ export default function ReportsPage() {
   const [visible,      setVisible]      = useState<string[]>(loadVisible)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [infoOpen,     setInfoOpen]     = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!infoOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInfoOpen(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [infoOpen])
   const [fromMonth,    setFromMonth]    = useState('')
   const [toMonth,      setToMonth]      = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
@@ -497,29 +504,26 @@ export default function ReportsPage() {
             <div key={report.id} className="card" style={{ padding: '12px 16px 16px', position: 'relative' }}>
               {/* Info modal overlay */}
               {infoOpen === report.id && (
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setInfoOpen(null)} />
-                  <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'var(--card, #1e2130)',
-                    border: '1px solid var(--border)', borderRadius: 8,
-                    padding: '16px 20px', zIndex: 200,
-                    display: 'flex', flexDirection: 'column', gap: 10,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</div>
-                      <button
-                        onClick={() => setInfoOpen(null)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
-                      >✕</button>
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {['description_revenue', 'description_profit', 'description_note'].map((key: string) => (
-                        <p key={key} style={{ margin: 0 }}>{t(`${report.id}.${key}`)}</p>
-                      ))}
-                    </div>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'var(--card, #1e2130)',
+                  border: '1px solid var(--border)', borderRadius: 8,
+                  padding: '16px 20px', zIndex: 200,
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</div>
+                    <button
+                      onClick={() => setInfoOpen(null)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                    >✕</button>
                   </div>
-                </>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {['description_revenue', 'description_profit', 'description_note'].map((key: string) => (
+                      <p key={key} style={{ margin: 0 }}>{t(`${report.id}.${key}`)}</p>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Card header */}

@@ -7,6 +7,6 @@
     "p3": "Establece la fecha de factura y la fecha de vencimiento. Opcionalmente añade una fecha estimada de entrega. Elige el método de pago — solo se muestran los métodos activados en Account Admin → Facturación.",
     "p4": "Introduce o confirma el número de factura. En modo manual se muestra el último número guardado como referencia para continuar la secuencia.",
     "p5": "Pulsa «Vista previa» para revisar el diseño final. Desde la vista previa puedes imprimir, descargar como PDF o guardar la factura en la base de datos.",
-    "p6": "Las facturas guardadas aparecen en la parte superior de la pestaña Facturación del Account Admin, donde puedes exportarlas como CSV o volver a abrirlas como PDF."
+    "p6": "Las facturas guardadas aparecen en la parte superior de la pestaña Facturación de <adminLink>Account Admin</adminLink>, donde puedes exportarlas como CSV o volver a abrirlas como PDF."
   }
 }
