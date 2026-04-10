@@ -12,6 +12,7 @@ const T: Record<Lang, Record<string, string>> = {
   en: {
     title:        'Customer Information',
     welcome:      'Hi, please send us your company information using this form.',
+    welcomeUpdate: 'Hi, please add any missing information about your company.',
     name:         'Customer Name',
     companyName:  'Contact',
     phone:        'Phone',
@@ -33,6 +34,7 @@ const T: Record<Lang, Record<string, string>> = {
   es: {
     title:        'Información del cliente',
     welcome:      'Hola, por favor envíanos la información de tu empresa usando este formulario.',
+    welcomeUpdate: 'Hola, por favor añade cualquier información que falte sobre tu empresa.',
     name:         'Nombre del Cliente',
     companyName:  'Contacto',
     phone:        'Teléfono',
@@ -54,6 +56,7 @@ const T: Record<Lang, Record<string, string>> = {
   sv: {
     title:        'Kundinformation',
     welcome:      'Hej, vänligen skicka din företagsinformation via det här formuläret.',
+    welcomeUpdate: 'Hej, vänligen lägg till eventuell saknad information om ditt företag.',
     name:         'Kundnamn',
     companyName:  'Kontakt',
     phone:        'Telefon',
@@ -101,6 +104,7 @@ export default function CustomerFormPage() {
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
   const lang = resolveLang(searchParams.get('lang'))
+  const isUpdate = searchParams.get('type') === 'update'
   const t = (k: string) => T[lang][k] ?? k
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'done' | 'error' | 'invalid'>('loading')
@@ -240,7 +244,7 @@ export default function CustomerFormPage() {
     <div style={page}>
       <div style={card}>
         <h2 style={{ margin: '0 0 8px', fontSize: 22, color: '#1a1a2e' }}>{t('title')}</h2>
-        <p style={{ margin: '0 0 24px', color: '#555', fontSize: 14 }}>{t('welcome')}</p>
+        <p style={{ margin: '0 0 24px', color: '#555', fontSize: 14 }}>{isUpdate ? t('welcomeUpdate') : t('welcome')}</p>
 
         <form onSubmit={handleSubmit} noValidate>
 

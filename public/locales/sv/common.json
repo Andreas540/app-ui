@@ -311,7 +311,8 @@
     "linkReady": "Länk klar — skicka till din kund:",
     "copyLink": "Kopiera",
     "copied": "Kopierat!",
-    "linkCreatedInfo": "{{name}} har skapats. Insamlad information läggs till i den kundprofilen."
+    "linkCreatedInfo": "{{name}} har skapats. Insamlad information läggs till i den kundprofilen.",
+    "askCustomerToUpdate": "Be kunden lägga till saknad information"
   },
   "customerDetail": {
     "editCustomer": "Redigera kund",

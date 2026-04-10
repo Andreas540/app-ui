@@ -311,7 +311,8 @@
     "linkReady": "Link ready — send to your customer:",
     "copyLink": "Copy",
     "copied": "Copied!",
-    "linkCreatedInfo": "{{name}} has been created. Retrieved info will be added to that customer profile."
+    "linkCreatedInfo": "{{name}} has been created. Retrieved info will be added to that customer profile.",
+    "askCustomerToUpdate": "Ask customer to add missing information"
   },
   "customerDetail": {
     "editCustomer": "Edit customer",

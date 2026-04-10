@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function EditCustomer() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { user } = useAuth()
@@ -19,7 +19,43 @@ export default function EditCustomer() {
   const directValue: CustomerType = isBLVTenant ? 'BLV' : 'Direct'
   const directLabel  = isBLVTenant ? 'BLV' : 'Direct'
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]       = useState(true)
+  const [showAskCustomer, setShowAskCustomer] = useState(false)
+  const [generatingLink, setGeneratingLink]   = useState(false)
+  const [customerLink, setCustomerLink]       = useState<string | null>(null)
+  const [copied, setCopied]                   = useState(false)
+
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+  async function generateLink() {
+    if (!id) return
+    setGeneratingLink(true)
+    try {
+      const { getAuthHeaders } = await import('../lib/api')
+      const res = await fetch(`${base}/api/customer-link`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: id,
+          lang: i18n.language.startsWith('sv') ? 'sv' : i18n.language.startsWith('es') ? 'es' : 'en',
+        }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error || 'Failed')
+      setCustomerLink(data.url)
+    } catch (e: any) {
+      alert(e?.message || t('payments.alertSaveFailed'))
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  async function copyLink() {
+    if (!customerLink) return
+    await navigator.clipboard.writeText(customerLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   const [err, setErr] = useState<string | null>(null)
 
   // form state
@@ -114,6 +150,48 @@ setCustomerType(
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <h3>{t('customers.editTitle')}</h3>
         <Link to={id ? `/customers/${id}` : '/customers'} className="helper">{t('cancel')}</Link>
+      </div>
+
+      {/* Ask customer to add missing information */}
+      <div style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setShowAskCustomer(v => !v)}
+          className="helper"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+        >
+          {t('customers.askCustomerToUpdate')}
+        </button>
+
+        {showAskCustomer && (
+          <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
+            {!customerLink ? (
+              <button
+                type="button"
+                onClick={generateLink}
+                disabled={generatingLink}
+                style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+              >
+                {generatingLink ? t('customers.generating') : t('customers.shareLink')}
+              </button>
+            ) : (
+              <div>
+                <p style={{ margin: '0 0 6px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    readOnly
+                    value={customerLink}
+                    style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }}
+                    onFocus={e => e.target.select()}
+                  />
+                  <button type="button" onClick={copyLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+                    {copied ? t('customers.copied') : t('customers.copyLink')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Customer Name - full width */}

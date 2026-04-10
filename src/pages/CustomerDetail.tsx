@@ -300,7 +300,13 @@ export default function CustomerDetailPage() {
               <div style={{ marginTop: 12 }}>
                 <div className="helper">{t('address')}</div>
                 <div>
-                  {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
+                  {addrLine1 || addrLine2 || customer.country ? (
+                    <>
+                      {addrLine1 && <div>{addrLine1}</div>}
+                      {addrLine2 && <div>{addrLine2}</div>}
+                      {customer.country && <div>{customer.country}</div>}
+                    </>
+                  ) : '—'}
                 </div>
               </div>
             </div>

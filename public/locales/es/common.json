@@ -311,7 +311,8 @@
     "linkReady": "Enlace listo — envíalo a tu cliente:",
     "copyLink": "Copiar",
     "copied": "¡Copiado!",
-    "linkCreatedInfo": "{{name}} ha sido creado. La información recibida se añadirá a ese perfil de cliente."
+    "linkCreatedInfo": "{{name}} ha sido creado. La información recibida se añadirá a ese perfil de cliente.",
+    "askCustomerToUpdate": "Pedir al cliente que añada información faltante"
   },
   "customerDetail": {
     "editCustomer": "Editar cliente",

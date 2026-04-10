@@ -45,6 +45,32 @@ async function createLink(event) {
 
     const body = JSON.parse(event.body || '{}')
 
+    // ── Build base URL ────────────────────────────────────────────────────
+    const host    = event?.headers?.host
+    const proto   = String(event?.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim()
+    const baseUrl = process.env.SITE_URL
+      ? String(process.env.SITE_URL).replace(/\/$/, '')
+      : host ? `${proto}://${host}` : process.env.URL ? String(process.env.URL) : ''
+    if (!baseUrl) return cors(500, { error: 'Could not determine baseUrl' }, event)
+
+    const lang = body.lang ? String(body.lang) : ''
+
+    // ── If customer_id provided, generate token for existing customer ─────
+    if (body.customer_id) {
+      const rows = await sql`
+        SELECT id, name FROM customers
+        WHERE id = ${String(body.customer_id)}::uuid AND tenant_id = ${TENANT_ID}::uuid
+        LIMIT 1
+      `
+      if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
+      const existing = rows[0]
+      const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: existing.id })
+      const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : '', 'type=update'].filter(Boolean)
+      const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}?${queryParts.join('&')}`
+      return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
+    }
+
+    // ── Otherwise create a new customer ───────────────────────────────────
     let name        = body.name         ? String(body.name).trim()         : ''
     let companyName = body.company_name ? String(body.company_name).trim() : ''
 
@@ -83,17 +109,7 @@ async function createLink(event) {
 
     const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: customer.id })
 
-    // SITE_URL env var takes priority — set it to https://app.biznizoptimizer.com in Netlify.
-    // Falls back to the request host so dev/staging still produce working links.
-    const host    = event?.headers?.host
-    const proto   = String(event?.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim()
-    const baseUrl = process.env.SITE_URL
-      ? String(process.env.SITE_URL).replace(/\/$/, '')
-      : host ? `${proto}://${host}` : process.env.URL ? String(process.env.URL) : ''
-    if (!baseUrl) return cors(500, { error: 'Could not determine baseUrl' }, event)
-
-    const lang = body.lang ? String(body.lang) : ''
-    const url  = `${baseUrl}/customer-form/${encodeURIComponent(token)}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
+    const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
 
     return cors(200, { ok: true, url, customer_id: customer.id, name }, event)
   } catch (e) {
