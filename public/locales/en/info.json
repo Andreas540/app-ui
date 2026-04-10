@@ -1,9 +1,11 @@
 {
   "welcome": {
     "title": "Welcome to the Bizniz Optimizer!",
-    "p1": "To start you first need to create a <customerLink>customer</customerLink>. After that you need to create a <productLink>product</productLink> or a <serviceLink>service</serviceLink>.",
-    "p2": "On all pages you will find an i icon with information about that page. If you have unanswered questions, don't hesitate to send a <messageLink>message</messageLink>.",
-    "p3": "On the <settingsLink>Settings</settingsLink> page you can change your password.",
+    "subtitle": "This is where you get in control of your business and start optimizing your profits. The more you use it, the more useful it becomes.",
+    "p1": "To start you first need to create a <customerLink>customer</customerLink>, and then you need to create a <productLink>product</productLink> or a <serviceLink>service</serviceLink>. After that you are ready to go.",
+    "p2": "On all pages you will find an <infoIcon/> with information about that page. If you have unanswered questions, don't hesitate to send us a <messageLink>message</messageLink>.",
+    "p3": "Change your password, or change to a lighter color theme on the <settingsLink>Settings</settingsLink> page.",
+    "p4": "Anything missing, or anything that could be improved? <letUsKnowLink>Let us know</letUsKnowLink> and we will fix it for you!",
     "close": "Close",
     "dontShowAgain": "Don't show this again"
   },

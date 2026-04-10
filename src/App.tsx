@@ -882,57 +882,81 @@ useEffect(() => {
       </div>
 
       {/* ── Welcome modal ── */}
-      {showWelcomeModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-          onClick={() => setShowWelcomeModal(false)}
-        >
+      {showWelcomeModal && (() => {
+        const linkStyle = { textDecoration: 'underline' } as const
+        const InfoBadge = () => (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--border, rgba(0,0,0,0.08))',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)', fontSize: 10, fontWeight: 700,
+            verticalAlign: 'middle', lineHeight: 1,
+          }}>i</span>
+        )
+        return (
           <div
-            className="card"
-            style={{ maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}
-            onClick={e => e.stopPropagation()}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+            onClick={() => setShowWelcomeModal(false)}
           >
-            <h3 style={{ margin: 0 }}>{ti('welcome.title')}</h3>
-            <p style={{ margin: 0 }}>
-              <Trans
-                i18nKey="welcome.p1"
-                ns="info"
-                components={{
-                  customerLink: <Link to="/customers" onClick={() => setShowWelcomeModal(false)} />,
-                  productLink:  <Link to="/products/new?type=product" onClick={() => setShowWelcomeModal(false)} />,
-                  serviceLink:  <Link to="/products/new?type=service" onClick={() => setShowWelcomeModal(false)} />,
-                }}
-              />
-            </p>
-            <p style={{ margin: 0 }}>
-              <Trans
-                i18nKey="welcome.p2"
-                ns="info"
-                components={{
-                  messageLink: <Link to="/messages" onClick={() => setShowWelcomeModal(false)} />,
-                }}
-              />
-            </p>
-            <p style={{ margin: 0 }}>
-              <Trans
-                i18nKey="welcome.p3"
-                ns="info"
-                components={{
-                  settingsLink: <Link to="/settings" onClick={() => setShowWelcomeModal(false)} />,
-                }}
-              />
-            </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <button onClick={() => { localStorage.setItem('welcomeDismissed', '1'); setShowWelcomeModal(false) }}>
-                {ti('welcome.dontShowAgain')}
-              </button>
-              <button className="primary" onClick={() => setShowWelcomeModal(false)}>
-                {ti('welcome.close')}
-              </button>
+            <div
+              className="card"
+              style={{ maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 style={{ margin: 0 }}>{ti('welcome.title')}</h3>
+              <p style={{ margin: 0 }}>{ti('welcome.subtitle')}</p>
+              <p style={{ margin: 0 }}>
+                <Trans
+                  i18nKey="welcome.p1"
+                  ns="info"
+                  components={{
+                    customerLink: <Link to="/customers" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    productLink:  <Link to="/products/new?type=product" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    serviceLink:  <Link to="/products/new?type=service" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                  }}
+                />
+              </p>
+              <p style={{ margin: 0 }}>
+                <Trans
+                  i18nKey="welcome.p2"
+                  ns="info"
+                  components={{
+                    infoIcon:    <InfoBadge />,
+                    messageLink: <Link to="/messages" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                  }}
+                />
+              </p>
+              <p style={{ margin: 0 }}>
+                <Trans
+                  i18nKey="welcome.p3"
+                  ns="info"
+                  components={{
+                    settingsLink: <Link to="/settings" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                  }}
+                />
+              </p>
+              <p style={{ margin: 0 }}>
+                <Trans
+                  i18nKey="welcome.p4"
+                  ns="info"
+                  components={{
+                    letUsKnowLink: <Link to="/messages" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                  }}
+                />
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                <button onClick={() => { localStorage.setItem('welcomeDismissed', '1'); setShowWelcomeModal(false) }}>
+                  {ti('welcome.dontShowAgain')}
+                </button>
+                <button className="primary" onClick={() => setShowWelcomeModal(false)}>
+                  {ti('welcome.close')}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

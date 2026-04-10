@@ -1,9 +1,11 @@
 {
   "welcome": {
     "title": "Välkommen till Bizniz Optimizer!",
-    "p1": "För att komma igång behöver du först skapa en <customerLink>kund</customerLink>. Sedan behöver du skapa en <productLink>produkt</productLink> eller en <serviceLink>tjänst</serviceLink>.",
-    "p2": "På alla sidor hittar du ett i-ikon med information om den sidan. Om du har frågor, tveka inte att skicka ett <messageLink>meddelande</messageLink>.",
-    "p3": "På sidan <settingsLink>Inställningar</settingsLink> kan du byta lösenord.",
+    "subtitle": "Här tar du kontroll över ditt företag och börjar optimera din vinst. Ju mer du använder det, desto mer användbart blir det.",
+    "p1": "För att komma igång behöver du först skapa en <customerLink>kund</customerLink>, och sedan skapa en <productLink>produkt</productLink> eller en <serviceLink>tjänst</serviceLink>. Efter det är du redo att köra.",
+    "p2": "På alla sidor hittar du en <infoIcon/> med information om den sidan. Om du har frågor, tveka inte att skicka oss ett <messageLink>meddelande</messageLink>.",
+    "p3": "Byt lösenord eller byt till ett ljusare färgtema på sidan <settingsLink>Inställningar</settingsLink>.",
+    "p4": "Saknas något, eller finns det något som kan förbättras? <letUsKnowLink>Hör av dig</letUsKnowLink> så fixar vi det åt dig!",
     "close": "Stäng",
     "dontShowAgain": "Visa inte igen"
   },
