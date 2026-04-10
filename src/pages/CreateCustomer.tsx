@@ -175,7 +175,7 @@ export default function CreateCustomer() {
             >✕</button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(['p1','p2','p3','p4'] as const).map(k => (
+            {(['p1','p2','p3','p4','p5'] as const).map(k => (
               <p key={k} style={{ margin: 0 }}>{ti(`createCustomer.${k}`)}</p>
             ))}
           </div>
