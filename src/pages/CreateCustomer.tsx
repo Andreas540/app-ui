@@ -47,7 +47,8 @@ export default function CreateCustomer() {
   const [showAskCustomer, setShowAskCustomer] = useState(false)
   const [generatingLink, setGeneratingLink]   = useState(false)
   const [customerLink, setCustomerLink]       = useState<string | null>(null)
-  const [sharedCustomerId, setSharedCustomerId] = useState<string | null>(null)
+  const [sharedCustomerId, setSharedCustomerId]     = useState<string | null>(null)
+  const [sharedCustomerName, setSharedCustomerName] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -78,6 +79,7 @@ export default function CreateCustomer() {
       if (!data.ok) throw new Error(data.error || 'Failed')
       setCustomerLink(data.url)
       setSharedCustomerId(data.customer_id)
+      setSharedCustomerName(data.name)
     } catch (e: any) {
       alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
@@ -174,6 +176,11 @@ export default function CreateCustomer() {
                     {copied ? t('customers.copied') : t('customers.copyLink')}
                   </button>
                 </div>
+                {sharedCustomerName && (
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {t('customers.linkCreatedInfo', { name: sharedCustomerName })}
+                  </p>
+                )}
               </div>
             )}
           </div>

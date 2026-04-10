@@ -310,7 +310,8 @@
     "generating": "Generating…",
     "linkReady": "Link ready — send to your customer:",
     "copyLink": "Copy",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "linkCreatedInfo": "{{name}} has been created. Retrieved info will be added to that customer profile."
   },
   "customerDetail": {
     "editCustomer": "Edit customer",

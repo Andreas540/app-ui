@@ -310,7 +310,8 @@
     "generating": "Genererar…",
     "linkReady": "Länk klar — skicka till din kund:",
     "copyLink": "Kopiera",
-    "copied": "Kopierat!"
+    "copied": "Kopierat!",
+    "linkCreatedInfo": "{{name}} har skapats. Insamlad information läggs till i den kundprofilen."
   },
   "customerDetail": {
     "editCustomer": "Redigera kund",

@@ -310,7 +310,8 @@
     "generating": "Generando…",
     "linkReady": "Enlace listo — envíalo a tu cliente:",
     "copyLink": "Copiar",
-    "copied": "¡Copiado!"
+    "copied": "¡Copiado!",
+    "linkCreatedInfo": "{{name}} ha sido creado. La información recibida se añadirá a ese perfil de cliente."
   },
   "customerDetail": {
     "editCustomer": "Editar cliente",

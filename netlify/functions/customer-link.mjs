@@ -95,7 +95,7 @@ async function createLink(event) {
     const lang = body.lang ? String(body.lang) : ''
     const url  = `${baseUrl}/customer-form/${encodeURIComponent(token)}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
 
-    return cors(200, { ok: true, url, customer_id: customer.id }, event)
+    return cors(200, { ok: true, url, customer_id: customer.id, name }, event)
   } catch (e) {
     console.error('customer-link createLink error:', e)
     return cors(500, { error: String(e?.message || e) }, event)
