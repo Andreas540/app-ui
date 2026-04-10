@@ -83,14 +83,17 @@ async function createLink(event) {
 
     const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: customer.id })
 
+    // SITE_URL env var takes priority — set it to https://app.biznizoptimizer.com in Netlify.
+    // Falls back to the request host so dev/staging still produce working links.
     const host    = event?.headers?.host
     const proto   = String(event?.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim()
-    const baseUrl = host
-      ? `${proto}://${host}`
-      : process.env.URL ? String(process.env.URL) : ''
+    const baseUrl = process.env.SITE_URL
+      ? String(process.env.SITE_URL).replace(/\/$/, '')
+      : host ? `${proto}://${host}` : process.env.URL ? String(process.env.URL) : ''
     if (!baseUrl) return cors(500, { error: 'Could not determine baseUrl' }, event)
 
-    const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}`
+    const lang = body.lang ? String(body.lang) : ''
+    const url  = `${baseUrl}/customer-form/${encodeURIComponent(token)}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
 
     return cors(200, { ok: true, url, customer_id: customer.id }, event)
   } catch (e) {
@@ -99,7 +102,7 @@ async function createLink(event) {
   }
 }
 
-function cors(status, body, event) {
+function cors(status, body, _event) {
   return {
     statusCode: status,
     headers: {

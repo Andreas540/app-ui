@@ -79,7 +79,14 @@ async function getForm(event) {
     `
     if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
 
-    return cors(200, { ok: true, customer: rows[0] }, event)
+    // Don't expose auto-generated placeholder names to the customer
+    const isTempName = (v) => v && /^Customer #\d+$/.test(String(v))
+    const c = rows[0]
+    return cors(200, { ok: true, customer: {
+      ...c,
+      name:         isTempName(c.name)         ? '' : (c.name         ?? ''),
+      company_name: isTempName(c.company_name) ? '' : (c.company_name ?? ''),
+    }}, event)
   } catch (e) {
     console.error('customer-form getForm error:', e)
     return cors(500, { error: String(e?.message || e) }, event)
@@ -146,7 +153,7 @@ async function submitForm(event) {
   }
 }
 
-function cors(status, body, event) {
+function cors(status, body, _event) {
   return {
     statusCode: status,
     headers: {

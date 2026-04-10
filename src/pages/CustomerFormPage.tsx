@@ -1,8 +1,8 @@
 // src/pages/CustomerFormPage.tsx
 // Public-facing page — rendered outside the authenticated app shell.
-// Accessed via /customer-form/:token  (token embedded in URL by the manager)
+// Accessed via /customer-form/:token?lang=sv  (token + optional lang in URL)
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 // ── Inline translations ───────────────────────────────────────────────────────
 
@@ -10,74 +10,74 @@ type Lang = 'en' | 'es' | 'sv'
 
 const T: Record<Lang, Record<string, string>> = {
   en: {
-    title:         'Customer Information',
-    subtitle:      'Please fill in your details below.',
-    name:          'Name',
-    companyName:   'Company name',
-    phone:         'Phone',
-    address1:      'Address line 1',
-    address2:      'Address line 2',
-    city:          'City',
-    state:         'State / Province',
-    postalCode:    'Postal code',
-    country:       'Country',
-    submit:        'Submit',
-    submitting:    'Submitting…',
-    successTitle:  'Thank you!',
-    successMsg:    'Your information has been submitted.',
-    invalidToken:  'This link is invalid or has expired.',
-    errorLoad:     'Could not load the form. Please try again.',
-    errorSubmit:   'Submission failed. Please try again.',
-    loading:       'Loading…',
+    title:        'Customer Information',
+    welcome:      'Hi, please send us your company information using this form.',
+    name:         'Name',
+    companyName:  'Company name',
+    phone:        'Phone',
+    address1:     'Address line 1',
+    address2:     'Address line 2',
+    city:         'City',
+    state:        'State / Province',
+    postalCode:   'Postal code',
+    country:      'Country',
+    submit:       'Submit',
+    submitting:   'Submitting…',
+    successTitle: 'Thank you!',
+    successMsg:   'Your information has been submitted.',
+    invalidToken: 'This link is invalid or has expired.',
+    errorLoad:    'Could not load the form. Please try again.',
+    errorSubmit:  'Submission failed. Please try again.',
+    loading:      'Loading…',
   },
   es: {
-    title:         'Información del cliente',
-    subtitle:      'Por favor, complete sus datos a continuación.',
-    name:          'Nombre',
-    companyName:   'Nombre de empresa',
-    phone:         'Teléfono',
-    address1:      'Dirección línea 1',
-    address2:      'Dirección línea 2',
-    city:          'Ciudad',
-    state:         'Estado / Provincia',
-    postalCode:    'Código postal',
-    country:       'País',
-    submit:        'Enviar',
-    submitting:    'Enviando…',
-    successTitle:  '¡Gracias!',
-    successMsg:    'Su información ha sido enviada.',
-    invalidToken:  'Este enlace no es válido o ha expirado.',
-    errorLoad:     'No se pudo cargar el formulario. Inténtelo de nuevo.',
-    errorSubmit:   'Error al enviar. Inténtelo de nuevo.',
-    loading:       'Cargando…',
+    title:        'Información del cliente',
+    welcome:      'Hola, por favor envíanos la información de tu empresa usando este formulario.',
+    name:         'Nombre',
+    companyName:  'Nombre de empresa',
+    phone:        'Teléfono',
+    address1:     'Dirección línea 1',
+    address2:     'Dirección línea 2',
+    city:         'Ciudad',
+    state:        'Estado / Provincia',
+    postalCode:   'Código postal',
+    country:      'País',
+    submit:       'Enviar',
+    submitting:   'Enviando…',
+    successTitle: '¡Gracias!',
+    successMsg:   'Su información ha sido enviada.',
+    invalidToken: 'Este enlace no es válido o ha expirado.',
+    errorLoad:    'No se pudo cargar el formulario. Inténtelo de nuevo.',
+    errorSubmit:  'Error al enviar. Inténtelo de nuevo.',
+    loading:      'Cargando…',
   },
   sv: {
-    title:         'Kundinformation',
-    subtitle:      'Fyll i dina uppgifter nedan.',
-    name:          'Namn',
-    companyName:   'Företagsnamn',
-    phone:         'Telefon',
-    address1:      'Adressrad 1',
-    address2:      'Adressrad 2',
-    city:          'Stad',
-    state:         'Stat / Län',
-    postalCode:    'Postnummer',
-    country:       'Land',
-    submit:        'Skicka',
-    submitting:    'Skickar…',
-    successTitle:  'Tack!',
-    successMsg:    'Din information har skickats.',
-    invalidToken:  'Den här länken är ogiltig eller har gått ut.',
-    errorLoad:     'Det gick inte att läsa in formuläret. Försök igen.',
-    errorSubmit:   'Det gick inte att skicka. Försök igen.',
-    loading:       'Laddar…',
+    title:        'Kundinformation',
+    welcome:      'Hej, vänligen skicka din företagsinformation via det här formuläret.',
+    name:         'Namn',
+    companyName:  'Företagsnamn',
+    phone:        'Telefon',
+    address1:     'Adressrad 1',
+    address2:     'Adressrad 2',
+    city:         'Stad',
+    state:        'Stat / Län',
+    postalCode:   'Postnummer',
+    country:      'Land',
+    submit:       'Skicka',
+    submitting:   'Skickar…',
+    successTitle: 'Tack!',
+    successMsg:   'Din information har skickats.',
+    invalidToken: 'Den här länken är ogiltig eller har gått ut.',
+    errorLoad:    'Det gick inte att läsa in formuläret. Försök igen.',
+    errorSubmit:  'Det gick inte att skicka. Försök igen.',
+    loading:      'Laddar…',
   },
 }
 
-function detectLang(): Lang {
-  const nav = navigator.language?.toLowerCase() || ''
-  if (nav.startsWith('sv')) return 'sv'
-  if (nav.startsWith('es')) return 'es'
+function resolveLang(param: string | null): Lang {
+  const s = (param || navigator.language || '').toLowerCase()
+  if (s.startsWith('sv')) return 'sv'
+  if (s.startsWith('es')) return 'es'
   return 'en'
 }
 
@@ -99,12 +99,13 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
 export default function CustomerFormPage() {
   const { token } = useParams<{ token: string }>()
-  const lang = detectLang()
+  const [searchParams] = useSearchParams()
+  const lang = resolveLang(searchParams.get('lang'))
   const t = (k: string) => T[lang][k] ?? k
 
-  const [status, setStatus]   = useState<'loading' | 'ready' | 'submitting' | 'done' | 'error' | 'invalid'>('loading')
-  const [errMsg, setErrMsg]   = useState('')
-  const [form, setForm]       = useState<FormData>({
+  const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'done' | 'error' | 'invalid'>('loading')
+  const [errMsg, setErrMsg] = useState('')
+  const [form, setForm]     = useState<FormData>({
     name: '', company_name: '', phone: '',
     address1: '', address2: '', city: '',
     state: '', postal_code: '', country: '',
@@ -154,52 +155,56 @@ export default function CustomerFormPage() {
     }
   }
 
-  // ── Styles ──────────────────────────────────────────────────────────────────
+  // ── Styles — always explicit, no CSS variables, works outside app theme ──────
 
-  const containerStyle: React.CSSProperties = {
+  const page: React.CSSProperties = {
     minHeight: '100vh',
-    background: '#f5f5f7',
+    background: '#f0f2f5',
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    padding: '32px 16px',
+    padding: '40px 16px',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    color: '#1a1a2e',
   }
-  const cardStyle: React.CSSProperties = {
-    background: '#fff',
+  const card: React.CSSProperties = {
+    background: '#ffffff',
     borderRadius: 12,
     padding: '32px 28px',
     maxWidth: 520,
     width: '100%',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    boxShadow: '0 2px 16px rgba(0,0,0,0.10)',
+    color: '#1a1a2e',
   }
-  const labelStyle: React.CSSProperties = {
+  const lbl: React.CSSProperties = {
     display: 'block',
     fontSize: 13,
     fontWeight: 500,
     marginBottom: 4,
     color: '#444',
   }
-  const inputStyle: React.CSSProperties = {
+  const inp: React.CSSProperties = {
     width: '100%',
     padding: '10px 12px',
-    border: '1px solid #ddd',
+    border: '1px solid #d0d0d0',
     borderRadius: 6,
     fontSize: 15,
     outline: 'none',
     boxSizing: 'border-box',
+    background: '#ffffff',
+    color: '#1a1a2e',
   }
-  const rowStyle: React.CSSProperties = {
+  const row2: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: 12,
   }
-  const fieldStyle: React.CSSProperties = { marginBottom: 16 }
-  const btnStyle: React.CSSProperties = {
+  const field: React.CSSProperties = { marginBottom: 14 }
+  const btn: React.CSSProperties = {
     width: '100%',
     padding: '12px 0',
     background: '#4f8ef7',
-    color: '#fff',
+    color: '#ffffff',
     border: 'none',
     borderRadius: 8,
     fontSize: 16,
@@ -208,43 +213,22 @@ export default function CustomerFormPage() {
     marginTop: 8,
   }
 
-  // ── Render states ────────────────────────────────────────────────────────────
+  // ── Render states ─────────────────────────────────────────────────────────────
 
   if (status === 'loading') {
-    return (
-      <div style={containerStyle}>
-        <div style={{ ...cardStyle, color: '#666', textAlign: 'center', padding: 48 }}>
-          {t('loading')}
-        </div>
-      </div>
-    )
+    return <div style={page}><div style={{ ...card, textAlign: 'center', padding: 48, color: '#666' }}>{t('loading')}</div></div>
   }
-
   if (status === 'invalid') {
-    return (
-      <div style={containerStyle}>
-        <div style={{ ...cardStyle, color: '#c0392b', textAlign: 'center', padding: 48 }}>
-          {t('invalidToken')}
-        </div>
-      </div>
-    )
+    return <div style={page}><div style={{ ...card, textAlign: 'center', padding: 48, color: '#c0392b' }}>{t('invalidToken')}</div></div>
   }
-
   if (status === 'error') {
-    return (
-      <div style={containerStyle}>
-        <div style={{ ...cardStyle, color: '#c0392b', textAlign: 'center', padding: 48 }}>
-          {errMsg}
-        </div>
-      </div>
-    )
+    return <div style={page}><div style={{ ...card, textAlign: 'center', padding: 48, color: '#c0392b' }}>{errMsg}</div></div>
   }
-
   if (status === 'done') {
     return (
-      <div style={containerStyle}>
-        <div style={{ ...cardStyle, textAlign: 'center', padding: 48 }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>✓</div>
+      <div style={page}>
+        <div style={{ ...card, textAlign: 'center', padding: 48 }}>
+          <div style={{ fontSize: 44, marginBottom: 16, color: '#2e7d32' }}>✓</div>
           <h2 style={{ margin: '0 0 8px', color: '#2e7d32' }}>{t('successTitle')}</h2>
           <p style={{ color: '#555', margin: 0 }}>{t('successMsg')}</p>
         </div>
@@ -253,64 +237,70 @@ export default function CustomerFormPage() {
   }
 
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 22, color: '#1a1a2e' }}>{t('title')}</h2>
-        <p style={{ margin: '0 0 24px', color: '#666', fontSize: 14 }}>{t('subtitle')}</p>
+    <div style={page}>
+      <div style={card}>
+        <h2 style={{ margin: '0 0 8px', fontSize: 22, color: '#1a1a2e' }}>{t('title')}</h2>
+        <p style={{ margin: '0 0 24px', color: '#555', fontSize: 14 }}>{t('welcome')}</p>
 
         <form onSubmit={handleSubmit} noValidate>
 
-          <div style={rowStyle}>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('name')}</label>
-              <input style={inputStyle} value={form.name} onChange={set('name')} autoComplete="name" />
+          {/* Name — full width */}
+          <div style={field}>
+            <label style={lbl}>{t('name')}</label>
+            <input style={inp} value={form.name} onChange={set('name')} autoComplete="name" />
+          </div>
+
+          {/* Company name + Phone — same row as in app */}
+          <div style={{ ...row2, marginBottom: 14 }}>
+            <div>
+              <label style={lbl}>{t('companyName')}</label>
+              <input style={inp} value={form.company_name} onChange={set('company_name')} autoComplete="organization" />
             </div>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('companyName')}</label>
-              <input style={inputStyle} value={form.company_name} onChange={set('company_name')} autoComplete="organization" />
-            </div>
-          </div>
-
-          <div style={fieldStyle}>
-            <label style={labelStyle}>{t('phone')}</label>
-            <input style={inputStyle} type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
-          </div>
-
-          <div style={fieldStyle}>
-            <label style={labelStyle}>{t('address1')}</label>
-            <input style={inputStyle} value={form.address1} onChange={set('address1')} autoComplete="address-line1" />
-          </div>
-
-          <div style={fieldStyle}>
-            <label style={labelStyle}>{t('address2')}</label>
-            <input style={inputStyle} value={form.address2} onChange={set('address2')} autoComplete="address-line2" />
-          </div>
-
-          <div style={rowStyle}>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('city')}</label>
-              <input style={inputStyle} value={form.city} onChange={set('city')} autoComplete="address-level2" />
-            </div>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('state')}</label>
-              <input style={inputStyle} value={form.state} onChange={set('state')} autoComplete="address-level1" />
+            <div>
+              <label style={lbl}>{t('phone')}</label>
+              <input style={inp} type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
             </div>
           </div>
 
-          <div style={rowStyle}>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('postalCode')}</label>
-              <input style={inputStyle} value={form.postal_code} onChange={set('postal_code')} autoComplete="postal-code" />
+          {/* Address line 1 + Address line 2 */}
+          <div style={{ ...row2, marginBottom: 14 }}>
+            <div>
+              <label style={lbl}>{t('address1')}</label>
+              <input style={inp} value={form.address1} onChange={set('address1')} autoComplete="address-line1" />
             </div>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>{t('country')}</label>
-              <input style={inputStyle} value={form.country} onChange={set('country')} autoComplete="country-name" />
+            <div>
+              <label style={lbl}>{t('address2')}</label>
+              <input style={inp} value={form.address2} onChange={set('address2')} autoComplete="address-line2" />
+            </div>
+          </div>
+
+          {/* City + State */}
+          <div style={{ ...row2, marginBottom: 14 }}>
+            <div>
+              <label style={lbl}>{t('city')}</label>
+              <input style={inp} value={form.city} onChange={set('city')} autoComplete="address-level2" />
+            </div>
+            <div>
+              <label style={lbl}>{t('state')}</label>
+              <input style={inp} value={form.state} onChange={set('state')} autoComplete="address-level1" />
+            </div>
+          </div>
+
+          {/* Postal code + Country */}
+          <div style={{ ...row2, marginBottom: 14 }}>
+            <div>
+              <label style={lbl}>{t('postalCode')}</label>
+              <input style={inp} value={form.postal_code} onChange={set('postal_code')} autoComplete="postal-code" />
+            </div>
+            <div>
+              <label style={lbl}>{t('country')}</label>
+              <input style={inp} value={form.country} onChange={set('country')} autoComplete="country-name" />
             </div>
           </div>
 
           <button
             type="submit"
-            style={{ ...btnStyle, opacity: status === 'submitting' ? 0.7 : 1 }}
+            style={{ ...btn, opacity: status === 'submitting' ? 0.7 : 1 }}
             disabled={status === 'submitting'}
           >
             {status === 'submitting' ? t('submitting') : t('submit')}

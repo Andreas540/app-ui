@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function CreateCustomer() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -71,6 +71,7 @@ export default function CreateCustomer() {
           state:    state.trim()    || undefined,
           postal_code: postal.trim()  || undefined,
           country:  country.trim()  || undefined,
+          lang: i18n.language.startsWith('sv') ? 'sv' : i18n.language.startsWith('es') ? 'es' : 'en',
         }),
       })
       const data = await res.json()
