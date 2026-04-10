@@ -481,22 +481,26 @@ useEffect(() => {
         </div>
 
         <div className="quick-buttons" aria-label="Quick navigation">
-  {user?.businessType !== 'physical_store' && selectedShortcuts.map(featureId => {
-    const shortcut = ALL_SHORTCUTS.find(s => s.id === featureId)
-    if (!shortcut || !hasFeature(featureId as any)) return null
-    return (
-      <NavLink
-        key={featureId}
-        to={shortcut.route}
-        end={shortcut.route === '/'}
-        className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-        title={shortcut.label}
-        onClick={() => setNavOpen(false)}
-      >
-        {shortcut.letter}
-      </NavLink>
-    )
-  })}
+  {user?.businessType !== 'physical_store' && (
+    selectedShortcuts.length === 0
+      ? <NavLink to="/settings" className="add-quick-nav-link" onClick={() => setNavOpen(false)}>{t('addQuickNavigation')}</NavLink>
+      : selectedShortcuts.map(featureId => {
+          const shortcut = ALL_SHORTCUTS.find(s => s.id === featureId)
+          if (!shortcut || !hasFeature(featureId as any)) return null
+          return (
+            <NavLink
+              key={featureId}
+              to={shortcut.route}
+              end={shortcut.route === '/'}
+              className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
+              title={shortcut.label}
+              onClick={() => setNavOpen(false)}
+            >
+              {shortcut.letter}
+            </NavLink>
+          )
+        })
+  )}
 </div>
       </header>
 

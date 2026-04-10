@@ -308,6 +308,17 @@ button.primary:focus-visible,
   gap: 8px;
 }
 
+.add-quick-nav-link {
+  font-size: 13px;
+  color: var(--color-primary, #4f8ef7);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.add-quick-nav-link:hover {
+  text-decoration: underline;
+}
+
 .icon-btn {
   width: 40px;
   height: 40px;
