@@ -1,0 +1,12 @@
+{
+  "addInvoiceInfo": "Agregar info de factura",
+  "createInvoice": {
+    "title": "Crear una factura",
+    "p1": "Selecciona un cliente en el menú desplegable. Sus pedidos se cargarán automáticamente.",
+    "p2": "Marca los pedidos que deseas incluir y pulsa «Elegir seleccionados» para confirmar la selección.",
+    "p3": "Establece la fecha de factura y la fecha de vencimiento. Opcionalmente añade una fecha estimada de entrega. Elige el método de pago — solo se muestran los métodos activados en Admin → Facturación.",
+    "p4": "Introduce o confirma el número de factura. En modo manual se muestra el último número guardado como referencia para continuar la secuencia.",
+    "p5": "Pulsa «Vista previa» para revisar el diseño final. Desde la vista previa puedes imprimir, descargar como PDF o guardar la factura en la base de datos.",
+    "p6": "Las facturas guardadas aparecen en la pestaña Contabilidad del Admin, donde puedes exportarlas como CSV o volver a abrirlas como PDF."
+  }
+}

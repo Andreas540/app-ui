@@ -6,6 +6,8 @@ import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
+const INFO_PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'] as const
+
 type Customer = {
   id: string
   name: string
@@ -30,7 +32,9 @@ type Order = {
 
 export default function CreateInvoicePage() {
   const { t } = useTranslation()
+  const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
+  const [showInfo, setShowInfo] = useState(false)
   const { user } = useAuth()
   const fallbackConfig = getTenantConfig(user?.tenantId).invoice
   const [invoiceConfig, setInvoiceConfig] = useState(fallbackConfig)
@@ -261,9 +265,54 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 }
 
   return (
-    <div className="card" style={{ maxWidth: 800 }}>
+    <div className="card" style={{ maxWidth: 800, position: 'relative' }}>
+
+      {/* Info overlay */}
+      {showInfo && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setShowInfo(false)} />
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'var(--card, #fff)',
+            border: '1px solid var(--border)', borderRadius: 8,
+            padding: '16px 20px', zIndex: 200,
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('createInvoice.title')}</div>
+              <button
+                onClick={() => setShowInfo(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+              >✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {INFO_PARAGRAPHS.map(key => (
+                <p key={key} style={{ margin: 0 }}>{ti(`createInvoice.${key}`)}</p>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>{t('invoice.createTitle')}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0 }}>{t('invoice.createTitle')}</h2>
+          <button
+            onClick={() => setShowInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+          <button
+            onClick={() => navigate('/admin', { state: { openInvoicingTab: true } })}
+            style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, height: 24 }}
+          >{ti('addInvoiceInfo')}</button>
+        </div>
         <Link to="/" className="helper">{t('back_link')}</Link>
       </div>
 

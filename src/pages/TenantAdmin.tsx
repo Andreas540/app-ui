@@ -138,6 +138,9 @@ export default function TenantAdmin() {
       if (m) setInvMonth(m)
       fetchInvoices(y, m)
     }
+    if (s?.openInvoicingTab) {
+      setActiveTab('invoicing')
+    }
   }, [])
 
   async function loadData() {
@@ -1045,14 +1048,22 @@ export default function TenantAdmin() {
               </div>
             </>)}
 
-            <button
-              className="primary"
-              onClick={handleSaveInvoiceConfig}
-              disabled={savingInvoice}
-              style={{ height: CONTROL_H, padding: '0 32px' }}
-            >
-              {savingInvoice ? t('saving') : t('save')}
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                className="primary"
+                onClick={handleSaveInvoiceConfig}
+                disabled={savingInvoice}
+                style={{ height: CONTROL_H, padding: '0 32px' }}
+              >
+                {savingInvoice ? t('saving') : t('save')}
+              </button>
+              <button
+                onClick={() => navigate('/invoices/create')}
+                style={{ height: CONTROL_H, padding: '0 20px' }}
+              >
+                {t('invoice.createTitle')}
+              </button>
+            </div>
 
           </>)
         })()}
