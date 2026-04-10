@@ -4,9 +4,9 @@
     "title": "Creating an Invoice",
     "p1": "Select a customer from the dropdown. Their orders will load automatically below.",
     "p2": "Check the orders you want to include, then tap \"Choose selected\" to confirm your selection.",
-    "p3": "Set the invoice date and due date. Optionally add an estimated delivery date. Choose a payment method — only the methods activated in Tenant Admin → Invoicing are shown.",
+    "p3": "Set the invoice date and due date. Optionally add an estimated delivery date. Choose a payment method — only the methods activated in Account Admin → Invoicing are shown.",
     "p4": "Enter or confirm the invoice number. In manual mode the last saved invoice number is shown as a placeholder to help you continue the sequence.",
     "p5": "Tap \"Preview Invoice\" to review the final layout. From the preview you can print, download as PDF, or save the invoice to the database.",
-    "p6": "Saved invoices appear at the top of the Invoicing tab in Tenant Admin, where you can export them as CSV or re-open any invoice as a PDF."
+    "p6": "Saved invoices appear at the top of the Invoicing tab in Account Admin, where you can export them as CSV or re-open any invoice as a PDF."
   }
 }

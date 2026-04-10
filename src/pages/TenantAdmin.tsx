@@ -875,7 +875,7 @@ export default function TenantAdmin() {
               <select
                 value={invYear}
                 onChange={e => setInvYear(e.target.value)}
-                style={{ height: CONTROL_H, width: 86, flexShrink: 0, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
+                style={{ height: CONTROL_H, width: 120, flexShrink: 0, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
               >
                 {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => (
                   <option key={y} value={y}>{y}</option>
@@ -884,7 +884,7 @@ export default function TenantAdmin() {
               <select
                 value={invMonth}
                 onChange={e => setInvMonth(e.target.value)}
-                style={{ height: CONTROL_H, flex: 1, minWidth: 90, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
+                style={{ height: CONTROL_H, width: 120, flexShrink: 0, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', padding: '0 6px' }}
               >
                 {[
                   ['01','January'],['02','February'],['03','March'],['04','April'],
