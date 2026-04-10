@@ -13,7 +13,8 @@
     "title": "Crear cliente",
     "p1": "Añade un nuevo perfil de cliente con datos de contacto y dirección. Una vez guardado, podrás registrar pedidos y pagos para este cliente.",
     "p2": "Tipo de cliente: Los clientes directos son clientes sin intermediarios ni partners involucrados. Los clientes partner reciben una comisión de partner en cada pedido.",
-    "p3": "El coste de envío establece una tarifa de envío para este cliente. Próximamente: coste de envío por pedido y coste de envío según ubicación.",
+    "p3": "El coste de envío se establece actualmente por unidad.",
+    "p3note": "Próximamente: coste de envío por pedido y coste de envío según ubicación.",
     "p4": "La información del cliente añadida aquí se usa automáticamente en las facturas a este cliente.",
     "p5": "Usa 'Pedir al cliente que añada información' para generar un enlace seguro y que el cliente rellene sus propios datos.",
     "shippingComingSoon": "Coste de envío por pedido y coste de envío según ubicación próximamente."

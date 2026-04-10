@@ -174,9 +174,9 @@ export default function CreateCustomer() {
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
             >✕</button>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(['p1','p2','p3','p4','p5'] as const).map(k => (
-              <p key={k} style={{ margin: 0 }}>{ti(`createCustomer.${k}`)}</p>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1','p2','p3','p3note','p4','p5'] as const).map(k => (
+              <p key={k} style={{ margin: 0, fontStyle: k === 'p3note' ? 'italic' : 'normal' }}>{ti(`createCustomer.${k}`)}</p>
             ))}
           </div>
         </div>

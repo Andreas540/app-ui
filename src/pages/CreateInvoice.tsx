@@ -302,7 +302,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
             >✕</button>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {INFO_PARAGRAPHS.map(key => (
               <p key={key} style={{ margin: 0 }}>
                 {key === 'p6' ? (
