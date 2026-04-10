@@ -9,6 +9,14 @@
     "close": "Stäng",
     "dontShowAgain": "Visa inte igen"
   },
+  "createCustomer": {
+    "title": "Skapa kund",
+    "p1": "Lägg till en ny kundprofil med kontaktuppgifter och adress. När den sparats kan du registrera ordrar och betalningar för denna kund.",
+    "p2": "Kundtyp: Direktkunder faktureras direkt. Partnerkunder får en partnerersättning på varje order.",
+    "p3": "Fraktkostnad är ett fast belopp som läggs till på varje order för denna kund.",
+    "p4": "Använd 'Be kunden om information' för att generera en säker länk och låta kunden fylla i sina egna uppgifter.",
+    "shippingComingSoon": "Fraktkostnad per order och fraktkostnad baserad på plats kommer snart."
+  },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {
     "title": "Skapa en faktura",

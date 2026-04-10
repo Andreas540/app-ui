@@ -9,6 +9,14 @@
     "close": "Close",
     "dontShowAgain": "Don't show this again"
   },
+  "createCustomer": {
+    "title": "Create Customer",
+    "p1": "Add a new customer profile with contact details and address. Once saved, you can register orders and payments for this customer.",
+    "p2": "Customer Type: Direct customers are billed directly. Partner customers receive a partner commission on each order.",
+    "p3": "Shipping Cost is a fixed amount applied to every order for this customer.",
+    "p4": "Use 'Ask customer for information' to generate a secure link and let the customer fill in their own details.",
+    "shippingComingSoon": "Shipping cost per order and shipping cost based on location coming soon."
+  },
   "manageInvoices": "Manage invoices",
   "createInvoice": {
     "title": "Creating an Invoice",

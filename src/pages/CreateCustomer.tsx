@@ -1,17 +1,20 @@
 // src/pages/CreateCustomer.tsx
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createCustomer, updateCustomer, type CustomerType } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 // The one tenant that still uses the legacy 'BLV' customer_type label
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
 export default function CreateCustomer() {
   const { t, i18n } = useTranslation()
+  const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
   const { user } = useAuth()
+  const tenantUi = getTenantConfig(user?.tenantId).ui
 
   // For the BLV tenant the "direct" type is stored as 'BLV'; everyone else uses 'Direct'.
   // Both values behave identically in all business logic — only the label/stored value differs.
@@ -42,6 +45,23 @@ export default function CreateCustomer() {
   const [country, setCountry] = useState('')
 
   const CONTROL_H = 44
+
+  // Info overlay
+  const [showInfo, setShowInfo] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!showInfo) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowInfo(false) }
+    const onDown = (e: MouseEvent) => {
+      if (overlayRef.current && !overlayRef.current.contains(e.target as Node)) setShowInfo(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [showInfo])
 
   // Ask customer for information
   const [showAskCustomer, setShowAskCustomer] = useState(false)
@@ -133,8 +153,51 @@ export default function CreateCustomer() {
   }
 
   return (
-    <div className="card" style={{maxWidth: 900}}>
-      <h3>{t('customers.createTitle')}</h3>
+    <div className="card" style={{maxWidth: 900, position: 'relative'}}>
+
+      {/* Info overlay */}
+      {showInfo && (
+        <div
+          ref={overlayRef}
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0,
+            background: 'var(--card, #fff)',
+            border: '1px solid var(--border)', borderRadius: 8,
+            padding: '16px 20px', zIndex: 200,
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('createCustomer.title')}</div>
+            <button
+              onClick={() => setShowInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1','p2','p3','p4'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{ti(`createCustomer.${k}`)}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <h3 style={{ margin: 0 }}>{t('customers.createTitle')}</h3>
+        {tenantUi.showInfoIconsPages && (
+          <button
+            onClick={() => setShowInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+        )}
+      </div>
 
       {/* Ask customer for information */}
       <div style={{ marginBottom: 16 }}>
@@ -244,6 +307,9 @@ export default function CreateCustomer() {
               </button>
             </div>
           )}
+          <p style={{ margin: '6px 0 0', fontSize: 12, fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+            {ti('createCustomer.shippingComingSoon')}
+          </p>
         </div>
       </div>
 
