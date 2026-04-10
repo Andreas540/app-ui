@@ -301,7 +301,16 @@
     "contact": "Kontakt",
     "alertNameRequired": "Namn krävs",
     "alertShippingNumber": "Fraktkostnaden måste vara ett nummer (eller lämna tomt)",
-    "failedUpdate": "Det gick inte att uppdatera kunden"
+    "failedUpdate": "Det gick inte att uppdatera kunden",
+    "askCustomerForInfo": "Be kunden om information",
+    "askCustomerLine1": "Skicka den här länken till din kund så att de kan fylla i formuläret.",
+    "askCustomerLine2": "Kundtyp och fraktkostnad delas inte.",
+    "askCustomerLine3": "Din kund har inte tillgång till appen, endast formuläret.",
+    "shareLink": "Dela länk",
+    "generating": "Genererar…",
+    "linkReady": "Länk klar — skicka till din kund:",
+    "copyLink": "Kopiera",
+    "copied": "Kopierat!"
   },
   "customerDetail": {
     "editCustomer": "Redigera kund",

@@ -301,7 +301,16 @@
     "contact": "Contacto",
     "alertNameRequired": "El nombre es obligatorio",
     "alertShippingNumber": "El costo de envío debe ser un número (o déjalo vacío)",
-    "failedUpdate": "Error al actualizar el cliente"
+    "failedUpdate": "Error al actualizar el cliente",
+    "askCustomerForInfo": "Pedir información al cliente",
+    "askCustomerLine1": "Envía este enlace a tu cliente para que rellene el formulario.",
+    "askCustomerLine2": "El Tipo de cliente y el Costo de envío no se compartirán.",
+    "askCustomerLine3": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario.",
+    "shareLink": "Compartir enlace",
+    "generating": "Generando…",
+    "linkReady": "Enlace listo — envíalo a tu cliente:",
+    "copyLink": "Copiar",
+    "copied": "¡Copiado!"
   },
   "customerDetail": {
     "editCustomer": "Editar cliente",

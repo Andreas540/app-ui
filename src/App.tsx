@@ -41,6 +41,7 @@ import TenantAdmin from './pages/TenantAdmin'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import TenantCustomization from './pages/TenantCustomization'
+import CustomerFormPage from './pages/CustomerFormPage'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
@@ -70,14 +71,18 @@ function apiBase() {
 export default function App() {
   const location = useLocation()
 
+  const isCustomerFormPath = useMemo(() =>
+    (location.pathname || '/').startsWith('/customer-form'),
+  [location.pathname])
+
   const isEmployeePath = useMemo(() => {
   const p = location.pathname || '/'
   const hash = window.location.hash || ''
-  
+
   // Only treat as employee path if:
   // 1. Starts with /time-entry-simple, OR
   // 2. Has /time-entry/ with something after it (the token)
-  return p.startsWith('/time-entry-simple') || 
+  return p.startsWith('/time-entry-simple') ||
          p.match(/^\/time-entry\/.+/) !== null ||
          hash.includes('/time-entry-simple') ||
          hash.match(/\/time-entry\/.+/) !== null
@@ -89,6 +94,10 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
+      if (isCustomerFormPath) {
+        if (alive) setEmployeeMode(false)
+        return
+      }
       if (isEmployeePath) {
         if (alive) setEmployeeMode(true)
         return
@@ -121,7 +130,9 @@ export default function App() {
     return () => {
       alive = false
     }
-  }, [isEmployeePath])
+  }, [isEmployeePath, isCustomerFormPath])
+
+  if (isCustomerFormPath) return <CustomerFormShell />
 
   if (employeeMode === null) {
     return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
@@ -158,6 +169,15 @@ function EmployeeShell() {
         </Routes>
       </main>
     </div>
+  )
+}
+
+function CustomerFormShell() {
+  return (
+    <Routes>
+      <Route path="/customer-form/:token" element={<CustomerFormPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
