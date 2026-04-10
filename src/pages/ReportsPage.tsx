@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -309,6 +311,8 @@ const VISIBLE_DESKTOP = 6
 export default function ReportsPage() {
   const { t } = useTranslation('reports')
   const { t: tc } = useTranslation()
+  const { user } = useAuth()
+  const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsReports
   const [rpsData,      setRpsData]      = useState<RpsPoint[]>([])
   const [loading,      setLoading]      = useState(true)
   const [err,          setErr]          = useState<string | null>(null)
@@ -538,18 +542,20 @@ export default function ReportsPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{t(`${report.id}.title`)}</span>
-                  <button
-                    onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
-                    title={t('aboutReport')}
-                    style={{
-                      width: 20, height: 20, padding: 0, flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      borderRadius: '50%', cursor: 'pointer',
-                      background: 'var(--border, rgba(255,255,255,0.15))',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
-                    }}
-                  >i</button>
+                  {showInfoIcons && (
+                    <button
+                      onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
+                      title={t('aboutReport')}
+                      style={{
+                        width: 20, height: 20, padding: 0, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '50%', cursor: 'pointer',
+                        background: 'var(--border, rgba(255,255,255,0.15))',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+                      }}
+                    >i</button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button

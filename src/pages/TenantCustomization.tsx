@@ -12,7 +12,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40 // control height
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -226,6 +226,19 @@ export default function TenantCustomization() {
         delete ui.showOrderNumberInList
         return { ...p, ui }
       })
+    } else if (section === 'welcome') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showWelcomeModal
+        return { ...p, ui }
+      })
+    } else if (section === 'ui-info') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showInfoIconsPages
+        delete ui.showInfoIconsReports
+        return { ...p, ui }
+      })
     }
   }
 
@@ -276,12 +289,18 @@ export default function TenantCustomization() {
               <optgroup label={t('tenantCustom.groupGlobal')}>
                 <option value="terminology">{t('tenantCustom.sectionTerminology')}</option>
               </optgroup>
-              <optgroup label={t('tenantCustom.groupModules')}>
+              <optgroup label={t('tenantCustom.groupFunctions')}>
                 <option value="payments">{t('tenantCustom.sectionPayments')}</option>
                 <option value="booking">{t('tenantCustom.sectionBooking')}</option>
               </optgroup>
               <optgroup label={t('tenantCustom.groupPages')}>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
+              </optgroup>
+              <optgroup label={t('tenantCustom.groupModals')}>
+                <option value="welcome">{t('tenantCustom.sectionWelcome')}</option>
+              </optgroup>
+              <optgroup label={t('tenantCustom.groupUI')}>
+                <option value="ui-info">{t('tenantCustom.sectionUiInfo')}</option>
               </optgroup>
             </select>
           </div>
@@ -380,6 +399,28 @@ export default function TenantCustomization() {
               customized={cu.showOrderNumberInList !== undefined && cu.showOrderNumberInList !== du.showOrderNumberInList}>
               <Toggle value={cu.showOrderNumberInList ?? du.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
             </Row>
+          )}
+
+          {/* Modals > Welcome */}
+          {section === 'welcome' && (
+            <Row label={t('tenantCustom.showWelcomeModal')} help={t('tenantCustom.showWelcomeModalHelp')}
+              customized={cu.showWelcomeModal !== undefined && cu.showWelcomeModal !== du.showWelcomeModal}>
+              <Toggle value={cu.showWelcomeModal ?? du.showWelcomeModal} onChange={v => setUi('showWelcomeModal', v)} />
+            </Row>
+          )}
+
+          {/* UI > Info icons */}
+          {section === 'ui-info' && (
+            <>
+              <Row label={t('tenantCustom.showInfoIconsPages')} help={t('tenantCustom.showInfoIconsPagesHelp')}
+                customized={cu.showInfoIconsPages !== undefined && cu.showInfoIconsPages !== du.showInfoIconsPages}>
+                <Toggle value={cu.showInfoIconsPages ?? du.showInfoIconsPages} onChange={v => setUi('showInfoIconsPages', v)} />
+              </Row>
+              <Row label={t('tenantCustom.showInfoIconsReports')} help={t('tenantCustom.showInfoIconsReportsHelp')}
+                customized={cu.showInfoIconsReports !== undefined && cu.showInfoIconsReports !== du.showInfoIconsReports}>
+                <Toggle value={cu.showInfoIconsReports ?? du.showInfoIconsReports} onChange={v => setUi('showInfoIconsReports', v)} />
+              </Row>
+            </>
           )}
 
           {/* Footer actions */}

@@ -22,6 +22,9 @@ export interface TenantConfig {
     showCostEffectiveness: boolean  // defined but not yet wired in UI
     requiresApproval: boolean       // defined but not yet wired in UI
     showOrderNumberInList: boolean
+    showWelcomeModal: boolean
+    showInfoIconsPages: boolean
+    showInfoIconsReports: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -75,6 +78,9 @@ export const defaultConfig: TenantConfig = {
     showCostEffectiveness: true,
     requiresApproval: false,
     showOrderNumberInList: true,
+    showWelcomeModal: true,
+    showInfoIconsPages: true,
+    showInfoIconsReports: true,
   },
   booking: {
     serviceTypeLabel: 'Session',

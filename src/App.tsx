@@ -5,6 +5,7 @@ import { NavLink, Link, Route, Routes, useLocation, Navigate } from 'react-route
 import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
+import { getTenantConfig } from './lib/tenantConfig'
 import { getAuthHeaders } from './lib/api'
 
 import Dashboard from './pages/Dashboard'
@@ -882,7 +883,7 @@ useEffect(() => {
       </div>
 
       {/* ── Welcome modal ── */}
-      {showWelcomeModal && (() => {
+      {showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
         const linkStyle = { textDecoration: 'underline' } as const
         const messagePath = user?.role === 'super_admin' ? '/messages' : '/contact'
         const InfoBadge = () => (
