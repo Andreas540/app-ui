@@ -1,4 +1,12 @@
 {
+  "welcome": {
+    "title": "¡Bienvenido al Bizniz Optimizer!",
+    "p1": "Para empezar primero debes crear un <customerLink>cliente</customerLink>. Después necesitas crear un <productLink>producto</productLink> o un <serviceLink>servicio</serviceLink>.",
+    "p2": "En todas las páginas encontrarás un icono i con información sobre esa página. Si tienes preguntas sin respuesta, no dudes en enviar un <messageLink>mensaje</messageLink>.",
+    "p3": "En la página de <settingsLink>Configuración</settingsLink> puedes cambiar tu contraseña.",
+    "close": "Cerrar",
+    "dontShowAgain": "No mostrar de nuevo"
+  },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
     "title": "Crear una factura",

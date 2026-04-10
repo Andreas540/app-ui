@@ -1,4 +1,12 @@
 {
+  "welcome": {
+    "title": "Välkommen till Bizniz Optimizer!",
+    "p1": "För att komma igång behöver du först skapa en <customerLink>kund</customerLink>. Sedan behöver du skapa en <productLink>produkt</productLink> eller en <serviceLink>tjänst</serviceLink>.",
+    "p2": "På alla sidor hittar du ett i-ikon med information om den sidan. Om du har frågor, tveka inte att skicka ett <messageLink>meddelande</messageLink>.",
+    "p3": "På sidan <settingsLink>Inställningar</settingsLink> kan du byta lösenord.",
+    "close": "Stäng",
+    "dontShowAgain": "Visa inte igen"
+  },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {
     "title": "Skapa en faktura",

@@ -1,4 +1,12 @@
 {
+  "welcome": {
+    "title": "Welcome to the Bizniz Optimizer!",
+    "p1": "To start you first need to create a <customerLink>customer</customerLink>. After that you need to create a <productLink>product</productLink> or a <serviceLink>service</serviceLink>.",
+    "p2": "On all pages you will find an i icon with information about that page. If you have unanswered questions, don't hesitate to send a <messageLink>message</messageLink>.",
+    "p3": "On the <settingsLink>Settings</settingsLink> page you can change your password.",
+    "close": "Close",
+    "dontShowAgain": "Don't show this again"
+  },
   "manageInvoices": "Manage invoices",
   "createInvoice": {
     "title": "Creating an Invoice",
