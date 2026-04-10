@@ -225,7 +225,7 @@ function MainApp() {
   const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
-  const [showWelcomeModal, setShowWelcomeModal] = useState(() => !localStorage.getItem('welcomeDismissed'))
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => !localStorage.getItem('welcomeDismissed') && !sessionStorage.getItem('welcomeClosed'))
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
 
@@ -886,6 +886,7 @@ useEffect(() => {
       {showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
         const linkStyle = { textDecoration: 'underline' } as const
         const messagePath = user?.role === 'super_admin' ? '/messages' : '/contact'
+        const closeModal = () => { sessionStorage.setItem('welcomeClosed', '1'); setShowWelcomeModal(false) }
         const InfoBadge = () => (
           <span style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -899,7 +900,7 @@ useEffect(() => {
         return (
           <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-            onClick={() => setShowWelcomeModal(false)}
+            onClick={closeModal}
           >
             <div
               className="card"
@@ -913,9 +914,9 @@ useEffect(() => {
                   i18nKey="welcome.p1"
                   ns="info"
                   components={{
-                    customerLink: <Link to="/customers" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
-                    productLink:  <Link to="/products/new?type=product" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
-                    serviceLink:  <Link to="/products/new?type=service" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    customerLink: <Link to="/customers" onClick={closeModal} style={linkStyle} />,
+                    productLink:  <Link to="/products/new?type=product" onClick={closeModal} style={linkStyle} />,
+                    serviceLink:  <Link to="/products/new?type=service" onClick={closeModal} style={linkStyle} />,
                   }}
                 />
               </p>
@@ -925,7 +926,7 @@ useEffect(() => {
                   ns="info"
                   components={{
                     infoIcon:    <InfoBadge />,
-                    messageLink: <Link to={messagePath} onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    messageLink: <Link to={messagePath} onClick={closeModal} style={linkStyle} />,
                   }}
                 />
               </p>
@@ -934,7 +935,7 @@ useEffect(() => {
                   i18nKey="welcome.p3"
                   ns="info"
                   components={{
-                    settingsLink: <Link to="/settings" onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    settingsLink: <Link to="/settings" onClick={closeModal} style={linkStyle} />,
                   }}
                 />
               </p>
@@ -943,7 +944,7 @@ useEffect(() => {
                   i18nKey="welcome.p4"
                   ns="info"
                   components={{
-                    letUsKnowLink: <Link to={messagePath} onClick={() => setShowWelcomeModal(false)} style={linkStyle} />,
+                    letUsKnowLink: <Link to={messagePath} onClick={closeModal} style={linkStyle} />,
                   }}
                 />
               </p>
@@ -951,7 +952,7 @@ useEffect(() => {
                 <button onClick={() => { localStorage.setItem('welcomeDismissed', '1'); setShowWelcomeModal(false) }}>
                   {ti('welcome.dontShowAgain')}
                 </button>
-                <button className="primary" onClick={() => setShowWelcomeModal(false)}>
+                <button className="primary" onClick={closeModal}>
                   {ti('welcome.close')}
                 </button>
               </div>
