@@ -241,7 +241,7 @@ function pathnameToAction(pathname: string): string | null {
 
 function MainApp() {
   const { t } = useTranslation('navigation')
-  const { t: ti } = useTranslation('info')
+  const { t: ti, ready: tiReady } = useTranslation('info')
   const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -903,7 +903,7 @@ useEffect(() => {
       </div>
 
       {/* ── Welcome modal ── */}
-      {showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
+      {tiReady && showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
         const linkStyle = { textDecoration: 'underline' } as const
         const messagePath = user?.role === 'super_admin' ? '/messages' : '/contact'
         const closeModal = () => { sessionStorage.setItem('welcomeClosed', '1'); setShowWelcomeModal(false) }

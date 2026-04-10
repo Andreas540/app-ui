@@ -10,7 +10,7 @@ i18n
     lng: 'en',
     debug: false,
 
-    ns: ['common', 'navigation', 'reports'],
+    ns: ['common', 'navigation', 'reports', 'info'],
     defaultNS: 'common',
 
     interpolation: {
