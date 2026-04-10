@@ -694,6 +694,8 @@
     "user": "Användare",
     "enterName": "Ange ditt namn",
     "quickAccess": "Snabbknappar ({{count}}/4 valda)",
+    "manageQuickAccess": "Hantera snabbknappar",
+    "quickAccessCount": "{{count}}/4 valda",
     "maxReached": "Max 4 uppnått",
     "allAdded": "Alla tillagda",
     "addShortcut": "Lägg till genväg…",

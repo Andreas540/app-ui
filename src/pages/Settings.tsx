@@ -184,78 +184,76 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Separator */}
+      <div style={{ marginTop: 20, borderBottom: '2px solid var(--line)' }} />
+
       {/* Quick access buttons */}
       <div style={{ marginTop: 20 }}>
-        <label>{t('settingsPage.quickAccess', { count: selectedShortcuts.length })}</label>
+        <h4 style={{ margin: '0 0 10px' }}>{t('settingsPage.manageQuickAccess')}</h4>
 
-        <div className="row row-2col-mobile" style={{ marginTop: 8, alignItems: 'flex-start' }}>
+        {/* Dropdown + buttons on one row */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <select
+            value=""
+            onChange={(e) => { if (e.target.value) addShortcut(e.target.value as FeatureId) }}
+            disabled={selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              opacity: selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 0.5 : 1,
+              cursor:  selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <option value="" disabled>
+              {selectedShortcuts.length >= 4
+                ? t('settingsPage.maxReached')
+                : unselectedShortcuts.length === 0
+                  ? t('settingsPage.allAdded')
+                  : t('settingsPage.addShortcut')}
+            </option>
+            {unselectedShortcuts.map(s => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
 
-          {/* Dropdown */}
-          <div>
-            <select
-              value=""
-              onChange={(e) => { if (e.target.value) addShortcut(e.target.value as FeatureId) }}
-              disabled={selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0}
-              style={{
-                width: '100%',
-                opacity: selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 0.5 : 1,
-                cursor:  selectedShortcuts.length >= 4 || unselectedShortcuts.length === 0 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <option value="" disabled>
-                {selectedShortcuts.length >= 4
-                  ? t('settingsPage.maxReached')
-                  : unselectedShortcuts.length === 0
-                    ? t('settingsPage.allAdded')
-                    : t('settingsPage.addShortcut')}
-              </option>
-              {unselectedShortcuts.map(s => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
-            <div className="helper" style={{ marginTop: 4 }}>
-              {t('settingsPage.quickAccessHelp')}
-            </div>
-          </div>
+          {selectedShortcuts.map(id => {
+            const s = ALL_SHORTCUTS.find(x => x.id === id)
+            if (!s) return null
+            return (
+              <button
+                key={id}
+                onClick={() => removeShortcut(id)}
+                title={t('settingsPage.removeTitle', { label: s.label })}
+                style={{
+                  width: 40,
+                  height: 40,
+                  border: '1px solid var(--primary)',
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: s.letter.length > 1 ? 11 : 14,
+                  letterSpacing: s.letter.length > 1 ? '-0.5px' : 'normal',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {s.letter}
+              </button>
+            )
+          })}
+        </div>
 
-          {/* Selected icons — horizontal */}
-          <div style={{ display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap', paddingTop: 2 }}>
-            {selectedShortcuts.map(id => {
-              const s = ALL_SHORTCUTS.find(x => x.id === id)
-              if (!s) return null
-              return (
-                <button
-                  key={id}
-                  onClick={() => removeShortcut(id)}
-                  title={t('settingsPage.removeTitle', { label: s.label })}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    border: '1px solid var(--primary)',
-                    background: 'var(--primary)',
-                    color: '#fff',
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: s.letter.length > 1 ? 11 : 14,
-                    letterSpacing: s.letter.length > 1 ? '-0.5px' : 'normal',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  {s.letter}
-                </button>
-              )
-            })}
-          </div>
-
+        <div className="helper" style={{ marginTop: 4 }}>
+          {t('settingsPage.quickAccessCount', { count: selectedShortcuts.length })}
         </div>
       </div>
 
       {/* Appearance */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--line)' }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -276,7 +274,7 @@ export default function Settings() {
       </div>
 
       {/* Password Change */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--line)' }}>
         <input
           type="text" name="username" autoComplete="username"
           value={localStorage.getItem('userEmail') || ''}

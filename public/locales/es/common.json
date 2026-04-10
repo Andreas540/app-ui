@@ -694,6 +694,8 @@
     "user": "Usuario",
     "enterName": "Ingresa tu nombre",
     "quickAccess": "Botones de acceso rápido ({{count}}/4 seleccionados)",
+    "manageQuickAccess": "Gestionar botones de acceso rápido",
+    "quickAccessCount": "{{count}}/4 seleccionados",
     "maxReached": "Máximo 4 alcanzado",
     "allAdded": "Todos agregados",
     "addShortcut": "Agregar acceso directo…",
