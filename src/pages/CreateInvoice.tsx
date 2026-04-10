@@ -294,20 +294,22 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
         </>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ margin: 0 }}>{t('invoice.createTitle')}</h2>
-          <button
-            onClick={() => setShowInfo(v => !v)}
-            style={{
-              width: 20, height: 20, padding: 0, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: '50%', cursor: 'pointer',
-              background: 'var(--border, rgba(0,0,0,0.08))',
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
-            }}
-          >i</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>{t('invoice.createTitle')}</h2>
+            <button
+              onClick={() => setShowInfo(v => !v)}
+              style={{
+                width: 20, height: 20, padding: 0, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '50%', cursor: 'pointer',
+                background: 'var(--border, rgba(0,0,0,0.08))',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+              }}
+            >i</button>
+          </div>
           <button
             onClick={() => navigate('/admin', { state: { openInvoicingTab: true } })}
             style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, height: 24 }}
