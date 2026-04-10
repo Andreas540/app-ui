@@ -14,6 +14,7 @@ export default function Settings() {
   const [tenantLoading, setTenantLoading] = useState(true)
   const [userName, setUserName]           = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
+  const [loadedShortcuts, setLoadedShortcuts]     = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
@@ -57,9 +58,9 @@ export default function Settings() {
   // ── Change tracking ───────────────────────────────────────────────────────
 
   useEffect(() => {
-    const shortcutsChanged = JSON.stringify(selectedShortcuts) !== JSON.stringify(DEFAULT_SHORTCUTS)
+    const shortcutsChanged = JSON.stringify(selectedShortcuts) !== JSON.stringify(loadedShortcuts)
     setHasChanges(userName.trim() !== '' || shortcutsChanged)
-  }, [userName, selectedShortcuts])
+  }, [userName, selectedShortcuts, loadedShortcuts])
 
   // ── Shortcuts ─────────────────────────────────────────────────────────────
 
@@ -132,7 +133,9 @@ export default function Settings() {
       if (saved) {
         const s = JSON.parse(saved)
         setUserName(s.userName || '')
-        setSelectedShortcuts(s.selectedShortcuts || DEFAULT_SHORTCUTS)
+        const shortcuts = s.selectedShortcuts || DEFAULT_SHORTCUTS
+        setSelectedShortcuts(shortcuts)
+        setLoadedShortcuts(shortcuts)
       }
     } catch (err) {
       console.error('Failed to load saved settings:', err)
