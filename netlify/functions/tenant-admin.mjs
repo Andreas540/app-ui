@@ -81,6 +81,16 @@ async function handleGet(event) {
       return cors(200, { invoiceConfig: tenant[0]?.invoice_config || null })
     }
 
+    if (action === 'getBookingConfig') {
+      const tenant = await sql`
+        SELECT booking_slug, booking_payment_provider FROM tenants WHERE id = ${tenantId} LIMIT 1
+      `
+      return cors(200, {
+        slug:            tenant[0]?.booking_slug             || '',
+        paymentProvider: tenant[0]?.booking_payment_provider || 'none',
+      })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -286,6 +296,39 @@ if (action === 'toggleUserStatus') {
 
   return cors(200, { success: true, isActive: isActiveBoolean })
 }
+
+    if (action === 'updateBookingConfig') {
+      const { slug, paymentProvider } = body
+
+      // Sanitize slug: lowercase alphanumeric + hyphens, no leading/trailing hyphens, max 60 chars
+      const cleanSlug = (slug || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60)
+
+      // Check uniqueness (skip if empty — null is always allowed)
+      if (cleanSlug) {
+        const existing = await sql`
+          SELECT id FROM tenants WHERE booking_slug = ${cleanSlug} AND id != ${tenantId} LIMIT 1
+        `
+        if (existing.length) {
+          return cors(400, { error: 'That booking URL is already taken. Please choose another.' })
+        }
+      }
+
+      const validProviders = ['none', 'stripe', 'amp']
+      const provider = validProviders.includes(paymentProvider) ? paymentProvider : 'none'
+
+      await sql`
+        UPDATE tenants
+        SET booking_slug             = ${cleanSlug || null},
+            booking_payment_provider = ${provider}
+        WHERE id = ${tenantId}
+      `
+
+      return cors(200, { ok: true, slug: cleanSlug, paymentProvider: provider })
+    }
 
     if (action === 'updateInvoiceConfig') {
       const { invoiceConfig } = body

@@ -1,6 +1,5 @@
 // src/pages/TenantAdminBookingTab.tsx
 // Booking configuration tab rendered inside TenantAdmin.
-// Step 3 will add: booking slug + payment provider selection.
 
 import { useEffect, useState } from 'react'
 import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
@@ -28,15 +27,37 @@ function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
+function sanitizeSlug(raw: string) {
+  return raw.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/, '').slice(0, 60)
+}
+
 export default function TenantAdminBookingTab() {
+  // ── Booking settings ──────────────────────────────────────────────────────
+  const [slug, setSlug]                     = useState('')
+  const [paymentProvider, setPaymentProvider] = useState<'none' | 'stripe' | 'amp'>('none')
+  const [savingConfig, setSavingConfig]     = useState(false)
+  const [configLoaded, setConfigLoaded]     = useState(false)
+
+  // ── Availability ──────────────────────────────────────────────────────────
   const [services, setServices]     = useState<ProductWithCost[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [week, setWeek]             = useState<WeekState>(defaultWeek())
-  const [loading, setLoading]       = useState(false)
-  const [saving, setSaving]         = useState(false)
+  const [loadingAvail, setLoadingAvail] = useState(false)
+  const [savingAvail, setSavingAvail]   = useState(false)
 
-  // Load services on mount
+  // Load booking config + services on mount
   useEffect(() => {
+    fetch(`${apiBase()}/api/tenant-admin?action=getBookingConfig`, {
+      headers: getAuthHeaders(),
+    })
+      .then(r => r.json())
+      .then(data => {
+        setSlug(data.slug || '')
+        setPaymentProvider(data.paymentProvider || 'none')
+        setConfigLoaded(true)
+      })
+      .catch(console.error)
+
     listProducts().then(({ products }) => {
       const svcs = products.filter(p => p.category === 'service')
       setServices(svcs)
@@ -47,7 +68,7 @@ export default function TenantAdminBookingTab() {
   // Load availability when service selection changes
   useEffect(() => {
     if (!selectedId) return
-    setLoading(true)
+    setLoadingAvail(true)
     fetch(`${apiBase()}/api/booking-availability?service_id=${selectedId}`, {
       headers: getAuthHeaders(),
     })
@@ -64,16 +85,36 @@ export default function TenantAdminBookingTab() {
         setWeek(w)
       })
       .catch(console.error)
-      .finally(() => setLoading(false))
+      .finally(() => setLoadingAvail(false))
   }, [selectedId])
 
   function setDay(dow: number, patch: Partial<DayState>) {
     setWeek(prev => ({ ...prev, [dow]: { ...prev[dow], ...patch } }))
   }
 
-  async function save() {
+  async function saveConfig() {
+    setSavingConfig(true)
+    try {
+      const res = await fetch(`${apiBase()}/api/tenant-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateBookingConfig', slug, paymentProvider }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save')
+      // Update slug to the sanitized value the backend returned
+      setSlug(data.slug || '')
+      alert('Booking settings saved!')
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save')
+    } finally {
+      setSavingConfig(false)
+    }
+  }
+
+  async function saveAvailability() {
     if (!selectedId) return
-    setSaving(true)
+    setSavingAvail(true)
     try {
       const availability = DAYS
         .filter(d => week[d.dow].active)
@@ -93,27 +134,78 @@ export default function TenantAdminBookingTab() {
     } catch (e: any) {
       alert(e?.message || 'Failed to save')
     } finally {
-      setSaving(false)
+      setSavingAvail(false)
     }
   }
 
   const selected = services.find(s => s.id === selectedId)
+  const publicUrl = slug ? `${window.location.origin}/book/${slug}` : ''
 
   return (
     <div>
+
+      {/* ── Booking settings ── */}
+      <h4 style={{ margin: '0 0 16px' }}>Booking settings</h4>
+
+      <div style={{ marginBottom: 16 }}>
+        <label>Booking page URL</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{
+            padding: '0 10px', height: 'var(--control-h)', display: 'flex', alignItems: 'center',
+            fontSize: 14, color: 'var(--muted)', background: 'var(--btn-bg)',
+            border: '1px solid var(--border)', borderRight: 'none', borderRadius: '10px 0 0 10px',
+            whiteSpace: 'nowrap',
+          }}>
+            /book/
+          </span>
+          <input
+            value={slug}
+            onChange={e => setSlug(sanitizeSlug(e.target.value))}
+            placeholder="your-business-name"
+            style={{ borderRadius: '0 10px 10px 0', flex: 1, maxWidth: 260 }}
+          />
+        </div>
+        {publicUrl && (
+          <div className="helper" style={{ marginTop: 4 }}>{publicUrl}</div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label>Payment provider</label>
+        <select
+          value={paymentProvider}
+          onChange={e => setPaymentProvider(e.target.value as 'none' | 'stripe' | 'amp')}
+          style={{ maxWidth: 280 }}
+        >
+          <option value="none">None (manual / pay on arrival)</option>
+          <option value="stripe">Stripe</option>
+          <option value="amp">AMP Payment Systems</option>
+        </select>
+      </div>
+
+      <button
+        className="primary"
+        onClick={saveConfig}
+        disabled={savingConfig || !configLoaded}
+        style={{ marginBottom: 28 }}
+      >
+        {savingConfig ? 'Saving…' : 'Save settings'}
+      </button>
+
+      {/* ── Separator ── */}
+      <div style={{ borderTop: '1px solid var(--separator)', marginBottom: 24 }} />
+
+      {/* ── Availability ── */}
       <h4 style={{ margin: '0 0 16px' }}>Availability</h4>
 
-      {services.length === 0 && !loading ? (
+      {services.length === 0 && !loadingAvail ? (
         <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
           No services found. Add services on the Products &amp; Services page first.
         </p>
       ) : (
         <>
-          {/* Service selector */}
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
-              Service
-            </label>
+            <label>Service</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <select
                 value={selectedId}
@@ -137,8 +229,7 @@ export default function TenantAdminBookingTab() {
             </div>
           </div>
 
-          {/* Weekly schedule */}
-          {loading ? (
+          {loadingAvail ? (
             <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
           ) : (
             <div style={{ display: 'grid', gap: 10 }}>
@@ -159,7 +250,6 @@ export default function TenantAdminBookingTab() {
                     >
                       {label}
                     </label>
-
                     {day.active ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
@@ -187,11 +277,11 @@ export default function TenantAdminBookingTab() {
 
           <button
             className="primary"
-            onClick={save}
-            disabled={saving || loading}
+            onClick={saveAvailability}
+            disabled={savingAvail || loadingAvail}
             style={{ marginTop: 20 }}
           >
-            {saving ? 'Saving…' : 'Save availability'}
+            {savingAvail ? 'Saving…' : 'Save availability'}
           </button>
         </>
       )}

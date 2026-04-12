@@ -31,6 +31,7 @@ export interface TenantConfig {
     bookingProviderName: string      // display name of connected provider, e.g. "SimplyBook"
     smsRemindersEnabled: boolean     // show/hide reminder settings UI
     showBookingParticipants: boolean // show participant management for group bookings
+    paymentProvider: 'none' | 'stripe' | 'amp'  // payment provider for public booking page
   }
   invoice: {
     autoInvoiceNumber: boolean       // generate invoice number from dates + customer initials
@@ -87,6 +88,7 @@ export const defaultConfig: TenantConfig = {
     bookingProviderName: '',
     smsRemindersEnabled: false,
     showBookingParticipants: false,
+    paymentProvider: 'none' as const,
   },
   invoice: {
     autoInvoiceNumber: false,
