@@ -147,7 +147,7 @@ async function createBooking(event) {
       : (event.body || '{}')
     const body = JSON.parse(rawBody)
 
-    const { slug, service_id, date, start_time, name, email, phone } = body
+    const { slug, service_id, date, start_time, name, email, phone, sms_consent } = body
 
     // Validate required fields
     if (!slug)       return cors(400, { error: 'slug is required' })
@@ -223,16 +223,17 @@ async function createBooking(event) {
     if (existingCust.length) {
       customerId = existingCust[0].id
       // Update phone if provided and not already set
-      if (cleanPhone) {
-        await sql`
-          UPDATE customers SET phone = COALESCE(phone, ${cleanPhone}), name = COALESCE(NULLIF(name,''), ${cleanName})
-          WHERE id = ${customerId}
-        `
-      }
+      await sql`
+        UPDATE customers
+        SET phone       = COALESCE(phone, ${cleanPhone}),
+            name        = COALESCE(NULLIF(name,''), ${cleanName}),
+            sms_consent = CASE WHEN ${!!sms_consent} THEN true ELSE sms_consent END
+        WHERE id = ${customerId}
+      `
     } else {
       const newCust = await sql`
         INSERT INTO customers (tenant_id, name, email, phone, customer_type, sms_consent)
-        VALUES (${tenantId}, ${cleanName}, ${cleanEmail}, ${cleanPhone}, 'Direct', ${!!cleanPhone})
+        VALUES (${tenantId}, ${cleanName}, ${cleanEmail}, ${cleanPhone}, 'Direct', ${!!sms_consent})
         RETURNING id
       `
       customerId = newCust[0].id

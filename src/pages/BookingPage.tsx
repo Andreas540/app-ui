@@ -24,40 +24,34 @@ function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
-function formatDate(ymd: string) {
-  // "2025-03-14" → "Friday, March 14, 2025"
-  const [y, m, d] = ymd.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+function todayYMD(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function ymd(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function formatDate(d: string) {
+  const [y, m, day] = d.split('-').map(Number)
+  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
 }
 
+function formatDateShort(d: string) {
+  const [y, m, day] = d.split('-').map(Number)
+  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
 function formatTime(hm: string) {
-  // "14:30" → "2:30 PM"
   const [h, m] = hm.split(':').map(Number)
   const ampm = h >= 12 ? 'PM' : 'AM'
   const h12  = h % 12 || 12
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
-}
-
-// Generate list of dates for the next N days (YYYY-MM-DD)
-function upcomingDates(n: number): string[] {
-  const dates: string[] = []
-  const today = new Date()
-  for (let i = 0; i < n; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    dates.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    )
-  }
-  return dates
-}
-
-// Parse YYYY-MM-DD and return JS day-of-week (0=Sun, 1=Mon, …)
-function dowOfDate(ymd: string): number {
-  const [y, m, d] = ymd.split('-').map(Number)
-  return new Date(y, m - 1, d).getDay()
 }
 
 function formatPrice(amount: string | number | null, currency: string | null) {
@@ -71,18 +65,152 @@ function formatPrice(amount: string | number | null, currency: string | null) {
   }
 }
 
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December']
+const DOW_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa']
+
+// ── Calendar picker ───────────────────────────────────────────────────────────
+
+interface CalendarProps {
+  availableDows: number[]       // 0–6 days of week that have slots
+  selectedDate: string          // YYYY-MM-DD or ''
+  onSelect: (d: string) => void
+}
+
+function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps) {
+  const today = new Date()
+  const [year, setYear]   = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth()) // 0-based
+
+  const todayStr = todayYMD()
+
+  function prevMonth() {
+    if (year === today.getFullYear() && month === today.getMonth()) return
+    if (month === 0) { setYear(y => y - 1); setMonth(11) }
+    else setMonth(m => m - 1)
+  }
+
+  function nextMonth() {
+    if (month === 11) { setYear(y => y + 1); setMonth(0) }
+    else setMonth(m => m + 1)
+  }
+
+  // Build grid: first week may have leading blanks
+  const firstDow   = new Date(year, month, 1).getDay()   // 0=Sun
+  const daysInMon  = new Date(year, month + 1, 0).getDate()
+  const cells: (number | null)[] = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMon }, (_, i) => i + 1),
+  ]
+  // Pad to full weeks
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const canGoPrev = !(year === today.getFullYear() && month === today.getMonth())
+
+  return (
+    <div style={{ userSelect: 'none' }}>
+      {/* Month navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <button
+          onClick={prevMonth}
+          disabled={!canGoPrev}
+          style={{
+            background: 'none', border: 'none', fontSize: 20, cursor: canGoPrev ? 'pointer' : 'default',
+            color: canGoPrev ? '#1a1a1a' : '#ccc', padding: '4px 8px', borderRadius: 6,
+          }}
+          aria-label="Previous month"
+        >‹</button>
+        <span style={{ fontWeight: 600, fontSize: 15 }}>{MONTH_NAMES[month]} {year}</span>
+        <button
+          onClick={nextMonth}
+          style={{
+            background: 'none', border: 'none', fontSize: 20, cursor: 'pointer',
+            color: '#1a1a1a', padding: '4px 8px', borderRadius: 6,
+          }}
+          aria-label="Next month"
+        >›</button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+        {DOW_LABELS.map(l => (
+          <div key={l} style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#999', padding: '2px 0' }}>
+            {l}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`blank-${i}`} />
+
+          const dateStr  = ymd(year, month, day)
+          const dow      = new Date(year, month, day).getDay()
+          const isPast   = dateStr < todayStr
+          const isAvail  = availableDows.includes(dow)
+          const disabled = isPast || !isAvail
+          const isSelected = dateStr === selectedDate
+          const isToday  = dateStr === todayStr
+
+          let bg = 'transparent'
+          let color = '#1a1a1a'
+          let border = '1.5px solid transparent'
+          let cursor = 'default'
+
+          if (disabled) {
+            color = '#ccc'
+          } else if (isSelected) {
+            bg = '#2563eb'
+            color = '#fff'
+            border = '1.5px solid #2563eb'
+            cursor = 'pointer'
+          } else {
+            cursor = 'pointer'
+            if (isToday) border = '1.5px solid #2563eb'
+          }
+
+          return (
+            <button
+              key={dateStr}
+              disabled={disabled}
+              onClick={() => !disabled && onSelect(dateStr)}
+              style={{
+                background: bg,
+                color,
+                border,
+                borderRadius: 7,
+                padding: '7px 2px',
+                fontSize: 14,
+                fontWeight: isToday ? 700 : 400,
+                cursor,
+                textAlign: 'center',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (!disabled && !isSelected) e.currentTarget.style.background = '#f0f4ff' }}
+              onMouseLeave={e => { if (!disabled && !isSelected) e.currentTarget.style.background = 'transparent' }}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
 
   // Page data
-  const [tenantName, setTenantName]       = useState('')
-  const [services, setServices]           = useState<Service[]>([])
-  const [availability, setAvailability]   = useState<Record<string, number[]>>({})
+  const [tenantName, setTenantName]     = useState('')
+  const [services, setServices]         = useState<Service[]>([])
+  const [availability, setAvailability] = useState<Record<string, number[]>>({})
 
   // Step
-  const [step, setStep] = useState<Step>('loading')
+  const [step, setStep]       = useState<Step>('loading')
   const [errorMsg, setErrorMsg] = useState('')
 
   // Selections
@@ -93,9 +221,10 @@ export default function BookingPage() {
   const [loadingSlots, setLoadingSlots]       = useState(false)
 
   // Contact form
-  const [name, setName]   = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+  const [name, setName]           = useState('')
+  const [email, setEmail]         = useState('')
+  const [phone, setPhone]         = useState('')
+  const [smsConsent, setSmsConsent] = useState(false)
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -144,9 +273,9 @@ export default function BookingPage() {
       .then(d => { setSlots(d.slots || []) })
       .catch(() => { setSlots([]) })
       .finally(() => setLoadingSlots(false))
-  }, [selectedService, selectedDate])
+  }, [selectedService, selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Event handlers ──────────────────────────────────────────────────────────
+  // ── Event handlers ───────────────────────────────────────────────────────────
 
   function selectService(svc: Service) {
     setSelectedService(svc)
@@ -160,6 +289,7 @@ export default function BookingPage() {
     setSelectedDate(date)
     setSelectedTime('')
     setSlots([])
+    setLoadingSlots(true) // prevents flash of "no times" before effect fires
     setStep('time')
   }
 
@@ -169,7 +299,7 @@ export default function BookingPage() {
   }
 
   async function submitBooking() {
-    if (!name.trim()) { alert('Please enter your name.'); return }
+    if (!name.trim())  { alert('Please enter your name.'); return }
     if (!email.trim()) { alert('Please enter your email address.'); return }
     setSubmitting(true)
     try {
@@ -178,21 +308,23 @@ export default function BookingPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           slug,
-          service_id: selectedService!.id,
-          date:       selectedDate,
-          start_time: selectedTime,
-          name:       name.trim(),
-          email:      email.trim(),
-          phone:      phone.trim() || undefined,
+          service_id:  selectedService!.id,
+          date:        selectedDate,
+          start_time:  selectedTime,
+          name:        name.trim(),
+          email:       email.trim(),
+          phone:       phone.trim() || undefined,
+          sms_consent: smsConsent,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
         alert(data.error || 'Booking failed. Please try again.')
         if (res.status === 409) {
-          // Slot taken — go back to time selection
+          // Slot taken — reload slots and go back to time selection
           setSelectedTime('')
           setSlots([])
+          setLoadingSlots(true)
           setStep('time')
         }
         return
@@ -206,16 +338,11 @@ export default function BookingPage() {
     }
   }
 
-  // ── Derived data ────────────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────────
 
-  const availableDates = upcomingDates(60).filter(d => {
-    if (!selectedService) return false
-    const dow = dowOfDate(d)
-    const dows = availability[selectedService.id] || []
-    return dows.includes(dow)
-  })
+  const availableDows = selectedService ? (availability[selectedService.id] || []) : []
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Styles ───────────────────────────────────────────────────────────────────
 
   const pageStyle: React.CSSProperties = {
     minHeight: '100vh',
@@ -278,6 +405,7 @@ export default function BookingPage() {
     marginBottom: 20,
   }
 
+  // Explicit light-mode colors so mobile dark-mode system themes don't override
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '10px 12px',
@@ -286,6 +414,10 @@ export default function BookingPage() {
     borderRadius: 8,
     boxSizing: 'border-box',
     outline: 'none',
+    background: '#fff',
+    color: '#1a1a1a',
+    WebkitTextFillColor: '#1a1a1a',
+    appearance: 'none',
   }
 
   const labelStyle: React.CSSProperties = {
@@ -295,6 +427,8 @@ export default function BookingPage() {
     marginBottom: 6,
     color: '#333',
   }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div style={pageStyle}>
@@ -342,16 +476,13 @@ export default function BookingPage() {
                       padding: '14px 16px',
                       textAlign: 'left',
                       cursor: 'pointer',
-                      transition: 'border-color 0.15s',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
                   >
                     <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{svc.name}</div>
                     <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', gap: 12 }}>
-                      {svc.duration_minutes != null && (
-                        <span>{svc.duration_minutes} min</span>
-                      )}
+                      {svc.duration_minutes != null && <span>{svc.duration_minutes} min</span>}
                       {svc.price_amount != null && Number(svc.price_amount) > 0 && (
                         <span>{formatPrice(svc.price_amount, svc.currency)}</span>
                       )}
@@ -363,37 +494,20 @@ export default function BookingPage() {
           </div>
         )}
 
-        {/* ── Step 2: Date ── */}
+        {/* ── Step 2: Date (calendar) ── */}
         {step === 'date' && selectedService && (
           <div style={cardStyle}>
             <button style={ghostBtn} onClick={() => setStep('service')}>← Back</button>
             <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Select a date</h3>
             <p style={{ ...mutedStyle, marginBottom: 20 }}>{selectedService.name}</p>
-            {availableDates.length === 0 ? (
-              <p style={{ color: '#888' }}>No available dates in the next 60 days.</p>
+            {availableDows.length === 0 ? (
+              <p style={{ color: '#888' }}>No availability set for this service yet.</p>
             ) : (
-              <div style={{ display: 'grid', gap: 6 }}>
-                {availableDates.map(d => (
-                  <button
-                    key={d}
-                    onClick={() => selectDate(d)}
-                    style={{
-                      background: '#fff',
-                      border: '1.5px solid #e0e0e0',
-                      borderRadius: 8,
-                      padding: '10px 14px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: 14,
-                      color: '#1a1a1a',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
-                  >
-                    {formatDate(d)}
-                  </button>
-                ))}
-              </div>
+              <CalendarPicker
+                availableDows={availableDows}
+                selectedDate={selectedDate}
+                onSelect={selectDate}
+              />
             )}
           </div>
         )}
@@ -449,7 +563,7 @@ export default function BookingPage() {
             <button style={ghostBtn} onClick={() => setStep('time')}>← Back</button>
             <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Your details</h3>
             <p style={{ ...mutedStyle, marginBottom: 20 }}>
-              {selectedService.name} · {formatDate(selectedDate)} · {formatTime(selectedTime)}
+              {selectedService.name} · {formatDateShort(selectedDate)} · {formatTime(selectedTime)}
             </p>
 
             <div style={{ display: 'grid', gap: 16 }}>
@@ -486,6 +600,25 @@ export default function BookingPage() {
                   autoComplete="tel"
                 />
               </div>
+
+              {/* SMS opt-in */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: '#444',
+                lineHeight: 1.4,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={smsConsent}
+                  onChange={e => setSmsConsent(e.target.checked)}
+                  style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0, cursor: 'pointer', accentColor: '#2563eb' }}
+                />
+                I agree to receive booking confirmations and reminders by SMS
+              </label>
             </div>
 
             <button
@@ -495,10 +628,6 @@ export default function BookingPage() {
             >
               {submitting ? 'Confirming…' : 'Confirm booking'}
             </button>
-
-            <p style={{ fontSize: 12, color: '#999', textAlign: 'center', marginTop: 12, marginBottom: 0 }}>
-              By confirming, you agree to receive a booking confirmation by email.
-            </p>
           </div>
         )}
 
@@ -534,7 +663,7 @@ export default function BookingPage() {
             </div>
 
             <p style={{ color: '#888', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-              A confirmation has been recorded. Contact {confirmation.tenant_name} if you need to make changes.
+              Contact {confirmation.tenant_name} if you need to make changes.
             </p>
           </div>
         )}
