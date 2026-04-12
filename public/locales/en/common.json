@@ -854,6 +854,7 @@
     "teamMembers": "Team Members",
     "tabUsers": "Users",
     "tabData": "Data Exports",
+    "tabBooking": "Booking",
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
+import TenantAdminBookingTab from './TenantAdminBookingTab'
 
 interface TenantUser {
   id: string
@@ -56,7 +57,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -754,7 +755,7 @@ export default function TenantAdmin() {
 
         {/* Tab row */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {(['team', 'invoicing', 'accounting'] as const).map(tab => (
+          {(['team', 'invoicing', 'accounting', 'booking'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -763,6 +764,7 @@ export default function TenantAdmin() {
             >
               {tab === 'team' ? t('tenantAdmin.tabUsers')
                 : tab === 'invoicing' ? t('tenantAdmin.invoicingTab')
+                : tab === 'booking' ? t('tenantAdmin.tabBooking')
                 : t('tenantAdmin.tabData')}
             </button>
           ))}
@@ -1105,6 +1107,9 @@ export default function TenantAdmin() {
 
           </>)
         })()}
+
+        {/* ── Booking tab ── */}
+        {activeTab === 'booking' && <TenantAdminBookingTab />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

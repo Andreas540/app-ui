@@ -854,6 +854,7 @@
     "teamMembers": "Miembros del Equipo",
     "tabUsers": "Usuarios",
     "tabData": "Exportaciones",
+    "tabBooking": "Reservas",
     "createUserButton": "+ Crear Usuario",
     "noUsers": "Sin usuarios aún",
     "roleLabel": "Rol:",

@@ -854,6 +854,7 @@
     "teamMembers": "Teammedlemmar",
     "tabUsers": "Användare",
     "tabData": "Dataexporter",
+    "tabBooking": "Bokning",
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",
