@@ -74,7 +74,8 @@ async function mergeCustomers(event) {
     // 2. Reassign all references from losing → winning
     await sql`UPDATE orders    SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
     await sql`UPDATE payments  SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
-    await sql`UPDATE bookings  SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
+    await sql`UPDATE bookings             SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
+    await sql`UPDATE booking_participants SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
     await sql`UPDATE booking_customer_links SET customer_id = ${winning_id} WHERE customer_id = ${losing_id}`
     await sql`UPDATE message_jobs SET customer_id = ${winning_id} WHERE customer_id = ${losing_id}`
 
