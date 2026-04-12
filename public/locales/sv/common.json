@@ -273,7 +273,7 @@
   "customers": {
     "smsConsent": "Har gett SMS-samtycke",
     "searchPlaceholder": "Sök kund",
-    "createNew": "Skapa ny kund",
+    "createNew": "Ny kund",
     "allFilter": "Alla",
     "directFilter": "Direkt",
     "partnerFilter": "Partner",

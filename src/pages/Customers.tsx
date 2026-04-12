@@ -148,25 +148,27 @@ export default function Customers() {
   return (
     <div className="card" style={{ maxWidth: 960 }}>
 
-      {/* Row 1: action buttons */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Link to="/customers/new">
-          <button className="primary" style={{ height: BTN_H }}>{t('customers.createNew')}</button>
+      {/* Row 1: action buttons — equal width 1/3 each */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <Link to="/customers/new" style={{ display: 'block' }}>
+          <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.createNew')}</button>
         </Link>
-        <button className="primary" style={{ height: BTN_H }} disabled>
+        <button className="primary" style={{ height: BTN_H, width: '100%' }} disabled>
           {t('customers.mergeCustomers')}
         </button>
-        <button className="primary" style={{ height: BTN_H, opacity: 0.4, cursor: 'not-allowed' }} disabled>
+        <button className="primary" style={{ height: BTN_H, width: '100%', opacity: 0.4, cursor: 'not-allowed' }} disabled>
           {t('customers.customerReports')}
         </button>
       </div>
 
-      {/* Row 2: filter buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{t('customers.filterBy')}</span>
-        <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: BTN_H }}>{t('customers.allFilter')}</button>
-        <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: BTN_H }}>{directLabel}</button>
-        <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: BTN_H }}>{t('customers.partnerFilter')}</button>
+      {/* Row 2: filter buttons — label + equal-width buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>{t('customers.filterBy')}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, flex: 1 }}>
+          <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: BTN_H }}>{t('customers.allFilter')}</button>
+          <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: BTN_H }}>{directLabel}</button>
+          <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: BTN_H }}>{t('customers.partnerFilter')}</button>
+        </div>
       </div>
 
       {/* Row 3: search */}
@@ -204,7 +206,7 @@ export default function Customers() {
           <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.owedToPartners')}</div>
           <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(filteredPartnerNet)}</div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--separator)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', paddingTop: 8, borderTop: '1px solid #eee' }}>
           <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.myDollars')}</div>
           <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
         </div>

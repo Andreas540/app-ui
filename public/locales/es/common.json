@@ -273,7 +273,7 @@
   "customers": {
     "smsConsent": "Ha dado consentimiento por SMS",
     "searchPlaceholder": "Buscar cliente",
-    "createNew": "Crear Nuevo Cliente",
+    "createNew": "Nuevo cliente",
     "allFilter": "Todos",
     "directFilter": "Directo",
     "partnerFilter": "Socio",

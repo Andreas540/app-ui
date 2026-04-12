@@ -263,6 +263,7 @@ export default function CreateCustomer() {
         </div>
       </div>
 
+      {/* Customer Type | Shipping Cost */}
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.customerType')}</label>
@@ -271,13 +272,8 @@ export default function CreateCustomer() {
             <option value="Partner">Partner</option>
           </select>
         </div>
-      </div>
-
-      {/* Shipping Cost */}
-      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.shippingCost')}</label>
-
           {shipMode === 'preset' ? (
             <select
               value={shipPreset}
