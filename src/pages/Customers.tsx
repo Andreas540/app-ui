@@ -143,167 +143,86 @@ export default function Customers() {
     [totalVisibleOwed, filteredPartnerNet]
   )
 
+  const BTN_H = 'calc(var(--control-h) * 0.67)'
+
   return (
     <div className="card" style={{ maxWidth: 960 }}>
-      {/* Force 2 columns even on mobile */}
-      <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
-        <div style={{ position: 'relative' }}>
-          <input
-            ref={inputRef}
-            placeholder={t('customers.searchPlaceholder')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 120)}
-          />
-          {(focused && query && suggestions.length > 0) && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                marginTop: 4,
-                borderRadius: 10,
-                background: 'rgba(47,109,246,0.90)',
-                color: '#fff',
-                padding: 6,
-                zIndex: 50,
-                boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
-              }}
-            >
-              {suggestions.map(s => (
-                <button
-                  key={s.id}
-                  className="primary"
-                  onClick={() => pickSuggestion(s.name)}
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    color: '#fff',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div>
-          <Link to="/customers/new">
-            <button
-              className="primary"
-              style={{ width: '100%', height: 'var(--control-h)' }}
-            >
-              {t('customers.createNew')}
-            </button>
-          </Link>
-        </div>
+      {/* Row 1: action buttons */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Link to="/customers/new">
+          <button className="primary" style={{ height: BTN_H }}>{t('customers.createNew')}</button>
+        </Link>
+        <button className="primary" style={{ height: BTN_H }} disabled>
+          {t('customers.mergeCustomers')}
+        </button>
+        <button className="primary" style={{ height: BTN_H, opacity: 0.4, cursor: 'not-allowed' }} disabled>
+          {t('customers.customerReports')}
+        </button>
       </div>
 
-      {/* Filter row: All / Direct (or BLV) / Partner */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-          marginTop: 8,
-        }}
-      >
-        <button className="primary" onClick={() => setFilterType('All')}        aria-pressed={filterType === 'All'}        style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.allFilter')}</button>
-        <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: 'calc(var(--control-h) * 0.67)' }}>{directLabel}</button>
-        <button className="primary" onClick={() => setFilterType('Partner')}    aria-pressed={filterType === 'Partner'}    style={{ height: 'calc(var(--control-h) * 0.67)' }}>{t('customers.partnerFilter')}</button>
+      {/* Row 2: filter buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{t('customers.filterBy')}</span>
+        <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: BTN_H }}>{t('customers.allFilter')}</button>
+        <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: BTN_H }}>{directLabel}</button>
+        <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: BTN_H }}>{t('customers.partnerFilter')}</button>
       </div>
 
-      {/* Blank row */}
-      <div style={{ height: 20 }} />
+      {/* Row 3: search */}
+      <div style={{ position: 'relative', marginTop: 10 }}>
+        <input
+          ref={inputRef}
+          placeholder={t('customers.searchPlaceholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 120)}
+        />
+        {(focused && query && suggestions.length > 0) && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff', padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)' }}>
+            {suggestions.map(s => (
+              <button key={s.id} className="primary" onClick={() => pickSuggestion(s.name)}
+                style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>
+                {s.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Total for filtered customers */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 8,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.totalOwedToMe')}</div>
-        <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {fmtIntMoney(totalVisibleOwed)}
+      {/* Separator */}
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
+
+      {/* Totals — Dashboard style */}
+      <div style={{ display: 'grid', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.totalOwedToMe')}</div>
+          <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(totalVisibleOwed)}</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.owedToPartners')}</div>
+          <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(filteredPartnerNet)}</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--separator)' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.myDollars')}</div>
+          <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
         </div>
       </div>
 
-      {/* Blank row */}
-      <div style={{ height: 8 }} />
-
-      {/* Owed to partners (respects Direct/Partner filter, excludes JJ Boston) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 8,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.owedToPartners')}</div>
-        <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {fmtIntMoney(filteredPartnerNet)}
-        </div>
-      </div>
-
-      {/* My $ */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 8,
-          alignItems: 'center',
-          marginTop: 4,
-        }}
-      >
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customers.myDollars')}</div>
-        <div style={{ textAlign: 'right', fontWeight: 600 }}>
-          {fmtIntMoney(myDollars)}
-        </div>
-      </div>
-
-      {/* Spacer between "My $" and Sort by */}
-      <div style={{ height: 8 }} />
+      {/* Separator */}
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
       {/* Sort row */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 8,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>{t('sortBy')}</div>
-        <div>
-          <select
-            aria-label="Sort customers by"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'owed' | 'name')}
-            style={{
-              height: 'calc(var(--control-h) * 0.67)',
-              borderRadius: 8,
-              padding: '0 10px',
-            }}
-          >
-            <option value="owed">{t('customers.sortOwed')}</option>
-            <option value="name">{t('customers.sortName')}</option>
-          </select>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
+        <select aria-label="Sort customers by" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'owed' | 'name')}
+          style={{ height: BTN_H, borderRadius: 8, padding: '0 10px' }}>
+          <option value="owed">{t('customers.sortOwed')}</option>
+          <option value="name">{t('customers.sortName')}</option>
+        </select>
       </div>
 
-      {/* Same spacer below sorting as above */}
       <div style={{ height: 8 }} />
 
       {err && <p style={{ color: 'salmon', marginTop: 8 }}>{t('error')} {err}</p>}

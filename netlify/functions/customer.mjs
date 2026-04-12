@@ -37,7 +37,7 @@ async function getCustomer(event) {
     const TENANT_ID = authz.tenantId
 
     const cust = await sql`
-      SELECT id, name, customer_type, shipping_cost, company_name, phone,
+      SELECT id, name, customer_type, shipping_cost, company_name, phone, email,
              address1, address2, city, state, postal_code, country, sms_consent
       FROM customers
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
@@ -140,7 +140,7 @@ async function updateCustomer(event) {
     const body = JSON.parse(event.body || '{}')
     const {
       id, name, customer_type, shipping_cost, apply_to_history, effective_date, company_name,
-      phone, sms_consent, address1, address2, city, state, postal_code, country
+      phone, email, sms_consent, address1, address2, city, state, postal_code, country
     } = body || {}
 
     if (!id)   return cors(400, { error: 'id is required' })
@@ -203,6 +203,7 @@ async function updateCustomer(event) {
         END,
         company_name = ${company_name ?? null},
         phone = ${phone ?? null},
+        email = ${email ?? null},
         sms_consent = COALESCE(${sms_consent ?? null}::boolean, sms_consent),
         sms_consent_at = CASE WHEN ${sms_consent ?? null}::boolean IS TRUE AND NOT sms_consent THEN now() ELSE sms_consent_at END,
         address1 = ${address1 ?? null},

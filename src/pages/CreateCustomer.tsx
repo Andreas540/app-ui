@@ -37,6 +37,7 @@ export default function CreateCustomer() {
 
   // Contact/address
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
   const [city, setCity] = useState('')
@@ -131,6 +132,7 @@ export default function CreateCustomer() {
       shipping_cost: ship,
       company_name: companyName.trim() || undefined,
       phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
       address1: address1.trim() || undefined,
       address2: address2.trim() || undefined,
       city: city.trim() || undefined,
@@ -256,6 +258,13 @@ export default function CreateCustomer() {
           <input type="text" value={name} onChange={e=>setName(e.target.value)} />
         </div>
         <div>
+          <label>{t('customers.contact')}</label>
+          <input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="row" style={{ marginTop: 12 }}>
+        <div>
           <label>{t('customers.customerType')}</label>
           <select value={ctype} onChange={e=>setCtype(e.target.value as CustomerType)}>
             <option value={directValue}>{directLabel}</option>
@@ -313,15 +322,15 @@ export default function CreateCustomer() {
         </div>
       </div>
 
-      {/* Row 1: Contact | Phone */}
+      {/* Row: Phone | Email */}
       <div className="row" style={{ marginTop: 12 }}>
-        <div>
-          <label>{t('customers.contact')}</label>
-          <input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} />
-        </div>
         <div>
           <label>{t('phone')}</label>
           <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} />
+        </div>
+        <div>
+          <label>{t('email')}</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} />
         </div>
       </div>
 

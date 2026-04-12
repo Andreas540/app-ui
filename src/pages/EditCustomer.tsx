@@ -66,6 +66,7 @@ export default function EditCustomer() {
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [companyName, setCompanyName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [smsConsent, setSmsConsent] = useState(true)
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
@@ -89,6 +90,7 @@ setCustomerType(
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
+        setEmail(c.email || '')
         setSmsConsent(c.sms_consent ?? true)
         setAddress1(c.address1 || '')
         setAddress2(c.address2 || '')
@@ -128,6 +130,7 @@ setCustomerType(
         effective_date: costOption === 'specific' ? specificDate : undefined,
         company_name: companyName.trim() || null,
         phone: phone.trim() || null,
+        email: email.trim() || null,
         sms_consent: smsConsent,
         address1: address1.trim() || null,
         address2: address2.trim() || null,
@@ -194,10 +197,16 @@ setCustomerType(
         )}
       </div>
 
-      {/* Customer Name - full width */}
-      <div style={{ marginTop: 12 }}>
-        <label>{t('customers.customerName')}</label>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder={t('fullNamePlaceholder')} />
+      {/* Customer Name | Contact */}
+      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+        <div>
+          <label>{t('customers.customerName')}</label>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder={t('fullNamePlaceholder')} />
+        </div>
+        <div>
+          <label>{t('customers.contact')}</label>
+          <input value={companyName} onChange={e=>setCompanyName(e.target.value)} />
+        </div>
       </div>
 
       {/* Shipping cost | Customer Type */}
@@ -269,15 +278,15 @@ setCustomerType(
         </div>
       </div>
 
-      {/* Row 1: Contact | Phone */}
+      {/* Row: Phone | Email */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        <div>
-          <label>{t('customers.contact')}</label>
-          <input value={companyName} onChange={e=>setCompanyName(e.target.value)} />
-        </div>
         <div>
           <label>{t('phone')}</label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
+        </div>
+        <div>
+          <label>{t('email')}</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} />
         </div>
       </div>
 

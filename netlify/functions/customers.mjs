@@ -114,6 +114,7 @@ console.log('Creating customer for tenant:', tenantId);
       shipping_cost,
       company_name,
       phone,
+      email,
       address1,
       address2,
       city,
@@ -141,10 +142,10 @@ console.log('Creating customer for tenant:', tenantId);
     const ins = await sql`
       INSERT INTO customers (
         tenant_id, name, customer_type, shipping_cost, company_name,
-        phone, address1, address2, city, state, postal_code, country
+        phone, email, address1, address2, city, state, postal_code, country
       ) VALUES (
         ${tenantId}, ${name.trim()}, ${customer_type}, ${ship}, ${company_name ?? null},
-        ${phone ?? null}, ${address1 ?? null}, ${address2 ?? null},
+        ${phone ?? null}, ${email ?? null}, ${address1 ?? null}, ${address2 ?? null},
         ${city ?? null}, ${state ?? null}, ${postal_code ?? null}, ${country ?? null}
       )
       RETURNING id
