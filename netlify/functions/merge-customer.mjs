@@ -75,6 +75,7 @@ async function mergeCustomers(event) {
     await sql`UPDATE orders    SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
     await sql`UPDATE payments  SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
     await sql`UPDATE bookings  SET customer_id = ${winning_id} WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
+    await sql`UPDATE booking_customer_links SET customer_id = ${winning_id} WHERE customer_id = ${losing_id}`
 
     // shipping_cost_history: keep winner's history, discard loser's
     await sql`DELETE FROM shipping_cost_history WHERE tenant_id = ${TENANT_ID} AND customer_id = ${losing_id}`
