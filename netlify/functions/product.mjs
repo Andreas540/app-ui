@@ -52,6 +52,14 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
       return cors(400, { error: 'cost must be a number ≥ 0' });
     }
 
+    // Service-specific fields (ignored for products)
+    const durationMinutes = category === 'service' && body.duration_minutes != null
+      ? Math.max(1, parseInt(body.duration_minutes, 10) || 60)
+      : null
+    const priceAmount = category === 'service' && body.price_amount != null
+      ? Number(body.price_amount)
+      : null
+
     const sql = neon(DATABASE_URL);
 
     const authz = await resolveAuthz({ sql, event });
@@ -61,9 +69,9 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category})
-      RETURNING id, name, cost, category
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount})
+      RETURNING id, name, cost, category, duration_minutes, price_amount
     `;
     const product = rows[0];
 
@@ -71,7 +79,12 @@ const TENANT_ID = authz.tenantId;
     if (category === 'service') {
       await sql`
         INSERT INTO services (id, tenant_id, name, service_type, duration_minutes, price_amount, currency)
-        VALUES (${product.id}, ${TENANT_ID}, ${name}, 'manual', 60, ${costNum}, 'USD')
+        VALUES (
+          ${product.id}, ${TENANT_ID}, ${name}, 'manual',
+          ${durationMinutes ?? 60},
+          ${priceAmount ?? costNum},
+          'USD'
+        )
         ON CONFLICT (id) DO NOTHING
       `
     }

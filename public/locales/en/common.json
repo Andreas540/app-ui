@@ -453,7 +453,11 @@
     "alertSelectDate": "Please select a date",
     "updatedProduct": "Updated \"{{product}}\"",
     "appliedToHistory": "(applied to all previous orders)",
-    "effectiveFrom": "(effective from {{date}})"
+    "effectiveFrom": "(effective from {{date}})",
+    "duration": "Duration (min)",
+    "servicePrice": "Customer price",
+    "addMoreInfo": "Add more info",
+    "lessInfo": "Less info"
   },
   "priceChecker": {
     "title": "Price Checker",

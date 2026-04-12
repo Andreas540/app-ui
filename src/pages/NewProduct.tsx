@@ -25,6 +25,10 @@ export default function NewProduct() {
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
 
+  const [showMoreInfo, setShowMoreInfo] = useState(false)
+  const [durationStr, setDurationStr] = useState('')
+  const [priceStr, setPriceStr] = useState('')
+
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
@@ -101,12 +105,22 @@ export default function NewProduct() {
     if (!nm) { alert(t('products.alertEnterName')); return }
     if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
 
+    const durationMinutes = category === 'service' && showMoreInfo && durationStr
+      ? Math.max(1, parseInt(durationStr, 10) || 60)
+      : null
+    const priceAmount = category === 'service' && showMoreInfo && priceStr
+      ? Number(parseCostInput(priceStr))
+      : null
+
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum, category })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount })
       alert(t('products.created'))
       setName('')
       setCostStr('')
+      setDurationStr('')
+      setPriceStr('')
+      setShowMoreInfo(false)
       await loadProducts()
       if (showHistorical) {
         await loadHistoricalCosts()
@@ -182,11 +196,47 @@ export default function NewProduct() {
         </div>
       </div>
 
+      {category === 'service' && (
+        <div style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={() => setShowMoreInfo(v => !v)}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 13, cursor: 'pointer' }}
+          >
+            {showMoreInfo ? `− ${t('products.lessInfo')}` : `+ ${t('products.addMoreInfo')}`}
+          </button>
+          {showMoreInfo && (
+            <div className="row" style={{ marginTop: 10 }}>
+              <div>
+                <label>{t('products.duration')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="60"
+                  value={durationStr}
+                  onChange={e => setDurationStr(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>{t('products.servicePrice')}</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={priceStr}
+                  onChange={e => setPriceStr(parseCostInput(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t('products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setShowMoreInfo(false) }} disabled={saving}>
           {t('clear')}
         </button>
       </div>

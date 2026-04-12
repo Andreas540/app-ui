@@ -453,7 +453,11 @@
     "alertSelectDate": "Välj ett datum",
     "updatedProduct": "Uppdaterade \"{{product}}\"",
     "appliedToHistory": "(tillämpas på alla tidigare beställningar)",
-    "effectiveFrom": "(gäller från {{date}})"
+    "effectiveFrom": "(gäller från {{date}})",
+    "duration": "Varaktighet (min)",
+    "servicePrice": "Kundpris",
+    "addMoreInfo": "Lägg till mer info",
+    "lessInfo": "Mindre info"
   },
   "priceChecker": {
     "title": "Priskontroll",

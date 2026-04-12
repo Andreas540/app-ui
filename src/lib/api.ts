@@ -426,7 +426,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -443,7 +443,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service'; external_service_id?: string | null }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {

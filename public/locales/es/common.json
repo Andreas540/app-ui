@@ -453,7 +453,11 @@
     "alertSelectDate": "Por favor seleccione una fecha",
     "updatedProduct": "Actualizado \"{{product}}\"",
     "appliedToHistory": "(aplicado a todos los pedidos anteriores)",
-    "effectiveFrom": "(efectivo desde {{date}})"
+    "effectiveFrom": "(efectivo desde {{date}})",
+    "duration": "Duración (min)",
+    "servicePrice": "Precio al cliente",
+    "addMoreInfo": "Añadir más información",
+    "lessInfo": "Menos información"
   },
   "priceChecker": {
     "title": "Verificador de Precios",
