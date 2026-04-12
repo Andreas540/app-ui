@@ -148,49 +148,58 @@ export default function Customers() {
   return (
     <div className="card" style={{ maxWidth: 960 }}>
 
-      {/* Row 1: action buttons — equal width 1/3 each */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-        <Link to="/customers/new" style={{ display: 'block' }}>
-          <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.createNew')}</button>
-        </Link>
-        <button className="primary" style={{ height: BTN_H, width: '100%' }} disabled>
-          {t('customers.mergeCustomers')}
-        </button>
-        <button className="primary" style={{ height: BTN_H, width: '100%', opacity: 0.4, cursor: 'not-allowed' }} disabled>
-          {t('customers.customerReports')}
-        </button>
-      </div>
+      <h3 style={{ margin: '0 0 12px' }}>{t('customers.title')}</h3>
 
-      {/* Row 2: filter buttons — label + equal-width buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>{t('customers.filterBy')}</span>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, flex: 1 }}>
+      {/* Top section — uniform 12px gap between every row */}
+      <div style={{ display: 'grid', gap: 12 }}>
+
+        {/* Row 1: action buttons — equal width 1/3 each */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          <Link to="/customers/new" style={{ display: 'block' }}>
+            <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.createNew')}</button>
+          </Link>
+          <button className="primary" style={{ height: BTN_H, width: '100%' }} disabled>
+            {t('customers.mergeCustomers')}
+          </button>
+          <button className="primary" style={{ height: BTN_H, width: '100%', opacity: 0.4, cursor: 'not-allowed' }} disabled>
+            {t('customers.customerReports')}
+          </button>
+        </div>
+
+        {/* Row 2: Filter by label */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          {t('customers.filterBy')}
+        </div>
+
+        {/* Row 3: filter buttons — equal width */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           <button className="primary" onClick={() => setFilterType('All')}     aria-pressed={filterType === 'All'}     style={{ height: BTN_H }}>{t('customers.allFilter')}</button>
           <button className="primary" onClick={() => setFilterType('Direct')}  aria-pressed={filterType === 'Direct'}  style={{ height: BTN_H }}>{directLabel}</button>
           <button className="primary" onClick={() => setFilterType('Partner')} aria-pressed={filterType === 'Partner'} style={{ height: BTN_H }}>{t('customers.partnerFilter')}</button>
         </div>
-      </div>
 
-      {/* Row 3: search */}
-      <div style={{ position: 'relative', marginTop: 10 }}>
-        <input
-          ref={inputRef}
-          placeholder={t('customers.searchPlaceholder')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 120)}
-        />
-        {(focused && query && suggestions.length > 0) && (
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff', padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)' }}>
-            {suggestions.map(s => (
-              <button key={s.id} className="primary" onClick={() => pickSuggestion(s.name)}
-                style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>
-                {s.name}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Row 4: search */}
+        <div style={{ position: 'relative' }}>
+          <input
+            ref={inputRef}
+            placeholder={t('customers.searchPlaceholder')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
+          />
+          {(focused && query && suggestions.length > 0) && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff', padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)' }}>
+              {suggestions.map(s => (
+                <button key={s.id} className="primary" onClick={() => pickSuggestion(s.name)}
+                  style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Separator */}
