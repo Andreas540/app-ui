@@ -21,6 +21,10 @@ export default function EditProduct() {
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [saving, setSaving] = useState(false)
 
+  const [showMoreInfo, setShowMoreInfo] = useState(false)
+  const [durationStr, setDurationStr] = useState('')
+  const [priceStr, setPriceStr] = useState('')
+
   useEffect(() => {
     (async () => {
       try {
@@ -47,6 +51,11 @@ export default function EditProduct() {
     setCostStr(selected.cost == null ? '' : String(selected.cost))
     setCostOption('next')
     setSpecificDate(todayYMD())
+    if (selected.category === 'service') {
+      setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
+      setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
+      setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
+    }
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseCostInput(s: string) {
@@ -66,6 +75,13 @@ export default function EditProduct() {
       return
     }
 
+    const durationMinutes = type === 'service' && showMoreInfo && durationStr
+      ? Math.max(1, parseInt(durationStr, 10) || 60)
+      : undefined
+    const priceAmount = type === 'service' && showMoreInfo && priceStr
+      ? Number(priceStr.replace(',', '.'))
+      : undefined
+
     try {
       setSaving(true)
       const res = await updateProduct({
@@ -74,6 +90,8 @@ export default function EditProduct() {
         cost: costNum,
         apply_to_history: costOption === 'history',
         effective_date: costOption === 'specific' ? specificDate : undefined,
+        duration_minutes: durationMinutes,
+        price_amount: priceAmount,
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -143,6 +161,42 @@ export default function EditProduct() {
         />
       </div>
 
+      {type === 'service' && (
+        <div style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={() => setShowMoreInfo(v => !v)}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 13, cursor: 'pointer' }}
+          >
+            {showMoreInfo ? `− ${t('products.lessInfo')}` : `+ ${t('products.addMoreInfo')}`}
+          </button>
+          {showMoreInfo && (
+            <div className="row" style={{ marginTop: 10 }}>
+              <div>
+                <label>{t('products.duration')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="60"
+                  value={durationStr}
+                  onChange={e => setDurationStr(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>{t('products.servicePrice')}</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={priceStr}
+                  onChange={e => setPriceStr(parseCostInput(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Cost application options */}
       <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
@@ -198,11 +252,16 @@ export default function EditProduct() {
         <button
           onClick={() => {
             if (selected) {
-              setNewName(selected.name);
-              setCostStr(selected.cost == null ? '' : String(selected.cost));
+              setNewName(selected.name)
+              setCostStr(selected.cost == null ? '' : String(selected.cost))
+              if (selected.category === 'service') {
+                setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
+                setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
+                setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
+              }
             }
-            setCostOption('next');
-            setSpecificDate(todayYMD());
+            setCostOption('next')
+            setSpecificDate(todayYMD())
           }}
           disabled={saving}
         >

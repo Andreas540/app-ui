@@ -112,6 +112,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const id = (body.id || '').trim();
     const name = typeof body.name === 'string' ? body.name.trim() : undefined;
     const effectiveDate = body.effective_date;
+    const newDurationMinutes = body.duration_minutes != null ? Math.max(1, parseInt(body.duration_minutes, 10) || 60) : undefined;
+    const newPriceAmount    = body.price_amount    != null ? Number(body.price_amount) : undefined;
 
     // Strict boolean coercion for checkbox
     const rawApply = body.apply_to_history;
@@ -175,13 +177,12 @@ const TENANT_ID = authz.tenantId;
     // Update product record
     const updatedRows = await sql`
   UPDATE products
-  SET name = COALESCE(${effectiveName ?? null}, name),
-      cost = CASE
-        WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum}
-        ELSE cost
-      END
+  SET name             = COALESCE(${effectiveName ?? null}, name),
+      cost             = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE cost END,
+      duration_minutes = CASE WHEN ${newDurationMinutes !== undefined} THEN ${newDurationMinutes ?? null} ELSE duration_minutes END,
+      price_amount     = CASE WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null} ELSE price_amount END
   WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-  RETURNING id, name, cost
+  RETURNING id, name, cost, duration_minutes, price_amount
 `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 
@@ -189,8 +190,11 @@ const TENANT_ID = authz.tenantId;
     if (isService && !isSyncedService) {
       await sql`
         UPDATE services
-        SET name         = COALESCE(${effectiveName ?? null}, name),
-            price_amount = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE price_amount END
+        SET name             = COALESCE(${effectiveName ?? null}, name),
+            price_amount     = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum}
+                                    WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null}
+                                    ELSE price_amount END,
+            duration_minutes = CASE WHEN ${newDurationMinutes !== undefined} THEN ${newDurationMinutes ?? null} ELSE duration_minutes END
         WHERE id = ${id} AND tenant_id = ${TENANT_ID}
       `
     }
