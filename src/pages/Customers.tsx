@@ -158,9 +158,9 @@ export default function Customers() {
           <Link to="/customers/new" style={{ display: 'block' }}>
             <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.createNew')}</button>
           </Link>
-          <button className="primary" style={{ height: BTN_H, width: '100%' }} disabled>
-            {t('customers.mergeCustomers')}
-          </button>
+          <Link to="/customers/merge" style={{ display: 'block' }}>
+            <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.mergeCustomers')}</button>
+          </Link>
           <button className="primary" style={{ height: BTN_H, width: '100%', opacity: 0.4, cursor: 'not-allowed' }} disabled>
             {t('customers.customerReports')}
           </button>

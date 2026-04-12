@@ -16,6 +16,7 @@ import Settings from './pages/Settings'
 import Payments from './pages/Payments'
 import CreateCustomer from './pages/CreateCustomer'
 import CustomerDetail from './pages/CustomerDetail'
+import MergeCustomer from './pages/MergeCustomer'
 import EditCustomer from './pages/EditCustomer'
 import NewProduct from './pages/NewProduct'
 import EditProduct from './pages/EditProduct'
@@ -847,6 +848,7 @@ useEffect(() => {
                   <>
                     <Route path="/customers" element={<Customers />} />
                     <Route path="/customers/new" element={<CreateCustomer />} />
+                    <Route path="/customers/merge" element={<MergeCustomer />} />
                     <Route path="/customers/:id" element={<CustomerDetail />} />
                     <Route path="/customers/:id/edit" element={<EditCustomer />} />
                   </>
