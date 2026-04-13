@@ -433,26 +433,26 @@ export default function BookingPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={pageStyle}>
+    <div style={{ ...pageStyle, position: 'relative' }}>
       <div ref={topRef} style={{ padding: '24px 16px 40px' }}>
 
-        {/* Tenant icon — top left */}
+        {/* Tenant icon — top left, floated so it doesn't push content down */}
         {tenantIcon && step !== 'loading' && step !== 'error' && (
-          <div style={{ maxWidth: 520, margin: '0 auto 12px', paddingLeft: 4 }}>
-            <img
-              src={tenantIcon}
-              alt={tenantName}
-              style={{
-                width: 52, height: 52,
-                borderRadius: 12,
-                background: '#fff',
-                padding: 4,
-                boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          </div>
+          <img
+            src={tenantIcon}
+            alt={tenantName}
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              width: 78, height: 78,
+              borderRadius: 14,
+              background: '#fff',
+              padding: 2,
+              boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
+              objectFit: 'contain',
+            }}
+          />
         )}
 
         {/* Header */}
