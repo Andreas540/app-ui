@@ -740,21 +740,6 @@ useEffect(() => {
                         {t('bookingPayments', { ns: 'navigation' })}
                       </NavLink>
                     )}
-                    {canAccess('booking-reminders') && (
-                      <NavLink to="/bookings/reminders" onClick={() => setNavOpen(false)}>
-                        {t('bookingReminders', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('booking-sms-usage') && (
-                      <NavLink to="/bookings/sms-usage" onClick={() => setNavOpen(false)}>
-                        {t('bookingSmsUsage', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('booking-integration') && (
-                      <NavLink to="/bookings/integration" onClick={() => setNavOpen(false)}>
-                        {t('bookingIntegrationNav', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
                   </>)}
                 </>)}
 
