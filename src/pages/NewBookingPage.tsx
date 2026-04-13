@@ -100,7 +100,21 @@ export default function NewBookingPage() {
     const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d
   })
 
+  const [bookingConfigExpanded, setBookingConfigExpanded] = useState(false)
+  const [bookingSlug, setBookingSlug] = useState<string | null>(null)
+  const [bookingPaymentProvider, setBookingPaymentProvider] = useState<string | null>(null)
+
   const formRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch(`${apiBase()}/api/tenant-admin?action=getBookingConfig`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => {
+        setBookingSlug(data.slug || null)
+        setBookingPaymentProvider(data.paymentProvider || null)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     ;(async () => {
@@ -251,7 +265,51 @@ export default function NewBookingPage() {
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ marginBottom: 20 }}>{t('newBooking.title')}</h3>
+      <h3 style={{ marginBottom: 8 }}>{t('newBooking.title')}</h3>
+
+      {/* Customer self-booking expander */}
+      <div style={{ marginBottom: 20 }}>
+        <button
+          onClick={() => setBookingConfigExpanded(v => !v)}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+        >
+          <span style={{ fontSize: 11 }}>{bookingConfigExpanded ? '▲' : '▼'}</span>
+          {t('newBooking.customerSelfBook', 'Let your customers book themselves')}
+        </button>
+
+        {bookingConfigExpanded && (
+          <div style={{ marginTop: 10, padding: '12px 14px', background: 'var(--btn-bg)', borderRadius: 10, fontSize: 14, display: 'grid', gap: 6 }}>
+            {bookingSlug ? (
+              <div>
+                {t('newBooking.bookingLink', 'Link to your booking site:')}
+                {' '}
+                <a
+                  href={`${window.location.origin}/book/${bookingSlug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  {`${window.location.origin}/book/${bookingSlug}`}
+                </a>
+              </div>
+            ) : (
+              <div>
+                <Link to="/admin" style={{ color: 'var(--primary)' }}>
+                  {t('newBooking.missingSlug', 'First specify your URL here')}
+                </Link>
+              </div>
+            )}
+            {(!bookingPaymentProvider || bookingPaymentProvider === 'none') && (
+              <div style={{ color: 'var(--text-secondary)' }}>
+                {t('newBooking.missingPayment', 'If you want your customers to pay when booking, ')}{' '}
+                <Link to="/admin" style={{ color: 'var(--primary)' }}>
+                  {t('newBooking.setupPaymentProvider', 'set up payment provider here')}
+                </Link>.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Service selector */}
       <div style={{ marginBottom: 20 }}>
