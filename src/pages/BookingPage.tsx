@@ -206,6 +206,7 @@ export default function BookingPage() {
 
   // Page data
   const [tenantName, setTenantName]     = useState('')
+  const [tenantIcon, setTenantIcon]     = useState<string | null>(null)
   const [services, setServices]         = useState<Service[]>([])
   const [availability, setAvailability] = useState<Record<string, number[]>>({})
 
@@ -254,6 +255,7 @@ export default function BookingPage() {
       .then(({ ok, d }) => {
         if (!ok) { setStep('error'); setErrorMsg(d.error || 'Booking page not found.'); return }
         setTenantName(d.tenant?.name || '')
+        setTenantIcon(d.tenant?.icon_url || null)
         setServices(d.services || [])
         setAvailability(d.availability || {})
         setStep('service')
@@ -433,6 +435,25 @@ export default function BookingPage() {
   return (
     <div style={pageStyle}>
       <div ref={topRef} style={{ padding: '24px 16px 40px' }}>
+
+        {/* Tenant icon — top left */}
+        {tenantIcon && step !== 'loading' && step !== 'error' && (
+          <div style={{ maxWidth: 520, margin: '0 auto 12px', paddingLeft: 4 }}>
+            <img
+              src={tenantIcon}
+              alt={tenantName}
+              style={{
+                width: 52, height: 52,
+                borderRadius: 12,
+                background: '#fff',
+                padding: 4,
+                boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </div>
+        )}
 
         {/* Header */}
         {step !== 'loading' && step !== 'error' && (

@@ -30,7 +30,7 @@ async function getBookingData(event) {
 
     // Look up tenant by booking slug
     const tenantRows = await sql`
-      SELECT id, name, default_timezone, booking_payment_provider
+      SELECT id, name, default_timezone, booking_payment_provider, app_icon_192
       FROM tenants
       WHERE booking_slug = ${slug}
       LIMIT 1
@@ -121,7 +121,7 @@ async function getBookingData(event) {
     }
 
     return cors(200, {
-      tenant:          { name: tenant.name },
+      tenant:          { name: tenant.name, icon_url: tenant.app_icon_192 || null },
       services,
       availability,
       paymentProvider: tenant.booking_payment_provider || 'none',
