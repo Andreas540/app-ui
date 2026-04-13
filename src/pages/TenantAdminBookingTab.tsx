@@ -153,7 +153,7 @@ export default function TenantAdminBookingTab() {
     { id: 'availability',  label: 'Availability' },
     { id: 'booking-page',  label: 'Booking page' },
     { id: 'sms',           label: 'SMS' },
-    { id: 'simplybook',    label: 'SimplyBook' },
+    { id: 'simplybook',    label: 'Simply Book' },
   ]
 
   return (
@@ -327,23 +327,24 @@ export default function TenantAdminBookingTab() {
       {subTab === 'sms' && (
         <div>
           {/* Toggle between SMS Usage and Reminders */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-            <button
-              className="primary"
-              aria-pressed={smsView === 'usage'}
-              onClick={() => setSmsView('usage')}
-              style={{ minWidth: 110 }}
-            >
-              SMS Usage
-            </button>
-            <button
-              className="primary"
-              aria-pressed={smsView === 'reminders'}
-              onClick={() => setSmsView('reminders')}
-              style={{ minWidth: 110 }}
-            >
-              Reminders
-            </button>
+          <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+            {(['usage', 'reminders'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setSmsView(v)}
+                style={{
+                  padding: '6px 18px',
+                  border: 'none',
+                  borderRadius: 0,
+                  background: smsView === v ? 'var(--primary, #2563eb)' : 'transparent',
+                  color: smsView === v ? '#fff' : 'inherit',
+                  cursor: 'pointer',
+                  fontWeight: smsView === v ? 600 : 400,
+                }}
+              >
+                {v === 'usage' ? 'SMS Usage' : 'Reminders'}
+              </button>
+            ))}
           </div>
 
           {smsView === 'usage'     && <BookingSmsUsagePage />}
