@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import Vibrant from 'node-vibrant'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -207,6 +208,7 @@ export default function BookingPage() {
   // Page data
   const [tenantName, setTenantName]     = useState('')
   const [tenantIcon, setTenantIcon]     = useState<string | null>(null)
+  const [bgColor, setBgColor]           = useState('#f5f5f5')
   const [services, setServices]         = useState<Service[]>([])
   const [availability, setAvailability] = useState<Record<string, number[]>>({})
 
@@ -241,6 +243,21 @@ export default function BookingPage() {
   } | null>(null)
 
   const topRef = useRef<HTMLDivElement>(null)
+
+  // Extract dominant color from tenant icon for page background tint
+  useEffect(() => {
+    if (!tenantIcon) return
+    Vibrant.from(tenantIcon).getPalette()
+      .then((palette: Awaited<ReturnType<typeof Vibrant.prototype.getPalette>>) => {
+        const swatch = palette.Vibrant ?? palette.LightVibrant ?? palette.Muted
+        if (!swatch) return
+        const [r, g, b] = swatch.getRgb()
+        // Blend 12% of the dominant color into white for a subtle tint
+        const tint = `rgb(${Math.round(r * 0.12 + 255 * 0.88)}, ${Math.round(g * 0.12 + 255 * 0.88)}, ${Math.round(b * 0.12 + 255 * 0.88)})`
+        setBgColor(tint)
+      })
+      .catch(() => {}) // keep default on CORS or any failure
+  }, [tenantIcon])
 
   // Scroll to top on step change
   useEffect(() => {
@@ -348,7 +365,7 @@ export default function BookingPage() {
 
   const pageStyle: React.CSSProperties = {
     minHeight: '100vh',
-    background: '#f5f5f5',
+    background: bgColor,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     color: '#1a1a1a',
     fontSize: 16,
@@ -363,12 +380,6 @@ export default function BookingPage() {
     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
   }
 
-  const headerStyle: React.CSSProperties = {
-    textAlign: 'center',
-    padding: '32px 24px 0',
-    maxWidth: 520,
-    margin: '0 auto',
-  }
 
   const h2Style: React.CSSProperties = {
     margin: '0 0 4px',
@@ -433,34 +444,33 @@ export default function BookingPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ ...pageStyle, position: 'relative' }}>
+    <div style={pageStyle}>
       <div ref={topRef} style={{ padding: '24px 16px 40px' }}>
 
-        {/* Tenant icon — top left, floated so it doesn't push content down */}
-        {tenantIcon && step !== 'loading' && step !== 'error' && (
-          <img
-            src={tenantIcon}
-            alt={tenantName}
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              width: 78, height: 78,
-              borderRadius: 14,
-              background: '#fff',
-              padding: 2,
-              boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
-              objectFit: 'contain',
-            }}
-          />
-        )}
-
-        {/* Header */}
+        {/* Header — icon left, name+subtitle centered in remaining space */}
         {step !== 'loading' && step !== 'error' && (
-          <div style={headerStyle}>
-            <h2 style={h2Style}>{tenantName}</h2>
-            <p style={mutedStyle}>Online booking</p>
-            <div style={{ height: 24 }} />
+          <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+            {tenantIcon ? (
+              <img
+                src={tenantIcon}
+                alt={tenantName}
+                style={{
+                  width: 78, height: 78,
+                  borderRadius: 14,
+                  background: '#fff',
+                  padding: 2,
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                }}
+              />
+            ) : null}
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <h2 style={h2Style}>{tenantName}</h2>
+              <p style={mutedStyle}>Online booking</p>
+            </div>
+            {/* Balancing spacer so text stays truly centred when icon is present */}
+            {tenantIcon && <div style={{ width: 78, flexShrink: 0 }} />}
           </div>
         )}
 

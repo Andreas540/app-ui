@@ -17,6 +17,7 @@
     "i18next": "^25.8.0",
     "i18next-http-backend": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
+    "node-vibrant": "^4.0.4",
     "pdf-lib": "^1.17.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
