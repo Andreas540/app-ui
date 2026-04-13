@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Vibrant } from 'node-vibrant/browser'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -34,41 +35,37 @@ function ymd(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-function formatDate(d: string) {
+function formatDate(d: string, locale: string) {
   const [y, m, day] = d.split('-').map(Number)
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
+  return new Date(y, m - 1, day).toLocaleDateString(locale, {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
 }
 
-function formatDateShort(d: string) {
+function formatDateShort(d: string, locale: string) {
   const [y, m, day] = d.split('-').map(Number)
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
+  return new Date(y, m - 1, day).toLocaleDateString(locale, {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 }
 
-function formatTime(hm: string) {
+function formatTime(hm: string, locale: string) {
   const [h, m] = hm.split(':').map(Number)
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  const h12  = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(
+    new Date(2000, 0, 1, h, m)
+  )
 }
 
-function formatPrice(amount: string | number | null, currency: string | null) {
+function formatPrice(amount: string | number | null, currency: string | null, locale: string) {
   if (amount == null) return ''
   const num = Number(amount)
   const cur = (currency || 'USD').toUpperCase()
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(num)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: cur }).format(num)
   } catch {
     return `${num.toFixed(2)} ${cur}`
   }
 }
-
-const MONTH_NAMES = ['January','February','March','April','May','June',
-                     'July','August','September','October','November','December']
-const DOW_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa']
 
 // ── Calendar picker ───────────────────────────────────────────────────────────
 
@@ -76,9 +73,10 @@ interface CalendarProps {
   availableDows: number[]       // 0–6 days of week that have slots
   selectedDate: string          // YYYY-MM-DD or ''
   onSelect: (d: string) => void
+  locale: string
 }
 
-function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps) {
+function CalendarPicker({ availableDows, selectedDate, onSelect, locale }: CalendarProps) {
   const today = new Date()
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth()) // 0-based
@@ -95,6 +93,13 @@ function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps
     if (month === 11) { setYear(y => y + 1); setMonth(0) }
     else setMonth(m => m + 1)
   }
+
+  // Locale-aware month name and DOW labels
+  const monthName = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(year, month, 1))
+  // Sun=0 … Sat=6; 2024-01-07 is a Sunday
+  const dowLabels = Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 7 + i))
+  )
 
   // Build grid: first week may have leading blanks
   const firstDow   = new Date(year, month, 1).getDay()   // 0=Sun
@@ -121,7 +126,7 @@ function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps
           }}
           aria-label="Previous month"
         >‹</button>
-        <span style={{ fontWeight: 600, fontSize: 15 }}>{MONTH_NAMES[month]} {year}</span>
+        <span style={{ fontWeight: 600, fontSize: 15, textTransform: 'capitalize' }}>{monthName}</span>
         <button
           onClick={nextMonth}
           style={{
@@ -134,8 +139,8 @@ function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps
 
       {/* Day-of-week headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
-        {DOW_LABELS.map(l => (
-          <div key={l} style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#999', padding: '2px 0' }}>
+        {dowLabels.map((l, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#999', padding: '2px 0' }}>
             {l}
           </div>
         ))}
@@ -204,6 +209,7 @@ function CalendarPicker({ availableDows, selectedDate, onSelect }: CalendarProps
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
+  const { t, i18n } = useTranslation()
 
   // Page data
   const [tenantName, setTenantName]     = useState('')
@@ -266,19 +272,20 @@ export default function BookingPage() {
 
   // Load initial page data
   useEffect(() => {
-    if (!slug) { setStep('error'); setErrorMsg('Invalid booking link.'); return }
+    if (!slug) { setStep('error'); setErrorMsg(t('bookingPage.invalidLink')); return }
     fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}`)
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
-        if (!ok) { setStep('error'); setErrorMsg(d.error || 'Booking page not found.'); return }
+        if (!ok) { setStep('error'); setErrorMsg(d.error || t('bookingPage.notFound')); return }
         setTenantName(d.tenant?.name || '')
         setTenantIcon(d.tenant?.icon_url || null)
+        if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
         setServices(d.services || [])
         setAvailability(d.availability || {})
         setStep('service')
       })
-      .catch(() => { setStep('error'); setErrorMsg('Could not load booking page. Please try again.') })
-  }, [slug])
+      .catch(() => { setStep('error'); setErrorMsg(t('bookingPage.loadFailed')) })
+  }, [slug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load time slots when date is picked
   useEffect(() => {
@@ -318,8 +325,8 @@ export default function BookingPage() {
   }
 
   async function submitBooking() {
-    if (!name.trim())  { alert('Please enter your name.'); return }
-    if (!email.trim()) { alert('Please enter your email address.'); return }
+    if (!name.trim())  { alert(t('bookingPage.pleaseEnterName')); return }
+    if (!email.trim()) { alert(t('bookingPage.pleaseEnterEmail')); return }
     setSubmitting(true)
     try {
       const res = await fetch(`${apiBase()}/.netlify/functions/public-booking`, {
@@ -338,7 +345,7 @@ export default function BookingPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        alert(data.error || 'Booking failed. Please try again.')
+        alert(data.error || t('bookingPage.bookingFailed'))
         if (res.status === 409) {
           // Slot taken — reload slots and go back to time selection
           setSelectedTime('')
@@ -351,7 +358,7 @@ export default function BookingPage() {
       setConfirmation(data)
       setStep('confirm')
     } catch {
-      alert('Booking failed. Please try again.')
+      alert(t('bookingPage.bookingFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -360,6 +367,7 @@ export default function BookingPage() {
   // ── Derived data ─────────────────────────────────────────────────────────────
 
   const availableDows = selectedService ? (availability[selectedService.id] || []) : []
+  const locale = i18n.language || 'en'
 
   // ── Styles ───────────────────────────────────────────────────────────────────
 
@@ -467,17 +475,15 @@ export default function BookingPage() {
             ) : null}
             <div style={{ flex: 1, textAlign: 'center' }}>
               <h2 style={h2Style}>{tenantName}</h2>
-              <p style={mutedStyle}>Online booking</p>
+              <p style={mutedStyle}>{t('bookingPage.onlineBooking')}</p>
             </div>
-            {/* Balancing spacer so text stays truly centred when icon is present */}
-            {tenantIcon && <div style={{ width: 78, flexShrink: 0 }} />}
           </div>
         )}
 
         {/* ── Loading ── */}
         {step === 'loading' && (
           <div style={{ ...cardStyle, textAlign: 'center', padding: 48 }}>
-            <p style={{ color: '#888' }}>Loading…</p>
+            <p style={{ color: '#888' }}>{t('bookingPage.loading')}</p>
           </div>
         )}
 
@@ -491,9 +497,9 @@ export default function BookingPage() {
         {/* ── Step 1: Service ── */}
         {step === 'service' && (
           <div style={cardStyle}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>Select a service</h3>
+            <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>{t('bookingPage.selectService')}</h3>
             {services.length === 0 ? (
-              <p style={{ color: '#888' }}>No services available at this time.</p>
+              <p style={{ color: '#888' }}>{t('bookingPage.noServices')}</p>
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
                 {services.map(svc => (
@@ -513,9 +519,9 @@ export default function BookingPage() {
                   >
                     <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{svc.name}</div>
                     <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', gap: 12 }}>
-                      {svc.duration_minutes != null && <span>{svc.duration_minutes} min</span>}
+                      {svc.duration_minutes != null && <span>{t('bookingPage.min', { n: svc.duration_minutes })}</span>}
                       {svc.price_amount != null && Number(svc.price_amount) > 0 && (
-                        <span>{formatPrice(svc.price_amount, svc.currency)}</span>
+                        <span>{formatPrice(svc.price_amount, svc.currency, locale)}</span>
                       )}
                     </div>
                   </button>
@@ -528,16 +534,17 @@ export default function BookingPage() {
         {/* ── Step 2: Date (calendar) ── */}
         {step === 'date' && selectedService && (
           <div style={cardStyle}>
-            <button style={ghostBtn} onClick={() => setStep('service')}>← Back</button>
-            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Select a date</h3>
+            <button style={ghostBtn} onClick={() => setStep('service')}>{t('bookingPage.back')}</button>
+            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>{t('bookingPage.selectDate')}</h3>
             <p style={{ ...mutedStyle, marginBottom: 20 }}>{selectedService.name}</p>
             {availableDows.length === 0 ? (
-              <p style={{ color: '#888' }}>No availability set for this service yet.</p>
+              <p style={{ color: '#888' }}>{t('bookingPage.noAvailability')}</p>
             ) : (
               <CalendarPicker
                 availableDows={availableDows}
                 selectedDate={selectedDate}
                 onSelect={selectDate}
+                locale={locale}
               />
             )}
           </div>
@@ -546,19 +553,19 @@ export default function BookingPage() {
         {/* ── Step 3: Time ── */}
         {step === 'time' && selectedService && selectedDate && (
           <div style={cardStyle}>
-            <button style={ghostBtn} onClick={() => setStep('date')}>← Back</button>
-            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Select a time</h3>
-            <p style={{ ...mutedStyle, marginBottom: 20 }}>{formatDate(selectedDate)}</p>
+            <button style={ghostBtn} onClick={() => setStep('date')}>{t('bookingPage.back')}</button>
+            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>{t('bookingPage.selectTime')}</h3>
+            <p style={{ ...mutedStyle, marginBottom: 20 }}>{formatDate(selectedDate, locale)}</p>
             {loadingSlots ? (
-              <p style={{ color: '#888' }}>Loading available times…</p>
+              <p style={{ color: '#888' }}>{t('bookingPage.loadingTimes')}</p>
             ) : slots.length === 0 ? (
               <p style={{ color: '#888' }}>
-                No available times for this date.{' '}
+                {t('bookingPage.noTimes')}{' '}
                 <button
                   style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, fontSize: 14 }}
                   onClick={() => setStep('date')}
                 >
-                  Choose another date
+                  {t('bookingPage.chooseAnotherDate')}
                 </button>
               </p>
             ) : (
@@ -576,9 +583,11 @@ export default function BookingPage() {
                       fontSize: 14,
                       fontWeight: 500,
                       color: '#1a1a1a',
+                      outline: 'none',
+                      WebkitTapHighlightColor: 'transparent',
                     }}
                   >
-                    {formatTime(s)}
+                    {formatTime(s, locale)}
                   </button>
                 ))}
               </div>
@@ -589,41 +598,41 @@ export default function BookingPage() {
         {/* ── Step 4: Contact ── */}
         {step === 'contact' && selectedService && selectedDate && selectedTime && (
           <div style={cardStyle}>
-            <button style={ghostBtn} onClick={() => setStep('time')}>← Back</button>
-            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Your details</h3>
+            <button style={ghostBtn} onClick={() => setStep('time')}>{t('bookingPage.back')}</button>
+            <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>{t('bookingPage.yourDetails')}</h3>
             <p style={{ ...mutedStyle, marginBottom: 20 }}>
-              {selectedService.name} · {formatDateShort(selectedDate)} · {formatTime(selectedTime)}
+              {selectedService.name} · {formatDateShort(selectedDate, locale)} · {formatTime(selectedTime, locale)}
             </p>
 
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
-                <label style={labelStyle}>Full name *</label>
+                <label style={labelStyle}>{t('bookingPage.fullName')}</label>
                 <input
                   style={inputStyle}
                   type="text"
-                  placeholder="Jane Smith"
+                  placeholder={t('bookingPage.namePlaceholder')}
                   value={name}
                   onChange={e => setName(e.target.value)}
                   autoComplete="name"
                 />
               </div>
               <div>
-                <label style={labelStyle}>Email address *</label>
+                <label style={labelStyle}>{t('bookingPage.emailAddress')}</label>
                 <input
                   style={inputStyle}
                   type="email"
-                  placeholder="jane@example.com"
+                  placeholder={t('bookingPage.emailPlaceholder')}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   autoComplete="email"
                 />
               </div>
               <div>
-                <label style={labelStyle}>Phone (optional)</label>
+                <label style={labelStyle}>{t('bookingPage.phoneOptional')}</label>
                 <input
                   style={inputStyle}
                   type="tel"
-                  placeholder="+1 555 000 0000"
+                  placeholder={t('bookingPage.phonePlaceholder')}
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   autoComplete="tel"
@@ -646,7 +655,7 @@ export default function BookingPage() {
                   onChange={e => setSmsConsent(e.target.checked)}
                   style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0, cursor: 'pointer', accentColor: '#2563eb' }}
                 />
-                I agree to receive booking confirmations and reminders by SMS
+                {t('bookingPage.smsConsent')}
               </label>
             </div>
 
@@ -655,7 +664,7 @@ export default function BookingPage() {
               onClick={submitBooking}
               disabled={submitting}
             >
-              {submitting ? 'Confirming…' : 'Confirm booking'}
+              {submitting ? t('bookingPage.confirming') : t('bookingPage.confirmBooking')}
             </button>
           </div>
         )}
@@ -665,10 +674,13 @@ export default function BookingPage() {
           <div style={{ ...cardStyle, textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
             <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#166534' }}>
-              Booking confirmed!
+              {t('bookingPage.confirmed')}
             </h3>
             <p style={{ color: '#555', marginBottom: 24 }}>
-              See you on {formatDate(confirmation.date)} at {formatTime(confirmation.start_time)}.
+              {t('bookingPage.seeYouOn', {
+                date: formatDate(confirmation.date, locale),
+                time: formatTime(confirmation.start_time, locale),
+              })}
             </p>
 
             <div style={{
@@ -679,20 +691,20 @@ export default function BookingPage() {
               fontSize: 14,
               lineHeight: 1.8,
             }}>
-              <div><strong>Service:</strong> {confirmation.service_name}</div>
-              <div><strong>Date:</strong> {formatDate(confirmation.date)}</div>
-              <div><strong>Time:</strong> {formatTime(confirmation.start_time)}</div>
+              <div><strong>{t('bookingPage.labelService')}</strong> {confirmation.service_name}</div>
+              <div><strong>{t('bookingPage.labelDate')}</strong> {formatDate(confirmation.date, locale)}</div>
+              <div><strong>{t('bookingPage.labelTime')}</strong> {formatTime(confirmation.start_time, locale)}</div>
               {confirmation.duration_minutes > 0 && (
-                <div><strong>Duration:</strong> {confirmation.duration_minutes} min</div>
+                <div><strong>{t('bookingPage.labelDuration')}</strong> {t('bookingPage.durationMin', { min: confirmation.duration_minutes })}</div>
               )}
               {confirmation.price > 0 && (
-                <div><strong>Price:</strong> {formatPrice(confirmation.price, confirmation.currency)}</div>
+                <div><strong>{t('bookingPage.labelPrice')}</strong> {formatPrice(confirmation.price, confirmation.currency, locale)}</div>
               )}
-              <div><strong>Reference:</strong> #{confirmation.booking_id.slice(0, 8).toUpperCase()}</div>
+              <div><strong>{t('bookingPage.labelReference')}</strong> #{confirmation.booking_id.slice(0, 8).toUpperCase()}</div>
             </div>
 
             <p style={{ color: '#888', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-              Contact {confirmation.tenant_name} if you need to make changes.
+              {t('bookingPage.contactFor', { name: confirmation.tenant_name })}
             </p>
           </div>
         )}

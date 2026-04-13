@@ -2,20 +2,13 @@
 // Booking configuration tab rendered inside TenantAdmin.
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
 import BookingSmsUsagePage from './BookingSmsUsagePage'
 import BookingRemindersPage from './BookingRemindersPage'
 import BookingIntegrationPage from './BookingIntegrationPage'
 
-const DAYS = [
-  { dow: 1, label: 'Monday' },
-  { dow: 2, label: 'Tuesday' },
-  { dow: 3, label: 'Wednesday' },
-  { dow: 4, label: 'Thursday' },
-  { dow: 5, label: 'Friday' },
-  { dow: 6, label: 'Saturday' },
-  { dow: 0, label: 'Sunday' },
-]
+const DOWS = [1, 2, 3, 4, 5, 6, 0] // Mon–Sun
 
 type DayState = { active: boolean; start: string; end: string }
 type WeekState = Record<number, DayState>
@@ -23,7 +16,7 @@ type WeekState = Record<number, DayState>
 const DEFAULT_DAY: DayState = { active: false, start: '09:00', end: '17:00' }
 
 function defaultWeek(): WeekState {
-  return Object.fromEntries(DAYS.map(d => [d.dow, { ...DEFAULT_DAY }]))
+  return Object.fromEntries(DOWS.map(d => [d, { ...DEFAULT_DAY }]))
 }
 
 function apiBase() {
@@ -34,31 +27,37 @@ function sanitizeSlug(raw: string) {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/, '').slice(0, 60)
 }
 
+// Returns the localised weekday name for a given day-of-week (0=Sun … 6=Sat)
+function dowLabel(dow: number, locale: string) {
+  return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(
+    new Date(2024, 0, dow === 0 ? 7 : 7 + dow)
+  )
+}
+
 type BookingSubTab = 'availability' | 'booking-page' | 'sms' | 'simplybook'
 type SmsView = 'usage' | 'reminders'
 
 export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab?: BookingSubTab }) {
+  const { t, i18n } = useTranslation()
   const [subTab, setSubTab] = useState<BookingSubTab>(initialSubTab ?? 'availability')
   const [smsView, setSmsView] = useState<SmsView>('usage')
 
   // ── Booking settings ──────────────────────────────────────────────────────
-  const [slug, setSlug]                     = useState('')
+  const [slug, setSlug]                       = useState('')
   const [paymentProvider, setPaymentProvider] = useState<'none' | 'stripe' | 'amp'>('none')
-  const [savingConfig, setSavingConfig]     = useState(false)
-  const [configLoaded, setConfigLoaded]     = useState(false)
+  const [savingConfig, setSavingConfig]       = useState(false)
+  const [configLoaded, setConfigLoaded]       = useState(false)
 
   // ── Availability ──────────────────────────────────────────────────────────
-  const [services, setServices]     = useState<ProductWithCost[]>([])
-  const [selectedId, setSelectedId] = useState('')
-  const [week, setWeek]             = useState<WeekState>(defaultWeek())
+  const [services, setServices]         = useState<ProductWithCost[]>([])
+  const [selectedId, setSelectedId]     = useState('')
+  const [week, setWeek]                 = useState<WeekState>(defaultWeek())
   const [loadingAvail, setLoadingAvail] = useState(false)
   const [savingAvail, setSavingAvail]   = useState(false)
 
   // Load booking config + services on mount
   useEffect(() => {
-    fetch(`${apiBase()}/api/tenant-admin?action=getBookingConfig`, {
-      headers: getAuthHeaders(),
-    })
+    fetch(`${apiBase()}/api/tenant-admin?action=getBookingConfig`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         setSlug(data.slug || '')
@@ -78,9 +77,7 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   useEffect(() => {
     if (!selectedId) return
     setLoadingAvail(true)
-    fetch(`${apiBase()}/api/booking-availability?service_id=${selectedId}`, {
-      headers: getAuthHeaders(),
-    })
+    fetch(`${apiBase()}/api/booking-availability?service_id=${selectedId}`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         const w = defaultWeek()
@@ -110,11 +107,11 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
         body: JSON.stringify({ action: 'updateBookingConfig', slug, paymentProvider }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to save')
+      if (!res.ok) throw new Error(data.error || t('tenantAdmin.booking.failedSave'))
       setSlug(data.slug || '')
-      alert('Booking settings saved!')
+      alert(t('tenantAdmin.booking.settingsSaved'))
     } catch (e: any) {
-      alert(e?.message || 'Failed to save')
+      alert(e?.message || t('tenantAdmin.booking.failedSave'))
     } finally {
       setSavingConfig(false)
     }
@@ -124,13 +121,9 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
     if (!selectedId) return
     setSavingAvail(true)
     try {
-      const availability = DAYS
-        .filter(d => week[d.dow].active)
-        .map(d => ({
-          day_of_week: d.dow,
-          start_time:  week[d.dow].start,
-          end_time:    week[d.dow].end,
-        }))
+      const availability = DOWS
+        .filter(d => week[d].active)
+        .map(d => ({ day_of_week: d, start_time: week[d].start, end_time: week[d].end }))
 
       const res = await fetch(`${apiBase()}/api/booking-availability`, {
         method: 'POST',
@@ -138,9 +131,9 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
         body: JSON.stringify({ service_id: selectedId, availability }),
       })
       if (!res.ok) throw new Error(`Save failed (${res.status})`)
-      alert('Availability saved!')
+      alert(t('tenantAdmin.booking.availabilitySaved'))
     } catch (e: any) {
-      alert(e?.message || 'Failed to save')
+      alert(e?.message || t('tenantAdmin.booking.failedSave'))
     } finally {
       setSavingAvail(false)
     }
@@ -149,8 +142,8 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   const [copiedUrl, setCopiedUrl] = useState(false)
 
   const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
-  const selected = services.find(s => s.id === selectedId)
-  const publicUrl = slug ? `${siteOrigin}/book/${slug}` : ''
+  const selected   = services.find(s => s.id === selectedId)
+  const publicUrl  = slug ? `${siteOrigin}/book/${slug}` : ''
 
   function copyPublicUrl() {
     navigator.clipboard.writeText(publicUrl)
@@ -159,10 +152,10 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   }
 
   const SUB_TABS: { id: BookingSubTab; label: string }[] = [
-    { id: 'availability',  label: 'Availability' },
-    { id: 'booking-page',  label: 'Booking page' },
-    { id: 'sms',           label: 'SMS' },
-    { id: 'simplybook',    label: 'Simply Book' },
+    { id: 'availability', label: t('tenantAdmin.booking.tabAvailability') },
+    { id: 'booking-page', label: t('tenantAdmin.booking.tabBookingPage') },
+    { id: 'sms',          label: t('tenantAdmin.booking.tabSms') },
+    { id: 'simplybook',   label: t('tenantAdmin.booking.tabSimplyBook') },
   ]
 
   return (
@@ -174,15 +167,11 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
             key={tab.id}
             onClick={() => setSubTab(tab.id)}
             style={{
-              background: 'none',
-              border: 'none',
+              background: 'none', border: 'none',
               borderBottom: subTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
               color: subTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
               fontWeight: subTab === tab.id ? 600 : 400,
-              fontSize: 14,
-              padding: '6px 14px 10px',
-              cursor: 'pointer',
-              marginBottom: -1,
+              fontSize: 14, padding: '6px 14px 10px', cursor: 'pointer', marginBottom: -1,
             }}
           >
             {tab.label}
@@ -195,25 +184,19 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
         <div>
           {services.length === 0 && !loadingAvail ? (
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
-              No services found. Add services on the Products &amp; Services page first.
+              {t('tenantAdmin.booking.noServices')}
             </p>
           ) : (
             <>
               <div style={{ marginBottom: 20 }}>
-                <label>Service</label>
+                <label>{t('tenantAdmin.booking.serviceLabel')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <select
-                    value={selectedId}
-                    onChange={e => setSelectedId(e.target.value)}
-                    style={{ maxWidth: 280 }}
-                  >
-                    {services.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
+                  <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ maxWidth: 280 }}>
+                    {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   {selected?.duration_minutes != null && (
                     <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                      {selected.duration_minutes} min slots
+                      {t('tenantAdmin.booking.minSlots', { min: selected.duration_minutes })}
                     </span>
                   )}
                   {selected?.price_amount != null && (
@@ -225,10 +208,10 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
               </div>
 
               {loadingAvail ? (
-                <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</p>
+                <p style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</p>
               ) : (
                 <div style={{ display: 'grid', gap: 10 }}>
-                  {DAYS.map(({ dow, label }) => {
+                  {DOWS.map(dow => {
                     const day = week[dow]
                     return (
                       <div key={dow} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -241,28 +224,20 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
                         />
                         <label
                           htmlFor={`day-${dow}`}
-                          style={{ width: 92, fontSize: 14, margin: 0, color: 'var(--text)', cursor: 'pointer', flexShrink: 0 }}
+                          style={{ width: 110, fontSize: 14, margin: 0, color: 'var(--text)', cursor: 'pointer', flexShrink: 0 }}
                         >
-                          {label}
+                          {dowLabel(dow, i18n.language)}
                         </label>
                         {day.active ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <input
-                              type="time"
-                              value={day.start}
-                              onChange={e => setDay(dow, { start: e.target.value })}
-                              style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }}
-                            />
-                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>to</span>
-                            <input
-                              type="time"
-                              value={day.end}
-                              onChange={e => setDay(dow, { end: e.target.value })}
-                              style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }}
-                            />
+                            <input type="time" value={day.start} onChange={e => setDay(dow, { start: e.target.value })}
+                              style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }} />
+                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('tenantAdmin.booking.to')}</span>
+                            <input type="time" value={day.end} onChange={e => setDay(dow, { end: e.target.value })}
+                              style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }} />
                           </div>
                         ) : (
-                          <span style={{ fontSize: 13, color: 'var(--muted)' }}>Closed</span>
+                          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('tenantAdmin.booking.closed')}</span>
                         )}
                       </div>
                     )
@@ -270,13 +245,8 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
                 </div>
               )}
 
-              <button
-                className="primary"
-                onClick={saveAvailability}
-                disabled={savingAvail || loadingAvail}
-                style={{ marginTop: 20 }}
-              >
-                {savingAvail ? 'Saving…' : 'Save availability'}
+              <button className="primary" onClick={saveAvailability} disabled={savingAvail || loadingAvail} style={{ marginTop: 20 }}>
+                {savingAvail ? t('tenantAdmin.booking.saving') : t('tenantAdmin.booking.saveAvailability')}
               </button>
             </>
           )}
@@ -287,7 +257,7 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
       {subTab === 'booking-page' && (
         <div>
           <div style={{ marginBottom: 16 }}>
-            <label>Booking page URL</label>
+            <label>{t('tenantAdmin.booking.bookingPageUrl')}</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
               <span style={{
                 padding: '0 10px', height: 'var(--control-h)', display: 'flex', alignItems: 'center',
@@ -306,11 +276,11 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
             </div>
             {publicUrl && (
               <div style={{ marginTop: 10, display: 'grid', gap: 4 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your external booking site:</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tenantAdmin.booking.yourBookingSite')}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <a href={publicUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--primary)', wordBreak: 'break-all' }}>{publicUrl}</a>
                   <button type="button" onClick={copyPublicUrl} style={{ height: 32, padding: '0 12px', fontSize: 12, flexShrink: 0 }}>
-                    {copiedUrl ? 'Copied!' : 'Copy URL'}
+                    {copiedUrl ? t('tenantAdmin.booking.copied') : t('tenantAdmin.booking.copyUrl')}
                   </button>
                 </div>
               </div>
@@ -318,24 +288,16 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label>Payment provider</label>
-            <select
-              value={paymentProvider}
-              onChange={e => setPaymentProvider(e.target.value as 'none' | 'stripe' | 'amp')}
-              style={{ maxWidth: 280 }}
-            >
-              <option value="none">None (manual / pay on arrival)</option>
-              <option value="stripe">Stripe</option>
-              <option value="amp">AMP Payment Systems</option>
+            <label>{t('tenantAdmin.booking.paymentProvider')}</label>
+            <select value={paymentProvider} onChange={e => setPaymentProvider(e.target.value as 'none' | 'stripe' | 'amp')} style={{ maxWidth: 280 }}>
+              <option value="none">{t('tenantAdmin.booking.paymentNone')}</option>
+              <option value="stripe">{t('tenantAdmin.booking.paymentStripe')}</option>
+              <option value="amp">{t('tenantAdmin.booking.paymentAmp')}</option>
             </select>
           </div>
 
-          <button
-            className="primary"
-            onClick={saveConfig}
-            disabled={savingConfig || !configLoaded}
-          >
-            {savingConfig ? 'Saving…' : 'Save settings'}
+          <button className="primary" onClick={saveConfig} disabled={savingConfig || !configLoaded}>
+            {savingConfig ? t('tenantAdmin.booking.saving') : t('tenantAdmin.booking.saveSettings')}
           </button>
         </div>
       )}
@@ -343,33 +305,24 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
       {/* ── SMS ── */}
       {subTab === 'sms' && (
         <div>
-          {/* Toggle between SMS Usage and Reminders */}
           <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
             {(['usage', 'reminders'] as const).map(v => (
-              <button
-                key={v}
-                onClick={() => setSmsView(v)}
-                style={{
-                  padding: '6px 18px',
-                  border: 'none',
-                  borderRadius: 0,
-                  background: smsView === v ? 'var(--primary, #2563eb)' : 'transparent',
-                  color: smsView === v ? '#fff' : 'inherit',
-                  cursor: 'pointer',
-                  fontWeight: smsView === v ? 600 : 400,
-                }}
-              >
-                {v === 'usage' ? 'SMS Usage' : 'Reminders'}
+              <button key={v} onClick={() => setSmsView(v)} style={{
+                padding: '6px 18px', border: 'none', borderRadius: 0,
+                background: smsView === v ? 'var(--primary, #2563eb)' : 'transparent',
+                color: smsView === v ? '#fff' : 'inherit',
+                cursor: 'pointer', fontWeight: smsView === v ? 600 : 400,
+              }}>
+                {v === 'usage' ? t('tenantAdmin.booking.smsUsageTab') : t('tenantAdmin.booking.remindersTab')}
               </button>
             ))}
           </div>
-
           {smsView === 'usage'     && <BookingSmsUsagePage />}
           {smsView === 'reminders' && <BookingRemindersPage />}
         </div>
       )}
 
-      {/* ── SimplyBook ── */}
+      {/* ── Simply Book ── */}
       {subTab === 'simplybook' && <BookingIntegrationPage />}
     </div>
   )
