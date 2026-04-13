@@ -453,6 +453,11 @@ export default function BookingPage() {
 
   return (
     <div style={pageStyle}>
+      {/* Reset global button hover/focus rules that leak into this public page */}
+      <style>{`
+        .bp-slot:hover { border-color: #e0e0e0 !important; filter: none !important; }
+        .bp-slot:focus, .bp-slot:focus-visible { outline: none !important; }
+      `}</style>
       <div ref={topRef} style={{ padding: '24px 16px 40px' }}>
 
         {/* Header — icon left, name+subtitle centered in remaining space */}
@@ -573,6 +578,7 @@ export default function BookingPage() {
                 {slots.map(s => (
                   <button
                     key={s}
+                    className="bp-slot"
                     onClick={() => selectTime(s)}
                     style={{
                       background: '#fff',
