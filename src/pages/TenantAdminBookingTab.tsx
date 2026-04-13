@@ -146,8 +146,17 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
     }
   }
 
+  const [copiedUrl, setCopiedUrl] = useState(false)
+
+  const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   const selected = services.find(s => s.id === selectedId)
-  const publicUrl = slug ? `${window.location.origin}/book/${slug}` : ''
+  const publicUrl = slug ? `${siteOrigin}/book/${slug}` : ''
+
+  function copyPublicUrl() {
+    navigator.clipboard.writeText(publicUrl)
+    setCopiedUrl(true)
+    setTimeout(() => setCopiedUrl(false), 2000)
+  }
 
   const SUB_TABS: { id: BookingSubTab; label: string }[] = [
     { id: 'availability',  label: 'Availability' },
@@ -296,7 +305,15 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
               />
             </div>
             {publicUrl && (
-              <div className="helper" style={{ marginTop: 4 }}>{publicUrl}</div>
+              <div style={{ marginTop: 10, display: 'grid', gap: 4 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your external booking site:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <a href={publicUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--primary)', wordBreak: 'break-all' }}>{publicUrl}</a>
+                  <button type="button" onClick={copyPublicUrl} style={{ height: 32, padding: '0 12px', fontSize: 12, flexShrink: 0 }}>
+                    {copiedUrl ? 'Copied!' : 'Copy URL'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
