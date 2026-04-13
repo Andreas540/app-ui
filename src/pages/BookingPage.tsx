@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import Vibrant from 'node-vibrant'
+import { Vibrant } from 'node-vibrant/browser'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -247,11 +247,11 @@ export default function BookingPage() {
   // Extract dominant color from tenant icon for page background tint
   useEffect(() => {
     if (!tenantIcon) return
-    Vibrant.from(tenantIcon).getPalette()
-      .then((palette: Awaited<ReturnType<typeof Vibrant.prototype.getPalette>>) => {
+    new Vibrant(tenantIcon).getPalette()
+      .then(palette => {
         const swatch = palette.Vibrant ?? palette.LightVibrant ?? palette.Muted
         if (!swatch) return
-        const [r, g, b] = swatch.getRgb()
+        const { r, g, b } = swatch
         // Blend 12% of the dominant color into white for a subtle tint
         const tint = `rgb(${Math.round(r * 0.12 + 255 * 0.88)}, ${Math.round(g * 0.12 + 255 * 0.88)}, ${Math.round(b * 0.12 + 255 * 0.88)})`
         setBgColor(tint)
