@@ -498,6 +498,8 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
   return (
     <div className="card" style={{maxWidth:720}}>
+      <h3 style={{ margin: '0 0 12px' }}>{t('newPayment')}</h3>
+
       {/* Payment direction checkboxes */}
       <div style={{ display:'flex', gap:24, marginBottom:16 }}>
         <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
@@ -531,8 +533,6 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
       {paymentDirection === 'customer' ? (
         <>
-          <h3>{t('payments.title')}</h3>
-
           <div className="row row-2col-mobile" style={{marginTop:12}}>
             <div>
               <label>{t('customer')}</label>
@@ -670,8 +670,6 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
         </>
       ) : paymentDirection === 'partner' ? (
         <>
-          <h3>{t('payments.paymentToPartner')}</h3>
-
           {partners.length === 0 ? (
             <p className="helper" style={{marginTop:12}}>{t('payments.noPartners')}</p>
           ) : (
@@ -765,8 +763,6 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
         </>
       ) : (
         <>
-          <h3>{t('payments.paymentToSupplier')}</h3>
-
           {suppliers.length === 0 ? (
             <p className="helper" style={{marginTop:12}}>{t('payments.noSuppliers')}</p>
           ) : (
