@@ -1260,11 +1260,11 @@
     "noDayBookings": "Inga bokningar för detta datum.",
     "customerSelfBook": "Låt dina kunder boka själva",
     "bookingLink": "Länk till din bokningssida:",
-    "missingSlug": "Ange din URL här först",
+    "missingSlug": "Ange din URL först",
     "missingPayment": "Om du vill att kunderna ska betala vid bokning, ",
-    "setupPaymentProvider": "ställ in betalleverantör här",
-    "manageAvailability": "Hantera din tillgänglighet här",
-    "manageSmsReminders": "Hantera dina SMS-påminnelser här"
+    "setupPaymentProvider": "ställ in betalleverantör",
+    "manageAvailability": "Hantera din tillgänglighet",
+    "manageSmsReminders": "Hantera dina SMS-påminnelser"
   },
   "smsUsagePage": {
     "title": "SMS-användning",

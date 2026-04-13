@@ -546,8 +546,6 @@ export default function BookingPage() {
                       fontWeight: 500,
                       color: '#1a1a1a',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
                   >
                     {formatTime(s)}
                   </button>

@@ -1260,11 +1260,11 @@
     "errorCreate": "Failed to create booking",
     "customerSelfBook": "Let your customers book themselves",
     "bookingLink": "Link to your booking site:",
-    "missingSlug": "First specify your URL here",
+    "missingSlug": "First specify your URL",
     "missingPayment": "If you want your customers to pay when booking, ",
-    "setupPaymentProvider": "set up payment provider here",
-    "manageAvailability": "Manage your availability here",
-    "manageSmsReminders": "Manage your SMS-reminders here"
+    "setupPaymentProvider": "set up payment provider",
+    "manageAvailability": "Manage your availability",
+    "manageSmsReminders": "Manage your SMS-reminders"
   },
   "smsUsagePage": {
     "title": "SMS Usage",

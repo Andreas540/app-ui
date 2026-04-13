@@ -1260,11 +1260,11 @@
     "noDayBookings": "No hay reservas para esta fecha.",
     "customerSelfBook": "Deja que tus clientes reserven solos",
     "bookingLink": "Enlace a tu sitio de reservas:",
-    "missingSlug": "Primero especifica tu URL aquí",
+    "missingSlug": "Primero especifica tu URL",
     "missingPayment": "Si quieres que tus clientes paguen al reservar, ",
-    "setupPaymentProvider": "configura el proveedor de pago aquí",
-    "manageAvailability": "Gestiona tu disponibilidad aquí",
-    "manageSmsReminders": "Gestiona tus recordatorios SMS aquí"
+    "setupPaymentProvider": "configura el proveedor de pago",
+    "manageAvailability": "Gestiona tu disponibilidad",
+    "manageSmsReminders": "Gestiona tus recordatorios SMS"
   },
   "smsUsagePage": {
     "title": "Uso de SMS",
