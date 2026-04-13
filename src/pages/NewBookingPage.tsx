@@ -268,17 +268,18 @@ export default function NewBookingPage() {
       <h3 style={{ marginBottom: 8 }}>{t('newBooking.title')}</h3>
 
       {/* Customer self-booking expander */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <button
+          type="button"
           onClick={() => setBookingConfigExpanded(v => !v)}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+          className="helper"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
         >
-          <span style={{ fontSize: 11 }}>{bookingConfigExpanded ? '▲' : '▼'}</span>
           {t('newBooking.customerSelfBook', 'Let your customers book themselves')}
         </button>
 
         {bookingConfigExpanded && (
-          <div style={{ marginTop: 10, padding: '12px 14px', background: 'var(--btn-bg)', borderRadius: 10, fontSize: 14, display: 'grid', gap: 6 }}>
+          <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, display: 'grid', gap: 6 }}>
             {bookingSlug ? (
               <div>
                 {t('newBooking.bookingLink', 'Link to your booking site:')}
@@ -294,7 +295,7 @@ export default function NewBookingPage() {
               </div>
             ) : (
               <div>
-                <Link to="/admin" style={{ color: 'var(--primary)' }}>
+                <Link to="/admin" state={{ openBookingTab: true, openBookingSubTab: 'booking-page' }} style={{ color: 'var(--primary)' }}>
                   {t('newBooking.missingSlug', 'First specify your URL here')}
                 </Link>
               </div>
@@ -302,7 +303,7 @@ export default function NewBookingPage() {
             {(!bookingPaymentProvider || bookingPaymentProvider === 'none') && (
               <div style={{ color: 'var(--text-secondary)' }}>
                 {t('newBooking.missingPayment', 'If you want your customers to pay when booking, ')}{' '}
-                <Link to="/admin" style={{ color: 'var(--primary)' }}>
+                <Link to="/admin" state={{ openBookingTab: true, openBookingSubTab: 'booking-page' }} style={{ color: 'var(--primary)' }}>
                   {t('newBooking.setupPaymentProvider', 'set up payment provider here')}
                 </Link>.
               </div>

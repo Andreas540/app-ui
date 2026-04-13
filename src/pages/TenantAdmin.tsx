@@ -142,6 +142,9 @@ export default function TenantAdmin() {
     if (s?.openInvoicingTab) {
       setActiveTab('invoicing')
     }
+    if (s?.openBookingTab) {
+      setActiveTab('booking')
+    }
   }, [])
 
   async function loadData() {
@@ -1109,7 +1112,7 @@ export default function TenantAdmin() {
         })()}
 
         {/* ── Booking tab ── */}
-        {activeTab === 'booking' && <TenantAdminBookingTab />}
+        {activeTab === 'booking' && <TenantAdminBookingTab initialSubTab={(location.state as any)?.openBookingSubTab} />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

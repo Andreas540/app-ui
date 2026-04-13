@@ -37,8 +37,8 @@ function sanitizeSlug(raw: string) {
 type BookingSubTab = 'availability' | 'booking-page' | 'sms' | 'simplybook'
 type SmsView = 'usage' | 'reminders'
 
-export default function TenantAdminBookingTab() {
-  const [subTab, setSubTab] = useState<BookingSubTab>('availability')
+export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab?: BookingSubTab }) {
+  const [subTab, setSubTab] = useState<BookingSubTab>(initialSubTab ?? 'availability')
   const [smsView, setSmsView] = useState<SmsView>('usage')
 
   // ── Booking settings ──────────────────────────────────────────────────────
