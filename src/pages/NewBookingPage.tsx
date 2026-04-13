@@ -308,6 +308,16 @@ export default function NewBookingPage() {
                 </Link>.
               </div>
             )}
+            <div>
+              <Link to="/admin" state={{ openBookingTab: true, openBookingSubTab: 'availability' }} style={{ color: 'var(--primary)' }}>
+                {t('newBooking.manageAvailability', 'Manage your availability here')}
+              </Link>
+            </div>
+            <div>
+              <Link to="/admin" state={{ openBookingTab: true, openBookingSubTab: 'sms' }} style={{ color: 'var(--primary)' }}>
+                {t('newBooking.manageSmsReminders', 'Manage your SMS-reminders here')}
+              </Link>
+            </div>
           </div>
         )}
       </div>

@@ -1257,7 +1257,14 @@
     "selectServiceFirst": "Please select a service first.",
     "selectCustomer": "Please select a customer.",
     "invalidTime": "Please enter a valid start time.",
-    "errorCreate": "Failed to create booking"
+    "errorCreate": "Failed to create booking",
+    "customerSelfBook": "Let your customers book themselves",
+    "bookingLink": "Link to your booking site:",
+    "missingSlug": "First specify your URL here",
+    "missingPayment": "If you want your customers to pay when booking, ",
+    "setupPaymentProvider": "set up payment provider here",
+    "manageAvailability": "Manage your availability here",
+    "manageSmsReminders": "Manage your SMS-reminders here"
   },
   "smsUsagePage": {
     "title": "SMS Usage",
