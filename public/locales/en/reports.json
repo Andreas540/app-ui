@@ -40,7 +40,8 @@
         "profit_rank": "Profit Rank",
         "profit_pct_rank": "Profit % Rank",
         "summary": "Summary",
-        "pct_of_total": "% of total",
+        "of_all_revenue": "of all revenue",
+        "of_all_profit": "of all profit",
         "product_breakdown": "Product Breakdown"
       }
     }

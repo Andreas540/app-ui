@@ -218,9 +218,21 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   ]
 
   const summaryRows = [
-    { label: t('customers.customer_ranking.col_revenue'),    value: fmtFull$(customer.revenue),      pct: fmtPct(pctRevenue) },
-    { label: t('customers.customer_ranking.col_profit'),     value: fmtFull$(customer.gross_profit), pct: fmtPct(pctProfit)  },
-    { label: t('customers.customer_ranking.col_profit_pct'), value: fmtPct(customer.profit_pct),     pct: ''                 },
+    {
+      label: t('customers.customer_ranking.col_revenue'),
+      value: fmtFull$(customer.revenue),
+      pct: totals.revenue > 0
+        ? `${(pctRevenue * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_revenue')}`
+        : '',
+    },
+    {
+      label: t('customers.customer_ranking.col_profit'),
+      value: fmtFull$(customer.gross_profit),
+      pct: totals.gross_profit > 0
+        ? `${(pctProfit * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_profit')}`
+        : '',
+    },
+    { label: t('customers.customer_ranking.col_profit_pct'), value: fmtPct(customer.profit_pct), pct: '' },
   ]
 
   return (
@@ -242,9 +254,13 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{customer.customer_name}</div>
-            {customer.customer_type && (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{customer.customer_type}</div>
-            )}
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {customer.customer_type && <span>{customer.customer_type}</span>}
+              {customer.customer_type && (from || to) && <span> · </span>}
+              {(from || to) && (
+                <span>{from || '…'} – {to || '…'}</span>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -262,7 +278,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
               background: 'var(--bg, #10131a)', borderRadius: 8,
               border: '1px solid var(--border)', padding: '10px 8px', textAlign: 'center',
             }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent, #6366f1)' }}>#{rank}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: rank <= 5 ? '#22c55e' : 'var(--accent, #6366f1)' }}>#{rank}</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.3 }}>{label}</div>
             </div>
           ))}
@@ -282,7 +298,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
                   <td style={{ padding: '7px 0 7px 12px', textAlign: 'right' }}>
                     {row.pct && (
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                        {row.pct} {t('customers.customer_ranking.detail.pct_of_total')}
+                        {row.pct}
                       </span>
                     )}
                   </td>

@@ -40,7 +40,8 @@
         "profit_rank": "Vinstrankning",
         "profit_pct_rank": "Vinstprocentrankning",
         "summary": "Sammanfattning",
-        "pct_of_total": "% av totalt",
+        "of_all_revenue": "av totala intäkter",
+        "of_all_profit": "av total vinst",
         "product_breakdown": "Produktfördelning"
       }
     }

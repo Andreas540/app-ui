@@ -663,7 +663,7 @@ useEffect(() => {
                 {canAccess('financial') && (<>
                   {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (<>
-                    <NavLink to="/reports" onClick={() => setNavOpen(false)}>
+                    <NavLink to="/reports" end onClick={() => setNavOpen(false)}>
                       {t('reportsSalesProfit')}
                     </NavLink>
                     <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>

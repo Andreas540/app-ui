@@ -40,7 +40,8 @@
         "profit_rank": "Ranking Beneficio",
         "profit_pct_rank": "Ranking % Beneficio",
         "summary": "Resumen",
-        "pct_of_total": "% del total",
+        "of_all_revenue": "del total de ingresos",
+        "of_all_profit": "del total de beneficios",
         "product_breakdown": "Desglose por Producto"
       }
     }
