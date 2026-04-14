@@ -27,6 +27,7 @@
     "pageTitle": "Informes de Clientes",
     "customer_ranking": {
       "title": "Ranking de Clientes",
+      "by_qty": "Por Cantidad",
       "by_revenue": "Por Ingresos",
       "by_profit": "Por Beneficio",
       "by_profit_pct": "Por % Beneficio",
@@ -40,6 +41,7 @@
         "profit_rank": "Ranking Beneficio",
         "profit_pct_rank": "Ranking % Beneficio",
         "summary": "Resumen",
+        "all_time": "Todo el tiempo",
         "of_all_revenue": "del total de ingresos",
         "of_all_profit": "del total de beneficios",
         "product_breakdown": "Desglose por Producto"

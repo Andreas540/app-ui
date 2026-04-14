@@ -28,6 +28,7 @@ SELECT
   c.customer_type,
   p.id                                                                                   AS product_id,
   p.name                                                                                 AS product_name,
+  SUM(oi.qty)                                                                            AS qty,
   SUM(oi.qty::numeric * COALESCE(oi.unit_price, 0))                                     AS revenue,
   SUM(oi.qty::numeric * (COALESCE(oi.product_cost, 0) + COALESCE(oi.shipping_cost, 0))) AS cogs,
   -- Partner amount allocated to this product proportionally by line revenue

@@ -103,6 +103,7 @@ export const handler = async (event) => {
           SELECT
             product_id,
             product_name,
+            SUM(qty)::int             AS qty,
             SUM(revenue)::float8      AS revenue,
             SUM(gross_profit)::float8 AS gross_profit
           FROM public.v_customer_product_monthly
@@ -111,20 +112,21 @@ export const handler = async (event) => {
             AND month >= ${fromDate}::date
             AND month <= ${toDate}::date
           GROUP BY product_id, product_name
-          ORDER BY SUM(revenue) DESC
+          ORDER BY SUM(qty) DESC
         `
       } else {
         products = await sql`
           SELECT
             product_id,
             product_name,
+            SUM(qty)::int             AS qty,
             SUM(revenue)::float8      AS revenue,
             SUM(gross_profit)::float8 AS gross_profit
           FROM public.v_customer_product_monthly
           WHERE tenant_id   = ${TENANT_ID}
             AND customer_id = ${customerId}::uuid
           GROUP BY product_id, product_name
-          ORDER BY SUM(revenue) DESC
+          ORDER BY SUM(qty) DESC
         `
       }
 

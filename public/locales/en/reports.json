@@ -27,6 +27,7 @@
     "pageTitle": "Customer Reports",
     "customer_ranking": {
       "title": "Customer Ranking",
+      "by_qty": "By Quantity",
       "by_revenue": "By Revenue",
       "by_profit": "By Profit",
       "by_profit_pct": "By Profit %",
@@ -40,6 +41,7 @@
         "profit_rank": "Profit Rank",
         "profit_pct_rank": "Profit % Rank",
         "summary": "Summary",
+        "all_time": "All time",
         "of_all_revenue": "of all revenue",
         "of_all_profit": "of all profit",
         "product_breakdown": "Product Breakdown"

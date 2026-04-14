@@ -27,6 +27,7 @@
     "pageTitle": "Kundrapporter",
     "customer_ranking": {
       "title": "Kundrankning",
+      "by_qty": "Antal",
       "by_revenue": "Intäkter",
       "by_profit": "Vinst",
       "by_profit_pct": "Vinstprocent",
@@ -40,6 +41,7 @@
         "profit_rank": "Vinstrankning",
         "profit_pct_rank": "Vinstprocentrankning",
         "summary": "Sammanfattning",
+        "all_time": "All tid",
         "of_all_revenue": "av totala intäkter",
         "of_all_profit": "av total vinst",
         "product_breakdown": "Produktfördelning"

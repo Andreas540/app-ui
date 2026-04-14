@@ -12,7 +12,8 @@ import { getTenantConfig } from '../lib/tenantConfig'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SortMetric = 'revenue' | 'profit' | 'profit_pct'
+type SortMetric  = 'revenue' | 'profit' | 'profit_pct'
+type ChartMetric = 'qty' | 'revenue' | 'profit' | 'profit_pct'
 
 type CustomerRow = {
   customer_id: string
@@ -26,6 +27,7 @@ type CustomerRow = {
 type ProductRow = {
   product_id: string
   product_name: string
+  qty: number
   revenue: number
   gross_profit: number
   profit_pct: number
@@ -115,6 +117,7 @@ async function fetchDetail(customerId: string, from?: string, to?: string): Prom
     return {
       product_id:   String(r.product_id   ?? ''),
       product_name: String(r.product_name ?? ''),
+      qty:          Number(r.qty          ?? 0),
       revenue,
       gross_profit,
       profit_pct: revenue > 0 ? gross_profit / revenue : 0,
@@ -125,9 +128,9 @@ async function fetchDetail(customerId: string, from?: string, to?: string): Prom
 // ── Metric toggle ─────────────────────────────────────────────────────────────
 
 function MetricToggle({ value, onChange, options }: {
-  value: SortMetric
-  onChange: (v: SortMetric) => void
-  options: { value: SortMetric; label: string }[]
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
 }) {
   return (
     <div style={{
@@ -164,10 +167,16 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   to: string
   onClose: () => void
 }) {
-  const { t } = useTranslation('reports')
+  const { t, i18n } = useTranslation('reports')
+
+  function fmtMonth(ym: string): string {
+    const [y, m] = ym.split('-').map(Number)
+    if (!y || !m) return ym
+    return new Date(y, m - 1, 1).toLocaleString(i18n.language, { month: 'short', year: 'numeric' })
+  }
   const [products,     setProducts]     = useState<ProductRow[]>([])
   const [loading,      setLoading]      = useState(true)
-  const [chartMetric,  setChartMetric]  = useState<SortMetric>('revenue')
+  const [chartMetric,  setChartMetric]  = useState<ChartMetric>('qty')
 
   // Compute ranks for all 3 metrics
   const ranks = useMemo(() => {
@@ -197,15 +206,22 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const chartData = products.map(p => ({
-    name:  p.product_name,
-    value: chartMetric === 'revenue'    ? p.revenue
-         : chartMetric === 'profit'     ? p.gross_profit
-         : p.profit_pct * 100,
-  }))
+  const chartData = useMemo(() => {
+    const getVal = (p: ProductRow) =>
+      chartMetric === 'qty'        ? p.qty
+      : chartMetric === 'revenue'  ? p.revenue
+      : chartMetric === 'profit'   ? p.gross_profit
+      : p.profit_pct * 100
+    return [...products]
+      .sort((a, b) => getVal(b) - getVal(a))
+      .map(p => ({ name: p.product_name, value: getVal(p) }))
+  }, [products, chartMetric])
+
   const chartFmt = (label: React.ReactNode): React.ReactNode => {
     const v = Number(label)
-    return chartMetric === 'profit_pct' ? `${v.toFixed(1)}%` : fmt$(v)
+    if (chartMetric === 'profit_pct') return `${v.toFixed(1)}%`
+    if (chartMetric === 'qty')        return String(Math.round(v))
+    return fmt$(v)
   }
 
   const pctRevenue = totals.revenue      > 0 ? customer.revenue      / totals.revenue      : 0
@@ -256,10 +272,13 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
             <div style={{ fontWeight: 700, fontSize: 16 }}>{customer.customer_name}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
               {customer.customer_type && <span>{customer.customer_type}</span>}
-              {customer.customer_type && (from || to) && <span> · </span>}
-              {(from || to) && (
-                <span>{from || '…'} – {to || '…'}</span>
-              )}
+              {customer.customer_type && <span> · </span>}
+              <span>
+                {(from || to)
+                  ? `${from ? fmtMonth(from) : '…'} – ${to ? fmtMonth(to) : '…'}`
+                  : t('customers.customer_ranking.detail.all_time')
+                }
+              </span>
             </div>
           </div>
           <button
@@ -316,8 +335,9 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
             </div>
             <MetricToggle
               value={chartMetric}
-              onChange={setChartMetric}
+              onChange={v => setChartMetric(v as ChartMetric)}
               options={[
+                { value: 'qty',        label: t('customers.customer_ranking.by_qty')        },
                 { value: 'revenue',    label: t('customers.customer_ranking.by_revenue')    },
                 { value: 'profit',     label: t('customers.customer_ranking.by_profit')     },
                 { value: 'profit_pct', label: t('customers.customer_ranking.by_profit_pct') },
@@ -395,7 +415,7 @@ function RankingCard({ customers, totals, from, to }: {
           <span style={{ fontWeight: 600, fontSize: 14 }}>{t('customers.customer_ranking.title')}</span>
           <MetricToggle
             value={sortMetric}
-            onChange={setSortMetric}
+            onChange={v => setSortMetric(v as SortMetric)}
             options={[
               { value: 'revenue',    label: t('customers.customer_ranking.by_revenue')    },
               { value: 'profit',     label: t('customers.customer_ranking.by_profit')     },
