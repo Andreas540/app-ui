@@ -22,5 +22,20 @@
     "description_revenue": "Revenue: The total value of all orders registered in the period.",
     "description_profit": "Profit: Total revenue minus total product cost and minus total shipping cost, minus any costs registered as recurring or non-recurring business costs on the New Cost page.",
     "description_note": "Product cost is registered, per unit, on the Products page. Shipping cost is registered, per unit, for each individual customer."
+  },
+  "customers": {
+    "pageTitle": "Customer Reports",
+    "showPct": "Show %",
+    "hidePct": "Hide %",
+    "label_new_customers": "New Customers",
+    "label_active_customers": "Active Customers",
+    "label_direct_revenue": "Direct Revenue",
+    "label_partner_revenue": "Partner Revenue",
+    "new_vs_active_customers": {
+      "title": "New vs Active Customers"
+    },
+    "direct_vs_partner_revenue": {
+      "title": "Direct vs Partner Revenue"
+    }
   }
 }

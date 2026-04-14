@@ -161,9 +161,11 @@ export default function Customers() {
           <Link to="/customers/merge" style={{ display: 'block' }}>
             <button className="primary" style={{ height: BTN_H, width: '100%' }}>{t('customers.mergeCustomers')}</button>
           </Link>
-          <button className="primary" style={{ height: BTN_H, width: '100%', opacity: 0.4, cursor: 'not-allowed' }} disabled>
-            {t('customers.customerReports')}
-          </button>
+          <Link to="/reports/customers" style={{ display: 'block' }}>
+            <button className="primary" style={{ height: BTN_H, width: '100%' }}>
+              {t('customers.customerReports')}
+            </button>
+          </Link>
         </div>
 
         {/* Row 2: Filter by label */}

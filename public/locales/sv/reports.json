@@ -22,5 +22,20 @@
     "description_revenue": "Intäkter: Det totala värdet av alla beställningar registrerade under perioden.",
     "description_profit": "Vinst: Totala intäkter minus totala produktkostnader och minus totala fraktkostnader, minus eventuella kostnader registrerade som återkommande eller icke-återkommande affärskostnader på sidan Ny kostnad.",
     "description_note": "Produktkostnad registreras, per enhet, på sidan Produkter. Fraktkostnad registreras, per enhet, för varje enskild kund."
+  },
+  "customers": {
+    "pageTitle": "Kundrapporter",
+    "showPct": "Visa %",
+    "hidePct": "Dölj %",
+    "label_new_customers": "Nya kunder",
+    "label_active_customers": "Aktiva kunder",
+    "label_direct_revenue": "Direktintäkter",
+    "label_partner_revenue": "Partnerintäkter",
+    "new_vs_active_customers": {
+      "title": "Nya vs aktiva kunder"
+    },
+    "direct_vs_partner_revenue": {
+      "title": "Direkt- vs partnerintäkter"
+    }
   }
 }

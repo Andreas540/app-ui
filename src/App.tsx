@@ -65,6 +65,7 @@ import BookingSmsUsagePage from './pages/BookingSmsUsagePage'
 import BookingDetailPage from './pages/BookingDetailPage'
 import NewBookingPage from './pages/NewBookingPage'
 import ReportsPage from './pages/ReportsPage'
+import CustomerReportsPage from './pages/CustomerReportsPage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -225,6 +226,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/supplier-orders/:id/edit':   'page_view_edit_supplier_order',
   '/costs/new':                  'page_view_new_cost',
   '/reports':                    'page_view_reports',
+  '/reports/customers':          'page_view_customer_reports',
   '/warehouse':                  'page_view_warehouse',
   '/supply-chain':               'page_view_supply_chain',
   '/labor-production':           'page_view_labor_production',
@@ -660,11 +662,14 @@ useEffect(() => {
                 </>)}
                 {canAccess('financial') && (<>
                   {sectionHeader('reports', t('reportsSection'))}
-                  {!collapsed['reports'] && (
+                  {!collapsed['reports'] && (<>
                     <NavLink to="/reports" onClick={() => setNavOpen(false)}>
                       {t('reportsSalesProfit')}
                     </NavLink>
-                  )}
+                    <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
+                      {t('reportsCustomers')}
+                    </NavLink>
+                  </>)}
                 </>)}
                 {sectionHeader('supply', t('supplyChain'))}
                 {!collapsed['supply'] && (<>
@@ -871,6 +876,7 @@ useEffect(() => {
                 )}
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
                 {hasFeature('financial') && <Route path="/reports" element={<ReportsPage />} />}
+                {hasFeature('financial') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
