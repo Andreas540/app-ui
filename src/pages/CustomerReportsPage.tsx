@@ -1,7 +1,7 @@
 // src/pages/CustomerReportsPage.tsx
 // Customer Reports — Customer Ranking with detail modal.
 // Header pattern mirrors ReportsPage: date interval selector + report dropdown.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList,
@@ -203,9 +203,10 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
          : chartMetric === 'profit'     ? p.gross_profit
          : p.profit_pct * 100,
   }))
-  const chartFmt = chartMetric === 'profit_pct'
-    ? (v: number) => `${v.toFixed(1)}%`
-    : (v: number) => fmt$(v)
+  const chartFmt = (label: React.ReactNode): React.ReactNode => {
+    const v = Number(label)
+    return chartMetric === 'profit_pct' ? `${v.toFixed(1)}%` : fmt$(v)
+  }
 
   const pctRevenue = totals.revenue      > 0 ? customer.revenue      / totals.revenue      : 0
   const pctProfit  = totals.gross_profit > 0 ? customer.gross_profit / totals.gross_profit : 0
