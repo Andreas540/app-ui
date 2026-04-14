@@ -1,28 +1,48 @@
 // src/pages/CustomerReportsPage.tsx
-// Customer Reports page — New/Active customers and Direct/Partner revenue.
-// Same header pattern as ReportsPage: date interval selector + report visibility dropdown.
+// Customer Reports — Customer Ranking with detail modal.
+// Header pattern mirrors ReportsPage: date interval selector + report dropdown.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList,
+} from 'recharts'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  LabelList,
-} from 'recharts'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type SortMetric = 'revenue' | 'profit' | 'profit_pct'
+
+type CustomerRow = {
+  customer_id: string
+  customer_name: string
+  customer_type: string
+  revenue: number
+  gross_profit: number
+  profit_pct: number   // precomputed: gross_profit / revenue
+}
+
+type ProductRow = {
+  product_id: string
+  product_name: string
+  revenue: number
+  gross_profit: number
+  profit_pct: number
+}
+
+type Totals = { revenue: number; gross_profit: number }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmtK1   = (n: number) => `$${(n / 1000).toFixed(1)}K`
-const fmtNum  = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(Math.round(n))
-const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
+const fmt$   = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : `$${n.toFixed(0)}`
+const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
+const fmtFull$ = (n: number) =>
+  `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
-// ── Month picker ─────────────────────────────────────────────────────────────
+const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+// ── Month picker ──────────────────────────────────────────────────────────────
 
 function MonthPicker({ value, onChange, placeholder }: {
   value: string
@@ -52,245 +72,373 @@ function MonthPicker({ value, onChange, placeholder }: {
   )
 }
 
-// ── Data types & fetch ────────────────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 
-type CustomerReportPoint = {
-  month: string
-  new_customers: number
-  active_customers: number
-  newActivePct: number
-  direct_revenue: number
-  partner_revenue: number
-  directPct: number
+async function fetchRanking(from?: string, to?: string): Promise<{ customers: CustomerRow[]; totals: Totals }> {
+  const p = new URLSearchParams({ action: 'ranking' })
+  if (from) p.set('from', from)
+  if (to)   p.set('to',   to)
+  const res = await fetch(`${BASE}/api/customer-reports?${p}`, { cache: 'no-store', headers: getAuthHeaders() })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = await res.json()
+  const customers: CustomerRow[] = (data.customers ?? []).map((r: any) => {
+    const revenue      = Number(r.revenue      ?? 0)
+    const gross_profit = Number(r.gross_profit ?? 0)
+    return {
+      customer_id:   String(r.customer_id   ?? ''),
+      customer_name: String(r.customer_name ?? ''),
+      customer_type: String(r.customer_type ?? ''),
+      revenue,
+      gross_profit,
+      profit_pct: revenue > 0 ? gross_profit / revenue : 0,
+    }
+  })
+  return {
+    customers,
+    totals: {
+      revenue:      Number(data.totals?.revenue      ?? 0),
+      gross_profit: Number(data.totals?.gross_profit ?? 0),
+    },
+  }
 }
 
-async function fetchCustomerReportData(from?: string, to?: string): Promise<CustomerReportPoint[]> {
-  const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const params = (from && to)
-    ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-    : 'months=3'
-  const res = await fetch(`${base}/api/customer-reports/monthly?${params}`, {
-    cache: 'no-store',
-    headers: getAuthHeaders(),
-  })
-  if (res.status === 404) return []
-  if (!res.ok) throw new Error(`Failed to load data (${res.status})`)
-  const { rows } = await res.json()
-  const safe = Array.isArray(rows) ? rows : []
-  return safe.map((r: any) => {
-    const new_customers    = Number(r.new_customers    ?? 0)
-    const active_customers = Number(r.active_customers ?? 0)
-    const direct_revenue   = Number(r.direct_revenue   ?? 0)
-    const partner_revenue  = Number(r.partner_revenue  ?? 0)
-    const total_revenue    = direct_revenue + partner_revenue
+async function fetchDetail(customerId: string, from?: string, to?: string): Promise<ProductRow[]> {
+  const p = new URLSearchParams({ action: 'detail', customer_id: customerId })
+  if (from) p.set('from', from)
+  if (to)   p.set('to',   to)
+  const res = await fetch(`${BASE}/api/customer-reports?${p}`, { cache: 'no-store', headers: getAuthHeaders() })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = await res.json()
+  return (data.products ?? []).map((r: any) => {
+    const revenue      = Number(r.revenue      ?? 0)
+    const gross_profit = Number(r.gross_profit ?? 0)
     return {
-      month: String(r.month ?? ''),
-      new_customers,
-      active_customers,
-      newActivePct:  active_customers > 0 ? new_customers    / active_customers : 0,
-      direct_revenue,
-      partner_revenue,
-      directPct:     total_revenue    > 0 ? direct_revenue   / total_revenue    : 0,
+      product_id:   String(r.product_id   ?? ''),
+      product_name: String(r.product_name ?? ''),
+      revenue,
+      gross_profit,
+      profit_pct: revenue > 0 ? gross_profit / revenue : 0,
     }
   })
 }
 
-// ── Chart component ───────────────────────────────────────────────────────────
+// ── Metric toggle ─────────────────────────────────────────────────────────────
 
-type CustomerChartSlideProps = {
-  data: CustomerReportPoint[]
-  bar1Key: string
-  bar1Label: string
-  bar2Key: string
-  bar2Label: string
-  lineKey: string
-  barFmt: 'count' | 'money'
-  needsScroll: boolean
-  canPrev: boolean
-  canNext: boolean
-  onPrev: () => void
-  onNext: () => void
-  showHint: boolean
-}
-
-function CustomerChartSlide({
-  data, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, barFmt,
-  needsScroll, canPrev, canNext, onPrev, onNext, showHint,
-}: CustomerChartSlideProps) {
-  const { t } = useTranslation('reports')
-  const [showPct, setShowPct] = useState(false)
-  const touchStartX = useRef<number | null>(null)
-
-  const barLabel = (v: any) =>
-    barFmt === 'money' ? fmtK1(Number(v)) : fmtNum(Number(v))
-
-  const navBtn = (disabled: boolean) => ({
-    width: 32, height: 32, padding: 0, fontSize: 16, fontWeight: 700,
-    background: 'transparent' as const,
-    border: '1px solid var(--border)', borderRadius: 6,
-    color: disabled ? 'var(--text-secondary)' : 'var(--text)',
-    opacity: disabled ? 0.3 : 1,
-    cursor: disabled ? 'not-allowed' as const : 'pointer' as const,
-  })
-
+function MetricToggle({ value, onChange, options }: {
+  value: SortMetric
+  onChange: (v: SortMetric) => void
+  options: { value: SortMetric; label: string }[]
+}) {
   return (
-    <div>
-      {/* Legend + Show/Hide % toggle */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 6, flexWrap: 'wrap', gap: 6,
-      }}>
-        <div style={{ display: 'flex', gap: '4px 16px', flexWrap: 'wrap' }}>
-          {[{ color: '#f59e0b', label: bar1Label }, { color: '#60a5fa', label: bar2Label }].map(({ color, label }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
-            </div>
-          ))}
-        </div>
+    <div style={{
+      display: 'inline-flex', borderRadius: 6, overflow: 'hidden',
+      border: '1px solid var(--border)',
+    }}>
+      {options.map((opt, i) => (
         <button
-          onClick={() => setShowPct(v => !v)}
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
           style={{
-            fontSize: 11, padding: '2px 8px', height: 22, borderRadius: 4,
-            background: showPct ? 'var(--accent)' : 'transparent',
-            border: '1px solid var(--border)',
-            color: showPct ? '#fff' : 'var(--text-secondary)',
-            cursor: 'pointer',
+            padding: '4px 10px', fontSize: 12, height: 28,
+            background: value === opt.value ? 'var(--accent, #6366f1)' : 'transparent',
+            color: value === opt.value ? '#fff' : 'var(--text-secondary)',
+            border: 'none',
+            borderRight: i < options.length - 1 ? '1px solid var(--border)' : 'none',
+            cursor: 'pointer', whiteSpace: 'nowrap',
           }}
         >
-          {showPct ? t('customers.hidePct') : t('customers.showPct')}
+          {opt.label}
         </button>
-      </div>
-
-      {/* Chart */}
-      <div
-        style={{ position: 'relative', height: 260 }}
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
-        onTouchEnd={(e) => {
-          if (touchStartX.current === null) return
-          const dx = e.changedTouches[0].clientX - touchStartX.current
-          touchStartX.current = null
-          if (Math.abs(dx) < 40) return
-          if (dx < 0 && canNext) onNext()
-          if (dx > 0 && canPrev) onPrev()
-        }}
-        onWheel={(e) => {
-          if (!needsScroll || Math.abs(e.deltaX) < 20) return
-          if (e.deltaX > 0 && canNext) onNext()
-          if (e.deltaX < 0 && canPrev) onPrev()
-        }}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 11 }}
-              axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
-              tickLine={false}
-              tickFormatter={(m) => {
-                const [y, mm] = (m || '').split('-').map(Number)
-                if (!y || !mm) return String(m || '')
-                return new Date(y, mm - 1, 1).toLocaleString('en-US', { month: 'short', year: '2-digit' })
-              }}
-            />
-            <YAxis yAxisId="left"  tick={false} axisLine={false} width={0}
-              domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.35)]} />
-            <YAxis yAxisId="right" orientation="right" tick={false} axisLine={false} width={0}
-              domain={[0, 0.55]} />
-
-            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}>
-              {!showPct && (
-                <LabelList dataKey={bar1Key} position="top" offset={8}
-                  formatter={(v: any) => barLabel(v)} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
-            </Bar>
-            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}>
-              {!showPct && (
-                <LabelList dataKey={bar2Key} position="top" offset={8}
-                  formatter={(v: any) => barLabel(v)} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
-            </Bar>
-            <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
-              strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-              {showPct && (
-                <LabelList dataKey={lineKey} position="top" offset={8}
-                  formatter={(v: any) => fmtPct1(Number(v))} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
-            </Line>
-          </ComposedChart>
-        </ResponsiveContainer>
-
-        {showHint && needsScroll && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none', zIndex: 10, borderRadius: 8,
-            background: 'rgba(0,0,0,0.48)',
-          }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '0 16px' }}>
-              ← Swipe to see all periods →
-            </span>
-          </div>
-        )}
-      </div>
-
-      {needsScroll && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
-          <button onClick={onPrev} disabled={!canPrev} style={navBtn(!canPrev)}>←</button>
-          <button onClick={onNext} disabled={!canNext} style={navBtn(!canNext)}>→</button>
-        </div>
-      )}
+      ))}
     </div>
   )
 }
 
-// ── Report definitions ────────────────────────────────────────────────────────
+// ── Customer detail modal ─────────────────────────────────────────────────────
 
-type CustomerReportDef = {
-  id: string
-  bar1Key: string
-  bar1Label: string
-  bar2Key: string
-  bar2Label: string
-  lineKey: string
-  barFmt: 'count' | 'money'
-}
+function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose }: {
+  customer: CustomerRow
+  totals: Totals
+  allCustomers: CustomerRow[]
+  from: string
+  to: string
+  onClose: () => void
+}) {
+  const { t } = useTranslation('reports')
+  const [products,     setProducts]     = useState<ProductRow[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [chartMetric,  setChartMetric]  = useState<SortMetric>('revenue')
 
-const ALL_REPORTS: CustomerReportDef[] = [
-  {
-    id: 'new_vs_active_customers',
-    bar1Key: 'new_customers',    bar1Label: 'customers.label_new_customers',
-    bar2Key: 'active_customers', bar2Label: 'customers.label_active_customers',
-    lineKey: 'newActivePct',
-    barFmt: 'count',
-  },
-  {
-    id: 'direct_vs_partner_revenue',
-    bar1Key: 'direct_revenue',  bar1Label: 'customers.label_direct_revenue',
-    bar2Key: 'partner_revenue', bar2Label: 'customers.label_partner_revenue',
-    lineKey: 'directPct',
-    barFmt: 'money',
-  },
-]
-
-const LS_ORDER  = 'customer_reports_order'
-const LS_HIDDEN = 'customer_reports_hidden'
-
-function loadOrder(): string[] {
-  try {
-    const s = localStorage.getItem(LS_ORDER)
-    if (s) {
-      const saved: string[] = JSON.parse(s)
-      const valid = saved.filter(id => ALL_REPORTS.some(r => r.id === id))
-      ALL_REPORTS.forEach(r => { if (!valid.includes(r.id)) valid.push(r.id) })
-      return valid
+  // Compute ranks for all 3 metrics
+  const ranks = useMemo(() => {
+    const byRev  = [...allCustomers].sort((a, b) => b.revenue      - a.revenue)
+    const byPro  = [...allCustomers].sort((a, b) => b.gross_profit - a.gross_profit)
+    const byPct  = [...allCustomers].sort((a, b) => b.profit_pct   - a.profit_pct)
+    return {
+      revenue:    byRev.findIndex(c => c.customer_id === customer.customer_id) + 1,
+      profit:     byPro.findIndex(c => c.customer_id === customer.customer_id) + 1,
+      profit_pct: byPct.findIndex(c => c.customer_id === customer.customer_id) + 1,
     }
-  } catch {}
-  return ALL_REPORTS.map(r => r.id)
+  }, [allCustomers, customer.customer_id])
+
+  useEffect(() => {
+    let stop = false
+    setLoading(true)
+    fetchDetail(customer.customer_id, from || undefined, to || undefined)
+      .then(rows => { if (!stop) { setProducts(rows); setLoading(false) } })
+      .catch(() => { if (!stop) setLoading(false) })
+    return () => { stop = true }
+  }, [customer.customer_id, from, to])
+
+  // Keyboard close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const chartData = products.map(p => ({
+    name:  p.product_name,
+    value: chartMetric === 'revenue'    ? p.revenue
+         : chartMetric === 'profit'     ? p.gross_profit
+         : p.profit_pct * 100,
+  }))
+  const chartFmt = chartMetric === 'profit_pct'
+    ? (v: number) => `${v.toFixed(1)}%`
+    : (v: number) => fmt$(v)
+
+  const pctRevenue = totals.revenue      > 0 ? customer.revenue      / totals.revenue      : 0
+  const pctProfit  = totals.gross_profit > 0 ? customer.gross_profit / totals.gross_profit : 0
+
+  const ranktiles = [
+    { label: t('customers.customer_ranking.detail.revenue_rank'),    rank: ranks.revenue },
+    { label: t('customers.customer_ranking.detail.profit_rank'),     rank: ranks.profit },
+    { label: t('customers.customer_ranking.detail.profit_pct_rank'), rank: ranks.profit_pct },
+  ]
+
+  const summaryRows = [
+    { label: t('customers.customer_ranking.col_revenue'),    value: fmtFull$(customer.revenue),      pct: fmtPct(pctRevenue) },
+    { label: t('customers.customer_ranking.col_profit'),     value: fmtFull$(customer.gross_profit), pct: fmtPct(pctProfit)  },
+    { label: t('customers.customer_ranking.col_profit_pct'), value: fmtPct(customer.profit_pct),     pct: ''                 },
+  ]
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 500,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{
+        background: 'var(--card)', borderRadius: 12, border: '1px solid var(--border)',
+        width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto',
+        padding: 20, display: 'flex', flexDirection: 'column', gap: 16,
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{customer.customer_name}</div>
+            {customer.customer_type && (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{customer.customer_type}</div>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent', border: 'none', color: 'var(--text-secondary)',
+              fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0, flexShrink: 0,
+            }}
+          >✕</button>
+        </div>
+
+        {/* Rank tiles */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {ranktiles.map(({ label, rank }) => (
+            <div key={label} style={{
+              background: 'var(--bg, #10131a)', borderRadius: 8,
+              border: '1px solid var(--border)', padding: '10px 8px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent, #6366f1)' }}>#{rank}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.3 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary */}
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+            {t('customers.customer_ranking.detail.summary')}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <tbody>
+              {summaryRows.map(row => (
+                <tr key={row.label} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '7px 0', color: 'var(--text-secondary)' }}>{row.label}</td>
+                  <td style={{ padding: '7px 0', fontWeight: 600, textAlign: 'right' }}>{row.value}</td>
+                  <td style={{ padding: '7px 0 7px 12px', textAlign: 'right' }}>
+                    {row.pct && (
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {row.pct} {t('customers.customer_ranking.detail.pct_of_total')}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Product breakdown */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>
+              {t('customers.customer_ranking.detail.product_breakdown')}
+            </div>
+            <MetricToggle
+              value={chartMetric}
+              onChange={setChartMetric}
+              options={[
+                { value: 'revenue',    label: t('customers.customer_ranking.by_revenue')    },
+                { value: 'profit',     label: t('customers.customer_ranking.by_profit')     },
+                { value: 'profit_pct', label: t('customers.customer_ranking.by_profit_pct') },
+              ]}
+            />
+          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-secondary)', fontSize: 13 }}>…</div>
+          ) : chartData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-secondary)', fontSize: 13 }}>—</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(100, chartData.length * 34)}>
+              <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 64, bottom: 0, left: 0 }}>
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category" dataKey="name" width={140}
+                  tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+                  axisLine={false} tickLine={false}
+                />
+                <Bar dataKey="value" fill="var(--accent, #6366f1)" isAnimationActive={false} radius={[0, 3, 3, 0]}>
+                  <LabelList
+                    dataKey="value" position="right"
+                    formatter={chartFmt}
+                    style={{ fontSize: 11, fill: 'var(--text)', fontWeight: 600 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
+
+// ── Ranking card ──────────────────────────────────────────────────────────────
+
+function RankingCard({ customers, totals, from, to }: {
+  customers: CustomerRow[]
+  totals: Totals
+  from: string
+  to: string
+}) {
+  const { t }             = useTranslation('reports')
+  const [sortMetric, setSortMetric] = useState<SortMetric>('revenue')
+  const [selected,   setSelected]   = useState<CustomerRow | null>(null)
+
+  const sorted = useMemo(() => [...customers].sort((a, b) => {
+    if (sortMetric === 'revenue')    return b.revenue      - a.revenue
+    if (sortMetric === 'profit')     return b.gross_profit - a.gross_profit
+    return b.profit_pct - a.profit_pct
+  }), [customers, sortMetric])
+
+  const valueHeader =
+    sortMetric === 'revenue'    ? t('customers.customer_ranking.col_revenue')    :
+    sortMetric === 'profit'     ? t('customers.customer_ranking.col_profit')     :
+                                  t('customers.customer_ranking.col_profit_pct')
+
+  const getValue = (c: CustomerRow) =>
+    sortMetric === 'revenue'    ? fmt$(c.revenue)      :
+    sortMetric === 'profit'     ? fmt$(c.gross_profit) :
+                                  fmtPct(c.profit_pct)
+
+  const th: React.CSSProperties = {
+    padding: '7px 8px', textAlign: 'left', fontWeight: 600,
+    fontSize: 11, color: 'var(--text-secondary)',
+    borderBottom: '2px solid var(--border)',
+  }
+
+  return (
+    <>
+      <div className="card" style={{ padding: '12px 16px 16px' }}>
+        {/* Card header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{t('customers.customer_ranking.title')}</span>
+          <MetricToggle
+            value={sortMetric}
+            onChange={setSortMetric}
+            options={[
+              { value: 'revenue',    label: t('customers.customer_ranking.by_revenue')    },
+              { value: 'profit',     label: t('customers.customer_ranking.by_profit')     },
+              { value: 'profit_pct', label: t('customers.customer_ranking.by_profit_pct') },
+            ]}
+          />
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, width: 32 }}>{t('customers.customer_ranking.col_rank')}</th>
+                <th style={th}>{t('customers.customer_ranking.col_customer')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{valueHeader}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((c, idx) => (
+                <tr
+                  key={c.customer_id}
+                  onClick={() => setSelected(c)}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
+                >
+                  <td style={{ padding: '8px 8px', color: 'var(--text-secondary)', fontWeight: 600 }}>{idx + 1}</td>
+                  <td style={{ padding: '8px 8px' }}>
+                    <div style={{ fontWeight: 500 }}>{c.customer_name}</div>
+                    {c.customer_type && (
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.customer_type}</div>
+                    )}
+                  </td>
+                  <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>{getValue(c)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {selected && (
+        <CustomerDetailModal
+          customer={selected}
+          totals={totals}
+          allCustomers={customers}
+          from={from}
+          to={to}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </>
+  )
+}
+
+// ── Report definitions (extensible) ──────────────────────────────────────────
+
+const ALL_REPORTS = [{ id: 'customer_ranking' }]
+const LS_HIDDEN   = 'customer_reports_hidden'
 
 function loadVisible(): string[] {
   try {
@@ -305,81 +453,38 @@ function loadVisible(): string[] {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const VISIBLE_MOBILE  = 3
-const VISIBLE_DESKTOP = 6
-
 export default function CustomerReportsPage() {
-  const { t } = useTranslation('reports')
+  const { t }  = useTranslation('reports')
   const { t: tc } = useTranslation()
   const { user } = useAuth()
-  const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsReports
+  // showInfoIcons kept for future info overlays — not used in ranking yet
+  void getTenantConfig(user?.tenantId).ui.showInfoIconsReports
 
-  const [data,         setData]         = useState<CustomerReportPoint[]>([])
+  const [customers,    setCustomers]    = useState<CustomerRow[]>([])
+  const [totals,       setTotals]       = useState<Totals>({ revenue: 0, gross_profit: 0 })
   const [loading,      setLoading]      = useState(true)
   const [err,          setErr]          = useState<string | null>(null)
-  const [order,        setOrder]        = useState<string[]>(loadOrder)
   const [visible,      setVisible]      = useState<string[]>(loadVisible)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [infoOpen,     setInfoOpen]     = useState<string | null>(null)
   const [fromMonth,    setFromMonth]    = useState('')
   const [toMonth,      setToMonth]      = useState('')
-  const [visibleStart, setVisibleStart] = useState(0)
-  const [showHint,     setShowHint]     = useState(false)
-  const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
 
-  const btnRef         = useRef<HTMLButtonElement>(null)
-  const hintTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const infoOverlayRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 640)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
-
-  useEffect(() => {
-    if (!infoOpen) return
-    const onKey  = (e: KeyboardEvent) => { if (e.key === 'Escape') setInfoOpen(null) }
-    const onDown = (e: MouseEvent) => {
-      if (infoOverlayRef.current && !infoOverlayRef.current.contains(e.target as Node)) setInfoOpen(null)
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onDown)
-    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown) }
-  }, [infoOpen])
-
-  const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
+  const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let stop = false
     setLoading(true)
     setErr(null)
-    fetchCustomerReportData(fromMonth || undefined, toMonth || undefined)
-      .then((rows) => {
+    fetchRanking(fromMonth || undefined, toMonth || undefined)
+      .then(({ customers: rows, totals: t }) => {
         if (stop) return
-        setData(rows)
+        setCustomers(rows)
+        setTotals(t)
         setLoading(false)
-        const start = Math.max(0, rows.length - visibleCount)
-        setVisibleStart(start)
-        if (rows.length > visibleCount && isMobile) {
-          setShowHint(true)
-          if (hintTimer.current) clearTimeout(hintTimer.current)
-          hintTimer.current = setTimeout(() => setShowHint(false), 2500)
-        }
       })
       .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
-  }, [fromMonth, toMonth]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const clampedStart = Math.min(visibleStart, Math.max(0, data.length - visibleCount))
-  const visibleData  = data.slice(clampedStart, clampedStart + visibleCount)
-  const needsScroll  = data.length > visibleCount
-  const canPrev      = clampedStart > 0
-  const canNext      = clampedStart + visibleCount < data.length
-
-  function nav(dir: -1 | 1) {
-    setVisibleStart(v => Math.max(0, Math.min(v + dir, data.length - visibleCount)))
-  }
+  }, [fromMonth, toMonth])
 
   function handleFromChange(val: string) {
     setFromMonth(val)
@@ -398,28 +503,11 @@ export default function CustomerReportsPage() {
     })
   }
 
-  function move(id: string, dir: -1 | 1) {
-    setOrder(prev => {
-      const idx  = prev.indexOf(id)
-      const next = [...prev]
-      const swap = idx + dir
-      if (swap < 0 || swap >= next.length) return prev
-      ;[next[idx], next[swap]] = [next[swap], next[idx]]
-      localStorage.setItem(LS_ORDER, JSON.stringify(next))
-      return next
-    })
-  }
-
-  const orderedVisible = useMemo(() =>
-    order
-      .map(id => ALL_REPORTS.find(r => r.id === id))
-      .filter((r): r is CustomerReportDef => !!r && visible.includes(r.id)),
-    [order, visible]
-  )
+  const showRanking = visible.includes('customer_ranking')
 
   return (
-    <div style={{ maxWidth: 1400 }}>
-      {/* ── Header card ──────────────────────────────────────────────────── */}
+    <div style={{ maxWidth: 900 }}>
+      {/* ── Header card ────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <h3 style={{ margin: 0 }}>{t('customers.pageTitle')}</h3>
@@ -434,16 +522,15 @@ export default function CustomerReportsPage() {
               {t('customers.pageTitle')} ▾
             </button>
             {dropdownOpen && (() => {
-              const rect    = btnRef.current?.getBoundingClientRect()
-              const dropW   = 220
+              const rect     = btnRef.current?.getBoundingClientRect()
               const rawRight = rect ? window.innerWidth - rect.right : 16
-              const right   = Math.max(8, rawRight)
-              const top     = rect ? rect.bottom + 4 : 60
+              const right    = Math.max(8, rawRight)
+              const top      = rect ? rect.bottom + 4 : 60
               return (
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setDropdownOpen(false)} />
                   <div style={{
-                    position: 'fixed', top, right, width: dropW,
+                    position: 'fixed', top, right, width: 220,
                     maxWidth: `calc(100vw - ${right + 8}px)`,
                     background: 'var(--card, #1e2130)',
                     border: '1px solid var(--border)', borderRadius: 8,
@@ -457,7 +544,7 @@ export default function CustomerReportsPage() {
                           onChange={() => toggleVisible(r.id)}
                           style={{ width: 14, height: 14, flexShrink: 0 }}
                         />
-                        <span style={{ fontSize: 13 }}>{t(`customers.${r.id}.title`)}</span>
+                        <span style={{ fontSize: 13 }}>{t(`customers.customer_ranking.title`)}</span>
                       </label>
                     ))}
                   </div>
@@ -467,7 +554,7 @@ export default function CustomerReportsPage() {
           </div>
         </div>
 
-        {/* ── Period picker ─────────────────────────────────────────────── */}
+        {/* Period picker */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>{t('from')}</div>
@@ -488,103 +575,19 @@ export default function CustomerReportsPage() {
         </div>
       </div>
 
-      {/* Error / loading */}
+      {/* Status */}
       {err     && <div className="card"><p style={{ color: 'salmon' }}>{tc('error')}: {err}</p></div>}
       {loading && <div className="card"><p className="helper">{tc('loadingDots')}</p></div>}
 
-      {!loading && orderedVisible.length === 0 && (
+      {!loading && !showRanking && (
         <div className="card">
           <p className="helper">{t('noReportsSelected')}</p>
         </div>
       )}
 
-      {/* ── Reports grid ─────────────────────────────────────────────────── */}
-      {!loading && orderedVisible.length > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))',
-          gap: 16,
-        }}>
-          {orderedVisible.map((report, idx) => (
-            <div key={report.id} className="card" style={{ padding: '12px 16px 16px', position: 'relative' }}>
-              {/* Info modal overlay */}
-              {infoOpen === report.id && (
-                <div ref={infoOverlayRef} style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'var(--card, #1e2130)',
-                  border: '1px solid var(--border)', borderRadius: 8,
-                  padding: '16px 20px', zIndex: 200,
-                  display: 'flex', flexDirection: 'column', gap: 10,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{t(`customers.${report.id}.title`)}</div>
-                    <button
-                      onClick={() => setInfoOpen(null)}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
-                    >✕</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Card header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{t(`customers.${report.id}.title`)}</span>
-                  {showInfoIcons && (
-                    <button
-                      onClick={() => setInfoOpen(infoOpen === report.id ? null : report.id)}
-                      title={t('aboutReport')}
-                      style={{
-                        width: 20, height: 20, padding: 0, flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderRadius: '50%', cursor: 'pointer',
-                        background: 'var(--border, rgba(255,255,255,0.15))',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
-                      }}
-                    >i</button>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button
-                    onClick={() => move(report.id, -1)} disabled={idx === 0}
-                    title={t('moveLeft')}
-                    style={{
-                      width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
-                      color: 'var(--text-secondary)', opacity: idx === 0 ? 0.25 : 1,
-                      background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >←</button>
-                  <button
-                    onClick={() => move(report.id, 1)} disabled={idx === orderedVisible.length - 1}
-                    title={t('moveRight')}
-                    style={{
-                      width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
-                      color: 'var(--text-secondary)', opacity: idx === orderedVisible.length - 1 ? 0.25 : 1,
-                      background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >→</button>
-                </div>
-              </div>
-
-              <CustomerChartSlide
-                data={visibleData}
-                bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                lineKey={report.lineKey}
-                barFmt={report.barFmt}
-                needsScroll={needsScroll}
-                canPrev={canPrev}
-                canNext={canNext}
-                onPrev={() => nav(-1)}
-                onNext={() => nav(1)}
-                showHint={showHint}
-              />
-            </div>
-          ))}
-        </div>
+      {/* Ranking card */}
+      {!loading && showRanking && (
+        <RankingCard customers={customers} totals={totals} from={fromMonth} to={toMonth} />
       )}
     </div>
   )

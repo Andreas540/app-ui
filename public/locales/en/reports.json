@@ -25,17 +25,24 @@
   },
   "customers": {
     "pageTitle": "Customer Reports",
-    "showPct": "Show %",
-    "hidePct": "Hide %",
-    "label_new_customers": "New Customers",
-    "label_active_customers": "Active Customers",
-    "label_direct_revenue": "Direct Revenue",
-    "label_partner_revenue": "Partner Revenue",
-    "new_vs_active_customers": {
-      "title": "New vs Active Customers"
-    },
-    "direct_vs_partner_revenue": {
-      "title": "Direct vs Partner Revenue"
+    "customer_ranking": {
+      "title": "Customer Ranking",
+      "by_revenue": "By Revenue",
+      "by_profit": "By Profit",
+      "by_profit_pct": "By Profit %",
+      "col_rank": "#",
+      "col_customer": "Customer",
+      "col_revenue": "Revenue",
+      "col_profit": "Profit",
+      "col_profit_pct": "Profit %",
+      "detail": {
+        "revenue_rank": "Revenue Rank",
+        "profit_rank": "Profit Rank",
+        "profit_pct_rank": "Profit % Rank",
+        "summary": "Summary",
+        "pct_of_total": "% of total",
+        "product_breakdown": "Product Breakdown"
+      }
     }
   }
 }

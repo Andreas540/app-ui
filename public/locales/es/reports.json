@@ -25,17 +25,24 @@
   },
   "customers": {
     "pageTitle": "Informes de Clientes",
-    "showPct": "Mostrar %",
-    "hidePct": "Ocultar %",
-    "label_new_customers": "Nuevos clientes",
-    "label_active_customers": "Clientes activos",
-    "label_direct_revenue": "Ingresos directos",
-    "label_partner_revenue": "Ingresos de socios",
-    "new_vs_active_customers": {
-      "title": "Clientes nuevos vs activos"
-    },
-    "direct_vs_partner_revenue": {
-      "title": "Ingresos directos vs socios"
+    "customer_ranking": {
+      "title": "Ranking de Clientes",
+      "by_revenue": "Por Ingresos",
+      "by_profit": "Por Beneficio",
+      "by_profit_pct": "Por % Beneficio",
+      "col_rank": "#",
+      "col_customer": "Cliente",
+      "col_revenue": "Ingresos",
+      "col_profit": "Beneficio",
+      "col_profit_pct": "% Beneficio",
+      "detail": {
+        "revenue_rank": "Ranking Ingresos",
+        "profit_rank": "Ranking Beneficio",
+        "profit_pct_rank": "Ranking % Beneficio",
+        "summary": "Resumen",
+        "pct_of_total": "% del total",
+        "product_breakdown": "Desglose por Producto"
+      }
     }
   }
 }

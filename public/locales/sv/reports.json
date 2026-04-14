@@ -25,17 +25,24 @@
   },
   "customers": {
     "pageTitle": "Kundrapporter",
-    "showPct": "Visa %",
-    "hidePct": "Dölj %",
-    "label_new_customers": "Nya kunder",
-    "label_active_customers": "Aktiva kunder",
-    "label_direct_revenue": "Direktintäkter",
-    "label_partner_revenue": "Partnerintäkter",
-    "new_vs_active_customers": {
-      "title": "Nya vs aktiva kunder"
-    },
-    "direct_vs_partner_revenue": {
-      "title": "Direkt- vs partnerintäkter"
+    "customer_ranking": {
+      "title": "Kundrankning",
+      "by_revenue": "Intäkter",
+      "by_profit": "Vinst",
+      "by_profit_pct": "Vinstprocent",
+      "col_rank": "#",
+      "col_customer": "Kund",
+      "col_revenue": "Intäkter",
+      "col_profit": "Vinst",
+      "col_profit_pct": "Vinstprocent",
+      "detail": {
+        "revenue_rank": "Intäktsrankning",
+        "profit_rank": "Vinstrankning",
+        "profit_pct_rank": "Vinstprocentrankning",
+        "summary": "Sammanfattning",
+        "pct_of_total": "% av totalt",
+        "product_breakdown": "Produktfördelning"
+      }
     }
   }
 }
