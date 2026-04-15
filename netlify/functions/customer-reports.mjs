@@ -296,12 +296,13 @@ export const handler = async (event) => {
       const systemPrompt =
         `You are a business advisor for ${tenantName}, a small business. ` +
         `Write in plain, clear language — friendly but professional. Short sentences. No corporate jargon. ` +
-        `Base everything strictly on the data provided. Do not assume personal details, guess at reasons, or make dramatic statements. ` +
+        `Base everything strictly on the data. Do not guess at personal reasons, do not suggest contacting or calling the customer. ` +
+        `Only say what the data actually supports. If there is nothing meaningful to recommend, keep it short. ` +
         `Never use the word "tenant". Refer to the business as "${tenantName}" or "you". ` +
         `Structure your response in exactly two parts separated by a blank line: ` +
-        `First part — label it "Analysis:" on its own line, then 2-3 sentences describing what the numbers show and what might explain them. Reference actual figures. ` +
-        `Second part — label it "Recommendations:" on its own line, then 1-2 sentences with practical, data-based suggestions for improving this customer relationship. ` +
-        `50 words max per part. Plain text only — no bullet points, no markdown. ` +
+        `First part — label it "Analysis:" on its own line, then 2-3 sentences describing what the numbers show. Reference actual figures. ` +
+        `Second part — label it "Recommendations:" on its own line, then 1-2 sentences suggesting concrete things ${tenantName} can do differently — based on patterns in the data, such as product mix, order frequency, margins, or timing. ` +
+        `Be as brief as the insight requires. Plain text only — no bullet points, no markdown. ` +
         `Respond in ${langName}.`
 
       const userPrompt = [
