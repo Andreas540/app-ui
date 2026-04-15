@@ -457,7 +457,17 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
               background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)',
               fontSize: 13, lineHeight: 1.65, color: 'var(--text)',
             }}>
-              {analysis}
+              {analysis.split(/\n\s*\n/).map((para, i) => {
+                const labelMatch = para.match(/^(Analysis:|Recommendations:)([\s\S]*)$/i)
+                if (labelMatch) {
+                  return (
+                    <p key={i} style={{ margin: i === 0 ? 0 : '10px 0 0' }}>
+                      <strong>{labelMatch[1]}</strong>{labelMatch[2]}
+                    </p>
+                  )
+                }
+                return <p key={i} style={{ margin: i === 0 ? 0 : '10px 0 0' }}>{para}</p>
+              })}
             </div>
           )}
 
