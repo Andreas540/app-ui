@@ -174,9 +174,13 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
     if (!y || !m) return ym
     return new Date(y, m - 1, 1).toLocaleString(i18n.language, { month: 'short', year: 'numeric' })
   }
-  const [products,     setProducts]     = useState<ProductRow[]>([])
-  const [loading,      setLoading]      = useState(true)
-  const [chartMetric,  setChartMetric]  = useState<ChartMetric>('qty')
+  const [products,      setProducts]      = useState<ProductRow[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [chartMetric,   setChartMetric]   = useState<ChartMetric>('qty')
+  const [analyzeState,  setAnalyzeState]  = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [analysis,      setAnalysis]      = useState('')
+  const [speaking,      setSpeaking]      = useState(false)
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   // Compute ranks for all 3 metrics
   const ranks = useMemo(() => {
@@ -199,12 +203,49 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
     return () => { stop = true }
   }, [customer.customer_id, from, to])
 
-  // Keyboard close
+  // Keyboard close + speech cleanup on unmount
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      window.speechSynthesis.cancel()
+    }
   }, [onClose])
+
+  async function runAnalyze() {
+    setAnalyzeState('loading')
+    setSpeaking(false)
+    window.speechSynthesis.cancel()
+    const p = new URLSearchParams({ action: 'analyze', customer_id: customer.customer_id, lang: i18n.language })
+    if (from) p.set('from', from)
+    if (to)   p.set('to',   to)
+    try {
+      const res  = await fetch(`${BASE}/api/customer-reports?${p}`, { cache: 'no-store', headers: getAuthHeaders() })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+      setAnalysis(data.analysis ?? '')
+      setAnalyzeState('done')
+    } catch (err: any) {
+      setAnalysis(err?.message ?? String(err))
+      setAnalyzeState('error')
+    }
+  }
+
+  function toggleSpeak() {
+    if (speaking) {
+      window.speechSynthesis.cancel()
+      setSpeaking(false)
+      return
+    }
+    const utt  = new SpeechSynthesisUtterance(analysis)
+    utt.lang   = i18n.language
+    utt.onend  = () => setSpeaking(false)
+    utt.onerror = () => setSpeaking(false)
+    utteranceRef.current = utt
+    window.speechSynthesis.speak(utt)
+    setSpeaking(true)
+  }
 
   const chartData = useMemo(() => {
     const getVal = (p: ProductRow) =>
@@ -366,6 +407,64 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* ── Analyze section ──────────────────────────────────────────── */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: 13 }}>
+              {t('customers.customer_ranking.detail.analysis_title')}
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {analyzeState === 'done' && (
+                <button
+                  onClick={toggleSpeak}
+                  title={speaking ? t('customers.customer_ranking.detail.stop_reading') : t('customers.customer_ranking.detail.read_aloud')}
+                  style={{
+                    height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6,
+                    background: speaking ? 'var(--accent, #6366f1)' : 'transparent',
+                    color: speaking ? '#fff' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)', cursor: 'pointer',
+                  }}
+                >
+                  {speaking ? '⏹ ' + t('customers.customer_ranking.detail.stop_reading')
+                            : '🔊 ' + t('customers.customer_ranking.detail.read_aloud')}
+                </button>
+              )}
+              <button
+                onClick={runAnalyze}
+                disabled={analyzeState === 'loading'}
+                style={{
+                  height: 28, padding: '0 12px', fontSize: 12, borderRadius: 6,
+                  background: 'var(--accent, #6366f1)', color: '#fff',
+                  border: 'none', cursor: analyzeState === 'loading' ? 'not-allowed' : 'pointer',
+                  opacity: analyzeState === 'loading' ? 0.7 : 1,
+                }}
+              >
+                {analyzeState === 'loading'
+                  ? t('customers.customer_ranking.detail.analyzing')
+                  : analyzeState === 'done'
+                  ? t('customers.customer_ranking.detail.re_analyze')
+                  : t('customers.customer_ranking.detail.analyze')}
+              </button>
+            </div>
+          </div>
+
+          {analyzeState === 'done' && (
+            <div style={{
+              marginTop: 10, padding: '12px 14px', borderRadius: 8,
+              background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)',
+              fontSize: 13, lineHeight: 1.65, color: 'var(--text)',
+            }}>
+              {analysis}
+            </div>
+          )}
+
+          {analyzeState === 'error' && (
+            <div style={{ marginTop: 10, fontSize: 12, color: 'salmon' }}>
+              {analysis}
+            </div>
           )}
         </div>
       </div>

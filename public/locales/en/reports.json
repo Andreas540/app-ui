@@ -44,7 +44,13 @@
         "all_time": "All time",
         "of_all_revenue": "of all revenue",
         "of_all_profit": "of all profit",
-        "product_breakdown": "Product Breakdown"
+        "product_breakdown": "Product Breakdown",
+        "analysis_title": "AI Analysis",
+        "analyze": "Analyze",
+        "re_analyze": "Re-analyze",
+        "analyzing": "Analyzing…",
+        "read_aloud": "Read aloud",
+        "stop_reading": "Stop"
       }
     }
   }

@@ -44,7 +44,13 @@
         "all_time": "All tid",
         "of_all_revenue": "av totala intäkter",
         "of_all_profit": "av total vinst",
-        "product_breakdown": "Produktfördelning"
+        "product_breakdown": "Produktfördelning",
+        "analysis_title": "AI-analys",
+        "analyze": "Analysera",
+        "re_analyze": "Analysera igen",
+        "analyzing": "Analyserar…",
+        "read_aloud": "Läs upp",
+        "stop_reading": "Stopp"
       }
     }
   }

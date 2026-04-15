@@ -48,3 +48,7 @@
   # Scheduled function to sync Stripe SMS usage (hourly)
 [functions."sync-stripe-sms-usage"]
   schedule = "0 * * * *"
+
+  # Scheduled function to sync Stripe AI usage (hourly)
+[functions."sync-stripe-ai-usage"]
+  schedule = "0 * * * *"

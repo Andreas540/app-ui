@@ -44,7 +44,13 @@
         "all_time": "Todo el tiempo",
         "of_all_revenue": "del total de ingresos",
         "of_all_profit": "del total de beneficios",
-        "product_breakdown": "Desglose por Producto"
+        "product_breakdown": "Desglose por Producto",
+        "analysis_title": "Análisis IA",
+        "analyze": "Analizar",
+        "re_analyze": "Analizar de nuevo",
+        "analyzing": "Analizando…",
+        "read_aloud": "Leer en voz alta",
+        "stop_reading": "Parar"
       }
     }
   }
