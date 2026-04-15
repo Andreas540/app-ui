@@ -146,7 +146,10 @@ export const handler = async (event) => {
       const langName  = langNames[lang] ?? 'English'
 
       // Run all context queries in parallel
-      const [summary, allCustomers, trend, products, recentOrders] = await Promise.all([
+      const [tenantRows, summary, allCustomers, trend, products, recentOrders] = await Promise.all([
+
+        // 0. Tenant name
+        sql`SELECT name FROM public.tenants WHERE id = ${TENANT_ID}::uuid`,
 
         // 1. This customer's totals in the selected period
         hasRange ? sql`
@@ -248,6 +251,7 @@ export const handler = async (event) => {
 
       if (!summary[0]) return resp(404, { error: 'Customer not found' })
 
+      const tenantName = tenantRows[0]?.name ?? 'your company'
       const cust       = summary[0]
       const custRev    = Number(cust.revenue)
       const custPro    = Number(cust.gross_profit)
@@ -290,11 +294,12 @@ export const handler = async (event) => {
       ).join('\n')
 
       const systemPrompt =
-        `You are a concise business analyst for a small business app. ` +
+        `You are a concise business analyst for ${tenantName}. ` +
         `Analyze the customer performance data provided. ` +
-        `Give 2-3 specific, data-driven observations about why the numbers look as they do — reference actual figures. ` +
-        `Then give 1-2 concrete, actionable recommendations the business owner can act on. ` +
-        `Be direct and specific. Under 200 words total. Plain text only — no bullet symbols, no markdown, no headers. ` +
+        `Structure your response in exactly two parts: ` +
+        `First, a part labeled "Analysis:" with 2-3 observations about how the numbers look and why that is likely the case — reference actual figures. ` +
+        `Second, a part labeled "Recommendations:" with 1-2 concrete actions ${tenantName} can take to improve or optimize this customer relationship. ` +
+        `Be direct and specific. 100 words maximum total. Plain text only — no bullet symbols, no markdown. ` +
         `Respond in ${langName}.`
 
       const userPrompt = [
