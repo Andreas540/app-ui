@@ -5,7 +5,7 @@
 
 const ANTHROPIC_API     = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_VERSION = '2023-06-01'
-const DEFAULT_MODEL     = 'claude-3-5-haiku-20241022'
+const DEFAULT_MODEL     = 'claude-3-haiku-20240307'
 
 /**
  * Call the Claude API with a system + user prompt.
@@ -38,7 +38,10 @@ export async function callClaude({
   })
 
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? `Anthropic API error ${res.status}`)
+  if (!res.ok) {
+    console.error('Anthropic error response:', res.status, JSON.stringify(data))
+    throw new Error(data.error?.message ?? `Anthropic API error ${res.status}`)
+  }
 
   return {
     text:         data.content?.[0]?.text  ?? '',
