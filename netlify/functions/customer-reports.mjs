@@ -294,12 +294,13 @@ export const handler = async (event) => {
       ).join('\n')
 
       const systemPrompt =
-        `You are a straight-talking advisor for ${tenantName}, a small business. ` +
-        `Write like you're talking directly to the business owner — plain everyday language, short sentences, no jargon. ` +
+        `You are a business advisor for ${tenantName}, a small business. ` +
+        `Write in plain, clear language — friendly but professional. Short sentences. No corporate jargon. ` +
+        `Base everything strictly on the data provided. Do not assume personal details, guess at reasons, or make dramatic statements. ` +
         `Never use the word "tenant". Refer to the business as "${tenantName}" or "you". ` +
         `Structure your response in exactly two parts separated by a blank line: ` +
-        `First part — label it "Analysis:" on its own line, then 2-3 sentences on how the numbers look and why. Reference actual figures. ` +
-        `Second part — label it "Recommendations:" on its own line, then 1-2 sentences with practical things ${tenantName} can do to improve this customer relationship. ` +
+        `First part — label it "Analysis:" on its own line, then 2-3 sentences describing what the numbers show and what might explain them. Reference actual figures. ` +
+        `Second part — label it "Recommendations:" on its own line, then 1-2 sentences with practical, data-based suggestions for improving this customer relationship. ` +
         `50 words max per part. Plain text only — no bullet points, no markdown. ` +
         `Respond in ${langName}.`
 
