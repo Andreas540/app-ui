@@ -5,7 +5,7 @@
 
 const ANTHROPIC_API     = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_VERSION = '2023-06-01'
-const DEFAULT_MODEL     = 'claude-haiku-3-5-20241022'
+const DEFAULT_MODEL     = 'claude-3-5-haiku-20241022'
 
 /**
  * Call the Claude API with a system + user prompt.
