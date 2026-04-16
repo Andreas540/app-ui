@@ -9,16 +9,6 @@ import { getAuthHeaders } from '../lib/api'
 
 const API = '/api/ai-assistant'
 
-interface Snapshot {
-  tenantName: string
-  monthlyRevenue: any[]
-  topCustomers: any[]
-  topProducts: any[]
-  costsByCategory: any[]
-  recurringCosts: any[]
-  recentOrders: any[]
-}
-
 interface QA {
   question: string
   answer: string
@@ -27,7 +17,6 @@ interface QA {
 export default function BizWizPage() {
   const { t, i18n } = useTranslation('bizwiz')
 
-  const [snapshot,     setSnapshot]     = useState<Snapshot | null>(null)
   const [suggestions,  setSuggestions]  = useState<string[]>([])
   const [history,      setHistory]      = useState<QA[]>([])
   const [input,        setInput]        = useState('')
@@ -46,21 +35,16 @@ export default function BizWizPage() {
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); return }
-        setSnapshot(data.snapshot)
-        // Once snapshot is ready, fetch suggestions
-        fetchSuggestions(data.snapshot)
+        fetchSuggestions()
       })
       .catch(() => setError(t('errorLoading')))
       .finally(() => setLoadingSnap(false))
   }, [])
 
-  async function fetchSuggestions(snap: Snapshot) {
+  async function fetchSuggestions() {
     setLoadingSugg(true)
     try {
-      const res  = await fetch(`${API}?action=suggest&lang=${i18n.language}`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ snapshot: snap }),
-      })
+      const res  = await fetch(`${API}?action=suggest&lang=${i18n.language}`, { headers })
       const data = await res.json()
       if (data.suggestions) setSuggestions(data.suggestions)
     } catch { /* non-critical */ }
@@ -68,14 +52,14 @@ export default function BizWizPage() {
   }
 
   async function ask(question: string) {
-    if (!snapshot || !question.trim()) return
+    if (!question.trim()) return
     setInput('')
     setLoadingAsk(true)
     setHistory(h => [...h, { question, answer: '' }])
     try {
       const res  = await fetch(`${API}?action=ask&lang=${i18n.language}`, {
         method: 'POST', headers,
-        body: JSON.stringify({ snapshot, question }),
+        body: JSON.stringify({ question }),
       })
       const data = await res.json()
       const answer = data.answer ?? data.error ?? t('errorAsk')

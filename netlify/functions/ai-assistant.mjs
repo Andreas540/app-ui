@@ -1,9 +1,9 @@
 // netlify/functions/ai-assistant.mjs
 // Powers the BizWiz AI assistant page.
 //
-// GET  /api/ai-assistant?action=snapshot            → { snapshot }
-// POST /api/ai-assistant?action=suggest  + { snapshot }   → { suggestions: string[] }
-// POST /api/ai-assistant?action=ask      + { snapshot, question } → { answer: string }
+// GET /api/ai-assistant?action=snapshot          → { snapshot }
+// GET /api/ai-assistant?action=suggest&lang=en   → { suggestions: string[] }
+// POST /api/ai-assistant?action=ask&lang=en  + { question } → { answer: string }
 
 import { neon }                    from '@neondatabase/serverless'
 import { resolveAuthz }            from './utils/auth.mjs'
@@ -29,124 +29,16 @@ export const handler = async (event) => {
 
     // ── action=snapshot ────────────────────────────────────────────────────────
     if (action === 'snapshot') {
-      const [
-        tenantRows,
-        monthlyRevenue,
-        topCustomers,
-        topProducts,
-        costsByCategory,
-        recurringCosts,
-        recentOrders,
-      ] = await Promise.all([
-
-        // Tenant name
-        sql`SELECT name FROM public.tenants WHERE id = ${TENANT_ID}::uuid`,
-
-        // Revenue & profit last 13 months
-        sql`
-          SELECT
-            TO_CHAR(month, 'YYYY-MM')      AS month,
-            SUM(revenue)::float8            AS revenue,
-            SUM(gross_profit)::float8       AS gross_profit
-          FROM public.v_customer_product_monthly
-          WHERE tenant_id = ${TENANT_ID}
-            AND month >= (DATE_TRUNC('month', NOW()) - INTERVAL '12 months')::date
-          GROUP BY month
-          ORDER BY month ASC
-        `,
-
-        // Top 10 customers by revenue
-        sql`
-          SELECT
-            customer_name,
-            customer_type,
-            SUM(revenue)::float8      AS revenue,
-            SUM(gross_profit)::float8 AS gross_profit
-          FROM public.v_customer_product_monthly
-          WHERE tenant_id = ${TENANT_ID}
-          GROUP BY customer_id, customer_name, customer_type
-          ORDER BY SUM(revenue) DESC
-          LIMIT 10
-        `,
-
-        // Top 10 products by revenue
-        sql`
-          SELECT
-            product_name,
-            SUM(qty)::int             AS qty,
-            SUM(revenue)::float8      AS revenue,
-            SUM(gross_profit)::float8 AS gross_profit
-          FROM public.v_customer_product_monthly
-          WHERE tenant_id = ${TENANT_ID}
-          GROUP BY product_id, product_name
-          ORDER BY SUM(revenue) DESC
-          LIMIT 10
-        `,
-
-        // Costs by category last 12 months
-        sql`
-          SELECT
-            cost_category,
-            SUM(amount)::float8 AS amount
-          FROM public.costs
-          WHERE tenant_id = ${TENANT_ID}
-            AND cost_date >= (DATE_TRUNC('month', NOW()) - INTERVAL '11 months')::date
-          GROUP BY cost_category
-          ORDER BY SUM(amount) DESC
-        `,
-
-        // Active recurring costs
-        sql`
-          SELECT cost_category, amount::float8, start_date, end_date
-          FROM public.costs_recurring
-          WHERE tenant_id = ${TENANT_ID}
-            AND (end_date IS NULL OR end_date >= NOW())
-          ORDER BY amount DESC
-        `,
-
-        // Last 20 orders
-        sql`
-          SELECT
-            o.order_no,
-            TO_CHAR(o.order_date, 'YYYY-MM-DD') AS order_date,
-            c.name                               AS customer_name,
-            SUM(oi.qty::numeric * oi.unit_price)::float8 AS revenue
-          FROM public.orders o
-          JOIN public.customers   c  ON c.id  = o.customer_id
-          JOIN public.order_items oi ON oi.order_id = o.id
-          WHERE o.tenant_id = ${TENANT_ID}
-            AND o.notes IS DISTINCT FROM 'Old tab'
-          GROUP BY o.id, o.order_no, o.order_date, c.name
-          ORDER BY o.order_date DESC
-          LIMIT 20
-        `,
-      ])
-
-      const snapshot = {
-        tenantName:      tenantRows[0]?.name ?? 'your company',
-        monthlyRevenue,
-        topCustomers,
-        topProducts,
-        costsByCategory,
-        recurringCosts,
-        recentOrders,
-      }
-
+      const snapshot = await fetchSnapshot(sql, TENANT_ID)
       return resp(200, { snapshot })
     }
 
-    // ── parse POST body ────────────────────────────────────────────────────────
-    let body = {}
-    try { body = JSON.parse(event.body || '{}') } catch { /* ignore */ }
-
     // ── action=suggest ─────────────────────────────────────────────────────────
     if (action === 'suggest') {
-      const snapshot = body.snapshot
-      if (!snapshot) return resp(400, { error: 'snapshot required' })
-
       const langNames = { en: 'English', sv: 'Swedish', es: 'Spanish' }
       const langName  = langNames[lang] ?? 'English'
 
+      const snapshot       = await fetchSnapshot(sql, TENANT_ID)
       const contextSummary = buildContextSummary(snapshot)
 
       const systemPrompt =
@@ -169,7 +61,7 @@ export const handler = async (event) => {
         }).catch(err => console.error('ai_usage_log failed:', err))
         const match = result.text.match(/\[[\s\S]*\]/)
         if (match) suggestions = JSON.parse(match[0])
-        else console.warn('BizWiz suggest: could not find JSON array in response')
+        else console.warn('BizWiz suggest: could not find JSON array in response:', result.text)
       } catch (err) {
         console.error('BizWiz suggest error:', err)
       }
@@ -179,20 +71,26 @@ export const handler = async (event) => {
 
     // ── action=ask ─────────────────────────────────────────────────────────────
     if (action === 'ask') {
-      const { snapshot, question } = body
-      if (!snapshot)  return resp(400, { error: 'snapshot required' })
-      if (!question)  return resp(400, { error: 'question required' })
+      let question = url.searchParams.get('q') || ''
+      if (!question) {
+        try {
+          const body = JSON.parse(event.body || '{}')
+          question = body.question || ''
+        } catch { /* ignore */ }
+      }
+      if (!question) return resp(400, { error: 'question required' })
 
       const langNames = { en: 'English', sv: 'Swedish', es: 'Spanish' }
       const langName  = langNames[lang] ?? 'English'
 
+      const snapshot       = await fetchSnapshot(sql, TENANT_ID)
       const contextSummary = buildContextSummary(snapshot)
 
       const systemPrompt =
-        `You are a straight-talking business advisor for ${snapshot.tenantName ?? 'this business'}. ` +
+        `You are a straight-talking business advisor for ${snapshot.tenantName}. ` +
         `Plain everyday language, short sentences, no jargon. ` +
         `Base everything strictly on the data provided. Do not guess at personal details or invent information. ` +
-        `Never use the word "tenant". Refer to the business as "${snapshot.tenantName ?? 'your company'}" or "you". ` +
+        `Never use the word "tenant". Refer to the business as "${snapshot.tenantName}" or "you". ` +
         `Under 150 words. Plain text only — no bullet points, no markdown. ` +
         `Respond in ${langName}.`
 
@@ -222,13 +120,113 @@ export const handler = async (event) => {
   }
 }
 
+// ── Fetch snapshot from DB ─────────────────────────────────────────────────────
+
+async function fetchSnapshot(sql, TENANT_ID) {
+  const [
+    tenantRows,
+    monthlyRevenue,
+    topCustomers,
+    topProducts,
+    costsByCategory,
+    recurringCosts,
+    recentOrders,
+  ] = await Promise.all([
+
+    sql`SELECT name FROM public.tenants WHERE id = ${TENANT_ID}::uuid`,
+
+    sql`
+      SELECT
+        TO_CHAR(month, 'YYYY-MM')      AS month,
+        SUM(revenue)::float8            AS revenue,
+        SUM(gross_profit)::float8       AS gross_profit
+      FROM public.v_customer_product_monthly
+      WHERE tenant_id = ${TENANT_ID}
+        AND month >= (DATE_TRUNC('month', NOW()) - INTERVAL '12 months')::date
+      GROUP BY month
+      ORDER BY month ASC
+    `,
+
+    sql`
+      SELECT
+        customer_name,
+        customer_type,
+        SUM(revenue)::float8      AS revenue,
+        SUM(gross_profit)::float8 AS gross_profit
+      FROM public.v_customer_product_monthly
+      WHERE tenant_id = ${TENANT_ID}
+      GROUP BY customer_id, customer_name, customer_type
+      ORDER BY SUM(revenue) DESC
+      LIMIT 10
+    `,
+
+    sql`
+      SELECT
+        product_name,
+        SUM(qty)::int             AS qty,
+        SUM(revenue)::float8      AS revenue,
+        SUM(gross_profit)::float8 AS gross_profit
+      FROM public.v_customer_product_monthly
+      WHERE tenant_id = ${TENANT_ID}
+      GROUP BY product_id, product_name
+      ORDER BY SUM(revenue) DESC
+      LIMIT 10
+    `,
+
+    sql`
+      SELECT
+        cost_category,
+        SUM(amount)::float8 AS amount
+      FROM public.costs
+      WHERE tenant_id = ${TENANT_ID}
+        AND cost_date >= (DATE_TRUNC('month', NOW()) - INTERVAL '11 months')::date
+      GROUP BY cost_category
+      ORDER BY SUM(amount) DESC
+    `,
+
+    sql`
+      SELECT cost_category, amount::float8, start_date, end_date
+      FROM public.costs_recurring
+      WHERE tenant_id = ${TENANT_ID}
+        AND (end_date IS NULL OR end_date >= NOW())
+      ORDER BY amount DESC
+    `,
+
+    sql`
+      SELECT
+        o.order_no,
+        TO_CHAR(o.order_date, 'YYYY-MM-DD') AS order_date,
+        c.name                               AS customer_name,
+        SUM(oi.qty::numeric * oi.unit_price)::float8 AS revenue
+      FROM public.orders o
+      JOIN public.customers   c  ON c.id  = o.customer_id
+      JOIN public.order_items oi ON oi.order_id = o.id
+      WHERE o.tenant_id = ${TENANT_ID}
+        AND o.notes IS DISTINCT FROM 'Old tab'
+      GROUP BY o.id, o.order_no, o.order_date, c.name
+      ORDER BY o.order_date DESC
+      LIMIT 20
+    `,
+  ])
+
+  return {
+    tenantName:      tenantRows[0]?.name ?? 'your company',
+    monthlyRevenue,
+    topCustomers,
+    topProducts,
+    costsByCategory,
+    recurringCosts,
+    recentOrders,
+  }
+}
+
 // ── Build a concise text summary of the snapshot for the prompt ───────────────
 
 function buildContextSummary(snapshot) {
   const lines = []
   const { tenantName, monthlyRevenue, topCustomers, topProducts, costsByCategory, recurringCosts, recentOrders } = snapshot
 
-  lines.push(`COMPANY: ${tenantName ?? 'unknown'}`)
+  lines.push(`COMPANY: ${tenantName}`)
 
   if (monthlyRevenue?.length) {
     lines.push(`\nMONTHLY REVENUE & PROFIT (last ${monthlyRevenue.length} months):`)
@@ -270,7 +268,7 @@ function buildContextSummary(snapshot) {
   if (recurringCosts?.length) {
     lines.push(`\nACTIVE RECURRING COSTS:`)
     for (const c of recurringCosts) {
-      lines.push(`  ${c.cost_category}: $${Number(c.amount).toFixed(0)}/month${c.notes ? ` (${c.notes})` : ''}`)
+      lines.push(`  ${c.cost_category}: $${Number(c.amount).toFixed(0)}/month`)
     }
   }
 
