@@ -64,7 +64,7 @@ export async function handler(event) {
 
     // Products (no unit_price here)
     const products = await sql`
-      SELECT id, name, category
+      SELECT id, name, category, price_amount::float8 AS price_amount
       FROM products
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY name

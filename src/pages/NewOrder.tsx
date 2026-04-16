@@ -232,6 +232,17 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
     [partners, partner1Id]
   )
 
+  // Pre-fill price from product's price_amount when product changes
+  useEffect(() => {
+    if (!product) return
+    const pa = product.price_amount
+    if (pa != null && pa > 0) {
+      setPriceStr(String(pa))
+    } else {
+      setPriceStr('')
+    }
+  }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---- Refund/Discount behaviors ----
   useEffect(() => {
     if (isRefundProduct) {

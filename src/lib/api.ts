@@ -3,7 +3,7 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' } // no unit_price anymore
+export type Product = { id: string; name: string; category?: 'product' | 'service'; price_amount?: number | null } // no unit_price anymore
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''

@@ -51,7 +51,7 @@ async function getData(event) {
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${customerId}
         AND oi.product_id = ${productId}
-        AND o.order_date < ${orderDate}
+        AND o.order_date <= ${orderDate}
       ORDER BY o.order_date DESC, o.created_at DESC
       LIMIT 1
     `;
