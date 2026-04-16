@@ -159,7 +159,7 @@ export const handler = async (event) => {
 
       const userPrompt = `BUSINESS DATA:\n${contextSummary}\n\nReturn 5 questions as a JSON array.`
 
-      let suggestions: string[] = []
+      let suggestions = []
       try {
         const result = await callClaude({ systemPrompt, userPrompt, model: MODEL, maxTokens: 300 })
         logAiUsage({
