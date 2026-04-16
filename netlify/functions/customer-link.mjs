@@ -65,6 +65,15 @@ async function createLink(event) {
       if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
       const existing = rows[0]
       const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: existing.id })
+
+      // type=order → order form page; default → customer info form
+      if (body.type === 'order') {
+        const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : ''].filter(Boolean)
+        const qs = queryParts.length ? `?${queryParts.join('&')}` : ''
+        const url = `${baseUrl}/order-form/${encodeURIComponent(token)}${qs}`
+        return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
+      }
+
       const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : '', 'type=update'].filter(Boolean)
       const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}?${queryParts.join('&')}`
       return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)

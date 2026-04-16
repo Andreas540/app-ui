@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function CustomerDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user, hasFeature } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   // --- Hooks (fixed, stable order) ---
@@ -27,6 +27,10 @@ export default function CustomerDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [deliveryOrder, setDeliveryOrder] = useState<any | null>(null)
   const [savingDelivery, setSavingDelivery] = useState(false)
+  const [showShareOrder,      setShowShareOrder]      = useState(false)
+  const [generatingOrderLink, setGeneratingOrderLink] = useState(false)
+  const [orderLink,           setOrderLink]           = useState<string | null>(null)
+  const [orderLinkCopied,     setOrderLinkCopied]     = useState(false)
 
 
   useEffect(() => {
@@ -45,6 +49,30 @@ export default function CustomerDetailPage() {
   }, [id])
 
   // --- Helpers (no hooks here) ---
+  async function generateOrderLink() {
+    if (!id) return
+    setGeneratingOrderLink(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/customer-link`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ customer_id: id, type: 'order', lang: i18n.language }),
+      })
+      const j = await res.json()
+      if (j.url) setOrderLink(j.url)
+    } catch { /* non-critical */ }
+    finally { setGeneratingOrderLink(false) }
+  }
+
+  function copyOrderLink() {
+    if (!orderLink) return
+    navigator.clipboard.writeText(orderLink).then(() => {
+      setOrderLinkCopied(true)
+      setTimeout(() => setOrderLinkCopied(false), 2000)
+    })
+  }
+
   function fmtMoney(n: number) {
     const v = Number(n) || 0
     const sign = v < 0 ? '-' : ''
@@ -249,6 +277,50 @@ export default function CustomerDetailPage() {
               {t('newBooking.title', 'New Booking')}
             </button>
           </Link>
+        )}
+      </div>
+
+      {/* Share order page with customer */}
+      <div style={{ marginTop: 12, marginBottom: 4 }}>
+        <button
+          type="button"
+          onClick={() => setShowShareOrder(v => !v)}
+          className="helper"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+        >
+          {t('customers.shareOrderPage')}
+        </button>
+
+        {showShareOrder && (
+          <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
+            <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
+            <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
+            {!orderLink ? (
+              <button
+                type="button"
+                onClick={generateOrderLink}
+                disabled={generatingOrderLink}
+                style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+              >
+                {generatingOrderLink ? t('customers.generating') : t('customers.shareLink')}
+              </button>
+            ) : (
+              <div>
+                <p style={{ margin: '0 0 6px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    readOnly
+                    value={orderLink}
+                    style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }}
+                    onFocus={e => e.target.select()}
+                  />
+                  <button type="button" onClick={copyOrderLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+                    {orderLinkCopied ? t('customers.copied') : t('customers.copyLink')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

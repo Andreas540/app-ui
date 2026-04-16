@@ -43,6 +43,7 @@ import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import TenantCustomization from './pages/TenantCustomization'
 import CustomerFormPage from './pages/CustomerFormPage'
+import OrderFormPage from './pages/OrderFormPage'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
@@ -79,6 +80,10 @@ export default function App() {
     (location.pathname || '/').startsWith('/customer-form'),
   [location.pathname])
 
+  const isOrderFormPath = useMemo(() =>
+    (location.pathname || '/').startsWith('/order-form'),
+  [location.pathname])
+
   const isBookingPath = useMemo(() =>
     (location.pathname || '/').startsWith('/book/'),
   [location.pathname])
@@ -102,7 +107,7 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
-      if (isCustomerFormPath || isBookingPath) {
+      if (isCustomerFormPath || isOrderFormPath || isBookingPath) {
         if (alive) setEmployeeMode(false)
         return
       }
@@ -138,9 +143,10 @@ export default function App() {
     return () => {
       alive = false
     }
-  }, [isEmployeePath, isCustomerFormPath, isBookingPath])
+  }, [isEmployeePath, isCustomerFormPath, isOrderFormPath, isBookingPath])
 
   if (isCustomerFormPath) return <CustomerFormShell />
+  if (isOrderFormPath) return <OrderFormShell />
   if (isBookingPath) return <BookingShell />
 
   if (employeeMode === null) {
@@ -185,6 +191,15 @@ function CustomerFormShell() {
   return (
     <Routes>
       <Route path="/customer-form/:token" element={<CustomerFormPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
+function OrderFormShell() {
+  return (
+    <Routes>
+      <Route path="/order-form/:token" element={<OrderFormPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

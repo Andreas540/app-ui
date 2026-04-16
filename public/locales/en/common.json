@@ -326,7 +326,10 @@
     "copyLink": "Copy",
     "copied": "Copied!",
     "linkCreatedInfo": "{{name}} has been created. Retrieved info will be added to that customer profile.",
-    "askCustomerToUpdate": "Ask customer to add missing information"
+    "askCustomerToUpdate": "Ask customer to add missing information",
+    "shareOrderPage": "Share order page with customer",
+    "shareOrderLine1": "Send this link to your customer so they can place an order.",
+    "shareOrderLine2": "Your customer will not have access to your app, only the order form."
   },
   "customerDetail": {
     "editCustomer": "Edit customer",

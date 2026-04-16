@@ -55,6 +55,8 @@ export default function EditProduct() {
       setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
       setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
       setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
+    } else {
+      setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
     }
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -78,7 +80,7 @@ export default function EditProduct() {
     const durationMinutes = type === 'service' && showMoreInfo && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : undefined
-    const priceAmount = type === 'service' && showMoreInfo && priceStr
+    const priceAmount = (type === 'service' && showMoreInfo && priceStr) || (type === 'product' && priceStr)
       ? Number(priceStr.replace(',', '.'))
       : undefined
 
@@ -160,6 +162,19 @@ export default function EditProduct() {
           onChange={e=>setCostStr(parseCostInput(e.target.value))}
         />
       </div>
+
+      {type === 'product' && (
+        <div style={{ marginTop: 12 }}>
+          <label>{t('products.servicePrice')}</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={priceStr}
+            onChange={e => setPriceStr(parseCostInput(e.target.value))}
+          />
+        </div>
+      )}
 
       {type === 'service' && (
         <div style={{ marginTop: 8 }}>
@@ -258,6 +273,8 @@ export default function EditProduct() {
                 setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
                 setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
                 setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
+              } else {
+                setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
               }
             }
             setCostOption('next')
