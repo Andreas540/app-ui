@@ -38,8 +38,9 @@
   "bookingSmsUsage": "SMS Usage",
   "bookingIntegrationNav": "Integration",
   "newBooking": "New Booking",
-  "reportsSection": "Reports",
+  "reportsSection": "Reports & Analytics",
   "reportsSalesProfit": "Sales & Profit",
   "reportsCustomers": "Customers",
+  "reportsBizWiz": "Ask BizWiz",
   "addQuickNavigation": "Add shortcuts"
 }

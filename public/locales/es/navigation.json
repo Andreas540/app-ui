@@ -38,8 +38,9 @@
   "bookingSmsUsage": "Uso de SMS",
   "bookingIntegrationNav": "Integración",
   "newBooking": "Nueva Reserva",
-  "reportsSection": "Informes",
+  "reportsSection": "Informes & Análisis",
   "reportsSalesProfit": "Ventas y Beneficios",
   "reportsCustomers": "Clientes",
+  "reportsBizWiz": "Preguntar a BizWiz",
   "addQuickNavigation": "Añadir accesos directos"
 }

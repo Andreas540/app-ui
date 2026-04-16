@@ -1,0 +1,13 @@
+{
+  "pageTitle": "Preguntar a BizWiz",
+  "pageSubtitle": "Pregunta lo que quieras sobre los datos de tu negocio. BizWiz analiza tus números y te da respuestas directas.",
+  "loadingData": "Cargando datos de tu negocio…",
+  "generatingSuggestions": "Generando preguntas sugeridas…",
+  "suggestedQuestions": "Preguntas sugeridas",
+  "inputPlaceholder": "Haz una pregunta sobre tu negocio…",
+  "ask": "Preguntar",
+  "asking": "Pensando…",
+  "thinking": "Pensando…",
+  "errorLoading": "No se pudieron cargar los datos del negocio.",
+  "errorAsk": "No se pudo obtener respuesta. Inténtalo de nuevo."
+}

@@ -1,0 +1,13 @@
+{
+  "pageTitle": "Ask BizWiz",
+  "pageSubtitle": "Ask anything about your business data. BizWiz analyzes your numbers and gives you straight answers.",
+  "loadingData": "Loading your business data…",
+  "generatingSuggestions": "Generating suggested questions…",
+  "suggestedQuestions": "Suggested questions",
+  "inputPlaceholder": "Ask a question about your business…",
+  "ask": "Ask",
+  "asking": "Thinking…",
+  "thinking": "Thinking…",
+  "errorLoading": "Failed to load business data.",
+  "errorAsk": "Could not get an answer. Please try again."
+}

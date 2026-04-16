@@ -1,0 +1,13 @@
+{
+  "pageTitle": "Fråga BizWiz",
+  "pageSubtitle": "Fråga vad som helst om din affärsdata. BizWiz analyserar dina siffror och ger dig raka svar.",
+  "loadingData": "Laddar din affärsdata…",
+  "generatingSuggestions": "Genererar förslag på frågor…",
+  "suggestedQuestions": "Föreslagna frågor",
+  "inputPlaceholder": "Ställ en fråga om ditt företag…",
+  "ask": "Fråga",
+  "asking": "Tänker…",
+  "thinking": "Tänker…",
+  "errorLoading": "Kunde inte ladda affärsdata.",
+  "errorAsk": "Kunde inte hämta svar. Försök igen."
+}

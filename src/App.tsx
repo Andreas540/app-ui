@@ -66,6 +66,7 @@ import BookingDetailPage from './pages/BookingDetailPage'
 import NewBookingPage from './pages/NewBookingPage'
 import ReportsPage from './pages/ReportsPage'
 import CustomerReportsPage from './pages/CustomerReportsPage'
+import BizWizPage from './pages/BizWizPage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -669,6 +670,9 @@ useEffect(() => {
                     <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
                       {t('reportsCustomers')}
                     </NavLink>
+                    <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)}>
+                      {t('reportsBizWiz')}
+                    </NavLink>
                   </>)}
                 </>)}
                 {sectionHeader('supply', t('supplyChain'))}
@@ -877,6 +881,7 @@ useEffect(() => {
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
                 {hasFeature('financial') && <Route path="/reports" element={<ReportsPage />} />}
                 {hasFeature('financial') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
+                {hasFeature('financial') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (

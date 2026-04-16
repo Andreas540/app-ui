@@ -38,8 +38,9 @@
   "bookingSmsUsage": "SMS-användning",
   "bookingIntegrationNav": "Integration",
   "newBooking": "Ny Bokning",
-  "reportsSection": "Rapporter",
+  "reportsSection": "Rapporter & Analys",
   "reportsSalesProfit": "Försäljning och vinst",
   "reportsCustomers": "Kunder",
+  "reportsBizWiz": "Fråga BizWiz",
   "addQuickNavigation": "Lägg till genvägar"
 }
