@@ -57,10 +57,8 @@ export default function BizWizPage() {
     setLoadingAsk(true)
     setHistory(h => [...h, { question, answer: '' }])
     try {
-      const res  = await fetch(`${API}?action=ask&lang=${i18n.language}`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ question }),
-      })
+      const params = new URLSearchParams({ action: 'ask', lang: i18n.language, q: question })
+      const res  = await fetch(`${API}?${params}`, { headers })
       const data = await res.json()
       const answer = data.answer ?? data.error ?? t('errorAsk')
       setHistory(h => h.map((qa, i) => i === h.length - 1 ? { ...qa, answer } : qa))

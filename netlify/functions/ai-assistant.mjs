@@ -71,13 +71,7 @@ export const handler = async (event) => {
 
     // ── action=ask ─────────────────────────────────────────────────────────────
     if (action === 'ask') {
-      let question = url.searchParams.get('q') || ''
-      if (!question) {
-        try {
-          const body = JSON.parse(event.body || '{}')
-          question = body.question || ''
-        } catch { /* ignore */ }
-      }
+      const question = url.searchParams.get('q') || ''
       if (!question) return resp(400, { error: 'question required' })
 
       const langNames = { en: 'English', sv: 'Swedish', es: 'Spanish' }
