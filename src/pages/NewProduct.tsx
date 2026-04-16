@@ -108,7 +108,7 @@ export default function NewProduct() {
     const durationMinutes = category === 'service' && showMoreInfo && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : null
-    const priceAmount = category === 'service' && showMoreInfo && priceStr
+    const priceAmount = (category === 'service' && showMoreInfo && priceStr) || (category === 'product' && priceStr)
       ? Number(parseCostInput(priceStr))
       : null
 
@@ -195,6 +195,19 @@ export default function NewProduct() {
           />
         </div>
       </div>
+
+      {category === 'product' && (
+        <div style={{ marginTop: 12 }}>
+          <label>{t('products.servicePrice')}</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={priceStr}
+            onChange={e => setPriceStr(parseCostInput(e.target.value))}
+          />
+        </div>
+      )}
 
       {category === 'service' && (
         <div style={{ marginTop: 8 }}>
