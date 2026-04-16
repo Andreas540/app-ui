@@ -162,16 +162,16 @@ export const handler = async (event) => {
       let suggestions = []
       try {
         const result = await callClaude({ systemPrompt, userPrompt, model: MODEL, maxTokens: 300 })
+        console.log('BizWiz suggest raw response:', result.text)
         logAiUsage({
           sql, tenantId: TENANT_ID, feature: 'bizwiz_suggest',
           model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens,
         }).catch(err => console.error('ai_usage_log failed:', err))
-        // Parse JSON array from response
         const match = result.text.match(/\[[\s\S]*\]/)
         if (match) suggestions = JSON.parse(match[0])
+        else console.warn('BizWiz suggest: could not find JSON array in response')
       } catch (err) {
         console.error('BizWiz suggest error:', err)
-        // Return empty suggestions — non-fatal
       }
 
       return resp(200, { suggestions })
