@@ -97,7 +97,7 @@ export const handler = async (event) => {
 
         // Active recurring costs
         sql`
-          SELECT cost_category, amount::float8, start_date, end_date, notes
+          SELECT cost_category, amount::float8, start_date, end_date
           FROM public.costs_recurring
           WHERE tenant_id = ${TENANT_ID}
             AND (end_date IS NULL OR end_date >= NOW())
