@@ -3,9 +3,9 @@
 // Loads a business snapshot on mount, generates suggested questions via Claude,
 // then lets the user ask free-form questions answered with that snapshot as context.
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../context/AuthContext'
+import { getAuthHeaders } from '../lib/api'
 
 const API = '/api/ai-assistant'
 
@@ -26,7 +26,6 @@ interface QA {
 
 export default function BizWizPage() {
   const { t, i18n } = useTranslation('bizwiz')
-  const { token } = useAuth()
 
   const [snapshot,     setSnapshot]     = useState<Snapshot | null>(null)
   const [suggestions,  setSuggestions]  = useState<string[]>([])
@@ -38,10 +37,7 @@ export default function BizWizPage() {
   const [error,        setError]        = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  }
+  const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' }
 
   // Load snapshot on mount
   useEffect(() => {
