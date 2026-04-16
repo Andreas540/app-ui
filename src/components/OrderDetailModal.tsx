@@ -40,12 +40,14 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder 
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
   const [bookings, setBookings] = useState<any[]>([])
+  const [items, setItems] = useState<any[]>([])
 
   // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
     setOrder(initialOrder)
     setPartnerSplits([])
     setBookings([])
+    setItems([])
   }, [initialOrder])
 
     useEffect(() => {
@@ -66,6 +68,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
         // Update order with profit data
         setOrder({ ...initialOrder, ...data.order })
+        setItems(data.items || [])
         setBookings(data.bookings || [])
 
         // Handle partner splits
@@ -111,8 +114,8 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
   // Consistent spacing between label and value
   const fieldStyle = { marginBottom: 4 }
 
-  const orderValue = (order.qty || 0) * (order.unit_price || 0)
-  const showProfit = Number.isFinite(orderValue) && orderValue > 0
+  const orderTotal = Number(order.total) || (Number(order.qty) || 0) * (Number(order.unit_price) || 0)
+  const showProfit = orderTotal > 0
   const profit = Number(order.profit) || 0
   const profitPercent = Number(order.profitPercent) || 0
 
@@ -225,29 +228,44 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         {/* Separator line */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
 
-        {/* Second Row: Product, Quantity, Unit Price */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-          {order.product_name && (
-            <div>
-              <div className="helper" style={fieldStyle}>{t('product')}</div>
-              <div style={{ fontWeight: 600 }}>{order.product_name}</div>
+        {/* Line items */}
+        {items.length > 1 ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+              <div className="helper">{t('product')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
-          )}
-
-          {order.qty && (
-            <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>{t('quantity')}</div>
-              <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
-            </div>
-          )}
-
-          {order.unit_price && (
-            <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
-              <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
-            </div>
-          )}
-        </div>
+            {items.map((item: any, idx: number) => (
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
+                <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            {order.product_name && (
+              <div>
+                <div className="helper" style={fieldStyle}>{t('product')}</div>
+                <div style={{ fontWeight: 600 }}>{order.product_name}</div>
+              </div>
+            )}
+            {order.qty && (
+              <div style={{ textAlign: 'right' }}>
+                <div className="helper" style={fieldStyle}>{t('quantity')}</div>
+                <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
+              </div>
+            )}
+            {order.unit_price && (
+              <div style={{ textAlign: 'right' }}>
+                <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
+                <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Linked bookings */}
         {bookings.length > 0 && (

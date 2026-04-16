@@ -116,10 +116,9 @@ ORDER BY oi.created_at ASC NULLS LAST
       ? Number(shippingHistory[0].shipping_cost) 
       : 0
 
-    // Calculate profit (only for positive order values)
-    const qty = Number(order.qty) || 0
-    const unitPrice = Number(order.unit_price) || 0
-    const orderValue = qty * unitPrice
+    // Calculate profit across all items
+    const orderValue = items.reduce((s, i) => s + Number(i.qty) * Number(i.unit_price), 0)
+    const totalQty    = items.reduce((s, i) => s + Number(i.qty), 0)
 
     let profit = 0
     let profitPercent = 0
@@ -128,17 +127,15 @@ ORDER BY oi.created_at ASC NULLS LAST
       // Partner amounts
       const totalPartners = partnerSplits.reduce((sum, split) => sum + Number(split.amount), 0)
 
-      // Effective costs
-      const effectiveProductCost = order.product_cost !== null 
-        ? Number(order.product_cost) 
-        : (Number(order.historical_product_cost) || 0)
+      // Product cost: order-level override applies uniformly; otherwise use per-item cost
+      const totalProductCost = order.product_cost !== null
+        ? Number(order.product_cost) * totalQty
+        : items.reduce((s, i) => s + Number(i.qty) * (Number(i.historical_product_cost) || 0), 0)
 
-      const effectiveShippingCost = order.shipping_cost !== null 
-        ? Number(order.shipping_cost) 
+      const effectiveShippingCost = order.shipping_cost !== null
+        ? Number(order.shipping_cost)
         : historicalShippingCost
-
-      const totalProductCost = effectiveProductCost * qty
-      const totalShippingCost = effectiveShippingCost * qty
+      const totalShippingCost = effectiveShippingCost * totalQty
 
       profit = orderValue - totalPartners - totalProductCost - totalShippingCost
       profitPercent = (profit / orderValue) * 100
