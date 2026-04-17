@@ -22,7 +22,6 @@ export default function EditProduct() {
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [saving, setSaving] = useState(false)
 
-  const [showMoreInfo, setShowMoreInfo] = useState(false)
   const [durationStr, setDurationStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
 
@@ -57,7 +56,6 @@ export default function EditProduct() {
     if (selected.category === 'service') {
       setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
       setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
-      setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
     } else {
       setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
     }
@@ -80,13 +78,10 @@ export default function EditProduct() {
       return
     }
 
-    const durationMinutes = type === 'service' && showMoreInfo && durationStr
+    const durationMinutes = type === 'service' && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : undefined
-    const hasPriceField = type === 'product' || (type === 'service' && showMoreInfo)
-    const priceAmount: number | null | undefined = hasPriceField
-      ? (priceStr.trim() === '' ? null : Number(priceStr.replace(',', '.')))
-      : undefined
+    const priceAmount: number | null | undefined = priceStr.trim() === '' ? null : Number(priceStr.replace(',', '.'))
 
     try {
       setSaving(true)
@@ -156,17 +151,6 @@ export default function EditProduct() {
         </div>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <label>{t('products.newProductCostUSD')}</label>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="0.00"
-          value={costStr}
-          onChange={e=>setCostStr(parseCostInput(e.target.value))}
-        />
-      </div>
-
       {type === 'product' && (
         <div style={{ marginTop: 12 }}>
           <label>{t('products.servicePrice')}</label>
@@ -181,40 +165,40 @@ export default function EditProduct() {
       )}
 
       {type === 'service' && (
-        <div style={{ marginTop: 8 }}>
-          <button
-            type="button"
-            onClick={() => setShowMoreInfo(v => !v)}
-            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 13, cursor: 'pointer' }}
-          >
-            {showMoreInfo ? `− ${t('products.lessInfo')}` : `+ ${t('products.addMoreInfo')}`}
-          </button>
-          {showMoreInfo && (
-            <div className="row" style={{ marginTop: 10 }}>
-              <div>
-                <label>{t('products.duration')}</label>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="60"
-                  value={durationStr}
-                  onChange={e => setDurationStr(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>{t('products.servicePrice')}</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={priceStr}
-                  onChange={e => setPriceStr(parseCostInput(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
+        <div className="row" style={{ marginTop: 12 }}>
+          <div>
+            <label>{t('products.duration')}</label>
+            <input
+              type="number"
+              min={1}
+              placeholder="60"
+              value={durationStr}
+              onChange={e => setDurationStr(e.target.value)}
+            />
+          </div>
+          <div>
+            <label>{t('products.servicePrice')}</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={priceStr}
+              onChange={e => setPriceStr(parseCostInput(e.target.value))}
+            />
+          </div>
         </div>
       )}
+
+      <div style={{ marginTop: 12 }}>
+        <label>{t('products.newProductCostUSD')}</label>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={costStr}
+          onChange={e=>setCostStr(parseCostInput(e.target.value))}
+        />
+      </div>
 
       {/* Cost application options */}
       <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
@@ -276,7 +260,6 @@ export default function EditProduct() {
               if (selected.category === 'service') {
                 setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
                 setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
-                setShowMoreInfo(!!(selected.duration_minutes || selected.price_amount))
               } else {
                 setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
               }
