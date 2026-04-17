@@ -734,7 +734,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     {/* FIRST ROW — date, delivery icon, order_no, customer name + first item, total */}
                     <div className="helper">{formatUSAny(o.order_date)}</div>
                     {deliveryIcon}
-                    <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{o.order_no}</div>
+                    <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{o.order_no}</div>
                     <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}

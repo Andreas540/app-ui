@@ -456,7 +456,7 @@ export default function CustomerDetailPage() {
                     {/* ROW 1: date | icon | #no | first item | total */}
                     <div className="helper">{formatUSAny((o as any).order_date)}</div>
                     {deliveryIcon}
-                    <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</div>
+                    <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{(o as any).order_no}</div>
                     <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
