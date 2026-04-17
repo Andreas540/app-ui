@@ -3,6 +3,13 @@
   "saveChanges": "Guardar cambios",
   "saving": "Guardando…",
   "cancel": "Cancelar",
+  "externalEvents": {
+    "title": "Actividad externa",
+    "noEvents": "Sin actividad reciente.",
+    "order": "Nuevo pedido de {{name}}",
+    "customerInfo": "Info de cliente actualizada por {{name}}",
+    "booking": "Nueva reserva de {{service}} por {{name}}"
+  },
   "delete": "Eliminar",
   "edit": "Editar",
   "create": "Crear",

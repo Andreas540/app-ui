@@ -3,6 +3,13 @@
   "saveChanges": "Save changes",
   "saving": "Saving…",
   "cancel": "Cancel",
+  "externalEvents": {
+    "title": "External activity",
+    "noEvents": "No recent activity.",
+    "order": "New order placed by {{name}}",
+    "customerInfo": "Customer info updated by {{name}}",
+    "booking": "New booking for {{service}} by {{name}}"
+  },
   "delete": "Delete",
   "edit": "Edit",
   "create": "Create",

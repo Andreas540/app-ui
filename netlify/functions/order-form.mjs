@@ -120,12 +120,13 @@ async function submitForm(event) {
 
     // Verify customer belongs to tenant
     const customerRows = await sql`
-      SELECT id FROM customers
+      SELECT id, name FROM customers
       WHERE id        = ${verified.customerId}::uuid
         AND tenant_id = ${verified.tenantId}::uuid
       LIMIT 1
     `
     if (customerRows.length === 0) return cors(404, { error: 'Customer not found' })
+    const customerName = customerRows[0].name
 
     // Next order number per-tenant
     const nextNo = await sql`
@@ -184,6 +185,12 @@ async function submitForm(event) {
         )
       `
     }
+
+    // Log external event (fire and forget)
+    sql`
+      INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+      VALUES (${verified.tenantId}::uuid, 'order', ${customerName}, ${JSON.stringify({ order_no: orderNo })}::jsonb)
+    `.catch(err => console.error('external_events insert failed:', err))
 
     return cors(201, { ok: true, order_no: orderNo })
   } catch (e) {

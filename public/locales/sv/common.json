@@ -3,6 +3,13 @@
   "saveChanges": "Spara ändringar",
   "saving": "Sparar…",
   "cancel": "Avbryt",
+  "externalEvents": {
+    "title": "Extern aktivitet",
+    "noEvents": "Ingen ny aktivitet.",
+    "order": "Ny order lagd av {{name}}",
+    "customerInfo": "Kundinfo uppdaterad av {{name}}",
+    "booking": "Ny bokning för {{service}} av {{name}}"
+  },
   "delete": "Ta bort",
   "edit": "Redigera",
   "create": "Skapa",

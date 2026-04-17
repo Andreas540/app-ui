@@ -286,6 +286,12 @@ async function createBooking(event) {
 
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
 
+    // Log external event (fire and forget)
+    sql`
+      INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+      VALUES (${tenantId}, 'booking', ${cleanName}, ${JSON.stringify({ service_name: svc.name, date, start_time: start_time.slice(0, 5) })}::jsonb)
+    `.catch(err => console.error('external_events insert failed:', err))
+
     // Return confirmation data
     return cors(201, {
       ok:          true,

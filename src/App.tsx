@@ -276,12 +276,17 @@ function pathnameToAction(pathname: string): string | null {
 function MainApp() {
   const { t } = useTranslation('navigation')
   const { t: ti, ready: tiReady } = useTranslation('info')
+  const { t: tc, i18n } = useTranslation('common')
   const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [showWelcomeModal, setShowWelcomeModal] = useState(() => !localStorage.getItem('welcomeDismissed') && !sessionStorage.getItem('welcomeClosed'))
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
+
+  const [externalEvents, setExternalEvents] = useState<any[]>([])
+  const [externalSeenAt, setExternalSeenAt] = useState<number>(() => Number(localStorage.getItem('externalSeenAt') || '0'))
+  const [showExternalOverlay, setShowExternalOverlay] = useState(false)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -401,6 +406,31 @@ function MainApp() {
     loadTenants()
   }, [isAuthenticated, user])
 
+  // ── External events polling ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const fetchEvents = async () => {
+      try {
+        const base = apiBase()
+        const res = await fetch(`${base}/api/external-events`, { headers: getAuthHeaders() })
+        if (res.ok) {
+          const data = await res.json()
+          setExternalEvents(data.events || [])
+        }
+      } catch {}
+    }
+    fetchEvents()
+    const id = setInterval(fetchEvents, 60 * 1000)
+    return () => clearInterval(id)
+  }, [isLoggedIn])
+
+  const handleExternalBadgeClick = () => {
+    const now = Date.now()
+    setExternalSeenAt(now)
+    localStorage.setItem('externalSeenAt', String(now))
+    setShowExternalOverlay(true)
+  }
+
   // ── Page-view logging ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) return
@@ -504,6 +534,26 @@ useEffect(() => {
             <span></span>
             <span></span>
           </button>
+          {(() => {
+            const unread = externalEvents.filter(e => new Date(e.created_at).getTime() > externalSeenAt).length
+            if (unread === 0) return null
+            return (
+              <button
+                onClick={handleExternalBadgeClick}
+                style={{
+                  position: 'absolute', top: 6, left: 6,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: '#22c55e', border: 'none', cursor: 'pointer',
+                  color: '#fff', fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 10, padding: 0, lineHeight: 1,
+                }}
+                aria-label={tc('externalEvents.title')}
+              >
+                {unread > 9 ? '9+' : unread}
+              </button>
+            )
+          })()}
 
           <div
             className="brand-title"
@@ -929,6 +979,45 @@ useEffect(() => {
           </Routes>
         </main>
       </div>
+
+      {/* ── External events overlay ── */}
+      {showExternalOverlay && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setShowExternalOverlay(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '80vh', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0 }}>{tc('externalEvents.title')}</h3>
+            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {externalEvents.length === 0
+                ? <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{tc('externalEvents.noEvents')}</p>
+                : externalEvents.map(ev => (
+                  <div key={ev.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                      {new Date(ev.created_at).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                    <span>
+                      {ev.event_type === 'order' && tc('externalEvents.order', { name: ev.customer_name })}
+                      {ev.event_type === 'customer_info' && tc('externalEvents.customerInfo', { name: ev.customer_name })}
+                      {ev.event_type === 'booking' && tc('externalEvents.booking', {
+                        name: ev.customer_name,
+                        service: ev.extra?.service_name || '',
+                      })}
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="primary" onClick={() => setShowExternalOverlay(false)}>{tc('close')}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Welcome modal ── */}
       {tiReady && showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {

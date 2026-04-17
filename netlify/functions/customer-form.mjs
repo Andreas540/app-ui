@@ -145,6 +145,12 @@ async function submitForm(event) {
         AND tenant_id = ${verified.tenantId}::uuid
     `
 
+    // Log external event (fire and forget)
+    sql`
+      INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+      VALUES (${verified.tenantId}::uuid, 'customer_info', ${name}, NULL)
+    `.catch(err => console.error('external_events insert failed:', err))
+
     return cors(200, { ok: true }, event)
   } catch (e) {
     console.error('customer-form submitForm error:', e)
