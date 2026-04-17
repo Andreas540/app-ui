@@ -710,11 +710,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
-              const showOrderNo = config.ui.showOrderNumberInList
-              const cols = showOrderNo
-                ? `${DATE_COL}px 20px auto 1fr auto`
-                : `${DATE_COL}px 20px 1fr auto`
-              const emptyOrderNoCell = showOrderNo ? <div /> : null
+              const cols = `${DATE_COL}px 20px auto 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray(o.items) && o.items.length > 0 ? o.items : []
@@ -742,7 +738,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP }}>
                     <div className="helper">{formatUSAny(o.order_date)}</div>
                     {deliveryIcon}
-                    {showOrderNo && <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{o.order_no}</div>}
+                    <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{o.order_no}</div>
                     <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -763,7 +759,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   {/* ADDITIONAL ITEM ROWS */}
                   {items.slice(1).map((item, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: LINE_GAP }}>
-                      <div /><div />{emptyOrderNoCell}
+                      <div /><div /><div />
                       <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -777,7 +773,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   {/* NOTES ROW */}
                   {hasNotes && (
                     <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: 4 }}>
-                      <div /><div />{emptyOrderNoCell}
+                      <div /><div /><div />
                       <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
