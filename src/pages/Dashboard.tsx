@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
@@ -730,8 +730,9 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               return (
                 <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
 
-                  {/* FIRST ROW — date, delivery icon, order_no, customer name + first item, total */}
-                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP }}>
+                  {/* SHARED GRID — all rows share one grid for correct auto-column sizing */}
+                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
+                    {/* FIRST ROW — date, delivery icon, order_no, customer name + first item, total */}
                     <div className="helper">{formatUSAny(o.order_date)}</div>
                     {deliveryIcon}
                     <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{o.order_no}</div>
@@ -750,35 +751,35 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                       style={{ textAlign: 'right', cursor: 'pointer' }}>
                       {fmtIntMoney(o.total)}
                     </div>
+
+                    {/* ADDITIONAL ITEM ROWS */}
+                    {items.slice(1).map((item, idx) => (
+                      <React.Fragment key={idx}>
+                        <div /><div /><div />
+                        <div className="helper" onClick={() => handleOrderClick(o)}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          style={{ cursor: 'pointer', lineHeight: '1.4', paddingLeft: 4, opacity: 0.9 }}>
+                          {itemLine(item)}
+                        </div>
+                        <div />
+                      </React.Fragment>
+                    ))}
+
+                    {/* NOTES ROW */}
+                    {hasNotes && (
+                      <React.Fragment>
+                        <div /><div /><div />
+                        <div className="helper" onClick={() => handleOrderClick(o)}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                          {o.notes}
+                        </div>
+                        <div />
+                      </React.Fragment>
+                    )}
                   </div>
-
-                  {/* ADDITIONAL ITEM ROWS */}
-                  {items.slice(1).map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: LINE_GAP }}>
-                      <div /><div /><div />
-                      <div className="helper" onClick={() => handleOrderClick(o)}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer', lineHeight: '1.4', paddingLeft: 4, opacity: 0.9 }}>
-                        {itemLine(item)}
-                      </div>
-                      <div />
-                    </div>
-                  ))}
-
-                  {/* NOTES ROW */}
-                  {hasNotes && (
-                    <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: 4 }}>
-                      <div /><div /><div />
-                      <div className="helper" onClick={() => handleOrderClick(o)}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                        {o.notes}
-                      </div>
-                      <div />
-                    </div>
-                  )}
                 </div>
               )
             })}
