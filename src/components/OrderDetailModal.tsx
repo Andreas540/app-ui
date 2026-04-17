@@ -175,7 +175,9 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
             top: -40,
             right: 40,
             textAlign: 'right',
-            fontSize: 14
+            fontSize: 14,
+            background: 'var(--card, white)',
+            paddingLeft: 8
           }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{
@@ -240,7 +242,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6, borderTop: '1px solid var(--line)' }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6 }}>
                 <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
                 <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                 <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
