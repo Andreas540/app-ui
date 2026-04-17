@@ -206,7 +206,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         </div>
 
         {/* Separator: profit%/delivery → order date */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
+        <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -229,7 +229,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         </div>
 
         {/* Separator line */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
+        <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
 
         {/* Line items */}
         {items.length > 1 ? (
@@ -240,7 +240,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6, borderTop: '1px solid var(--line)' }}>
                 <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
                 <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                 <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
@@ -272,7 +272,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
         {/* Linked bookings */}
         {bookings.length > 0 && (
-          <div style={{ paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+          <div style={{ paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div className="helper" style={{ marginBottom: 6 }}>{t('orderModal.linkedBookings')}</div>
             {bookings.map((b: any, idx: number) => {
               const start = new Date(b.start_at)
@@ -285,7 +285,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '6px 0',
-                  borderBottom: idx < bookings.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none'
+                  borderBottom: idx < bookings.length - 1 ? '1px solid var(--line)' : 'none'
                 }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{b.service_name || '—'}</div>
@@ -302,7 +302,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
         {/* Partner Information */}
         {partnerSplits.length > 0 && (
-          <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+          <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             {/* Header Row - aligned with 3-column grid */}
             <div style={{
               display: 'grid',
