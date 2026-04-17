@@ -12,7 +12,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40 // control height
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -239,6 +239,13 @@ export default function TenantCustomization() {
         delete ui.showInfoIconsReports
         return { ...p, ui }
       })
+    } else if (section === 'ui-nav') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showNavArrowsMobile
+        delete ui.showNavArrowsDesktop
+        return { ...p, ui }
+      })
     }
   }
 
@@ -292,6 +299,7 @@ export default function TenantCustomization() {
               <optgroup label={t('tenantCustom.groupFunctions')}>
                 <option value="payments">{t('tenantCustom.sectionPayments')}</option>
                 <option value="booking">{t('tenantCustom.sectionBooking')}</option>
+                <option value="ui-nav">{t('tenantCustom.sectionNavigation')}</option>
               </optgroup>
               <optgroup label={t('tenantCustom.groupPages')}>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
@@ -407,6 +415,20 @@ export default function TenantCustomization() {
               customized={cu.showWelcomeModal !== undefined && cu.showWelcomeModal !== du.showWelcomeModal}>
               <Toggle value={cu.showWelcomeModal ?? du.showWelcomeModal} onChange={v => setUi('showWelcomeModal', v)} />
             </Row>
+          )}
+
+          {/* Functions > Navigation */}
+          {section === 'ui-nav' && (
+            <>
+              <Row label={t('tenantCustom.showNavArrowsMobile')} help={t('tenantCustom.showNavArrowsMobileHelp')}
+                customized={cu.showNavArrowsMobile !== undefined && cu.showNavArrowsMobile !== du.showNavArrowsMobile}>
+                <Toggle value={cu.showNavArrowsMobile ?? du.showNavArrowsMobile} onChange={v => setUi('showNavArrowsMobile', v)} />
+              </Row>
+              <Row label={t('tenantCustom.showNavArrowsDesktop')} help={t('tenantCustom.showNavArrowsDesktopHelp')}
+                customized={cu.showNavArrowsDesktop !== undefined && cu.showNavArrowsDesktop !== du.showNavArrowsDesktop}>
+                <Toggle value={cu.showNavArrowsDesktop ?? du.showNavArrowsDesktop} onChange={v => setUi('showNavArrowsDesktop', v)} />
+              </Row>
+            </>
           )}
 
           {/* UI > Info icons */}

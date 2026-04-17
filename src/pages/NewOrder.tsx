@@ -298,35 +298,6 @@ const hasProducts = filteredProducts.length > 0
   const CONTROL_H = 44
 
   return (
-    <>
-    {/* ── Page navigation arrows ── */}
-    <div style={{ maxWidth: 720, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-      <button
-        onClick={() => navigate(-1)}
-        aria-label="Back"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          padding: '3px 0', minWidth: 33, minHeight: 33,
-          fontSize: 20, color: 'var(--text-secondary)',
-          lineHeight: 1, display: 'flex', alignItems: 'center',
-        }}
-      >
-        ‹
-      </button>
-      <button
-        onClick={() => navigate(1)}
-        aria-label="Forward"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          padding: '3px 0', minWidth: 33, minHeight: 33,
-          fontSize: 20, color: 'var(--text-secondary)',
-          lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        }}
-      >
-        ›
-      </button>
-    </div>
-
     <div className="card" style={{maxWidth: 720}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <h3 style={{ margin:0 }}>{t('orders.newOrderTitle')}</h3>
@@ -764,7 +735,6 @@ const hasProducts = filteredProducts.length > 0
         </button>
       </div>
     </div>
-    </>
   )
 }
 

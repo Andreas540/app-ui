@@ -1,7 +1,7 @@
 // src/App.tsx
 import MaintenanceGate from './components/MaintenanceGate'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink, Link, Route, Routes, useLocation, Navigate } from 'react-router-dom'
+import { NavLink, Link, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
@@ -271,6 +271,30 @@ function pathnameToAction(pathname: string): string | null {
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ':id')
     .replace(/\/\d+(?=\/|$)/g, '/:id')
   return PAGE_ACTIONS[normalised] ?? null
+}
+
+function PageNavArrows({ showMobile, showDesktop }: { showMobile: boolean; showDesktop: boolean }) {
+  const navigate = useNavigate()
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  const show = isMobile ? showMobile : showDesktop
+  if (!show) return null
+  const btnStyle: React.CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    padding: '3px 6px', minWidth: 40, minHeight: 33,
+    fontSize: 30, color: 'var(--text-secondary)',
+    lineHeight: 1, display: 'flex', alignItems: 'center',
+  }
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+      <button onClick={() => navigate(-1)} aria-label="Back" style={btnStyle}>‹</button>
+      <button onClick={() => navigate(1)} aria-label="Forward" style={{ ...btnStyle, justifyContent: 'flex-end' }}>›</button>
+    </div>
+  )
 }
 
 function MainApp() {
@@ -880,6 +904,10 @@ useEffect(() => {
 
         <main className="content">
           <TenantSwitcher />
+          {(() => {
+            const cfg = getTenantConfig(activeTenantId)
+            return <PageNavArrows showMobile={cfg.ui.showNavArrowsMobile} showDesktop={cfg.ui.showNavArrowsDesktop} />
+          })()}
           <Routes>
             {user?.businessType === 'physical_store' ? (
               <>

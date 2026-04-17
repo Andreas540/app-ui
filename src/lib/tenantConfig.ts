@@ -25,6 +25,8 @@ export interface TenantConfig {
     showWelcomeModal: boolean
     showInfoIconsPages: boolean
     showInfoIconsReports: boolean
+    showNavArrowsMobile: boolean
+    showNavArrowsDesktop: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -82,6 +84,8 @@ export const defaultConfig: TenantConfig = {
     showWelcomeModal: true,
     showInfoIconsPages: true,
     showInfoIconsReports: true,
+    showNavArrowsMobile: true,
+    showNavArrowsDesktop: false,
   },
   booking: {
     serviceTypeLabel: 'Session',
