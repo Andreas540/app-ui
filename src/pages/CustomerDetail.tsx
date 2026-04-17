@@ -412,7 +412,7 @@ export default function CustomerDetailPage() {
             {shownOrders.map(o => {
               const showOrderNo = config.ui.showOrderNumberInList
               const cols = showOrderNo
-                ? `${DATE_COL}px auto 20px 1fr auto`
+                ? `${DATE_COL}px 20px auto 1fr auto`
                 : `${DATE_COL}px 20px 1fr auto`
               const emptyOrderNoCell = showOrderNo ? <div /> : null
 
@@ -457,11 +457,11 @@ export default function CustomerDetailPage() {
               return (
                 <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
 
-                  {/* FIRST ITEM ROW — date, order_no, delivery icon, first item, total */}
+                  {/* FIRST ITEM ROW — date, delivery icon, order_no, first item, total */}
                   <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP }}>
                     <div className="helper">{formatUSAny((o as any).order_date)}</div>
-                    {showOrderNo && <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</div>}
                     {deliveryIcon}
+                    {showOrderNo && <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</div>}
                     <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -479,7 +479,7 @@ export default function CustomerDetailPage() {
                   {/* ADDITIONAL ITEM ROWS */}
                   {items.slice(1).map((item, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: LINE_GAP }}>
-                      <div />{emptyOrderNoCell}<div />
+                      <div /><div />{emptyOrderNoCell}
                       <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -493,7 +493,7 @@ export default function CustomerDetailPage() {
                   {/* NOTES ROW */}
                   {hasNotes && (
                     <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: 4 }}>
-                      <div />{emptyOrderNoCell}<div />
+                      <div /><div />{emptyOrderNoCell}
                       <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
