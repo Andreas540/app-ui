@@ -9,7 +9,8 @@
     "order": "Ny order lagd av {{name}}",
     "customerInfo": "Kundinfo uppdaterad av {{name}}",
     "booking": "Ny bokning för {{service}} av {{name}}",
-    "messageReply": "Svar skickat till {{email}}"
+    "messageReplyEmail": "Svar på ditt meddelande har skickats till {{email}}",
+    "messageReplyApp": "Ditt meddelande har besvarats. Se sidan Kontakt."
   },
   "delete": "Ta bort",
   "edit": "Redigera",

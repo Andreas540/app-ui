@@ -9,7 +9,8 @@
     "order": "Nuevo pedido de {{name}}",
     "customerInfo": "Info de cliente actualizada por {{name}}",
     "booking": "Nueva reserva de {{service}} por {{name}}",
-    "messageReply": "Respuesta enviada a {{email}}"
+    "messageReplyEmail": "Se ha enviado una respuesta a tu mensaje a {{email}}",
+    "messageReplyApp": "Tu mensaje ha sido respondido. Ver página de Contacto."
   },
   "delete": "Eliminar",
   "edit": "Editar",

@@ -149,20 +149,19 @@ export const handler = async (event) => {
         `
         if (!msg) return cors(404, { error: 'Message not found' })
 
-        // Save reply, set replied_at and answered_at
+        // Save reply and replied_at only — answered_at stays independent (checkbox)
         const now = new Date().toISOString()
         await sql`
           UPDATE contact_messages
-          SET reply       = ${reply},
-              replied_at  = ${now},
-              answered_at = ${now}
+          SET reply      = ${reply},
+              replied_at = ${now}
           WHERE id = ${id}::uuid
         `
 
-        // Notify the user's tenant via external_events so it appears in the activity overlay
+        // Notify via external_events: in-app reply
         await sql`
-          INSERT INTO external_events (tenant_id, event_type, customer_name)
-          VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email})
+          INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+          VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email}, ${JSON.stringify({ via: 'app' })})
         `
       } else {
         // Toggle answered/unanswered
@@ -171,6 +170,19 @@ export const handler = async (event) => {
           SET answered_at = ${answered ? new Date().toISOString() : null}
           WHERE id = ${id}::uuid
         `
+
+        // When manually marking as answered via email, insert external event
+        if (answered) {
+          const [msg] = await sql`
+            SELECT tenant_id, user_email FROM contact_messages WHERE id = ${id}::uuid
+          `
+          if (msg) {
+            await sql`
+              INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+              VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email}, ${JSON.stringify({ via: 'email' })})
+            `
+          }
+        }
       }
       return cors(200, { ok: true })
     } catch (err) {

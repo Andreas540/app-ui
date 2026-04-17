@@ -1011,7 +1011,8 @@ useEffect(() => {
                         name: ev.customer_name,
                         service: ev.extra?.service_name || '',
                       })}
-                      {ev.event_type === 'message_reply' && tc('externalEvents.messageReply', { email: ev.customer_name })}
+                      {ev.event_type === 'message_reply' && ev.extra?.via === 'email' && tc('externalEvents.messageReplyEmail', { email: ev.customer_name })}
+                      {ev.event_type === 'message_reply' && ev.extra?.via === 'app' && tc('externalEvents.messageReplyApp')}
                     </span>
                   </div>
                 ))

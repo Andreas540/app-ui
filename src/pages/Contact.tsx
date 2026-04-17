@@ -190,7 +190,7 @@ export default function Contact() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {sentMessages.map(msg => {
                   const isExpanded = expandedId === msg.id
-                  const isAnswered = !!msg.answered_at
+                  const isAnswered = !!(msg.answered_at || msg.replied_at)
                   return (
                     <div
                       key={msg.id}

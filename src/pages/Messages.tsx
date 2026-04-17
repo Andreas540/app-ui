@@ -88,13 +88,13 @@ export default function Messages() {
       const res = await fetch(`${base}/api/contact`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id: msg.id, reply: text, answered: true }),
+        body: JSON.stringify({ id: msg.id, reply: text }),
       })
       if (!res.ok) throw new Error(`status ${res.status}`)
       const now = new Date().toISOString()
       setMessages(prev => prev.map(m =>
         m.id === msg.id
-          ? { ...m, answered_at: now, reply: text, replied_at: now }
+          ? { ...m, reply: text, replied_at: now }
           : m
       ))
       setReplyingId(null)
@@ -107,8 +107,9 @@ export default function Messages() {
     }
   }
 
-  const unanswered = messages.filter(m => !m.answered_at)
-  const answered   = messages.filter(m =>  m.answered_at)
+  const isAnswered  = (m: Message) => !!(m.answered_at || m.replied_at)
+  const unanswered  = messages.filter(m => !isAnswered(m))
+  const answered    = messages.filter(m =>  isAnswered(m))
 
   return (
     <div className="card" style={{ maxWidth: 680 }}>
@@ -205,7 +206,8 @@ function MessageList({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {messages.map(msg => {
         const isExpanded     = expandedId === msg.id
-        const isAnswered     = !!msg.answered_at
+        const isAnswered     = !!(msg.answered_at || msg.replied_at)
+        const isEmailAnswered = !!msg.answered_at
         const isToggling     = togglingId === msg.id
         const isReplying     = replyingId === msg.id
         const isSendingReply = sendingReplyId === msg.id
@@ -311,7 +313,7 @@ function MessageList({
                 >
                   <input
                     type="checkbox"
-                    checked={isAnswered}
+                    checked={isEmailAnswered}
                     disabled={isToggling}
                     onChange={() => onToggle(msg)}
                     style={{ width: 16, height: 16, cursor: 'pointer' }}
