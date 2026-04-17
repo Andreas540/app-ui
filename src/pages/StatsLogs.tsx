@@ -34,6 +34,20 @@ const FALLBACK_PALETTE = [
   '#2dd4bf', '#38bdf8', '#fb7185',
 ]
 
+const ERROR_KEYWORD_COLORS: Array<[RegExp, string]> = [
+  [/failed|failure/,              '#f87171'],  // red
+  [/blocked|denied|forbidden/,    '#dc2626'],  // dark red
+  [/unauthorized|auth/,           '#c084fc'],  // purple
+  [/expired|timeout/,             '#fb923c'],  // orange
+  [/invalid/,                     '#fbbf24'],  // amber
+  [/error|exception/,             '#f97316'],  // orange-red
+  [/limit|throttl/,               '#e879f9'],  // pink
+]
+
+function isErrorAction(action: string): boolean {
+  return ERROR_KEYWORD_COLORS.some(([pattern]) => pattern.test(action))
+}
+
 function actionLabel(action: string): string {
   const stripped = action.startsWith('page_view_') ? action.slice('page_view_'.length) : action
   return stripped.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -41,6 +55,9 @@ function actionLabel(action: string): string {
 
 function actionColor(action: string): string {
   if (ACTION_COLORS[action]) return ACTION_COLORS[action]
+  for (const [pattern, color] of ERROR_KEYWORD_COLORS) {
+    if (pattern.test(action)) return color
+  }
   let h = 0
   for (let i = 0; i < action.length; i++) { h = ((h << 5) - h) + action.charCodeAt(i); h |= 0 }
   return FALLBACK_PALETTE[Math.abs(h) % FALLBACK_PALETTE.length]
@@ -52,7 +69,8 @@ interface ActivityRow { bucket_index: number; action: string; count: number }
 interface Entity      { id: string; name: string; total: number; rows: ActivityRow[] }
 interface StatsData   { view: 'global' | 'tenant'; window_start: string; tz: string; entities: Entity[] }
 type SortOrder = 'activity' | 'name'
-type ReportTab = 'activity' | 'placeholder1' | 'placeholder2'
+type ReportTab = 'activity' | 'errors'
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -230,6 +248,23 @@ export default function StatsLogs() {
   const windowStart = data ? new Date(data.window_start) : new Date()
   const tz          = data?.tz ?? 'UTC'
 
+  // ── Error-filtered data ──────────────────────────────────────────────────────
+  const errorActions = allActions.filter(a => isErrorAction(a))
+
+  const errorEntities: Entity[] = data
+    ? data.entities
+        .map(e => ({
+          ...e,
+          rows: e.rows.filter(r => isErrorAction(r.action)),
+          total: e.rows.filter(r => isErrorAction(r.action)).reduce((s, r) => s + r.count, 0),
+        }))
+        .filter(e => e.total > 0)
+    : []
+
+  const sortedErrorEntities = [...errorEntities].sort((a, b) =>
+    sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total,
+  )
+
   const CONTROL_H = 44
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -237,7 +272,10 @@ export default function StatsLogs() {
     <div style={{ maxWidth: 1400 }}>
       {/* ── Top card: report buttons ───────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3 style={{ margin: '0 0 16px 0' }}>Stats &amp; Logs</h3>
+        <h3 style={{ margin: '0 0 4px 0' }}>Stats &amp; Logs</h3>
+        <p className="helper" style={{ margin: '0 0 16px 0', fontSize: 12 }}>
+          Stats shown in Tenants/Users time zone
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             className={activeReport === 'activity' ? 'primary' : undefined}
@@ -247,10 +285,11 @@ export default function StatsLogs() {
             Activity
           </button>
           <button
-            disabled
-            style={{ height: CONTROL_H, minWidth: 120, opacity: 0.35, cursor: 'not-allowed' }}
+            className={activeReport === 'errors' ? 'primary' : undefined}
+            onClick={() => setActiveReport('errors')}
+            style={{ height: CONTROL_H, minWidth: 120 }}
           >
-            —
+            Errors
           </button>
           <button
             disabled
@@ -328,6 +367,80 @@ export default function StatsLogs() {
                   windowStart={windowStart}
                   tz={tz}
                   allActions={allActions}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Errors report ───────────────────────────────────────────────── */}
+      {activeReport === 'errors' && (
+        <>
+          {/* Controls bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>
+                {t('sort')}:
+              </span>
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value as SortOrder)}
+                style={{ height: 36 }}
+              >
+                <option value="activity">Activity</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {loading && data && (
+                <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>
+              )}
+              {lastRefresh && (
+                <span className="helper" style={{ fontSize: 12 }}>
+                  Updated {lastRefresh.toLocaleTimeString()}
+                </span>
+              )}
+              <button onClick={loadData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>
+                ↺
+              </button>
+            </div>
+          </div>
+
+          {/* Error */}
+          {err && (
+            <div className="card">
+              <p style={{ color: 'salmon' }}>{t('error')}: {err}</p>
+            </div>
+          )}
+
+          {/* Initial loading */}
+          {loading && !data && (
+            <div className="card"><p>{t('loading')}</p></div>
+          )}
+
+          {/* No errors */}
+          {data && sortedErrorEntities.length === 0 && (
+            <div className="card">
+              <p className="helper">No errors in the last 24 hours.</p>
+            </div>
+          )}
+
+          {/* Charts grid */}
+          {data && sortedErrorEntities.length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+              gap: 12,
+            }}>
+              {sortedErrorEntities.map(entity => (
+                <EntityChart
+                  key={entity.id}
+                  entity={entity}
+                  windowStart={windowStart}
+                  tz={tz}
+                  allActions={errorActions}
                 />
               ))}
             </div>
