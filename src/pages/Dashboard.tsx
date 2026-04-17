@@ -670,17 +670,19 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                   {rpsLoading && <span className="helper">Loading…</span>}
                   {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
-                  <div style={{ display:'flex', gap:4 }}>
-                    <button className="helper" onClick={prev} title="Previous" style={{ padding:'4px 8px' }}>{'‹'}</button>
-                    <button className="helper" onClick={next} title="Next" style={{ padding:'4px 8px' }}>{'›'}</button>
-                  </div>
                   {moveArrows}
                 </div>
               </div>
-              <div style={{ flex: 1, display: 'flex', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
-                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
-                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
-                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+                <button onClick={prev} aria-label="Previous" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1, flexShrink: 0 }}>‹</button>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
+                    <div style={{ width:'33.3333%', paddingLeft: 4, paddingRight: 4, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
+                    <div style={{ width:'33.3333%', paddingLeft: 4, paddingRight: 4, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
+                    <div style={{ width:'33.3333%', paddingLeft: 4, paddingRight: 4, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
+                  </div>
+                </div>
+                <button onClick={next} aria-label="Next" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1, flexShrink: 0 }}>›</button>
               </div>
               <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
                 {[0,1,2].map(i => (
