@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
-import { useAuth } from '../contexts/AuthContext'
-import { getTenantConfig } from '../lib/tenantConfig'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -245,8 +243,6 @@ function ChartSlide({
 
 export default function Dashboard() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const config = getTenantConfig(user?.tenantId)
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [recentOrders, setRecentOrders] = useState<any[]>([])

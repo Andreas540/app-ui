@@ -7,12 +7,10 @@ import { formatUSAny } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useAuth } from '../contexts/AuthContext'
-import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
-  const { user, hasFeature } = useAuth()
-  const config = getTenantConfig(user?.tenantId)
+  const { hasFeature } = useAuth()
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
