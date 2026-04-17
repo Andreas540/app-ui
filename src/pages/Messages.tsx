@@ -288,9 +288,21 @@ function MessageList({
                     background: 'rgba(34,197,94,0.08)',
                     border: '1px solid rgba(34,197,94,0.25)',
                   }}>
-                    <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 600, marginBottom: 4 }}>
-                      {t('messages.yourReply')}
-                      {msg.replied_at && ` · ${formatDateTime(msg.replied_at)}`}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>
+                        {t('messages.yourReply')}
+                        {msg.replied_at && ` · ${formatDateTime(msg.replied_at)}`}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onReplyTextChange(msg.id, msg.reply || '')
+                          onReply(msg.id)
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#22c55e', textDecoration: 'underline', fontSize: 11 }}
+                      >
+                        {t('messages.editReply')}
+                      </button>
                     </div>
                     <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                       {msg.reply}

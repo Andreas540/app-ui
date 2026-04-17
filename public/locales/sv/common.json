@@ -762,6 +762,7 @@
     "sendingReply": "Skickar svar…",
     "replyFailed": "Misslyckades att skicka svar. Försök igen.",
     "yourReply": "Ditt svar",
+    "editReply": "Redigera",
     "sentDate": "Skickat: {{date}}",
     "answeredDate": "Besvarad: {{date}}",
     "updateFailed": "Misslyckades att uppdatera meddelandet. Försök igen."

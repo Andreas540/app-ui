@@ -762,6 +762,7 @@
     "sendingReply": "Sending reply…",
     "replyFailed": "Failed to send reply. Please try again.",
     "yourReply": "Your reply",
+    "editReply": "Edit",
     "sentDate": "Sent: {{date}}",
     "answeredDate": "Answered: {{date}}",
     "updateFailed": "Failed to update message. Please try again."

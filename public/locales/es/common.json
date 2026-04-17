@@ -762,6 +762,7 @@
     "sendingReply": "Enviando respuesta…",
     "replyFailed": "Error al enviar la respuesta. Inténtalo de nuevo.",
     "yourReply": "Tu respuesta",
+    "editReply": "Editar",
     "sentDate": "Enviado: {{date}}",
     "answeredDate": "Respondido: {{date}}",
     "updateFailed": "Error al actualizar el mensaje. Inténtalo de nuevo."
