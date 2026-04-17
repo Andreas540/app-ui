@@ -205,8 +205,11 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
           <span>{deliveryText}</span>
         </div>
 
+        {/* Separator: profit%/delivery → order date */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, marginBottom: 4 }} />
+
         {/* First Row: Order Date, Total Amount, Order Lines */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div>
             <div className="helper" style={fieldStyle}>{t('orderModal.orderDate')}</div>
             <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
@@ -367,8 +370,6 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
           display: 'flex',
           gap: 8,
           marginTop: 16,
-          paddingTop: 16,
-          borderTop: '1px solid var(--line)'
         }}>
           <Link to={`/orders/${order.id}/edit`} style={{ flex: 1 }}>
             <button
