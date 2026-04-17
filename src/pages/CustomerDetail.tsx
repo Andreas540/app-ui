@@ -361,15 +361,14 @@ export default function CustomerDetailPage() {
               </div>
               {/* ✨ END NEW */}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                <div>
-                  <div className="helper">{t('phone')}</div>
-                  <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{formatPhoneDisplay(customer.phone)}</a> : '—'}</div>
-                </div>
-                <div>
-                  <div className="helper">{t('email')}</div>
-                  <div>{customer.email ? <a href={`mailto:${customer.email}`}>{customer.email}</a> : '—'}</div>
-                </div>
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">{t('phone')}</div>
+                <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{formatPhoneDisplay(customer.phone)}</a> : '—'}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="helper">{t('email')}</div>
+                <div>{customer.email ? <a href={`mailto:${customer.email}`}>{customer.email}</a> : '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
