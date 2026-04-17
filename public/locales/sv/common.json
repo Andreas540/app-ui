@@ -42,6 +42,7 @@
   "pending": "Väntande",
   "approved": "✓ Godkänd",
   "delivered": "Levererad",
+  "shipped": "Skickad",
   "notDelivered": "Ej levererad",
   "received": "Mottagen",
   "inCustoms": "I tull",

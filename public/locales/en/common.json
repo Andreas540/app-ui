@@ -42,6 +42,7 @@
   "pending": "Pending",
   "approved": "✓ Approved",
   "delivered": "Delivered",
+  "shipped": "Shipped",
   "notDelivered": "Not delivered",
   "received": "Received",
   "inCustoms": "In Customs",

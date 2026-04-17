@@ -295,15 +295,15 @@ export default function NewOrderSupplier() {
           <div style={{ marginTop: 12, display:'flex', gap:18, alignItems:'center', flexWrap:'wrap' }}>
             <label style={{ display:'flex', alignItems:'center', gap:6 }}>
               <input type="checkbox" checked={delivered} onChange={e=>setDelivered(e.target.checked)} style={{ width:14, height:14 }} />
-              {t('delivered')}
-            </label>
-            <label style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <input type="checkbox" checked={received} onChange={e=>setReceived(e.target.checked)} style={{ width:14, height:14 }} />
-              {t('received')}
+              {t('shipped')}
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:6 }}>
               <input type="checkbox" checked={inCustoms} onChange={e=>setInCustoms(e.target.checked)} style={{ width:14, height:14 }} />
               {t('inCustoms')}
+            </label>
+            <label style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="checkbox" checked={received} onChange={e=>setReceived(e.target.checked)} style={{ width:14, height:14 }} />
+              {t('received')}
             </label>
           </div>
 
