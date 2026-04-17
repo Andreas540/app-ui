@@ -239,6 +239,10 @@
     "pageTitle": "Försäljning och vinst"
   },
   "dashboard": {
+    "title": "Dashboard",
+    "cardFinancials": "Ekonomi",
+    "cardCharts": "Diagram",
+    "cardOrders": "Ordrar",
     "totalOwedToMe": "Totalt som skyldes mig",
     "owedToPartners": "Skuld till partners",
     "myDollars": "Mitt $",

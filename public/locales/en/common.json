@@ -239,6 +239,10 @@
     "pageTitle": "Sales & Profit"
   },
   "dashboard": {
+    "title": "Dashboard",
+    "cardFinancials": "Financials",
+    "cardCharts": "Charts",
+    "cardOrders": "Orders",
     "totalOwedToMe": "Total owed to me",
     "owedToPartners": "Owed to partners",
     "myDollars": "My $",

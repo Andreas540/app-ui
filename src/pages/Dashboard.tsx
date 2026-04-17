@@ -241,6 +241,41 @@ function ChartSlide({
   )
 }
 
+// ── Dashboard card registry ────────────────────────────────────────────────────
+
+const ALL_CARDS = [
+  { id: 'financials', labelKey: 'dashboard.cardFinancials' },
+  { id: 'charts',     labelKey: 'dashboard.cardCharts'     },
+  { id: 'orders',     labelKey: 'dashboard.cardOrders'     },
+] as const
+
+const LS_DASH_ORDER  = 'dashboard_order'
+const LS_DASH_HIDDEN = 'dashboard_hidden'
+
+function loadDashOrder(): string[] {
+  try {
+    const s = localStorage.getItem(LS_DASH_ORDER)
+    if (s) {
+      const saved: string[] = JSON.parse(s)
+      const valid = saved.filter(id => ALL_CARDS.some(c => c.id === id))
+      ALL_CARDS.forEach(c => { if (!valid.includes(c.id)) valid.push(c.id) })
+      return valid
+    }
+  } catch {}
+  return ALL_CARDS.map(c => c.id)
+}
+
+function loadDashVisible(): string[] {
+  try {
+    const s = localStorage.getItem(LS_DASH_HIDDEN)
+    if (s) {
+      const hidden: string[] = JSON.parse(s)
+      return ALL_CARDS.map(c => c.id).filter(id => !hidden.includes(id))
+    }
+  } catch {}
+  return ALL_CARDS.map(c => c.id)
+}
+
 export default function Dashboard() {
   const { t } = useTranslation()
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
@@ -266,6 +301,12 @@ export default function Dashboard() {
   const [rpsMonthly, setRpsMonthly] = useState<RpsPoint[]>([])
   const [rpsLoading, setRpsLoading] = useState(true)
   const [rpsErr, setRpsErr] = useState<string | null>(null)
+
+  // Dashboard card customisation
+  const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
+  const [dashVisible,  setDashVisible]  = useState<string[]>(loadDashVisible)
+  const [dashDropOpen, setDashDropOpen] = useState(false)
+  const dashBtnRef = useRef<HTMLButtonElement>(null)
 
   // Load customers data for totals
   useEffect(() => {
@@ -505,288 +546,273 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   const slides = [slide1, slide2, slide3]
 
+  function toggleDashCard(id: string) {
+    setDashVisible(v => {
+      const next   = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
+      const hidden = ALL_CARDS.map(c => c.id).filter(cid => !next.includes(cid))
+      localStorage.setItem(LS_DASH_HIDDEN, JSON.stringify(hidden))
+      return next
+    })
+  }
+
+  function moveDashCard(id: string, dir: -1 | 1) {
+    setDashOrder(prev => {
+      const idx  = prev.indexOf(id)
+      const next = [...prev]
+      const swap = idx + dir
+      if (swap < 0 || swap >= next.length) return prev
+      ;[next[idx], next[swap]] = [next[swap], next[idx]]
+      localStorage.setItem(LS_DASH_ORDER, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const orderedVisible = dashOrder.filter(id => dashVisible.includes(id))
+
+  const moveBtn = (disabled: boolean): React.CSSProperties => ({
+    width: 24, height: 24, padding: 0, fontSize: 13, fontWeight: 700,
+    color: 'var(--text-secondary)', opacity: disabled ? 0.25 : 1,
+    background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: disabled ? 'default' : 'pointer',
+  })
+
   return (
-    <div className="grid">
-      {/* -------- Card 1: Totals -------- */}
-      <div className="card">        
-        {loading ? (
-          <div className="helper">{t('loading')}</div>
-        ) : err ? (
-          <div style={{ color: 'salmon' }}>{t('error')} {err}</div>
-        ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {/* Total owed to me */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 8,
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.totalOwedToMe')}</div>
-              <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
-                {fmtIntMoney(totalOwedToMe)}
-              </div>
-            </div>
-
-            {/* Owed to partners (excluding JJ Boston) */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 8,
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToPartners')}</div>
-              <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>
-                {fmtIntMoney(owedToPartnersExJJ)}
-              </div>
-            </div>
-
-            {/* My $ */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 8,
-                alignItems: 'center',
-                marginTop: 4,
-                paddingTop: 8,
-                borderTop: '1px solid #eee'
-              }}
-            >
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
-              <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>
-                {fmtIntMoney(myDollars)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* -------- Card 2: Chart Carousel -------- */}
-      <div
-        className="card"
-        style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Header: title + slide controls + loading/errors */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', marginBottom: 6, gap: 8 }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>
-            {slides[slide].title}
-          </h3>
-
-          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            {/* Loading badges */}
-            {rpsLoading && <span className="helper">Loading…</span>}
-            {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
-
-            {/* Prev / Next buttons (desktop) */}
-            <div style={{ display:'flex', gap:4 }}>
-              <button className="helper" onClick={prev} title="Previous" style={{ padding:'4px 8px' }}>{'‹'}</button>
-              <button className="helper" onClick={next} title="Next" style={{ padding:'4px 8px' }}>{'›'}</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Slides strip */}
-<div
-  style={{
-    flex: 1,
-    display: 'flex',
-    width: '300%',
-    transform: `translateX(-${slide * 33.3333}%)`,
-    transition: 'transform 220ms ease',
-  }}
->
-  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
-    <ChartSlide {...slides[0]} />
-  </div>
-  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
-    <ChartSlide {...slides[1]} />
-  </div>
-  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}>
-    <ChartSlide {...slides[2]} />
-  </div>
-</div>
-
-        {/* Dots */}
-        <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
-          {[0,1,2].map(i => (
-  <button
-    key={i}
-    onClick={() => setSlide(i as 0|1|2)}
-    aria-pressed={slide===i}
-    style={{
-      width: 6, 
-      height: 6, 
-      borderRadius: '50%',
-      border: 'none',
-      background: slide===i ? 'var(--primary)' : '#d1d5db',
-      cursor: 'pointer',
-      padding: 0
-    }}
-    title={`Go to slide ${i+1}`}
-  />
-))}
-        </div>
-      </div>
-
-      {/* -------- Card 3: Orders -------- */}
-      <div className="card">
-        {/* Filter buttons */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 8,
-            marginBottom: 8,
-          }}
-        >
+    <div>
+      {/* ── Header: title + card selector ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>{t('dashboard.title')}</h2>
+        <div>
           <button
-            className="primary"
-            onClick={() => {
-              setOrderFilter('Most recent')
-              setOrderDisplayCount(5)
-            }}
-            aria-pressed={orderFilter === 'Most recent'}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
+            ref={dashBtnRef}
+            onClick={() => setDashDropOpen(o => !o)}
+            style={{ height: 36, padding: '0 14px', fontSize: 13 }}
           >
-            {t('dashboard.mostRecent')}
+            {t('dashboard.title')} ▾
           </button>
-          <button
-            className="primary"
-            onClick={() => {
-              setOrderFilter('Not delivered')
-              setOrderDisplayCount(5)
-            }}
-            aria-pressed={orderFilter === 'Not delivered'}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
-          >
-            {t('notDelivered')}
-          </button>
-        </div>
-
-        <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap: 8, alignItems:'center', marginTop: 12}}>
-          <h3 style={{margin:0, fontSize: 16}}>{ordersTitle}</h3>
-          {recentOrders.length > 5 && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              {orderDisplayCount > 5 && (
-                <button
-                  className="helper"
-                  onClick={() => setOrderDisplayCount(5)}
-                  style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-                >
-                  {t('dashboard.collapse')}
-                </button>
-              )}
-              {orderDisplayCount < 30 && recentOrders.length > orderDisplayCount && (
-                <button
-                  className="helper"
-                  onClick={() => setOrderDisplayCount(prev => prev + 5)}
-                  style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-                >
-                  {t('dashboard.showMore')}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {ordersLoading ? (
-          <p className="helper">{t('dashboard.loadingOrders')}</p>
-        ) : ordersErr ? (
-          <p style={{ color: 'salmon' }}>{t('dashboard.errorLoadingOrders', { error: ordersErr })}</p>
-        ) : recentOrders.length === 0 ? (
-          <p className="helper">{t('dashboard.noOrdersFound')}</p>
-        ) : (
-          <div style={{display:'grid', marginTop: 12}}>
-            {shownOrders.map(o => {
-              const cols = `50px 18px minmax(24px, max-content) 1fr auto`
-
-              const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
-                Array.isArray(o.items) && o.items.length > 0 ? o.items : []
-
-              const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
-                `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}`
-
-              const hasNotes = o.notes && o.notes.trim()
-
-              const { symbol, color, label } = getDeliveryVisual(o)
-              const deliveryIcon = (
-                <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeliveryToggle(o.id, !o.delivered) }}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14 }}
-                    title={label}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
-                  </button>
+          {dashDropOpen && (() => {
+            const rect  = dashBtnRef.current?.getBoundingClientRect()
+            const right = rect ? Math.max(8, window.innerWidth - rect.right) : 16
+            const top   = rect ? rect.bottom + 4 : 60
+            return (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setDashDropOpen(false)} />
+                <div style={{
+                  position: 'fixed', top, right, width: 180,
+                  background: 'var(--card, #1e2130)',
+                  border: '1px solid var(--border)', borderRadius: 8,
+                  padding: '4px 0', zIndex: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                }}>
+                  {ALL_CARDS.map(c => (
+                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={dashVisible.includes(c.id)}
+                        onChange={() => toggleDashCard(c.id)}
+                        style={{ width: 14, height: 14, flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: 13 }}>{t(c.labelKey)}</span>
+                    </label>
+                  ))}
                 </div>
-              )
+              </>
+            )
+          })()}
+        </div>
+      </div>
 
-              return (
-                <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+      {/* ── Cards grid ── */}
+      <div className="grid">
+        {orderedVisible.map((cardId, idx) => {
+          const isFirst = idx === 0
+          const isLast  = idx === orderedVisible.length - 1
+          const moveArrows = (
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={() => moveDashCard(cardId, -1)} disabled={isFirst} style={moveBtn(isFirst)}>←</button>
+              <button onClick={() => moveDashCard(cardId, 1)}  disabled={isLast}  style={moveBtn(isLast)}>→</button>
+            </div>
+          )
 
-                  {/* SHARED GRID — all rows share one grid for correct auto-column sizing */}
-                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
-                    {/* FIRST ROW — date, delivery icon, order_no, customer name + first item, total */}
-                    <div className="helper">{formatDate(o.order_date)}</div>
-                    {deliveryIcon}
-                    <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{o.order_no}</div>
-                    <div className="helper" onClick={() => handleOrderClick(o)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                      <div><strong>{o.customer_name}</strong></div>
-                      {items.length > 0 && (
-                        <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>{itemLine(items[0])}</div>
-                      )}
-                    </div>
-                    <div className="helper" onClick={() => handleOrderClick(o)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ textAlign: 'right', cursor: 'pointer' }}>
-                      {fmtIntMoney(o.total)}
-                    </div>
-
-                    {/* ADDITIONAL ITEM ROWS */}
-                    {items.slice(1).map((item, idx) => (
-                      <React.Fragment key={idx}>
-                        <div /><div /><div />
-                        <div className="helper" onClick={() => handleOrderClick(o)}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          style={{ cursor: 'pointer', lineHeight: '1.4', paddingLeft: 4, opacity: 0.9 }}>
-                          {itemLine(item)}
-                        </div>
-                        <div />
-                      </React.Fragment>
-                    ))}
-
-                    {/* NOTES ROW */}
-                    {hasNotes && (
-                      <React.Fragment>
-                        <div /><div /><div />
-                        <div className="helper" onClick={() => handleOrderClick(o)}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                          {o.notes}
-                        </div>
-                        <div />
-                      </React.Fragment>
-                    )}
+          if (cardId === 'financials') return (
+            <div key="financials" className="card">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
+              {loading ? (
+                <div className="helper">{t('loading')}</div>
+              ) : err ? (
+                <div style={{ color: 'salmon' }}>{t('error')} {err}</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.totalOwedToMe')}</div>
+                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(totalOwedToMe)}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToPartners')}</div>
+                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToPartnersExJJ)}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid #eee' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
+                    <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          )
+
+          if (cardId === 'charts') return (
+            <div key="charts" className="card"
+              style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+            >
+              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', marginBottom: 6, gap: 8 }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{slides[slide].title}</h3>
+                <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                  {rpsLoading && <span className="helper">Loading…</span>}
+                  {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+                  <div style={{ display:'flex', gap:4 }}>
+                    <button className="helper" onClick={prev} title="Previous" style={{ padding:'4px 8px' }}>{'‹'}</button>
+                    <button className="helper" onClick={next} title="Next" style={{ padding:'4px 8px' }}>{'›'}</button>
+                  </div>
+                  {moveArrows}
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
+                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
+                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
+                <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
+              </div>
+              <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
+                {[0,1,2].map(i => (
+                  <button key={i} onClick={() => setSlide(i as 0|1|2)} aria-pressed={slide===i}
+                    style={{ width: 6, height: 6, borderRadius: '50%', border: 'none', background: slide===i ? 'var(--primary)' : '#d1d5db', cursor: 'pointer', padding: 0 }}
+                    title={`Go to slide ${i+1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+
+          if (cardId === 'orders') return (
+            <div key="orders" className="card">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 8 }}>
+                <button className="primary"
+                  onClick={() => { setOrderFilter('Most recent'); setOrderDisplayCount(5) }}
+                  aria-pressed={orderFilter === 'Most recent'}
+                  style={{ height: 'calc(var(--control-h) * 0.67)' }}>
+                  {t('dashboard.mostRecent')}
+                </button>
+                <button className="primary"
+                  onClick={() => { setOrderFilter('Not delivered'); setOrderDisplayCount(5) }}
+                  aria-pressed={orderFilter === 'Not delivered'}
+                  style={{ height: 'calc(var(--control-h) * 0.67)' }}>
+                  {t('notDelivered')}
+                </button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap: 8, alignItems:'center', marginTop: 12 }}>
+                <h3 style={{ margin:0, fontSize: 16 }}>{ordersTitle}</h3>
+                {recentOrders.length > 5 && (
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    {orderDisplayCount > 5 && (
+                      <button className="helper" onClick={() => setOrderDisplayCount(5)}
+                        style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}>
+                        {t('dashboard.collapse')}
+                      </button>
+                    )}
+                    {orderDisplayCount < 30 && recentOrders.length > orderDisplayCount && (
+                      <button className="helper" onClick={() => setOrderDisplayCount(prev => prev + 5)}
+                        style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}>
+                        {t('dashboard.showMore')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {ordersLoading ? (
+                <p className="helper">{t('dashboard.loadingOrders')}</p>
+              ) : ordersErr ? (
+                <p style={{ color: 'salmon' }}>{t('dashboard.errorLoadingOrders', { error: ordersErr })}</p>
+              ) : recentOrders.length === 0 ? (
+                <p className="helper">{t('dashboard.noOrdersFound')}</p>
+              ) : (
+                <div style={{ display:'grid', marginTop: 12 }}>
+                  {shownOrders.map(o => {
+                    const cols = `50px 18px minmax(24px, max-content) 1fr auto`
+                    const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
+                      Array.isArray(o.items) && o.items.length > 0 ? o.items : []
+                    const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
+                      `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}`
+                    const hasNotes = o.notes && o.notes.trim()
+                    const { symbol, color, label } = getDeliveryVisual(o)
+                    const deliveryIcon = (
+                      <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeliveryToggle(o.id, !o.delivered) }}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14 }}
+                          title={label}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
+                        </button>
+                      </div>
+                    )
+                    return (
+                      <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
+                          <div className="helper">{formatDate(o.order_date)}</div>
+                          {deliveryIcon}
+                          <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{o.order_no}</div>
+                          <div className="helper" onClick={() => handleOrderClick(o)}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                            <div><strong>{o.customer_name}</strong></div>
+                            {items.length > 0 && (
+                              <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>{itemLine(items[0])}</div>
+                            )}
+                          </div>
+                          <div className="helper" onClick={() => handleOrderClick(o)}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            style={{ textAlign: 'right', cursor: 'pointer' }}>
+                            {fmtIntMoney(o.total)}
+                          </div>
+                          {items.slice(1).map((item, idx) => (
+                            <React.Fragment key={idx}>
+                              <div /><div /><div />
+                              <div className="helper" onClick={() => handleOrderClick(o)}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                style={{ cursor: 'pointer', lineHeight: '1.4', paddingLeft: 4, opacity: 0.9 }}>
+                                {itemLine(item)}
+                              </div>
+                              <div />
+                            </React.Fragment>
+                          ))}
+                          {hasNotes && (
+                            <React.Fragment>
+                              <div /><div /><div />
+                              <div className="helper" onClick={() => handleOrderClick(o)}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                                {o.notes}
+                              </div>
+                              <div />
+                            </React.Fragment>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+
+          return null
+        })}
       </div>
 
-      <OrderDetailModal 
+      <OrderDetailModal
         isOpen={showOrderModal}
         onClose={() => setShowOrderModal(false)}
         order={selectedOrder}

@@ -239,6 +239,10 @@
     "pageTitle": "Ventas y Beneficios"
   },
   "dashboard": {
+    "title": "Panel",
+    "cardFinancials": "Finanzas",
+    "cardCharts": "Gráficos",
+    "cardOrders": "Pedidos",
     "totalOwedToMe": "Total que me deben",
     "owedToPartners": "Adeudado a socios",
     "myDollars": "Mi $",
