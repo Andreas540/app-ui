@@ -307,7 +307,7 @@ export default function CustomerDetailPage() {
                 <ul style={{ margin: 0, paddingLeft: 16 }}>
                   {productsNeedingPrice.map(p => (
                     <li key={p.id}>
-                      <Link to="/products/edit" style={{ color: 'var(--accent)' }}>{p.name}</Link>
+                      <Link to={`/products/edit?type=product&id=${p.id}`} style={{ color: 'var(--accent)' }}>{p.name}</Link>
                     </li>
                   ))}
                 </ul>

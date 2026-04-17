@@ -10,6 +10,7 @@ export default function EditProduct() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type') === 'service' ? 'service' : 'product'
+  const preselectedId = searchParams.get('id') || ''
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -31,9 +32,11 @@ export default function EditProduct() {
         setLoading(true); setErr(null)
         const { products } = await listProducts()
         setProducts(products)
-        // default selection — pick first item matching the current type
+        // default selection — preselected id from URL, or first item matching type
         const filtered = products.filter(p => (p.category ?? 'product') === type)
-        if (filtered.length) setSelectedId(filtered[0].id)
+        const match = preselectedId && products.find(p => p.id === preselectedId)
+        if (match) setSelectedId(match.id)
+        else if (filtered.length) setSelectedId(filtered[0].id)
       } catch (e:any) {
         setErr(e?.message || String(e))
       } finally {
