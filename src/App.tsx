@@ -535,22 +535,26 @@ useEffect(() => {
             <span></span>
           </button>
           {(() => {
+            const total  = externalEvents.length
             const unread = externalEvents.filter(e => new Date(e.created_at).getTime() > externalSeenAt).length
-            if (unread === 0) return null
+            if (total === 0) return null
+            const isNew = unread > 0
             return (
               <button
                 onClick={handleExternalBadgeClick}
                 style={{
                   position: 'absolute', top: 6, left: 6,
                   width: 28, height: 28, borderRadius: '50%',
-                  background: '#22c55e', border: 'none', cursor: 'pointer',
+                  background: isNew ? '#22c55e' : '#9ca3af',
+                  border: 'none', cursor: 'pointer',
                   color: '#fff', fontSize: 12, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   zIndex: 10, padding: 0, lineHeight: 1,
+                  transition: 'background 0.3s',
                 }}
                 aria-label={tc('externalEvents.title')}
               >
-                {unread > 9 ? '9+' : unread}
+                {(isNew ? unread : total) > 9 ? '9+' : (isNew ? unread : total)}
               </button>
             )
           })()}
