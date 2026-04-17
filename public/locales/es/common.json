@@ -345,7 +345,8 @@
     "askCustomerToUpdate": "Pedir al cliente que añada información faltante",
     "shareOrderPage": "Compartir página de pedido con el cliente",
     "shareOrderLine1": "Envía este enlace a tu cliente para que pueda hacer un pedido.",
-    "shareOrderLine2": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario de pedido."
+    "shareOrderLine2": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario de pedido.",
+    "shareOrderMissingPrices": "Los siguientes productos necesitan un precio para ser visibles en la página de pedidos:"
   },
   "customerDetail": {
     "editCustomer": "Editar cliente",

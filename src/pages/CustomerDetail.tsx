@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders } from '../lib/api'
+import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
 import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
@@ -29,6 +29,7 @@ export default function CustomerDetailPage() {
   const [generatingOrderLink, setGeneratingOrderLink] = useState(false)
   const [orderLink,           setOrderLink]           = useState<string | null>(null)
   const [orderLinkCopied,     setOrderLinkCopied]     = useState(false)
+  const [productsNeedingPrice, setProductsNeedingPrice] = useState<ProductWithCost[]>([])
 
 
   useEffect(() => {
@@ -45,6 +46,13 @@ export default function CustomerDetailPage() {
       }
     })()
   }, [id])
+
+  useEffect(() => {
+    if (!showShareOrder) return
+    listProducts().then(({ products }) => {
+      setProductsNeedingPrice(products.filter(p => !p.price_amount))
+    }).catch(() => {})
+  }, [showShareOrder])
 
   // --- Helpers (no hooks here) ---
   async function generateOrderLink() {
@@ -293,6 +301,18 @@ export default function CustomerDetailPage() {
           <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
             <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
             <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
+            {productsNeedingPrice.length > 0 && (
+              <div style={{ marginBottom: 12, padding: '8px 10px', background: 'var(--warning-bg, #fff8e1)', borderRadius: 6, fontSize: 12 }}>
+                <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{t('customers.shareOrderMissingPrices')}</p>
+                <ul style={{ margin: 0, paddingLeft: 16 }}>
+                  {productsNeedingPrice.map(p => (
+                    <li key={p.id}>
+                      <Link to="/products/edit" style={{ color: 'var(--accent)' }}>{p.name}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {!orderLink ? (
               <button
                 type="button"
