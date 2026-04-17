@@ -675,10 +675,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               </div>
               <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <button onClick={prev} aria-label="Previous" style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1 }}>‹</button>
-                <div style={{ display: 'flex', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
-                  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
-                  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
-                  <div style={{ width:'33.3333%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
+                <div style={{ display: 'flex', height: '100%', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
                 </div>
                 <button onClick={next} aria-label="Next" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1 }}>›</button>
               </div>
