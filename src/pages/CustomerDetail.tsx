@@ -408,7 +408,7 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
-              const cols = `50px 18px auto 1fr auto`
+              const cols = `50px 18px minmax(24px, max-content) 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray((o as any).items) && (o as any).items.length > 0

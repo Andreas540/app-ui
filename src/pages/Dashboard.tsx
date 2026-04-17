@@ -705,7 +705,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
-              const cols = `50px 18px auto 1fr auto`
+              const cols = `50px 18px minmax(24px, max-content) 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray(o.items) && o.items.length > 0 ? o.items : []
