@@ -72,7 +72,7 @@ async function getForm(event) {
 
     const [rows, tenantRows] = await Promise.all([
       sql`
-        SELECT name, company_name, phone, address1, address2, city, state, postal_code, country
+        SELECT name, company_name, email, phone, address1, address2, city, state, postal_code, country
         FROM customers
         WHERE id        = ${verified.customerId}::uuid
           AND tenant_id = ${verified.tenantId}::uuid
@@ -112,7 +112,7 @@ async function submitForm(event) {
     const sql = neon(process.env.DATABASE_URL)
 
     const existing = await sql`
-      SELECT name, company_name, phone, address1, address2, city, state, postal_code, country
+      SELECT name, company_name, email, phone, address1, address2, city, state, postal_code, country
       FROM customers
       WHERE id        = ${verified.customerId}::uuid
         AND tenant_id = ${verified.tenantId}::uuid
@@ -128,6 +128,7 @@ async function submitForm(event) {
 
     const name        = pick(body.name,         cur.name)
     const companyName = pick(body.company_name,  cur.company_name)
+    const email       = pick(body.email,         cur.email)
     const phone       = pick(body.phone,         cur.phone)
     const address1    = pick(body.address1,      cur.address1)
     const address2    = pick(body.address2,      cur.address2)
@@ -140,6 +141,7 @@ async function submitForm(event) {
       UPDATE customers SET
         name         = ${name},
         company_name = ${companyName},
+        email        = ${email},
         phone        = ${phone},
         address1     = ${address1},
         address2     = ${address2},

@@ -14,8 +14,9 @@ const T: Record<Lang, Record<string, string>> = {
     title:        'Customer Information',
     welcome:      'Hi, please send us your company information using this form.',
     welcomeUpdate: 'Hi, please add any missing information about your company.',
-    name:         'Customer Name',
-    companyName:  'Contact',
+    companyName:  'Company name',
+    name:         'Contact',
+    email:        'Email',
     phone:        'Phone',
     address1:     'Address line 1',
     address2:     'Address line 2',
@@ -36,8 +37,9 @@ const T: Record<Lang, Record<string, string>> = {
     title:        'Información del cliente',
     welcome:      'Hola, por favor envíanos la información de tu empresa usando este formulario.',
     welcomeUpdate: 'Hola, por favor añade cualquier información que falte sobre tu empresa.',
-    name:         'Nombre del Cliente',
-    companyName:  'Contacto',
+    companyName:  'Nombre de la empresa',
+    name:         'Contacto',
+    email:        'Correo electrónico',
     phone:        'Teléfono',
     address1:     'Dirección línea 1',
     address2:     'Dirección línea 2',
@@ -58,8 +60,9 @@ const T: Record<Lang, Record<string, string>> = {
     title:        'Kundinformation',
     welcome:      'Hej, vänligen skicka din företagsinformation via det här formuläret.',
     welcomeUpdate: 'Hej, vänligen lägg till eventuell saknad information om ditt företag.',
-    name:         'Kundnamn',
-    companyName:  'Kontakt',
+    companyName:  'Företagsnamn',
+    name:         'Kontakt',
+    email:        'E-post',
     phone:        'Telefon',
     address1:     'Adressrad 1',
     address2:     'Adressrad 2',
@@ -90,6 +93,7 @@ function resolveLang(param: string | null): Lang {
 type FormData = {
   name:         string
   company_name: string
+  email:        string
   phone:        string
   address1:     string
   address2:     string
@@ -114,7 +118,7 @@ export default function CustomerFormPage() {
   const [tenantIcon, setTenantIcon] = useState<string | null>(null)
   const [bgColor,    setBgColor]    = useState('#f0f2f5')
   const [form, setForm]     = useState<FormData>({
-    name: '', company_name: '', phone: '',
+    name: '', company_name: '', email: '', phone: '',
     address1: '', address2: '', city: '',
     state: '', postal_code: '', country: '',
   })
@@ -131,6 +135,7 @@ export default function CustomerFormPage() {
         setForm({
           name:         c.name         ?? '',
           company_name: c.company_name ?? '',
+          email:        c.email        ?? '',
           phone:        c.phone        ?? '',
           address1:     c.address1     ?? '',
           address2:     c.address2     ?? '',
@@ -223,7 +228,6 @@ export default function CustomerFormPage() {
     gridTemplateColumns: '1fr 1fr',
     gap: 12,
   }
-  const field: React.CSSProperties = { marginBottom: 14 }
   const btn: React.CSSProperties = {
     width: '100%',
     padding: '12px 0',
@@ -283,21 +287,27 @@ export default function CustomerFormPage() {
 
         <form onSubmit={handleSubmit} noValidate>
 
-          {/* Name — full width */}
-          <div style={field}>
-            <label style={lbl}>{t('name')}</label>
-            <input style={inp} value={form.name} onChange={set('name')} autoComplete="name" />
-          </div>
-
-          {/* Company name + Phone — same row as in app */}
+          {/* Company name + Contact — same row as in app */}
           <div style={{ ...row2, marginBottom: 14 }}>
             <div>
               <label style={lbl}>{t('companyName')}</label>
               <input style={inp} value={form.company_name} onChange={set('company_name')} autoComplete="organization" />
             </div>
             <div>
+              <label style={lbl}>{t('name')}</label>
+              <input style={inp} value={form.name} onChange={set('name')} autoComplete="name" />
+            </div>
+          </div>
+
+          {/* Phone + Email */}
+          <div style={{ ...row2, marginBottom: 14 }}>
+            <div>
               <label style={lbl}>{t('phone')}</label>
               <input style={inp} type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
+            </div>
+            <div>
+              <label style={lbl}>{t('email')}</label>
+              <input style={inp} type="email" value={form.email} onChange={set('email')} autoComplete="email" />
             </div>
           </div>
 
