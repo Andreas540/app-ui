@@ -166,48 +166,41 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
       onClose={onClose}
       title={`Order #${order.order_no || order.id}`}
     >
-      <div style={{ display: 'grid', gap: 16, position: 'relative', marginTop: -16 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
 
-        {/* Profit display - positioned absolutely in top right of modal */}
-        {showProfit && (
+        {/* Top row: delivery status (left) + profit (right) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{
-            position: 'absolute',
-            top: -40,
-            right: 40,
-            textAlign: 'right',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             fontSize: 14,
-            background: 'var(--panel)',
-            paddingLeft: 8
+            fontWeight: 600,
+            color: deliveryColor,
+            marginTop: 2
           }}>
-            <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
-            <div style={{
-              fontWeight: 600,
-              fontSize: 16,
-              color: profit >= 0 ? 'var(--primary)' : 'salmon'
-            }}>
-              {fmtMoneyWithThousands(profit)}
-            </div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-              {profitPercent.toFixed(1)}%
-            </div>
+            <span>{deliverySymbol}</span>
+            <span>{deliveryText}</span>
           </div>
-        )}
 
-                {/* Delivered Status (tri-state) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 14,
-          fontWeight: 600,
-          color: deliveryColor,
-          marginTop: 2
-        }}>
-          <span>{deliverySymbol}</span>
-          <span>{deliveryText}</span>
+          {showProfit && (
+            <div style={{ textAlign: 'right', fontSize: 14 }}>
+              <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
+              <div style={{
+                fontWeight: 600,
+                fontSize: 16,
+                color: profit >= 0 ? 'var(--primary)' : 'salmon'
+              }}>
+                {fmtMoneyWithThousands(profit)}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+                {profitPercent.toFixed(1)}%
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Separator: profit%/delivery → order date */}
+        {/* Separator: delivery/profit → order date */}
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
 
         {/* First Row: Order Date, Total Amount, Order Lines */}
