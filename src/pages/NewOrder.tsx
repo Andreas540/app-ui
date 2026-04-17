@@ -300,14 +300,14 @@ const hasProducts = filteredProducts.length > 0
   return (
     <>
     {/* ── Page navigation arrows ── */}
-    <div style={{ maxWidth: 720, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+    <div style={{ maxWidth: 720, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
       <button
         onClick={() => navigate(-1)}
         aria-label="Back"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          padding: '4px 0', minWidth: 44, minHeight: 44,
-          fontSize: 26, color: 'var(--text-secondary)',
+          padding: '3px 0', minWidth: 33, minHeight: 33,
+          fontSize: 20, color: 'var(--text-secondary)',
           lineHeight: 1, display: 'flex', alignItems: 'center',
         }}
       >
@@ -318,8 +318,8 @@ const hasProducts = filteredProducts.length > 0
         aria-label="Forward"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          padding: '4px 0', minWidth: 44, minHeight: 44,
-          fontSize: 26, color: 'var(--text-secondary)',
+          padding: '3px 0', minWidth: 33, minHeight: 33,
+          fontSize: 20, color: 'var(--text-secondary)',
           lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         }}
       >
