@@ -426,7 +426,7 @@
     "toPartner2USD": "Till Partner 2 (USD)"
   },
   "warehouse": {
-    "title": "Justera lagerbestånd",
+    "title": "Justera inventarie",
     "stage": "Fas",
     "preProduction": "Förproduktion (M)",
     "finishedProducts": "Färdiga produkter (P)",
@@ -553,7 +553,7 @@
     "recentlyDelivered": "Nyligen levererat",
     "production": "Produktion",
     "notDelivered": "Ej levererat",
-    "inWarehouse": "I lagret",
+    "inWarehouse": "Inventarie",
     "inCustoms": "I tull",
     "orderedFromSuppliers": "Beställt från leverantörer",
     "last30d": "Sen. 30 d",

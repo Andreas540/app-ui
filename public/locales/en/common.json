@@ -426,7 +426,7 @@
     "toPartner2USD": "To Partner 2 (USD)"
   },
   "warehouse": {
-    "title": "Adjust Warehouse Inventory",
+    "title": "Adjust Inventory",
     "stage": "Stage",
     "preProduction": "Pre-production (M)",
     "finishedProducts": "Finished products (P)",
@@ -553,7 +553,7 @@
     "recentlyDelivered": "Recently delivered",
     "production": "Production",
     "notDelivered": "Not delivered",
-    "inWarehouse": "In the warehouse",
+    "inWarehouse": "Inventory",
     "inCustoms": "In Customs",
     "orderedFromSuppliers": "Ordered from suppliers",
     "last30d": "Last 30 d",

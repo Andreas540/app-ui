@@ -426,7 +426,7 @@
     "toPartner2USD": "Al Socio 2 (USD)"
   },
   "warehouse": {
-    "title": "Ajustar Inventario de Almacén",
+    "title": "Ajustar Inventario",
     "stage": "Etapa",
     "preProduction": "Pre-producción (M)",
     "finishedProducts": "Productos terminados (P)",
@@ -553,7 +553,7 @@
     "recentlyDelivered": "Entregado recientemente",
     "production": "Producción",
     "notDelivered": "No entregado",
-    "inWarehouse": "En el almacén",
+    "inWarehouse": "Inventario",
     "inCustoms": "En aduana",
     "orderedFromSuppliers": "Pedido a proveedores",
     "last30d": "Últ. 30 d",

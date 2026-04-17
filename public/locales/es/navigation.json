@@ -15,7 +15,7 @@
   "newCost": "Nuevo Costo",
   "supplyDemand": "Oferta y Demanda",
   "production": "Producción",
-  "warehouse": "Almacén",
+  "warehouse": "Inventario",
   "newOrderSupplier": "Nuevo Pedido (P)",
   "suppliers": "Proveedores",
   "employees": "Empleados",
@@ -41,6 +41,6 @@
   "reportsSection": "Informes & Análisis",
   "reportsSalesProfit": "Ventas y Beneficios",
   "reportsCustomers": "Clientes",
-  "reportsBizWiz": "Preguntar a BizWiz",
+  "reportsBizWiz": "Preguntar a BizWiz AI",
   "addQuickNavigation": "Añadir accesos directos"
 }

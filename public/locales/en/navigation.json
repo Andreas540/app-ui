@@ -15,7 +15,7 @@
   "newCost": "New Cost",
   "supplyDemand": "Supply & Demand",
   "production": "Production",
-  "warehouse": "Warehouse",
+  "warehouse": "Inventory",
   "newOrderSupplier": "New Order (S)",
   "suppliers": "Suppliers",
   "employees": "Employees",
@@ -41,6 +41,6 @@
   "reportsSection": "Reports & Analytics",
   "reportsSalesProfit": "Sales & Profit",
   "reportsCustomers": "Customers",
-  "reportsBizWiz": "Ask BizWiz",
+  "reportsBizWiz": "Ask BizWiz AI",
   "addQuickNavigation": "Add shortcuts"
 }

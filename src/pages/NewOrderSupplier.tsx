@@ -275,24 +275,18 @@ export default function NewOrderSupplier() {
               </div>
 
               {/* Add / Remove product controls */}
-              <div style={{ marginTop: 8, display:'flex', gap:12, alignItems:'center' }}>
+              <div style={{ marginTop: 8, display:'flex', gap:16, alignItems:'center' }}>
                 <button
-                  aria-label={t('supplierOrders.addProduct')}
-                  title={t('supplierOrders.addProduct')}
-                  className="primary"
+                  className="helper"
                   onClick={addProductBlock}
-                  style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center' }}
-                >+</button>
-                <span className="helper">{t('supplierOrders.addProduct')}</span>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                >+ {t('supplierOrders.addProduct')}</button>
 
                 <button
-                  aria-label={t('supplierOrders.removeProduct')}
-                  title={t('supplierOrders.removeProduct')}
-                  className="primary"
+                  className="helper"
                   onClick={() => removeProductBlock(idx)}
-                  style={{ height: 36, width: 36, padding: 0, borderRadius: '50%', lineHeight: '36px', textAlign: 'center', marginLeft: 12 }}
-                >–</button>
-                <span className="helper">{t('supplierOrders.removeProduct')}</span>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                >– {t('supplierOrders.removeProduct')}</button>
               </div>
             </div>
           ))}

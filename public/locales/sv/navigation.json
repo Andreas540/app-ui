@@ -15,7 +15,7 @@
   "newCost": "Ny kostnad",
   "supplyDemand": "Utbud och efterfrågan",
   "production": "Produktion",
-  "warehouse": "Lager",
+  "warehouse": "Inventarie",
   "newOrderSupplier": "Ny beställning (L)",
   "suppliers": "Leverantörer",
   "employees": "Anställda",
@@ -41,6 +41,6 @@
   "reportsSection": "Rapporter & Analys",
   "reportsSalesProfit": "Försäljning och vinst",
   "reportsCustomers": "Kunder",
-  "reportsBizWiz": "Fråga BizWiz",
+  "reportsBizWiz": "Fråga BizWiz AI",
   "addQuickNavigation": "Lägg till genvägar"
 }
