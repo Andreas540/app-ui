@@ -176,7 +176,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
             right: 40,
             textAlign: 'right',
             fontSize: 14,
-            background: 'var(--card, white)',
+            background: 'var(--panel)',
             paddingLeft: 8
           }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
