@@ -27,6 +27,7 @@ const T: Record<Lang, Record<string, string>> = {
     errorNoItems: 'Please add at least one item.',
     loading:      'Loading…',
     noProducts:   'No products are available to order at this time.',
+    total:        'Total for this order',
   },
   es: {
     title:        'Realizar un pedido',
@@ -45,6 +46,7 @@ const T: Record<Lang, Record<string, string>> = {
     errorNoItems: 'Por favor, añade al menos un artículo.',
     loading:      'Cargando…',
     noProducts:   'No hay productos disponibles para pedir en este momento.',
+    total:        'Total de este pedido',
   },
   sv: {
     title:        'Lägg en beställning',
@@ -63,6 +65,7 @@ const T: Record<Lang, Record<string, string>> = {
     errorNoItems: 'Lägg till minst en produkt.',
     loading:      'Laddar…',
     noProducts:   'Inga produkter är tillgängliga för beställning just nu.',
+    total:        'Totalt för denna beställning',
   },
 }
 
@@ -295,6 +298,22 @@ export default function OrderFormPage() {
               </div>
             ))}
           </div>
+
+          {/* Total */}
+          {(() => {
+            const total = products.reduce((sum, p) => {
+              const qty = Math.max(0, Math.floor(Number(qtys[p.id]) || 0))
+              return sum + qty * Number(p.price_amount)
+            }, 0)
+            return (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', marginBottom: 8, borderTop: '2px solid #1a1a2e' }}>
+                <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{t('total')}</span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>
+                  ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )
+          })()}
 
           {/* Notes */}
           <div style={{ marginBottom: 16 }}>
