@@ -8,7 +8,8 @@
     "noEvents": "Ingen ny aktivitet.",
     "order": "Ny order lagd av {{name}}",
     "customerInfo": "Kundinfo uppdaterad av {{name}}",
-    "booking": "Ny bokning för {{service}} av {{name}}"
+    "booking": "Ny bokning för {{service}} av {{name}}",
+    "messageReply": "Svar skickat till {{email}}"
   },
   "delete": "Ta bort",
   "edit": "Redigera",

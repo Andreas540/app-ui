@@ -8,7 +8,8 @@
     "noEvents": "Sin actividad reciente.",
     "order": "Nuevo pedido de {{name}}",
     "customerInfo": "Info de cliente actualizada por {{name}}",
-    "booking": "Nueva reserva de {{service}} por {{name}}"
+    "booking": "Nueva reserva de {{service}} por {{name}}",
+    "messageReply": "Respuesta enviada a {{email}}"
   },
   "delete": "Eliminar",
   "edit": "Editar",

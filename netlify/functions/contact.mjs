@@ -143,7 +143,13 @@ export const handler = async (event) => {
 
     try {
       if (reply !== undefined) {
-        // Send an in-app reply → save reply text, set replied_at and answered_at
+        // Look up the message to get tenant and sender
+        const [msg] = await sql`
+          SELECT tenant_id, user_email FROM contact_messages WHERE id = ${id}::uuid
+        `
+        if (!msg) return cors(404, { error: 'Message not found' })
+
+        // Save reply, set replied_at and answered_at
         const now = new Date().toISOString()
         await sql`
           UPDATE contact_messages
@@ -151,6 +157,12 @@ export const handler = async (event) => {
               replied_at  = ${now},
               answered_at = ${now}
           WHERE id = ${id}::uuid
+        `
+
+        // Notify the user's tenant via external_events so it appears in the activity overlay
+        await sql`
+          INSERT INTO external_events (tenant_id, event_type, customer_name)
+          VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email})
         `
       } else {
         // Toggle answered/unanswered
