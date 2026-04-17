@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
-import { formatDate } from '../lib/time'
+import { formatDate, formatMonthYear } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import {
   ResponsiveContainer,
@@ -170,7 +170,7 @@ function ChartSlide({
                 const [y, mm] = (m || '').split('-').map(Number)
                 if (!y || !mm) return String(m || '')
                 const d = new Date(y, mm - 1, 1)
-                return d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
+                return formatMonthYear(d)
               }}
             />
             {/* Left axis = $, hidden ticks; add 10% headroom */}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getAuthHeaders } from '../lib/api'
+import { formatDateTime } from '../lib/time'
 
 const TOPIC_LABEL: Record<string, string> = {
   questions:    'I have questions about the app',
@@ -20,15 +21,6 @@ interface Message {
   tenant_name: string
 }
 
-function formatDate(iso: string): string {
-  const d   = new Date(iso)
-  const m   = d.getMonth() + 1
-  const day = d.getDate()
-  const yy  = String(d.getFullYear() % 100).padStart(2, '0')
-  const hh  = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${m}/${day}/${yy} ${hh}:${min}`
-}
 
 export default function Messages() {
   const { t } = useTranslation()
@@ -208,10 +200,10 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                 gap: 2,
               }}>
                 <span>{msg.user_email} · {msg.tenant_name}</span>
-                <span>{t('messages.sentDate', { date: formatDate(msg.sent_at) })}</span>
+                <span>{t('messages.sentDate', { date: formatDateTime(msg.sent_at) })}</span>
                 {isAnswered && msg.answered_at && (
                   <span style={{ color: '#22c55e' }}>
-                    {t('messages.answeredDate', { date: formatDate(msg.answered_at) })}
+                    {t('messages.answeredDate', { date: formatDateTime(msg.answered_at) })}
                   </span>
                 )}
               </div>

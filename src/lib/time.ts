@@ -35,7 +35,7 @@ export function parseLocalDate(dateStr: string): Date {
  * Format a YYYY-MM-DD date string (or any date) as "Mon, Jan 15" format.
  * Avoids timezone shifts by parsing as local date.
  */
-export function formatLongDate(input: string | Date | undefined | null, locale: string = 'en-US'): string {
+export function formatLongDate(input: string | Date | undefined | null, locale: string = resolveLocale(i18n.language || 'en')): string {
   if (!input) return '';
   
   const date = typeof input === 'string' ? parseLocalDate(input) : input;
@@ -57,7 +57,7 @@ const LOCALE_MAP: Record<string, string> = {
   es: 'es-419',
   sv: 'sv-SE',
 }
-function resolveLocale(lang: string): string {
+export function resolveLocale(lang: string): string {
   if (lang.includes('-')) return lang          // already a full BCP 47 tag
   return LOCALE_MAP[lang] ?? lang
 }
@@ -80,6 +80,78 @@ export function formatDate(input: string | Date | undefined | null): string {
     year: '2-digit',
     month: 'numeric',
     day: 'numeric',
+  });
+}
+
+/**
+ * Format a date as "Apr '26" for chart axis labels, using i18n locale.
+ */
+export function formatMonthYear(input: string | Date | undefined | null): string {
+  if (!input) return '';
+  const s = String(input);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const date = m
+    ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    : input instanceof Date ? input : new Date(s);
+  if (Number.isNaN(date.getTime())) return s;
+  return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
+    month: 'short',
+    year: '2-digit',
+  });
+}
+
+/**
+ * Format a date as "Apr 17" using i18n locale.
+ */
+export function formatShortMonthDay(input: string | Date | undefined | null): string {
+  if (!input) return '';
+  const s = String(input);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const date = m
+    ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    : input instanceof Date ? input : new Date(s);
+  if (Number.isNaN(date.getTime())) return s;
+  return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Format a date as "Apr 17, 2026" using i18n locale.
+ */
+export function formatShortMonthDayYear(input: string | Date | undefined | null): string {
+  if (!input) return '';
+  const s = String(input);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const date = m
+    ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    : input instanceof Date ? input : new Date(s);
+  if (Number.isNaN(date.getTime())) return s;
+  return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Format a date+time using i18n locale.
+ */
+export function formatDateTime(input: string | Date | undefined | null): string {
+  if (!input) return '';
+  const s = String(input);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const date = m
+    ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    : input instanceof Date ? input : new Date(s);
+  if (Number.isNaN(date.getTime())) return s;
+  return date.toLocaleString(resolveLocale(i18n.language || 'en'), {
+    month: 'numeric',
+    day: 'numeric',
+    year: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 }
 

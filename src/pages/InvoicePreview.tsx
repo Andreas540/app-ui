@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { formatDate } from '../lib/time'
 
 type CompanyInfo = {
   autoInvoiceNumber: boolean
@@ -132,17 +133,7 @@ useEffect(() => {
   }
 }, [invoiceData])
 
-    const fmtDate = (s: string) => {
-    if (!s) return ''
-    // If already in something like "MM/DD/YYYY", just show it
-    if (s.includes('/')) return s
-
-    // Expecting "YYYY-MM-DD" from the invoice form
-    const [year, month, day] = s.split('-')
-    if (!year || !month || !day) return s
-
-    return `${Number(month)}/${Number(day)}/${year}`
-  }
+    const fmtDate = formatDate
   const money = (n: number) => `$${Number(n).toFixed(2)}`
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + Number(o.amount), 0), [invoiceData])
   const total = subtotal

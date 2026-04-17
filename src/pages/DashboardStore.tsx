@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDateTime } from '../lib/time'
 
 interface InventoryItem {
   item_name: string
@@ -130,14 +131,8 @@ const sortedInventory = [...inventory].sort((a, b) => {
 })
 
   // Format last update time
-  const lastUpdateFormatted = salesStats?.lastUpdate 
-    ? new Date(salesStats.lastUpdate).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
+  const lastUpdateFormatted = salesStats?.lastUpdate
+    ? formatDateTime(salesStats.lastUpdate)
     : ''
 
   return (

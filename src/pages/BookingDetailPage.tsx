@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { formatDate } from '../lib/time'
 
 interface BookingDetail {
   id: string
@@ -212,7 +213,7 @@ export default function BookingDetailPage() {
               <div key={ob.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
                 <div>
                   <span style={{ textTransform: 'capitalize' }}>{ob.obligation_type.replace('_', ' ')}</span>
-                  {ob.due_at && <span className="helper"> · due {new Date(ob.due_at).toLocaleDateString()}</span>}
+                  {ob.due_at && <span className="helper"> · due {formatDate(ob.due_at)}</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span className="helper" style={{ textTransform: 'capitalize' }}>{ob.obligation_status.replace('_', ' ')}</span>

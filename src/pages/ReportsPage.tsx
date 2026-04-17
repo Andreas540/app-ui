@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { formatMonthYear } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import {
@@ -33,7 +34,7 @@ function MonthPicker({ value, onChange, placeholder }: {
   for (let i = 0; i < 24; i++) {
     const d   = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    opts.push({ val, label: d.toLocaleString('en-US', { month: 'short', year: 'numeric' }) })
+    opts.push({ val, label: formatMonthYear(d) })
   }
   return (
     <select
@@ -191,7 +192,7 @@ function ChartSlide({
               tickFormatter={(m) => {
                 const [y, mm] = (m || '').split('-').map(Number)
                 if (!y || !mm) return String(m || '')
-                return new Date(y, mm - 1, 1).toLocaleString('en-US', { month: 'short', year: '2-digit' })
+                return formatMonthYear(new Date(y, mm - 1, 1))
               }}
             />
             {/* Wider domain headroom so bar labels sit above bars without overlap */}

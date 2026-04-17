@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList,
 } from 'recharts'
 import { getAuthHeaders } from '../lib/api'
+import { formatMonthYear } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
@@ -56,7 +57,7 @@ function MonthPicker({ value, onChange, placeholder }: {
   for (let i = 0; i < 24; i++) {
     const d   = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    opts.push({ val, label: d.toLocaleString('en-US', { month: 'short', year: 'numeric' }) })
+    opts.push({ val, label: formatMonthYear(d) })
   }
   return (
     <select

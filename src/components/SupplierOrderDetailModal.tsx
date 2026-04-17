@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
+import { resolveLocale } from '../lib/time'
+import i18n from '../i18n/config'
 
 interface SupplierOrderDetailModalProps {
   isOpen: boolean
@@ -43,7 +45,7 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
     // Check if date is valid
     if (isNaN(date.getTime())) return 'N/A'
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

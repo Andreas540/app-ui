@@ -228,7 +228,7 @@ export default function StatsLogs() {
     : []
 
   const windowStart = data ? new Date(data.window_start) : new Date()
-  const tz          = data?.tz ?? 'America/New_York'
+  const tz          = data?.tz ?? 'UTC'
 
   const CONTROL_H = 44
 

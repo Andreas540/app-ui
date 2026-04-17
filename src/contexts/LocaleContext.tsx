@@ -13,7 +13,6 @@ interface LocaleContextType {
   setTimezone: (timezone: string) => void;
   availableLanguages: string[];
   formatCurrency: (amount: number) => string;
-  formatDate: (date: Date) => string;
 }
 
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
@@ -21,7 +20,7 @@ const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 const LANGUAGE_TO_LOCALE: Record<string, string> = {
   en: 'en-US',
   sv: 'sv-SE',
-  es: 'es-ES',
+  es: 'es-419',
 };
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
@@ -95,15 +94,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }).format(amount);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      timeZone: timezone,
-    }).format(date);
-  };
-
   const availableLanguages = user?.tenant_available_languages || ['en', 'sv', 'es'];
 
   return (
@@ -118,7 +108,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         setTimezone,
         availableLanguages,
         formatCurrency,
-        formatDate,
       }}
     >
       {children}

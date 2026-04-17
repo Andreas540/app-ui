@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
-import { formatLongDate } from '../lib/time'
+import { formatLongDate, formatDate } from '../lib/time'
 
 type TimeEntry = {
   id: string
@@ -620,7 +620,7 @@ const stats = useMemo(() => {
 )}
                             {entry.approved && entry.approved_by && (
                               <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
-                                {t('timeApproval.approvedBy')} {entry.approved_by} {t('timeApproval.on')} {new Date(entry.approved_at!).toLocaleDateString()}
+                                {t('timeApproval.approvedBy')} {entry.approved_by} {t('timeApproval.on')} {formatDate(entry.approved_at!)}
                               </div>
                             )}
                           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { formatDate } from '../lib/time'
 
 interface ProviderConnection {
   id: string
@@ -169,7 +170,7 @@ export default function BookingIntegrationPage() {
               <div className="helper">{t('bookingIntegration.connectedSince')}</div>
               <div style={{ fontWeight: 600 }}>
                 {activeConnection.onboarding_completed_at
-                  ? new Date(activeConnection.onboarding_completed_at).toLocaleDateString()
+                  ? formatDate(activeConnection.onboarding_completed_at)
                   : '—'}
               </div>
             </div>

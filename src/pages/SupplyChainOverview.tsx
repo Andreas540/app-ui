@@ -1,7 +1,7 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatDate } from '../lib/time'
+import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTime } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import { DateInput } from '../components/DateInput'
 import {
@@ -292,8 +292,8 @@ export default function SupplyChainOverview() {
   // Format week header
   const formatWeekHeader = (offset: number) => {
     const { start, end } = getWeekRange(offset)
-    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const startStr = formatShortMonthDay(start)
+    const endStr = formatShortMonthDay(end)
     return `${startStr} - ${endStr}`
   }
 
@@ -303,8 +303,8 @@ export default function SupplyChainOverview() {
     if (demandFilter === '3m') return t('supplyChain.demandTitle3Months')
     if (demandFilter === '6m') return t('supplyChain.demandTitle6Months')
     if (demandFilter === 'custom' && demandCustomFrom && demandCustomTo) {
-      const from = new Date(demandCustomFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      const to = new Date(demandCustomTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      const from = formatShortMonthDayYear(demandCustomFrom)
+      const to = formatShortMonthDayYear(demandCustomTo)
       return t('supplyChain.demandTitleCustomRange', { from, to })
     }
     return t('supplyChain.demand')
@@ -346,13 +346,7 @@ export default function SupplyChainOverview() {
       return
     }
 
-    const now = new Date().toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })
+    const now = formatDateTime(new Date())
 
     const html = `
       <!DOCTYPE html>

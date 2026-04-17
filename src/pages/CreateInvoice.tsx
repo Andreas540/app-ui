@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { Trans, useTranslation } from 'react-i18next'
+import { formatDate } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -269,16 +270,6 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
   const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
 
-    const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-
-  // Take only the date part in case it's a full ISO timestamp
-  const base = dateStr.slice(0, 10) // "YYYY-MM-DD"
-  const [year, month, day] = base.split('-')
-  if (!year || !month || !day) return dateStr
-
-  return `${Number(month)}/${Number(day)}/${year.slice(-2)}`
-}
 
   return (
     <div className="card" style={{ maxWidth: 800, position: 'relative' }}>

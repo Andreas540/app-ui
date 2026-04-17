@@ -3,7 +3,8 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders } from '../lib/api'
-import { todayYMD } from '../lib/time'
+import { todayYMD, formatShortMonthDay, formatShortMonthDayYear, resolveLocale } from '../lib/time'
+import i18n from '../i18n/config'
 import { DateInput } from '../components/DateInput'
 
 type Product = { id: string; name: string; category?: string }
@@ -259,11 +260,7 @@ export default function LaborProduction() {
   }
 
   // Format selected date for display
-  const formattedSelectedDate = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
+  const formattedSelectedDate = formatShortMonthDayYear(selectedDate)
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
@@ -329,10 +326,7 @@ export default function LaborProduction() {
                   fontWeight: isSelected ? 600 : 400
                 }}
               >
-                {new Date(date + 'T12:00:00').toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
+                {formatShortMonthDay(date)}
               </button>
             )
           })}
@@ -519,7 +513,7 @@ export default function LaborProduction() {
               {dates.map((date, di) => {
                 const rows = byDate.get(date)!.filter(r => r.product_name && r.qty_produced != null)
                 if (rows.length === 0) return null
-                const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                const label = new Date(date + 'T12:00:00').toLocaleDateString(resolveLocale(i18n.language || 'en'), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
                 return (
                   <div key={date} style={{ marginBottom: 0 }}>
                     {di > 0 && <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />}

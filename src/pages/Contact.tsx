@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getAuthHeaders } from '../lib/api'
+import { formatDateTime } from '../lib/time'
 
 const TOPICS = [
   { value: '',             label: 'How can we help you?' },
@@ -25,15 +26,6 @@ interface SentMessage {
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
 
-function formatSentAt(iso: string): string {
-  const d   = new Date(iso)
-  const m   = d.getMonth() + 1
-  const day = d.getDate()
-  const yy  = String(d.getFullYear() % 100).padStart(2, '0')
-  const hh  = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${m}/${day}/${yy} ${hh}:${min}`
-}
 
 export default function Contact() {
   const { t } = useTranslation()
@@ -231,7 +223,7 @@ export default function Contact() {
 
                       {/* Sent date */}
                       <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
-                        {t('contact.sentDate', { date: formatSentAt(msg.sent_at) })}
+                        {t('contact.sentDate', { date: formatDateTime(msg.sent_at) })}
                       </div>
 
                       {/* Expanded message */}

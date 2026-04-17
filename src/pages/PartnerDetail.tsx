@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
-import { formatDate } from '../lib/time'
+import { formatDate, todayYMD } from '../lib/time'
+import { useLocale } from '../contexts/LocaleContext'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import PrintDialog from '../components/PrintDialog'
@@ -67,6 +68,7 @@ type Partner = {
 export default function PartnerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const showPartnerTransfer = config.payments.showPartnerTransfer
@@ -169,16 +171,6 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     return s ? `tel:${s}` : undefined
   }
 
-  // Get current date in EST timezone, format as YYYY-MM-DD
-  function getCurrentDateEST(): string {
-    const now = new Date()
-    // Convert to EST (UTC-5 or UTC-4 depending on DST)
-    const estDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
-    const year = estDate.getFullYear()
-    const month = String(estDate.getMonth() + 1).padStart(2, '0')
-    const day = String(estDate.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
 
   const handleOrderClick = (order: any) => {
     setSelectedOrder(order)
@@ -205,7 +197,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     setTransferring(true)
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const paymentDate = getCurrentDateEST()
+      const paymentDate = todayYMD(timezone)
       
       // Get partner names
       const fromPartnerName = data?.partner.name || 'Unknown'
@@ -294,7 +286,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     setPaying(true)
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const paymentDate = getCurrentDateEST()
+      const paymentDate = todayYMD(timezone)
       
       // Get partner names
       const creditors = data?.totals.creditors || []
