@@ -753,7 +753,13 @@
     "unanswered": "Obesvarade",
     "answered": "Besvarade",
     "answeredBadge": "Besvarad",
-    "markAsAnswered": "Markera som besvarad",
+    "markAsAnswered": "Besvarad via e-post eller liknande",
+    "answerMessage": "Svara på meddelande",
+    "replyPlaceholder": "Skriv ditt svar…",
+    "sendReply": "Skicka svar",
+    "sendingReply": "Skickar svar…",
+    "replyFailed": "Misslyckades att skicka svar. Försök igen.",
+    "yourReply": "Ditt svar",
     "sentDate": "Skickat: {{date}}",
     "answeredDate": "Besvarad: {{date}}",
     "updateFailed": "Misslyckades att uppdatera meddelandet. Försök igen."
@@ -774,6 +780,8 @@
     "sending": "Skickar…",
     "sendMessage": "Skicka meddelande",
     "sentMessages": "Skickade meddelanden",
+    "receivedMessages": "Mottagna meddelanden",
+    "receivedDate": "Mottaget: {{date}}",
     "thankYou": "Tack!",
     "successMessage": "Vi återkommer via e-post så snart som möjligt.",
     "sentDate": "Skickat: {{date}}"

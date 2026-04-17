@@ -753,7 +753,13 @@
     "unanswered": "Sin responder",
     "answered": "Respondido",
     "answeredBadge": "Respondido",
-    "markAsAnswered": "Marcar como respondido",
+    "markAsAnswered": "Respondido por correo electrónico o similar",
+    "answerMessage": "Responder mensaje",
+    "replyPlaceholder": "Escribe tu respuesta…",
+    "sendReply": "Enviar respuesta",
+    "sendingReply": "Enviando respuesta…",
+    "replyFailed": "Error al enviar la respuesta. Inténtalo de nuevo.",
+    "yourReply": "Tu respuesta",
     "sentDate": "Enviado: {{date}}",
     "answeredDate": "Respondido: {{date}}",
     "updateFailed": "Error al actualizar el mensaje. Inténtalo de nuevo."
@@ -774,6 +780,8 @@
     "sending": "Enviando…",
     "sendMessage": "Enviar mensaje",
     "sentMessages": "Mensajes enviados",
+    "receivedMessages": "Mensajes recibidos",
+    "receivedDate": "Recibido: {{date}}",
     "thankYou": "¡Gracias!",
     "successMessage": "Te responderemos por correo lo antes posible.",
     "sentDate": "Enviado: {{date}}"

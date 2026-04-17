@@ -37,6 +37,8 @@ export const handler = async (event) => {
             cm.message,
             cm.sent_at,
             cm.answered_at,
+            cm.reply,
+            cm.replied_at,
             cm.user_email,
             t.name AS tenant_name
           FROM contact_messages cm
@@ -52,6 +54,8 @@ export const handler = async (event) => {
             cm.message,
             cm.sent_at,
             cm.answered_at,
+            cm.reply,
+            cm.replied_at,
             cm.user_email,
             t.name AS tenant_name
           FROM contact_messages cm
@@ -62,7 +66,7 @@ export const handler = async (event) => {
       } else {
         // Regular user → only their own messages for their tenant
         rows = await sql`
-          SELECT id, topic, message, sent_at, answered_at
+          SELECT id, topic, message, sent_at, answered_at, reply, replied_at
           FROM contact_messages
           WHERE tenant_id  = ${authz.tenantId}::uuid
             AND user_email = ${user.email}
@@ -134,15 +138,28 @@ export const handler = async (event) => {
       return cors(400, { error: 'Invalid JSON' })
     }
 
-    const { id, answered } = body
+    const { id, answered, reply } = body
     if (!id) return cors(400, { error: 'Missing message id' })
 
     try {
-      await sql`
-        UPDATE contact_messages
-        SET answered_at = ${answered ? new Date().toISOString() : null}
-        WHERE id = ${id}::uuid
-      `
+      if (reply !== undefined) {
+        // Send an in-app reply → save reply text, set replied_at and answered_at
+        const now = new Date().toISOString()
+        await sql`
+          UPDATE contact_messages
+          SET reply       = ${reply},
+              replied_at  = ${now},
+              answered_at = ${now}
+          WHERE id = ${id}::uuid
+        `
+      } else {
+        // Toggle answered/unanswered
+        await sql`
+          UPDATE contact_messages
+          SET answered_at = ${answered ? new Date().toISOString() : null}
+          WHERE id = ${id}::uuid
+        `
+      }
       return cors(200, { ok: true })
     } catch (err) {
       console.error('contact PATCH error:', err)

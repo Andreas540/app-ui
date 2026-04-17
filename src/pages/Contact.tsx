@@ -22,6 +22,8 @@ interface SentMessage {
   message: string
   sent_at: string
   answered_at: string | null
+  reply: string | null
+  replied_at: string | null
 }
 
 type Status = 'idle' | 'sending' | 'success' | 'error'
@@ -34,8 +36,9 @@ export default function Contact() {
   const [topic, setTopic]     = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus]   = useState<Status>('idle')
-  const [sentMessages, setSentMessages] = useState<SentMessage[]>([])
-  const [expandedId, setExpandedId]     = useState<string | null>(null)
+  const [sentMessages, setSentMessages]     = useState<SentMessage[]>([])
+  const [expandedId, setExpandedId]         = useState<string | null>(null)
+  const [expandedReplyId, setExpandedReplyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const userEmail = user?.email || ''
@@ -248,6 +251,52 @@ export default function Contact() {
           </div>
         )}
       </div>
+
+      {/* Received messages (replies from support) */}
+      {!loading && sentMessages.some(m => m.reply) && (
+        <div className="card" style={{ maxWidth: 560, marginTop: 16 }}>
+          <h4 style={{ margin: 0, marginBottom: 12 }}>{t('contact.receivedMessages')}</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {sentMessages.filter(m => m.reply).map(msg => {
+              const isExpanded = expandedReplyId === msg.id
+              return (
+                <div
+                  key={msg.id}
+                  onClick={() => setExpandedReplyId(isExpanded ? null : msg.id)}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    background: isExpanded ? 'rgba(255,255,255,0.03)' : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>
+                    Re: {TOPIC_LABEL[msg.topic] ?? msg.topic}
+                  </div>
+                  <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>
+                    {t('contact.receivedDate', { date: formatDateTime(msg.replied_at!) })}
+                  </div>
+                  {isExpanded && (
+                    <div style={{
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTop: '1px solid var(--border)',
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      color: 'var(--text, #fff)',
+                    }}>
+                      {msg.reply}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </>
   )
 }

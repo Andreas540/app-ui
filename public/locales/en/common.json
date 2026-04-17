@@ -753,7 +753,13 @@
     "unanswered": "Unanswered",
     "answered": "Answered",
     "answeredBadge": "Answered",
-    "markAsAnswered": "Mark as answered",
+    "markAsAnswered": "Answered via email or similar",
+    "answerMessage": "Answer message",
+    "replyPlaceholder": "Type your reply…",
+    "sendReply": "Send reply",
+    "sendingReply": "Sending reply…",
+    "replyFailed": "Failed to send reply. Please try again.",
+    "yourReply": "Your reply",
     "sentDate": "Sent: {{date}}",
     "answeredDate": "Answered: {{date}}",
     "updateFailed": "Failed to update message. Please try again."
@@ -774,6 +780,8 @@
     "sending": "Sending…",
     "sendMessage": "Send message",
     "sentMessages": "Sent messages",
+    "receivedMessages": "Received messages",
+    "receivedDate": "Received: {{date}}",
     "thankYou": "Thank you!",
     "successMessage": "We will get back to you via email asap.",
     "sentDate": "Sent: {{date}}"

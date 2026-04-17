@@ -19,6 +19,8 @@ interface Message {
   answered_at: string | null
   user_email: string
   tenant_name: string
+  reply: string | null
+  replied_at: string | null
 }
 
 
@@ -26,10 +28,13 @@ export default function Messages() {
   const { t } = useTranslation()
   const { user } = useAuth()
 
-  const [messages, setMessages]     = useState<Message[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [messages, setMessages]             = useState<Message[]>([])
+  const [loading, setLoading]               = useState(true)
+  const [expandedId, setExpandedId]         = useState<string | null>(null)
+  const [togglingId, setTogglingId]         = useState<string | null>(null)
+  const [replyingId, setReplyingId]         = useState<string | null>(null)
+  const [replyTexts, setReplyTexts]         = useState<Record<string, string>>({})
+  const [sendingReplyId, setSendingReplyId] = useState<string | null>(null)
 
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -75,6 +80,33 @@ export default function Messages() {
     }
   }
 
+  const sendReply = async (msg: Message) => {
+    const text = replyTexts[msg.id]?.trim()
+    if (!text) return
+    setSendingReplyId(msg.id)
+    try {
+      const res = await fetch(`${base}/api/contact`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id: msg.id, reply: text, answered: true }),
+      })
+      if (!res.ok) throw new Error(`status ${res.status}`)
+      const now = new Date().toISOString()
+      setMessages(prev => prev.map(m =>
+        m.id === msg.id
+          ? { ...m, answered_at: now, reply: text, replied_at: now }
+          : m
+      ))
+      setReplyingId(null)
+      setReplyTexts(prev => { const next = { ...prev }; delete next[msg.id]; return next })
+    } catch (err) {
+      console.error('Failed to send reply:', err)
+      alert(t('messages.replyFailed'))
+    } finally {
+      setSendingReplyId(null)
+    }
+  }
+
   const unanswered = messages.filter(m => !m.answered_at)
   const answered   = messages.filter(m =>  m.answered_at)
 
@@ -113,6 +145,12 @@ export default function Messages() {
                 togglingId={togglingId}
                 onExpand={setExpandedId}
                 onToggle={toggleAnswered}
+                replyingId={replyingId}
+                replyTexts={replyTexts}
+                sendingReplyId={sendingReplyId}
+                onReply={setReplyingId}
+                onReplyTextChange={(id, text) => setReplyTexts(prev => ({ ...prev, [id]: text }))}
+                onSendReply={sendReply}
               />
             </div>
           )}
@@ -129,6 +167,12 @@ export default function Messages() {
                 togglingId={togglingId}
                 onExpand={setExpandedId}
                 onToggle={toggleAnswered}
+                replyingId={replyingId}
+                replyTexts={replyTexts}
+                sendingReplyId={sendingReplyId}
+                onReply={setReplyingId}
+                onReplyTextChange={(id, text) => setReplyTexts(prev => ({ ...prev, [id]: text }))}
+                onSendReply={sendReply}
               />
             </div>
           )}
@@ -139,21 +183,32 @@ export default function Messages() {
 }
 
 interface MessageListProps {
-  messages:   Message[]
-  expandedId: string | null
-  togglingId: string | null
-  onExpand:   (id: string | null) => void
-  onToggle:   (msg: Message) => void
+  messages:          Message[]
+  expandedId:        string | null
+  togglingId:        string | null
+  onExpand:          (id: string | null) => void
+  onToggle:          (msg: Message) => void
+  replyingId:        string | null
+  replyTexts:        Record<string, string>
+  sendingReplyId:    string | null
+  onReply:           (id: string | null) => void
+  onReplyTextChange: (id: string, text: string) => void
+  onSendReply:       (msg: Message) => void
 }
 
-function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: MessageListProps) {
+function MessageList({
+  messages, expandedId, togglingId, onExpand, onToggle,
+  replyingId, replyTexts, sendingReplyId, onReply, onReplyTextChange, onSendReply,
+}: MessageListProps) {
   const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {messages.map(msg => {
-        const isExpanded = expandedId === msg.id
-        const isAnswered = !!msg.answered_at
-        const isToggling = togglingId === msg.id
+        const isExpanded     = expandedId === msg.id
+        const isAnswered     = !!msg.answered_at
+        const isToggling     = togglingId === msg.id
+        const isReplying     = replyingId === msg.id
+        const isSendingReply = sendingReplyId === msg.id
 
         return (
           <div
@@ -190,7 +245,7 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                 )}
               </div>
 
-              {/* Meta — stacked vertically for mobile */}
+              {/* Meta */}
               <div style={{
                 color: 'var(--muted)',
                 fontSize: 12,
@@ -210,11 +265,8 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
             </div>
 
             {isExpanded && (
-              <div style={{
-                marginTop: 10,
-                paddingTop: 10,
-                borderTop: '1px solid var(--border)',
-              }}>
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                {/* Message body */}
                 <div style={{
                   fontSize: 14,
                   lineHeight: 1.6,
@@ -225,6 +277,26 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                   {msg.message}
                 </div>
 
+                {/* Existing reply */}
+                {msg.reply && (
+                  <div style={{
+                    marginBottom: 14,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(34,197,94,0.08)',
+                    border: '1px solid rgba(34,197,94,0.25)',
+                  }}>
+                    <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 600, marginBottom: 4 }}>
+                      {t('messages.yourReply')}
+                      {msg.replied_at && ` · ${formatDateTime(msg.replied_at)}`}
+                    </div>
+                    <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {msg.reply}
+                    </div>
+                  </div>
+                )}
+
+                {/* Checkbox */}
                 <label
                   onClick={(e) => e.stopPropagation()}
                   style={{
@@ -246,6 +318,49 @@ function MessageList({ messages, expandedId, togglingId, onExpand, onToggle }: M
                   />
                   {t('messages.markAsAnswered')}
                 </label>
+
+                {/* Answer message link */}
+                <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => onReply(isReplying ? null : msg.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      color: 'var(--primary)',
+                      textDecoration: 'underline',
+                      fontSize: 13,
+                    }}
+                  >
+                    {t('messages.answerMessage')}
+                  </button>
+                </div>
+
+                {/* Reply textarea */}
+                {isReplying && (
+                  <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
+                    <textarea
+                      value={replyTexts[msg.id] || ''}
+                      onChange={e => onReplyTextChange(msg.id, e.target.value)}
+                      placeholder={t('messages.replyPlaceholder')}
+                      style={{ width: '100%', minHeight: 100, resize: 'vertical', fontFamily: 'inherit', fontSize: 13 }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                      <button
+                        className="primary"
+                        disabled={!replyTexts[msg.id]?.trim() || isSendingReply}
+                        onClick={() => onSendReply(msg)}
+                        style={{ fontSize: 13 }}
+                      >
+                        {isSendingReply ? t('messages.sendingReply') : t('messages.sendReply')}
+                      </button>
+                      <button onClick={() => onReply(null)} style={{ fontSize: 13 }}>
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
