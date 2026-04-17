@@ -368,7 +368,7 @@ export type OrderSummary = {
   order_date: string
   delivered: boolean
   total: number
-  lines: number
+  items?: Array<{ product_name: string | null; qty: number; unit_price: number }>
 }
 
 export type PaymentSummary = {

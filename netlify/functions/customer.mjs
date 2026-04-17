@@ -75,21 +75,17 @@ async function getCustomer(event) {
         o.notes,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
         COALESCE(SUM(oi.qty),0)::integer AS total_qty,
-        COUNT(oi.id) AS lines,
-        fl.product_name,
-        fl.qty,
-        fl.unit_price,
+        COALESCE(
+          json_agg(
+            json_build_object('product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price)
+            ORDER BY oi.id ASC
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'::json
+        ) AS items,
         pa.partner_amount
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN LATERAL (
-        SELECT p.name AS product_name, oi2.qty, oi2.unit_price
-        FROM order_items oi2
-        JOIN products p ON p.id = oi2.product_id
-        WHERE oi2.order_id = o.id
-        ORDER BY oi2.id ASC
-        LIMIT 1
-      ) fl ON true
+      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
       LEFT JOIN LATERAL (
         SELECT COALESCE(SUM(op.amount),0)::numeric(12,2) AS partner_amount
         FROM order_partners op
@@ -105,9 +101,6 @@ async function getCustomer(event) {
         o.delivered_quantity,
         o.delivery_status,
         o.notes,
-        fl.product_name,
-        fl.qty,
-        fl.unit_price,
         pa.partner_amount
       ORDER BY o.order_date DESC, o.order_no DESC
       LIMIT 100

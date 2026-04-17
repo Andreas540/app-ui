@@ -36,36 +36,28 @@ async function getRecentOrders(event) {
         c.name as customer_name,
         -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-        COUNT(oi.id) AS lines,
-        -- first line snapshot
-        fl.product_name,
-        fl.qty,
-        fl.unit_price
+        COALESCE(
+          json_agg(
+            json_build_object('product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price)
+            ORDER BY oi.id ASC
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'::json
+        ) AS items
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN LATERAL (
-        SELECT p.name AS product_name, oi2.qty, oi2.unit_price
-        FROM order_items oi2
-        JOIN products p ON p.id = oi2.product_id
-        WHERE oi2.order_id = o.id
-        ORDER BY oi2.id ASC
-        LIMIT 1
-      ) fl ON true
+      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
       WHERE o.tenant_id = ${TENANT_ID}
         ${filter === 'not-delivered' ? sql`AND o.delivered = false` : sql``}
-      GROUP BY 
-        o.id, 
-        o.order_no, 
-        o.order_date, 
+      GROUP BY
+        o.id,
+        o.order_no,
+        o.order_date,
         o.delivered,
         o.delivered_quantity,
         o.delivery_status,
-        o.notes, 
-        c.name, 
-        fl.product_name, 
-        fl.qty, 
-        fl.unit_price
+        o.notes,
+        c.name
       ORDER BY o.order_no DESC, o.id DESC
       LIMIT 30
     `;

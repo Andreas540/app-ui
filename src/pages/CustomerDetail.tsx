@@ -410,157 +410,97 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
-              // NOTE: server should provide product_name, qty, unit_price, partner_amount
-              const orderNoPrefix = config.ui.showOrderNumberInList ? `#${(o as any).order_no} ` : ''
-              const middle =
-                (o as any).product_name && (o as any).qty != null
-                  ? `${orderNoPrefix}${(o as any).product_name} / ${Number((o as any).qty).toLocaleString('en-US')} / ${fmtMoney((o as any).unit_price ?? 0)}`
-                  : `${orderNoPrefix}${t('customerDetail.orderLines', { count: o.lines })}`
+              const showOrderNo = config.ui.showOrderNumberInList
+              const cols = showOrderNo
+                ? `${DATE_COL}px auto 20px 1fr auto`
+                : `${DATE_COL}px 20px 1fr auto`
+              const emptyOrderNoCell = showOrderNo ? <div /> : null
 
-              const withPartner = isPartnerCustomer && (o as any).partner_amount != null
-                ? `${middle} / ${fmtIntMoney((o as any).partner_amount)}`
-                : middle
+              const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
+                Array.isArray((o as any).items) && (o as any).items.length > 0
+                  ? (o as any).items
+                  : []
+
+              const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) => {
+                const suffix = isPartnerCustomer && (o as any).partner_amount != null && items.indexOf(item) === 0
+                  ? ` / ${fmtIntMoney((o as any).partner_amount)}`
+                  : ''
+                return `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}${suffix}`
+              }
 
               const hasNotes = (o as any).notes && (o as any).notes.trim()
+              const orderTotal = Number((o as any).total) || 0
+              const paid = paidByOrderId[o.id] || 0
+              const orderColor = paid >= orderTotal && orderTotal > 0
+                ? '#10b981'
+                : paid > 0 && paid < orderTotal
+                  ? '#f59e0b'
+                  : undefined
+
+              const deliveryIcon = (() => {
+                const status = (o as any).delivery_status || ((o as any).delivered ? 'delivered' : 'not_delivered')
+                const deliveredQty = (o as any).delivered_quantity ?? 0
+                const totalQty = (o as any).total_qty ?? 0
+                let symbol = '○', color = '#d1d5db', title = t('notDelivered')
+                if (status === 'delivered') { symbol = '✓'; color = '#10b981'; title = t('customerDetail.deliveredInFull') }
+                else if (status === 'partial') { symbol = '◐'; color = '#f59e0b'; title = t('customerDetail.partiallyDelivered', { delivered: deliveredQty, total: totalQty }) }
+                return (
+                  <div style={{ width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeliveryIconClick(o) }}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }} title={title}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
+                    </button>
+                  </div>
+                )
+              })()
 
               return (
-                <div
-                  key={o.id}
-                  style={{
-                    borderBottom:'1px solid #eee',
-                    paddingTop: '12px',
-                    paddingBottom: '12px'
-                  }}
-                >
-                  <div
-                    style={{
-                      display:'grid',
-                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                      gap:LINE_GAP,
-                    }}
-                  >
-                    {/* DATE (MM/DD/YY) */}
+                <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+
+                  {/* FIRST ITEM ROW — date, order_no, delivery icon, first item, total */}
+                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP }}>
                     <div className="helper">{formatUSAny((o as any).order_date)}</div>
-
-                                                            {/* DELIVERY STATUS ICON (tri-state) */}
-                    <div
-                      style={{
-                        width: 20,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {(() => {
-                        const status =
-                          (o as any).delivery_status ||
-                          ((o as any).delivered ? 'delivered' : 'not_delivered')
-                        const deliveredQty = (o as any).delivered_quantity ?? 0
-                        const totalQty = (o as any).total_qty ?? (o as any).qty ?? 0
-
-                        let symbol = '○'
-                        let color = '#d1d5db'
-                        let title = t('notDelivered')
-
-                        if (status === 'delivered') {
-                          symbol = '✓'
-                          color = '#10b981'
-                          title = t('customerDetail.deliveredInFull')
-                        } else if (status === 'partial') {
-                          symbol = '◐'
-                          color = '#f59e0b'
-                          title = t('customerDetail.partiallyDelivered', { delivered: deliveredQty, total: totalQty })
-                        }
-
-                        return (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeliveryIconClick(o)
-                            }}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: 0,
-                            }}
-                            title={title}
-                          >
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 16,
-                                height: 16,
-                                fontSize: 14,
-                                lineHeight: 1,
-                                color,
-                              }}
-                            >
-                              {symbol}
-                            </span>
-                          </button>
-                        )
-                      })()}
-                    </div>
-
-                    {/* MIDDLE TEXT — compact like the date */}
-                    <div 
-                      className="helper"
-                      onClick={() => handleOrderClick(o)}
+                    {showOrderNo && <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</div>}
+                    {deliveryIcon}
+                    <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer', lineHeight: '1.4' }}
-                    >
-                      {withPartner}
+                      style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                      {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
                     </div>
-
-                    {/* RIGHT TOTAL — show with 2 decimals */}
-                    {(() => {
-                      const orderTotal = Number((o as any).total) || 0
-                      const paid = paidByOrderId[o.id] || 0
-                      const orderColor = paid >= orderTotal && orderTotal > 0
-                        ? '#10b981'
-                        : paid > 0 && paid < orderTotal
-                          ? '#f59e0b'
-                          : undefined
-                      return (
-                        <div
-                          className="helper"
-                          onClick={() => handleOrderClick(o)}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}
-                        >
-                          {fmtMoney(orderTotal)}
-                        </div>
-                      )
-                    })()}
+                    <div className="helper" onClick={() => handleOrderClick(o)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}>
+                      {fmtMoney(orderTotal)}
+                    </div>
                   </div>
+
+                  {/* ADDITIONAL ITEM ROWS */}
+                  {items.slice(1).map((item, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: LINE_GAP }}>
+                      <div />{emptyOrderNoCell}<div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                        {itemLine(item)}
+                      </div>
+                      <div />
+                    </div>
+                  ))}
 
                   {/* NOTES ROW */}
                   {hasNotes && (
-                    <div
-                      style={{
-                        display:'grid',
-                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
-                        marginTop: 4
-                      }}
-                    >
-                      <div></div>
-                      <div></div>
-                      <div 
-                        className="helper"
-                        onClick={() => handleOrderClick(o)}
+                    <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: 4 }}>
+                      <div />{emptyOrderNoCell}<div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer', lineHeight: '1.4' }}
-                      >
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
                         {(o as any).notes}
                       </div>
-                      <div></div>
+                      <div />
                     </div>
                   )}
                 </div>

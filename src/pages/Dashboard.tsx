@@ -710,108 +710,81 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
-              const orderNoPrefix = config.ui.showOrderNumberInList ? `#${o.order_no} ` : ''
-              const detailsLine = o.product_name && o.qty != null
-                ? `${orderNoPrefix}${o.product_name} / ${Number(o.qty).toLocaleString('en-US')} / ${fmtMoney(o.unit_price ?? 0)}`
-                : `${orderNoPrefix}${t('dashboard.orderLines', { count: o.lines })}`
+              const showOrderNo = config.ui.showOrderNumberInList
+              const cols = showOrderNo
+                ? `${DATE_COL}px auto 20px 1fr auto`
+                : `${DATE_COL}px 20px 1fr auto`
+              const emptyOrderNoCell = showOrderNo ? <div /> : null
+
+              const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
+                Array.isArray(o.items) && o.items.length > 0 ? o.items : []
+
+              const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
+                `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}`
 
               const hasNotes = o.notes && o.notes.trim()
 
+              const { symbol, color, label } = getDeliveryVisual(o)
+              const deliveryIcon = (
+                <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleDeliveryToggle(o.id, !o.delivered) }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14 }}
+                    title={label}>
+                    <span style={{ color }}>{symbol}</span>
+                  </button>
+                </div>
+              )
+
               return (
-                <div
-                  key={o.id}
-                  style={{
-                    borderBottom:'1px solid #eee',
-                    paddingTop: '12px',
-                    paddingBottom: '12px'
-                  }}
-                >
-                  <div
-                    style={{
-                      display:'grid',
-                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                      gap:LINE_GAP,
-                    }}
-                  >
-                    {/* DATE (MM/DD/YY) */}
+                <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+
+                  {/* FIRST ROW — date, order_no, delivery icon, customer name + first item, total */}
+                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP }}>
                     <div className="helper">{formatUSAny(o.order_date)}</div>
-
-                                        {/* DELIVERY STATUS ICON (tri-state) */}
-                    <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
-                      {(() => {
-                        const { symbol, color, label } = getDeliveryVisual(o)
-                        return (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Dashboard behavior: full or none
-                              handleDeliveryToggle(o.id, !o.delivered)
-                            }}
-                            style={{ 
-                              background: 'transparent', 
-                              border: 'none', 
-                              cursor: 'pointer',
-                              padding: 0,
-                              fontSize: 14
-                            }}
-                            title={label}
-                          >
-                            <span style={{ color }}>{symbol}</span>
-                          </button>
-                        )
-                      })()}
-                    </div>
-
-                    {/* MIDDLE: Customer name + details */}
-                    <div 
-                      className="helper"
-                      onClick={() => handleOrderClick(o)}
+                    {showOrderNo && <div className="helper" style={{ whiteSpace: 'nowrap' }}>#{o.order_no}</div>}
+                    {deliveryIcon}
+                    <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer', lineHeight: '1.4' }}
-                    >
-                      <div>
-                        <strong>{o.customer_name}</strong>
-                      </div>
-                      <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>
-                        {detailsLine}
-                      </div>
+                      style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                      <div><strong>{o.customer_name}</strong></div>
+                      {items.length > 0 && (
+                        <div className="helper" style={{ opacity: 0.9, marginTop: 2 }}>{itemLine(items[0])}</div>
+                      )}
                     </div>
-
-                    {/* RIGHT TOTAL — with $ sign and correct minus placement */}
-                    <div 
-                      className="helper" 
-                      onClick={() => handleOrderClick(o)}
+                    <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{textAlign:'right', cursor: 'pointer'}}
-                    >
+                      style={{ textAlign: 'right', cursor: 'pointer' }}>
                       {fmtIntMoney(o.total)}
                     </div>
                   </div>
 
-                  {/* NOTES ROW */}
-                  {hasNotes && (
-                    <div
-                      style={{
-                        display:'grid',
-                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
-                        marginTop: 4
-                      }}
-                    >
-                      <div></div>
-                      <div></div>
-                      <div 
-                        className="helper"
-                        onClick={() => handleOrderClick(o)}
+                  {/* ADDITIONAL ITEM ROWS */}
+                  {items.slice(1).map((item, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: LINE_GAP }}>
+                      <div />{emptyOrderNoCell}<div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{ cursor: 'pointer', lineHeight: '1.4' }}
-                      >
+                        style={{ cursor: 'pointer', lineHeight: '1.4', paddingLeft: 4, opacity: 0.9 }}>
+                        {itemLine(item)}
+                      </div>
+                      <div />
+                    </div>
+                  ))}
+
+                  {/* NOTES ROW */}
+                  {hasNotes && (
+                    <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, marginTop: 4 }}>
+                      <div />{emptyOrderNoCell}<div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
                         {o.notes}
                       </div>
-                      <div></div>
+                      <div />
                     </div>
                   )}
                 </div>
