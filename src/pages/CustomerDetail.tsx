@@ -361,7 +361,7 @@ export default function CustomerDetailPage() {
               </div>
               {/* ✨ END NEW */}
 
-              <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
                 <div>
                   <div className="helper">{t('phone')}</div>
                   <div>{customer.phone ? <a href={phoneHref(customer.phone)}>{formatPhoneDisplay(customer.phone)}</a> : '—'}</div>
