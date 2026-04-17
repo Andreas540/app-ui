@@ -1,4 +1,5 @@
 // src/lib/time.ts
+import i18n from '../i18n/config'
 
 /**
  * Return YYYY-MM-DD for "today" in the given IANA time zone (e.g., 'America/New_York').
@@ -42,6 +43,42 @@ export function formatLongDate(input: string | Date | undefined | null, locale: 
   return date.toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Maps short i18n language codes to explicit BCP 47 regional tags so date
+ * formatting is unambiguous. Full tags (e.g. 'en-GB' added in the future)
+ * are passed through unchanged — no code change needed when new locales arrive.
+ */
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  es: 'es-419',
+  sv: 'sv-SE',
+}
+function resolveLocale(lang: string): string {
+  if (lang.includes('-')) return lang          // already a full BCP 47 tag
+  return LOCALE_MAP[lang] ?? lang
+}
+
+/**
+ * Locale-aware compact date formatter. Uses the current i18n language so dates
+ * display in the tenant's regional format (e.g. M/D/YY for en-US, D/M/YY for
+ * es, YY-MM-DD for sv-SE, D/M/YY for en-GB). Parses YYYY-MM-DD strings as
+ * local dates to avoid UTC shifts.
+ */
+export function formatDate(input: string | Date | undefined | null): string {
+  if (!input) return '';
+  const s = String(input);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const date = m
+    ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    : input instanceof Date ? input : new Date(s);
+  if (Number.isNaN(date.getTime())) return s;
+  return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
+    year: '2-digit',
+    month: 'numeric',
     day: 'numeric',
   });
 }

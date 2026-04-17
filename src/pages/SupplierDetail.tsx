@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
@@ -301,7 +301,7 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    {t('suppliers.receivedLabel')} {formatUSAny(o.received_date)}
+                    {t('suppliers.receivedLabel')} {formatDate(o.received_date)}
                   </span>
                 )
               } else if (o.in_customs && o.in_customs_date) {
@@ -314,7 +314,7 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    {t('suppliers.inCustomsLabel')} {formatUSAny(o.in_customs_date)}
+                    {t('suppliers.inCustomsLabel')} {formatDate(o.in_customs_date)}
                   </span>
                 )
               } else if (o.delivered && o.delivery_date) {
@@ -327,13 +327,13 @@ export default function SupplierDetailPage() {
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
                   }}>
-                    {t('delivered')}: {formatUSAny(o.delivery_date)}
+                    {t('shipped')}: {formatDate(o.delivery_date)}
                   </span>
                 )
               } else if (o.est_delivery_date) {
                 statusBadge = (
                   <span className="helper" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                    {t('suppliers.estDelivery')} {formatUSAny(o.est_delivery_date)}
+                    {t('suppliers.estDelivery')} {formatDate(o.est_delivery_date)}
                   </span>
                 )
               }
@@ -359,7 +359,7 @@ export default function SupplierDetailPage() {
                     }}
                   >
                     {/* DATE (MM/DD/YY) */}
-                    <div className="helper">{formatUSAny(o.order_date)}</div>
+                    <div className="helper">{formatDate(o.order_date)}</div>
 
                     {/* EMPTY COLUMN for alignment */}
                     <div></div>
@@ -498,7 +498,7 @@ export default function SupplierDetailPage() {
                     }}
                   >
                     {/* DATE */}
-                    <div className="helper">{formatUSAny(p.payment_date)}</div>
+                    <div className="helper">{formatDate(p.payment_date)}</div>
 
                     {/* EMPTY COLUMN for alignment */}
                     <div></div>

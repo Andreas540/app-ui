@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders } from '../lib/api'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -454,7 +454,7 @@ export default function CustomerDetailPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
 
                     {/* ROW 1: date | icon | #no | first item | total */}
-                    <div className="helper">{formatUSAny((o as any).order_date)}</div>
+                    <div className="helper">{formatDate((o as any).order_date)}</div>
                     {deliveryIcon}
                     <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{(o as any).order_no}</div>
                     <div className="helper" onClick={() => handleOrderClick(o)}
@@ -551,7 +551,7 @@ export default function CustomerDetailPage() {
                     }}
                   >
                     {/* DATE */}
-                    <div className="helper">{formatUSAny((p as any).payment_date)}</div>
+                    <div className="helper">{formatDate((p as any).payment_date)}</div>
 
                     {/* EMPTY COLUMN for alignment with orders checkmark column */}
                     <div></div>

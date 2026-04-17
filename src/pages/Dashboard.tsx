@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import {
   ResponsiveContainer,
@@ -732,7 +732,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   {/* SHARED GRID — all rows share one grid for correct auto-column sizing */}
                   <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
                     {/* FIRST ROW — date, delivery icon, order_no, customer name + first item, total */}
-                    <div className="helper">{formatUSAny(o.order_date)}</div>
+                    <div className="helper">{formatDate(o.order_date)}</div>
                     {deliveryIcon}
                     <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{o.order_no}</div>
                     <div className="helper" onClick={() => handleOrderClick(o)}

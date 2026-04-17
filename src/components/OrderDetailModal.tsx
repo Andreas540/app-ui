@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 
 interface OrderDetailModalProps {
@@ -207,7 +207,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div>
             <div className="helper" style={fieldStyle}>{t('orderModal.orderDate')}</div>
-            <div style={{ fontWeight: 600 }}>{formatUSAny(order.order_date)}</div>
+            <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
           </div>
 
           <div style={{ textAlign: 'right' }}>

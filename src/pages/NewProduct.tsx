@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 
 interface HistoricalCost {
   product_id: string
@@ -344,7 +344,7 @@ export default function NewProduct() {
                       }}
                     >
                       <div className="helper">
-                        {formatUSAny(item.effective_from)}
+                        {formatDate(item.effective_from)}
                       </div>
                       <div></div>
                       <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>

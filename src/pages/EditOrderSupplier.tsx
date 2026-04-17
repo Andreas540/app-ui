@@ -408,7 +408,7 @@ const pRes = await fetch(`${base}/api/product`, {
                 }}
                 style={{ width: 14, height: 14 }}
               />
-              {t('delivered')}
+              {t('shipped')}
             </label>
           </div>
           <div>

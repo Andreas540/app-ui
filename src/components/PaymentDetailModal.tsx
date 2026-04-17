@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
-import { formatUSAny } from '../lib/time'  // ADD THIS IMPORT
+import { formatDate } from '../lib/time'  // ADD THIS IMPORT
 
 interface PaymentDetailModalProps {
   isOpen: boolean
@@ -25,7 +25,7 @@ export default function PaymentDetailModal({
   const { t } = useTranslation()
   if (!payment) return null
 
-  // REMOVE the old formatDate function and use formatUSAny instead
+  // REMOVE the old formatDate function and use formatDate instead
 
   // Determine payment type for edit link
   let paymentType = 'customer'
@@ -61,7 +61,7 @@ export default function PaymentDetailModal({
           <div>
             <div style={{ marginBottom: 16 }}>
               <div className="helper">{t('paymentModal.paymentDate')}</div>
-              <div style={{ fontWeight: 600 }}>{formatUSAny(payment.payment_date)}</div>
+              <div style={{ fontWeight: 600 }}>{formatDate(payment.payment_date)}</div>
             </div>
 
             <div style={{ marginBottom: 16 }}>

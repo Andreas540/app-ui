@@ -1,7 +1,7 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import { DateInput } from '../components/DateInput'
 import {
@@ -883,7 +883,7 @@ export default function SupplyChainOverview() {
                         ...tableRowStyle,
                       }}
                     >
-                      <div className="helper" style={{ fontSize: 12 }}>{formatUSAny(item.date)}</div>
+                      <div className="helper" style={{ fontSize: 12 }}>{formatDate(item.date)}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
                       <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
@@ -1283,7 +1283,7 @@ export default function SupplyChainOverview() {
                           display: 'inline-block',
                         }}
                       >
-                        Delivered: {formatUSAny(item.delivery_date)}
+                        Delivered: {formatDate(item.delivery_date)}
                       </span>
                     )
                   } else if (item.est_delivery_date) {
@@ -1296,7 +1296,7 @@ export default function SupplyChainOverview() {
                           display: 'inline-block',
                         }}
                       >
-                        Est. delivery: {formatUSAny(item.est_delivery_date)}
+                        Est. delivery: {formatDate(item.est_delivery_date)}
                       </span>
                     )
                   }

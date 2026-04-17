@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
-import { formatUSAny } from '../lib/time'
+import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import PrintDialog from '../components/PrintDialog'
@@ -701,7 +701,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 >
                   {/* DATE */}
                   <div className="helper" data-date={o.order_date}>
-                    {formatUSAny(o.order_date)}
+                    {formatDate(o.order_date)}
                   </div>
 
                   {/* spacer */}
@@ -800,7 +800,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                 >
                   {/* DATE */}
                   <div className="helper" data-date={p.payment_date}>
-                    {formatUSAny(p.payment_date)}
+                    {formatDate(p.payment_date)}
                   </div>
 
                   {/* spacer */}
