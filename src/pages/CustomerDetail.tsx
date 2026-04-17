@@ -408,7 +408,7 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
-              const cols = `${DATE_COL}px 20px auto 1fr auto`
+              const cols = `max-content 18px auto 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray((o as any).items) && (o as any).items.length > 0
@@ -439,7 +439,7 @@ export default function CustomerDetailPage() {
                 if (status === 'delivered') { symbol = '✓'; color = '#10b981'; title = t('customerDetail.deliveredInFull') }
                 else if (status === 'partial') { symbol = '◐'; color = '#f59e0b'; title = t('customerDetail.partiallyDelivered', { delivered: deliveredQty, total: totalQty }) }
                 return (
-                  <div style={{ width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
                     <button onClick={(e) => { e.stopPropagation(); handleDeliveryIconClick(o) }}
                       style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }} title={title}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>

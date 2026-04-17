@@ -411,7 +411,6 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   const shownOrders = recentOrders.slice(0, orderDisplayCount)
 
   // Compact layout constants (same as CustomerDetail)
-  const DATE_COL = 55
   const LINE_GAP = 4
 
   // Handle delivery toggle for orders
@@ -706,7 +705,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
         ) : (
           <div style={{display:'grid', marginTop: 12}}>
             {shownOrders.map(o => {
-              const cols = `${DATE_COL}px 20px auto 1fr auto`
+              const cols = `max-content 18px auto 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray(o.items) && o.items.length > 0 ? o.items : []
@@ -718,11 +717,11 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
               const { symbol, color, label } = getDeliveryVisual(o)
               const deliveryIcon = (
-                <div style={{ width: 20, textAlign: 'left', paddingLeft: 4 }}>
+                <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
                   <button onClick={(e) => { e.stopPropagation(); handleDeliveryToggle(o.id, !o.delivered) }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14 }}
                     title={label}>
-                    <span style={{ color }}>{symbol}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
                   </button>
                 </div>
               )
