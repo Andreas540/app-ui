@@ -198,7 +198,7 @@ function ChartSlide({
               {!showPct && <LabelList dataKey={bar2Key} position="top" offset={8} formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-              {showPct && <LabelList dataKey={lineKey} position="top" offset={8} formatter={(v: any) => fmtPct1(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
+              {showPct && <LabelList dataKey={lineKey} position="bottom" offset={8} formatter={(v: any) => fmtPct1(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
