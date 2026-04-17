@@ -240,6 +240,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "showPct": "Visa %",
+    "hidePct": "Dölj %",
     "cardFinancials": "Ekonomi",
     "cardCharts": "Diagram",
     "cardOrders": "Ordrar",

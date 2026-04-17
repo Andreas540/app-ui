@@ -240,6 +240,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "showPct": "Show %",
+    "hidePct": "Hide %",
     "cardFinancials": "Financials",
     "cardCharts": "Charts",
     "cardOrders": "Orders",

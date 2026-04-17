@@ -137,7 +137,7 @@ type SlideSpec = {
   computePct?: (row: any) => number
 }
 
-type ChartSlideProps = Omit<SlideSpec, 'title'>
+type ChartSlideProps = Omit<SlideSpec, 'title'> & { showPct: boolean }
 
 function ChartSlide({
   data,
@@ -145,6 +145,7 @@ function ChartSlide({
   bar2Key,
   lineKey,
   computePct,
+  showPct,
 }: ChartSlideProps) {
   const enriched = useMemo(() => {
     if (!computePct) return data
@@ -179,60 +180,25 @@ function ChartSlide({
               tick={false}
               axisLine={false}
               width={0}
-              domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.1)]}
+              domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.35)]}
             />
-            {/* Right axis = %, fixed 0..45% */}
             <YAxis
               yAxisId="right"
               orientation="right"
               tick={false}
               axisLine={false}
               width={0}
-              domain={[0, 0.45]}
+              domain={[0, 0.55]}
             />
 
-            {/* Bars: orange (revenue) + light blue (2nd series); labels; NO animations */}
             <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false} barSize={33}>
-              <LabelList
-                dataKey={bar1Key}
-                position="top"
-                offset={12}
-                formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                fill="#fff"
-                style={{ fontSize: 12, fontWeight: 700 }}
-              />
+              {!showPct && <LabelList dataKey={bar1Key} position="top" offset={8} formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
-
             <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false} barSize={33}>
-              <LabelList
-                dataKey={bar2Key}
-                position="top"
-                offset={12}
-                formatter={(v: any) => `$${fmtK1(Number(v))}`}
-                fill="#fff"
-                style={{ fontSize: 12, fontWeight: 700 }}
-              />
+              {!showPct && <LabelList dataKey={bar2Key} position="top" offset={8} formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
-
-            {/* Percent line on right axis */}
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey={lineKey}
-              stroke="#374151"
-              strokeWidth={2}
-              dot={false}
-              activeDot={false}
-              isAnimationActive={false}
-            >
-              <LabelList
-                dataKey={lineKey}
-                position="top"
-                offset={12}
-                formatter={(v: any) => fmtPct1(Number(v))}
-                fill="#fff"
-                style={{ fontSize: 12, fontWeight: 700 }}
-              />
+            <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
+              {showPct && <LabelList dataKey={lineKey} position="top" offset={8} formatter={(v: any) => fmtPct1(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
@@ -301,6 +267,8 @@ export default function Dashboard() {
   const [rpsMonthly, setRpsMonthly] = useState<RpsPoint[]>([])
   const [rpsLoading, setRpsLoading] = useState(true)
   const [rpsErr, setRpsErr] = useState<string | null>(null)
+
+  const [showPct, setShowPct] = useState(false)
 
   // Dashboard card customisation
   const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
@@ -670,15 +638,18 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                   {rpsLoading && <span className="helper">Loading…</span>}
                   {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+                  <button onClick={() => setShowPct(v => !v)} style={{ fontSize: 11, padding: '2px 8px', height: 22, borderRadius: 4, background: showPct ? 'var(--accent)' : 'transparent', border: '1px solid var(--border)', color: showPct ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>
+                    {showPct ? t('dashboard.hidePct') : t('dashboard.showPct')}
+                  </button>
                   {moveArrows}
                 </div>
               </div>
               <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <button onClick={prev} aria-label="Previous" style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1 }}>‹</button>
                 <div style={{ display: 'flex', height: '100%', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
-                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} /></div>
-                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} /></div>
-                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} /></div>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} showPct={showPct} /></div>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[1]} showPct={showPct} /></div>
+                  <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[2]} showPct={showPct} /></div>
                 </div>
                 <button onClick={next} aria-label="Next" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1 }}>›</button>
               </div>
