@@ -739,8 +739,7 @@ function DeliveryModal({
           {t('customerDetail.newStatus')}
         </div>
         <div style={{ marginBottom: 12 }}>
-          {statusLabel}{' '}
-          {totalQty > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
+          {statusLabel}{totalQty > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

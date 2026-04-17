@@ -356,7 +356,7 @@
     "fullDelivery": "Entrega completa",
     "newStatus": "Nuevo estado",
     "deliveredInFullStatus": "Entregado completo",
-    "partiallyDeliveredWithRemaining": "Entrega parcial ({{remaining}} restante)"
+    "partiallyDeliveredWithRemaining": ", {{remaining}} restante."
   },
   "payments": {
     "fromCustomer": "De cliente",

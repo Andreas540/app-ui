@@ -356,7 +356,7 @@
     "fullDelivery": "Full leverans",
     "newStatus": "Ny status",
     "deliveredInFullStatus": "Fullt levererad",
-    "partiallyDeliveredWithRemaining": "Delvis levererad ({{remaining}} återstår)"
+    "partiallyDeliveredWithRemaining": ", {{remaining}} återstår."
   },
   "payments": {
     "fromCustomer": "Från kund",
