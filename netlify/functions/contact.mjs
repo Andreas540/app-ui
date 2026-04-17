@@ -143,9 +143,9 @@ export const handler = async (event) => {
 
     try {
       if (reply !== undefined) {
-        // Look up the message to get tenant and sender
+        // Look up the message to get tenant, sender, and whether a reply already exists
         const [msg] = await sql`
-          SELECT tenant_id, user_email FROM contact_messages WHERE id = ${id}::uuid
+          SELECT tenant_id, user_email, reply AS existing_reply FROM contact_messages WHERE id = ${id}::uuid
         `
         if (!msg) return cors(404, { error: 'Message not found' })
 
@@ -158,11 +158,13 @@ export const handler = async (event) => {
           WHERE id = ${id}::uuid
         `
 
-        // Notify via external_events: in-app reply
-        await sql`
-          INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
-          VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email}, ${JSON.stringify({ via: 'app' })})
-        `
+        // Only notify via external_events on first reply, not on edits
+        if (!msg.existing_reply) {
+          await sql`
+            INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
+            VALUES (${msg.tenant_id}::uuid, 'message_reply', ${msg.user_email}, ${JSON.stringify({ via: 'app' })})
+          `
+        }
       } else {
         // Toggle answered/unanswered
         await sql`
