@@ -3,6 +3,7 @@
 // Accessed via /order-form/:token?lang=sv
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
+import { Vibrant } from 'node-vibrant/browser'
 
 // ── Inline translations ───────────────────────────────────────────────────────
 
@@ -94,6 +95,9 @@ export default function OrderFormPage() {
   const [products,     setProducts]     = useState<Product[]>([])
   const [qtys,         setQtys]         = useState<Record<string, string>>({})
   const [notes,        setNotes]        = useState('')
+  const [tenantName,   setTenantName]   = useState('')
+  const [tenantIcon,   setTenantIcon]   = useState<string | null>(null)
+  const [bgColor,      setBgColor]      = useState('#f0f2f5')
 
   useEffect(() => {
     if (!token) { setStatus('invalid'); return }
@@ -102,11 +106,25 @@ export default function OrderFormPage() {
       .then(data => {
         if (!data.ok) { setStatus('invalid'); return }
         setCustomerName(data.customer_name ?? '')
+        setTenantName(data.tenant_name ?? '')
+        setTenantIcon(data.tenant_icon ?? null)
         setProducts(data.products ?? [])
         setStatus('ready')
       })
       .catch(() => { setErrMsg(t('errorLoad')); setStatus('error') })
   }, [token])
+
+  useEffect(() => {
+    if (!tenantIcon) return
+    new Vibrant(tenantIcon).getPalette()
+      .then(palette => {
+        const swatch = palette.Vibrant ?? palette.LightVibrant ?? palette.Muted
+        if (!swatch) return
+        const { r, g, b } = swatch
+        setBgColor(`rgb(${Math.round(r * 0.12 + 255 * 0.88)}, ${Math.round(g * 0.12 + 255 * 0.88)}, ${Math.round(b * 0.12 + 255 * 0.88)})`)
+      })
+      .catch(() => {})
+  }, [tenantIcon])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -135,8 +153,10 @@ export default function OrderFormPage() {
   // ── Styles ────────────────────────────────────────────────────────────────────
 
   const page: React.CSSProperties = {
-    minHeight: '100vh',
-    background: '#f0f2f5',
+    position: 'fixed',
+    inset: 0,
+    overflowY: 'auto',
+    background: bgColor,
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -202,6 +222,21 @@ export default function OrderFormPage() {
 
   return (
     <div style={page}>
+      <div style={{ maxWidth: 520, width: '100%' }}>
+        {(tenantIcon || tenantName) && (
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+            {tenantIcon && (
+              <img
+                src={tenantIcon}
+                alt={tenantName}
+                style={{ width: 78, height: 78, borderRadius: 14, background: '#fff', padding: 2, boxShadow: '0 1px 6px rgba(0,0,0,0.10)', objectFit: 'contain', flexShrink: 0 }}
+              />
+            )}
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>{tenantName}</h2>
+            </div>
+          </div>
+        )}
       <div style={card}>
         <h2 style={{ margin: '0 0 8px', fontSize: 22, color: '#1a1a2e' }}>{t('title')}</h2>
         <p style={{ margin: '0 0 24px', color: '#555', fontSize: 14 }}>
@@ -297,6 +332,7 @@ export default function OrderFormPage() {
           </button>
 
         </form>
+      </div>
       </div>
     </div>
   )

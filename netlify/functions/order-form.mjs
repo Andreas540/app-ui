@@ -72,7 +72,7 @@ async function getForm(event) {
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
 
-    const [customerRows, products] = await Promise.all([
+    const [customerRows, products, tenantRows] = await Promise.all([
       sql`
         SELECT name FROM customers
         WHERE id        = ${verified.customerId}::uuid
@@ -88,13 +88,17 @@ async function getForm(event) {
           AND price_amount > 0
         ORDER BY name ASC
       `,
+      sql`SELECT name, app_icon_192 FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`,
     ])
 
     if (customerRows.length === 0) return cors(404, { error: 'Customer not found' })
 
+    const tenant = tenantRows[0] ?? {}
     return cors(200, {
       ok: true,
       customer_name: customerRows[0].name,
+      tenant_name: tenant.name ?? '',
+      tenant_icon: tenant.app_icon_192 ?? null,
       products,
     })
   } catch (e) {

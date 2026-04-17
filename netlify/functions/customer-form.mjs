@@ -70,19 +70,25 @@ async function getForm(event) {
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
 
-    const rows = await sql`
-      SELECT name, company_name, phone, address1, address2, city, state, postal_code, country
-      FROM customers
-      WHERE id        = ${verified.customerId}::uuid
-        AND tenant_id = ${verified.tenantId}::uuid
-      LIMIT 1
-    `
+    const [rows, tenantRows] = await Promise.all([
+      sql`
+        SELECT name, company_name, phone, address1, address2, city, state, postal_code, country
+        FROM customers
+        WHERE id        = ${verified.customerId}::uuid
+          AND tenant_id = ${verified.tenantId}::uuid
+        LIMIT 1
+      `,
+      sql`
+        SELECT name, app_icon_192 FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1
+      `,
+    ])
     if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
 
+    const tenant = tenantRows[0] ?? {}
     // Don't expose auto-generated placeholder names to the customer
     const isTempName = (v) => v && /^Customer #\d+$/.test(String(v))
     const c = rows[0]
-    return cors(200, { ok: true, customer: {
+    return cors(200, { ok: true, tenant_name: tenant.name ?? '', tenant_icon: tenant.app_icon_192 ?? null, customer: {
       ...c,
       name:         isTempName(c.name)         ? '' : (c.name         ?? ''),
       company_name: isTempName(c.company_name) ? '' : (c.company_name ?? ''),

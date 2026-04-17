@@ -542,9 +542,9 @@ useEffect(() => {
                 onClick={handleExternalBadgeClick}
                 style={{
                   position: 'absolute', top: 6, left: 6,
-                  width: 20, height: 20, borderRadius: '50%',
+                  width: 28, height: 28, borderRadius: '50%',
                   background: '#22c55e', border: 'none', cursor: 'pointer',
-                  color: '#fff', fontSize: 10, fontWeight: 700,
+                  color: '#fff', fontSize: 12, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   zIndex: 10, padding: 0, lineHeight: 1,
                 }}
