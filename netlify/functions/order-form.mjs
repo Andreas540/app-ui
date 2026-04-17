@@ -85,7 +85,6 @@ async function getForm(event) {
         WHERE tenant_id    = ${verified.tenantId}::uuid
           AND category     = 'product'
           AND price_amount IS NOT NULL
-          AND price_amount > 0
         ORDER BY name ASC
       `,
       sql`SELECT name, app_icon_192 FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`,
@@ -171,7 +170,6 @@ async function submitForm(event) {
           AND tenant_id = ${verified.tenantId}::uuid
           AND category  = 'product'
           AND price_amount IS NOT NULL
-          AND price_amount > 0
         LIMIT 1
       `
       if (productRows.length === 0) continue // skip unknown/invalid products

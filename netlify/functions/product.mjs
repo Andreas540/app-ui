@@ -113,7 +113,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const name = typeof body.name === 'string' ? body.name.trim() : undefined;
     const effectiveDate = body.effective_date;
     const newDurationMinutes = body.duration_minutes != null ? Math.max(1, parseInt(body.duration_minutes, 10) || 60) : undefined;
-    const newPriceAmount    = body.price_amount    != null ? Number(body.price_amount) : undefined;
+    const newPriceAmount    = body.price_amount === null ? null : body.price_amount != null ? Number(body.price_amount) : undefined;
 
     // Strict boolean coercion for checkbox
     const rawApply = body.apply_to_history;

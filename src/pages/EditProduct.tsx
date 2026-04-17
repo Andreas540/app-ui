@@ -80,8 +80,9 @@ export default function EditProduct() {
     const durationMinutes = type === 'service' && showMoreInfo && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : undefined
-    const priceAmount = (type === 'service' && showMoreInfo && priceStr) || (type === 'product' && priceStr)
-      ? Number(priceStr.replace(',', '.'))
+    const hasPriceField = type === 'product' || (type === 'service' && showMoreInfo)
+    const priceAmount: number | null | undefined = hasPriceField
+      ? (priceStr.trim() === '' ? null : Number(priceStr.replace(',', '.')))
       : undefined
 
     try {

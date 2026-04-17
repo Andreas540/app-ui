@@ -50,7 +50,7 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     if (!showShareOrder) return
     listProducts().then(({ products }) => {
-      setProductsNeedingPrice(products.filter(p => !p.price_amount))
+      setProductsNeedingPrice(products.filter(p => (p.category ?? 'product') === 'product' && p.price_amount == null))
     }).catch(() => {})
   }, [showShareOrder])
 
