@@ -42,12 +42,12 @@ export const MODULES: ModuleDef[] = [
     features: featuresForModule('labor'),
   },
   {
-    id: 'financial',
+    id: 'reports',
     name: 'Reports',
     pricePerUser: 9.99,
     description: 'Financial reports and analytics',
     alwaysIncluded: false,
-    features: featuresForModule('financial'), // empty until pages are added
+    features: featuresForModule('reports'),
   },
   {
     id: 'booking',

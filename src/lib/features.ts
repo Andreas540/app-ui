@@ -32,8 +32,10 @@ export const AVAILABLE_FEATURES = {
   'booking-integration': { id: 'booking-integration', name: 'Integration',        route: '/bookings/integration',category: 'Booking', module: 'booking' },
   'new-booking':         { id: 'new-booking',         name: 'New Booking',        route: '/bookings/new',        category: 'Booking', module: 'booking' },
 
-  // Financial / Reports
-  financial:       { id: 'financial',       name: 'Sales & Profit', route: '/reports',             category: 'Financial', module: 'financial' },
+  // Reports
+  reports:             { id: 'reports',              name: 'Sales & Profit',    route: '/reports',             category: 'Reports', module: 'reports' },
+  'customer-reports':  { id: 'customer-reports',     name: 'Customer Reports',  route: '/reports/customers',   category: 'Reports', module: 'reports' },
+  bizwiz:              { id: 'bizwiz',               name: 'Ask BizWiz',        route: '/reports/bizwiz',      category: 'Reports', module: 'reports' },
 
   // Admin (always included, not a paid module)
   'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },
@@ -42,15 +44,15 @@ export const AVAILABLE_FEATURES = {
 } as const
 
 export type FeatureId = keyof typeof AVAILABLE_FEATURES
-export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'financial' | 'reports' | 'admin' | 'booking'
+export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'reports' | 'admin' | 'booking'
 
 export const FEATURE_CATEGORIES = {
-  Sales:     'Sales & Cash Flow',
-  Supply:    'Supply Chain',
-  Labor:     'Employee Management',
-  Booking:   'Bookings',
-  Financial: 'Reports',
-  Admin:     'Administration',
+  Sales:   'Sales & Cash Flow',
+  Supply:  'Supply Chain',
+  Labor:   'Employee Management',
+  Booking: 'Bookings',
+  Reports: 'Reports',
+  Admin:   'Administration',
 } as const
 
 export function getFeaturesByModule(moduleId: ModuleId): (typeof AVAILABLE_FEATURES)[FeatureId][] {

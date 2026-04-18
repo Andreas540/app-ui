@@ -754,18 +754,24 @@ useEffect(() => {
                   </NavLink>
                 )}
                 </>)}
-                {canAccess('financial') && (<>
+                {(canAccess('reports') || canAccess('customer-reports') || canAccess('bizwiz')) && (<>
                   {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (<>
-                    <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)}>
-                      {t('reportsBizWiz')}
-                    </NavLink>
-                    <NavLink to="/reports" end onClick={() => setNavOpen(false)}>
-                      {t('reportsSalesProfit')}
-                    </NavLink>
-                    <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
-                      {t('reportsCustomers')}
-                    </NavLink>
+                    {canAccess('bizwiz') && (
+                      <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)}>
+                        {t('reportsBizWiz')}
+                      </NavLink>
+                    )}
+                    {canAccess('reports') && (
+                      <NavLink to="/reports" end onClick={() => setNavOpen(false)}>
+                        {t('reportsSalesProfit')}
+                      </NavLink>
+                    )}
+                    {canAccess('customer-reports') && (
+                      <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
+                        {t('reportsCustomers')}
+                      </NavLink>
+                    )}
                   </>)}
                 </>)}
                 {sectionHeader('supply', t('supplyChain'))}
@@ -976,9 +982,9 @@ useEffect(() => {
                   </>
                 )}
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
-                {hasFeature('financial') && <Route path="/reports" element={<ReportsPage />} />}
-                {hasFeature('financial') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
-                {hasFeature('financial') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}
+                {hasFeature('reports') && <Route path="/reports" element={<ReportsPage />} />}
+                {hasFeature('customer-reports') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
+                {hasFeature('bizwiz') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (

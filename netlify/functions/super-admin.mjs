@@ -140,7 +140,7 @@ async function handleGet(event) {
       for (const row of memberships) {
         if (row.modules === null) {
           // Full access - counts for all paid modules
-          for (const mod of ['sales', 'supply-chain', 'labor', 'financial', 'reports']) {
+          for (const mod of ['sales', 'supply-chain', 'labor', 'reports', 'booking']) {
             usedCounts[mod] = (usedCounts[mod] || 0) + 1
           }
         } else if (Array.isArray(row.modules)) {
