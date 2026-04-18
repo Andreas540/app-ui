@@ -139,13 +139,13 @@ export default function BookingSmsUsagePage() {
   }
 
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
-  if (error && !monthStats) return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
+  if (error && !monthStats) return <div style={{ padding: 32, color: 'var(--color-error)' }}>{error}</div>
 
   return (
     <div className="card" style={{ maxWidth: 800 }}>
       <h3 style={{ marginBottom: 24 }}>{t('smsUsagePage.title')}</h3>
 
-      {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--color-error)', marginBottom: 16 }}>{error}</div>}
 
       {/* ── Current month summary ────────────────────────────────── */}
       {monthStats && settings && (

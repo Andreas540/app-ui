@@ -488,7 +488,7 @@ export default function SupplyChainOverview() {
   const intFmt = new Intl.NumberFormat('en-US')
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const sectionHeaderStyle: React.CSSProperties = {
@@ -632,7 +632,7 @@ export default function SupplyChainOverview() {
             {demandLoading ? (
               <p className="helper">{t('supplyChain.loadingDemand')}</p>
             ) : demandErr ? (
-              <p style={{ color: 'salmon' }}>{t('error')} {demandErr}</p>
+              <p style={{ color: 'var(--color-error)' }}>{t('error')} {demandErr}</p>
             ) : filteredDemandData.length === 0 ? (
               <p className="helper">{t('supplyChain.noDemandData')}</p>
             ) : (
@@ -1156,7 +1156,7 @@ export default function SupplyChainOverview() {
                 style={{
                   textAlign: 'right',
                   fontVariantNumeric: 'tabular-nums',
-                  color: item.pre_prod < 0 ? 'salmon' : undefined,
+                  color: item.pre_prod < 0 ? 'var(--color-error)' : undefined,
                   fontWeight: item.pre_prod < 0 ? 600 : undefined,
                 }}
               >
@@ -1176,7 +1176,7 @@ export default function SupplyChainOverview() {
                 style={{
                   textAlign: 'right',
                   fontVariantNumeric: 'tabular-nums',
-                  color: item.qty < 0 ? 'salmon' : item.qty === 0 ? 'var(--text-secondary)' : undefined,
+                  color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : undefined,
                   fontWeight: item.qty < 0 ? 600 : undefined,
                 }}
               >

@@ -89,7 +89,7 @@ export default function Contact() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.55)',
+            background: 'var(--backdrop)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -343,7 +343,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
       </div>
 
       {loading && <p>{t('invoice.loadingCustomers')}</p>}
-      {error && <p style={{ color: 'salmon' }}>{t('error')} {error}</p>}
+      {error && <p style={{ color: 'var(--color-error)' }}>{t('error')} {error}</p>}
 
       {!loading && !error && (
         <>

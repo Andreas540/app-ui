@@ -292,7 +292,7 @@ export default function EmployeeManagement() {
   }
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')}: {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>
 
   const CONTROL_H = 44
   const activeEmployees = employees.filter(e => e.active)
@@ -537,7 +537,7 @@ export default function EmployeeManagement() {
                       background: 'transparent',
                       border: 'none',
                       borderRadius: 4,
-                      color: 'salmon',
+                      color: 'var(--color-error)',
                       cursor: 'pointer',
                     }}
                   >
@@ -590,7 +590,7 @@ export default function EmployeeManagement() {
                       {emp.employee_code}
                     </span>
                   )}
-                  <span style={{ marginLeft: 8, fontSize: 12, color: 'salmon', fontWeight: 400 }}>{t('employees.inactiveBadge')}</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--color-error)', fontWeight: 400 }}>{t('employees.inactiveBadge')}</span>
                 </div>
                 {!isEmpty(emp.email) && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}
 

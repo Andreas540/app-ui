@@ -133,7 +133,7 @@ export default function BookingIntegrationPage() {
       <p className="helper" style={{ marginBottom: 24 }}>{t('bookingIntegration.subtitle')}</p>
 
       {error && (
-        <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>
+        <div style={{ color: 'var(--color-error)', marginBottom: 16 }}>{error}</div>
       )}
 
       {activeConnection ? (
@@ -194,7 +194,7 @@ export default function BookingIntegrationPage() {
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div className="helper" style={{ marginBottom: 8 }}>{t('bookingIntegration.syncHelp')}</div>
             {syncResult && (
-              <div style={{ marginBottom: 8, fontSize: 14, color: syncResult.includes('ailed') ? 'salmon' : '#10b981' }}>
+              <div style={{ marginBottom: 8, fontSize: 14, color: syncResult.includes('ailed') ? 'var(--color-error)' : '#10b981' }}>
                 {syncResult}
               </div>
             )}
@@ -272,7 +272,7 @@ export default function BookingIntegrationPage() {
             </div>
 
             {connectError && (
-              <div style={{ color: 'salmon', fontSize: 14 }}>{connectError}</div>
+              <div style={{ color: 'var(--color-error)', fontSize: 14 }}>{connectError}</div>
             )}
 
             <button

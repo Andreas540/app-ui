@@ -353,7 +353,7 @@ export default function EditOrder() {
   }
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -369,7 +369,7 @@ export default function EditOrder() {
         {Number.isFinite(orderValue) && orderValue > 0 && !isRefundProduct && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
-            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
               ${profit.toFixed(2)}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
@@ -592,7 +592,7 @@ export default function EditOrder() {
           style={{
             height: CONTROL_H,
             marginLeft: 'auto',
-            backgroundColor: 'salmon',
+            backgroundColor: 'var(--color-error)',
             color: 'white',
             border: 'none'
           }}

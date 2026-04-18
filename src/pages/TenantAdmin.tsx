@@ -716,7 +716,7 @@ export default function TenantAdmin() {
 
   if (error) return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ color: 'salmon' }}>{t('error')}</h3>
+      <h3 style={{ color: 'var(--color-error)' }}>{t('error')}</h3>
       <p>{error}</p>
     </div>
   )
@@ -819,7 +819,7 @@ export default function TenantAdmin() {
                     }
                   </div>
                   {!u.active && (
-                    <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
+                    <div style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 2 }}>
                       {t('inactive')}
                     </div>
                   )}
@@ -1158,7 +1158,7 @@ export default function TenantAdmin() {
       {/* ── Invoice preview modal ── */}
       {showInvPreview && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={() => setShowInvPreview(false)}
         >
           <div
@@ -1243,7 +1243,7 @@ export default function TenantAdmin() {
       {/* ── Accounting preview modal ── */}
       {showAccPreview && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={() => setShowAccPreview(false)}
         >
           <div
@@ -1346,7 +1346,7 @@ export default function TenantAdmin() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--backdrop)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1514,7 +1514,7 @@ export default function TenantAdmin() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--backdrop)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1632,7 +1632,7 @@ export default function TenantAdmin() {
       {managingGeoUserId && (
         <div
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            position: 'fixed', inset: 0, background: 'var(--backdrop)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000, padding: 16,
           }}

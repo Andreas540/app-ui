@@ -352,7 +352,7 @@ export default function TimeEntry() {
   }, [timeEntries])
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
 
@@ -634,7 +634,7 @@ export default function TimeEntry() {
                             background: 'transparent',
                             border: '1px solid salmon',
                             borderRadius: 4,
-                            color: 'salmon',
+                            color: 'var(--color-error)',
                             cursor: 'pointer',
                           }}
                         >

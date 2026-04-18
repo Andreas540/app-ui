@@ -317,7 +317,7 @@ export default function MergeCustomer() {
               </label>
 
               {/* Warning */}
-              <p style={{ marginTop: 16, fontSize: 13, color: 'salmon' }}>
+              <p style={{ marginTop: 16, fontSize: 13, color: 'var(--color-error)' }}>
                 {t('customers.mergeWarning')}
               </p>
 

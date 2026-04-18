@@ -139,7 +139,7 @@ export default function Warehouse() {
   const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
   if (!products.length) return <div className="card"><p>{t('warehouse.noProducts')}</p></div>
 
   return (
@@ -232,7 +232,7 @@ export default function Warehouse() {
                   fontWeight: 700,
                   borderRadius: 6,
                   border: '1px solid var(--border)',
-                  background: qtyStr.trim().startsWith('-') ? 'salmon' : 'transparent',
+                  background: qtyStr.trim().startsWith('-') ? 'var(--color-error)' : 'transparent',
                   color: qtyStr.trim().startsWith('-') ? 'white' : 'var(--text)',
                   cursor: 'pointer',
                   flexShrink: 0,
@@ -252,13 +252,13 @@ export default function Warehouse() {
                 style={{
                   height: CONTROL_H,
                   flex: 1,
-                  borderColor: willGoNegative ? 'salmon' : undefined,
+                  borderColor: willGoNegative ? 'var(--color-error)' : undefined,
                 }}
               />
             </div>
 
             {willGoNegative && (
-              <div style={{ color: 'salmon', fontSize: 13, marginTop: 4 }}>
+              <div style={{ color: 'var(--color-error)', fontSize: 13, marginTop: 4 }}>
                 {t('warehouse.negativeWarning', { product: selectedProduct?.name, qty: newInventoryQty })}
               </div>
             )}
@@ -461,7 +461,7 @@ export default function Warehouse() {
                     style={{
                       textAlign: 'right',
                       fontVariantNumeric: 'tabular-nums',
-                      color: item.pre_prod < 0 ? 'salmon' : undefined,
+                      color: item.pre_prod < 0 ? 'var(--color-error)' : undefined,
                       fontWeight: item.pre_prod < 0 ? 600 : undefined,
                     }}
                   >
@@ -472,7 +472,7 @@ export default function Warehouse() {
                     style={{
                       textAlign: 'right',
                       fontVariantNumeric: 'tabular-nums',
-                      color: item.finished < 0 ? 'salmon' : undefined,
+                      color: item.finished < 0 ? 'var(--color-error)' : undefined,
                       fontWeight: item.finished < 0 ? 600 : undefined,
                     }}
                   >
@@ -486,7 +486,7 @@ export default function Warehouse() {
                       fontWeight: 600,
                       color:
                         item.qty < 0
-                          ? 'salmon'
+                          ? 'var(--color-error)'
                           : item.qty === 0
                             ? 'var(--text-secondary)'
                             : 'var(--primary)',

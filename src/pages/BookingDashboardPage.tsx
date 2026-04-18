@@ -281,7 +281,7 @@ export default function BookingDashboardPage() {
   }
 
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
-  if (error)   return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
+  if (error)   return <div style={{ padding: 32, color: 'var(--color-error)' }}>{error}</div>
   if (!data)   return null
 
   return (
@@ -292,7 +292,7 @@ export default function BookingDashboardPage() {
         <h3 style={{ margin: 0 }}>{t('bookingDashboard.title', 'Bookings')}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {syncResult && (
-            <span style={{ fontSize: 13, color: syncResult.includes('ailed') ? 'salmon' : '#10b981' }}>
+            <span style={{ fontSize: 13, color: syncResult.includes('ailed') ? 'var(--color-error)' : '#10b981' }}>
               {syncResult}
             </span>
           )}

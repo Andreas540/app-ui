@@ -168,7 +168,7 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {error && <div style={{ color: 'salmon', marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--color-error)', marginBottom: 16 }}>{error}</div>}
 
       {loading ? (
         <div className="helper">{t('loading')}</div>

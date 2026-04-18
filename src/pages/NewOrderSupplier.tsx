@@ -199,7 +199,7 @@ export default function NewOrderSupplier() {
     <div className="card" style={{ maxWidth: 900 }}>
       <h3>{t('supplierOrders.newTitle')}</h3>
 
-      {err && <p style={{ color:'salmon' }}>{t('error')} {err}</p>}
+      {err && <p style={{ color:'var(--color-error)' }}>{t('error')} {err}</p>}
       {loading ? <p>{t('loading')}</p> : (
         <>
           {/* Supplier row (stacks on mobile) */}

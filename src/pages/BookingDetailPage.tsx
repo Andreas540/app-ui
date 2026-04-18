@@ -149,7 +149,7 @@ export default function BookingDetailPage() {
   }
 
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
-  if (error) return <div style={{ padding: 32, color: 'salmon' }}>{error}</div>
+  if (error) return <div style={{ padding: 32, color: 'var(--color-error)' }}>{error}</div>
   if (!booking) return null
 
   return (
@@ -230,7 +230,7 @@ export default function BookingDetailPage() {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          style={{ backgroundColor: 'salmon', color: 'white', border: 'none' }}
+          style={{ backgroundColor: 'var(--color-error)', color: 'white', border: 'none' }}
         >
           {deleting ? t('deleting', 'Deleting…') : t('bookingDetail.deleteBooking', 'Delete booking')}
         </button>

@@ -232,7 +232,7 @@ function ChartSlide({
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             pointerEvents: 'none', zIndex: 10, borderRadius: 8,
-            background: 'rgba(0,0,0,0.48)',
+            background: 'var(--backdrop)',
           }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '0 16px' }}>
               ← Swipe to see all periods →
@@ -497,7 +497,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Error / loading */}
-      {err     && <div className="card"><p style={{ color: 'salmon' }}>{tc('error')}: {err}</p></div>}
+      {err     && <div className="card"><p style={{ color: 'var(--color-error)' }}>{tc('error')}: {err}</p></div>}
       {loading && <div className="card"><p className="helper">{tc('loadingDots')}</p></div>}
 
       {!loading && orderedVisible.length === 0 && (

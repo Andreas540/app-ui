@@ -297,7 +297,7 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
   const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
 const hasCustomers = people.length > 0
 const hasProducts = filteredProducts.length > 0
@@ -314,7 +314,7 @@ const hasProducts = filteredProducts.length > 0
         {Number.isFinite(orderValue) && orderValue > 0 && (
           <div style={{ textAlign:'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
-            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'salmon' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
               ${profit.toFixed(2)}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
@@ -479,7 +479,7 @@ const hasProducts = filteredProducts.length > 0
             value={orderValueStr}
             placeholder="auto"
             readOnly
-            style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(orderValue) && orderValue < 0 ? 'salmon' : undefined }}
+            style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(orderValue) && orderValue < 0 ? 'var(--color-error)' : undefined }}
           />
         </div>
 

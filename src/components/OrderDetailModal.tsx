@@ -189,7 +189,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div style={{
                 fontWeight: 600,
                 fontSize: 16,
-                color: profit >= 0 ? 'var(--primary)' : 'salmon'
+                color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)'
               }}>
                 {fmtMoneyWithThousands(profit)}
               </div>

@@ -309,7 +309,7 @@ const stats = useMemo(() => {
   if (loading && timeEntries.length === 0) {
     return <div className="card"><p>{t('loading')}</p></div>
   }
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')}: {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>
 
   const CONTROL_H = 44
 

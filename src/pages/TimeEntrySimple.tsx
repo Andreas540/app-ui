@@ -364,7 +364,7 @@ const to = toLocalYMD(toDate)
 }, [timeEntries])
 
   if (loading) return <div className="card"><p>{t.loading}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t.error} {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t.error} {err}</p></div>
   if (!employee) return <div className="card"><p>{t.employeeNotFound}</p></div>
 
   return (

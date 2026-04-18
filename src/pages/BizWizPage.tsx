@@ -88,7 +88,7 @@ export default function BizWizPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ fontSize: 14, color: 'salmon', marginBottom: 20 }}>{error}</div>
+        <div style={{ fontSize: 14, color: 'var(--color-error)', marginBottom: 20 }}>{error}</div>
       )}
 
       {/* Suggested questions */}

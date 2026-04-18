@@ -291,7 +291,7 @@ const pRes = await fetch(`${base}/api/product`, {
   }
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'salmon' }}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
 
   return (
     <div className="card" style={{ maxWidth: 900 }}>
@@ -517,7 +517,7 @@ const pRes = await fetch(`${base}/api/product`, {
           style={{
             height: 'var(--control-h)',
             marginLeft: 'auto',
-            backgroundColor: 'salmon',
+            backgroundColor: 'var(--color-error)',
             color: 'white',
             border: 'none',
           }}

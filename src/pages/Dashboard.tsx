@@ -607,7 +607,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               {loading ? (
                 <div className="helper">{t('loading')}</div>
               ) : err ? (
-                <div style={{ color: 'salmon' }}>{t('error')} {err}</div>
+                <div style={{ color: 'var(--color-error)' }}>{t('error')} {err}</div>
               ) : (
                 <div style={{ display: 'grid', gap: 12 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
@@ -637,7 +637,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 <h3 style={{ margin: 0, fontSize: 16 }}>{slides[slide].title}</h3>
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                   {rpsLoading && <span className="helper">Loading…</span>}
-                  {rpsErr && <span style={{ color: 'salmon' }}>{rpsErr}</span>}
+                  {rpsErr && <span style={{ color: 'var(--color-error)' }}>{rpsErr}</span>}
                   <button onClick={() => setShowPct(v => !v)} style={{ fontSize: 11, padding: '2px 8px', height: 22, borderRadius: 4, background: showPct ? 'var(--accent)' : 'transparent', border: '1px solid var(--border)', color: showPct ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>
                     {showPct ? t('dashboard.hidePct') : t('dashboard.showPct')}
                   </button>
@@ -703,7 +703,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               {ordersLoading ? (
                 <p className="helper">{t('dashboard.loadingOrders')}</p>
               ) : ordersErr ? (
-                <p style={{ color: 'salmon' }}>{t('dashboard.errorLoadingOrders', { error: ordersErr })}</p>
+                <p style={{ color: 'var(--color-error)' }}>{t('dashboard.errorLoadingOrders', { error: ordersErr })}</p>
               ) : recentOrders.length === 0 ? (
                 <p className="helper">{t('dashboard.noOrdersFound')}</p>
               ) : (

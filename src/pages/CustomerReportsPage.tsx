@@ -297,7 +297,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
-        background: 'rgba(0,0,0,0.6)',
+        background: 'var(--backdrop)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
       }}
@@ -473,7 +473,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
           )}
 
           {analyzeState === 'error' && (
-            <div style={{ marginTop: 10, fontSize: 12, color: 'salmon' }}>
+            <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-error)' }}>
               {analysis}
             </div>
           )}
@@ -723,7 +723,7 @@ export default function CustomerReportsPage() {
       </div>
 
       {/* Status */}
-      {err     && <div className="card"><p style={{ color: 'salmon' }}>{tc('error')}: {err}</p></div>}
+      {err     && <div className="card"><p style={{ color: 'var(--color-error)' }}>{tc('error')}: {err}</p></div>}
       {loading && <div className="card"><p className="helper">{tc('loadingDots')}</p></div>}
 
       {!loading && !showRanking && (

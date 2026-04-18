@@ -489,7 +489,7 @@ useEffect(() => {
 }
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
   if (!people.length) return <div className="card"><p>{t('payments.noCustomersFound')}</p></div>
 
   const CONTROL_H = 44

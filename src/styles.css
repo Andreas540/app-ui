@@ -11,10 +11,17 @@
   --primary: #3b82f6;
   --accent: #3b82f6;
   --danger: #ef4444;
+  /* Semantic state foreground colors — same in all themes */
+  --color-success:  #10b981;
+  --color-warning:  #f59e0b;
+  --color-error:    #ef4444;
+  --color-info:     #6366f1;
+  --color-neutral:  #9ca3af;
 }
 
 /* ── Dark theme (default) ─────────────────────────────── */
 html[data-theme="dark"] {
+  /* Layout */
   --bg:            #0b1020;
   --panel:         #0f1630;
   --card:          #0f1630;
@@ -29,10 +36,22 @@ html[data-theme="dark"] {
   --nav-active:    #1a2347;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
   --invoiced-row-bg: rgba(99,140,255,0.10);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(16,185,129,0.14);
+  --color-warning-bg:  rgba(245,158,11,0.13);
+  --color-error-bg:    rgba(239,68,68,0.13);
+  --color-info-bg:     rgba(99,102,241,0.13);
+  --color-neutral-bg:  rgba(156,163,175,0.12);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(0,0,0,0.65);
+  --surface-subtle:    rgba(255,255,255,0.04);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
 }
 
 /* ── Light theme ──────────────────────────────────────── */
 html[data-theme="light"] {
+  /* Layout */
   --bg:            #eef1f8;
   --panel:         #ffffff;
   --card:          #ffffff;
@@ -47,6 +66,17 @@ html[data-theme="light"] {
   --nav-active:    #dde4f5;
   --shadow:        0 1px 3px rgba(0,0,0,0.08);
   --invoiced-row-bg: rgba(13,110,253,0.06);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(16,185,129,0.10);
+  --color-warning-bg:  rgba(245,158,11,0.10);
+  --color-error-bg:    rgba(239,68,68,0.08);
+  --color-info-bg:     rgba(99,102,241,0.09);
+  --color-neutral-bg:  rgba(156,163,175,0.10);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(0,0,0,0.40);
+  --surface-subtle:    rgba(0,0,0,0.03);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.10);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* ===================== Base Reset ===================== */

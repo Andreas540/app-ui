@@ -727,7 +727,7 @@ async function handleSaveStripeCustomerId() {
 
   if (error) return (
     <div className="card" style={{ maxWidth: 720 }}>
-      <h3 style={{ color: 'salmon' }}>{t('error')}</h3>
+      <h3 style={{ color: 'var(--color-error)' }}>{t('error')}</h3>
       <p>{error}</p>
     </div>
   )
@@ -841,7 +841,7 @@ async function handleSaveStripeCustomerId() {
 <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
   Stripe: {tenant.stripe_customer_id
     ? <span style={{ color: '#4CAF50' }}>{tenant.stripe_customer_id}</span>
-    : <span style={{ color: 'salmon' }}>Not set</span>
+    : <span style={{ color: 'var(--color-error)' }}>Not set</span>
   }
 </div>
 <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
@@ -985,7 +985,7 @@ async function handleSaveStripeCustomerId() {
                           height: CONTROL_H,
                           width: CONTROL_H,
                           padding: 0,
-                          backgroundColor: 'salmon',
+                          backgroundColor: 'var(--color-error)',
                           color: 'white',
                           border: 'none',
                         }}
@@ -1037,7 +1037,7 @@ async function handleSaveStripeCustomerId() {
                         <div style={{ marginTop: 4 }}>{user.name}</div>
                       )}
                       {!user.active && (
-                        <div style={{ color: 'salmon', fontSize: 12, marginTop: 2 }}>
+                        <div style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 2 }}>
                           {t('inactive')}
                         </div>
                       )}
@@ -1049,7 +1049,7 @@ async function handleSaveStripeCustomerId() {
                             </div>
                           ))
                         ) : (
-                          <div className="helper" style={{ fontSize: 12, color: 'salmon' }}>
+                          <div className="helper" style={{ fontSize: 12, color: 'var(--color-error)' }}>
                             No tenant access
                           </div>
                         )}
@@ -1135,7 +1135,7 @@ async function handleSaveStripeCustomerId() {
             </button>
           </div>
 
-          {webhookError && <p style={{ color: 'salmon' }}>{webhookError}</p>}
+          {webhookError && <p style={{ color: 'var(--color-error)' }}>{webhookError}</p>}
 
           {!webhookLoading && webhookEvents.length === 0 && (
             <p className="helper">No webhook events found.</p>
@@ -1188,7 +1188,7 @@ async function handleSaveStripeCustomerId() {
                               {ev.processed ? 'processed' : ev.processing_error ? 'error' : 'pending'}
                             </span>
                           </td>
-                          <td style={{ padding: '6px 8px', fontSize: 12, color: 'salmon', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--color-error)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {ev.processing_error || ''}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
@@ -1255,7 +1255,7 @@ async function handleSaveStripeCustomerId() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--backdrop)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1380,7 +1380,7 @@ async function handleSaveStripeCustomerId() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--backdrop)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1544,7 +1544,7 @@ async function handleSaveStripeCustomerId() {
                               background: 'transparent',
                               border: '1px solid salmon',
                               borderRadius: 4,
-                              color: 'salmon',
+                              color: 'var(--color-error)',
                               cursor: 'pointer',
                             }}
                           >
@@ -1611,7 +1611,7 @@ async function handleSaveStripeCustomerId() {
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.7)', display: 'flex',
+            background: 'var(--backdrop)', display: 'flex',
             alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
           }}
           onClick={() => setManagingQuotaTenantId(null)}
@@ -1646,7 +1646,7 @@ const available = max - used
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600 }}>{mod.name}</div>
-                          <div className="helper" style={{ fontSize: 12, marginTop: 4, color: available < 0 ? 'salmon' : 'inherit' }}>
+                          <div className="helper" style={{ fontSize: 12, marginTop: 4, color: available < 0 ? 'var(--color-error)' : 'inherit' }}>
   Used: {used} · {available >= 0 ? `Available: ${available}` : `Over quota: ${Math.abs(available)}`}
 </div>
                         </div>
@@ -1713,7 +1713,7 @@ const available = max - used
   <div
     style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.7)', display: 'flex',
+      background: 'var(--backdrop)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
     }}
     onClick={() => setManagingStripeId(null)}
@@ -1780,7 +1780,7 @@ const available = max - used
       {managingGeoTenantId && (
         <div
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            position: 'fixed', inset: 0, background: 'var(--backdrop)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000, padding: 16,
           }}

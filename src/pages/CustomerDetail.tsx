@@ -176,7 +176,7 @@ export default function CustomerDetailPage() {
   }
 
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'salmon'}}>{t('error')} {err}</p></div>
+  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
   const { customer, totals, orders, payments } = data
@@ -302,7 +302,7 @@ export default function CustomerDetailPage() {
             <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
             <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
             {productsNeedingPrice.length > 0 && (
-              <div style={{ marginBottom: 12, padding: '8px 10px', background: 'var(--warning-bg, #fff8e1)', borderRadius: 6, fontSize: 12 }}>
+              <div style={{ marginBottom: 12, padding: '8px 10px', background: 'var(--color-warning-bg)', borderRadius: 6, fontSize: 12 }}>
                 <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{t('customers.shareOrderMissingPrices')}</p>
                 <ul style={{ margin: 0, paddingLeft: 16 }}>
                   {productsNeedingPrice.map(p => (

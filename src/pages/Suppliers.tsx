@@ -155,7 +155,7 @@ export default function Suppliers() {
       {/* Spacer */}
       <div style={{ height: 8 }} />
 
-      {err && <p style={{ color: 'salmon', marginTop: 8 }}>{t('error')} {err}</p>}
+      {err && <p style={{ color: 'var(--color-error)', marginTop: 8 }}>{t('error')} {err}</p>}
 
       {/* List */}
       <div style={{ marginTop: 12 }}>

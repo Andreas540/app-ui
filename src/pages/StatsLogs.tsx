@@ -337,7 +337,7 @@ export default function StatsLogs() {
           {/* Error */}
           {err && (
             <div className="card">
-              <p style={{ color: 'salmon' }}>{t('error')}: {err}</p>
+              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
             </div>
           )}
 
@@ -411,7 +411,7 @@ export default function StatsLogs() {
           {/* Error */}
           {err && (
             <div className="card">
-              <p style={{ color: 'salmon' }}>{t('error')}: {err}</p>
+              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
             </div>
           )}
 

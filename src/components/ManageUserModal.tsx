@@ -195,7 +195,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'var(--backdrop)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -291,7 +291,7 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                         onClick={() => handleRemoveMembership(m.tenant_id)}
                         style={{
                           padding: '6px 12px',
-                          background: 'salmon',
+                          background: 'var(--color-error)',
                           color: 'white',
                           border: 'none',
                           borderRadius: 4,
