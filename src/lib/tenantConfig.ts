@@ -27,6 +27,7 @@ export interface TenantConfig {
     showInfoIconsReports: boolean
     showNavArrowsMobile: boolean
     showNavArrowsDesktop: boolean
+    showOwedToSuppliers: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -86,6 +87,7 @@ export const defaultConfig: TenantConfig = {
     showInfoIconsReports: true,
     showNavArrowsMobile: true,
     showNavArrowsDesktop: false,
+    showOwedToSuppliers: false,
   },
   booking: {
     serviceTypeLabel: 'Session',

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
+import { getTenantConfig } from '../lib/tenantConfig'
+import { useAuth } from '../contexts/AuthContext'
 import { formatDate, formatMonthYear } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import {
@@ -244,7 +246,12 @@ function loadDashVisible(): string[] {
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
+  const showOwedToSuppliers = config.ui.showOwedToSuppliers
+
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
+  const [owedToSuppliers, setOwedToSuppliers] = useState(0)
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -392,6 +399,21 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     })()
   }, [recentOrders.length])
 
+  // Load total owed to suppliers
+  useEffect(() => {
+    if (!showOwedToSuppliers) return
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/suppliers`, { cache: 'no-store', headers: getAuthHeaders() })
+        if (!res.ok) return
+        const data = await res.json()
+        const total = (data.suppliers ?? []).reduce((sum: number, s: any) => sum + Number(s.owed_to_supplier || 0), 0)
+        setOwedToSuppliers(total)
+      } catch { /* swallow */ }
+    })()
+  }, [showOwedToSuppliers])
+
   // Total owed to me: sum positives only (treat negatives as 0)
   const totalOwedToMe = useMemo(
     () =>
@@ -412,8 +434,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   // My $
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalOwedToMe) - Number(owedToPartnersExJJ)),
-    [totalOwedToMe, owedToPartnersExJJ]
+    () => Math.max(0, Number(totalOwedToMe) - Number(owedToPartnersExJJ) - (showOwedToSuppliers ? Number(owedToSuppliers) : 0)),
+    [totalOwedToMe, owedToPartnersExJJ, owedToSuppliers, showOwedToSuppliers]
   )
 
   // Show orders based on display count
@@ -618,6 +640,12 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToPartners')}</div>
                     <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToPartnersExJJ)}</div>
                   </div>
+                  {showOwedToSuppliers && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToSuppliers')}</div>
+                      <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToSuppliers)}</div>
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid #eee' }}>
                     <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
                     <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>

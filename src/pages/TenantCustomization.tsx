@@ -12,7 +12,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40 // control height
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -246,6 +246,12 @@ export default function TenantCustomization() {
         delete ui.showNavArrowsDesktop
         return { ...p, ui }
       })
+    } else if (section === 'dashboard') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.showOwedToSuppliers
+        return { ...p, ui }
+      })
     }
   }
 
@@ -303,6 +309,7 @@ export default function TenantCustomization() {
               </optgroup>
               <optgroup label={t('tenantCustom.groupPages')}>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
+                <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
               </optgroup>
               <optgroup label={t('tenantCustom.groupModals')}>
                 <option value="welcome">{t('tenantCustom.sectionWelcome')}</option>
@@ -399,6 +406,14 @@ export default function TenantCustomization() {
                 <Toggle value={cb.showBookingParticipants ?? db.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
               </Row>
             </>
+          )}
+
+          {/* Pages > Dashboard */}
+          {section === 'dashboard' && (
+            <Row label={t('tenantCustom.showOwedToSuppliers')} help={t('tenantCustom.showOwedToSuppliersHelp')}
+              customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
+              <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
+            </Row>
           )}
 
           {/* Pages > Orders */}
