@@ -69,7 +69,7 @@ interface ActivityRow { bucket_index: number; action: string; count: number }
 interface Entity      { id: string; name: string; total: number; rows: ActivityRow[] }
 interface StatsData   { view: 'global' | 'tenant'; window_start: string; tz: string; entities: Entity[] }
 type SortOrder = 'activity' | 'name'
-type ReportTab = 'activity' | 'errors'
+type ReportTab = 'activity' | 'errors' | 'website'
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -207,6 +207,10 @@ export default function StatsLogs() {
   const [err, setErr] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
+  const [websiteData, setWebsiteData]       = useState<StatsData | null>(null)
+  const [websiteLoading, setWebsiteLoading] = useState(false)
+  const [websiteErr, setWebsiteErr]         = useState<string | null>(null)
+
   const activeTenantId = localStorage.getItem('activeTenantId')
 
   const loadData = useCallback(async () => {
@@ -230,6 +234,28 @@ export default function StatsLogs() {
     const id = setInterval(loadData, 30_000)
     return () => clearInterval(id)
   }, [loadData])
+
+  const loadWebsiteData = useCallback(async () => {
+    try {
+      setWebsiteLoading(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/website-stats`, { headers: getAuthHeaders() })
+      if (!res.ok) throw new Error(`Failed to load website stats (${res.status})`)
+      setWebsiteData(await res.json())
+      setWebsiteErr(null)
+    } catch (e: any) {
+      setWebsiteErr(e?.message || String(e))
+    } finally {
+      setWebsiteLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeReport !== 'website') return
+    loadWebsiteData()
+    const id = setInterval(loadWebsiteData, 30_000)
+    return () => clearInterval(id)
+  }, [activeReport, loadWebsiteData])
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const allActions = (() => {
@@ -292,10 +318,11 @@ export default function StatsLogs() {
             Errors
           </button>
           <button
-            disabled
-            style={{ height: CONTROL_H, minWidth: 120, opacity: 0.35, cursor: 'not-allowed' }}
+            className={activeReport === 'website' ? 'primary' : undefined}
+            onClick={() => setActiveReport('website')}
+            style={{ height: CONTROL_H, minWidth: 120 }}
           >
-            —
+            Website
           </button>
         </div>
       </div>
@@ -445,6 +472,48 @@ export default function StatsLogs() {
               ))}
             </div>
           )}
+        </>
+      )}
+
+      {/* ── Website report ───────────────────────────────────────────────── */}
+      {activeReport === 'website' && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            {websiteLoading && websiteData && (
+              <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>
+            )}
+            <button onClick={loadWebsiteData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
+          </div>
+
+          {websiteErr && (
+            <div className="card">
+              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {websiteErr}</p>
+            </div>
+          )}
+
+          {websiteLoading && !websiteData && (
+            <div className="card"><p>{t('loading')}</p></div>
+          )}
+
+          {websiteData && websiteData.entities[0]?.total === 0 && (
+            <div className="card">
+              <p className="helper">No website events in the last 24 hours.</p>
+            </div>
+          )}
+
+          {websiteData && websiteData.entities[0]?.total > 0 && (() => {
+            const entity = websiteData.entities[0]
+            const ws = new Date(websiteData.window_start)
+            const websiteActions = Array.from(new Set(entity.rows.map(r => r.action)))
+            return (
+              <EntityChart
+                entity={entity}
+                windowStart={ws}
+                tz="UTC"
+                allActions={websiteActions}
+              />
+            )
+          })()}
         </>
       )}
     </div>
