@@ -52,7 +52,7 @@ html[data-theme="dark"] {
 /* ── Light theme ──────────────────────────────────────── */
 html[data-theme="light"] {
   /* Layout */
-  --bg:            #eef1f8;
+  --bg:            #e8eef8;
   --panel:         #ffffff;
   --card:          #ffffff;
   --line:          #dce1ef;
