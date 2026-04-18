@@ -546,7 +546,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   })
 
   return (
-    <div>
+    <div className="page-wide">
       {/* ── Header: title + card selector ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>{t('dashboard.title')}</h2>

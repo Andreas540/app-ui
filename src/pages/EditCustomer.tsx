@@ -149,7 +149,7 @@ setCustomerType(
   if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-normal">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <h3>{t('customers.editTitle')}</h3>
         <Link to={id ? `/customers/${id}` : '/customers'} className="helper">{t('cancel')}</Link>

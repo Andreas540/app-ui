@@ -368,7 +368,7 @@ const to = toLocalYMD(toDate)
   if (!employee) return <div className="card"><p>{t.employeeNotFound}</p></div>
 
   return (
-    <div className="card" style={{ maxWidth: 600 }}>
+    <div className="card page-narrow">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
   <h3 style={{ margin: 0 }}>{t.timeEntry}</h3>
   <div style={{ display: 'flex', gap: 6 }}>

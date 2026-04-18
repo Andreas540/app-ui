@@ -272,7 +272,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
 
   return (
-    <div className="card" style={{ maxWidth: 800, position: 'relative' }}>
+    <div className="card page-normal" style={{ position: 'relative' }}>
 
       {/* Info overlay */}
       {showInfo && (

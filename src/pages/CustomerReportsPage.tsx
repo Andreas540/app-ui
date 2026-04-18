@@ -653,7 +653,7 @@ export default function CustomerReportsPage() {
   const showRanking = visible.includes('customer_ranking')
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div className="page-wide">
       {/* ── Header card ────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>

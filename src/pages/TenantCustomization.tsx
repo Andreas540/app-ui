@@ -262,7 +262,7 @@ export default function TenantCustomization() {
   const cb = cfg.booking || {}
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="page-normal">
       <h2 style={{ marginBottom: 24 }}>{t('tenantCustom.title')}</h2>
 
       {/* Tenant selector */}

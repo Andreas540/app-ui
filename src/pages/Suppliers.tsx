@@ -81,7 +81,7 @@ export default function Suppliers() {
   )
 
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
       {/* Search + Create button */}
       <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>

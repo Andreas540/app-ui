@@ -84,7 +84,7 @@ export default function BookingCustomersPage() {
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="card" style={{ maxWidth: 800 }}>
+    <div className="card page-normal">
       <h3 style={{ marginBottom: 20 }}>{t('bookingClients.title', 'Booking Clients')}</h3>
 
       {/* 2-column grid: count label | search+sort */}

@@ -61,7 +61,7 @@ export default function Partners() {
   }, [partners, query])
 
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
       {/* Force 2 columns even on mobile */}
       <div className="row row-2col-mobile" style={{ alignItems: 'end' }}>
         <div style={{ position: 'relative' }}>

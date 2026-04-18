@@ -259,7 +259,7 @@ export default function BookingRemindersPage() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 800 }}>
+    <div className="card page-normal">
       <h3 style={{ marginBottom: 8 }}>{t('remindersPage.title')}</h3>
       <p className="helper" style={{ marginBottom: 24 }}>{t('remindersPage.subtitle')}</p>
 

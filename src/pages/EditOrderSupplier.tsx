@@ -294,7 +294,7 @@ const pRes = await fetch(`${base}/api/product`, {
   if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
 
   return (
-    <div className="card" style={{ maxWidth: 900 }}>
+    <div className="card page-normal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div>
           <h3 style={{ margin: 0 }}>{t('supplierOrders.editTitle')}</h3>

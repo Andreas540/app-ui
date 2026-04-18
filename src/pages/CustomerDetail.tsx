@@ -202,7 +202,7 @@ export default function CustomerDetailPage() {
   const LINE_GAP = 4  // tighter than default
 
   return (
-    <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
+    <div className="card page-normal" style={{paddingBottom: 12}}>
       {/* Header row: Name + Edit (left), Back link (right) */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>

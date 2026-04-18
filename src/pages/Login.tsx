@@ -68,7 +68,7 @@ export default function Login() {
       minHeight: '100vh',
       background: 'var(--bg)'
     }}>
-      <div className="card" style={{ maxWidth: 400, width: '100%', margin: '0 16px' }}>
+      <div className="card page-narrow" style={{ width: '100%', margin: '0 16px' }}>
         <h3 style={{ textAlign: 'center', marginBottom: 24 }}>
           {t('login.heading')}
         </h3>

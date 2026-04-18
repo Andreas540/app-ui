@@ -529,7 +529,7 @@ export default function SupplyChainOverview() {
   const productionTotalQty = weeklyProductionData.reduce((sum, item) => sum + item.qty, 0)
 
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
       <h3 style={{ margin: 0 }}>{t('supplyChain.title')}</h3>
 
       {/* Section: Demand */}

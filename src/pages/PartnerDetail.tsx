@@ -391,7 +391,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
   const LINE_GAP = 4
 
   return (
-    <div className="card" style={{maxWidth: 960, paddingBottom: 12}}>
+    <div className="card page-normal" style={{paddingBottom: 12}}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
           <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>

@@ -196,7 +196,7 @@ export default function NewOrderSupplier() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 900 }}>
+    <div className="card page-normal">
       <h3>{t('supplierOrders.newTitle')}</h3>
 
       {err && <p style={{ color:'var(--color-error)' }}>{t('error')} {err}</p>}

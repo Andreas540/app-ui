@@ -153,7 +153,7 @@ export default function BookingDetailPage() {
   if (!booking) return null
 
   return (
-    <div className="card" style={{ maxWidth: 700 }}>
+    <div className="card page-narrow">
       <div style={{ marginBottom: 20 }}>
         <Link to="/bookings/list" className="helper" style={{ color: 'var(--accent)' }}>
           ← {t('bookingDetail.backToList', 'All bookings')}

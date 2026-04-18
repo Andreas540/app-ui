@@ -365,7 +365,7 @@ export default function TimeEntry() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 900, position: 'relative' }}>
+    <div className="card page-normal" style={{ position: 'relative' }}>
       <h3>{t('timeEntry.title')}</h3>
 
       {!employeeMode && (

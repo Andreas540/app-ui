@@ -314,7 +314,7 @@ const stats = useMemo(() => {
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{ maxWidth: 1200, position: 'relative' }}>
+    <div className="card page-normal" style={{ position: 'relative' }}>
       {/* Responsive styles for mobile */}
       <style>{`
         @media (max-width: 768px) {

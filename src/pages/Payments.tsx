@@ -498,7 +498,7 @@ const viaPartner = people.filter(p => p.customer_type === 'Partner')
 const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
   return (
-    <div className="card" style={{maxWidth:720}}>
+    <div className="card page-normal">
       <h3 style={{ margin: '0 0 12px' }}>
         {t('newPayment')}
         <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.85em' }}>

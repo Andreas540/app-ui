@@ -248,7 +248,7 @@ export default function EditPayment() {
   }
 
   return (
-    <div className="card" style={{maxWidth:720}}>
+    <div className="card page-narrow">
       <h3>{t('editPayment.title')}</h3>
 
       <div className="row row-2col-mobile" style={{marginTop:12}}>

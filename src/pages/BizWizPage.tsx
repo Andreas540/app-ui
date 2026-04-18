@@ -71,7 +71,7 @@ export default function BizWizPage() {
   }
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 16px 80px' }}>
+    <div className="page-narrow" style={{ padding: '24px 16px 80px' }}>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>

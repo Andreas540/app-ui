@@ -50,7 +50,7 @@ const res = await fetch(`${base}/api/partners`, {
   }
 
   return (
-    <div className="card" style={{maxWidth: 900}}>
+    <div className="card page-normal">
       <h3>{t('partners.createTitle')}</h3>
 
       <div className="row" style={{ marginTop: 12 }}>

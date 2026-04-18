@@ -91,7 +91,7 @@ const res = await fetch(`${base}/api/partner`, {
   if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-narrow">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <h3>{t('partners.editTitle')}</h3>
         <Link to={id ? `/partners/${id}` : '/partners'} className="helper">{t('cancel')}</Link>

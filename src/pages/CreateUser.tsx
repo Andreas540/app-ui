@@ -74,7 +74,7 @@ export default function CreateUser() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 600 }}>
+    <div className="card page-narrow">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>{t('createUser.title')}</h2>
         <Link to="/" className="helper">{t('back_link')}</Link>

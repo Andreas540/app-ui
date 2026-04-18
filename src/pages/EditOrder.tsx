@@ -358,7 +358,7 @@ export default function EditOrder() {
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{maxWidth: 720}}>
+    <div className="card page-narrow">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <div>
           <h3 style={{ margin:0 }}>{t('orders.editOrderTitle')}</h3>

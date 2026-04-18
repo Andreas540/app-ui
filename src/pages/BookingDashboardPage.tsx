@@ -285,7 +285,7 @@ export default function BookingDashboardPage() {
   if (!data)   return null
 
   return (
-    <div className="card" style={{ maxWidth: 900, paddingBottom: '60vh' }}>
+    <div className="card page-normal" style={{ paddingBottom: '60vh' }}>
 
       {/* Header with sync button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

@@ -118,7 +118,7 @@ export default function EditProduct() {
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-normal">
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
         <h3 style={{ margin:0 }}>{type === 'service' ? t('products.editServiceTitle') : t('products.editProductTitle')}</h3>
       </div>

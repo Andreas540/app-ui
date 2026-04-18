@@ -264,7 +264,7 @@ export default function NewBookingPage() {
     : null
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-narrow">
       <h3 style={{ marginBottom: 8 }}>{t('newBooking.title')}</h3>
 
       {/* Customer self-booking expander */}

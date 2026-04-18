@@ -155,7 +155,7 @@ export default function CreateCustomer() {
   }
 
   return (
-    <div className="card" style={{maxWidth: 900, position: 'relative'}}>
+    <div className="card page-normal" style={{position: 'relative'}}>
 
       {/* Info overlay */}
       {showInfo && (

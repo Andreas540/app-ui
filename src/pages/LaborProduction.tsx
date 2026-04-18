@@ -263,7 +263,7 @@ export default function LaborProduction() {
   const formattedSelectedDate = formatShortMonthDayYear(selectedDate)
 
   return (
-    <div className="card" style={{ maxWidth: 800 }}>
+    <div className="card page-normal">
       {/* Statistics at top */}
       <div style={{ 
         padding: 16, 

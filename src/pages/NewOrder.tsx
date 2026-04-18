@@ -306,7 +306,7 @@ const hasProducts = filteredProducts.length > 0
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{maxWidth: 720}}>
+    <div className="card page-normal">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
         <h3 style={{ margin:0 }}>{t('orders.newOrderTitle')}</h3>
 

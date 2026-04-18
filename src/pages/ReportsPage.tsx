@@ -426,7 +426,7 @@ export default function ReportsPage() {
     .filter((r): r is ReportDef => !!r && visible.includes(r.id))
 
   return (
-    <div style={{ maxWidth: 1400 }}>
+    <div className="page-wide">
       {/* ── Header card ──────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>

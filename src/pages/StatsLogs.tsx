@@ -295,7 +295,7 @@ export default function StatsLogs() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 1400 }}>
+    <div className="page-wide">
       {/* ── Top card: report buttons ───────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <h3 style={{ margin: '0 0 4px 0' }}>Stats &amp; Logs</h3>

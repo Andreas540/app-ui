@@ -128,7 +128,7 @@ export default function BookingIntegrationPage() {
   if (loading) return <div className="helper" style={{ padding: 32 }}>{t('loading')}</div>
 
   return (
-    <div className="card" style={{ maxWidth: 600 }}>
+    <div className="card page-narrow">
       <h3 style={{ marginBottom: 8 }}>{t('bookingIntegration.title')}</h3>
       <p className="helper" style={{ marginBottom: 24 }}>{t('bookingIntegration.subtitle')}</p>
 

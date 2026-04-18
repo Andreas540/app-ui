@@ -145,7 +145,7 @@ export default function Settings() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="card" style={{ maxWidth: 680 }}>
+    <div className="card page-narrow">
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

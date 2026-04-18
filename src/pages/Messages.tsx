@@ -112,7 +112,7 @@ export default function Messages() {
   const answered    = messages.filter(m =>  isAnswered(m))
 
   return (
-    <div className="card" style={{ maxWidth: 680 }}>
+    <div className="card page-narrow">
       <h3 style={{ margin: 0, marginBottom: 4 }}>{t('messages.title')}</h3>
       <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
         {t('messages.description')}

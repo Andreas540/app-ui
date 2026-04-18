@@ -520,7 +520,7 @@ const NewCost = () => {
   return (
     <>
       {/* Register/Edit Cost Card */}
-      <div ref={formRef} className="card" style={{ maxWidth: 720 }}>
+      <div ref={formRef} className="card page-normal">
         <h3 style={{ margin: 0, marginBottom: 16 }}>
           {editingCostId ? t('costs.editTitle') : t('costs.registerTitle')}
         </h3>
@@ -766,7 +766,7 @@ const NewCost = () => {
       </div>
 
       {/* View Costs Card */}
-      <div className="card" style={{ maxWidth: 720, marginTop: 16 }}>
+      <div className="card page-normal" style={{ marginTop: 16 }}>
         {/* Filter Buttons for Viewing Costs */}
         <div
           style={{

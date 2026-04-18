@@ -715,7 +715,7 @@ export default function TenantAdmin() {
   if (loading) return <div className="card"><p>{t('loading')}</p></div>
 
   if (error) return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-normal">
       <h3 style={{ color: 'var(--color-error)' }}>{t('error')}</h3>
       <p>{error}</p>
     </div>
@@ -730,7 +730,7 @@ export default function TenantAdmin() {
   const accMonthLabel = `${accYear}-${accMonth}`
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div className="page-wide">
       <div className="card" style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>{t('tenantAdmin.title')}</h2>
         <p className="helper" style={{ marginTop: 8 }}>

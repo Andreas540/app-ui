@@ -299,7 +299,7 @@ export default function EmployeeManagement() {
   const inactiveEmployees = employees.filter(e => !e.active)
 
   return (
-    <div className="card" style={{ maxWidth: 1000 }}>
+    <div className="card page-normal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <h3 style={{ margin: 0 }}>{t('employees.title')}</h3>
         <button className="primary" onClick={handleNew} style={{ height: CONTROL_H }}>

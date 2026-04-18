@@ -138,7 +138,7 @@ export default function MergeCustomer() {
   const showForm     = bothSelected && !!source
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-narrow">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3 style={{ margin: 0 }}>{t('customers.mergeTitle')}</h3>
         <button onClick={() => nav('/customers')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 14 }}>

@@ -131,7 +131,7 @@ export default function EditSupplier() {
   const CONTROL_H = 44
 
   return (
-    <div className="card" style={{ maxWidth: 900 }}>
+    <div className="card page-normal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h3 style={{ margin: 0 }}>{t('suppliers.editTitle')}</h3>
         <Link to={`/suppliers/${id}`} className="helper">{t('back_link')}</Link>

@@ -136,7 +136,7 @@ const sortedInventory = [...inventory].sort((a, b) => {
     : ''
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
+    <div className="page-wide" style={{ padding: '0 16px' }}>
       {/* Sales Stats */}
       <div className="card" style={{ marginBottom: 20 }}>
         {statsLoading ? (

@@ -114,7 +114,7 @@ export default function Contact() {
       )}
 
       {/* Form */}
-      <div className="card" style={{ maxWidth: 560 }}>
+      <div className="card page-narrow">
         <h3 style={{ margin: 0, marginBottom: 12 }}>{t('contact.title')}</h3>
         <p style={{ color: 'var(--muted)', margin: 0, marginBottom: 24 }}>
           {t('contact.subheading')}
@@ -254,7 +254,7 @@ export default function Contact() {
 
       {/* Received messages (replies from support) */}
       {!loading && sentMessages.some(m => m.reply) && (
-        <div className="card" style={{ maxWidth: 560, marginTop: 16 }}>
+        <div className="card page-narrow" style={{ marginTop: 16 }}>
           <h4 style={{ margin: 0, marginBottom: 12 }}>{t('contact.receivedMessages')}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sentMessages.filter(m => m.reply).map(msg => {

@@ -146,7 +146,7 @@ export default function Customers() {
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
 
       <h3 style={{ margin: '0 0 12px' }}>{t('customers.title')}</h3>
 

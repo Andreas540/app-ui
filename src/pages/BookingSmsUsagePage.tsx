@@ -142,7 +142,7 @@ export default function BookingSmsUsagePage() {
   if (error && !monthStats) return <div style={{ padding: 32, color: 'var(--color-error)' }}>{error}</div>
 
   return (
-    <div className="card" style={{ maxWidth: 800 }}>
+    <div className="card page-normal">
       <h3 style={{ marginBottom: 24 }}>{t('smsUsagePage.title')}</h3>
 
       {error && <div style={{ color: 'var(--color-error)', marginBottom: 16 }}>{error}</div>}

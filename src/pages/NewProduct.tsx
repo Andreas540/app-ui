@@ -140,7 +140,7 @@ export default function NewProduct() {
   }, {} as Record<string, HistoricalCost[]>)
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-normal">
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
         <h3 style={{ margin:0 }}>{category === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}</h3>
         <Link to={`/products/edit?type=${category}`}>

@@ -121,7 +121,7 @@ export default function BookingsPage() {
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
       <h3 style={{ marginBottom: 20 }}>{t('bookingsList.title', 'All Bookings')}</h3>
 
       {/* Filters */}

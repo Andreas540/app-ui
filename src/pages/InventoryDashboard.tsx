@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 export default function InventoryDashboard() {
   const { t } = useTranslation()
   return (
-    <div className="card" style={{ maxWidth: 960 }}>
+    <div className="card page-normal">
       <h3>{t('inventoryDashboard.title')}</h3>
 
       <div className="grid" style={{ marginTop: 20 }}>

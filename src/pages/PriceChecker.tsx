@@ -83,7 +83,7 @@ const res = await fetch(
   const showResults = selectedCustomerId && selectedProductId
 
   return (
-    <div className="card" style={{ maxWidth: 720 }}>
+    <div className="card page-narrow">
       <h3 style={{ margin: 0, marginBottom: 16 }}>{t('priceChecker.title')}</h3>
 
       {/* Filters */}

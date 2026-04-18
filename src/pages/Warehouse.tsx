@@ -145,7 +145,7 @@ export default function Warehouse() {
   return (
     <>
       {/* Adjust Warehouse Inventory Card */}
-      <div className="card" style={{ maxWidth: 720 }}>
+      <div className="card page-normal">
         <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
 
         {/* Row 1: Stage (M or P) - MOVED TO TOP */}
@@ -403,7 +403,7 @@ export default function Warehouse() {
       </div>
 
       {/* Current Inventory Card */}
-      <div className="card" style={{ maxWidth: 720, marginTop: 16 }}>
+      <div className="card page-normal" style={{ marginTop: 16 }}>
         <h4 style={{ margin: 0, marginBottom: 12 }}>{t('warehouse.currentInventory')}</h4>
         {inventory.length === 0 ? (
           <p className="helper">{t('warehouse.noInventoryData')}</p>
