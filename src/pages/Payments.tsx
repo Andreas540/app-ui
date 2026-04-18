@@ -118,7 +118,8 @@ useEffect(() => {
         setSupplierId(preselectedSupplierId)
         setPaymentDirection('supplier')
       } else {
-        setEntityId((customers[0]?.id as string) ?? '')
+        const firstDirect = (customers as any[]).find(p => p.customer_type === 'BLV' || p.customer_type === 'Direct')
+        setEntityId((firstDirect?.id ?? customers[0]?.id ?? '') as string)
       }
       
       if (bootPartners && bootPartners.length > 0) {
