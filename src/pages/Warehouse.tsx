@@ -138,9 +138,9 @@ export default function Warehouse() {
 
   const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
-  if (!products.length) return <div className="card"><p>{t('warehouse.noProducts')}</p></div>
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
+  if (!products.length) return <div className="card page-normal"><p>{t('warehouse.noProducts')}</p></div>
 
   return (
     <>

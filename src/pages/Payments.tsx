@@ -488,9 +488,9 @@ useEffect(() => {
   }
 }
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
-  if (!people.length) return <div className="card"><p>{t('payments.noCustomersFound')}</p></div>
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
+  if (!people.length) return <div className="card page-normal"><p>{t('payments.noCustomersFound')}</p></div>
 
   const CONTROL_H = 44
   const directCustomers = people.filter(p => p.customer_type === 'BLV' || p.customer_type === 'Direct')

@@ -111,9 +111,9 @@ export default function EditProduct() {
     }
   }
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
-  if (!products.length) return <div className="card"><p>{t('products.noProducts')}</p></div>
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
+  if (!products.length) return <div className="card page-normal"><p>{t('products.noProducts')}</p></div>
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 

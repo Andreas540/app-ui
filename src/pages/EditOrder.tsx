@@ -352,8 +352,8 @@ export default function EditOrder() {
     }
   }
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
+  if (loading) return <div className="card page-narrow"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-narrow"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
   const CONTROL_H = 44
 

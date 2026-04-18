@@ -145,8 +145,8 @@ setCustomerType(
     }
   }
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-  if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
   return (
     <div className="card page-normal">

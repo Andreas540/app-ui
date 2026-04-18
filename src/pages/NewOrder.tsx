@@ -296,8 +296,8 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
   const partner1TotalStr = partner1Total > 0 ? usdFmt.format(partner1Total) : ''
   const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
-if (err) return <div className="card"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
 const hasCustomers = people.length > 0
 const hasProducts = filteredProducts.length > 0

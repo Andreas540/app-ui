@@ -712,7 +712,7 @@ export default function TenantAdmin() {
     }
   }
 
-  if (loading) return <div className="card"><p>{t('loading')}</p></div>
+  if (loading) return <div className="card page-wide"><p>{t('loading')}</p></div>
 
   if (error) return (
     <div className="card page-normal">
