@@ -40,6 +40,7 @@ export default function TenantAdmin() {
   // Manage user features modal
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
   const [managingUserName, setManagingUserName] = useState('')
+  const [managingUserRole, setManagingUserRole] = useState<'tenant_admin' | 'tenant_user'>('tenant_user')
   const [managingUserFeatures, setManagingUserFeatures] = useState<FeatureId[]>([])
   const [savingFeatures, setSavingFeatures] = useState(false)
 
@@ -186,6 +187,7 @@ export default function TenantAdmin() {
   async function openManageUserFeatures(targetUser: TenantUser) {
     setManagingUserId(targetUser.id)
     setManagingUserName(targetUser.name || targetUser.email)
+    setManagingUserRole(targetUser.role)
     const allFeatures: FeatureId[] = MODULES.flatMap(m => m.features)
     if (targetUser.features === null) {
       setManagingUserFeatures(allFeatures)
@@ -1575,6 +1577,7 @@ export default function TenantAdmin() {
                       {availableFeatures.map((featureId) => {
                         const feature = AVAILABLE_FEATURES[featureId]
                         if (!feature) return null
+                        const disabled = featureId === 'tenant-admin' && managingUserRole === 'tenant_user'
                         return (
                           <label
                             key={featureId}
@@ -1585,14 +1588,16 @@ export default function TenantAdmin() {
                               padding: 12,
                               background: 'rgba(255,255,255,0.03)',
                               borderRadius: 8,
-                              cursor: 'pointer',
+                              cursor: disabled ? 'not-allowed' : 'pointer',
                               border: '1px solid var(--border)',
+                              opacity: disabled ? 0.4 : 1,
                             }}
                           >
                             <input
                               type="checkbox"
                               checked={managingUserFeatures.includes(featureId)}
                               onChange={() => toggleFeature(featureId, false)}
+                              disabled={disabled}
                               style={{ width: 20, height: 20 }}
                             />
                             <div style={{ flex: 1 }}>
