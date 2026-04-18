@@ -593,7 +593,9 @@
     "delDateColumn": "Del. date",
     "preProdColumn": "Pre-prod",
     "finishedColumn": "Finished",
-    "printNotDelivered": "Print not delivered list"
+    "printNotDelivered": "Print not delivered list",
+    "aiAnalyze": "AI Analyze",
+    "aiDemandAnalysis": "AI Demand Analysis"
   },
   "costs": {
     "registerTitle": "Register New Cost",

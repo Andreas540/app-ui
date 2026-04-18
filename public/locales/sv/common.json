@@ -593,7 +593,9 @@
     "delDateColumn": "Lev.datum",
     "preProdColumn": "Förprod",
     "finishedColumn": "Färdigt",
-    "printNotDelivered": "Skriv ut ej levererat"
+    "printNotDelivered": "Skriv ut ej levererat",
+    "aiAnalyze": "AI-analys",
+    "aiDemandAnalysis": "AI efterfråganalys"
   },
   "costs": {
     "registerTitle": "Registrera ny kostnad",

@@ -593,7 +593,9 @@
     "delDateColumn": "Fecha ent.",
     "preProdColumn": "Pre-prod",
     "finishedColumn": "Terminado",
-    "printNotDelivered": "Imprimir lista no entregada"
+    "printNotDelivered": "Imprimir lista no entregada",
+    "aiAnalyze": "Analizar con IA",
+    "aiDemandAnalysis": "Análisis de demanda IA"
   },
   "costs": {
     "registerTitle": "Registrar Nuevo Costo",

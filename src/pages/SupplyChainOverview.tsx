@@ -113,6 +113,30 @@ export default function SupplyChainOverview() {
   const [demandCustomFrom, setDemandCustomFrom] = useState('')
   const [demandCustomTo, setDemandCustomTo] = useState('')
 
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiErr, setAiErr] = useState<string | null>(null)
+
+  const runDemandAnalysis = async () => {
+    setAiLoading(true)
+    setAiErr(null)
+    setAiAnalysis(null)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/supply-chain-analyze`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? `Status ${res.status}`)
+      setAiAnalysis(json.analysis)
+    } catch (e: any) {
+      setAiErr(e?.message || String(e))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   // Persistent color mapping for products
   const [productColorMap] = useState(new Map<string, string>())
   let colorIndex = 0
@@ -532,11 +556,70 @@ export default function SupplyChainOverview() {
     <div className="card page-normal">
       <h3 style={{ margin: 0 }}>{t('supplyChain.title')}</h3>
 
+      {/* AI analysis overlay */}
+      {(aiAnalysis !== null || aiLoading || aiErr) && (
+        <div
+          onClick={() => { setAiAnalysis(null); setAiErr(null) }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'var(--backdrop)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: 24,
+              maxWidth: 520,
+              width: '100%',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <strong style={{ fontSize: 15 }}>{t('supplyChain.aiDemandAnalysis')}</strong>
+              <button
+                onClick={() => { setAiAnalysis(null); setAiErr(null) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-secondary)', padding: '0 4px' }}
+              >✕</button>
+            </div>
+            {aiLoading && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('loading')}</p>}
+            {aiErr    && <p style={{ color: 'var(--color-error)', margin: 0 }}>{aiErr}</p>}
+            {aiAnalysis && <p style={{ margin: 0, lineHeight: 1.6 }}>{aiAnalysis}</p>}
+          </div>
+        </div>
+      )}
+
       {/* Section: Demand */}
       <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('demand')}>
-          <span>{t('supplyChain.demand')}</span>
-          <span style={expandIconStyle}>{expandedSections.demand ? '−' : '+'}</span>
+        <div style={sectionHeaderStyle}>
+          <span onClick={() => toggleSection('demand')} style={{ cursor: 'pointer', flex: 1 }}>
+            {t('supplyChain.demand')}
+          </span>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              onClick={e => { e.stopPropagation(); runDemandAnalysis() }}
+              disabled={aiLoading}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: aiLoading ? 'default' : 'pointer',
+                fontSize: 18,
+                padding: '4px 8px',
+                color: 'var(--text)',
+                opacity: aiLoading ? 0.5 : 1,
+              }}
+              title={t('supplyChain.aiAnalyze')}
+            >
+              🤖
+            </button>
+            <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
+              {expandedSections.demand ? '−' : '+'}
+            </span>
+          </div>
         </div>
 
         {expandedSections.demand && (
