@@ -498,7 +498,12 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
 
   return (
     <div className="card" style={{maxWidth:720}}>
-      <h3 style={{ margin: '0 0 12px' }}>{t('newPayment')}</h3>
+      <h3 style={{ margin: '0 0 12px' }}>
+        {t('newPayment')}
+        <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.85em' }}>
+          {' — '}{paymentDirection === 'customer' ? t('payments.fromCustomer') : paymentDirection === 'partner' ? t('payments.toPartner') : t('payments.toSupplier')}
+        </span>
+      </h3>
 
       {/* Payment direction checkboxes */}
       <div style={{ display:'flex', gap:24, marginBottom:16 }}>

@@ -69,7 +69,10 @@ export default function NewOrder() {
         setPeople(customers)
         setProducts(products)
         setPartners(bootPartners ?? [])
-        if (products[0]) setProductId(products[0].id)
+        const firstProduct = products
+          .filter(p => (p.category ?? 'product') === 'product')
+          .sort((a, b) => a.name.localeCompare(b.name))[0]
+        if (firstProduct) setProductId(firstProduct.id)
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -120,10 +123,15 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
   const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
 
-  // Filter out specific products from dropdown
-  const filteredProducts = useMemo(() => {
+  // Filter out specific products and split into sorted groups
+  const { filteredProducts, productGroup, serviceGroup } = useMemo(() => {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
-    return products.filter(p => !excludedNames.includes(p.name.toLowerCase()))
+    const filtered = products
+      .filter(p => !excludedNames.includes(p.name.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    const productGroup = filtered.filter(p => (p.category ?? 'product') === 'product')
+    const serviceGroup = filtered.filter(p => p.category === 'service')
+    return { filteredProducts: filtered, productGroup, serviceGroup }
   }, [products])
 
   // Is this the Refund/Discount product? (name match, case-insensitive)
@@ -382,19 +390,30 @@ const hasProducts = filteredProducts.length > 0
       {/* Product | Order date */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
-          <label>{t('product')}</label>
+          <label>{t('orders.productOrService')}</label>
           <select
-  value={productId}
-  onChange={e=>setProductId(e.target.value)}
-  style={{ height: CONTROL_H }}
-  disabled={!hasProducts}
->
-  {!hasProducts ? (
-    <option value="">{t('orders.noProductsYet')}</option>
-  ) : (
-    filteredProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
-  )}
-</select>
+            value={productId}
+            onChange={e => setProductId(e.target.value)}
+            style={{ height: CONTROL_H }}
+            disabled={!hasProducts}
+          >
+            {!hasProducts ? (
+              <option value="">{t('orders.noProductsYet')}</option>
+            ) : (
+              <>
+                {productGroup.length > 0 && (
+                  <optgroup label={t('orders.groupProducts')}>
+                    {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </optgroup>
+                )}
+                {serviceGroup.length > 0 && (
+                  <optgroup label={t('orders.groupServices')}>
+                    {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </optgroup>
+                )}
+              </>
+            )}
+          </select>
         </div>
         <div>
           <label>{t('orders.orderDate')}</label>
