@@ -1,17 +1,17 @@
 // netlify/functions/product.mjs
 
-import { resolveAuthz } from './utils/auth.mjs'
+import { resolveAuthz }     from './utils/auth.mjs'
+import { withErrorLogging } from './utils/with-error-logging.mjs'
 
-export async function handler(event) {
+export const handler = withErrorLogging('product', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')  return list(event);
   if (event.httpMethod === 'POST') return create(event);
   if (event.httpMethod === 'PUT')  return update(event);
   return cors(405, { error: 'Method not allowed' });
-}
+})
 
 async function list(event) {
-  try {
     const { neon } = await import('@neondatabase/serverless');
 const { DATABASE_URL } = process.env;
 if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
@@ -30,14 +30,9 @@ const TENANT_ID = authz.tenantId;
       ORDER BY category, name
     `;
     return cors(200, { products: rows });
-  } catch (e) {
-    console.error(e);
-    return cors(500, { error: String(e?.message || e) });
-  }
 }
 
 async function create(event) {
-  try {
     const { neon } = await import('@neondatabase/serverless');
 const { DATABASE_URL } = process.env;
 if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
@@ -96,14 +91,9 @@ const TENANT_ID = authz.tenantId;
 `;
 
     return cors(201, { product });
-  } catch (e) {
-    console.error(e);
-    return cors(500, { error: String(e?.message || e) });
-  }
 }
 
 async function update(event) {
-  try {
     const { neon } = await import('@neondatabase/serverless');
 const { DATABASE_URL } = process.env;
 if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
@@ -246,10 +236,6 @@ const TENANT_ID = authz.tenantId;
       product: updatedRows[0],
       applied_to_history: applyToHistory && costChanged
     });
-  } catch (e) {
-    console.error(e);
-    return cors(500, { error: String(e?.message || e) });
-  }
 }
 
 function cors(status, body) {

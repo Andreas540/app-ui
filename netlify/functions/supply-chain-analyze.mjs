@@ -6,12 +6,14 @@ import { neon }                    from '@neondatabase/serverless'
 import { resolveAuthz }            from './utils/auth.mjs'
 import { callClaude, logAiUsage }  from './utils/ai.mjs'
 import { GENERAL_TONE, TOPICS }    from './utils/ai-prompts.mjs'
+import { logActivity }             from './utils/activity-logger.mjs'
+import { withErrorLogging }        from './utils/with-error-logging.mjs'
 
 const TOPIC   = TOPICS.supply_chain_demand
 const FEATURE = 'supply_chain_demand'
 const MODEL   = 'claude-haiku-4-5-20251001'
 
-export async function handler(event) {
+export const handler = withErrorLogging('supply_chain_analyze', async (event) => {
   if (event.httpMethod === 'OPTIONS') return resp(204, {})
   if (event.httpMethod !== 'POST')    return resp(405, { error: 'Method not allowed' })
 
@@ -23,8 +25,7 @@ export async function handler(event) {
   if (authz.error) return resp(403, { error: authz.error })
   const TENANT_ID = authz.tenantId
 
-  try {
-    const [
+  const [
       demandMonthly,
       warehouseStock,
       supplierOrders,
@@ -153,13 +154,11 @@ export async function handler(event) {
       model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens,
     }).catch(e => console.error('ai_usage_log failed:', e))
 
-    return resp(200, { analysis: result.text })
+    logActivity({ sql, event, action: 'supply_chain_analyze', success: true, tenantId: TENANT_ID })
+      .catch(e => console.error('logActivity failed:', e))
 
-  } catch (e) {
-    console.error('supply-chain-analyze error:', e)
-    return resp(500, { error: 'Analysis failed', detail: e?.message })
-  }
-}
+    return resp(200, { analysis: result.text })
+})
 
 function buildPrompt({ demandMonthly, warehouseStock, supplierOrders, undeliveredOrders, deliveryLeadTimes }) {
   const lines = []

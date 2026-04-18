@@ -1,6 +1,7 @@
 // netlify/functions/order-supplier.mjs
-import { neon } from '@neondatabase/serverless'
-import { resolveAuthz } from './utils/auth.mjs'
+import { neon }             from '@neondatabase/serverless'
+import { resolveAuthz }     from './utils/auth.mjs'
+import { withErrorLogging } from './utils/with-error-logging.mjs'
 
 const json = (code, obj) => ({
   statusCode: code,
@@ -14,8 +15,7 @@ const json = (code, obj) => ({
   body: JSON.stringify(obj),
 })
 
-export const handler = async (event) => {
-  try {
+export const handler = withErrorLogging('order_supplier', async (event) => {
     const method = event.httpMethod || 'GET'
     
     // Handle CORS preflight
@@ -260,8 +260,4 @@ export const handler = async (event) => {
     }
 
     return json(405, { error: 'Method Not Allowed' })
-  } catch (err) {
-    console.error('order-supplier error:', err)
-    return json(500, { error: String(err?.message || err) })
-  }
-}
+})

@@ -13,15 +13,16 @@ export function isDirectType(customer_type) {
 
 const VALID_CUSTOMER_TYPES = ['BLV', 'Direct', 'Partner']
 
-export async function handler(event) {
+import { withErrorLogging } from './utils/with-error-logging.mjs'
+
+export const handler = withErrorLogging('customer', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getCustomer(event)
   if (event.httpMethod === 'PUT')    return updateCustomer(event)
   return cors(405, { error: 'Method not allowed' })
-}
+})
 
 async function getCustomer(event) {
-  try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
@@ -117,15 +118,9 @@ async function getCustomer(event) {
     `
 
     return cors(200, { customer, totals: totals[0], orders, payments })
-  } catch (e) {
-    console.error(e)
-    return cors(500, { error: String(e?.message || e) })
-  }
 }
 
-
 async function updateCustomer(event) {
-  try {
     const { neon } = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
@@ -242,10 +237,6 @@ async function updateCustomer(event) {
       ok: true,
       applied_to_history: apply_to_history && shippingCostChanged
     })
-  } catch (e) {
-    console.error(e)
-    return cors(500, { error: String(e?.message || e) })
-  }
 }
 
 function cors(status, body) {
