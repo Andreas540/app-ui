@@ -32,91 +32,118 @@ export async function handler(event) {
       deliveryLeadTimes,
     ] = await Promise.all([
 
-      // Monthly demand per product (last 6 months)
+      // Monthly demand per product (last 6 months) via the reporting view
       sql`
         SELECT
           product_name,
           TO_CHAR(month, 'YYYY-MM') AS month,
           SUM(qty)::int             AS qty
-        FROM public.v_customer_product_monthly
+        FROM v_customer_product_monthly
         WHERE tenant_id = ${TENANT_ID}
           AND month >= DATE_TRUNC('month', NOW()) - INTERVAL '6 months'
         GROUP BY product_name, month
         ORDER BY product_name, month
       `,
 
-      // Current warehouse inventory
+      // Current warehouse inventory using the same CTE logic as supply-chain-overview
       sql`
+        WITH wd AS (
+          SELECT
+            product_id,
+            SUM(CASE WHEN supplier_manual_delivered IN ('M','S') THEN qty ELSE 0 END) AS pre_from_m,
+            SUM(CASE WHEN supplier_manual_delivered = 'P'        THEN qty ELSE 0 END) AS finished_from_p,
+            SUM(CASE WHEN supplier_manual_delivered = 'D'        THEN qty ELSE 0 END) AS outbound_qty
+          FROM warehouse_deliveries
+          WHERE tenant_id = ${TENANT_ID}
+          GROUP BY product_id
+        ),
+        lp AS (
+          SELECT product_id, SUM(qty_produced) AS produced_qty
+          FROM labor_production
+          WHERE tenant_id = ${TENANT_ID}
+          GROUP BY product_id
+        ),
+        base AS (
+          SELECT
+            COALESCE(wd.product_id, lp.product_id) AS product_id,
+            COALESCE(wd.pre_from_m,       0) AS pre_from_m,
+            COALESCE(wd.finished_from_p,  0) AS finished_from_p,
+            COALESCE(wd.outbound_qty,     0) AS outbound_qty,
+            COALESCE(lp.produced_qty,     0) AS produced_qty
+          FROM wd
+          FULL OUTER JOIN lp ON lp.product_id = wd.product_id
+        )
         SELECT
-          product,
-          SUM(CASE WHEN status = 'pre_production' THEN qty ELSE 0 END)::int AS pre_prod,
-          SUM(CASE WHEN status = 'finished'        THEN qty ELSE 0 END)::int AS finished,
-          SUM(qty)::int AS total
-        FROM public.warehouse_deliveries
-        WHERE tenant_id = ${TENANT_ID}
-          AND delivered = false
-        GROUP BY product
-        ORDER BY product
+          p.name                                                            AS product,
+          (base.pre_from_m - base.produced_qty)::int                       AS pre_prod,
+          (base.finished_from_p + base.produced_qty - base.outbound_qty)::int AS finished,
+          (base.pre_from_m + base.finished_from_p - base.outbound_qty)::int   AS total
+        FROM base
+        JOIN products p ON p.id = base.product_id
+        WHERE p.tenant_id = ${TENANT_ID}
+          AND (p.category IS NULL OR p.category != 'service')
+        ORDER BY p.name
       `,
 
-      // Open supplier orders (not yet delivered)
+      // Open supplier orders (not in customs, not yet delivered)
       sql`
         SELECT
-          p.name                                        AS product,
-          s.name                                        AS supplier,
-          os.qty::int                                   AS qty,
-          TO_CHAR(os.order_date,    'YYYY-MM-DD')       AS order_date,
-          TO_CHAR(os.est_delivery_date, 'YYYY-MM-DD')   AS est_delivery_date
-        FROM public.orders_suppliers os
-        JOIN public.suppliers s ON s.id = os.supplier_id
-        JOIN public.products  p ON p.id = os.product_id
-        WHERE os.tenant_id = ${TENANT_ID}
-          AND os.delivered  = false
+          p.name                                      AS product,
+          s.name                                      AS supplier,
+          SUM(ois.qty)::int                           AS qty,
+          TO_CHAR(os.est_delivery_date, 'YYYY-MM-DD') AS est_delivery_date
+        FROM orders_suppliers os
+        JOIN order_items_suppliers ois ON ois.order_id = os.id
+        JOIN products  p ON p.id = ois.product_id
+        JOIN suppliers s ON s.id = os.supplier_id
+        WHERE os.tenant_id  = ${TENANT_ID}
+          AND os.delivered  = FALSE
+          AND os.in_customs = FALSE
+        GROUP BY p.name, s.name, os.est_delivery_date
         ORDER BY os.est_delivery_date NULLS LAST
       `,
 
-      // Undelivered customer orders
+      // Undelivered customer orders (remaining qty after partial deliveries)
       sql`
+        WITH order_remaining AS (
+          SELECT
+            oi.product_id,
+            GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0) AS remaining_qty
+          FROM orders o
+          JOIN order_items oi ON oi.order_id = o.id
+          WHERE o.tenant_id = ${TENANT_ID}
+            AND oi.qty > COALESCE(o.delivered_quantity, 0)
+        )
         SELECT
-          pr.name   AS product,
-          SUM(oi.qty)::int AS qty_pending
-        FROM public.orders o
-        JOIN public.order_items oi ON oi.order_id = o.id
-        JOIN public.products   pr  ON pr.id = oi.product_id
-        WHERE o.tenant_id   = ${TENANT_ID}
-          AND o.delivered   = false
-          AND o.invoiced    = false
-        GROUP BY pr.name
-        ORDER BY pr.name
+          p.name           AS product,
+          SUM(remaining_qty)::int AS qty_pending
+        FROM order_remaining
+        JOIN products p ON p.id = order_remaining.product_id
+        GROUP BY p.name
+        HAVING SUM(remaining_qty) > 0
+        ORDER BY p.name
       `,
 
-      // Avg lead time: supplier order → customer delivery (last 12 months, delivered only)
+      // Avg lead time: supplier order date → warehouse delivery (last 12 months)
       sql`
         SELECT
-          p.name                                          AS product,
-          AVG(
-            os.delivery_date::date - os.order_date::date
-          )::numeric(6,1)                                 AS avg_days_supplier_to_wh,
-          COUNT(*)::int                                   AS deliveries
-        FROM public.orders_suppliers os
-        JOIN public.products p ON p.id = os.product_id
-        WHERE os.tenant_id    = ${TENANT_ID}
-          AND os.delivered    = true
-          AND os.delivery_date IS NOT NULL
-          AND os.order_date   >= NOW() - INTERVAL '12 months'
+          p.name                                                      AS product,
+          AVG(os.delivery_date::date - os.est_delivery_date::date)::numeric(6,1) AS avg_days_vs_estimate,
+          COUNT(*)::int                                               AS deliveries
+        FROM orders_suppliers os
+        JOIN order_items_suppliers ois ON ois.order_id = os.id
+        JOIN products p ON p.id = ois.product_id
+        WHERE os.tenant_id      = ${TENANT_ID}
+          AND os.delivered      = TRUE
+          AND os.delivery_date  IS NOT NULL
+          AND os.est_delivery_date IS NOT NULL
+          AND os.delivery_date >= NOW() - INTERVAL '12 months'
         GROUP BY p.name
         ORDER BY p.name
       `,
     ])
 
-    const userPrompt = buildPrompt({
-      demandMonthly,
-      warehouseStock,
-      supplierOrders,
-      undeliveredOrders,
-      deliveryLeadTimes,
-    })
-
+    const userPrompt = buildPrompt({ demandMonthly, warehouseStock, supplierOrders, undeliveredOrders, deliveryLeadTimes })
     const systemPrompt = `${GENERAL_TONE}\n\n${TOPIC.systemPrompt}`
 
     const result = await callClaude({ systemPrompt, userPrompt, model: MODEL, maxTokens: 300 })
@@ -150,7 +177,7 @@ function buildPrompt({ demandMonthly, warehouseStock, supplierOrders, undelivere
   }
 
   if (warehouseStock.length) {
-    lines.push('\nWAREHOUSE INVENTORY (undelivered stock):')
+    lines.push('\nWAREHOUSE INVENTORY:')
     for (const r of warehouseStock) {
       lines.push(`  ${r.product}: ${r.total} total (${r.pre_prod} pre-prod, ${r.finished} finished)`)
     }
@@ -159,21 +186,22 @@ function buildPrompt({ demandMonthly, warehouseStock, supplierOrders, undelivere
   if (supplierOrders.length) {
     lines.push('\nOPEN SUPPLIER ORDERS (not yet delivered):')
     for (const r of supplierOrders) {
-      lines.push(`  ${r.product} from ${r.supplier}: ${r.qty} units, ordered ${r.order_date}, est. delivery ${r.est_delivery_date ?? 'unknown'}`)
+      lines.push(`  ${r.product} from ${r.supplier}: ${r.qty} units, est. delivery ${r.est_delivery_date ?? 'unknown'}`)
     }
   }
 
   if (undeliveredOrders.length) {
-    lines.push('\nPENDING CUSTOMER ORDERS (not yet delivered):')
+    lines.push('\nPENDING CUSTOMER ORDERS:')
     for (const r of undeliveredOrders) {
       lines.push(`  ${r.product}: ${r.qty_pending} units pending`)
     }
   }
 
   if (deliveryLeadTimes.length) {
-    lines.push('\nAVERAGE SUPPLIER LEAD TIMES (order → warehouse, last 12 months):')
+    lines.push('\nSUPPLIER DELIVERY VS ESTIMATE (last 12 months):')
     for (const r of deliveryLeadTimes) {
-      lines.push(`  ${r.product}: ${r.avg_days_supplier_to_wh} days avg (${r.deliveries} deliveries)`)
+      const sign = r.avg_days_vs_estimate > 0 ? '+' : ''
+      lines.push(`  ${r.product}: ${sign}${r.avg_days_vs_estimate} days vs estimate (${r.deliveries} orders)`)
     }
   }
 
