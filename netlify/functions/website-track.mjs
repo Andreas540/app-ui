@@ -23,12 +23,6 @@ export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod !== 'POST')    return cors(405, { error: 'Method not allowed' })
 
-  // Shared-secret validation
-  const { WEBSITE_TRACK_SECRET } = process.env
-  if (WEBSITE_TRACK_SECRET) {
-    const key = event.headers?.['x-track-key'] || event.headers?.['X-Track-Key'] || ''
-    if (key !== WEBSITE_TRACK_SECRET) return cors(401, { error: 'Unauthorized' })
-  }
 
   let body
   try { body = JSON.parse(event.body || '{}') } catch { return cors(400, { error: 'Invalid JSON' }) }
