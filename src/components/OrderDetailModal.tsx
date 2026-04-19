@@ -229,13 +229,13 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         {/* Line items */}
         {items.length > 0 ? (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', marginBottom: 4 }}>
               <div className="helper">{t('product')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6 }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 6 }}>
                 <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
                 <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                 <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
@@ -244,12 +244,12 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
           </div>
         ) : (order.product_name || order.qty || order.unit_price) ? (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', marginBottom: 4 }}>
               <div className="helper">{t('product')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 6 }}>
               <div style={{ fontWeight: 500 }}>{order.product_name || '—'}</div>
               <div style={{ textAlign: 'right' }}>{order.qty ? intFmt.format(order.qty) : '—'}</div>
               <div style={{ textAlign: 'right' }}>{order.unit_price ? fmtMoney(order.unit_price) : '—'}</div>
