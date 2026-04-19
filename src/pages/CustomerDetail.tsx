@@ -474,7 +474,10 @@ export default function CustomerDetailPage() {
                   <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
                     <button onClick={(e) => { e.stopPropagation(); handleDeliveryIconClick(o) }}
                       style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }} title={title}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: status === 'not_delivered' ? 18 : 16, lineHeight: 1, color }}>{symbol}</span>
+                      {status === 'not_delivered'
+          ? <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', border: `2px solid ${color}`, flexShrink: 0 }} />
+          : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
+        }
                     </button>
                   </div>
                 )
