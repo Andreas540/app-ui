@@ -512,6 +512,7 @@
     "selectBoth": "Select both a customer and a product to view price data."
   },
   "suppliers": {
+    "title": "Suppliers",
     "searchPlaceholder": "Search suppliers",
     "createNew": "Create New Supplier",
     "owedToSuppliers": "Owed to suppliers",

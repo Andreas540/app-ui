@@ -512,6 +512,7 @@
     "selectBoth": "Välj både en kund och en produkt för att se prisdata."
   },
   "suppliers": {
+    "title": "Leverantörer",
     "searchPlaceholder": "Sök leverantörer",
     "createNew": "Skapa ny leverantör",
     "owedToSuppliers": "Skuld till leverantörer",

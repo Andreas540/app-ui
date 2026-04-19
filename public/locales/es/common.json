@@ -512,6 +512,7 @@
     "selectBoth": "Selecciona un cliente y un producto para ver los datos de precio."
   },
   "suppliers": {
+    "title": "Proveedores",
     "searchPlaceholder": "Buscar proveedores",
     "createNew": "Crear Nuevo Proveedor",
     "owedToSuppliers": "Adeudado a proveedores",

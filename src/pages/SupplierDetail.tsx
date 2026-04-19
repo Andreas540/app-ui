@@ -161,30 +161,22 @@ export default function SupplierDetailPage() {
 
   return (
     <div className="card page-normal" style={{paddingBottom: 12}}>
-      {/* Header row: Name + Edit (left), Back link (right) */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
-          <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {supplier.name}
-          </h3>
-          <Link
-            to={`/suppliers/${supplier.id}/edit`}
-            className="icon-btn"
-            title={t('suppliers.editTitle')}
-            aria-label={t('suppliers.editTitle')}
-            style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
-          >
-            ✎
-          </Link>
-        </div>
-
-        <Link to="/suppliers" className="helper" style={{ whiteSpace:'nowrap' }}>
-          {t('suppliers.backToSuppliers')}
+      {/* Header row: Name + Edit link */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
+        <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {supplier.name}
+        </h3>
+        <Link
+          to={`/suppliers/${supplier.id}/edit`}
+          className="helper"
+          style={{ whiteSpace:'nowrap', textDecoration:'none', color:'var(--accent)' }}
+        >
+          {t('edit')}
         </Link>
       </div>
 
       {/* Action row under name: New order + New payment */}
-      <div style={{ display:'flex', gap:8, marginTop: 8 }}>
+      <div style={{ display:'flex', gap:8, marginTop: 12 }}>
         <Link
           to={`/supplier-orders/new?supplier_id=${supplier.id}&supplier_name=${encodeURIComponent(supplier.name)}&return_to=supplier&return_id=${supplier.id}`}
           style={{ textDecoration: 'none' }}
@@ -224,49 +216,48 @@ export default function SupplierDetailPage() {
         </Link>
       </div>
 
-      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to supplier (right-aligned) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        {/* LEFT */}
-        <div>
-          {!showInfo ? (
+      {/* Collapsible info */}
+      <div style={{ marginTop: 12 }}>
+        {!showInfo ? (
+          <button
+            className="helper"
+            onClick={() => setShowInfo(true)}
+            style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+          >
+            {t('showInfo')}
+          </button>
+        ) : (
+          <div>
             <button
               className="helper"
-              onClick={() => setShowInfo(true)}
+              onClick={() => setShowInfo(false)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {t('showInfo')}
+              {t('hideInfo')}
             </button>
-          ) : (
-            <div>
-              <button
-                className="helper"
-                onClick={() => setShowInfo(false)}
-                style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-              >
-                {t('hideInfo')}
-              </button>
 
-              <div style={{ marginTop: 12 }}>
-                <div className="helper">{t('phone')}</div>
-                <div>{supplier.phone ? <a href={phoneHref(supplier.phone)}>{supplier.phone}</a> : '—'}</div>
-              </div>
+            <div style={{ marginTop: 12 }}>
+              <div className="helper">{t('phone')}</div>
+              <div>{supplier.phone ? <a href={phoneHref(supplier.phone)}>{supplier.phone}</a> : '—'}</div>
+            </div>
 
-              <div style={{ marginTop: 12 }}>
-                <div className="helper">{t('address')}</div>
-                <div>
-                  {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
-                </div>
+            <div style={{ marginTop: 12 }}>
+              <div className="helper">{t('address')}</div>
+              <div>
+                {addrLine1 || '—'}{addrLine1 && <br/>}{addrLine2}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* RIGHT */}
-        <div style={{ textAlign:'right' }}>
-          <div className="helper">{t('suppliers.owedToSupplier')}</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.owed_to_supplier)}</div>
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Total owed to supplier */}
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('suppliers.owedToSupplier')}</div>
+        <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(totals.owed_to_supplier)}</div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
       {/* Orders with supplier */}
       <div style={{ marginTop: 20 }}>
@@ -343,7 +334,7 @@ export default function SupplierDetailPage() {
                   key={o.id}
                   onClick={() => setSelectedOrder(o)}
                   style={{
-                    borderBottom:'1px solid #eee',
+                    borderBottom:'1px solid var(--line)',
                     paddingTop: '12px',
                     paddingBottom: '12px',
                     cursor: 'pointer'
@@ -354,7 +345,8 @@ export default function SupplierDetailPage() {
                     style={{
                       display:'grid',
                       gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                      gap:LINE_GAP,
+                      columnGap: 8,
+                      rowGap: LINE_GAP,
                       alignItems: 'center'
                     }}
                   >
@@ -394,7 +386,8 @@ export default function SupplierDetailPage() {
                       style={{
                         display:'grid',
                         gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
+                        columnGap: 8,
+                        rowGap: LINE_GAP,
                         marginTop: 4
                       }}
                     >
@@ -415,7 +408,8 @@ export default function SupplierDetailPage() {
                       style={{
                         display:'grid',
                         gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
+                        columnGap: 8,
+                        rowGap: LINE_GAP,
                         marginTop: 4
                       }}
                     >
@@ -436,7 +430,8 @@ export default function SupplierDetailPage() {
                       style={{
                         display:'grid',
                         gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
+                        columnGap: 8,
+                        rowGap: LINE_GAP,
                         marginTop: 4
                       }}
                     >
@@ -485,7 +480,7 @@ export default function SupplierDetailPage() {
                 <div
                   key={p.id}
                   style={{
-                    borderBottom:'1px solid #eee',
+                    borderBottom:'1px solid var(--line)',
                     paddingTop: '12px',
                     paddingBottom: '12px'
                   }}
@@ -494,7 +489,8 @@ export default function SupplierDetailPage() {
                     style={{
                       display:'grid',
                       gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                      gap:LINE_GAP,
+                      columnGap: 8,
+                      rowGap: LINE_GAP,
                     }}
                   >
                     {/* DATE */}
@@ -535,7 +531,8 @@ export default function SupplierDetailPage() {
                       style={{
                         display:'grid',
                         gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
+                        columnGap: 8,
+                        rowGap: LINE_GAP,
                         marginTop: 4
                       }}
                     >
