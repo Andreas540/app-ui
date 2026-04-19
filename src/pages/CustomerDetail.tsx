@@ -205,25 +205,17 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="card page-normal" style={{paddingBottom: 12}}>
-      {/* Header row: Name + Edit (left), Back link (right) */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
-          <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {customer.name}
-          </h3>
-          <Link
-            to={`/customers/${customer.id}/edit`}
-            className="icon-btn"
-            title={t('customerDetail.editCustomer')}
-            aria-label={t('customerDetail.editCustomer')}
-            style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
-          >
-            ✎
-          </Link>
-        </div>
-
-        <Link to="/customers" className="helper" style={{ whiteSpace:'nowrap' }}>
-          {t('customerDetail.backToCustomers')}
+      {/* Header row: Name + Edit link */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
+        <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {customer.name}
+        </h3>
+        <Link
+          to={`/customers/${customer.id}/edit`}
+          className="helper"
+          style={{ whiteSpace:'nowrap', textDecoration:'none', color:'var(--accent)' }}
+        >
+          {t('edit')}
         </Link>
       </div>
 
@@ -344,11 +336,9 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
-      {/* Two columns: LEFT = collapsible info; RIGHT = Owed to me (right-aligned) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        {/* LEFT */}
-        <div>
-          {!showInfo ? (
+      {/* Collapsible info */}
+      <div style={{ marginTop: 12 }}>
+        {!showInfo ? (
             <button
               className="helper"
               onClick={() => setShowInfo(true)}
@@ -407,14 +397,15 @@ export default function CustomerDetailPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* RIGHT */}
-        <div style={{ textAlign:'right' }}>
-          <div className="helper">{t('customerDetail.owedToMe')}</div>
-          <div style={{ fontWeight: 700 }}>{fmtMoney((totals as any).owed_to_me)}</div>
-        </div>
       </div>
+
+      {/* Total owed by customer */}
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customerDetail.totalOwedByCustomer')}</div>
+        <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18 }}>{fmtMoney((totals as any).owed_to_me)}</div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
       {/* Recent orders */}
       <div style={{ marginTop: 20 }}>
@@ -567,7 +558,7 @@ export default function CustomerDetailPage() {
                 <div
                   key={p.id}
                   style={{
-                    borderBottom:'1px solid #eee',
+                    borderBottom:'1px solid var(--line)',
                     paddingTop: '12px',
                     paddingBottom: '12px'
                   }}

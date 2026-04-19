@@ -355,6 +355,7 @@
     "type": "Type",
     "shippingCost": "Shipping cost",
     "owedToMe": "Owed to me",
+    "totalOwedByCustomer": "Total owed by customer",
     "recentOrders": "Recent orders",
     "recentPayments": "Recent payments",
     "partiallyDelivered": "Partially delivered ({{delivered}}/{{total}})",

@@ -355,6 +355,7 @@
     "type": "Typ",
     "shippingCost": "Fraktkostnad",
     "owedToMe": "Skyldig mig",
+    "totalOwedByCustomer": "Totalt skyldigt av kund",
     "recentOrders": "Senaste beställningar",
     "recentPayments": "Senaste betalningar",
     "partiallyDelivered": "Delvis levererad ({{delivered}}/{{total}})",
