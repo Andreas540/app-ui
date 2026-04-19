@@ -533,6 +533,7 @@
     "updated": "Leverantör uppdaterad"
   },
   "partners": {
+    "title": "Partners",
     "searchPlaceholder": "Sök partners",
     "createNew": "Skapa ny partner",
     "owedToPartners": "Skuld till partners",

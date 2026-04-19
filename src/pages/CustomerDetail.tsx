@@ -222,7 +222,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Action row under name: New order + New payment */}
-      <div style={{ display:'flex', gap:8, marginTop: 8 }}>
+      <div style={{ display:'flex', gap:8, marginTop: 12 }}>
         <Link
           to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
           style={{ textDecoration: 'none' }}

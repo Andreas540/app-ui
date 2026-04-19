@@ -533,6 +533,7 @@
     "updated": "Supplier updated successfully"
   },
   "partners": {
+    "title": "Partners",
     "searchPlaceholder": "Search partners",
     "createNew": "Create New Partner",
     "owedToPartners": "Owed to partners",

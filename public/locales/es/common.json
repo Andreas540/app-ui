@@ -533,6 +533,7 @@
     "updated": "Proveedor actualizado con éxito"
   },
   "partners": {
+    "title": "Socios",
     "searchPlaceholder": "Buscar socios",
     "createNew": "Crear Nuevo Socio",
     "owedToPartners": "Adeudado a socios",
