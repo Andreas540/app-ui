@@ -422,12 +422,14 @@ export default function TenantCustomization() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                    onChange={() => setUi('compactCustomerOrderRows', false)} />
+                    onChange={() => setUi('compactCustomerOrderRows', false)}
+                    style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
                   <span>{t('tenantCustom.orderRowsFull')}</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                    onChange={() => setUi('compactCustomerOrderRows', true)} />
+                    onChange={() => setUi('compactCustomerOrderRows', true)}
+                    style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
                   <span>{t('tenantCustom.orderRowsCompact')}</span>
                 </label>
               </div>

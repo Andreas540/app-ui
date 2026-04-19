@@ -227,7 +227,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
 
         {/* Line items */}
-        {items.length > 1 ? (
+        {items.length > 0 ? (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
               <div className="helper">{t('product')}</div>
@@ -242,28 +242,20 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            {order.product_name && (
-              <div>
-                <div className="helper" style={fieldStyle}>{t('product')}</div>
-                <div style={{ fontWeight: 600 }}>{order.product_name}</div>
-              </div>
-            )}
-            {order.qty && (
-              <div style={{ textAlign: 'right' }}>
-                <div className="helper" style={fieldStyle}>{t('quantity')}</div>
-                <div style={{ fontWeight: 600 }}>{intFmt.format(order.qty)}</div>
-              </div>
-            )}
-            {order.unit_price && (
-              <div style={{ textAlign: 'right' }}>
-                <div className="helper" style={fieldStyle}>{t('orderModal.unitPrice')}</div>
-                <div style={{ fontWeight: 600 }}>{fmtMoney(order.unit_price)}</div>
-              </div>
-            )}
+        ) : (order.product_name || order.qty || order.unit_price) ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+              <div className="helper">{t('product')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 6 }}>
+              <div style={{ fontWeight: 500 }}>{order.product_name || '—'}</div>
+              <div style={{ textAlign: 'right' }}>{order.qty ? intFmt.format(order.qty) : '—'}</div>
+              <div style={{ textAlign: 'right' }}>{order.unit_price ? fmtMoney(order.unit_price) : '—'}</div>
+            </div>
           </div>
-        )}
+        ) : null}
 
         {/* Linked bookings */}
         {bookings.length > 0 && (
