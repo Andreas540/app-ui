@@ -469,7 +469,7 @@ export default function CustomerDetailPage() {
               })()
 
               return (
-                <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
                   {/* Single shared grid — auto column sized by #no, all item rows align beneath it */}
                   <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
 
