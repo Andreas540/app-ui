@@ -12,7 +12,9 @@ import { getTenantConfig } from '../lib/tenantConfig'
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
   const { hasFeature, user } = useAuth()
-  const compactOrderRows = getTenantConfig(user?.tenantId).ui.compactCustomerOrderRows
+  const tenantUi = getTenantConfig(user?.tenantId).ui
+  const compactOrderRows = tenantUi.compactCustomerOrderRows
+  const showOrderNumber = tenantUi.showOrderNumberInList
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
@@ -280,8 +282,14 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
+      {/* Share links */}
+      <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <span className="helper" style={{ fontSize: 13, color: 'var(--text-secondary)', opacity: 0.5, cursor: 'default' }}>
+          {t('customers.shareBookingPage')}
+        </span>
+      </div>
       {/* Share order page with customer */}
-      <div style={{ marginTop: 12, marginBottom: 4 }}>
+      <div style={{ marginTop: 4, marginBottom: 4 }}>
         <button
           type="button"
           onClick={() => setShowShareOrder(v => !v)}
@@ -425,7 +433,9 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
-              const cols = `50px 18px minmax(24px, max-content) 1fr auto`
+              const cols = showOrderNumber
+                ? `50px 18px minmax(24px, max-content) 1fr auto`
+                : `50px 18px 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray((o as any).items) && (o as any).items.length > 0
@@ -462,7 +472,7 @@ export default function CustomerDetailPage() {
                   <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
                     <button onClick={(e) => { e.stopPropagation(); handleDeliveryIconClick(o) }}
                       style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }} title={title}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
                     </button>
                   </div>
                 )
@@ -471,12 +481,12 @@ export default function CustomerDetailPage() {
               return (
                 <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
                   {/* Single shared grid — auto column sized by #no, all item rows align beneath it */}
-                  <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: cols, columnGap: 8, rowGap: LINE_GAP }}>
 
-                    {/* ROW 1: date | icon | #no | first item | total */}
+                    {/* ROW 1: date | icon | [#no] | first item | total */}
                     <div className="helper">{formatDate((o as any).order_date)}</div>
                     {deliveryIcon}
-                    <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{(o as any).order_no}</div>
+                    {showOrderNumber && <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{(o as any).order_no}</div>}
                     <div className="helper" onClick={() => handleOrderClick(o)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -490,10 +500,10 @@ export default function CustomerDetailPage() {
                       {fmtMoney(orderTotal)}
                     </div>
 
-                    {/* ADDITIONAL ITEM ROWS: empty | empty | empty | item | empty */}
+                    {/* ADDITIONAL ITEM ROWS: empty | empty | [empty] | item | empty */}
                     {items.slice(1).map((item, idx) => (
                       <React.Fragment key={idx}>
-                        <div /><div /><div />
+                        <div /><div />{showOrderNumber && <div />}
                         <div className="helper" onClick={() => handleOrderClick(o)}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -504,10 +514,10 @@ export default function CustomerDetailPage() {
                       </React.Fragment>
                     ))}
 
-                    {/* NOTES ROW: empty | empty | empty | notes | empty */}
+                    {/* NOTES ROW: empty | empty | [empty] | notes | empty */}
                     {hasNotes && !compactOrderRows && (
                       <React.Fragment>
-                        <div /><div /><div />
+                        <div /><div />{showOrderNumber && <div />}
                         <div className="helper" onClick={() => handleOrderClick(o)}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -566,25 +576,35 @@ export default function CustomerDetailPage() {
                   <div
                     style={{
                       display:'grid',
-                      gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                      gap:LINE_GAP,
+                      gridTemplateColumns: showOrderNumber
+                        ? `${DATE_COL}px 20px minmax(24px, max-content) 1fr auto`
+                        : `${DATE_COL}px 20px 1fr auto`,
+                      columnGap: 8,
+                      rowGap: LINE_GAP,
                     }}
                   >
                     {/* DATE */}
                     <div className="helper">{formatDate((p as any).payment_date)}</div>
 
-                    {/* EMPTY COLUMN for alignment with orders checkmark column */}
+                    {/* EMPTY COLUMN for alignment with orders delivery icon column */}
                     <div></div>
 
+                    {/* ORDER # — own column when showOrderNumber, inline otherwise */}
+                    {showOrderNumber && (
+                      <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
+                        {(p as any).order_no ? `#${(p as any).order_no}` : ''}
+                      </div>
+                    )}
+
                     {/* TYPE */}
-                    <div 
+                    <div
                       className="helper"
                       onClick={() => handlePaymentClick(p)}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
-                      {(p as any).payment_type}{(p as any).order_no ? ` · #${(p as any).order_no}` : ''}
+                      {(p as any).payment_type}{!showOrderNumber && (p as any).order_no ? ` · #${(p as any).order_no}` : ''}
                     </div>
 
                     {/* AMOUNT with conditional sign, 2 decimals */}
@@ -604,14 +624,16 @@ export default function CustomerDetailPage() {
                     <div
                       style={{
                         display:'grid',
-                        gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                        gap:LINE_GAP,
+                        gridTemplateColumns: showOrderNumber
+                          ? `${DATE_COL}px 20px minmax(24px, max-content) 1fr auto`
+                          : `${DATE_COL}px 20px 1fr auto`,
+                        columnGap: 8,
+                        rowGap: LINE_GAP,
                         marginTop: 4
                       }}
                     >
-                      <div></div>
-                      <div></div>
-                      <div 
+                      <div></div><div></div>{showOrderNumber && <div></div>}
+                      <div
                         className="helper"
                         onClick={() => handlePaymentClick(p)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}

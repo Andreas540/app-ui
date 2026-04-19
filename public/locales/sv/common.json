@@ -345,6 +345,7 @@
     "linkCreatedInfo": "{{name}} har skapats. Insamlad information läggs till i den kundprofilen.",
     "askCustomerToUpdate": "Be kunden lägga till saknad information",
     "shareOrderPage": "Dela beställningssida med kund",
+    "shareBookingPage": "Dela bokningssida med kund",
     "shareOrderLine1": "Skicka den här länken till din kund så att de kan lägga en beställning.",
     "shareOrderLine2": "Din kund har inte tillgång till appen, endast beställningsformuläret.",
     "shareOrderMissingPrices": "Följande produkter behöver ett pris för att visas på beställningssidan:"
