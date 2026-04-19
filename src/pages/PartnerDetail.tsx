@@ -392,38 +392,31 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
   return (
     <div className="card page-normal" style={{paddingBottom: 12}}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
-          <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {partner.name}
-          </h3>
-          <Link
-            to={`/partners/${partner.id}/edit`}
-            className="icon-btn"
-            title={t('partners.editTitle')}
-            aria-label={t('partners.editTitle')}
-            style={{ width: 20, height: 20, fontSize: 12, lineHeight: 1, borderRadius: 6 }}
-          >
-            ✎
-          </Link>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            onClick={() => PrintManager.openPrintDialog()}
-            className="icon-btn"
-            title="Print to PDF"
-            aria-label="Print to PDF"
-            style={{ width: 20, height: 20, fontSize: 14, lineHeight: 1, borderRadius: 6 }}
-          >
-            🖨️
-          </button>
-          <Link to="/partners" className="helper">&larr; {t('partners.backToPartners')}</Link>
-        </div>
+      <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
+        <h3 style={{ margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {partner.name}
+        </h3>
+        <Link
+          to={`/partners/${partner.id}/edit`}
+          className="helper"
+          style={{ whiteSpace:'nowrap', textDecoration:'none', color:'var(--accent)' }}
+        >
+          {t('edit')}
+        </Link>
+        <button
+          onClick={() => PrintManager.openPrintDialog()}
+          className="helper"
+          style={{ background:'none', border:'none', padding:0, cursor:'pointer', fontSize:14, lineHeight:1 }}
+          title="Print to PDF"
+          aria-label="Print to PDF"
+        >
+          🖨️
+        </button>
       </div>
 
       {/* P to P Transfer and P to P Payment buttons */}
       {showPartnerTransfer && (<>
-        <div style={{ display:'flex', gap:8, marginTop: 8 }}>
+        <div style={{ display:'flex', gap:8, marginTop: 12 }}>
           <button
             className="primary"
             onClick={() => {
@@ -577,77 +570,69 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       )}
       </>)}
 
-      {/* Partner Info + Owed to partner (right) */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        {/* LEFT */}
-        <div>
-          {!showInfo ? (
+      {/* Collapsible info */}
+      <div style={{ marginTop: 12 }}>
+        {!showInfo ? (
+          <button
+            className="helper"
+            onClick={() => setShowInfo(true)}
+            style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
+          >
+            {t('showInfo')}
+          </button>
+        ) : (
+          <div>
             <button
               className="helper"
-              onClick={() => setShowInfo(true)}
+              onClick={() => setShowInfo(false)}
               style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
             >
-              {t('showInfo')}
+              {t('hideInfo')}
             </button>
-          ) : (
-            <div>
-              <button
-                className="helper"
-                onClick={() => setShowInfo(false)}
-                style={{ background:'transparent', border:'none', padding:0, cursor:'pointer' }}
-              >
-                {t('hideInfo')}
-              </button>
 
-              <div style={{ marginTop: 10 }}>
-                <div className="helper">{t('phone')}</div>
-                <div>{partner.phone ? <a href={phoneHref(partner.phone)}>{partner.phone}</a> : '—'}</div>
-              </div>
+            <div style={{ marginTop: 10 }}>
+              <div className="helper">{t('phone')}</div>
+              <div>{partner.phone ? <a href={phoneHref(partner.phone)}>{partner.phone}</a> : '—'}</div>
+            </div>
 
-              <div style={{ marginTop: 12 }}>
-                <div className="helper">{t('address')}</div>
-                <div>
-                  {[partner.address1, partner.address2].filter(Boolean).join(', ') || '—'}
-                  {[partner.address1, partner.address2].filter(Boolean).length > 0 && <br/>}
-                  {[partner.city, partner.state, partner.postal_code].filter(Boolean).join(' ')}
-                </div>
+            <div style={{ marginTop: 12 }}>
+              <div className="helper">{t('address')}</div>
+              <div>
+                {[partner.address1, partner.address2].filter(Boolean).join(', ') || '—'}
+                {[partner.address1, partner.address2].filter(Boolean).length > 0 && <br/>}
+                {[partner.city, partner.state, partner.postal_code].filter(Boolean).join(' ')}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* RIGHT (printable): Owed to partner */}
-        <div
-          data-printable
-          data-printable-id="owed"
-          data-printable-title="Owed to Partner"
-          style={{ textAlign:'right' }}
-        >
-          <div className="helper">{t('partners.owedToPartner')}</div>
-          <div style={{ fontWeight: 700 }}>{fmtIntMoney(totals.net_owed)}</div>
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Owed by [Partner] (only if there are debtors) */}
-      {debtors.length > 0 && (
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-          <div></div>
-          <div style={{ textAlign:'right' }}>
-            {debtors.map(debtor => (
-              <div
-                key={debtor.partner_id}
-                data-printable
-                data-printable-id={`debtor-${debtor.partner_id}`}
-                data-printable-title={`Owed by ${debtor.partner_name}`}
-                style={{ marginBottom: 8 }}
-              >
-                <div className="helper">{t('partners.owedBy')} {debtor.partner_name}</div>
-                <div style={{ fontWeight: 700 }}>{fmtIntMoney(debtor.net_owed)}</div>
-              </div>
-            ))}
-          </div>
+      {/* Total owed to partner */}
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
+      <div
+        data-printable
+        data-printable-id="owed"
+        data-printable-title="Owed to Partner"
+        style={{ display: 'grid', gap: 12 }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('partners.owedToPartner')}</div>
+          <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(totals.net_owed)}</div>
         </div>
-      )}
+        {debtors.map(debtor => (
+          <div
+            key={debtor.partner_id}
+            data-printable
+            data-printable-id={`debtor-${debtor.partner_id}`}
+            data-printable-title={`Owed by ${debtor.partner_name}`}
+            style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}
+          >
+            <div className="helper">{t('partners.owedBy')} {debtor.partner_name}</div>
+            <div style={{ textAlign: 'right', fontWeight: 600 }}>{fmtIntMoney(debtor.net_owed)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
       {/* === Orders (CustomerDetail-like layout) === */}
       <section 
@@ -670,7 +655,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         </div>
 
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
-          <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
+          <div style={{display:'grid', marginTop:12}} data-print-rows>
             {shownOrders.map(o => {
               const middleLine2 = [
                 o.product_name || '—',
@@ -680,27 +665,18 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               ].join(' / ')
 
               return (
-                <div
-                  key={o.id}
-                  data-print-row
-                  style={{
-                    display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                    gap:LINE_GAP,
-                    borderBottom:'1px solid #eee',
-                    padding:'8px 0'
-                  }}
-                >
+                <div key={o.id} data-print-row style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, rowGap: LINE_GAP }}>
                   {/* DATE */}
                   <div className="helper" data-date={o.order_date}>
                     {formatDate(o.order_date)}
                   </div>
 
                   {/* spacer */}
-                  <div style={{ width: 20 }}></div>
+                  <div></div>
 
                   {/* MIDDLE */}
-                  <div 
+                  <div
                     className="helper"
                     onClick={() => handleOrderClick(o)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
@@ -738,6 +714,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                       </div>
                     )
                   })()}
+                  </div>
                 </div>
               )
             })}
@@ -766,40 +743,30 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         </div>
 
         {payments.length === 0 ? <p className="helper">{t('noPaymentsYet')}</p> : (
-          <div style={{display:'grid', gap:10, marginTop:12}} data-print-rows>
+          <div style={{display:'grid', marginTop:12}} data-print-rows>
             {shownPayments.map(p => {
               const notes = (p.notes ?? '').trim()
               const isOther = (p.payment_type || '').toLowerCase() === 'other'
               const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
               const mainLine = isOther ? (notes || 'Other') : p.payment_type
 
-              // Amount display: "-$..." for all, except "+$..." (no minus) for Add to debt
               const amountStr = isAddToDebt
                 ? fmtMoney(Math.abs(p.amount))
                 : `-${fmtMoney(Math.abs(p.amount))}`
 
               return (
-                <div
-                  key={p.id}
-                  data-print-row
-                  style={{
-                    display:'grid',
-                    gridTemplateColumns:`${DATE_COL}px 20px 1fr auto`,
-                    gap:LINE_GAP,
-                    borderBottom:'1px solid #eee',
-                    padding:'8px 0'
-                  }}
-                >
+                <div key={p.id} data-print-row style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, rowGap: LINE_GAP }}>
                   {/* DATE */}
                   <div className="helper" data-date={p.payment_date}>
                     {formatDate(p.payment_date)}
                   </div>
 
                   {/* spacer */}
-                  <div style={{ width: 20 }}></div>
+                  <div></div>
 
                   {/* TYPE (+ optional notes line) */}
-                  <div 
+                  <div
                     className="helper"
                     onClick={() => handlePaymentClick(p)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
@@ -817,9 +784,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                     )}
                   </div>
 
-                  {/* AMOUNT: "-$..." except Add to debt */}
-                  <div 
-                    className="helper" 
+                  {/* AMOUNT */}
+                  <div
+                    className="helper"
                     onClick={() => handlePaymentClick(p)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -827,6 +794,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
                     title={isAddToDebt ? 'Added to debt' : 'Payment to partner'}
                   >
                     {amountStr}
+                  </div>
                   </div>
                 </div>
               )
