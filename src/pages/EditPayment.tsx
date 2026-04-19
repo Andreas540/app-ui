@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useCurrency } from '../lib/useCurrency'
 import { DateInput } from '../components/DateInput'
 import { 
   fetchBootstrap, 
@@ -24,6 +25,7 @@ export default function EditPayment() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { parseAmount } = useCurrency()
   
   const paymentTypeParam = searchParams.get('type')
   const isPartnerPayment = paymentTypeParam === 'partner'
@@ -161,7 +163,7 @@ export default function EditPayment() {
   const isMinusOnly = requiresMinus && amountStr.trim() === '-'
 
   async function save() {
-    const amountNum = Number((amountStr || '').replace(',', '.'))
+    const amountNum = parseAmount(amountStr)
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       alert(t('editPayment.alertEnterAmount'))
       return

@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
+import { useCurrency } from '../lib/useCurrency'
 
 export default function EditProduct() {
   const { t } = useTranslation()
+  const { parseAmount } = useCurrency()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type') === 'service' ? 'service' : 'product'
@@ -63,14 +65,14 @@ export default function EditProduct() {
 
   function parseCostInput(s: string) {
     const cleaned = s.replace(/[^\d.,-]/g, '')
-    return cleaned.replace(',', '.') // normalize comma to dot
+    return String(parseAmount(cleaned)) // normalize comma to dot
   }
 
   async function save() {
     if (!selected) { alert(t('products.alertPickProduct')); return }
     const name = (newName || '').trim()
     if (!name) { alert(t('products.alertEnterName')); return }
-    const costNum = Number((costStr || '').replace(',', '.'))
+    const costNum = parseAmount(costStr)
     if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
 
     if (costOption === 'specific' && !specificDate) {
@@ -81,7 +83,7 @@ export default function EditProduct() {
     const durationMinutes = type === 'service' && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : undefined
-    const priceAmount: number | null | undefined = priceStr.trim() === '' ? null : Number(priceStr.replace(',', '.'))
+    const priceAmount: number | null | undefined = priceStr.trim() === '' ? null : parseAmount(priceStr)
 
     try {
       setSaving(true)

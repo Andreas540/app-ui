@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
-import { formatDate } from '../lib/time'  // ADD THIS IMPORT
+import { formatDate } from '../lib/time'
+import { useCurrency } from '../lib/useCurrency'
 
 interface PaymentDetailModalProps {
   isOpen: boolean
@@ -9,10 +10,6 @@ interface PaymentDetailModalProps {
   payment: any
   isPartnerPayment?: boolean
   isSupplierPayment?: boolean
-}
-
-function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
 }
 
 export default function PaymentDetailModal({
@@ -23,9 +20,8 @@ export default function PaymentDetailModal({
   isSupplierPayment = false
 }: PaymentDetailModalProps) {
   const { t } = useTranslation()
+  const { fmtIntMoney } = useCurrency()
   if (!payment) return null
-
-  // REMOVE the old formatDate function and use formatDate instead
 
   // Determine payment type for edit link
   let paymentType = 'customer'

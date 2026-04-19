@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, createOrder, type Person, type Product, getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
@@ -12,6 +13,7 @@ export default function NewOrder() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const { parseAmount } = useCurrency()
 
   const [people, setPeople] = useState<Person[]>([])
   const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
@@ -163,25 +165,8 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
     const digits = s.replace(/\D/g, '')
     return digits.replace(/^0+(?=\d)/, '')
   }
-  // UPDATED: allow ".5" / ",5" (and "-.5") to parse as 0.5
-  function parsePriceToNumber(s: string) {
-    if (!s) return NaN
-    // Normalize commas to dots
-    let t = s.trim().replace(',', '.')
-    // If user starts with "." or "-.", prefix a leading zero for safe parsing
-    t = t.replace(/^(-)?\.(\d+)/, '$10.$2')
-
-    // Strict match: signed decimal number, allowing no leading digit before dot
-    const m = t.match(/^-?(?:\d+(?:\.\d+)?|\.\d+)$/)
-    if (m) return Number(m[0])
-
-    // Fallback: first reasonable numeric token
-    const fallback = t.match(/-?(?:\d+\.\d+|\d+)/)
-    return fallback ? Number(fallback[0]) : NaN
-  }
-
   const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
-  const priceNum = useMemo(() => parsePriceToNumber(priceStr), [priceStr])
+  const priceNum = useMemo(() => parseAmount(priceStr), [priceStr])
 
   const orderValue = useMemo(() => {
     if (!Number.isInteger(qtyInt) || qtyInt <= 0) return NaN
@@ -190,8 +175,8 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
   }, [qtyInt, priceNum])
 
   // Partner totals
-  const partner1PerItem = useMemo(() => parsePriceToNumber(partner1PerItemStr), [partner1PerItemStr])
-  const partner2PerItem = useMemo(() => parsePriceToNumber(partner2PerItemStr), [partner2PerItemStr])
+  const partner1PerItem = useMemo(() => parseAmount(partner1PerItemStr), [partner1PerItemStr])
+  const partner2PerItem = useMemo(() => parseAmount(partner2PerItemStr), [partner2PerItemStr])
 
   const partner1Total = useMemo(() => {
     if (!Number.isFinite(partner1PerItem) || partner1PerItem <= 0) return 0
@@ -206,13 +191,13 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
 
   // Effective costs (override or historical)
   const effectiveProductCost = useMemo(() => {
-    const override = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
+    const override = productCostStr.trim() ? parseAmount(productCostStr) : null
     if (override !== null && Number.isFinite(override)) return override
     return historicalProductCost ?? 0
   }, [productCostStr, historicalProductCost])
 
   const effectiveShippingCost = useMemo(() => {
-    const override = shippingCostStr.trim() ? parsePriceToNumber(shippingCostStr) : null
+    const override = shippingCostStr.trim() ? parseAmount(shippingCostStr) : null
     if (override !== null && Number.isFinite(override)) return override
     return historicalShippingCost ?? 0
   }, [shippingCostStr, historicalShippingCost])
@@ -660,7 +645,7 @@ const hasProducts = filteredProducts.length > 0
           const qty = parseInt(qtyStr || '0', 10)
           if (!Number.isInteger(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
 
-          const unitPrice = parsePriceToNumber(priceStr)
+          const unitPrice = parseAmount(priceStr)
           if (!Number.isFinite(unitPrice)) { alert(t('orders.alertEnterPrice')); return }
           if (isRefundProduct) {
             if (!(unitPrice < 0)) { alert(t('orders.alertRefundNegative')); return }
@@ -672,11 +657,11 @@ const hasProducts = filteredProducts.length > 0
           const splits: Array<{ partner_id: string; amount: number }> = []
           if (isPartnerCustomer) {
             if (partner1Id && partner1PerItemStr) {
-              const per = parsePriceToNumber(partner1PerItemStr)
+              const per = parseAmount(partner1PerItemStr)
               if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner1Id, amount: per * qty })
             }
             if (partner2Id && partner2PerItemStr) {
-              const per = parsePriceToNumber(partner2PerItemStr)
+              const per = parseAmount(partner2PerItemStr)
               if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner2Id, amount: per * qty })
             }
           }
@@ -686,12 +671,12 @@ const hasProducts = filteredProducts.length > 0
           let shippingCostToSend: number | undefined = undefined
 
           if (productCostStr.trim()) {
-            const parsed = parsePriceToNumber(productCostStr)
+            const parsed = parseAmount(productCostStr)
             if (Number.isFinite(parsed) && parsed > 0) productCostToSend = parsed
           }
 
           if (shippingCostStr.trim()) {
-            const parsed = parsePriceToNumber(shippingCostStr)
+            const parsed = parseAmount(shippingCostStr)
             if (Number.isFinite(parsed) && parsed >= 0) shippingCostToSend = parsed
           }
 

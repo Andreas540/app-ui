@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { resolveLocale } from '../lib/time'
 import i18n from '../i18n/config'
+import { useCurrency } from '../lib/useCurrency'
 
 interface SupplierOrderDetailModalProps {
   isOpen: boolean
@@ -11,22 +12,9 @@ interface SupplierOrderDetailModalProps {
   supplierName: string
 }
 
-function fmtMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-function fmtIntMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-}
-
 export default function SupplierOrderDetailModal({ isOpen, onClose, order, supplierName }: SupplierOrderDetailModalProps) {
   const { t } = useTranslation()
+  const { fmtMoney, fmtIntMoney } = useCurrency()
   if (!order) return null
 
   const formatDate = (dateStr: string) => {
@@ -185,7 +173,7 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
                 <div>
                   <div style={{ fontWeight: 600 }}>{item.product_name}</div>
                   <div className="helper">
-                    {Number(item.qty).toLocaleString('en-US')} × {fmtMoney(item.product_cost)}
+                    {Number(item.qty).toLocaleString()} × {fmtMoney(item.product_cost)}
                   </div>
                 </div>
                 <div style={{ fontWeight: 600, textAlign: 'right' }}>

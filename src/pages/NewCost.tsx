@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCostCategories, getCostTypes, createCost, getExistingCosts, updateCost, deleteCost } from '../lib/api';
+import { useCurrency } from '../lib/useCurrency';
 import { DateInput } from '../components/DateInput';
 
 interface RecurringDetails {
@@ -39,6 +40,7 @@ interface NonRecurringCostSummary {
 const NewCost = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { parseAmount } = useCurrency();
   const formRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef<boolean>(false);
   
@@ -394,12 +396,6 @@ const NewCost = () => {
     setAmount(`${intWithSep}.${dec}`);
   };
 
-  const parseAmount = (formattedAmount: string): number => {
-    if (!formattedAmount) return 0;
-    // Strip thousands and parse US-style decimal
-    const n = Number(formattedAmount.replace(/,/g, ''));
-    return Number.isFinite(n) ? n : 0;
-  };
   // ---------- END AMOUNT INPUT ----------
 
   const formatCurrency = (amount: number): string => {

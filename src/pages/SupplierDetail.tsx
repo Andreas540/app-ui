@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import { useCurrency } from '../lib/useCurrency'
 
 interface Supplier {
   id: string
@@ -113,19 +114,7 @@ export default function SupplierDetailPage() {
     })()
   }, [id])
 
-  // --- Helpers (no hooks here) ---
-  function fmtMoney(n: number) {
-    const v = Number(n) || 0
-    const sign = v < 0 ? '-' : ''
-    const abs = Math.abs(v)
-    return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
-  function fmtIntMoney(n: number) {
-    const v = Number(n) || 0
-    const sign = v < 0 ? '-' : ''
-    const abs = Math.abs(v)
-    return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-  }
+  const { fmtMoney, fmtIntMoney } = useCurrency()
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined

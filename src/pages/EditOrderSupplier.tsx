@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 
 type Product = { id: string; name: string }
 
@@ -22,12 +23,6 @@ const todayYMD = () => {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-// Accept "," or "." then normalize to "."
-function parsePriceToNumber(s: string) {
-  const m = (s ?? '').match(/-?\d+(?:[.,]\d+)?/)
-  if (!m) return NaN
-  return Number(m[0].replace(',', '.'))
-}
 
 // Detect a brand-new fully blank line (ignore for validation/payload)
 function isBrandNewBlank(l: Line) {
@@ -47,6 +42,7 @@ function toQtyIntString(v: any): string {
 export default function EditOrderSupplier() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
+  const { parseAmount } = useCurrency()
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
@@ -228,7 +224,7 @@ const pRes = await fetch(`${base}/api/product`, {
 
       // Map ALL relevant lines (no filter): server deletes then inserts exactly what we send
       const cleanLines = relevantLines.map((l) => {
-        const cost = parsePriceToNumber(l.cost)
+        const cost = parseAmount(l.cost)
         return {
           id: l.id || undefined,
           product_id: l.product_id,

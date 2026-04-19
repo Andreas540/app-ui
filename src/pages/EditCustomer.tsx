@@ -6,6 +6,7 @@ import { fetchCustomerDetail, updateCustomer, type CustomerType } from '../lib/a
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
+import { useCurrency } from '../lib/useCurrency'
 
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
 
@@ -14,6 +15,7 @@ export default function EditCustomer() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { user } = useAuth()
+  const { parseAmount } = useCurrency()
 
   const isBLVTenant = user?.tenantId === BLV_TENANT_ID
   const directValue: CustomerType = isBLVTenant ? 'BLV' : 'Direct'
@@ -112,7 +114,7 @@ setCustomerType(
     if (!id) return
     if (!name.trim()) { alert(t('customers.alertNameRequired')); return }
 
-    const sc = shippingCost.trim() === '' ? null : Number(shippingCost.replace(',', '.'))
+    const sc = shippingCost.trim() === '' ? null : parseAmount(shippingCost)
     if (sc != null && !Number.isFinite(sc)) { alert(t('customers.alertShippingNumber')); return }
 
     if (costOption === 'specific' && !specificDate) {

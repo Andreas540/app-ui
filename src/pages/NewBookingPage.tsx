@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders, listProducts } from '../lib/api'
 import { useLocale } from '../contexts/LocaleContext'
+import { useCurrency } from '../lib/useCurrency'
 
 interface ServiceOption {
   id: string
@@ -73,6 +74,7 @@ export default function NewBookingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { locale, timezone } = useLocale()
+  const { parseAmount } = useCurrency()
   const prefilledCustomerId = searchParams.get('customer_id') || ''
 
   const [services, setServices] = useState<ServiceOption[]>([])
@@ -218,7 +220,7 @@ export default function NewBookingPage() {
     if (!selectedCustomerId){ alert(t('newBooking.selectCustomer')); return }
     if (!startTime)         { alert(t('newBooking.invalidTime')); return }
 
-    const price = Number((priceStr || '0').replace(',', '.'))
+    const price = parseAmount(priceStr || '0')
 
     try {
       setSaving(true)
@@ -484,7 +486,7 @@ export default function NewBookingPage() {
                   <option value="">{t('newBooking.noAdvancePayment', 'None')}</option>
                   {billingPayments.map(p => {
                     const amt = Number(p.amount)
-                    const bookingPrice = Number((priceStr || '0').replace(',', '.'))
+                    const bookingPrice = parseAmount(priceStr || '0')
                     const afterThis = amt - bookingPrice
                     const dateStr = new Date(String(p.payment_date).slice(0, 10) + 'T12:00:00').toLocaleDateString(locale)
                     const afterStr = afterThis > 0 ? ` → $${afterThis.toFixed(2)} after booking` : ''

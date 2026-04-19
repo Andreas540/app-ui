@@ -5,11 +5,13 @@ import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
+import { useCurrency } from '../lib/useCurrency'
 
 type PartnerRef = { id: string; name: string }
 
 export default function EditOrder() {
   const { t } = useTranslation()
+  const { parseAmount } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
   
@@ -141,9 +143,7 @@ export default function EditOrder() {
   }
   // Allow optional leading "-" for Refund/Discount
   function parsePriceToNumber(s: string) {
-    const m = s.match(/-?\d+(?:[.,]\d+)?/)
-    if (!m) return NaN
-    return Number(m[0].replace(',', '.'))
+    return parseAmount(s)
   }
 
   const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])

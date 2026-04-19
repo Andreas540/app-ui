@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 
 type Supplier = {
   id: string
@@ -11,12 +12,9 @@ type Supplier = {
   owed_to_supplier: number
 }
 
-function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
-}
-
 export default function Suppliers() {
   const { t } = useTranslation()
+  const { fmtIntMoney } = useCurrency()
   const [query, setQuery] = useState('')
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)

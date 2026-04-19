@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, fetchCustomerDetail, getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 
 const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
@@ -39,6 +40,7 @@ const EMPTY: CustomerFields = {
 export default function MergeCustomer() {
   const { t } = useTranslation()
   const nav = useNavigate()
+  const { parseAmount } = useCurrency()
   const { user } = useAuth()
   const isBLVTenant = user?.tenantId === BLV_TENANT_ID
   const directValue = isBLVTenant ? 'BLV' : 'Direct'
@@ -120,7 +122,7 @@ export default function MergeCustomer() {
           losing_id:  losingId,
           data: {
             ...fields,
-            shipping_cost: fields.shipping_cost !== '' ? Number(fields.shipping_cost.replace(',', '.')) : null,
+            shipping_cost: fields.shipping_cost !== '' ? parseAmount(fields.shipping_cost) : null,
           },
         }),
       })

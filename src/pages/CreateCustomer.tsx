@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createCustomer, updateCustomer, type CustomerType } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
@@ -14,6 +15,7 @@ export default function CreateCustomer() {
   const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { parseAmount } = useCurrency()
   const tenantUi = getTenantConfig(user?.tenantId).ui
 
   // For the BLV tenant the "direct" type is stored as 'BLV'; everyone else uses 'Direct'.
@@ -117,7 +119,7 @@ export default function CreateCustomer() {
 
   function resolvedShipping(): number {
     if (shipMode === 'preset') return parseFloat(shipPreset)
-    const n = Number(shipCustom.replace(',', '.'))
+    const n = parseAmount(shipCustom)
     return Number.isFinite(n) && n >= 0 ? n : NaN
   }
 

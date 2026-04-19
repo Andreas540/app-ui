@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 
 type PriceData = {
   price_last_time: number | null
@@ -72,10 +73,7 @@ const res = await fetch(
     })()
   }, [selectedCustomerId, selectedProductId])
 
-  const fmtMoney = (n: number | null) => {
-    if (n === null || n === undefined) return '—'
-    return `$${Number(n).toFixed(2)}`
-  }
+  const { fmtMoney } = useCurrency()
 
   if (loading) return <div className="card page-narrow"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-narrow"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
@@ -134,7 +132,7 @@ const res = await fetch(
                   {t('priceChecker.priceLastTime')}
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
-                  {fmtMoney(priceData.price_last_time)}
+                  {priceData.price_last_time == null ? '—' : fmtMoney(priceData.price_last_time)}
                 </div>
               </div>
 
@@ -144,7 +142,7 @@ const res = await fetch(
                   {t('priceChecker.averagePrice')}
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
-                  {fmtMoney(priceData.average_price)}
+                  {priceData.average_price == null ? '—' : fmtMoney(priceData.average_price)}
                 </div>
                 <div className="helper" style={{ marginTop: 8 }}>
                   {t('priceChecker.previousOrders', { count: priceData.order_count })}

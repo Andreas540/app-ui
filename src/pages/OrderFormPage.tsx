@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Vibrant } from 'node-vibrant/browser'
+import { useCurrency } from '../lib/useCurrency'
 
 // ── Inline translations ───────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 export default function OrderFormPage() {
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
+  const { fmtMoney } = useCurrency()
   const lang = resolveLang(searchParams.get('lang'))
   const t = (k: string, vars?: Record<string, string>) => {
     let s = T[lang][k] ?? k
@@ -273,7 +275,7 @@ export default function OrderFormPage() {
               >
                 <span style={{ fontSize: 15, color: '#1a1a2e' }}>{p.name}</span>
                 <span style={{ fontSize: 14, color: '#555', textAlign: 'right' }}>
-                  ${Number(p.price_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {fmtMoney(p.price_amount)}
                 </span>
                 <input
                   type="number"
@@ -309,7 +311,7 @@ export default function OrderFormPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', marginBottom: 8, borderTop: '2px solid #1a1a2e' }}>
                 <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{t('total')}</span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>
-                  ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {fmtMoney(total)}
                 </span>
               </div>
             )

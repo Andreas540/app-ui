@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
@@ -17,6 +18,7 @@ type InventoryItem = {
 export default function Warehouse() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { parseAmount } = useCurrency()
 
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -92,16 +94,6 @@ export default function Warehouse() {
     return isNaN(num) ? NaN : num
   }
 
-  // Parse decimal (allow starting with . or ,)
-  function parseDecimalToNumber(s: string): number {
-    if (!s || s.trim() === '') return NaN
-    let t = s.trim().replace(',', '.')
-    t = t.replace(/^(-)?\.(\d+)/, '$10.$2')
-    const m = t.match(/^-?(?:\d+(?:\.\d+)?|\.\d+)$/)
-    if (m) return Number(m[0])
-    const fallback = t.match(/-?(?:\d+\.\d+|\d+)/)
-    return fallback ? Number(fallback[0]) : NaN
-  }
 
   // iOS numeric keypad often has no "-" key. Provide a toggle button instead.
   function toggleNegativeQty() {
@@ -114,8 +106,8 @@ export default function Warehouse() {
   }
 
   const qtyInt = useMemo(() => parseQtyToNumber(qtyStr), [qtyStr])
-  const productCost = useMemo(() => parseDecimalToNumber(productCostStr), [productCostStr])
-  const laborCost = useMemo(() => parseDecimalToNumber(laborCostStr), [laborCostStr])
+  const productCost = useMemo(() => parseAmount(productCostStr), [productCostStr])
+  const laborCost = useMemo(() => parseAmount(laborCostStr), [laborCostStr])
 
   const selectedProduct = useMemo(() => products.find((p) => p.id === productId), [products, productId])
 

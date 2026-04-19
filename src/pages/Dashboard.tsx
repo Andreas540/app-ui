@@ -5,6 +5,7 @@ import { getTenantConfig } from '../lib/tenantConfig'
 import { useAuth } from '../contexts/AuthContext'
 import { formatDate, formatMonthYear } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
+import { useCurrency } from '../lib/useCurrency'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -14,20 +15,6 @@ import {
   YAxis,
   LabelList,
 } from 'recharts'
-
-// --- Money format helpers (with correct minus placement) ---
-function fmtMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-function fmtIntMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-}
 
 // --- Chart label helpers ---
 const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K`
@@ -246,6 +233,7 @@ function loadDashVisible(): string[] {
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const { fmtMoney, fmtIntMoney } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const showOwedToSuppliers = config.ui.showOwedToSuppliers
@@ -741,7 +729,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                       Array.isArray(o.items) && o.items.length > 0 ? o.items : []
                     const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
-                      `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}`
+                      `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString()} / ${fmtMoney(item.unit_price ?? 0)}`
                     const hasNotes = o.notes && o.notes.trim()
                     const { symbol, color, label } = getDeliveryVisual(o)
                     const deliveryIcon = (

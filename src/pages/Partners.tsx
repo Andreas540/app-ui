@@ -2,13 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listPartnersWithOwed, type PartnerWithOwed } from '../lib/api'
-
-function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
-}
+import { useCurrency } from '../lib/useCurrency'
 
 export default function Partners() {
   const { t } = useTranslation()
+  const { fmtIntMoney } = useCurrency()
   const [query, setQuery] = useState('')
   const [partners, setPartners] = useState<PartnerWithOwed[]>([])
   const [loading, setLoading] = useState(true)

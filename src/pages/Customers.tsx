@@ -4,21 +4,16 @@ import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 
 // Mirrors the backend helper — both 'BLV' and 'Direct' are direct customer types
 function isDirectType(customerType: string | null | undefined) {
   return customerType === 'BLV' || customerType === 'Direct'
 }
 
-function fmtIntMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-}
-
 export default function Customers() {
   const { t } = useTranslation()
+  const { fmtIntMoney } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const directLabel = config.labels.directLabel

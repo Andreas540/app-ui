@@ -8,6 +8,7 @@ import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
@@ -83,18 +84,7 @@ export default function CustomerDetailPage() {
     })
   }
 
-  function fmtMoney(n: number) {
-    const v = Number(n) || 0
-    const sign = v < 0 ? '-' : ''
-    const abs = Math.abs(v)
-    return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
-  function fmtIntMoney(n: number) {
-    const v = Number(n) || 0
-    const sign = v < 0 ? '-' : ''
-    const abs = Math.abs(v)
-    return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-  }
+  const { fmtMoney, fmtIntMoney } = useCurrency()
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -562,14 +552,12 @@ export default function CustomerDetailPage() {
             {shownPayments.map(p => {
               const hasNotes = (p as any).notes && (p as any).notes.trim()
               const amt = Number((p as any).amount) || 0
-              const abs2dec = Math.abs(amt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
               // Display rule:
-              //  - positive amounts => "-$xx.xx" (reduce what’s owed)
-              //  - negative amounts => "$xx.xx"  (do NOT show a minus)
+              //  - positive amounts => "-xx.xx" (reduce what’s owed)
+              //  - negative amounts => "xx.xx"  (do NOT show a minus)
               const amountDisplay = amt < 0
-                ? `$${abs2dec}`
-                : `-$${abs2dec}`
+                ? fmtMoney(Math.abs(amt))
+                : fmtMoney(-Math.abs(amt))
 
               return (
                 <div

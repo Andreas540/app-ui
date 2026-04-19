@@ -6,6 +6,7 @@ import { formatDate } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 
 const INFO_PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'] as const
 
@@ -268,7 +269,7 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     navigate('/invoices/preview', { state: invoiceData })
   }
 
-  const fmtMoney = (n: number) => `$${Number(n).toFixed(2)}`
+  const { fmtMoney } = useCurrency()
 
 
   return (

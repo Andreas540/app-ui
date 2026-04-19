@@ -23,6 +23,7 @@ import { todayYMD } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useLocale } from '../contexts/LocaleContext'
+import { useCurrency } from '../lib/useCurrency'
 
 type CustomerLite = { id: string; name: string; customer_type?: 'BLV' | 'Direct' | 'Partner' }
 type PartnerLite = { id: string; name: string }
@@ -36,6 +37,7 @@ export default function Payments() {
   const config = getTenantConfig(user?.tenantId)
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
+  const { parseAmount } = useCurrency()
 
   const activePaymentTypes = useMemo(
     () => isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES,
@@ -378,7 +380,7 @@ useEffect(() => {
       }
     }
 
-    const amountNum = Number((amountStr || '').replace(',', '.'))
+    const amountNum = parseAmount(amountStr)
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       alert(t('payments.alertEnterAmount'))
       return
@@ -428,7 +430,7 @@ useEffect(() => {
 
   async function savePartnerPayment() {
     if (!partner) { alert(t('payments.alertSelectPartner')); return }
-    const amountNum = Number((partnerAmountStr || '').replace(',', '.'))
+    const amountNum = parseAmount(partnerAmountStr)
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       alert(t('payments.alertEnterAmountSimple'))
       return
@@ -454,7 +456,7 @@ useEffect(() => {
 
   async function saveSupplierPayment() {
   if (!supplier) { alert(t('payments.alertSelectSupplier')); return }
-  const amountNum = Number((supplierAmountStr || '').replace(',', '.'))
+  const amountNum = parseAmount(supplierAmountStr)
   if (!Number.isFinite(amountNum) || amountNum === 0) {
     alert(t('payments.alertEnterAmountSimple'))
     return

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { formatDate } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 
 interface OrderDetailModalProps {
   isOpen: boolean
@@ -17,25 +18,9 @@ interface PartnerSplit {
   amount: number
 }
 
-function fmtMoney(n: number) {
-  return `$${(Number(n) || 0).toFixed(2)}`
-}
-
-function fmtIntMoney(n: number) {
-  return `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`
-}
-
-function fmtMoneyWithThousands(n: number) {
-  return (Number(n) || 0).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
-
 export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
   const { t } = useTranslation()
+  const { fmtMoney, fmtIntMoney } = useCurrency()
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
@@ -191,7 +176,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                 fontSize: 16,
                 color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)'
               }}>
-                {fmtMoneyWithThousands(profit)}
+                {fmtMoney(profit)}
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
                 {profitPercent.toFixed(1)}%

@@ -12,6 +12,7 @@ import type { PrintOptions } from '../lib/printManager'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 
 type PartnerDetail = {
   partner: {
@@ -159,12 +160,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     })()
   }, [id])
 
-  function fmtIntMoney(n:number) {
-    return `$${Math.round(Number(n)||0).toLocaleString('en-US')}`
-  }
-  function fmtMoney(n:number) {
-    return `$${(Number(n)||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
+  const { fmtMoney, fmtIntMoney, parseAmount } = useCurrency()
 
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
@@ -184,7 +180,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
   const handleTransferSubmit = async () => {
     // Validation
-    const amount = parseFloat(transferAmount.replace(/,/g, ''))
+    const amount = parseAmount(transferAmount)
     if (!amount || amount <= 0) {
       alert('Please enter a valid amount')
       return
@@ -273,7 +269,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
   const handleDebtPaymentSubmit = async () => {
     // Validation
-    const amount = parseFloat(paymentAmount.replace(/,/g, ''))
+    const amount = parseAmount(paymentAmount)
     if (!amount || amount <= 0) {
       alert('Please enter a valid amount')
       return

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDateTime } from '../lib/time'
+import { useCurrency } from '../lib/useCurrency'
 
 interface InventoryItem {
   item_name: string
@@ -24,16 +25,9 @@ interface SalesStats {
   lastUpdate: string
 }
 
-// Money format helper
-function fmtIntMoney(n: number) {
-  const v = Number(n) || 0
-  const sign = v < 0 ? '-' : ''
-  const abs = Math.abs(v)
-  return `${sign}$${Math.round(abs).toLocaleString('en-US')}`
-}
-
 export default function DashboardStore() {
   const { t } = useTranslation()
+  const { fmtIntMoney } = useCurrency()
   const [showInventory, setShowInventory] = useState(false)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<Location[]>([])

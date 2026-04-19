@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
+import { useCurrency } from '../lib/useCurrency'
 
 interface HistoricalCost {
   product_id: string
@@ -47,15 +48,7 @@ export default function NewProduct() {
     return normalized
   }
 
-  function fmtMoney(n: number) {
-    const v = Number(n) || 0
-    return v.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    })
-  }
+  const { fmtMoney, parseAmount } = useCurrency()
 
   async function loadProducts() {
     try {
@@ -100,14 +93,14 @@ export default function NewProduct() {
 
   async function save() {
     const nm = name.trim()
-    const costNum = Number(parseCostInput(costStr || ''))
+    const costNum = parseAmount(costStr || '')
     if (!nm) { alert(t('products.alertEnterName')); return }
     if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
 
     const durationMinutes = category === 'service' && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
       : null
-    const priceAmount = priceStr ? Number(parseCostInput(priceStr)) : null
+    const priceAmount = priceStr ? parseAmount(priceStr) : null
 
     try {
       setSaving(true)
@@ -285,7 +278,7 @@ export default function NewProduct() {
                   </span>
                 )}
                 <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmtMoney(p.cost ?? 0)}
+                  {fmtMoney(p.cost ?? 0, 3)}
                 </div>
               </div>
             ))}
@@ -332,7 +325,7 @@ export default function NewProduct() {
                       </div>
                       <div></div>
                       <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtMoney(item.cost)}
+                        {fmtMoney(item.cost, 3)}
                       </div>
                     </div>
                   ))}
