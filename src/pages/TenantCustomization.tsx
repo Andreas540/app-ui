@@ -12,7 +12,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40 // control height
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -252,6 +252,12 @@ export default function TenantCustomization() {
         delete ui.showOwedToSuppliers
         return { ...p, ui }
       })
+    } else if (section === 'customer-detail') {
+      setCfg(p => {
+        const ui = { ...p.ui }
+        delete ui.compactCustomerOrderRows
+        return { ...p, ui }
+      })
     }
   }
 
@@ -310,6 +316,7 @@ export default function TenantCustomization() {
               <optgroup label={t('tenantCustom.groupPages')}>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
                 <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
+                <option value="customer-detail">{t('tenantCustom.sectionCustomerDetail')}</option>
               </optgroup>
               <optgroup label={t('tenantCustom.groupModals')}>
                 <option value="welcome">{t('tenantCustom.sectionWelcome')}</option>
@@ -406,6 +413,25 @@ export default function TenantCustomization() {
                 <Toggle value={cb.showBookingParticipants ?? db.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
               </Row>
             </>
+          )}
+
+          {/* Pages > Customer Detail */}
+          {section === 'customer-detail' && (
+            <Row label={t('tenantCustom.customerOrderRows')}
+              customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                    onChange={() => setUi('compactCustomerOrderRows', false)} />
+                  <span>{t('tenantCustom.orderRowsFull')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                    onChange={() => setUi('compactCustomerOrderRows', true)} />
+                  <span>{t('tenantCustom.orderRowsCompact')}</span>
+                </label>
+              </div>
+            </Row>
           )}
 
           {/* Pages > Dashboard */}

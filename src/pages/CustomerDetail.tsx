@@ -7,10 +7,12 @@ import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
-  const { hasFeature } = useAuth()
+  const { hasFeature, user } = useAuth()
+  const compactOrderRows = getTenantConfig(user?.tenantId).ui.compactCustomerOrderRows
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<CustomerDetail | null>(null)
@@ -440,6 +442,9 @@ export default function CustomerDetailPage() {
                   : []
 
               const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) => {
+                if (compactOrderRows) {
+                  return `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')}`
+                }
                 const suffix = isPartnerCustomer && (o as any).partner_amount != null && items.indexOf(item) === 0
                   ? ` / ${fmtIntMoney((o as any).partner_amount)}`
                   : ''
@@ -509,7 +514,7 @@ export default function CustomerDetailPage() {
                     ))}
 
                     {/* NOTES ROW: empty | empty | empty | notes | empty */}
-                    {hasNotes && (
+                    {hasNotes && !compactOrderRows && (
                       <React.Fragment>
                         <div /><div /><div />
                         <div className="helper" onClick={() => handleOrderClick(o)}
