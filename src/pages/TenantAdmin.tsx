@@ -1577,7 +1577,8 @@ export default function TenantAdmin() {
                       {availableFeatures.map((featureId) => {
                         const feature = AVAILABLE_FEATURES[featureId]
                         if (!feature) return null
-                        const disabled = featureId === 'tenant-admin' && managingUserRole === 'tenant_user'
+                        const disabled = (featureId === 'tenant-admin' && managingUserRole === 'tenant_user')
+                          || !tenantFeatures.includes(featureId)
                         return (
                           <label
                             key={featureId}
