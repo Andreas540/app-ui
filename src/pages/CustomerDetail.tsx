@@ -283,11 +283,13 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Share links */}
-      <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <span className="helper" style={{ fontSize: 13, color: 'var(--text-secondary)', opacity: 0.5, cursor: 'default' }}>
-          {t('customers.shareBookingPage')}
-        </span>
-      </div>
+      {hasFeature('new-booking') && (
+        <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <span className="helper" style={{ fontSize: 13, color: 'var(--text-secondary)', opacity: 0.5, cursor: 'default' }}>
+            {t('customers.shareBookingPage')}
+          </span>
+        </div>
+      )}
       {/* Share order page with customer */}
       <div style={{ marginTop: 4, marginBottom: 4 }}>
         <button
