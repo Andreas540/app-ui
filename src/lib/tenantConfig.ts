@@ -89,7 +89,7 @@ export const defaultConfig: TenantConfig = {
     showNavArrowsMobile: true,
     showNavArrowsDesktop: false,
     showOwedToSuppliers: false,
-    compactCustomerOrderRows: false,
+    compactCustomerOrderRows: true,
   },
   booking: {
     serviceTypeLabel: 'Session',
