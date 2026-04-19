@@ -1561,14 +1561,18 @@ export default function TenantAdmin() {
                 if (availableFeatures.length === 0) return null
                 const fullyChecked = isModuleFullyChecked(mod.features, managingUserFeatures)
                 const partiallyChecked = isModulePartiallyChecked(mod.features, managingUserFeatures)
+                const moduleDisabled = mod.features.every(f =>
+                  !tenantFeatures.includes(f) || (f === 'tenant-admin' && managingUserRole === 'tenant_user')
+                )
                 return (
-                  <div key={mod.id} style={{ marginBottom: 24 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
+                  <div key={mod.id} style={{ marginBottom: 24, opacity: moduleDisabled ? 0.4 : 1 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: moduleDisabled ? 'not-allowed' : 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={fullyChecked}
                         ref={(el: HTMLInputElement | null) => { if (el) el.indeterminate = partiallyChecked }}
                         onChange={() => toggleModule(mod.features, managingUserFeatures, false)}
+                        disabled={moduleDisabled}
                         style={{ width: 20, height: 20 }}
                       />
                       <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary)' }}>{mod.name}</span>
