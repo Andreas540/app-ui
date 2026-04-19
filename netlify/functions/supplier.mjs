@@ -1,13 +1,14 @@
 // netlify/functions/supplier.mjs
 
 import { resolveAuthz } from './utils/auth.mjs'
+import { withErrorLogging } from './utils/with-error-logging.mjs'
 
-export async function handler(event) {
+export const handler = withErrorLogging('supplier', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getSupplier(event)
   if (event.httpMethod === 'PUT')    return updateSupplier(event)
   return cors(405, { error: 'Method not allowed' })
-}
+})
 
 async function getSupplier(event) {
   try {

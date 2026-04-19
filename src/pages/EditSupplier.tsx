@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { getAuthHeaders } from '../lib/api'
 
 interface Supplier {
   id: string
@@ -46,11 +47,8 @@ export default function EditSupplier() {
         setErr(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const token = localStorage.getItem('authToken')
         const res = await fetch(`${base}/api/supplier?id=${id}`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          headers: getAuthHeaders(),
         })
 
         if (!res.ok) {
@@ -88,14 +86,10 @@ export default function EditSupplier() {
     try {
       setSaving(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const token = localStorage.getItem('authToken')
 
       const res = await fetch(`${base}/api/supplier`, {
         method: 'PUT',
-        headers: {
-          'content-type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
         body: JSON.stringify({
           id,
           name: name.trim(),
