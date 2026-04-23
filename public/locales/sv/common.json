@@ -1010,6 +1010,8 @@
       "tabSimplyBook": "Simply Book",
       "tabConnectSite": "Koppla hemsida",
       "connectSiteIntro": "Använd den här funktionen om dina kunder väljer tjänst på din egen hemsida och du vill använda Bizniz Optimizers kalender för bokningen. Efter att ha följt stegen nedan får du ett kodstycke att implementera på din hemsida.",
+      "connectSiteAvailabilityReminder": "Glöm inte att lägga till din tillgänglighet för de tjänster du erbjuder.",
+      "connectSiteAvailabilityLink": "Lägg till din tillgänglighet",
       "connectSiteSelectServices": "Välj de tjänster du vill koppla",
       "connectSiteStep1": "Välj de tjänster ovan som du vill göra bokningsbara från din hemsida.",
       "connectSiteStep2": "Kopiera kodstycket nedan och dela det med din webbutvecklare.",

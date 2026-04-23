@@ -365,6 +365,16 @@ ${entries}
             {t('tenantAdmin.booking.connectSiteIntro')}
           </p>
 
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {t('tenantAdmin.booking.connectSiteAvailabilityReminder')}{' '}
+            <button
+              onClick={() => setSubTab('availability')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 14, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {t('tenantAdmin.booking.connectSiteAvailabilityLink')}
+            </button>.
+          </p>
+
           {/* Service selector */}
           <div>
             <label style={{ display: 'block', marginBottom: 10 }}>{t('tenantAdmin.booking.connectSiteSelectServices')}</label>

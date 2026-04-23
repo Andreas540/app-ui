@@ -1010,6 +1010,8 @@
       "tabSimplyBook": "Simply Book",
       "tabConnectSite": "Connect site",
       "connectSiteIntro": "Use this feature if your customers select a service on your own website and you want to use Bizniz Optimizer's calendar for the booking. After completing the steps below you will get a code snippet to implement on your site.",
+      "connectSiteAvailabilityReminder": "Don't forget to add your availability for the services you provide.",
+      "connectSiteAvailabilityLink": "Add your availability",
       "connectSiteSelectServices": "Select the services you want to connect",
       "connectSiteStep1": "Select the services above that you want to make bookable from your website.",
       "connectSiteStep2": "Copy the code snippet below and share it with your web developer.",
