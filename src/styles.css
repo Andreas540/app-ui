@@ -184,7 +184,9 @@ a {
 .content {
   padding: 16px;
   overflow-y: auto; /* Independent scroll */
+  overflow-x: hidden;
   min-height: 0; /* Critical for grid child */
+  min-width: 0; /* Prevents grid child from overflowing its column */
   -webkit-overflow-scrolling: touch; /* Smooth iOS scroll */
 }
 
