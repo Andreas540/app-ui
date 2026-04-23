@@ -193,23 +193,36 @@ ${entries}
 
   return (
     <div>
-      {/* Sub-tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--separator)', paddingBottom: 0 }}>
-        {SUB_TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id)}
-            style={{
-              background: 'none', border: 'none',
-              borderBottom: subTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-              color: subTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
-              fontWeight: subTab === tab.id ? 600 : 400,
-              fontSize: 14, padding: '6px 14px 10px', cursor: 'pointer', marginBottom: -1,
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Sub-tab bar — dropdown on mobile, tabs on desktop */}
+      <div className="booking-subtab-bar" style={{ marginBottom: 24 }}>
+        {/* Mobile dropdown */}
+        <select
+          className="booking-subtab-select"
+          value={subTab}
+          onChange={e => setSubTab(e.target.value as BookingSubTab)}
+        >
+          {SUB_TABS.map(tab => (
+            <option key={tab.id} value={tab.id}>{tab.label}</option>
+          ))}
+        </select>
+        {/* Desktop tabs */}
+        <div className="booking-subtab-tabs" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--separator)' }}>
+          {SUB_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setSubTab(tab.id)}
+              style={{
+                background: 'none', border: 'none',
+                borderBottom: subTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                color: subTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: subTab === tab.id ? 600 : 400,
+                fontSize: 14, padding: '6px 14px 10px', cursor: 'pointer', marginBottom: -1,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Availability ── */}
