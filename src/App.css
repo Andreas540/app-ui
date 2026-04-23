@@ -84,7 +84,7 @@ html, body, #root {
 
 /* Booking sub-tab bar: tabs on desktop, dropdown on mobile */
 .booking-subtab-select { display: none; width: 100%; }
-.booking-subtab-tabs   { display: flex; }
+.booking-subtab-tabs   { display: flex; flex-wrap: nowrap; }
 
 @media (max-width: 768px) {
   .booking-subtab-select { display: block; }

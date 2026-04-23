@@ -206,7 +206,7 @@ ${entries}
           ))}
         </select>
         {/* Desktop tabs */}
-        <div className="booking-subtab-tabs" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--separator)' }}>
+        <div className="booking-subtab-tabs" style={{ gap: 4, borderBottom: '1px solid var(--separator)' }}>
           {SUB_TABS.map(tab => (
             <button
               key={tab.id}
