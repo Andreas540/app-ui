@@ -402,6 +402,15 @@ button.primary:focus-visible,
   border-radius: 6px;
 }
 
+/* Booking sub-tab bar: tabs on desktop, dropdown on mobile */
+.booking-subtab-select { display: none; width: 100%; }
+.booking-subtab-tabs   { display: flex; }
+
+@media (max-width: 768px) {
+  .booking-subtab-select { display: block; }
+  .booking-subtab-tabs   { display: none; }
+}
+
 /* ===================== Mobile Styles ===================== */
 @media (max-width: 768px) {
   .layout {

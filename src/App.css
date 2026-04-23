@@ -82,14 +82,6 @@ html, body, #root {
 /* Smooth iOS scroll for the nav */
 .nav { -webkit-overflow-scrolling: touch; }
 
-/* Booking sub-tab bar: tabs on desktop, dropdown on mobile */
-.booking-subtab-select { display: none; width: 100%; }
-.booking-subtab-tabs   { display: flex; flex-wrap: nowrap; }
-
-@media (max-width: 768px) {
-  .booking-subtab-select { display: block; }
-  .booking-subtab-tabs   { display: none; }
-}
 
 /* Mobile hamburger/overlay behavior */
 @media (max-width: 768px) {
