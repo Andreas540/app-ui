@@ -419,7 +419,7 @@ ${entries}
           </div>
 
           {/* Instructions + code snippet */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, margin: '0 0 14px', paddingLeft: 20, wordBreak: 'break-word' }}>
               <li>{t('tenantAdmin.booking.connectSiteStep1')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep2')}</li>
