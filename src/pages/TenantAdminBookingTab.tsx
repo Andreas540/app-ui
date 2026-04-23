@@ -420,17 +420,17 @@ ${entries}
 
           {/* Instructions + code snippet */}
           <div>
-            <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, margin: '0 0 14px', paddingLeft: 20 }}>
+            <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, margin: '0 0 14px', paddingLeft: 20, wordBreak: 'break-word' }}>
               <li>{t('tenantAdmin.booking.connectSiteStep1')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep2')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep3')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep4')}</li>
             </ul>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', maxWidth: '100%', overflowX: 'auto' }}>
               <pre style={{
                 background: 'var(--btn-bg)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '14px 16px', fontSize: 12,
-                lineHeight: 1.7, overflowX: 'auto', margin: 0,
+                borderRadius: 10, padding: '14px 16px', paddingRight: 80, fontSize: 12,
+                lineHeight: 1.7, margin: 0,
                 color: 'var(--text)', whiteSpace: 'pre',
               }}>
                 {codeSnippet}
