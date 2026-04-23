@@ -426,11 +426,11 @@ ${entries}
               <li>{t('tenantAdmin.booking.connectSiteStep3')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep4')}</li>
             </ul>
-            <div style={{ position: 'relative', maxWidth: '100%', overflowX: 'auto' }}>
+            <div style={{ position: 'relative' }}>
               <pre style={{
                 background: 'var(--btn-bg)', border: '1px solid var(--border)',
                 borderRadius: 10, padding: '14px 16px', paddingRight: 80, fontSize: 12,
-                lineHeight: 1.7, margin: 0,
+                lineHeight: 1.7, margin: 0, overflowX: 'auto',
                 color: 'var(--text)', whiteSpace: 'pre',
               }}>
                 {codeSnippet}
