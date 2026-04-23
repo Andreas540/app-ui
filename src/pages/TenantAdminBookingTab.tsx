@@ -2,6 +2,7 @@
 // Booking configuration tab rendered inside TenantAdmin.
 
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
 import BookingSmsUsagePage from './BookingSmsUsagePage'
@@ -216,7 +217,7 @@ ${entries}
         <div>
           {services.length === 0 && !loadingAvail ? (
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
-              {t('tenantAdmin.booking.noServices')}
+              {t('tenantAdmin.booking.noServices')} <Link to="/products/new?type=service">{t('tenantAdmin.booking.noServicesLink')}</Link>.
             </p>
           ) : (
             <>
@@ -368,7 +369,9 @@ ${entries}
           <div>
             <label style={{ display: 'block', marginBottom: 10 }}>{t('tenantAdmin.booking.connectSiteSelectServices')}</label>
             {services.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>{t('tenantAdmin.booking.noServices')}</p>
+              <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
+                {t('tenantAdmin.booking.noServices')} <Link to="/products/new?type=service">{t('tenantAdmin.booking.noServicesLink')}</Link>.
+              </p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {services.map(s => (
