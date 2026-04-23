@@ -373,7 +373,7 @@ ${entries}
 
       {/* ── Connect site ── */}
       {subTab === 'connect-site' && (
-        <div style={{ display: 'grid', gap: 20 }}>
+        <div style={{ display: 'grid', gap: 20, maxWidth: '100%', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             {t('tenantAdmin.booking.connectSiteIntro')}
           </p>
@@ -431,7 +431,7 @@ ${entries}
                 background: 'var(--btn-bg)', border: '1px solid var(--border)',
                 borderRadius: 10, padding: '14px 16px', paddingRight: 80, fontSize: 12,
                 lineHeight: 1.7, margin: 0, overflowX: 'auto',
-                color: 'var(--text)', whiteSpace: 'pre',
+                color: 'var(--text)', whiteSpace: 'pre', wordBreak: 'normal', overflowWrap: 'normal',
               }}>
                 {codeSnippet}
               </pre>
