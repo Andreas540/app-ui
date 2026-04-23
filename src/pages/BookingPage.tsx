@@ -4,7 +4,7 @@
 // Steps: service → date → time → contact → confirmation
 
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Vibrant } from 'node-vibrant/browser'
 
@@ -209,6 +209,7 @@ function CalendarPicker({ availableDows, selectedDate, onSelect, locale }: Calen
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams] = useSearchParams()
   const { t, i18n } = useTranslation()
 
   // Page data
@@ -280,9 +281,17 @@ export default function BookingPage() {
         setTenantName(d.tenant?.name || '')
         setTenantIcon(d.tenant?.icon_url || null)
         if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
-        setServices(d.services || [])
+        const serviceList: Service[] = d.services || []
+        setServices(serviceList)
         setAvailability(d.availability || {})
-        setStep('service')
+        const preselectedId = searchParams.get('service')
+        const preselected = preselectedId ? serviceList.find(s => s.id === preselectedId) : null
+        if (preselected) {
+          setSelectedService(preselected)
+          setStep('date')
+        } else {
+          setStep('service')
+        }
       })
       .catch(() => { setStep('error'); setErrorMsg(t('bookingPage.loadFailed')) })
   }, [slug]) // eslint-disable-line react-hooks/exhaustive-deps

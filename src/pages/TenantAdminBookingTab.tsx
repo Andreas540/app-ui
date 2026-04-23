@@ -34,7 +34,7 @@ function dowLabel(dow: number, locale: string) {
   )
 }
 
-type BookingSubTab = 'availability' | 'booking-page' | 'sms' | 'simplybook'
+type BookingSubTab = 'availability' | 'booking-page' | 'sms' | 'simplybook' | 'connect-site'
 type SmsView = 'usage' | 'reminders'
 
 export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab?: BookingSubTab }) {
@@ -140,6 +140,8 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   }
 
   const [copiedUrl, setCopiedUrl] = useState(false)
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [copiedSnippet, setCopiedSnippet] = useState(false)
 
   const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   const selected   = services.find(s => s.id === selectedId)
@@ -151,11 +153,41 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
     setTimeout(() => setCopiedUrl(false), 2000)
   }
 
+  const selectedConnectServices = services.filter(s => selectedServiceIds.includes(s.id))
+
+  const codeSnippet = (() => {
+    const base = publicUrl || 'https://yourapp.com/book/your-slug'
+    const entries = selectedConnectServices.length
+      ? selectedConnectServices.map(s => `  "YOUR_KEY_FOR_${s.name.replace(/\s+/g, '_')}": "?service=${s.id}",  // ${s.name}`).join('\n')
+      : `  "YOUR_KEY_HERE": "?service=...",  // (no services selected yet)`
+    return `const bookingBaseUrl = "${base}";
+
+const serviceUrls = {
+${entries}
+};
+
+// When the user clicks "Continue to book":
+// bookButton.href = bookingBaseUrl + serviceUrls[currentSelectionKey];`
+  })()
+
+  function copySnippet() {
+    navigator.clipboard.writeText(codeSnippet)
+    setCopiedSnippet(true)
+    setTimeout(() => setCopiedSnippet(false), 2000)
+  }
+
+  function toggleConnectService(id: string) {
+    setSelectedServiceIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
   const SUB_TABS: { id: BookingSubTab; label: string }[] = [
-    { id: 'availability', label: t('tenantAdmin.booking.tabAvailability') },
-    { id: 'booking-page', label: t('tenantAdmin.booking.tabBookingPage') },
-    { id: 'sms',          label: t('tenantAdmin.booking.tabSms') },
-    { id: 'simplybook',   label: t('tenantAdmin.booking.tabSimplyBook') },
+    { id: 'availability',  label: t('tenantAdmin.booking.tabAvailability') },
+    { id: 'booking-page',  label: t('tenantAdmin.booking.tabBookingPage') },
+    { id: 'sms',           label: t('tenantAdmin.booking.tabSms') },
+    { id: 'simplybook',    label: t('tenantAdmin.booking.tabSimplyBook') },
+    { id: 'connect-site',  label: t('tenantAdmin.booking.tabConnectSite') },
   ]
 
   return (
@@ -324,6 +356,69 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
 
       {/* ── Simply Book ── */}
       {subTab === 'simplybook' && <BookingIntegrationPage />}
+
+      {/* ── Connect site ── */}
+      {subTab === 'connect-site' && (
+        <div style={{ display: 'grid', gap: 20 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {t('tenantAdmin.booking.connectSiteIntro')}
+          </p>
+
+          {/* Service selector */}
+          <div>
+            <label style={{ display: 'block', marginBottom: 10 }}>{t('tenantAdmin.booking.connectSiteSelectServices')}</label>
+            {services.length === 0 ? (
+              <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>{t('tenantAdmin.booking.noServices')}</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {services.map(s => (
+                  <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedServiceIds.includes(s.id)}
+                      onChange={() => toggleConnectService(s.id)}
+                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
+                    />
+                    <span>{s.name}</span>
+                    {s.price_amount != null && (
+                      <span style={{ color: 'var(--muted)', fontSize: 13 }}>· {Number(s.price_amount).toFixed(2)}</span>
+                    )}
+                    {s.duration_minutes != null && (
+                      <span style={{ color: 'var(--muted)', fontSize: 13 }}>· {s.duration_minutes} min</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Instructions + code snippet */}
+          <div>
+            <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, margin: '0 0 14px', paddingLeft: 20 }}>
+              <li>{t('tenantAdmin.booking.connectSiteStep1')}</li>
+              <li>{t('tenantAdmin.booking.connectSiteStep2')}</li>
+              <li>{t('tenantAdmin.booking.connectSiteStep3')}</li>
+              <li>{t('tenantAdmin.booking.connectSiteStep4')}</li>
+            </ul>
+            <div style={{ position: 'relative' }}>
+              <pre style={{
+                background: 'var(--btn-bg)', border: '1px solid var(--border)',
+                borderRadius: 10, padding: '14px 16px', fontSize: 12,
+                lineHeight: 1.7, overflowX: 'auto', margin: 0,
+                color: 'var(--text)', whiteSpace: 'pre',
+              }}>
+                {codeSnippet}
+              </pre>
+              <button
+                onClick={copySnippet}
+                style={{ position: 'absolute', top: 10, right: 10, height: 30, padding: '0 12px', fontSize: 12 }}
+              >
+                {copiedSnippet ? t('tenantAdmin.booking.copied') : t('tenantAdmin.booking.copyUrl')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
