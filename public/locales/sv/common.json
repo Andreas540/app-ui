@@ -1017,6 +1017,8 @@
       "connectSiteStep2": "Kopiera kodstycket nedan och dela det med din webbutvecklare.",
       "connectSiteStep3": "Be din utvecklare ersätta varje YOUR_KEY_FOR_...-platshållare med det värde din hemsida använder internt för att identifiera den tjänsten.",
       "connectSiteStep4": "Koppla knappen 'Fortsätt till bokning' på din hemsida så att den bygger URL:en via uppslagstabellen och skickar användaren dit.",
+      "connectSiteStep5": "När koden är implementerad på din hemsida kan du inte ändra din bokningssidas URL.",
+      "copyCode": "Kopiera kod",
       "noServices": "Inga bokningsbara tjänster. Börja med att",
       "noServicesLink": "lägga till en tjänst",
       "serviceLabel": "Tjänst",

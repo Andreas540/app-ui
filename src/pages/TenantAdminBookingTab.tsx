@@ -425,6 +425,7 @@ ${entries}
               <li>{t('tenantAdmin.booking.connectSiteStep2')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep3')}</li>
               <li>{t('tenantAdmin.booking.connectSiteStep4')}</li>
+              <li>{t('tenantAdmin.booking.connectSiteStep5')}</li>
             </ul>
             <div style={{ position: 'relative' }}>
               <pre style={{
@@ -437,9 +438,9 @@ ${entries}
               </pre>
               <button
                 onClick={copySnippet}
-                style={{ position: 'absolute', top: 10, right: 10, height: 30, padding: '0 12px', fontSize: 12 }}
+                style={{ position: 'absolute', top: 10, right: 10, height: 30, padding: '0 12px', fontSize: 12, background: '#93c5fd', color: '#1e3a5f', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
               >
-                {copiedSnippet ? t('tenantAdmin.booking.copied') : t('tenantAdmin.booking.copyUrl')}
+                {copiedSnippet ? t('tenantAdmin.booking.copied') : t('tenantAdmin.booking.copyCode')}
               </button>
             </div>
           </div>

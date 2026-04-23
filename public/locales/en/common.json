@@ -1017,6 +1017,8 @@
       "connectSiteStep2": "Copy the code snippet below and share it with your web developer.",
       "connectSiteStep3": "Ask your developer to replace each YOUR_KEY_FOR_... placeholder with the value your website uses internally to identify that service selection.",
       "connectSiteStep4": "Wire the 'Continue to book' button on your site to build the URL using the lookup table and redirect the user to it.",
+      "connectSiteStep5": "After implementing the code on your site, you cannot change your booking page URL.",
+      "copyCode": "Copy code",
       "noServices": "No bookable services found. Start by",
       "noServicesLink": "adding a service",
       "serviceLabel": "Service",
