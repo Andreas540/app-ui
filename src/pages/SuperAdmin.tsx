@@ -504,7 +504,7 @@ async function handleSaveStripeCustomerId() {
       throw new Error(data.error || 'Failed to save')
     }
     // Save SMS billing settings (price per SMS + Stripe subscription item ID)
-    await fetch(`${base}/api/save-billing-settings`, {
+    const smsRes = await fetch(`${base}/api/save-billing-settings`, {
       method: 'POST',
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json', 'x-active-tenant': managingStripeId },
       body: JSON.stringify({
@@ -512,6 +512,10 @@ async function handleSaveStripeCustomerId() {
         stripe_sms_subscription_item_id: editingStripeItemId.trim() || null,
       }),
     })
+    if (!smsRes.ok) {
+      const smsData = await smsRes.json()
+      throw new Error(smsData.error || 'Failed to save SMS settings')
+    }
     alert(t('superAdmin.stripeSaved'))
     setManagingStripeId(null)
     await loadData()
