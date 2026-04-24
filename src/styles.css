@@ -405,11 +405,13 @@ button.primary:focus-visible,
   border-radius: 6px;
 }
 
-/* TenantAdmin tab row: Payment Providers button wraps to its own full-width row on mobile */
+/* TenantAdmin tab row: dropdown on mobile, buttons on desktop */
+.tenant-admin-tab-select  { display: none; width: 100%; }
+.tenant-admin-tab-buttons { display: flex; }
+
 @media (max-width: 768px) {
-  .tenant-admin-tab-payment {
-    flex-basis: 100% !important;
-  }
+  .tenant-admin-tab-select  { display: block; }
+  .tenant-admin-tab-buttons { display: none; }
 }
 
 /* Booking sub-tab bar: tabs on desktop, dropdown on mobile */

@@ -29,7 +29,7 @@ interface TenantGeo {
 }
 
 export default function TenantAdmin() {
-  const { user } = useAuth()
+  useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -736,12 +736,6 @@ export default function TenantAdmin() {
     <div className="page-wide">
       <div className="card" style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>{t('tenantAdmin.title')}</h2>
-        <p className="helper" style={{ marginTop: 8 }}>
-  {t('tenantAdmin.subtitle', { name: user?.tenantName || 'your organization' })}
-</p>
-        <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>
-          {t('tenantAdmin.featuresInfo', { count: tenantFeatures.length })}
-        </p>
         <div style={{ marginTop: 16 }}>
           <button
             onClick={handleManageSubscription}
@@ -759,8 +753,21 @@ export default function TenantAdmin() {
       {/* Tabbed card: Users | Invoicing | Data */}
       <div className="card">
 
-        {/* Tab row — first 4 on row 1, Payment Providers full-width on row 2 on mobile */}
-        <div className="tenant-admin-tabs" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+        {/* Tab row — dropdown on mobile, buttons on desktop */}
+        <select
+          className="tenant-admin-tab-select"
+          value={activeTab}
+          onChange={e => setActiveTab(e.target.value as typeof activeTab)}
+          style={{ marginBottom: 20 }}
+        >
+          <option value="team">{t('tenantAdmin.tabUsers')}</option>
+          <option value="invoicing">{t('tenantAdmin.invoicingTab')}</option>
+          <option value="accounting">{t('tenantAdmin.tabData')}</option>
+          <option value="booking">{t('tenantAdmin.tabBooking')}</option>
+          <option value="payment-providers">{t('tenantAdmin.tabPaymentProviders')}</option>
+        </select>
+
+        <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
           {(['team', 'invoicing', 'accounting', 'booking'] as const).map(tab => (
             <button
               key={tab}
@@ -776,7 +783,7 @@ export default function TenantAdmin() {
           ))}
           <button
             onClick={() => setActiveTab('payment-providers')}
-            className={activeTab === 'payment-providers' ? 'primary tenant-admin-tab-payment' : 'tenant-admin-tab-payment'}
+            className={activeTab === 'payment-providers' ? 'primary' : ''}
             style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {t('tenantAdmin.tabPaymentProviders')}

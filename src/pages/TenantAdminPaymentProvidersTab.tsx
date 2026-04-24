@@ -112,7 +112,7 @@ export default function TenantAdminPaymentProvidersTab() {
     ? `${base}/api/stripe-payment-webhook?tenant_id=${tenantId}`
     : `${base}/api/amp-payment-webhook?tenant_id=${tenantId}`
 
-  if (loading) return <p className="helper">{t('common.loading')}</p>
+  if (loading) return <p className="helper">{t('loading')}</p>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -246,7 +246,7 @@ export default function TenantAdminPaymentProvidersTab() {
           disabled={saving}
           style={{ height: 36, padding: '0 20px', fontSize: 14 }}
         >
-          {saving ? t('common.saving') : saved ? t('common.saved') : t('common.save')}
+          {saving ? t('saving') : saved ? t('saved') : t('save')}
         </button>
       </div>
 
