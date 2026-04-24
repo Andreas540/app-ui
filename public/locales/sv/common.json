@@ -1357,7 +1357,9 @@
     "manageSmsReminders": "Hantera dina SMS-påminnelser"
   },
   "paymentProviders": {
+    "selectProvider": "Betalningsleverantör:",
     "stripeDescription": "Ta emot betalningar från dina kunder via Stripe. Ange dina Stripe API-nycklar nedan — dessa är specifika för ditt Stripe-konto och lagras säkert på våra servrar.",
+    "ampDescription": "Ta emot betalningar via AMP Payments. Ange dina AMP API-uppgifter nedan.",
     "publishableKey": "Publiceringsnyckel",
     "secretKey": "Hemlig nyckel",
     "webhookSecret": "Webhook-hemlighet",

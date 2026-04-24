@@ -44,9 +44,8 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   const [smsView, setSmsView] = useState<SmsView>('usage')
 
   // ── Booking settings ──────────────────────────────────────────────────────
-  const [slug, setSlug]                       = useState('')
-  const [paymentProvider, setPaymentProvider] = useState<'none' | 'stripe' | 'amp'>('none')
-  const [savingConfig, setSavingConfig]       = useState(false)
+  const [slug, setSlug]           = useState('')
+  const [savingConfig, setSavingConfig] = useState(false)
   const [configLoaded, setConfigLoaded]       = useState(false)
 
   // ── Availability ──────────────────────────────────────────────────────────
@@ -62,7 +61,6 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
       .then(r => r.json())
       .then(data => {
         setSlug(data.slug || '')
-        setPaymentProvider(data.paymentProvider || 'none')
         setConfigLoaded(true)
       })
       .catch(console.error)
@@ -105,7 +103,7 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
       const res = await fetch(`${apiBase()}/api/tenant-admin`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'updateBookingConfig', slug, paymentProvider }),
+        body: JSON.stringify({ action: 'updateBookingConfig', slug }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || t('tenantAdmin.booking.failedSave'))
@@ -331,15 +329,6 @@ ${entries}
                 </div>
               </div>
             )}
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label>{t('tenantAdmin.booking.paymentProvider')}</label>
-            <select value={paymentProvider} onChange={e => setPaymentProvider(e.target.value as 'none' | 'stripe' | 'amp')} style={{ maxWidth: 280 }}>
-              <option value="none">{t('tenantAdmin.booking.paymentNone')}</option>
-              <option value="stripe">{t('tenantAdmin.booking.paymentStripe')}</option>
-              <option value="amp">{t('tenantAdmin.booking.paymentAmp')}</option>
-            </select>
           </div>
 
           <button className="primary" onClick={saveConfig} disabled={savingConfig || !configLoaded}>

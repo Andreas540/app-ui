@@ -1357,7 +1357,9 @@
     "manageSmsReminders": "Gestiona tus recordatorios SMS"
   },
   "paymentProviders": {
+    "selectProvider": "Proveedor de pago:",
     "stripeDescription": "Acepta pagos de tus clientes a través de Stripe. Introduce tus claves API de Stripe a continuación — son específicas de tu cuenta de Stripe y se almacenan de forma segura en nuestros servidores.",
+    "ampDescription": "Acepta pagos a través de AMP Payments. Introduce tus credenciales de API de AMP a continuación.",
     "publishableKey": "Clave publicable",
     "secretKey": "Clave secreta",
     "webhookSecret": "Secreto de webhook",

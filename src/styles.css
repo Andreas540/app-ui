@@ -408,7 +408,7 @@ button.primary:focus-visible,
 /* TenantAdmin tab row: Payment Providers button wraps to its own full-width row on mobile */
 @media (max-width: 768px) {
   .tenant-admin-tab-payment {
-    flex-basis: 100%;
+    flex-basis: 100% !important;
   }
 }
 
