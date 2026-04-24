@@ -13,8 +13,7 @@ export default function EditOrder() {
   const { t } = useTranslation()
   const { parseAmount } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
-  const [paymentLinkUrl, setPaymentLinkUrl]   = useState<string | null>(null)
-  const [generatingLink, setGeneratingLink]   = useState(false)
+  const [generatingLink, setGeneratingLink] = useState(false)
   const navigate = useNavigate()
   
   const [people, setPeople] = useState<Person[]>([])
@@ -361,7 +360,7 @@ export default function EditOrder() {
     if (!orderId) return
     try {
       setGeneratingLink(true)
-      setPaymentLinkUrl(null)
+
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/create-order-payment-link`, {
         method: 'POST',
@@ -370,7 +369,7 @@ export default function EditOrder() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to generate link')
-      setPaymentLinkUrl(data.checkout_url)
+
       await navigator.clipboard.writeText(data.checkout_url)
       alert(t('orders.paymentLinkCopied'))
     } catch (e: any) {
