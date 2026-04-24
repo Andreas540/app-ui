@@ -436,9 +436,9 @@ export default function SuperAdmin() {
     setEditingStripeItemId('')
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/get-sms-usage`, {
-        headers: { ...getAuthHeaders(), 'x-active-tenant': tenant.id },
-      })
+      const headers = { ...getAuthHeaders(), 'X-Active-Tenant': tenant.id } as Record<string, string>
+      delete headers['x-active-tenant']
+      const res = await fetch(`${base}/api/get-sms-usage`, { headers })
       if (res.ok) {
         const data = await res.json()
         setEditingSmsPricePerUnit(String(data.settings?.sms_price_per_unit ?? '0.03'))
@@ -504,9 +504,11 @@ async function handleSaveStripeCustomerId() {
       throw new Error(data.error || 'Failed to save')
     }
     // Save SMS billing settings (price per SMS + Stripe subscription item ID)
+    const smsHeaders = { ...getAuthHeaders(), 'Content-Type': 'application/json', 'X-Active-Tenant': managingStripeId } as Record<string, string>
+    delete smsHeaders['x-active-tenant']
     const smsRes = await fetch(`${base}/api/save-billing-settings`, {
       method: 'POST',
-      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json', 'x-active-tenant': managingStripeId },
+      headers: smsHeaders,
       body: JSON.stringify({
         sms_price_per_unit: editingSmsPricePerUnit ? parseFloat(editingSmsPricePerUnit) : undefined,
         stripe_sms_subscription_item_id: editingStripeItemId.trim() || null,
