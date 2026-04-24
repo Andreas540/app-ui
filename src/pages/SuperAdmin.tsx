@@ -1752,7 +1752,7 @@ const available = max - used
           min="0"
           value={editingSmsPricePerUnit}
           onChange={(e) => setEditingSmsPricePerUnit(e.target.value)}
-          placeholder="0.0200"
+          placeholder="0.0300"
           style={{ height: CONTROL_H, marginTop: 6 }}
         />
       </div>
