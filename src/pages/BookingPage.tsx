@@ -18,7 +18,7 @@ interface Service {
   currency: string | null
 }
 
-type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm'
+type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm' | 'canceled'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -213,11 +213,12 @@ export default function BookingPage() {
   const { t, i18n } = useTranslation()
 
   // Page data
-  const [tenantName, setTenantName]     = useState('')
-  const [tenantIcon, setTenantIcon]     = useState<string | null>(null)
-  const [bgColor, setBgColor]           = useState('#f5f5f5')
-  const [services, setServices]         = useState<Service[]>([])
-  const [availability, setAvailability] = useState<Record<string, number[]>>({})
+  const [tenantName, setTenantName]       = useState('')
+  const [tenantIcon, setTenantIcon]       = useState<string | null>(null)
+  const [bgColor, setBgColor]             = useState('#f5f5f5')
+  const [services, setServices]           = useState<Service[]>([])
+  const [availability, setAvailability]   = useState<Record<string, number[]>>({})
+  const [requiresPayment, setRequiresPayment] = useState(false)
 
   // Step
   const [step, setStep]       = useState<Step>('loading')
@@ -271,9 +272,43 @@ export default function BookingPage() {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [step])
 
-  // Load initial page data
+  // Load initial page data — also handles post-Stripe-redirect returns
   useEffect(() => {
     if (!slug) { setStep('error'); setErrorMsg(t('bookingPage.invalidLink')); return }
+
+    // ── Returning from Stripe Checkout ──────────────────────────────────────
+    const bookingSuccess  = searchParams.get('booking_success')
+    const bookingCanceled = searchParams.get('booking_canceled')
+
+    if (bookingCanceled) {
+      // Fetch page data then show a cancellation message
+      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}`)
+        .then(r => r.json())
+        .then(d => {
+          setTenantName(d.tenant?.name || '')
+          setTenantIcon(d.tenant?.icon_url || null)
+          if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
+          setStep('canceled')
+        })
+        .catch(() => { setStep('error'); setErrorMsg(t('bookingPage.loadFailed')) })
+      return
+    }
+
+    if (bookingSuccess) {
+      // Fetch booking details to display confirmation
+      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}&booking_id=${encodeURIComponent(bookingSuccess)}`)
+        .then(r => r.json().then(d => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => {
+          if (!ok) { setStep('error'); setErrorMsg(d.error || t('bookingPage.notFound')); return }
+          setTenantName(d.tenant_name || '')
+          setConfirmation(d)
+          setStep('confirm')
+        })
+        .catch(() => { setStep('error'); setErrorMsg(t('bookingPage.loadFailed')) })
+      return
+    }
+
+    // ── Normal page load ────────────────────────────────────────────────────
     fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}`)
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
@@ -281,6 +316,7 @@ export default function BookingPage() {
         setTenantName(d.tenant?.name || '')
         setTenantIcon(d.tenant?.icon_url || null)
         if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
+        setRequiresPayment(!!d.requiresPayment)
         const serviceList: Service[] = d.services || []
         setServices(serviceList)
         setAvailability(d.availability || {})
@@ -356,12 +392,15 @@ export default function BookingPage() {
       if (!res.ok) {
         alert(data.error || t('bookingPage.bookingFailed'))
         if (res.status === 409) {
-          // Slot taken — reload slots and go back to time selection
           setSelectedTime('')
           setSlots([])
           setLoadingSlots(true)
           setStep('time')
         }
+        return
+      }
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url
         return
       }
       setConfirmation(data)
@@ -679,7 +718,11 @@ export default function BookingPage() {
               onClick={submitBooking}
               disabled={submitting}
             >
-              {submitting ? t('bookingPage.confirming') : t('bookingPage.confirmBooking')}
+              {submitting
+                ? t('bookingPage.confirming')
+                : (requiresPayment && selectedService && Number(selectedService.price_amount) > 0)
+                  ? t('bookingPage.bookAndPay')
+                  : t('bookingPage.confirmBooking')}
             </button>
           </div>
         )}
@@ -721,6 +764,25 @@ export default function BookingPage() {
             <p style={{ color: '#888', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
               {t('bookingPage.contactFor', { name: confirmation.tenant_name })}
             </p>
+          </div>
+        )}
+
+        {/* ── Payment canceled ── */}
+        {step === 'canceled' && (
+          <div style={{ ...cardStyle, textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✕</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#b91c1c' }}>
+              {t('bookingPage.paymentCanceled')}
+            </h3>
+            <p style={{ color: '#555', marginBottom: 24 }}>
+              {t('bookingPage.paymentCanceledDesc')}
+            </p>
+            <button
+              style={primaryBtn}
+              onClick={() => window.location.href = `/book/${slug}`}
+            >
+              {t('bookingPage.tryAgain')}
+            </button>
           </div>
         )}
       </div>

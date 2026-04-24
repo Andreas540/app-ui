@@ -13,6 +13,8 @@ export default function EditOrder() {
   const { t } = useTranslation()
   const { parseAmount } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
+  const [paymentLinkUrl, setPaymentLinkUrl]   = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink]   = useState(false)
   const navigate = useNavigate()
   
   const [people, setPeople] = useState<Person[]>([])
@@ -355,6 +357,29 @@ export default function EditOrder() {
   if (loading) return <div className="card page-narrow"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-narrow"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
 
+  async function generatePaymentLink() {
+    if (!orderId) return
+    try {
+      setGeneratingLink(true)
+      setPaymentLinkUrl(null)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/create-order-payment-link`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate link')
+      setPaymentLinkUrl(data.checkout_url)
+      await navigator.clipboard.writeText(data.checkout_url)
+      alert(t('orders.paymentLinkCopied'))
+    } catch (e: any) {
+      alert(e?.message || 'Failed to generate payment link')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
   const CONTROL_H = 44
 
   return (
@@ -578,7 +603,7 @@ export default function EditOrder() {
         </div>
       )}
 
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+      <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>
         <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>{t('cancel')}</button>
         <button
@@ -586,6 +611,14 @@ export default function EditOrder() {
           style={{ height: CONTROL_H }}
         >
           {t('orders.more')}
+        </button>
+        <button
+          onClick={generatePaymentLink}
+          disabled={generatingLink}
+          style={{ height: CONTROL_H }}
+          title={t('orders.paymentLinkTitle')}
+        >
+          {generatingLink ? t('orders.generatingLink') : t('orders.paymentLink')}
         </button>
         <button
           onClick={deleteOrder}

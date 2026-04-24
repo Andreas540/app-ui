@@ -21,16 +21,48 @@ async function getBookingData(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     const sql = neon(DATABASE_URL)
 
-    const params = event.queryStringParameters || {}
+    const params     = event.queryStringParameters || {}
     const slug       = (params.slug || '').toLowerCase().trim()
     const service_id = params.service_id
-    const date       = params.date  // YYYY-MM-DD
+    const date       = params.date        // YYYY-MM-DD
+    const booking_id = params.booking_id  // post-payment confirmation fetch
+
+    // ── Booking detail fetch (post-payment return) ─────────────────────────
+    if (booking_id && slug) {
+      const rows = await sql`
+        SELECT b.id, b.booking_status, b.payment_status,
+               b.start_at, b.end_at, b.total_amount, b.currency,
+               p.name AS service_name, p.duration_minutes,
+               t.name AS tenant_name
+        FROM bookings b
+        JOIN products p  ON p.id = b.service_id
+        JOIN tenants  t  ON t.id = b.tenant_id
+        WHERE b.id           = ${booking_id}::uuid
+          AND t.booking_slug = ${slug}
+        LIMIT 1
+      `
+      if (!rows.length) return cors(404, { error: 'Booking not found' })
+      const bk = rows[0]
+      const startLocal = new Date(bk.start_at).toISOString()
+      return cors(200, {
+        booking_id:       bk.id,
+        booking_status:   bk.booking_status,
+        payment_status:   bk.payment_status,
+        service_name:     bk.service_name,
+        date:             startLocal.slice(0, 10),
+        start_time:       startLocal.slice(11, 16),
+        duration_minutes: bk.duration_minutes || 0,
+        price:            Number(bk.total_amount),
+        currency:         bk.currency || 'USD',
+        tenant_name:      bk.tenant_name,
+      })
+    }
 
     if (!slug) return cors(400, { error: 'slug is required' })
 
     // Look up tenant by booking slug
     const tenantRows = await sql`
-      SELECT id, name, default_timezone, default_language, booking_payment_provider, app_icon_192
+      SELECT id, name, default_timezone, default_language, app_icon_192
       FROM tenants
       WHERE booking_slug = ${slug}
       LIMIT 1
@@ -120,11 +152,19 @@ async function getBookingData(event) {
       availability[row.service_id].push(row.day_of_week)
     }
 
+    // Check if tenant has an active Stripe provider
+    const paymentRows = await sql`
+      SELECT 1 FROM tenant_payment_providers
+      WHERE tenant_id = ${tenantId}::uuid AND provider = 'stripe' AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+      LIMIT 1
+    `.catch(() => [])
+
     return cors(200, {
-      tenant:          { name: tenant.name, icon_url: tenant.app_icon_192 || null, language: tenant.default_language || 'en' },
+      tenant:         { name: tenant.name, icon_url: tenant.app_icon_192 || null, language: tenant.default_language || 'en' },
       services,
       availability,
-      paymentProvider: tenant.booking_payment_provider || 'none',
+      requiresPayment: paymentRows.length > 0,
     })
 
   } catch (e) {
@@ -159,7 +199,7 @@ async function createBooking(event) {
 
     // Look up tenant
     const tenantRows = await sql`
-      SELECT id, name, default_timezone, booking_payment_provider
+      SELECT id, name, default_timezone
       FROM tenants WHERE booking_slug = ${slug.toLowerCase()} LIMIT 1
     `
     if (!tenantRows.length) return cors(404, { error: 'Booking page not found' })
@@ -245,6 +285,19 @@ async function createBooking(event) {
     if (!startAt || isNaN(startAt.getTime())) return cors(400, { error: 'Invalid date or time' })
     const endAt = new Date(startAt.getTime() + durationMin * 60 * 1000)
 
+    // Check if Stripe is enabled for this tenant
+    const stripeRows = await sql`
+      SELECT secret_key FROM tenant_payment_providers
+      WHERE tenant_id = ${tenantId}::uuid AND provider = 'stripe' AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+      LIMIT 1
+    `.catch(() => [])
+    const stripeSecretKey = stripeRows[0]?.secret_key || null
+
+    // Determine initial booking status
+    const bookingStatus = stripeSecretKey && price > 0 ? 'pending_payment' : 'confirmed'
+    const paymentStatus = stripeSecretKey && price > 0 ? 'pending'          : 'unpaid'
+
     // Create booking
     const bkRow = await sql`
       INSERT INTO bookings (
@@ -253,7 +306,7 @@ async function createBooking(event) {
         start_at, end_at, participant_count, total_amount, currency
       ) VALUES (
         ${tenantId}, ${customerId}, ${service_id},
-        'confirmed', 'unpaid',
+        ${bookingStatus}, ${paymentStatus},
         ${startAt.toISOString()}, ${endAt.toISOString()},
         1, ${price}, ${currency}
       )
@@ -261,7 +314,7 @@ async function createBooking(event) {
     `
     const bookingId = bkRow[0].id
 
-    // Create order + order_item (keeps booking revenue in the main orders system)
+    // Create order + order_item
     const counterRow = await sql`
       INSERT INTO tenant_order_counters (tenant_id, last_order_no)
       VALUES (
@@ -283,7 +336,6 @@ async function createBooking(event) {
       INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
       VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
     `
-
     await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
 
     // Log external event (fire and forget)
@@ -292,14 +344,40 @@ async function createBooking(event) {
       VALUES (${tenantId}, 'booking', ${cleanName}, ${JSON.stringify({ service_name: svc.name, date, start_time: start_time.slice(0, 5) })}::jsonb)
     `.catch(err => console.error('external_events insert failed:', err))
 
-    // Return confirmation data
+    // ── Stripe Checkout ───────────────────────────────────────────────────────
+    if (stripeSecretKey && price > 0) {
+      const Stripe = (await import('stripe')).default
+      const stripe  = new Stripe(stripeSecretKey)
+      const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30-minute window
+        line_items: [{
+          price_data: {
+            currency:     currency.toLowerCase(),
+            product_data: { name: svc.name },
+            unit_amount:  Math.round(price * 100),
+          },
+          quantity: 1,
+        }],
+        customer_email: cleanEmail,
+        metadata: { type: 'booking', booking_id: bookingId, tenant_id: tenantId },
+        success_url: `${appBase}/book/${slug}?booking_success=${bookingId}`,
+        cancel_url:  `${appBase}/book/${slug}?booking_canceled=1`,
+      })
+
+      return cors(200, { checkout_url: session.url })
+    }
+
+    // ── No payment required — return confirmation directly ────────────────────
     return cors(201, {
-      ok:          true,
-      booking_id:  bookingId,
-      tenant_name: tenant.name,
-      service_name: svc.name,
+      ok:               true,
+      booking_id:       bookingId,
+      tenant_name:      tenant.name,
+      service_name:     svc.name,
       date,
-      start_time:  start_time.slice(0, 5),
+      start_time:       start_time.slice(0, 5),
       duration_minutes: durationMin,
       price,
       currency,

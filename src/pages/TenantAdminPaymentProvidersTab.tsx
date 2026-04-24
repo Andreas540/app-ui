@@ -107,7 +107,10 @@ export default function TenantAdminPaymentProvidersTab() {
   const isConnected = storedRow?.enabled && !!storedRow?.publishable_key && storedRow?.secret_key_set && storedRow?.webhook_secret_set
 
   const base = apiBase() || window.location.origin
-  const webhookUrl = `${base}/api/stripe-payment-webhook`
+  const tenantId = localStorage.getItem('activeTenantId') || ''
+  const webhookUrl = selectedProvider === 'stripe'
+    ? `${base}/api/stripe-payment-webhook?tenant_id=${tenantId}`
+    : `${base}/api/amp-payment-webhook?tenant_id=${tenantId}`
 
   if (loading) return <p className="helper">{t('common.loading')}</p>
 
@@ -153,7 +156,9 @@ export default function TenantAdminPaymentProvidersTab() {
             onChange={e => setEnabled(e.target.checked)}
             style={{ width: 18, height: 18 }}
           />
-          <span style={{ fontSize: 14 }}>{t('paymentProviders.enabled')}</span>
+          <span style={{ fontSize: 14 }}>
+            {selectedProvider === 'stripe' ? t('paymentProviders.enabledStripe') : t('paymentProviders.enabledAmp')}
+          </span>
         </label>
 
         {/* Provider description */}
