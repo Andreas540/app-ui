@@ -908,6 +908,7 @@
     "tabUsers": "Användare",
     "tabData": "Dataexporter",
     "tabBooking": "Bokning",
+    "tabPaymentProviders": "Betalningsleverantörer",
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",
@@ -1354,6 +1355,20 @@
     "setupPaymentProvider": "ställ in betalleverantör",
     "manageAvailability": "Hantera din tillgänglighet",
     "manageSmsReminders": "Hantera dina SMS-påminnelser"
+  },
+  "paymentProviders": {
+    "stripeDescription": "Ta emot betalningar från dina kunder via Stripe. Ange dina Stripe API-nycklar nedan — dessa är specifika för ditt Stripe-konto och lagras säkert på våra servrar.",
+    "publishableKey": "Publiceringsnyckel",
+    "secretKey": "Hemlig nyckel",
+    "webhookSecret": "Webhook-hemlighet",
+    "webhookUrl": "Webhook-URL",
+    "webhookUrlHelper": "Kopiera denna URL och lägg till den som webhook-endpoint i din Stripe-dashboard (Utvecklare → Webhooks).",
+    "enabled": "Aktivera Stripe-betalningar",
+    "statusConnected": "Ansluten",
+    "statusNotConfigured": "Ej konfigurerad",
+    "keySet": "Nyckel är angiven (dold)",
+    "leaveBlankToKeep": "lämna tomt för att behålla befintlig",
+    "moreProvidersComingSoon": "Fler betalningsleverantörer tillkommer snart."
   },
   "bookingPage": {
     "loading": "Laddar…",

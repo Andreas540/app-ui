@@ -7,6 +7,7 @@ import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
 import TenantAdminBookingTab from './TenantAdminBookingTab'
+import TenantAdminPaymentProvidersTab from './TenantAdminPaymentProvidersTab'
 
 interface TenantUser {
   id: string
@@ -58,7 +59,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -758,8 +759,8 @@ export default function TenantAdmin() {
       {/* Tabbed card: Users | Invoicing | Data */}
       <div className="card">
 
-        {/* Tab row */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {/* Tab row — first 4 on row 1, Payment Providers full-width on row 2 on mobile */}
+        <div className="tenant-admin-tabs" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
           {(['team', 'invoicing', 'accounting', 'booking'] as const).map(tab => (
             <button
               key={tab}
@@ -773,6 +774,13 @@ export default function TenantAdmin() {
                 : t('tenantAdmin.tabData')}
             </button>
           ))}
+          <button
+            onClick={() => setActiveTab('payment-providers')}
+            className={activeTab === 'payment-providers' ? 'primary tenant-admin-tab-payment' : 'tenant-admin-tab-payment'}
+            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {t('tenantAdmin.tabPaymentProviders')}
+          </button>
         </div>
 
         {/* ── Team Members tab ── */}
@@ -1115,6 +1123,9 @@ export default function TenantAdmin() {
 
         {/* ── Booking tab ── */}
         {activeTab === 'booking' && <TenantAdminBookingTab initialSubTab={(location.state as any)?.openBookingSubTab} />}
+
+        {/* ── Payment Providers tab ── */}
+        {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

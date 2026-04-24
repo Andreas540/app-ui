@@ -908,6 +908,7 @@
     "tabUsers": "Users",
     "tabData": "Data Exports",
     "tabBooking": "Booking",
+    "tabPaymentProviders": "Payment Providers",
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",
@@ -1354,6 +1355,20 @@
     "setupPaymentProvider": "set up payment provider",
     "manageAvailability": "Manage your availability",
     "manageSmsReminders": "Manage your SMS-reminders"
+  },
+  "paymentProviders": {
+    "stripeDescription": "Accept payments from your customers via Stripe. Enter your Stripe API keys below — these are specific to your Stripe account and kept securely on our servers.",
+    "publishableKey": "Publishable Key",
+    "secretKey": "Secret Key",
+    "webhookSecret": "Webhook Secret",
+    "webhookUrl": "Webhook URL",
+    "webhookUrlHelper": "Copy this URL and add it as a webhook endpoint in your Stripe dashboard (Developers → Webhooks).",
+    "enabled": "Enable Stripe payments",
+    "statusConnected": "Connected",
+    "statusNotConfigured": "Not configured",
+    "keySet": "Key is set (hidden)",
+    "leaveBlankToKeep": "leave blank to keep existing",
+    "moreProvidersComingSoon": "More payment providers coming soon."
   },
   "bookingPage": {
     "loading": "Loading…",
