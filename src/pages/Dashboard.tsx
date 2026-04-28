@@ -731,6 +731,13 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
                       `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString()} / ${fmtMoney(item.unit_price ?? 0)}`
                     const hasNotes = o.notes && o.notes.trim()
+                    const orderTotal = Number(o.total) || 0
+                    const paidAmount = Number((o as any).paid_amount) || 0
+                    const amountColor = paidAmount >= orderTotal && orderTotal > 0
+                      ? 'var(--color-success)'
+                      : paidAmount > 0
+                        ? 'var(--color-warning)'
+                        : undefined
                     const { symbol, color, label } = getDeliveryVisual(o)
                     const deliveryIcon = (
                       <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
@@ -759,7 +766,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                           <div className="helper" onClick={() => handleOrderClick(o)}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            style={{ textAlign: 'right', cursor: 'pointer' }}>
+                            style={{ textAlign: 'right', cursor: 'pointer', color: amountColor }}>
                             {fmtIntMoney(o.total)}
                           </div>
                           {items.slice(1).map((item, idx) => (

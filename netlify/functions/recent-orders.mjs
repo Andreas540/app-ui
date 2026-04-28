@@ -36,6 +36,11 @@ async function getRecentOrders(event) {
         c.name as customer_name,
         -- full order total
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
+        COALESCE((
+          SELECT SUM(py.amount) FROM payments py
+          WHERE py.order_id = o.id
+             OR (o.booking_id IS NOT NULL AND py.booking_id = o.booking_id)
+        ), 0)::numeric(12,2) AS paid_amount,
         COALESCE(
           json_agg(
             json_build_object('product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price)

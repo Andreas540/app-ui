@@ -106,12 +106,13 @@ export async function handler(event) {
           ? session.amount_total / 100
           : Number(order.total_amount)
 
-        // Insert a payment record
+        // Insert a payment record linked to the order
         await sql`
-          INSERT INTO payments (tenant_id, customer_id, amount, payment_type, payment_date, notes)
+          INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
           VALUES (
             ${tenantId}::uuid,
             ${order.customer_id},
+            ${orderId}::uuid,
             ${amountPaid},
             'stripe',
             ${new Date().toISOString().slice(0, 10)},
