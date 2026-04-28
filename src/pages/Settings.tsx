@@ -12,6 +12,7 @@ export default function Settings() {
 
   const [tenantName, setTenantName]       = useState('')
   const [tenantLoading, setTenantLoading] = useState(true)
+  const [allTenants, setAllTenants]       = useState<{ id: string; name: string; display_name: string | null }[]>([])
   const [userName, setUserName]           = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [loadedShortcuts, setLoadedShortcuts]     = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
@@ -37,16 +38,28 @@ export default function Settings() {
     try {
       setTenantLoading(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res  = await fetch(`${base}/api/tenant`, { cache: 'no-store', headers: getAuthHeaders() })
-      if (!res.ok) throw new Error(`status ${res.status}`)
-      const data = await res.json()
+      const [tenantRes, tenantsRes] = await Promise.all([
+        fetch(`${base}/api/tenant`, { cache: 'no-store', headers: getAuthHeaders() }),
+        fetch(`${base}/api/user-tenants`, { cache: 'no-store', headers: getAuthHeaders() }),
+      ])
+      if (!tenantRes.ok) throw new Error(`status ${tenantRes.status}`)
+      const data = await tenantRes.json()
       setTenantName(data.tenant.name)
+      if (tenantsRes.ok) {
+        const td = await tenantsRes.json()
+        setAllTenants(td.tenants || [])
+      }
     } catch (err) {
       console.error('Failed to load tenant info:', err)
       setTenantName('Unknown')
     } finally {
       setTenantLoading(false)
     }
+  }
+
+  function handleTenantSwitch(tenantId: string) {
+    localStorage.setItem('activeTenantId', tenantId)
+    window.location.reload()
   }
 
   useEffect(() => { fetchTenant() }, [])
@@ -164,11 +177,22 @@ export default function Settings() {
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('settingsPage.company')}</label>
-          <input
-            value={tenantLoading ? t('loadingDots') : tenantName}
-            disabled
-            style={{ backgroundColor: 'transparent', border: '1px solid var(--primary)', color: '#999', cursor: 'not-allowed' }}
-          />
+          {!tenantLoading && allTenants.length > 1 ? (
+            <select
+              value={localStorage.getItem('activeTenantId') || ''}
+              onChange={e => handleTenantSwitch(e.target.value)}
+            >
+              {allTenants.map(tenant => (
+                <option key={tenant.id} value={tenant.id}>{tenant.display_name || tenant.name}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={tenantLoading ? t('loadingDots') : tenantName}
+              disabled
+              style={{ backgroundColor: 'transparent', border: '1px solid var(--primary)', color: '#999', cursor: 'not-allowed' }}
+            />
+          )}
         </div>
         <div>
           <label>{t('settingsPage.user')}</label>
