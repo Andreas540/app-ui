@@ -20,6 +20,7 @@ export default function Settings() {
   const [loadedShortcuts, setLoadedShortcuts]     = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [hiddenNavItems, setHiddenNavItems]       = useState<string[]>([])
   const [loadedHiddenNav, setLoadedHiddenNav]     = useState<string[]>([])
+  const [menuExpanded, setMenuExpanded]           = useState(false)
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
@@ -313,8 +314,17 @@ export default function Settings() {
 
       {/* Menu Visibility */}
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--separator)' }}>
-        <h4 style={{ margin: '0 0 4px' }}>{t('settingsPage.menuVisibility')}</h4>
-        <p className="helper" style={{ margin: '0 0 16px' }}>{t('settingsPage.menuVisibilityHelper')}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h4 style={{ margin: 0 }}>{t('settingsPage.menuVisibility')}</h4>
+          <button
+            onClick={() => setMenuExpanded(v => !v)}
+            style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0 }}
+          >
+            {t('settingsPage.menuVisibilityToggle')}
+          </button>
+        </div>
+        {menuExpanded && <>
+        <p className="helper" style={{ margin: '8px 0 16px' }}>{t('settingsPage.menuVisibilityHelper')}</p>
         {NAV_SECTIONS.map(section => {
           const items = NAV_ITEMS.filter(item =>
             item.section === section.id &&
@@ -342,6 +352,7 @@ export default function Settings() {
             </div>
           )
         })}
+        </>}
       </div>
 
       {/* Password Change */}

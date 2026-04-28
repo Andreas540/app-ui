@@ -768,6 +768,7 @@
     "passwordMismatch": "New passwords do not match",
     "passwordChanged": "Password changed successfully!",
     "menuVisibility": "Show/Hide Menu Items",
+    "menuVisibilityToggle": "Select / de-select items",
     "menuVisibilityHelper": "Choose which items appear in your menu. Only items you have access to are shown here.",
     "savingFailed": "Failed to save settings. Please try again."
   },

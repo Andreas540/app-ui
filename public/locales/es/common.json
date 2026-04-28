@@ -768,6 +768,7 @@
     "passwordMismatch": "Las contraseñas no coinciden",
     "passwordChanged": "¡Contraseña cambiada exitosamente!",
     "menuVisibility": "Mostrar/ocultar elementos del menú",
+    "menuVisibilityToggle": "Seleccionar / deseleccionar elementos",
     "menuVisibilityHelper": "Elige qué elementos aparecen en tu menú. Solo se muestran los elementos a los que tienes acceso.",
     "savingFailed": "Error al guardar configuración. Inténtalo de nuevo."
   },
