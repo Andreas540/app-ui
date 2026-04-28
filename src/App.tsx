@@ -646,7 +646,10 @@ useEffect(() => {
           {(() => {
             // SuperAdmin with tenant selected gets access to ALL features
             const superAdminWithTenant = user?.role === 'super_admin' && user?.tenantId
-            const canAccess = (featureId: string) => hasFeature(featureId as any) || superAdminWithTenant
+            const hiddenNav: Set<string> = (() => {
+              try { return new Set<string>(JSON.parse(localStorage.getItem('userSettings') || '{}').hiddenNavItems || []) } catch { return new Set<string>() }
+            })()
+            const canAccess = (featureId: string) => (hasFeature(featureId as any) || !!superAdminWithTenant) && !hiddenNav.has(featureId)
 
             if (user?.businessType === 'physical_store') {
               return (
@@ -853,9 +856,11 @@ useEffect(() => {
 
                 {sectionHeader('admin', t('admin'))}
                 {!collapsed['admin'] && (<>
-                <NavLink to="/contact" onClick={() => setNavOpen(false)}>
-                  {t('contact')}
-                </NavLink>
+                {!hiddenNav.has('contact') && (
+                  <NavLink to="/contact" onClick={() => setNavOpen(false)}>
+                    {t('contact')}
+                  </NavLink>
+                )}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
                   <NavLink to="/admin" onClick={() => setNavOpen(false)}>
                     {t('accountAdmin')}

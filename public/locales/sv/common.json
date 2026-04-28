@@ -767,6 +767,8 @@
     "passwordMinLength": "Det nya lösenordet måste ha minst 8 tecken",
     "passwordMismatch": "Lösenorden matchar inte",
     "passwordChanged": "Lösenord ändrat!",
+    "menuVisibility": "Visa/dölj menyalternativ",
+    "menuVisibilityHelper": "Välj vilka alternativ som visas i din meny. Endast alternativ du har tillgång till visas här.",
     "savingFailed": "Misslyckades att spara inställningar. Försök igen."
   },
   "messages": {

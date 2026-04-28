@@ -5,9 +5,11 @@ import { useAuth } from '../contexts/AuthContext'
 import { type FeatureId } from '../lib/features'
 import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS } from '../lib/shortcuts'
 import { useTheme } from '../lib/theme'
+import { NAV_ITEMS, NAV_SECTIONS } from '../lib/navItems'
 
 export default function Settings() {
   const { t } = useTranslation()
+  const { t: tNav } = useTranslation('navigation')
   const { hasFeature, user } = useAuth()
 
   const [tenantName, setTenantName]       = useState('')
@@ -16,6 +18,8 @@ export default function Settings() {
   const [userName, setUserName]           = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
   const [loadedShortcuts, setLoadedShortcuts]     = useState<FeatureId[]>(DEFAULT_SHORTCUTS)
+  const [hiddenNavItems, setHiddenNavItems]       = useState<string[]>([])
+  const [loadedHiddenNav, setLoadedHiddenNav]     = useState<string[]>([])
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
@@ -72,8 +76,9 @@ export default function Settings() {
 
   useEffect(() => {
     const shortcutsChanged = JSON.stringify(selectedShortcuts) !== JSON.stringify(loadedShortcuts)
-    setHasChanges(userName.trim() !== '' || shortcutsChanged)
-  }, [userName, selectedShortcuts, loadedShortcuts])
+    const navChanged = JSON.stringify([...hiddenNavItems].sort()) !== JSON.stringify([...loadedHiddenNav].sort())
+    setHasChanges(userName.trim() !== '' || shortcutsChanged || navChanged)
+  }, [userName, selectedShortcuts, loadedShortcuts, hiddenNavItems, loadedHiddenNav])
 
   // ── Shortcuts ─────────────────────────────────────────────────────────────
 
@@ -89,13 +94,19 @@ export default function Settings() {
     setSelectedShortcuts(prev => prev.filter(i => i !== id))
   }
 
+  const toggleNavItem = (id: string) => {
+    setHiddenNavItems(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
   // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     if (!hasChanges) return
     setSaving(true)
     try {
-      localStorage.setItem('userSettings', JSON.stringify({ userName: userName.trim(), selectedShortcuts }))
+      localStorage.setItem('userSettings', JSON.stringify({ userName: userName.trim(), selectedShortcuts, hiddenNavItems }))
       window.location.reload()
       await new Promise(r => setTimeout(r, 500))
       setHasChanges(false)
@@ -149,6 +160,9 @@ export default function Settings() {
         const shortcuts = s.selectedShortcuts || DEFAULT_SHORTCUTS
         setSelectedShortcuts(shortcuts)
         setLoadedShortcuts(shortcuts)
+        const hidden = s.hiddenNavItems || []
+        setHiddenNavItems(hidden)
+        setLoadedHiddenNav(hidden)
       }
     } catch (err) {
       console.error('Failed to load saved settings:', err)
@@ -211,8 +225,29 @@ export default function Settings() {
       {/* Separator */}
       <div style={{ marginTop: 20, borderBottom: '1px solid var(--separator)' }} />
 
+      {/* Appearance */}
+      <div style={{ marginTop: 24 }}>
+        <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setTheme('dark')}
+            className={theme === 'dark' ? 'primary' : ''}
+            style={{ flex: 1 }}
+          >
+            Dark
+          </button>
+          <button
+            onClick={() => setTheme('light')}
+            className={theme === 'light' ? 'primary' : ''}
+            style={{ flex: 1 }}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+
       {/* Quick access buttons */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--separator)' }}>
         <h4 style={{ margin: '0 0 10px' }}>{t('settingsPage.manageQuickAccess')}</h4>
 
         {/* Dropdown + buttons on one row */}
@@ -276,25 +311,37 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Appearance */}
+      {/* Menu Visibility */}
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--separator)' }}>
-        <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setTheme('dark')}
-            className={theme === 'dark' ? 'primary' : ''}
-            style={{ flex: 1 }}
-          >
-            Dark
-          </button>
-          <button
-            onClick={() => setTheme('light')}
-            className={theme === 'light' ? 'primary' : ''}
-            style={{ flex: 1 }}
-          >
-            Light
-          </button>
-        </div>
+        <h4 style={{ margin: '0 0 4px' }}>{t('settingsPage.menuVisibility')}</h4>
+        <p className="helper" style={{ margin: '0 0 16px' }}>{t('settingsPage.menuVisibilityHelper')}</p>
+        {NAV_SECTIONS.map(section => {
+          const items = NAV_ITEMS.filter(item =>
+            item.section === section.id &&
+            (item.id === 'contact' || hasFeature(item.id as any))
+          )
+          if (items.length === 0) return null
+          return (
+            <div key={section.id} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                {tNav(section.labelKey)}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
+                {items.map(item => (
+                  <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={!hiddenNavItems.includes(item.id)}
+                      onChange={() => toggleNavItem(item.id)}
+                      style={{ width: 15, height: 15, cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    {tNav(item.labelKey)}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Password Change */}
