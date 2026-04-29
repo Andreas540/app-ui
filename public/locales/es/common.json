@@ -349,6 +349,8 @@
     "shareBookingPage": "Compartir página de reserva con el cliente",
     "shareOrderLine1": "Envía este enlace a tu cliente para que pueda hacer un pedido.",
     "shareOrderLine2": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario de pedido.",
+    "shareOrderCustomizeText": "Puedes personalizar los precios y productos disponibles para este cliente",
+    "shareOrderCustomizeLink": "aquí",
     "shareOrderMissingPrices": "Los siguientes productos necesitan un precio para ser visibles en la página de pedidos:"
   },
   "customerDetail": {
@@ -917,6 +919,7 @@
     "tabData": "Exportaciones",
     "tabBooking": "Reservas",
     "tabPaymentProviders": "Proveedores de pago",
+    "tabCustomerOffers": "Ofertas de cliente",
     "createUserButton": "+ Crear Usuario",
     "noUsers": "Sin usuarios aún",
     "roleLabel": "Rol:",
@@ -1051,6 +1054,16 @@
       "smsUsageTab": "Uso",
       "remindersTab": "Recordatorios"
     }
+  },
+  "customerOffers": {
+    "selectCustomer": "Cliente",
+    "selectCustomerPlaceholder": "Seleccionar un cliente…",
+    "description": "Selecciona los productos y precios que se mostrarán en el formulario de pedido de {{name}}. Desmarca un producto para ocultarlo. Cambia el precio para establecer un precio específico para este cliente.",
+    "product": "Producto",
+    "price": "Precio",
+    "default": "predeterminado",
+    "noProducts": "No se encontraron productos con precios.",
+    "errorLoad": "No se pudieron cargar los productos. Inténtalo de nuevo."
   },
   "tenantCustom": {
     "title": "Personalización UI",

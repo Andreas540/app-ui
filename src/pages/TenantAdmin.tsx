@@ -8,6 +8,7 @@ import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
 import TenantAdminBookingTab from './TenantAdminBookingTab'
 import TenantAdminPaymentProvidersTab from './TenantAdminPaymentProvidersTab'
+import TenantAdminCustomerOffersTab from './TenantAdminCustomerOffersTab'
 
 interface TenantUser {
   id: string
@@ -59,7 +60,8 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers'>('team')
+  const [offersCustomerId, setOffersCustomerId] = useState<string | undefined>(undefined)
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -146,6 +148,10 @@ export default function TenantAdmin() {
     }
     if (s?.openBookingTab) {
       setActiveTab('booking')
+    }
+    if (s?.openTab === 'customer-offers') {
+      setActiveTab('customer-offers')
+      if (s?.customerId) setOffersCustomerId(s.customerId)
     }
   }, [])
 
@@ -765,6 +771,7 @@ export default function TenantAdmin() {
           <option value="accounting">{t('tenantAdmin.tabData')}</option>
           <option value="booking">{t('tenantAdmin.tabBooking')}</option>
           <option value="payment-providers">{t('tenantAdmin.tabPaymentProviders')}</option>
+          <option value="customer-offers">{t('tenantAdmin.tabCustomerOffers')}</option>
         </select>
 
         <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
@@ -787,6 +794,13 @@ export default function TenantAdmin() {
             style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {t('tenantAdmin.tabPaymentProviders')}
+          </button>
+          <button
+            onClick={() => setActiveTab('customer-offers')}
+            className={activeTab === 'customer-offers' ? 'primary' : ''}
+            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {t('tenantAdmin.tabCustomerOffers')}
           </button>
         </div>
 
@@ -1133,6 +1147,8 @@ export default function TenantAdmin() {
 
         {/* ── Payment Providers tab ── */}
         {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
+
+        {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

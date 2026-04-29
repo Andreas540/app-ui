@@ -1,6 +1,6 @@
 // src/pages/CustomerDetail.tsx
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
 import { formatDate } from '../lib/time'
@@ -18,6 +18,7 @@ export default function CustomerDetailPage() {
   const showOrderNumber = tenantUi.showOrderNumberInList
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [data, setData] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -295,6 +296,16 @@ export default function CustomerDetailPage() {
           <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
             <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
             <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
+            <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
+              {t('customers.shareOrderCustomizeText')}{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
+              >
+                {t('customers.shareOrderCustomizeLink')}
+              </button>
+            </p>
             {productsNeedingPrice.length > 0 && (
               <div style={{ marginBottom: 12, padding: '8px 10px', background: 'var(--color-warning-bg)', borderRadius: 6, fontSize: 12 }}>
                 <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{t('customers.shareOrderMissingPrices')}</p>

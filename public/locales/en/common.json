@@ -349,6 +349,8 @@
     "shareBookingPage": "Share booking page with customer",
     "shareOrderLine1": "Send this link to your customer so they can place an order.",
     "shareOrderLine2": "Your customer will not have access to your app, only the order form.",
+    "shareOrderCustomizeText": "You can customize prices and available products for this customer",
+    "shareOrderCustomizeLink": "here",
     "shareOrderMissingPrices": "The following products need a price to be visible on the order page:"
   },
   "customerDetail": {
@@ -917,6 +919,7 @@
     "tabData": "Data Exports",
     "tabBooking": "Booking",
     "tabPaymentProviders": "Payment Providers",
+    "tabCustomerOffers": "Customer Offers",
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",
@@ -1051,6 +1054,16 @@
       "smsUsageTab": "Usage",
       "remindersTab": "Reminders"
     }
+  },
+  "customerOffers": {
+    "selectCustomer": "Customer",
+    "selectCustomerPlaceholder": "Select a customer…",
+    "description": "Select products and prices to show on {{name}}'s order form. Uncheck a product to hide it. Change the price to set a customer-specific price.",
+    "product": "Product",
+    "price": "Price",
+    "default": "default",
+    "noProducts": "No products with prices found.",
+    "errorLoad": "Could not load products. Please try again."
   },
   "tenantCustom": {
     "title": "UI Customization",

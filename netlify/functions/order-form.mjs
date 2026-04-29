@@ -72,7 +72,22 @@ async function getForm(event) {
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
 
-    const [customerRows, products, tenantRows] = await Promise.all([
+    // Ensure offers table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS customer_product_offers (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id   UUID NOT NULL,
+        customer_id UUID NOT NULL,
+        product_id  UUID NOT NULL,
+        price_amount NUMERIC(12,2),
+        is_available BOOLEAN NOT NULL DEFAULT true,
+        created_at  TIMESTAMPTZ DEFAULT now(),
+        updated_at  TIMESTAMPTZ DEFAULT now(),
+        UNIQUE(tenant_id, customer_id, product_id)
+      )
+    `
+
+    const [customerRows, rawProducts, tenantRows] = await Promise.all([
       sql`
         SELECT name FROM customers
         WHERE id        = ${verified.customerId}::uuid
@@ -80,15 +95,26 @@ async function getForm(event) {
         LIMIT 1
       `,
       sql`
-        SELECT id, name, price_amount::float8 AS price_amount
-        FROM products
-        WHERE tenant_id    = ${verified.tenantId}::uuid
-          AND category     = 'product'
-          AND price_amount IS NOT NULL
-        ORDER BY name ASC
+        SELECT
+          p.id,
+          p.name,
+          COALESCE(o.price_amount, p.price_amount)::float8 AS price_amount,
+          COALESCE(o.is_available, true) AS is_available
+        FROM products p
+        LEFT JOIN customer_product_offers o
+          ON  o.product_id   = p.id
+          AND o.tenant_id    = p.tenant_id
+          AND o.customer_id  = ${verified.customerId}::uuid
+        WHERE p.tenant_id    = ${verified.tenantId}::uuid
+          AND p.category     = 'product'
+          AND p.price_amount IS NOT NULL
+        ORDER BY p.name ASC
       `,
       sql`SELECT name, app_icon_192, default_language, default_currency FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`,
     ])
+
+    // Filter out products hidden for this customer
+    const products = rawProducts.filter(p => p.is_available !== false)
 
     if (customerRows.length === 0) return cors(404, { error: 'Customer not found' })
 

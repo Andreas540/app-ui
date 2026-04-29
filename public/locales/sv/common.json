@@ -349,6 +349,8 @@
     "shareBookingPage": "Dela bokningssida med kund",
     "shareOrderLine1": "Skicka den här länken till din kund så att de kan lägga en beställning.",
     "shareOrderLine2": "Din kund har inte tillgång till appen, endast beställningsformuläret.",
+    "shareOrderCustomizeText": "Du kan anpassa priser och tillgängliga produkter för den här kunden",
+    "shareOrderCustomizeLink": "här",
     "shareOrderMissingPrices": "Följande produkter behöver ett pris för att visas på beställningssidan:"
   },
   "customerDetail": {
@@ -917,6 +919,7 @@
     "tabData": "Dataexporter",
     "tabBooking": "Bokning",
     "tabPaymentProviders": "Betalningsleverantörer",
+    "tabCustomerOffers": "Kundbud",
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",
@@ -1051,6 +1054,16 @@
       "smsUsageTab": "Användning",
       "remindersTab": "Påminnelser"
     }
+  },
+  "customerOffers": {
+    "selectCustomer": "Kund",
+    "selectCustomerPlaceholder": "Välj en kund…",
+    "description": "Välj produkter och priser som ska visas på {{name}}s beställningsformulär. Avmarkera en produkt för att dölja den. Ändra priset för att ange ett kundspecifikt pris.",
+    "product": "Produkt",
+    "price": "Pris",
+    "default": "standard",
+    "noProducts": "Inga produkter med priser hittades.",
+    "errorLoad": "Kunde inte ladda produkter. Försök igen."
   },
   "tenantCustom": {
     "title": "UI-anpassning",
