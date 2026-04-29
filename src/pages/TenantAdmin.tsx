@@ -61,7 +61,8 @@ export default function TenantAdmin() {
 
   // Tab
   const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers'>('team')
-  const [offersCustomerId, setOffersCustomerId] = useState<string | undefined>(undefined)
+  const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
+  const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -152,6 +153,7 @@ export default function TenantAdmin() {
     if (s?.openTab === 'customer-offers') {
       setActiveTab('customer-offers')
       if (s?.customerId) setOffersCustomerId(s.customerId)
+      if (s?.customerOffersSubTab) setOffersInitialSubTab(s.customerOffersSubTab)
     }
   }, [])
 
@@ -1148,7 +1150,7 @@ export default function TenantAdmin() {
         {/* ── Payment Providers tab ── */}
         {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
 
-        {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} />}
+        {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} initialSubTab={offersInitialSubTab} />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

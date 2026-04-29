@@ -29,6 +29,7 @@ function apiBase() {
 
 interface Props {
   initialCustomerId?: string
+  initialSubTab?: 'order-form' | 'booking-form'
 }
 
 // ── Order-form tab ────────────────────────────────────────────────────────────
@@ -313,12 +314,12 @@ function BookingFormTab({ customerId, customers }: { customerId: string; custome
 
 // ── Main tab component ────────────────────────────────────────────────────────
 
-export default function TenantAdminCustomerOffersTab({ initialCustomerId }: Props) {
+export default function TenantAdminCustomerOffersTab({ initialCustomerId, initialSubTab }: Props) {
   const { t } = useTranslation()
 
   const [customers, setCustomers]               = useState<CustomerOption[]>([])
   const [customerId, setCustomerId]             = useState(initialCustomerId || '')
-  const [subTab, setSubTab]                     = useState<'order-form' | 'booking-form'>('order-form')
+  const [subTab, setSubTab]                     = useState<'order-form' | 'booking-form'>(initialSubTab || 'order-form')
   const [loadingCustomers, setLoadingCustomers] = useState(true)
 
   useEffect(() => {

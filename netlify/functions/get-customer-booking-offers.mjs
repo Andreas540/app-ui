@@ -4,34 +4,6 @@
 
 import { resolveAuthz } from './utils/auth.mjs'
 
-const CREATE_OFFERS_TABLE = `
-  CREATE TABLE IF NOT EXISTS customer_service_offers (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id        UUID NOT NULL,
-    customer_id      UUID NOT NULL,
-    service_id       UUID NOT NULL,
-    price_amount     NUMERIC(12,2),
-    duration_minutes INTEGER,
-    is_available     BOOLEAN NOT NULL DEFAULT true,
-    created_at       TIMESTAMPTZ DEFAULT now(),
-    updated_at       TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(tenant_id, customer_id, service_id)
-  )
-`
-
-const CREATE_AVAIL_TABLE = `
-  CREATE TABLE IF NOT EXISTS customer_service_availability (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id   UUID NOT NULL,
-    customer_id UUID NOT NULL,
-    service_id  UUID NOT NULL,
-    day_of_week INTEGER NOT NULL,
-    start_time  TIME NOT NULL,
-    end_time    TIME NOT NULL,
-    UNIQUE(tenant_id, customer_id, service_id, day_of_week)
-  )
-`
-
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod !== 'GET') return cors(405, { error: 'Method not allowed' })
@@ -49,8 +21,32 @@ export async function handler(event) {
     const customerId = event.queryStringParameters?.customer_id
     if (!customerId) return cors(400, { error: 'customer_id required' })
 
-    await sql.unsafe(CREATE_OFFERS_TABLE)
-    await sql.unsafe(CREATE_AVAIL_TABLE)
+    await sql`
+      CREATE TABLE IF NOT EXISTS customer_service_offers (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id        UUID NOT NULL,
+        customer_id      UUID NOT NULL,
+        service_id       UUID NOT NULL,
+        price_amount     NUMERIC(12,2),
+        duration_minutes INTEGER,
+        is_available     BOOLEAN NOT NULL DEFAULT true,
+        created_at       TIMESTAMPTZ DEFAULT now(),
+        updated_at       TIMESTAMPTZ DEFAULT now(),
+        UNIQUE(tenant_id, customer_id, service_id)
+      )
+    `
+    await sql`
+      CREATE TABLE IF NOT EXISTS customer_service_availability (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id   UUID NOT NULL,
+        customer_id UUID NOT NULL,
+        service_id  UUID NOT NULL,
+        day_of_week INTEGER NOT NULL,
+        start_time  TIME NOT NULL,
+        end_time    TIME NOT NULL,
+        UNIQUE(tenant_id, customer_id, service_id, day_of_week)
+      )
+    `
 
     const services = await sql`
       SELECT

@@ -324,7 +324,7 @@ export default function CustomerDetailPage() {
                 {t('customers.shareBookingCustomizeText')}{' '}
                 <button
                   type="button"
-                  onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
+                  onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id, customerOffersSubTab: 'booking-form' } })}
                   style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
                 >
                   {t('customers.shareOrderCustomizeLink')}
