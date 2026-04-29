@@ -79,7 +79,7 @@ async function getForm(event) {
         LIMIT 1
       `,
       sql`
-        SELECT name, app_icon_192 FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1
+        SELECT name, app_icon_192, default_language FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1
       `,
     ])
     if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
@@ -88,7 +88,7 @@ async function getForm(event) {
     // Don't expose auto-generated placeholder names to the customer
     const isTempName = (v) => v && /^Customer #\d+$/.test(String(v))
     const c = rows[0]
-    return cors(200, { ok: true, tenant_name: tenant.name ?? '', tenant_icon: tenant.app_icon_192 ?? null, customer: {
+    return cors(200, { ok: true, tenant_name: tenant.name ?? '', tenant_icon: tenant.app_icon_192 ?? null, tenant_language: tenant.default_language ?? null, customer: {
       ...c,
       name:         isTempName(c.name)         ? '' : (c.name         ?? ''),
       company_name: isTempName(c.company_name) ? '' : (c.company_name ?? ''),

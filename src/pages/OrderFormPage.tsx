@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Vibrant } from 'node-vibrant/browser'
-import { useCurrency } from '../lib/useCurrency'
 
 // ── Inline translations ───────────────────────────────────────────────────────
 
@@ -86,13 +85,14 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 export default function OrderFormPage() {
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
-  const { fmtMoney } = useCurrency()
-  const lang = resolveLang(searchParams.get('lang'))
+  const [lang, setLang]         = useState<Lang>(() => resolveLang(searchParams.get('lang')))
+  const [currency, setCurrency] = useState('USD')
   const t = (k: string, vars?: Record<string, string>) => {
     let s = T[lang][k] ?? k
     if (vars) Object.entries(vars).forEach(([key, val]) => { s = s.replace(`{{${key}}}`, val) })
     return s
   }
+  const fmtMoney = (n: number) => new Intl.NumberFormat(lang, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0)
 
   const [status,       setStatus]       = useState<'loading' | 'ready' | 'submitting' | 'done' | 'error' | 'invalid'>('loading')
   const [errMsg,       setErrMsg]       = useState('')
@@ -114,6 +114,8 @@ export default function OrderFormPage() {
         setTenantName(data.tenant_name ?? '')
         setTenantIcon(data.tenant_icon ?? null)
         setProducts(data.products ?? [])
+        if (!searchParams.get('lang') && data.tenant_language) setLang(resolveLang(data.tenant_language))
+        if (data.tenant_currency) setCurrency(data.tenant_currency)
         setStatus('ready')
       })
       .catch(() => { setErrMsg(t('errorLoad')); setStatus('error') })

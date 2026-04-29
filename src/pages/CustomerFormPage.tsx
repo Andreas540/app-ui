@@ -108,7 +108,7 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 export default function CustomerFormPage() {
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
-  const lang = resolveLang(searchParams.get('lang'))
+  const [lang, setLang] = useState<Lang>(() => resolveLang(searchParams.get('lang')))
   const isUpdate = searchParams.get('type') === 'update'
   const t = (k: string) => T[lang][k] ?? k
 
@@ -131,6 +131,7 @@ export default function CustomerFormPage() {
         if (!data.ok) { setStatus('invalid'); return }
         setTenantName(data.tenant_name ?? '')
         setTenantIcon(data.tenant_icon ?? null)
+        if (!searchParams.get('lang') && data.tenant_language) setLang(resolveLang(data.tenant_language))
         const c = data.customer
         setForm({
           name:         c.name         ?? '',

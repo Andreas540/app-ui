@@ -87,7 +87,7 @@ async function getForm(event) {
           AND price_amount IS NOT NULL
         ORDER BY name ASC
       `,
-      sql`SELECT name, app_icon_192 FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`,
+      sql`SELECT name, app_icon_192, default_language, default_currency FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`,
     ])
 
     if (customerRows.length === 0) return cors(404, { error: 'Customer not found' })
@@ -95,9 +95,11 @@ async function getForm(event) {
     const tenant = tenantRows[0] ?? {}
     return cors(200, {
       ok: true,
-      customer_name: customerRows[0].name,
-      tenant_name: tenant.name ?? '',
-      tenant_icon: tenant.app_icon_192 ?? null,
+      customer_name:   customerRows[0].name,
+      tenant_name:     tenant.name             ?? '',
+      tenant_icon:     tenant.app_icon_192     ?? null,
+      tenant_language: tenant.default_language ?? null,
+      tenant_currency: tenant.default_currency ?? null,
       products,
     })
   } catch (e) {
