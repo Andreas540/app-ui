@@ -351,6 +351,10 @@
     "shareOrderLine2": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario de pedido.",
     "shareOrderCustomizeText": "Puedes personalizar los precios y productos disponibles para este cliente",
     "shareOrderCustomizeLink": "aquí",
+    "shareBookingLine1": "Envía este enlace a tu cliente para que pueda reservar una cita directamente.",
+    "shareBookingLine2": "Tu cliente no tendrá acceso a tu aplicación, solo a la página de reservas.",
+    "shareBookingCustomizeText": "Puedes personalizar los servicios disponibles, precios y disponibilidad para este cliente",
+    "bookingLinkError": "No se pudo generar el enlace de reserva. Asegúrate de que la URL de la página de reservas esté configurada en Admin de cuenta → Reservas.",
     "shareOrderMissingPrices": "Los siguientes productos necesitan un precio para ser visibles en la página de pedidos:"
   },
   "customerDetail": {
@@ -1058,12 +1062,20 @@
   "customerOffers": {
     "selectCustomer": "Cliente",
     "selectCustomerPlaceholder": "Seleccionar un cliente…",
+    "tabOrderForm": "Formulario de pedido",
+    "tabBookingForm": "Formulario de reserva",
     "description": "Selecciona los productos y precios que se mostrarán en el formulario de pedido de {{name}}. Desmarca un producto para ocultarlo. Cambia el precio para establecer un precio específico para este cliente.",
+    "bookingDescription": "Selecciona los servicios, precios y disponibilidad que se mostrarán en la página de reservas de {{name}}. Desmarca un servicio para ocultarlo.",
     "product": "Producto",
+    "service": "Servicio",
     "price": "Precio",
+    "duration": "Duración (min)",
     "default": "predeterminado",
+    "defaultDuration": "{{min}} min",
+    "availability": "Disponibilidad",
     "noProducts": "No se encontraron productos con precios.",
-    "errorLoad": "No se pudieron cargar los productos. Inténtalo de nuevo."
+    "noServices": "No se encontraron servicios reservables.",
+    "errorLoad": "No se pudo cargar. Inténtalo de nuevo."
   },
   "tenantCustom": {
     "title": "Personalización UI",

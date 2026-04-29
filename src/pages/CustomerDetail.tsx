@@ -31,11 +31,16 @@ export default function CustomerDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [deliveryOrder, setDeliveryOrder] = useState<any | null>(null)
   const [savingDelivery, setSavingDelivery] = useState(false)
-  const [showShareOrder,      setShowShareOrder]      = useState(false)
-  const [generatingOrderLink, setGeneratingOrderLink] = useState(false)
-  const [orderLink,           setOrderLink]           = useState<string | null>(null)
-  const [orderLinkCopied,     setOrderLinkCopied]     = useState(false)
-  const [productsNeedingPrice, setProductsNeedingPrice] = useState<ProductWithCost[]>([])
+  const [showShareOrder,        setShowShareOrder]        = useState(false)
+  const [generatingOrderLink,   setGeneratingOrderLink]   = useState(false)
+  const [orderLink,             setOrderLink]             = useState<string | null>(null)
+  const [orderLinkCopied,       setOrderLinkCopied]       = useState(false)
+  const [productsNeedingPrice,  setProductsNeedingPrice]  = useState<ProductWithCost[]>([])
+  const [showShareBooking,      setShowShareBooking]      = useState(false)
+  const [generatingBookingLink, setGeneratingBookingLink] = useState(false)
+  const [bookingLink,           setBookingLink]           = useState<string | null>(null)
+  const [bookingLinkCopied,     setBookingLinkCopied]     = useState(false)
+  const [bookingLinkError,      setBookingLinkError]      = useState<string | null>(null)
 
 
   useEffect(() => {
@@ -82,6 +87,32 @@ export default function CustomerDetailPage() {
     navigator.clipboard.writeText(orderLink).then(() => {
       setOrderLinkCopied(true)
       setTimeout(() => setOrderLinkCopied(false), 2000)
+    })
+  }
+
+  async function generateBookingLink() {
+    if (!id) return
+    setGeneratingBookingLink(true)
+    setBookingLinkError(null)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/customer-link`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ customer_id: id, type: 'booking' }),
+      })
+      const j = await res.json()
+      if (j.url) setBookingLink(j.url)
+      else setBookingLinkError(j.error || t('customers.bookingLinkError'))
+    } catch { setBookingLinkError(t('customers.bookingLinkError')) }
+    finally { setGeneratingBookingLink(false) }
+  }
+
+  function copyBookingLink() {
+    if (!bookingLink) return
+    navigator.clipboard.writeText(bookingLink).then(() => {
+      setBookingLinkCopied(true)
+      setTimeout(() => setBookingLinkCopied(false), 2000)
     })
   }
 
@@ -275,10 +306,55 @@ export default function CustomerDetailPage() {
 
       {/* Share links */}
       {hasFeature('new-booking') && (
-        <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <span className="helper" style={{ fontSize: 13, color: 'var(--text-secondary)', opacity: 0.5, cursor: 'default' }}>
+        <div style={{ marginTop: 4, marginBottom: 4 }}>
+          <button
+            type="button"
+            onClick={() => setShowShareBooking(v => !v)}
+            className="helper"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+          >
             {t('customers.shareBookingPage')}
-          </span>
+          </button>
+
+          {showShareBooking && (
+            <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
+              <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine1')}</p>
+              <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine2')}</p>
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                {t('customers.shareBookingCustomizeText')}{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
+                >
+                  {t('customers.shareOrderCustomizeLink')}
+                </button>
+              </p>
+              {bookingLinkError && (
+                <p style={{ margin: '0 0 8px', color: 'var(--color-error)', fontSize: 12 }}>{bookingLinkError}</p>
+              )}
+              {!bookingLink ? (
+                <button
+                  type="button"
+                  onClick={generateBookingLink}
+                  disabled={generatingBookingLink}
+                  style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+                >
+                  {generatingBookingLink ? t('customers.generating') : t('customers.shareLink')}
+                </button>
+              ) : (
+                <div>
+                  <p style={{ margin: '0 0 6px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input readOnly value={bookingLink} style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }} onFocus={e => e.target.select()} />
+                    <button type="button" onClick={copyBookingLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+                      {bookingLinkCopied ? t('customers.copied') : t('customers.copyLink')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       {/* Share order page with customer */}

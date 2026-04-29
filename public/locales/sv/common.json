@@ -351,6 +351,10 @@
     "shareOrderLine2": "Din kund har inte tillgång till appen, endast beställningsformuläret.",
     "shareOrderCustomizeText": "Du kan anpassa priser och tillgängliga produkter för den här kunden",
     "shareOrderCustomizeLink": "här",
+    "shareBookingLine1": "Skicka den här länken till din kund så att de kan boka en tid direkt.",
+    "shareBookingLine2": "Din kund har inte tillgång till appen, endast bokningssidan.",
+    "shareBookingCustomizeText": "Du kan anpassa tillgängliga tjänster, priser och tillgänglighet för den här kunden",
+    "bookingLinkError": "Kunde inte generera bokningslänk. Kontrollera att en bokningssidans URL är konfigurerad i Kontoadmin → Bokning.",
     "shareOrderMissingPrices": "Följande produkter behöver ett pris för att visas på beställningssidan:"
   },
   "customerDetail": {
@@ -1058,12 +1062,20 @@
   "customerOffers": {
     "selectCustomer": "Kund",
     "selectCustomerPlaceholder": "Välj en kund…",
+    "tabOrderForm": "Beställningsformulär",
+    "tabBookingForm": "Bokningsformulär",
     "description": "Välj produkter och priser som ska visas på {{name}}s beställningsformulär. Avmarkera en produkt för att dölja den. Ändra priset för att ange ett kundspecifikt pris.",
+    "bookingDescription": "Välj tjänster, priser och tillgänglighet som ska visas på {{name}}s bokningssida. Avmarkera en tjänst för att dölja den.",
     "product": "Produkt",
+    "service": "Tjänst",
     "price": "Pris",
+    "duration": "Varaktighet (min)",
     "default": "standard",
+    "defaultDuration": "{{min}} min",
+    "availability": "Tillgänglighet",
     "noProducts": "Inga produkter med priser hittades.",
-    "errorLoad": "Kunde inte ladda produkter. Försök igen."
+    "noServices": "Inga bokningsbara tjänster hittades.",
+    "errorLoad": "Kunde inte ladda. Försök igen."
   },
   "tenantCustom": {
     "title": "UI-anpassning",

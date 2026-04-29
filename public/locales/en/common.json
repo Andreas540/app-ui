@@ -351,6 +351,10 @@
     "shareOrderLine2": "Your customer will not have access to your app, only the order form.",
     "shareOrderCustomizeText": "You can customize prices and available products for this customer",
     "shareOrderCustomizeLink": "here",
+    "shareBookingLine1": "Send this link to your customer so they can book a time directly.",
+    "shareBookingLine2": "Your customer will not have access to your app, only the booking page.",
+    "shareBookingCustomizeText": "You can customize available services, prices and availability for this customer",
+    "bookingLinkError": "Could not generate booking link. Make sure a booking page URL is configured in Account Admin → Booking.",
     "shareOrderMissingPrices": "The following products need a price to be visible on the order page:"
   },
   "customerDetail": {
@@ -1058,12 +1062,20 @@
   "customerOffers": {
     "selectCustomer": "Customer",
     "selectCustomerPlaceholder": "Select a customer…",
+    "tabOrderForm": "Order form",
+    "tabBookingForm": "Booking form",
     "description": "Select products and prices to show on {{name}}'s order form. Uncheck a product to hide it. Change the price to set a customer-specific price.",
+    "bookingDescription": "Select services, prices and availability to show on {{name}}'s booking page. Uncheck a service to hide it.",
     "product": "Product",
+    "service": "Service",
     "price": "Price",
+    "duration": "Duration (min)",
     "default": "default",
+    "defaultDuration": "{{min}} min",
+    "availability": "Availability",
     "noProducts": "No products with prices found.",
-    "errorLoad": "Could not load products. Please try again."
+    "noServices": "No bookable services found.",
+    "errorLoad": "Could not load. Please try again."
   },
   "tenantCustom": {
     "title": "UI Customization",

@@ -1,9 +1,40 @@
 // netlify/functions/public-booking.mjs
 // Public (unauthenticated) booking API.
 //
-// GET  ?slug=X                          → tenant + services + availability map
-// GET  ?slug=X&service_id=Y&date=Z      → available time slots for that date
-// POST { slug, service_id, date, start_time, name, email, phone }  → create booking
+// GET  ?slug=X                                         → tenant + services + availability map
+// GET  ?slug=X&service_id=Y&date=Z                     → available time slots for that date
+// GET  ?slug=X&customer_token=T                        → same, with customer-specific overrides
+// POST { slug, service_id, date, start_time, ... }     → create booking
+
+import crypto from 'crypto'
+
+function base64urlDecodeToString(b64url) {
+  const b64 = String(b64url).replace(/-/g, '+').replace(/_/g, '/')
+  const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
+  return Buffer.from(b64 + pad, 'base64').toString('utf8')
+}
+
+function base64urlEncode(bufOrStr) {
+  const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
+  return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+}
+
+function verifyCustomerToken(token) {
+  const secret = process.env.CUSTOMER_TOKEN_SECRET
+  if (!secret || !token) return null
+  try {
+    const parts = String(token).split('.')
+    if (parts.length !== 2) return null
+    const [payloadB64, sigB64] = parts
+    const payloadStr = base64urlDecodeToString(payloadB64)
+    const payload = JSON.parse(payloadStr)
+    const expectedSig = base64urlEncode(crypto.createHmac('sha256', secret).update(payloadB64).digest())
+    const aa = Buffer.from(expectedSig); const bb = Buffer.from(sigB64)
+    if (aa.length !== bb.length || !crypto.timingSafeEqual(aa, bb)) return null
+    if (Math.floor(Date.now() / 1000) > Number(payload.exp)) return null
+    return payload
+  } catch { return null }
+}
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -21,11 +52,14 @@ async function getBookingData(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     const sql = neon(DATABASE_URL)
 
-    const params     = event.queryStringParameters || {}
-    const slug       = (params.slug || '').toLowerCase().trim()
-    const service_id = params.service_id
-    const date       = params.date        // YYYY-MM-DD
-    const booking_id = params.booking_id  // post-payment confirmation fetch
+    const params         = event.queryStringParameters || {}
+    const slug           = (params.slug || '').toLowerCase().trim()
+    const service_id     = params.service_id
+    const date           = params.date        // YYYY-MM-DD
+    const booking_id     = params.booking_id  // post-payment confirmation fetch
+    const customerToken  = params.customer_token || null
+    const customerPayload = customerToken ? verifyCustomerToken(customerToken) : null
+    const customerId     = customerPayload?.customer_id || null
 
     // ── Booking detail fetch (post-payment return) ─────────────────────────
     if (booking_id && slug) {
@@ -90,13 +124,27 @@ async function getBookingData(event) {
       const [dy, dm, dd] = date.split('-').map(Number)
       const dow = new Date(dy, dm - 1, dd).getDay()
 
-      // Get availability window for this service + day
-      const availRows = await sql`
-        SELECT start_time, end_time
-        FROM service_availability
-        WHERE tenant_id = ${tenantId} AND service_id = ${service_id} AND day_of_week = ${dow}
-        LIMIT 1
-      `
+      // Get availability window — customer-specific if token present, else service default
+      let availRows = []
+      if (customerId) {
+        availRows = await sql`
+          SELECT start_time, end_time
+          FROM customer_service_availability
+          WHERE tenant_id   = ${tenantId}
+            AND customer_id = ${customerId}::uuid
+            AND service_id  = ${service_id}
+            AND day_of_week = ${dow}
+          LIMIT 1
+        `.catch(() => [])
+      }
+      if (!availRows.length) {
+        availRows = await sql`
+          SELECT start_time, end_time
+          FROM service_availability
+          WHERE tenant_id = ${tenantId} AND service_id = ${service_id} AND day_of_week = ${dow}
+          LIMIT 1
+        `
+      }
       if (!availRows.length) return cors(200, { slots: [] })  // not available that day
 
       const startTime = String(availRows[0].start_time).slice(0, 5)
@@ -131,19 +179,77 @@ async function getBookingData(event) {
     }
 
     // ── Services + availability map request ───────────────────────────────
-    const services = await sql`
+    let rawServices = await sql`
       SELECT id, name, duration_minutes, price_amount, currency
       FROM products
       WHERE tenant_id = ${tenantId} AND category = 'service'
       ORDER BY name
     `
 
-    const availRows = await sql`
-      SELECT service_id, day_of_week
-      FROM service_availability
-      WHERE tenant_id = ${tenantId}
-      ORDER BY service_id, day_of_week
-    `
+    // Apply customer-specific service overrides when token present
+    if (customerId) {
+      const offerRows = await sql`
+        SELECT service_id, price_amount, duration_minutes, is_available
+        FROM customer_service_offers
+        WHERE tenant_id   = ${tenantId}
+          AND customer_id = ${customerId}::uuid
+      `.catch(() => [])
+
+      const offerMap = {}
+      for (const o of offerRows) offerMap[o.service_id] = o
+
+      rawServices = rawServices
+        .filter(s => offerMap[s.id]?.is_available !== false)
+        .map(s => {
+          const o = offerMap[s.id]
+          if (!o) return s
+          return {
+            ...s,
+            price_amount:     o.price_amount     ?? s.price_amount,
+            duration_minutes: o.duration_minutes ?? s.duration_minutes,
+          }
+        })
+    }
+    const services = rawServices
+
+    // Availability days — prefer customer-specific, fall back to service defaults
+    let availRows
+    if (customerId) {
+      const custAvail = await sql`
+        SELECT service_id, day_of_week
+        FROM customer_service_availability
+        WHERE tenant_id   = ${tenantId}
+          AND customer_id = ${customerId}::uuid
+        ORDER BY service_id, day_of_week
+      `.catch(() => [])
+
+      if (custAvail.length > 0) {
+        // Merge: customer overrides for services they have, default for the rest
+        const custServiceIds = new Set(custAvail.map(r => r.service_id))
+        const defaultForRest = await sql`
+          SELECT service_id, day_of_week
+          FROM service_availability
+          WHERE tenant_id  = ${tenantId}
+            AND service_id NOT IN (SELECT UNNEST(${[...custServiceIds]}::uuid[]))
+          ORDER BY service_id, day_of_week
+        `.catch(() => [])
+        availRows = [...custAvail, ...defaultForRest]
+      } else {
+        availRows = await sql`
+          SELECT service_id, day_of_week
+          FROM service_availability
+          WHERE tenant_id = ${tenantId}
+          ORDER BY service_id, day_of_week
+        `
+      }
+    } else {
+      availRows = await sql`
+        SELECT service_id, day_of_week
+        FROM service_availability
+        WHERE tenant_id = ${tenantId}
+        ORDER BY service_id, day_of_week
+      `
+    }
 
     // Build map: service_id → [dow, ...]
     const availability = {}

@@ -66,11 +66,19 @@ async function createLink(event) {
       const existing = rows[0]
       const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: existing.id })
 
-      // type=order → order form page; default → customer info form
+      // type=order → order form page; type=booking → customer booking page; default → customer info form
       if (body.type === 'order') {
         const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : ''].filter(Boolean)
         const qs = queryParts.length ? `?${queryParts.join('&')}` : ''
         const url = `${baseUrl}/order-form/${encodeURIComponent(token)}${qs}`
+        return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
+      }
+
+      if (body.type === 'booking') {
+        const tenantRows = await sql`SELECT booking_slug FROM tenants WHERE id = ${TENANT_ID}::uuid LIMIT 1`
+        const slug = tenantRows[0]?.booking_slug
+        if (!slug) return cors(400, { error: 'Booking page URL not configured. Set it in Account Admin → Booking.' }, event)
+        const url = `${baseUrl}/book/${slug}?customer_token=${encodeURIComponent(token)}`
         return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
       }
 
