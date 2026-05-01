@@ -1478,5 +1478,12 @@
     "stripePending": "⏳ pending",
     "loadFailed": "Failed to load usage data",
     "saveFailed": "Failed to save settings"
+  },
+  "paymentTypes": {
+    "stripe": "Stripe",
+    "Partner credit": "Partner credit",
+    "Loan/Deposit": "Loan/Deposit",
+    "Repayment": "Repayment",
+    "Advance Payment": "Advance Payment"
   }
 }

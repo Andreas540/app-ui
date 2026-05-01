@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
+import { tPaymentType } from '../lib/api'
 
 interface PaymentDetailModalProps {
   isOpen: boolean
@@ -51,7 +52,7 @@ export default function PaymentDetailModal({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <div className="helper" style={fieldStyle}>{t('paymentModal.paymentType')}</div>
-            <div style={{ fontWeight: 600 }}>{payment.payment_type}</div>
+            <div style={{ fontWeight: 600 }}>{tPaymentType(payment.payment_type, t)}</div>
           </div>
 
           {payment.customer_name && (

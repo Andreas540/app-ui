@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
+import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
 import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
@@ -686,7 +686,7 @@ export default function CustomerDetailPage() {
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ cursor: 'pointer', lineHeight: '1.4' }}
                     >
-                      {(p as any).payment_type}{!showOrderNumber && (p as any).order_no ? ` · #${(p as any).order_no}` : ''}
+                      {tPaymentType((p as any).payment_type, t)}{!showOrderNumber && (p as any).order_no ? ` · #${(p as any).order_no}` : ''}
                     </div>
 
                     {/* AMOUNT with conditional sign, 2 decimals */}

@@ -121,6 +121,11 @@ export type PaymentType =
   | 'Pagos Seguros en Línea / PSE'
   | 'Efectivo'
   | 'Cheques'
+  | 'Bankgiro/Postgiro'
+  | 'Banköverföring'
+  | 'Kortbetalning'
+  | 'Swish'
+  | 'stripe'
 
 export const PAYMENT_TYPES: PaymentType[] = [
   'Advance Payment',
@@ -143,6 +148,24 @@ export const PAYMENT_TYPES_COP: PaymentType[] = [
   'Repayment',
   'Advance Payment',
 ]
+
+export const PAYMENT_TYPES_SEK: PaymentType[] = [
+  'Bankgiro/Postgiro',
+  'Banköverföring',
+  'Kortbetalning',
+  'Swish',
+  'Partner credit',
+  'Loan/Deposit',
+  'Repayment',
+  'Advance Payment',
+]
+
+// Translate a stored payment_type string for display.
+// Universal types (stored as English) are translated via i18n.
+// Market-specific strings (Swish, ACH, etc.) display as-is.
+export function tPaymentType(type: string, tFn: (key: string, fallback: string) => string): string {
+  return tFn(`paymentTypes.${type}`, type)
+}
 
 export type NewPaymentInput = {
   customer_id: string
@@ -198,6 +221,15 @@ export type PartnerPaymentType =
 
 export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = ['Cash', 'Cash app', 'Other', 'Add to debt']
 
+export const PARTNER_PAYMENT_TYPES_SEK: PartnerPaymentType[] = [
+  'Bankgiro/Postgiro' as any,
+  'Banköverföring' as any,
+  'Kortbetalning' as any,
+  'Swish' as any,
+  'Other',
+  'Add to debt',
+]
+
 export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = [
   'Transferencias Bancarias / ACH',
   'Pagos Seguros en Línea / PSE',
@@ -251,6 +283,16 @@ export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
   'Add to debt',
   'Prepayment',
   'Other'
+]
+
+export const SUPPLIER_PAYMENT_TYPES_SEK: SupplierPaymentType[] = [
+  'Bankgiro/Postgiro' as any,
+  'Banköverföring' as any,
+  'Kortbetalning' as any,
+  'Swish' as any,
+  'Add to debt',
+  'Prepayment',
+  'Other',
 ]
 
 export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = [

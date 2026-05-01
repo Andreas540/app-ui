@@ -8,10 +8,13 @@ import {
   getAuthHeaders,
   PAYMENT_TYPES,
   PAYMENT_TYPES_COP,
+  PAYMENT_TYPES_SEK,
   PARTNER_PAYMENT_TYPES,
   PARTNER_PAYMENT_TYPES_COP,
+  PARTNER_PAYMENT_TYPES_SEK,
   SUPPLIER_PAYMENT_TYPES,
   SUPPLIER_PAYMENT_TYPES_COP,
+  SUPPLIER_PAYMENT_TYPES_SEK,
   type PaymentType,
   type PartnerPaymentType,
   type SupplierPaymentType,
@@ -37,19 +40,20 @@ export default function Payments() {
   const config = getTenantConfig(user?.tenantId)
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
+  const isSEK = currency === 'SEK'
   const { parseAmount } = useCurrency()
 
   const activePaymentTypes = useMemo(
-    () => isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES,
-    [isCOP]
+    () => isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES,
+    [isCOP, isSEK]
   )
   const activePartnerPaymentTypes = useMemo(
-    () => isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES,
-    [isCOP]
+    () => isCOP ? PARTNER_PAYMENT_TYPES_COP : isSEK ? PARTNER_PAYMENT_TYPES_SEK : PARTNER_PAYMENT_TYPES,
+    [isCOP, isSEK]
   )
   const activeSupplierPaymentTypes = useMemo(
-    () => isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES,
-    [isCOP]
+    () => isCOP ? SUPPLIER_PAYMENT_TYPES_COP : isSEK ? SUPPLIER_PAYMENT_TYPES_SEK : SUPPLIER_PAYMENT_TYPES,
+    [isCOP, isSEK]
   )
 
   const [people, setPeople] = useState<CustomerLite[]>([])

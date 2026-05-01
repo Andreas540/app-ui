@@ -1478,5 +1478,12 @@
     "stripePending": "⏳ väntande",
     "loadFailed": "Det gick inte att läsa in användningsdata",
     "saveFailed": "Det gick inte att spara inställningar"
+  },
+  "paymentTypes": {
+    "stripe": "Stripe",
+    "Partner credit": "Partnerkrediter",
+    "Loan/Deposit": "Lån/Deposition",
+    "Repayment": "Återbetalning",
+    "Advance Payment": "Förskottsbetalning"
   }
 }

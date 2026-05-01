@@ -1478,5 +1478,12 @@
     "stripePending": "⏳ pendiente",
     "loadFailed": "Error al cargar datos de uso",
     "saveFailed": "Error al guardar configuración"
+  },
+  "paymentTypes": {
+    "stripe": "Stripe",
+    "Partner credit": "Crédito de socio",
+    "Loan/Deposit": "Préstamo/Depósito",
+    "Repayment": "Reembolso",
+    "Advance Payment": "Pago anticipado"
   }
 }

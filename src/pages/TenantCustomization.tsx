@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getAuthHeaders,
-  PAYMENT_TYPES, PAYMENT_TYPES_COP,
-  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_COP,
-  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_COP,
+  PAYMENT_TYPES, PAYMENT_TYPES_COP, PAYMENT_TYPES_SEK,
+  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_COP, PARTNER_PAYMENT_TYPES_SEK,
+  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_COP, SUPPLIER_PAYMENT_TYPES_SEK,
 } from '../lib/api'
 import { defaultConfig } from '../lib/tenantConfig'
 
@@ -360,10 +360,12 @@ export default function TenantCustomization() {
                 <Toggle value={cp.showOrderSelection ?? dp.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
               </Row>
               {(() => {
-                const isCOP = (tenants.find(t => t.id === tenantId)?.default_currency || 'USD') === 'COP'
-                const customerTypes = (isCOP ? PAYMENT_TYPES_COP : PAYMENT_TYPES) as string[]
-                const partnerTypes  = (isCOP ? PARTNER_PAYMENT_TYPES_COP : PARTNER_PAYMENT_TYPES) as string[]
-                const supplierTypes = (isCOP ? SUPPLIER_PAYMENT_TYPES_COP : SUPPLIER_PAYMENT_TYPES) as string[]
+                const tenantCurrency = tenants.find(t => t.id === tenantId)?.default_currency || 'USD'
+                const isCOP = tenantCurrency === 'COP'
+                const isSEK = tenantCurrency === 'SEK'
+                const customerTypes = (isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES) as string[]
+                const partnerTypes  = (isCOP ? PARTNER_PAYMENT_TYPES_COP : isSEK ? PARTNER_PAYMENT_TYPES_SEK : PARTNER_PAYMENT_TYPES) as string[]
+                const supplierTypes = (isCOP ? SUPPLIER_PAYMENT_TYPES_COP : isSEK ? SUPPLIER_PAYMENT_TYPES_SEK : SUPPLIER_PAYMENT_TYPES) as string[]
                 const customized = cp.visibleCustomerPaymentTypes != null || cp.visiblePartnerPaymentTypes != null || cp.visibleSupplierPaymentTypes != null
                 return (
                   <Row label={t('tenantCustom.visiblePaymentTypes')} help={t('tenantCustom.visiblePaymentTypesHelp')} customized={customized}>
