@@ -1,5 +1,5 @@
 // src/pages/Payments.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
@@ -69,8 +69,8 @@ export default function Payments() {
   const [entityId, setEntityId] = useState('')
   const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState('')
-  const [preselectedOrderId, setPreselectedOrderId] = useState('')
-  const [preselectedAmount, setPreselectedAmount] = useState('')
+  const preselectedOrderIdRef = useRef('')
+  const preselectedAmountRef = useRef('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
@@ -120,8 +120,8 @@ useEffect(() => {
       const preselectedSupplierId = params.get('supplier_id')
       const paramOrderId = params.get('order_id')
       const paramAmount = params.get('amount')
-      if (paramOrderId) setPreselectedOrderId(paramOrderId)
-      if (paramAmount) setPreselectedAmount(paramAmount)
+      if (paramOrderId) preselectedOrderIdRef.current = paramOrderId
+      if (paramAmount) preselectedAmountRef.current = paramAmount
 
       if (preselectedCustomerId) {
         setEntityId(preselectedCustomerId)
@@ -165,18 +165,20 @@ useEffect(() => {
         const data = await res.json()
         const loadedOrders = data.orders || []
         setOrders(loadedOrders)
-        if (preselectedOrderId && loadedOrders.some((o: any) => o.id === preselectedOrderId)) {
-          setSelectedOrderId(preselectedOrderId)
-          setAmountStr(preselectedAmount || '')
-          setPreselectedOrderId('')
-          setPreselectedAmount('')
+        const pendingOrderId = preselectedOrderIdRef.current
+        const pendingAmount = preselectedAmountRef.current
+        if (pendingOrderId && loadedOrders.some((o: any) => o.id === pendingOrderId)) {
+          preselectedOrderIdRef.current = ''
+          preselectedAmountRef.current = ''
+          setSelectedOrderId(pendingOrderId)
+          setAmountStr(pendingAmount || '')
         } else {
           setSelectedOrderId('')
           setAmountStr('')
         }
       } catch { /* silent */ }
     })()
-  }, [entityId, config.payments.showOrderSelection, preselectedOrderId, preselectedAmount])
+  }, [entityId, config.payments.showOrderSelection])
 
   useEffect(() => {
     if (!partnerId || !config.payments.showOrderSelection) {
