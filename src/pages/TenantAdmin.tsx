@@ -1034,7 +1034,9 @@ export default function TenantAdmin() {
             <div className="row" style={{ marginBottom: 24 }}>
               <div>
                 <label>{t('phone')}</label>
-                <input value={invoiceCfg.companyPhone} onChange={e => setInvoiceCfg(c => ({ ...c, companyPhone: e.target.value }))} placeholder="(000) 000-0000" style={{ marginTop: 4 }} />
+                <input value={invoiceCfg.companyPhone} onChange={e => setInvoiceCfg(c => ({ ...c, companyPhone: e.target.value }))}
+                  placeholder={invoiceCfg.billingCountry === 'SE' ? '070-000 00 00' : invoiceCfg.billingCountry === 'CO' ? '300 000 0000' : '(000) 000-0000'}
+                  style={{ marginTop: 4 }} />
               </div>
               <div>
                 <label>{t('tenantAdmin.invoiceContactName')}</label>
@@ -1173,7 +1175,7 @@ export default function TenantAdmin() {
               <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.bankgiroDetails')}</h4>
               <div style={{ marginBottom: 24 }}>
                 <label>{t('tenantAdmin.bankgiroNumber')}</label>
-                <input value={invoiceCfg.bankgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankgiroNumber: e.target.value }))} placeholder="123456-7" style={{ marginTop: 4, maxWidth: 240 }} />
+                <input value={invoiceCfg.bankgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankgiroNumber: e.target.value }))} placeholder="123-4567" style={{ marginTop: 4, maxWidth: 240 }} />
               </div>
             </>)}
 
@@ -1182,7 +1184,7 @@ export default function TenantAdmin() {
               <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.plusgiroDetails')}</h4>
               <div style={{ marginBottom: 24 }}>
                 <label>{t('tenantAdmin.plusgiroNumber')}</label>
-                <input value={invoiceCfg.plusgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, plusgiroNumber: e.target.value }))} placeholder="12345-6" style={{ marginTop: 4, maxWidth: 240 }} />
+                <input value={invoiceCfg.plusgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, plusgiroNumber: e.target.value }))} placeholder="12 34 56-7" style={{ marginTop: 4, maxWidth: 240 }} />
               </div>
             </>)}
 
@@ -1196,7 +1198,7 @@ export default function TenantAdmin() {
               <div className="row" style={{ marginBottom: 24 }}>
                 <div>
                   <label>{t('tenantAdmin.clearingNumber')}</label>
-                  <input value={invoiceCfg.seClearingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, seClearingNumber: e.target.value }))} placeholder="8327-9" style={{ marginTop: 4 }} />
+                  <input value={invoiceCfg.seClearingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, seClearingNumber: e.target.value }))} placeholder="3300" style={{ marginTop: 4 }} />
                 </div>
                 <div>
                   <label>{t('tenantAdmin.accountNumber')}</label>
