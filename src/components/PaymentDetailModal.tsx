@@ -23,153 +23,88 @@ export default function PaymentDetailModal({
   const { fmtIntMoney } = useCurrency()
   if (!payment) return null
 
-  // Determine payment type for edit link
   let paymentType = 'customer'
   if (isPartnerPayment) paymentType = 'partner'
   if (isSupplierPayment) paymentType = 'supplier'
+
+  const fieldStyle = { marginBottom: 4 }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('paymentModal.title')}>
       <div style={{ display: 'grid', gap: 16 }}>
 
-        {/* Payment Amount - Highlighted */}
-        <div style={{
-          textAlign: 'center',
-          padding: 20,
-          backgroundColor: 'var(--panel)',
-          borderRadius: 12,
-          border: '1px solid var(--line)'
-        }}>
-          <div className="helper" style={{ marginBottom: 8 }}>{t('paymentModal.paymentAmount')}</div>
-          <div style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: 'var(--primary)'
-          }}>
-            {fmtIntMoney(payment.amount)}
-          </div>
-        </div>
-
-        {/* Payment Details Grid */}
+        {/* Date + Amount */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-          {/* Left Column */}
           <div>
-            <div style={{ marginBottom: 16 }}>
-              <div className="helper">{t('paymentModal.paymentDate')}</div>
-              <div style={{ fontWeight: 600 }}>{formatDate(payment.payment_date)}</div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div className="helper">{t('paymentModal.paymentType')}</div>
-              <div style={{
-                fontWeight: 600,
-                padding: '4px 8px',
-                backgroundColor: 'var(--primary)',
-                color: 'white',
-                borderRadius: 6,
-                display: 'inline-block',
-                fontSize: 14
-              }}>
-                {payment.payment_type}
-              </div>
-            </div>
-
-            {payment.payment_id && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('paymentModal.paymentId')}</div>
-                <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: 12 }}>
-                  {payment.payment_id}
-                </div>
-              </div>
-            )}
+            <div className="helper" style={fieldStyle}>{t('paymentModal.paymentDate')}</div>
+            <div style={{ fontWeight: 600 }}>{formatDate(payment.payment_date)}</div>
           </div>
-
-          {/* Right Column */}
-          <div>
-            {payment.customer_name && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('customer')}</div>
-                <div style={{ fontWeight: 600 }}>{payment.customer_name}</div>
-              </div>
-            )}
-
-            {payment.partner_name && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('partner')}</div>
-                <div style={{ fontWeight: 600 }}>{payment.partner_name}</div>
-              </div>
-            )}
-
-            {payment.supplier_name && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('supplier')}</div>
-                <div style={{ fontWeight: 600 }}>{payment.supplier_name}</div>
-              </div>
-            )}
-
-            {payment.order_id && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('paymentModal.relatedOrder')}</div>
-                <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: 12 }}>
-                  {payment.order_id}
-                </div>
-              </div>
-            )}
-
-            {payment.created_at && (
-              <div style={{ marginBottom: 16 }}>
-                <div className="helper">{t('paymentModal.recorded')}</div>
-                <div style={{ fontSize: 14 }}>
-                  {new Date(payment.created_at).toLocaleString()}
-                </div>
-              </div>
-            )}
+          <div style={{ textAlign: 'right' }}>
+            <div className="helper" style={fieldStyle}>{t('paymentModal.paymentAmount')}</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(payment.amount)}</div>
           </div>
         </div>
 
-        {/* Notes Section */}
-        {payment.notes && (
-          <div style={{
-            marginTop: 8,
-            paddingTop: 16,
-            borderTop: '1px solid var(--line)'
-          }}>
-            <div className="helper" style={{ marginBottom: 8 }}>{t('notes')}</div>
-            <div style={{
-              padding: 12,
-              backgroundColor: 'var(--panel)',
-              borderRadius: 8,
-              fontStyle: 'italic'
-            }}>
-              {payment.notes}
+        <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
+
+        {/* Type + who */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <div className="helper" style={fieldStyle}>{t('paymentModal.paymentType')}</div>
+            <div style={{ fontWeight: 600 }}>{payment.payment_type}</div>
+          </div>
+
+          {payment.customer_name && (
+            <div>
+              <div className="helper" style={fieldStyle}>{t('customer')}</div>
+              <div style={{ fontWeight: 600 }}>{payment.customer_name}</div>
             </div>
+          )}
+          {payment.partner_name && (
+            <div>
+              <div className="helper" style={fieldStyle}>{t('partner')}</div>
+              <div style={{ fontWeight: 600 }}>{payment.partner_name}</div>
+            </div>
+          )}
+          {payment.supplier_name && (
+            <div>
+              <div className="helper" style={fieldStyle}>{t('supplier')}</div>
+              <div style={{ fontWeight: 600 }}>{payment.supplier_name}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Linked order */}
+        {payment.order_no && (
+          <div>
+            <div className="helper" style={fieldStyle}>{t('paymentModal.relatedOrder')}</div>
+            <div style={{ fontWeight: 600 }}>#{payment.order_no}</div>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div style={{
-          display: 'flex',
-          gap: 8,
-          marginTop: 16,
-          paddingTop: 16,
-          borderTop: '1px solid var(--line)'
-        }}>
+        {/* Notes */}
+        {payment.notes && (
+          <>
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
+            <div>
+              <div className="helper" style={fieldStyle}>{t('notes')}</div>
+              <div>{payment.notes}</div>
+            </div>
+          </>
+        )}
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Link to={`/payments/${payment.id}/edit?type=${paymentType}`} style={{ flex: 1 }}>
-            <button
-              className="primary"
-              style={{ width: '100%' }}
-            >
+            <button className="primary" style={{ width: '100%' }}>
               {t('paymentModal.editPayment')}
             </button>
           </Link>
-          <button
-            onClick={onClose}
-            style={{ flex: 1 }}
-          >
+          <button onClick={onClose} style={{ flex: 1 }}>
             {t('close')}
           </button>
         </div>
+
       </div>
     </Modal>
   )
