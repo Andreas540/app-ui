@@ -3,16 +3,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrency } from '../lib/useCurrency'
+import { useLocale } from '../contexts/LocaleContext'
 import { DateInput } from '../components/DateInput'
-import { 
-  fetchBootstrap, 
-  PAYMENT_TYPES, 
-  PARTNER_PAYMENT_TYPES, 
-  SUPPLIER_PAYMENT_TYPES,
-  type PaymentType, 
+import {
+  fetchBootstrap,
+  PAYMENT_TYPES, PAYMENT_TYPES_SEK, PAYMENT_TYPES_COP,
+  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_SEK, PARTNER_PAYMENT_TYPES_COP,
+  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_SEK, SUPPLIER_PAYMENT_TYPES_COP,
+  type PaymentType,
   type PartnerPaymentType,
   type SupplierPaymentType,
-  getAuthHeaders 
+  getAuthHeaders,
 } from '../lib/api'
 import { todayYMD } from '../lib/time'
 
@@ -26,7 +27,10 @@ export default function EditPayment() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { parseAmount } = useCurrency()
-  
+  const { currency } = useLocale()
+  const isCOP = currency === 'COP'
+  const isSEK = currency === 'SEK'
+
   const paymentTypeParam = searchParams.get('type')
   const isPartnerPayment = paymentTypeParam === 'partner'
   const isSupplierPayment = paymentTypeParam === 'supplier'
@@ -91,13 +95,13 @@ export default function EditPayment() {
     })()
   }, [paymentId, isPartnerPayment, isSupplierPayment])
 
-  // ---------- Minus handling (Loan/Deposit & Add to debt) ----------
+  // ---------- Minus handling (Loan/Deposit & Add to debt, all locales) ----------
   const requiresMinus = useMemo(() => {
-    const t = String(paymentType || '').trim().toLowerCase()
+    const lc = String(paymentType || '').trim().toLowerCase()
     if (isPartnerPayment || isSupplierPayment) {
-      return t === 'add to debt'
+      return ['add to debt', 'lägg till skuld', 'añadir a la deuda'].includes(lc)
     }
-    return t === 'loan/deposit' || t === 'repayment'
+    return ['loan/deposit', 'repayment', 'lån/deposition', 'återbetalning', 'préstamo/depósito', 'reembolso'].includes(lc)
   }, [paymentType, isPartnerPayment, isSupplierPayment])
 
   // Ensure minus is present/removed when type toggles
@@ -236,15 +240,15 @@ export default function EditPayment() {
   let paymentTypes, entityList, entityLabel
   
   if (isPartnerPayment) {
-    paymentTypes = PARTNER_PAYMENT_TYPES
+    paymentTypes = isCOP ? PARTNER_PAYMENT_TYPES_COP : isSEK ? PARTNER_PAYMENT_TYPES_SEK : PARTNER_PAYMENT_TYPES
     entityList = partners
     entityLabel = t('partner')
   } else if (isSupplierPayment) {
-    paymentTypes = SUPPLIER_PAYMENT_TYPES
+    paymentTypes = isCOP ? SUPPLIER_PAYMENT_TYPES_COP : isSEK ? SUPPLIER_PAYMENT_TYPES_SEK : SUPPLIER_PAYMENT_TYPES
     entityList = suppliers
     entityLabel = t('supplier')
   } else {
-    paymentTypes = PAYMENT_TYPES
+    paymentTypes = isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES
     entityList = customers
     entityLabel = t('customer')
   }
