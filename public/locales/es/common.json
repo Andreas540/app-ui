@@ -1484,6 +1484,17 @@
     "Partner credit": "Crédito de socio",
     "Loan/Deposit": "Préstamo/Depósito",
     "Repayment": "Reembolso",
-    "Advance Payment": "Pago anticipado"
+    "Advance Payment": "Pago anticipado",
+    "Cash payment": "Pago en efectivo",
+    "Wire Transfer": "Transferencia bancaria",
+    "Cash App payment": "Cash App",
+    "Zelle payment": "Zelle",
+    "Other": "Otro",
+    "Add to debt": "Añadir a la deuda",
+    "Prepayment": "Prepago",
+    "Cash": "Efectivo",
+    "Bank transfer": "Transferencia bancaria",
+    "Check": "Cheque",
+    "Credit card": "Tarjeta de crédito"
   }
 }

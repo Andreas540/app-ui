@@ -1484,6 +1484,17 @@
     "Partner credit": "Partnerkrediter",
     "Loan/Deposit": "Lån/Deposition",
     "Repayment": "Återbetalning",
-    "Advance Payment": "Förskottsbetalning"
+    "Advance Payment": "Förskottsbetalning",
+    "Cash payment": "Kontantbetalning",
+    "Wire Transfer": "Banköverföring",
+    "Cash App payment": "Cash App",
+    "Zelle payment": "Zelle",
+    "Other": "Övrigt",
+    "Add to debt": "Lägg till skuld",
+    "Prepayment": "Förskottsbetalning",
+    "Cash": "Kontant",
+    "Bank transfer": "Banköverföring",
+    "Check": "Check",
+    "Credit card": "Kortbetalning"
   }
 }

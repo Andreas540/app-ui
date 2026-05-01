@@ -107,65 +107,17 @@ export async function createOrder(input: NewOrderInput) {
   return (await res.json()) as { ok: true; order_id: string; order_no: number }
 }
 
-// ---- Payments API (from customers) ----
-export type PaymentType =
-  | 'Cash payment'
-  | 'Cash App payment'
-  | 'Wire Transfer'
-  | 'Zelle payment'
-  | 'Partner credit'
-  | 'Loan/Deposit'
-  | 'Repayment'
-  | 'Advance Payment'
-  | 'Transferencias Bancarias / ACH'
-  | 'Pagos Seguros en Línea / PSE'
-  | 'Efectivo'
-  | 'Cheques'
-  | 'Bankgiro/Postgiro'
-  | 'Banköverföring'
-  | 'Kortbetalning'
-  | 'Swish'
-  | 'stripe'
+// ---- Payment types (definitions live in paymentTypes.ts) ----
+import type { PaymentType, PartnerPaymentType, SupplierPaymentType } from './paymentTypes'
+export type { PaymentType, PartnerPaymentType, SupplierPaymentType }
+export {
+  PAYMENT_TYPES, PAYMENT_TYPES_SEK, PAYMENT_TYPES_COP,
+  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_SEK, PARTNER_PAYMENT_TYPES_COP,
+  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_SEK, SUPPLIER_PAYMENT_TYPES_COP,
+  tPaymentType,
+} from './paymentTypes'
 
-export const PAYMENT_TYPES: PaymentType[] = [
-  'Advance Payment',
-  'Cash App payment',
-  'Cash payment',
-  'Loan/Deposit',
-  'Partner credit',
-  'Repayment',
-  'Wire Transfer',
-  'Zelle payment',
-]
-
-export const PAYMENT_TYPES_COP: PaymentType[] = [
-  'Transferencias Bancarias / ACH',
-  'Pagos Seguros en Línea / PSE',
-  'Efectivo',
-  'Cheques',
-  'Partner credit',
-  'Loan/Deposit',
-  'Repayment',
-  'Advance Payment',
-]
-
-export const PAYMENT_TYPES_SEK: PaymentType[] = [
-  'Bankgiro/Postgiro',
-  'Banköverföring',
-  'Kortbetalning',
-  'Swish',
-  'Partner credit',
-  'Loan/Deposit',
-  'Repayment',
-  'Advance Payment',
-]
-
-// Translate a stored payment_type string for display.
-// Universal types (stored as English) are translated via i18n.
-// Market-specific strings (Swish, ACH, etc.) display as-is.
-export function tPaymentType(type: string, tFn: (key: string, fallback: string) => string): string {
-  return tFn(`paymentTypes.${type}`, type)
-}
+// ---- Customer Payments API ----
 
 export type NewPaymentInput = {
   customer_id: string
@@ -208,36 +160,7 @@ export async function listPayments(limit = 20) {
   }
 }
 
-// ---- Partner Payments API (to partners) ----
-export type PartnerPaymentType =
-  | 'Cash'
-  | 'Cash app'
-  | 'Other'
-  | 'Add to debt'
-  | 'Transferencias Bancarias / ACH'
-  | 'Pagos Seguros en Línea / PSE'
-  | 'Efectivo'
-  | 'Cheques'
-
-export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = ['Cash', 'Cash app', 'Other', 'Add to debt']
-
-export const PARTNER_PAYMENT_TYPES_SEK: PartnerPaymentType[] = [
-  'Bankgiro/Postgiro' as any,
-  'Banköverföring' as any,
-  'Kortbetalning' as any,
-  'Swish' as any,
-  'Other',
-  'Add to debt',
-]
-
-export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = [
-  'Transferencias Bancarias / ACH',
-  'Pagos Seguros en Línea / PSE',
-  'Efectivo',
-  'Cheques',
-  'Other',
-  'Add to debt',
-]
+// ---- Partner Payments API ----
 
 export type NewPartnerPaymentInput = {
   partner_id: string
@@ -261,49 +184,7 @@ export async function createPartnerPayment(input: NewPartnerPaymentInput) {
   return (await res.json()) as { ok: true; id: string }
 }
 
-// ---- Supplier Payments API (to suppliers) ----
-export type SupplierPaymentType =
-  | 'Cash'
-  | 'Bank transfer'
-  | 'Check'
-  | 'Credit card'
-  | 'Add to debt'
-  | 'Prepayment'
-  | 'Other'
-  | 'Transferencias Bancarias / ACH'
-  | 'Pagos Seguros en Línea / PSE'
-  | 'Efectivo'
-  | 'Cheques'
-
-export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
-  'Cash',
-  'Bank transfer',
-  'Check',
-  'Credit card',
-  'Add to debt',
-  'Prepayment',
-  'Other'
-]
-
-export const SUPPLIER_PAYMENT_TYPES_SEK: SupplierPaymentType[] = [
-  'Bankgiro/Postgiro' as any,
-  'Banköverföring' as any,
-  'Kortbetalning' as any,
-  'Swish' as any,
-  'Add to debt',
-  'Prepayment',
-  'Other',
-]
-
-export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = [
-  'Transferencias Bancarias / ACH',
-  'Pagos Seguros en Línea / PSE',
-  'Efectivo',
-  'Cheques',
-  'Add to debt',
-  'Prepayment',
-  'Other',
-]
+// ---- Supplier Payments API ----
 
 export type NewSupplierPaymentInput = {
   supplier_id: string
