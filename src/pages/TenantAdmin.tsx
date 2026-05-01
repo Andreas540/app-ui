@@ -74,15 +74,32 @@ export default function TenantAdmin() {
     companyPhone: '',
     contactName: '',
     enabledPaymentMethods: [] as string[],
+    // US — Wire Transfer
     bankName: '',
     bankAccountName: '',
     bankAccountNumber: '',
     bankRoutingNumber: '',
+    // US — ACH
     achBankName: '',
     achBranch: '',
     achCityState: '',
     achAccountNumber: '',
     achAba: '',
+    // SE — Bankgiro / Plusgiro / Bank transfer / IBAN
+    bankgiroNumber: '',
+    plusgiroNumber: '',
+    seBankName: '',
+    seClearingNumber: '',
+    seAccountNumber: '',
+    ibanNumber: '',
+    bicSwift: '',
+    // CO — Bank transfer / PSE / Nequi
+    copBankName: '',
+    copAccountType: '',
+    copAccountNumber: '',
+    copNit: '',
+    nequiPhone: '',
+    daviplataPhone: '',
   })
   const [savingInvoice, setSavingInvoice] = useState(false)
 
@@ -532,6 +549,19 @@ export default function TenantAdmin() {
           achCityState: ic.achCityState ?? '',
           achAccountNumber: ic.achAccountNumber ?? '',
           achAba: ic.achAba ?? '',
+          bankgiroNumber: ic.bankgiroNumber ?? '',
+          plusgiroNumber: ic.plusgiroNumber ?? '',
+          seBankName: ic.seBankName ?? '',
+          seClearingNumber: ic.seClearingNumber ?? '',
+          seAccountNumber: ic.seAccountNumber ?? '',
+          ibanNumber: ic.ibanNumber ?? '',
+          bicSwift: ic.bicSwift ?? '',
+          copBankName: ic.copBankName ?? '',
+          copAccountType: ic.copAccountType ?? '',
+          copAccountNumber: ic.copAccountNumber ?? '',
+          copNit: ic.copNit ?? '',
+          nequiPhone: ic.nequiPhone ?? '',
+          daviplataPhone: ic.daviplataPhone ?? '',
         })
       }
     } catch { /* silently ignore — form starts empty */ }
@@ -902,6 +932,19 @@ export default function TenantAdmin() {
               { id: 'wire_transfer', labelKey: 'wireTransfer', available: true },
               { id: 'ach',           labelKey: 'ach',          available: true },
             ],
+            SE: [
+              { id: 'bankgiro',         labelKey: 'bankgiro',      available: true },
+              { id: 'plusgiro',         labelKey: 'plusgiro',      available: true },
+              { id: 'bank_transfer_se', labelKey: 'bankTransferSe', available: true },
+              { id: 'iban',             labelKey: 'iban',          available: true },
+            ],
+            CO: [
+              { id: 'bank_transfer_cop', labelKey: 'bankTransferCop', available: true },
+              { id: 'pse',               labelKey: 'pse',             available: true },
+              { id: 'nequi',             labelKey: 'nequi',           available: true },
+              { id: 'daviplata',         labelKey: 'daviplata',       available: true },
+              { id: 'efectivo_cop',      labelKey: 'efectivoCop',     available: true },
+            ],
           }
           const availablePMs = pmByCountry[invoiceCfg.billingCountry] ?? null
 
@@ -1011,6 +1054,7 @@ export default function TenantAdmin() {
                 <option value="">{t('tenantAdmin.selectBillingCountry')}</option>
                 <option value="US">{t('tenantAdmin.countryUS')}</option>
                 <option value="SE">{t('tenantAdmin.countrySweden')}</option>
+                <option value="CO">{t('tenantAdmin.countryColombia')}</option>
                 <option value="EU">{t('tenantAdmin.countryEU')}</option>
                 <option value="GB">{t('tenantAdmin.countryUK')}</option>
               </select>
@@ -1121,6 +1165,107 @@ export default function TenantAdmin() {
                     style={{ marginTop: 4 }}
                   />
                 </div>
+              </div>
+            </>)}
+
+            {/* Bankgiro detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('bankgiro') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.bankgiroDetails')}</h4>
+              <div style={{ marginBottom: 24 }}>
+                <label>{t('tenantAdmin.bankgiroNumber')}</label>
+                <input value={invoiceCfg.bankgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, bankgiroNumber: e.target.value }))} placeholder="123456-7" style={{ marginTop: 4, maxWidth: 240 }} />
+              </div>
+            </>)}
+
+            {/* Plusgiro detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('plusgiro') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.plusgiroDetails')}</h4>
+              <div style={{ marginBottom: 24 }}>
+                <label>{t('tenantAdmin.plusgiroNumber')}</label>
+                <input value={invoiceCfg.plusgiroNumber} onChange={e => setInvoiceCfg(c => ({ ...c, plusgiroNumber: e.target.value }))} placeholder="12345-6" style={{ marginTop: 4, maxWidth: 240 }} />
+              </div>
+            </>)}
+
+            {/* Swedish bank transfer detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('bank_transfer_se') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.bankTransferSeDetails')}</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.bankName')}</label>
+                <input value={invoiceCfg.seBankName} onChange={e => setInvoiceCfg(c => ({ ...c, seBankName: e.target.value }))} placeholder="Swedbank" style={{ marginTop: 4 }} />
+              </div>
+              <div className="row" style={{ marginBottom: 24 }}>
+                <div>
+                  <label>{t('tenantAdmin.clearingNumber')}</label>
+                  <input value={invoiceCfg.seClearingNumber} onChange={e => setInvoiceCfg(c => ({ ...c, seClearingNumber: e.target.value }))} placeholder="8327-9" style={{ marginTop: 4 }} />
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.accountNumber')}</label>
+                  <input value={invoiceCfg.seAccountNumber} onChange={e => setInvoiceCfg(c => ({ ...c, seAccountNumber: e.target.value }))} placeholder="0000000000" style={{ marginTop: 4 }} />
+                </div>
+              </div>
+            </>)}
+
+            {/* IBAN/SWIFT detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('iban') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.ibanDetails')}</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.ibanNumber')}</label>
+                <input value={invoiceCfg.ibanNumber} onChange={e => setInvoiceCfg(c => ({ ...c, ibanNumber: e.target.value }))} placeholder="SE00 0000 0000 0000 0000 0000" style={{ marginTop: 4 }} />
+              </div>
+              <div className="row" style={{ marginBottom: 24 }}>
+                <div>
+                  <label>{t('tenantAdmin.bicSwift')}</label>
+                  <input value={invoiceCfg.bicSwift} onChange={e => setInvoiceCfg(c => ({ ...c, bicSwift: e.target.value }))} placeholder="SWEDSESS" style={{ marginTop: 4 }} />
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.bankName')}</label>
+                  <input value={invoiceCfg.seBankName} onChange={e => setInvoiceCfg(c => ({ ...c, seBankName: e.target.value }))} placeholder="Swedbank" style={{ marginTop: 4 }} />
+                </div>
+              </div>
+            </>)}
+
+            {/* Colombian bank transfer detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('bank_transfer_cop') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.bankTransferCopDetails')}</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label>{t('tenantAdmin.bankName')}</label>
+                <input value={invoiceCfg.copBankName} onChange={e => setInvoiceCfg(c => ({ ...c, copBankName: e.target.value }))} placeholder="Bancolombia" style={{ marginTop: 4 }} />
+              </div>
+              <div className="row" style={{ marginBottom: 12 }}>
+                <div>
+                  <label>{t('tenantAdmin.copAccountType')}</label>
+                  <select value={invoiceCfg.copAccountType} onChange={e => setInvoiceCfg(c => ({ ...c, copAccountType: e.target.value }))} style={{ marginTop: 4 }}>
+                    <option value="">—</option>
+                    <option value="Corriente">{t('tenantAdmin.corriente')}</option>
+                    <option value="Ahorros">{t('tenantAdmin.ahorros')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label>{t('tenantAdmin.accountNumber')}</label>
+                  <input value={invoiceCfg.copAccountNumber} onChange={e => setInvoiceCfg(c => ({ ...c, copAccountNumber: e.target.value }))} placeholder="000-000000-00" style={{ marginTop: 4 }} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <label>{t('tenantAdmin.copNit')}</label>
+                <input value={invoiceCfg.copNit} onChange={e => setInvoiceCfg(c => ({ ...c, copNit: e.target.value }))} placeholder="900.123.456-7" style={{ marginTop: 4, maxWidth: 240 }} />
+              </div>
+            </>)}
+
+            {/* Nequi detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('nequi') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.nequiDetails')}</h4>
+              <div style={{ marginBottom: 24 }}>
+                <label>{t('tenantAdmin.nequiPhone')}</label>
+                <input value={invoiceCfg.nequiPhone} onChange={e => setInvoiceCfg(c => ({ ...c, nequiPhone: e.target.value }))} placeholder="300 000 0000" style={{ marginTop: 4, maxWidth: 240 }} />
+              </div>
+            </>)}
+
+            {/* Daviplata detail fields */}
+            {invoiceCfg.enabledPaymentMethods.includes('daviplata') && (<>
+              <h4 style={{ margin: '0 0 12px', color: 'var(--text-secondary)' }}>{t('tenantAdmin.daviplataDetails')}</h4>
+              <div style={{ marginBottom: 24 }}>
+                <label>{t('tenantAdmin.daviplataPhone')}</label>
+                <input value={invoiceCfg.daviplataPhone} onChange={e => setInvoiceCfg(c => ({ ...c, daviplataPhone: e.target.value }))} placeholder="300 000 0000" style={{ marginTop: 4, maxWidth: 240 }} />
               </div>
             </>)}
 
