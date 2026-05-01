@@ -36,7 +36,7 @@ async function getSupplyChainOverview(event) {
       LEFT JOIN orders o ON o.id = wd.order_id AND o.tenant_id = ${TENANT_ID}
       WHERE wd.tenant_id = ${TENANT_ID}
         AND wd.supplier_manual_delivered = 'D'
-        AND COALESCE(o.delivered_at, wd.date) >= CURRENT_DATE - INTERVAL '30 days'
+        AND wd.date >= CURRENT_DATE - INTERVAL '30 days'
       GROUP BY wd.customer, wd.product, wd.order_id, o.delivered_at
       HAVING SUM(wd.qty) != 0
       ORDER BY COALESCE(o.delivered_at, MAX(wd.date)) DESC, wd.customer ASC

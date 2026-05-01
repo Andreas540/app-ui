@@ -37,6 +37,8 @@ async function getCustomer(event) {
 
     const TENANT_ID = authz.tenantId
 
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at DATE`
+
     const cust = await sql`
       SELECT id, name, customer_type, shipping_cost, company_name, phone, email,
              address1, address2, city, state, postal_code, country, sms_consent
@@ -72,6 +74,7 @@ async function getCustomer(event) {
         o.order_date,
         o.delivered,
         o.delivered_quantity,
+        o.delivered_at,
         o.delivery_status,
         o.notes,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
@@ -100,6 +103,7 @@ async function getCustomer(event) {
         o.order_date,
         o.delivered,
         o.delivered_quantity,
+        o.delivered_at,
         o.delivery_status,
         o.notes,
         pa.partner_amount
