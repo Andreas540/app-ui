@@ -471,7 +471,7 @@ const hasProducts = filteredProducts.length > 0
 
         {/* Delivered: only the checkbox toggles; show "Yes" only when checked */}
         <div>
-          <label>{t('delivered')}</label>
+          <label>{t('fullyDelivered')}</label>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
             <input
               type="checkbox"

@@ -45,6 +45,7 @@
   "pending": "Pending",
   "approved": "✓ Approved",
   "delivered": "Delivered",
+  "fullyDelivered": "Fully delivered",
   "shipped": "Shipped",
   "notDelivered": "Not delivered",
   "received": "Received",

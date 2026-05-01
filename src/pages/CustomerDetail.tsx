@@ -1,5 +1,5 @@
 // src/pages/CustomerDetail.tsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
@@ -187,6 +187,7 @@ export default function CustomerDetailPage() {
                   ...order,
                   delivered: updated.delivered,
                   delivered_quantity: updated.delivered_quantity,
+                  delivered_at: updated.delivered_at,
                   delivery_status: updated.delivery_status,
                 }
               : order
@@ -794,6 +795,14 @@ function DeliveryModal({
   const [deliveredAt, setDeliveredAt] = useState<string>(
     (order as any).delivered_at ?? todayYMD()
   )
+  const hasInteracted = useRef(false)
+
+  function touchDate() {
+    if (!hasInteracted.current) {
+      hasInteracted.current = true
+      setDeliveredAt(todayYMD())
+    }
+  }
 
   // Parse and clamp for display / status / save
   const parsed = Number(inputValue)
@@ -843,12 +852,10 @@ function DeliveryModal({
           min={0}
           max={totalQty}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => { touchDate(); setInputValue(e.target.value) }}
           onFocus={(e) => {
-            // When starting from 0, clear the field on first focus
-            if (e.target.value === '0') {
-              setInputValue('')
-            }
+            touchDate()
+            if (e.target.value === '0') setInputValue('')
           }}
           style={{ width: '100%', marginBottom: 8 }}
         />
@@ -857,7 +864,7 @@ function DeliveryModal({
           <button
             type="button"
             className="helper"
-            onClick={() => setInputValue('0')}
+            onClick={() => { touchDate(); setInputValue('0') }}
             style={{ flex: 1 }}
           >
             {t('customerDetail.setToZero')}
@@ -865,7 +872,7 @@ function DeliveryModal({
           <button
             type="button"
             className="helper"
-            onClick={() => setInputValue(String(totalQty))}
+            onClick={() => { touchDate(); setInputValue(String(totalQty)) }}
             style={{ flex: 1 }}
           >
             {t('customerDetail.fullDelivery')}

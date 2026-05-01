@@ -45,6 +45,7 @@
   "pending": "Väntande",
   "approved": "✓ Godkänd",
   "delivered": "Levererad",
+  "fullyDelivered": "Fullt levererad",
   "shipped": "Skickad",
   "notDelivered": "Ej levererad",
   "received": "Mottagen",

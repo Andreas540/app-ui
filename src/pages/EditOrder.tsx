@@ -472,7 +472,7 @@ export default function EditOrder() {
         </div>
         <div style={{ display:'flex', alignItems:'end' }}>
           <label style={{ width:'100%' }}>
-            {t('delivered')}
+            {t('fullyDelivered')}
             <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
               <input
                 type="checkbox"
