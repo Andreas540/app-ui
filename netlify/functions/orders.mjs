@@ -38,6 +38,7 @@ async function getOrders(event) {
           o.id,
           o.order_no,
           o.order_date,
+          o.delivered_at,
           COALESCE(SUM(oi.qty * oi.unit_price), 0)::numeric(12,2) AS amount,
           COALESCE(MAX(p.name), MAX(s.name), 'Service') AS product_name,
           COALESCE((
@@ -60,7 +61,7 @@ async function getOrders(event) {
         LEFT JOIN services s ON s.id = oi.service_id
         WHERE o.tenant_id = ${TENANT_ID}
           AND o.customer_id = ${customerId}
-        GROUP BY o.id, o.order_no, o.order_date
+        GROUP BY o.id, o.order_no, o.order_date, o.delivered_at
         ORDER BY o.order_date DESC, o.order_no DESC
       `;
     } else if (partnerId) {
@@ -141,7 +142,7 @@ const TENANT_ID = authz.tenantId;
 
     const body = JSON.parse(event.body || '{}');
     const {
-      customer_id, product_id, qty, unit_price, date, delivered, discount,
+      customer_id, product_id, qty, unit_price, date, delivered, delivered_at, discount,
       notes,
       product_cost, shipping_cost,
       partner_splits
@@ -210,12 +211,12 @@ const deliveredQty = delivered ? qtyInt : 0;
 const hdr = await sql`
   INSERT INTO orders (
     tenant_id, customer_id, order_no, order_date,
-    delivered, delivered_quantity,
+    delivered, delivered_quantity, delivered_at,
     discount, notes, product_cost, shipping_cost
   )
   VALUES (
     ${TENANT_ID}, ${customer_id}, ${orderNo}, ${date},
-    ${!!delivered}, ${deliveredQty},
+    ${!!delivered}, ${deliveredQty}, ${delivered ? (delivered_at || null) : null},
     ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum}
   )
   RETURNING id

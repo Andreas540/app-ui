@@ -33,6 +33,7 @@ export default function NewOrder() {
   const [qtyStr, setQtyStr] = useState('') // integer string (digits only)
   const [priceStr, setPriceStr] = useState('') // decimal string (can be negative for Refund/Discount)
   const [delivered, setDelivered] = useState(false) // default unchecked
+  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('') // optional notes
 
   // Partner splits - per-item amounts
@@ -480,6 +481,12 @@ const hasProducts = filteredProducts.length > 0
             />
             {delivered && <span className="helper">{t('yes')}</span>}
           </div>
+          {delivered && (
+            <div style={{ marginTop: 8 }}>
+              <label>{t('customerDetail.deliveryDate')}</label>
+              <DateInput value={deliveredAt} onChange={setDeliveredAt} style={{ height: CONTROL_H }} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -688,6 +695,7 @@ const hasProducts = filteredProducts.length > 0
               unit_price: unitPrice,
               date: orderDate,
               delivered,
+              delivered_at: delivered ? deliveredAt : null,
               discount: 0,
               notes: notes.trim() || undefined,
               product_cost: productCostToSend,

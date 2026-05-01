@@ -35,6 +35,7 @@ const TENANT_ID = authz.tenantId
         o.delivered,
         o.delivered_quantity,
         o.delivery_status,
+        o.delivered_at,
         o.notes,
         o.customer_id,
         o.product_cost,
@@ -168,6 +169,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
       unit_price,
       date,
       delivered,
+      delivered_at,
       notes,
       product_cost,
       shipping_cost,
@@ -215,6 +217,7 @@ const TENANT_ID = authz.tenantId
       UPDATE orders
       SET order_date = ${date},
           delivered = ${delivered ?? false},
+          delivered_at = ${delivered_at || null},
           notes = ${notes ?? null},
           product_cost = ${product_cost ?? null},
           shipping_cost = ${shipping_cost ?? null}

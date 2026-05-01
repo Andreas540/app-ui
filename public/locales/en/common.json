@@ -376,7 +376,8 @@
     "fullDelivery": "Full delivery",
     "newStatus": "New status",
     "deliveredInFullStatus": "Delivered in full",
-    "partiallyDeliveredWithRemaining": ", {{remaining}} remaining."
+    "partiallyDeliveredWithRemaining": ", {{remaining}} remaining.",
+    "deliveryDate": "Delivery date"
   },
   "payments": {
     "fromCustomer": "From customer",

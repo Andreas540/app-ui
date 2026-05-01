@@ -14,7 +14,7 @@ async function updateDeliveryStatus(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
-    const { order_id } = body || {};
+    const { order_id, delivered_at } = body || {};
     const deliveredQuantityRaw = body.delivered_quantity;
     const deliveredFlag = body.delivered; // legacy support
 
@@ -29,6 +29,9 @@ async function updateDeliveryStatus(event) {
     }
 
     const sql = neon(DATABASE_URL);
+
+    // Ensure delivered_at column exists (safe to run repeatedly)
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at DATE`;
 
     // Resolve tenant from JWT
     const authz = await resolveAuthz({ sql, event });
@@ -71,17 +74,24 @@ async function updateDeliveryStatus(event) {
       newDeliveredQty = deliveredFlag ? totalQty : 0;
     }
 
+    // delivered_at: use provided date if marking delivered, clear if undelivering
+    const newDeliveredAt = newDeliveredQty > 0
+      ? (delivered_at || new Date().toISOString().slice(0, 10))
+      : null
+
     const result = await sql`
-      UPDATE orders 
+      UPDATE orders
       SET delivered_quantity = ${newDeliveredQty},
-          delivered          = ${newDeliveredFlag}
-      WHERE tenant_id = ${TENANT_ID} 
+          delivered          = ${newDeliveredFlag},
+          delivered_at       = ${newDeliveredAt}
+      WHERE tenant_id = ${TENANT_ID}
         AND id = ${order_id}
       RETURNING
         id,
         delivered,
         delivered_quantity,
-        delivery_status
+        delivery_status,
+        delivered_at
     `;
 
     if (result.length === 0) {
@@ -90,12 +100,13 @@ async function updateDeliveryStatus(event) {
 
     const row = result[0];
 
-    return cors(200, { 
-      ok: true, 
-      order_id: row.id,
-      delivered: row.delivered,
+    return cors(200, {
+      ok: true,
+      order_id:          row.id,
+      delivered:         row.delivered,
       delivered_quantity: row.delivered_quantity,
-      delivery_status: row.delivery_status,
+      delivery_status:   row.delivery_status,
+      delivered_at:      row.delivered_at,
     });
   } catch (e) {
     console.error(e);

@@ -87,6 +87,7 @@ export type NewOrderInput = {
   unit_price: number // per-order-line price
   date: string // YYYY-MM-DD
   delivered?: boolean
+  delivered_at?: string | null
   discount?: number
   notes?: string
   product_cost?: number

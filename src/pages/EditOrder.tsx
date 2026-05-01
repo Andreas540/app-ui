@@ -31,6 +31,7 @@ export default function EditOrder() {
   const [qtyStr, setQtyStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
   const [delivered, setDelivered] = useState(false)
+  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
 
   // Partner splits
@@ -73,6 +74,7 @@ export default function EditOrder() {
         setQtyStr(String(order.qty))
         setPriceStr(String(order.unit_price))
         setDelivered(order.delivered)
+        setDeliveredAt(order.delivered_at || todayYMD())
         setNotes(order.notes || '')
         
         // Set cost overrides if they exist
@@ -311,6 +313,7 @@ export default function EditOrder() {
           unit_price: unitPrice,
           date: orderDate,
           delivered,
+          delivered_at: delivered ? deliveredAt : null,
           notes: notes.trim() || undefined,
           product_cost: productCostToSend,
           shipping_cost: shippingCostToSend,
@@ -481,6 +484,12 @@ export default function EditOrder() {
             </div>
           </label>
         </div>
+        {delivered && (
+          <div>
+            <label>{t('customerDetail.deliveryDate')}</label>
+            <DateInput value={deliveredAt} onChange={setDeliveredAt} style={{ height: CONTROL_H }} />
+          </div>
+        )}
       </div>
 
       {/* Partner splits */}

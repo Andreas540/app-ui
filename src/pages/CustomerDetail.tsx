@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
-import { formatDate } from '../lib/time'
+import { formatDate, todayYMD } from '../lib/time'
+import { DateInput } from '../components/DateInput'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -156,16 +157,17 @@ export default function CustomerDetailPage() {
     setDeliveryOrder(order)
   }
 
-  const handleDeliverySave = async (orderId: string, newDeliveredQuantity: number) => {
+  const handleDeliverySave = async (orderId: string, newDeliveredQuantity: number, deliveredAt?: string) => {
   try {
     setSavingDelivery(true)
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     const res = await fetch(`${base}/api/orders-delivery`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ 
-        order_id: orderId, 
-        delivered_quantity: newDeliveredQuantity
+      body: JSON.stringify({
+        order_id: orderId,
+        delivered_quantity: newDeliveredQuantity,
+        delivered_at: deliveredAt || null,
       }),
     })
       if (!res.ok) {
@@ -768,7 +770,7 @@ function DeliveryModal({
   order: any
   saving: boolean
   onClose: () => void
-  onSave: (orderId: string, newDeliveredQuantity: number) => void
+  onSave: (orderId: string, newDeliveredQuantity: number, deliveredAt?: string) => void
 }) {
   const { t } = useTranslation()
 
@@ -780,6 +782,9 @@ function DeliveryModal({
   // Keep the raw input as a string so the user can clear it
   const [inputValue, setInputValue] = useState<string>(
     String(initialDelivered)
+  )
+  const [deliveredAt, setDeliveredAt] = useState<string>(
+    (order as any).delivered_at ?? todayYMD()
   )
 
   // Parse and clamp for display / status / save
@@ -866,6 +871,19 @@ function DeliveryModal({
           {statusLabel}{totalQty > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
         </div>
 
+        {clampedValue > 0 && (
+          <>
+            <div className="helper" style={{ marginBottom: 4 }}>
+              {t('customerDetail.deliveryDate')}
+            </div>
+            <DateInput
+              value={deliveredAt}
+              onChange={setDeliveredAt}
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+          </>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button
             type="button"
@@ -878,7 +896,7 @@ function DeliveryModal({
           <button
             type="button"
             className="primary"
-            onClick={() => onSave(order.id, clampedValue)}
+            onClick={() => onSave(order.id, clampedValue, clampedValue > 0 ? deliveredAt : undefined)}
             disabled={saving}
           >
             {saving ? t('saving') : t('save')}
