@@ -276,13 +276,15 @@ export default function BookingPage() {
   useEffect(() => {
     if (!slug) { setStep('error'); setErrorMsg(t('bookingPage.invalidLink')); return }
 
+    const customerToken   = searchParams.get('customer_token')
+    const tokenParam      = customerToken ? `&customer_token=${encodeURIComponent(customerToken)}` : ''
+
     // ── Returning from Stripe Checkout ──────────────────────────────────────
     const bookingSuccess  = searchParams.get('booking_success')
     const bookingCanceled = searchParams.get('booking_canceled')
 
     if (bookingCanceled) {
-      // Fetch page data then show a cancellation message
-      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}`)
+      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}${tokenParam}`)
         .then(r => r.json())
         .then(d => {
           setTenantName(d.tenant?.name || '')
@@ -295,7 +297,6 @@ export default function BookingPage() {
     }
 
     if (bookingSuccess) {
-      // Fetch booking details to display confirmation
       fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}&booking_id=${encodeURIComponent(bookingSuccess)}`)
         .then(r => r.json().then(d => ({ ok: r.ok, d })))
         .then(({ ok, d }) => {
@@ -309,7 +310,7 @@ export default function BookingPage() {
     }
 
     // ── Normal page load ────────────────────────────────────────────────────
-    fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}`)
+    fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}${tokenParam}`)
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         if (!ok) { setStep('error'); setErrorMsg(d.error || t('bookingPage.notFound')); return }
@@ -337,8 +338,10 @@ export default function BookingPage() {
     if (!selectedService || !selectedDate) return
     setLoadingSlots(true)
     setSlots([])
+    const customerToken = searchParams.get('customer_token')
+    const tokenParam    = customerToken ? `&customer_token=${encodeURIComponent(customerToken)}` : ''
     fetch(
-      `${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug || '')}&service_id=${selectedService.id}&date=${selectedDate}`
+      `${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug || '')}&service_id=${selectedService.id}&date=${selectedDate}${tokenParam}`
     )
       .then(r => r.json())
       .then(d => { setSlots(d.slots || []) })
