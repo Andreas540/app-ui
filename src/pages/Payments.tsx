@@ -69,6 +69,8 @@ export default function Payments() {
   const [entityId, setEntityId] = useState('')
   const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState('')
+  const [preselectedOrderId, setPreselectedOrderId] = useState('')
+  const [preselectedAmount, setPreselectedAmount] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
@@ -116,7 +118,11 @@ useEffect(() => {
       const params = new URLSearchParams(location.search)
       const preselectedCustomerId = params.get('customer_id')
       const preselectedSupplierId = params.get('supplier_id')
-      
+      const paramOrderId = params.get('order_id')
+      const paramAmount = params.get('amount')
+      if (paramOrderId) setPreselectedOrderId(paramOrderId)
+      if (paramAmount) setPreselectedAmount(paramAmount)
+
       if (preselectedCustomerId) {
         setEntityId(preselectedCustomerId)
         setPaymentDirection('customer')
@@ -157,12 +163,20 @@ useEffect(() => {
         const res = await fetch(`${base}/api/orders?customer_id=${entityId}`, { headers: getAuthHeaders() })
         if (!res.ok) return
         const data = await res.json()
-        setOrders(data.orders || [])
-        setSelectedOrderId('')
-        setAmountStr('')
+        const loadedOrders = data.orders || []
+        setOrders(loadedOrders)
+        if (preselectedOrderId && loadedOrders.some((o: any) => o.id === preselectedOrderId)) {
+          setSelectedOrderId(preselectedOrderId)
+          setAmountStr(preselectedAmount || '')
+          setPreselectedOrderId('')
+          setPreselectedAmount('')
+        } else {
+          setSelectedOrderId('')
+          setAmountStr('')
+        }
       } catch { /* silent */ }
     })()
-  }, [entityId, config.payments.showOrderSelection])
+  }, [entityId, config.payments.showOrderSelection, preselectedOrderId, preselectedAmount])
 
   useEffect(() => {
     if (!partnerId || !config.payments.showOrderSelection) {

@@ -579,7 +579,15 @@ export default function CustomerDetailPage() {
                       style={{ cursor: 'pointer', lineHeight: '1.4' }}>
                       {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
                     </div>
-                    <div className="helper" onClick={() => handleOrderClick(o)}
+                    <div className="helper"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const balance = Math.max(0, orderTotal - paid)
+                        const amount = balance > 0 ? balance : orderTotal
+                        navigate(
+                          `/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`
+                        )
+                      }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}>
