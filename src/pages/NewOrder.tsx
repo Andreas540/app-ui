@@ -481,13 +481,13 @@ const hasProducts = filteredProducts.length > 0
             />
             {delivered && <span className="helper">{t('yes')}</span>}
           </div>
-          {delivered && (
-            <div style={{ marginTop: 8 }}>
-              <label>{t('customerDetail.deliveryDate')}</label>
-              <DateInput value={deliveredAt} onChange={setDeliveredAt} style={{ height: CONTROL_H }} />
-            </div>
-          )}
         </div>
+        {delivered && (
+          <div>
+            <label>{t('customerDetail.deliveryDate')}</label>
+            <DateInput value={deliveredAt} onChange={setDeliveredAt} style={{ height: CONTROL_H }} />
+          </div>
+        )}
       </div>
 
       {/* Partner splits (only when selected customer's customer_type === 'Partner') */}
