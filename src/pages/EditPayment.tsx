@@ -4,6 +4,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrency } from '../lib/useCurrency'
 import { useLocale } from '../contexts/LocaleContext'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 import { DateInput } from '../components/DateInput'
 import {
   fetchBootstrap,
@@ -30,6 +32,8 @@ export default function EditPayment() {
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
 
   const paymentTypeParam = searchParams.get('type')
   const isPartnerPayment = paymentTypeParam === 'partner'
@@ -47,6 +51,8 @@ export default function EditPayment() {
   const [amountStr, setAmountStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
   const [notes, setNotes] = useState('')
+  const [orderId, setOrderId] = useState('')
+  const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])
 
   // Load payment data
   useEffect(() => {
@@ -87,6 +93,7 @@ export default function EditPayment() {
         setAmountStr(String(payment.amount))
         setDate(payment.payment_date)
         setNotes(payment.notes || '')
+        setOrderId(payment.order_id || '')
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -94,6 +101,19 @@ export default function EditPayment() {
       }
     })()
   }, [paymentId, isPartnerPayment, isSupplierPayment])
+
+  // Load orders for the selected customer
+  useEffect(() => {
+    if (!entityId || isPartnerPayment || isSupplierPayment || !config.payments.showOrderSelection) {
+      setOrders([])
+      return
+    }
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/api/orders?customer_id=${entityId}`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(d => setOrders(d.orders || []))
+      .catch(() => {})
+  }, [entityId, isPartnerPayment, isSupplierPayment, config.payments.showOrderSelection])
 
   // ---------- Minus handling (Loan/Deposit & Add to debt, all locales) ----------
   const requiresMinus = useMemo(() => {
@@ -181,7 +201,8 @@ export default function EditPayment() {
         payment_type: paymentType,
         amount: amountNum,
         payment_date: date,
-        notes: notes.trim() || null
+        notes: notes.trim() || null,
+        order_id: orderId || null,
       }
 
       if (isPartnerPayment) {
@@ -308,6 +329,22 @@ export default function EditPayment() {
           <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} style={{ height: CONTROL_H }} />
         </div>
       </div>
+
+      {!isPartnerPayment && !isSupplierPayment && config.payments.showOrderSelection && orders.length > 0 && (
+        <div className="row" style={{marginTop:12}}>
+          <div style={{gridColumn:'1 / -1'}}>
+            <label>{t('payments.orderOptional')}</label>
+            <select value={orderId} onChange={e => setOrderId(e.target.value)} style={{ height: CONTROL_H }}>
+              <option value="">{t('payments.chooseOrder')}</option>
+              {orders.map(o => (
+                <option key={o.id} value={o.id}>
+                  #{o.order_no} · {o.product_name} · {Number(o.amount).toFixed(2)}{Number(o.balance) > 0 ? ` · due: ${Number(o.balance).toFixed(2)}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <div style={{marginTop:16, display:'flex', gap:8}}>
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>

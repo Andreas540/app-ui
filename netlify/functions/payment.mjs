@@ -28,9 +28,11 @@ async function getPayment(event) {
 
     const payments = await sql`
       SELECT p.id, p.customer_id, p.payment_type, p.amount, p.payment_date, p.notes,
+             p.order_id, o.order_no,
              c.name AS customer_name
       FROM payments p
       JOIN customers c ON c.id = p.customer_id
+      LEFT JOIN orders o ON o.id = p.order_id AND o.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID} AND p.id = ${id}
       LIMIT 1
     `;
@@ -45,7 +47,7 @@ async function updatePayment(event) {
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
 
     const body = JSON.parse(event.body || '{}');
-    const { id, customer_id, payment_type, amount, payment_date, notes } = body;
+    const { id, customer_id, payment_type, amount, payment_date, notes, order_id } = body;
 
     if (!id) return cors(400, { error: 'id is required' });
     if (!customer_id) return cors(400, { error: 'customer_id is required' });
@@ -71,7 +73,8 @@ async function updatePayment(event) {
           payment_type = ${payment_type},
           amount = ${amountNum},
           payment_date = ${payment_date},
-          notes = ${notes || null}
+          notes = ${notes || null},
+          order_id = ${order_id || null}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `;
 
