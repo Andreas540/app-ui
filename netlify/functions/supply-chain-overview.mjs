@@ -16,6 +16,9 @@ async function getSupplyChainOverview(event) {
 
     const sql = neon(DATABASE_URL)
 
+    // Ensure delivered_at column exists (safe to run repeatedly)
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at DATE`
+
     // Resolve tenant from JWT
     const authz = await resolveAuthz({ sql, event })
     if (authz.error) return cors(403, { error: authz.error })
