@@ -12,7 +12,7 @@ import { defaultConfig } from '../lib/tenantConfig'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40 // control height
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'new-order' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -315,6 +315,7 @@ export default function TenantCustomization() {
               </optgroup>
               <optgroup label={t('tenantCustom.groupPages')}>
                 <option value="orders">{t('tenantCustom.sectionOrders')}</option>
+                <option value="new-order">{t('tenantCustom.sectionNewOrder')}</option>
                 <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
                 <option value="customer-detail">{t('tenantCustom.sectionCustomerDetail')}</option>
               </optgroup>
@@ -443,6 +444,14 @@ export default function TenantCustomization() {
             <Row label={t('tenantCustom.showOwedToSuppliers')} help={t('tenantCustom.showOwedToSuppliersHelp')}
               customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
               <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
+            </Row>
+          )}
+
+          {/* Pages > New Order */}
+          {section === 'new-order' && (
+            <Row label={t('tenantCustom.multipleOrderRows')} help={t('tenantCustom.multipleOrderRowsHelp')}
+              customized={cu.multipleOrderRows !== undefined && cu.multipleOrderRows !== du.multipleOrderRows}>
+              <Toggle value={cu.multipleOrderRows ?? du.multipleOrderRows} onChange={v => setUi('multipleOrderRows', v)} />
             </Row>
           )}
 

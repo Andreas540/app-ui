@@ -29,6 +29,7 @@ export interface TenantConfig {
     showNavArrowsDesktop: boolean
     showOwedToSuppliers: boolean
     compactCustomerOrderRows: boolean
+    multipleOrderRows: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -90,6 +91,7 @@ export const defaultConfig: TenantConfig = {
     showNavArrowsDesktop: false,
     showOwedToSuppliers: false,
     compactCustomerOrderRows: true,
+    multipleOrderRows: true,
   },
   booking: {
     serviceTypeLabel: 'Session',

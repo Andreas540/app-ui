@@ -142,99 +142,85 @@ const TENANT_ID = authz.tenantId;
 
     const body = JSON.parse(event.body || '{}');
     const {
-      customer_id, product_id, qty, unit_price, date, delivered, delivered_at, discount,
-      notes,
-      product_cost, shipping_cost,
-      partner_splits
+      customer_id, date, delivered, delivered_at, discount,
+      notes, product_cost, shipping_cost, partner_splits
     } = body || {};
 
-    const qtyInt = parseInt(qty, 10);
-    const unitPriceNum = Number(unit_price);
+    // Normalise to items array (supports both multi-item and legacy single-item)
+    const rawItems = Array.isArray(body.items) && body.items.length > 0
+      ? body.items
+      : [{ product_id: body.product_id, qty: body.qty, unit_price: body.unit_price }];
 
-    // Required fields (0 not allowed for qty or unit price)
-    if (!customer_id || !product_id || !qtyInt || !unitPriceNum || !date) {
-      return cors(400, { error: 'Missing fields: customer_id, product_id, qty, unit_price, date' });
+    if (!customer_id || !date) {
+      return cors(400, { error: 'Missing fields: customer_id, date' });
     }
-    if (!(qtyInt > 0)) return cors(400, { error: 'qty must be > 0' });
 
-    // NEW: enforce unit_price sign based on product name (Refund/Discount => price must be negative)
-    const prodRows = await sql`
-      SELECT name
-      FROM products
-      WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
-      LIMIT 1
-    `;
-    if (prodRows.length === 0) return cors(400, { error: 'Invalid product_id' });
-
-    const productName = (prodRows[0].name || '').trim().toLowerCase();
-    const isRefundProduct = productName === 'refund/discount';
-
-    if (!Number.isFinite(unitPriceNum)) {
-      return cors(400, { error: 'unit_price must be a number' });
+    // Validate each item
+    const validatedItems = [];
+    for (const item of rawItems) {
+      const qtyInt = parseInt(item.qty, 10);
+      const unitPriceNum = Number(item.unit_price);
+      if (!item.product_id || !(qtyInt > 0) || !Number.isFinite(unitPriceNum)) {
+        return cors(400, { error: 'Each item needs product_id, qty > 0, and a numeric unit_price' });
+      }
+      const prodRows = await sql`
+        SELECT name FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID} LIMIT 1
+      `;
+      if (prodRows.length === 0) return cors(400, { error: `Invalid product_id: ${item.product_id}` });
+      const isRefund = (prodRows[0].name || '').trim().toLowerCase() === 'refund/discount';
+      if (isRefund && !(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
+      if (!isRefund && !(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
+      validatedItems.push({ product_id: item.product_id, qtyInt, unitPriceNum });
     }
-    if (isRefundProduct) {
-      if (!(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
-    } else {
-      if (!(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
-    }
+
+    const totalQty = validatedItems.reduce((s, i) => s + i.qtyInt, 0);
 
     // Next order number per-tenant
     const nextNo = await sql`
-      SELECT COALESCE(MAX(order_no),0) + 1 AS n
-      FROM orders
-      WHERE tenant_id = ${TENANT_ID}
+      SELECT COALESCE(MAX(order_no),0) + 1 AS n FROM orders WHERE tenant_id = ${TENANT_ID}
     `;
     const orderNo = Number(nextNo[0].n) || 1;
 
     // Convert cost fields to numbers or null
     let productCostNum = null;
     let shippingCostNum = null;
-    
     if (product_cost !== undefined && product_cost !== null) {
       const parsed = Number(product_cost);
-      if (Number.isFinite(parsed)) {
-        productCostNum = parsed;
-      }
+      if (Number.isFinite(parsed)) productCostNum = parsed;
     }
-    
     if (shipping_cost !== undefined && shipping_cost !== null) {
       const parsed = Number(shipping_cost);
-      if (Number.isFinite(parsed)) {
-        shippingCostNum = parsed;
-      }
+      if (Number.isFinite(parsed)) shippingCostNum = parsed;
     }
 
-    // Determine delivered_quantity
-const deliveredQty = delivered ? qtyInt : 0;
+    const deliveredQty = delivered ? totalQty : 0;
 
-// Header (now includes delivered_quantity)
-const hdr = await sql`
-  INSERT INTO orders (
-    tenant_id, customer_id, order_no, order_date,
-    delivered, delivered_quantity, delivered_at,
-    discount, notes, product_cost, shipping_cost
-  )
-  VALUES (
-    ${TENANT_ID}, ${customer_id}, ${orderNo}, ${date},
-    ${!!delivered}, ${deliveredQty}, ${delivered ? (delivered_at || null) : null},
-    ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum}
-  )
-  RETURNING id
-`;
-const orderId = hdr[0].id;
-
-
-    // Line (snapshot product cost)
-    await sql`
-      INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
-      VALUES (
-        ${orderId},
-        ${product_id},
-        ${qtyInt},
-        ${unitPriceNum},
-        (SELECT cost FROM products WHERE id = ${product_id} AND tenant_id = ${TENANT_ID})
+    const hdr = await sql`
+      INSERT INTO orders (
+        tenant_id, customer_id, order_no, order_date,
+        delivered, delivered_quantity, delivered_at,
+        discount, notes, product_cost, shipping_cost
       )
+      VALUES (
+        ${TENANT_ID}, ${customer_id}, ${orderNo}, ${date},
+        ${!!delivered}, ${deliveredQty}, ${delivered ? (delivered_at || null) : null},
+        ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum}
+      )
+      RETURNING id
     `;
+    const orderId = hdr[0].id;
+
+    // Insert all line items
+    for (const item of validatedItems) {
+      await sql`
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
+        VALUES (
+          ${orderId}, ${item.product_id}, ${item.qtyInt}, ${item.unitPriceNum},
+          (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID})
+        )
+      `;
+    }
+
 
     // Partner splits (insert only finite, non-zero)
     if (Array.isArray(partner_splits) && partner_splits.length) {
@@ -266,7 +252,7 @@ const BLANCO_CUSTOMER_IDS = [
 const TONY_PARTNER_ID = '1e77e4ee-5745-4de6-be8f-b7a75b86df95';
 
 if (BLANCO_CUSTOMER_IDS.includes(customer_id)) {
-  const blancoDebtToTony = qtyInt * 0.50;
+  const blancoDebtToTony = totalQty * 0.50;
   
   // Check if Tony partner record already exists for this order
   const existingTony = await sql`
@@ -291,30 +277,30 @@ if (BLANCO_CUSTOMER_IDS.includes(customer_id)) {
   }
 }
 
-    // NEW: If order is created with delivered = true, manually add to warehouse_deliveries
-// (The INSERT trigger won't work because order_items didn't exist when order was inserted)
-if (delivered) {
-  const negativeQty = -qtyInt;  // Calculate negative value here
-  
-  await sql`
-    INSERT INTO warehouse_deliveries (
-      tenant_id, date, supplier_manual_delivered, product, customer,
-      qty, order_id, product_id
-    )
-    SELECT 
-      ${TENANT_ID},
-      (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date,
-      'D',
-      p.name,
-      c.name,
-      ${negativeQty},
-      ${orderId},
-      ${product_id}
-    FROM products p
-    JOIN customers c ON c.id = ${customer_id}
-    WHERE p.id = ${product_id}
-  `;
-}
+    // If delivered=true, insert warehouse_deliveries per item
+    // (trigger won't fire because order_items didn't exist when order was inserted)
+    if (delivered) {
+      for (const item of validatedItems) {
+        await sql`
+          INSERT INTO warehouse_deliveries (
+            tenant_id, date, supplier_manual_delivered, product, customer,
+            qty, order_id, product_id
+          )
+          SELECT
+            ${TENANT_ID},
+            (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date,
+            'D',
+            p.name,
+            c.name,
+            ${-item.qtyInt},
+            ${orderId},
+            ${item.product_id}
+          FROM products p
+          JOIN customers c ON c.id = ${customer_id}
+          WHERE p.id = ${item.product_id}
+        `;
+      }
+    }
 
     return cors(201, { ok: true, order_no: orderNo, order_id: orderId });
   } catch (e) {

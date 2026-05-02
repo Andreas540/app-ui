@@ -2,21 +2,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchBootstrap, createOrder, type Person, type Product, getAuthHeaders } from '../lib/api'
+import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type PartnerRef = { id: string; name: string }
+
+type Line = {
+  product_id: string
+  qtyStr: string
+  priceStr: string
+  historicalPrice: number | null
+  historicalProductCost: number | null
+}
+
+function emptyLine(product_id = ''): Line {
+  return { product_id, qtyStr: '', priceStr: '', historicalPrice: null, historicalProductCost: null }
+}
 
 export default function NewOrder() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { parseAmount } = useCurrency()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
+  const allowMultipleRows = config.ui.multipleOrderRows
 
   const [people, setPeople] = useState<Person[]>([])
-  const [partners, setPartners] = useState<PartnerRef[]>([]) // from partners table
+  const [partners, setPartners] = useState<PartnerRef[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -27,29 +44,27 @@ export default function NewOrder() {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [entityId, setEntityId] = useState('')
 
-  // Form fields
-  const [productId, setProductId] = useState('')
+  // Order-level fields
   const [orderDate, setOrderDate] = useState<string>(todayYMD())
-  const [qtyStr, setQtyStr] = useState('') // integer string (digits only)
-  const [priceStr, setPriceStr] = useState('') // decimal string (can be negative for Refund/Discount)
-  const [delivered, setDelivered] = useState(false) // default unchecked
+  const [delivered, setDelivered] = useState(false)
   const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
-  const [notes, setNotes] = useState('') // optional notes
+  const [notes, setNotes] = useState('')
 
-  // Partner splits - per-item amounts
+  // Line items
+  const [lines, setLines] = useState<Line[]>([emptyLine()])
+
+  // Partner splits
   const [partner1Id, setPartner1Id] = useState('')
   const [partner2Id, setPartner2Id] = useState('')
   const [partner1PerItemStr, setPartner1PerItemStr] = useState('')
   const [partner2PerItemStr, setPartner2PerItemStr] = useState('')
 
+  // Cost overrides (order-level)
   const [showMoreFields, setShowMoreFields] = useState(false)
   const [productCostStr, setProductCostStr] = useState('')
   const [shippingCostStr, setShippingCostStr] = useState('')
-  const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
-  const [historicalPrice, setHistoricalPrice] = useState<number | null>(null)
 
-  // Formatters
   const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
   const usdFmt = useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }), [])
 
@@ -68,14 +83,14 @@ export default function NewOrder() {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers, products, partners: bootPartners } = await fetchBootstrap()
+        const { customers, products: prods, partners: bootPartners } = await fetchBootstrap()
         setPeople(customers)
-        setProducts(products)
+        setProducts(prods)
         setPartners(bootPartners ?? [])
-        const firstProduct = products
+        const firstProduct = prods
           .filter(p => (p.category ?? 'product') === 'product')
           .sort((a, b) => a.name.localeCompare(b.name))[0]
-        if (firstProduct) setProductId(firstProduct.id)
+        if (firstProduct) setLines([emptyLine(firstProduct.id)])
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -84,49 +99,92 @@ export default function NewOrder() {
     })()
   }, [])
 
-  // Fetch historical costs when product or customer changes
+  // Historical costs (order-level, based on first line's product)
   useEffect(() => {
-    if (!productId || !entityId || !orderDate) return
-    (async () => {
+    const firstProductId = lines[0]?.product_id
+    if (!firstProductId || !entityId || !orderDate) return
+    ;(async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/historical-costs?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
-  headers: getAuthHeaders(),
-})
+        const res = await fetch(
+          `${base}/api/historical-costs?product_id=${firstProductId}&customer_id=${entityId}&order_date=${orderDate}`,
+          { headers: getAuthHeaders() }
+        )
         if (res.ok) {
           const data = await res.json()
-          setHistoricalProductCost(data.product_cost)
           setHistoricalShippingCost(data.shipping_cost)
         }
-      } catch (e) {
-        console.error('Failed to fetch historical costs:', e)
-      }
+      } catch { /* silent */ }
     })()
-  }, [productId, entityId, orderDate])
+  }, [lines[0]?.product_id, entityId, orderDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch last price when product or customer changes
-  useEffect(() => {
-    if (!productId || !entityId || !orderDate) return
-    (async () => {
+  // Fetch last price + historical product cost per line
+  function fetchLastPrice(lineIdx: number, product_id: string) {
+    if (!product_id || !entityId || !orderDate) return
+    ;(async () => {
       try {
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer_id=${entityId}&order_date=${orderDate}`, {
-  headers: getAuthHeaders(),
-})
-        if (res.ok) {
-          const data = await res.json()
-          setHistoricalPrice(data.unit_price)
+        const [priceRes, costRes] = await Promise.allSettled([
+          fetch(`${base}/api/last-price?product_id=${product_id}&customer_id=${entityId}&order_date=${orderDate}`, { headers: getAuthHeaders() }),
+          fetch(`${base}/api/historical-costs?product_id=${product_id}&customer_id=${entityId}&order_date=${orderDate}`, { headers: getAuthHeaders() }),
+        ])
+        const patch: Partial<Line> = {}
+        if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
+          const d = await priceRes.value.json()
+          patch.historicalPrice = d.unit_price
         }
-      } catch (e) {
-        console.error('Failed to fetch last price:', e)
-      }
+        if (costRes.status === 'fulfilled' && costRes.value.ok) {
+          const d = await costRes.value.json()
+          patch.historicalProductCost = d.product_cost
+        }
+        setLines(prev => prev.map((l, i) => i === lineIdx ? { ...l, ...patch } : l))
+      } catch { /* silent */ }
     })()
-  }, [productId, entityId, orderDate])
+  }
 
-  const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
-  const product = useMemo(() => products.find(p => p.id === productId), [products, productId])
+  // Re-fetch last prices for all lines when customer or date changes
+  useEffect(() => {
+    lines.forEach((l, i) => { if (l.product_id) fetchLastPrice(i, l.product_id) })
+  }, [entityId, orderDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter out specific products and split into sorted groups
+  // Pre-fill price from product's price_amount when product on a line changes
+  function onLineProductChange(idx: number, product_id: string) {
+    const prod = products.find(p => p.id === product_id)
+    const pa = prod?.price_amount
+    const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
+    let priceStr = ''
+    if (pa != null && pa > 0) priceStr = isRefund ? String(-Math.abs(pa)) : String(pa)
+    setLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr, historicalPrice: null } : l))
+    fetchLastPrice(idx, product_id)
+  }
+
+  function updateLine(idx: number, patch: Partial<Line>) {
+    setLines(prev => prev.map((l, i) => i === idx ? { ...l, ...patch } : l))
+  }
+
+  function addLine() {
+    setLines(prev => [...prev, emptyLine()])
+  }
+
+  function removeLine(idx: number) {
+    setLines(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev)
+  }
+
+  // Per-line computed helpers
+  function lineProduct(l: Line) {
+    return products.find(p => p.id === l.product_id)
+  }
+  function lineIsRefund(l: Line) {
+    return (lineProduct(l)?.name || '').trim().toLowerCase() === 'refund/discount'
+  }
+  function lineQty(l: Line) { return parseInt(l.qtyStr || '0', 10) }
+  function linePrice(l: Line) { return parseAmount(l.priceStr) }
+  function lineValue(l: Line) {
+    const q = lineQty(l); const p = linePrice(l)
+    return Number.isInteger(q) && q > 0 && Number.isFinite(p) ? q * p : NaN
+  }
+
+  // Filter and group products
   const { filteredProducts, productGroup, serviceGroup } = useMemo(() => {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     const filtered = products
@@ -137,13 +195,6 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
     return { filteredProducts: filtered, productGroup, serviceGroup }
   }, [products])
 
-  // Is this the Refund/Discount product? (name match, case-insensitive)
-  const isRefundProduct = useMemo(
-    () => (product?.name || '').trim().toLowerCase() === 'refund/discount',
-    [product]
-  )
-
-  // Suggestions (like Customers.tsx)
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
@@ -161,144 +212,70 @@ const res = await fetch(`${base}/api/last-price?product_id=${productId}&customer
     inputRef.current?.blur()
   }
 
-  // Helpers
-  function parseQty(s: string) {
-    const digits = s.replace(/\D/g, '')
-    return digits.replace(/^0+(?=\d)/, '')
-  }
-  const qtyInt = useMemo(() => parseInt(qtyStr || '0', 10), [qtyStr])
-  const priceNum = useMemo(() => parseAmount(priceStr), [priceStr])
+  const person = useMemo(() => people.find(p => p.id === entityId), [people, entityId])
 
-  const orderValue = useMemo(() => {
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return NaN
-    if (!Number.isFinite(priceNum)) return NaN
-    return qtyInt * priceNum
-  }, [qtyInt, priceNum])
+  // Order totals
+  const totalOrderValue = useMemo(() => {
+    const sum = lines.reduce((s, l) => { const v = lineValue(l); return s + (Number.isFinite(v) ? v : 0) }, 0)
+    return sum !== 0 ? sum : NaN
+  }, [lines]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Partner totals
+  const totalQty = useMemo(() => lines.reduce((s, l) => s + (lineQty(l) > 0 ? lineQty(l) : 0), 0), [lines]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Partner totals (per-item × total qty)
   const partner1PerItem = useMemo(() => parseAmount(partner1PerItemStr), [partner1PerItemStr])
   const partner2PerItem = useMemo(() => parseAmount(partner2PerItemStr), [partner2PerItemStr])
+  const partner1Total = useMemo(() => Number.isFinite(partner1PerItem) && partner1PerItem > 0 && totalQty > 0 ? partner1PerItem * totalQty : 0, [partner1PerItem, totalQty])
+  const partner2Total = useMemo(() => Number.isFinite(partner2PerItem) && partner2PerItem > 0 && totalQty > 0 ? partner2PerItem * totalQty : 0, [partner2PerItem, totalQty])
 
-  const partner1Total = useMemo(() => {
-    if (!Number.isFinite(partner1PerItem) || partner1PerItem <= 0) return 0
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
-    return partner1PerItem * qtyInt
-  }, [partner1PerItem, qtyInt])
-  const partner2Total = useMemo(() => {
-    if (!Number.isFinite(partner2PerItem) || partner2PerItem <= 0) return 0
-    if (!Number.isInteger(qtyInt) || qtyInt <= 0) return 0
-    return partner2PerItem * qtyInt
-  }, [partner2PerItem, qtyInt])
-
-  // Effective costs (override or historical)
-  const effectiveProductCost = useMemo(() => {
-    const override = productCostStr.trim() ? parseAmount(productCostStr) : null
-    if (override !== null && Number.isFinite(override)) return override
-    return historicalProductCost ?? 0
-  }, [productCostStr, historicalProductCost])
-
+  // Effective shipping cost (order-level, per customer)
   const effectiveShippingCost = useMemo(() => {
     const override = shippingCostStr.trim() ? parseAmount(shippingCostStr) : null
     if (override !== null && Number.isFinite(override)) return override
     return historicalShippingCost ?? 0
   }, [shippingCostStr, historicalShippingCost])
 
-  // Profit (only for positive order values)
+  // Profit — product cost summed per line for accuracy with multiple products
   const profit = useMemo(() => {
-    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
-    const totalPartners = partner1Total + partner2Total
-    const totalProductCost = effectiveProductCost * qtyInt
-    const totalShippingCost = effectiveShippingCost * qtyInt
-    return orderValue - totalPartners - totalProductCost - totalShippingCost
-  }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, qtyInt])
+    if (!Number.isFinite(totalOrderValue) || totalOrderValue <= 0) return 0
+    const productCostOverride = productCostStr.trim() ? parseAmount(productCostStr) : null
+    const totalProductCost = productCostOverride !== null && Number.isFinite(productCostOverride)
+      ? productCostOverride * totalQty
+      : lines.reduce((s, l) => s + lineQty(l) * (l.historicalProductCost ?? 0), 0)
+    const totalShippingCost = effectiveShippingCost * totalQty
+    return totalOrderValue - partner1Total - partner2Total - totalProductCost - totalShippingCost
+  }, [totalOrderValue, partner1Total, partner2Total, productCostStr, lines, effectiveShippingCost, totalQty]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const profitPercent = useMemo(() => {
-    if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
-    return (profit / orderValue) * 100
-  }, [profit, orderValue])
+    if (!Number.isFinite(totalOrderValue) || totalOrderValue <= 0) return 0
+    return (profit / totalOrderValue) * 100
+  }, [profit, totalOrderValue])
 
-  // Customer type
   const personCustomerType = (person as any)?.customer_type
   const isPartnerCustomer = personCustomerType === 'Partner'
 
-  const partner2Options = useMemo(
-    () => partners.filter(p => p.id !== partner1Id),
-    [partners, partner1Id]
-  )
+  const partner2Options = useMemo(() => partners.filter(p => p.id !== partner1Id), [partners, partner1Id])
 
-  // Pre-fill price from product's price_amount when product changes
-  useEffect(() => {
-    if (!product) return
-    const pa = product.price_amount
-    if (pa != null && pa > 0) {
-      setPriceStr(String(pa))
-    } else {
-      setPriceStr('')
-    }
-  }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+  const BLANCO_IDS = ['f4bfabe7-62cb-4e08-b98a-b3faed93278f', '9f5b9939-e35f-435f-93aa-0ed5be64b2a1']
 
-  // ---- Refund/Discount behaviors ----
-  useEffect(() => {
-    if (isRefundProduct) {
-      setPriceStr(prev => {
-        const cleaned = (prev ?? '').replace(/^-+/, '')
-        const next = '-' + cleaned
-        return next === '-' ? '-' : next
-      })
-    } else {
-      setPriceStr(prev => (prev ?? '').replace(/^-+/, ''))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRefundProduct])
+  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
+  if (err) return <div className="card page-normal"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
 
-  const onPriceKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    if (!isRefundProduct) return
-    const target = e.target as HTMLInputElement
-    const { selectionStart, selectionEnd, value } = target
-    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) {
-      e.preventDefault(); return
-    }
-    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) {
-      e.preventDefault(); return
-    }
-  }
+  const hasCustomers = people.length > 0
+  const hasProducts = filteredProducts.length > 0
+  const CONTROL_H = 44
 
-  const onPriceChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const raw = e.target.value
-    if (isRefundProduct) {
-      const withoutSigns = raw.replace(/^[+-]+/, '')
-      const v = '-' + withoutSigns
-      setPriceStr(v === '-' ? '-' : v)
-    } else {
-      setPriceStr(raw.replace(/^[+-]+/, ''))
-    }
-  }
-
-  const isMinusOnly = isRefundProduct && priceStr.trim() === '-'
-
-  // --- Presentation helpers ---
-  const formattedQty = qtyStr ? intFmt.format(Number(qtyStr)) : ''
-  const orderValueStr = Number.isFinite(orderValue) ? usdFmt.format(orderValue as number) : ''
+  const orderValueStr = Number.isFinite(totalOrderValue) ? usdFmt.format(totalOrderValue) : ''
   const partner1TotalStr = partner1Total > 0 ? usdFmt.format(partner1Total) : ''
   const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
 
-  if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
-  if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
-
-const hasCustomers = people.length > 0
-const hasProducts = filteredProducts.length > 0
-
-
-  const CONTROL_H = 44
-
   return (
     <div className="card page-normal">
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16 }}>
-        <h3 style={{ margin:0 }}>{t('orders.newOrderTitle')}</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+        <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
 
-        {/* Profit display - top right (only for positive orders) */}
-        {Number.isFinite(orderValue) && orderValue > 0 && (
-          <div style={{ textAlign:'right', fontSize: 14 }}>
+        {Number.isFinite(totalOrderValue) && totalOrderValue > 0 && (
+          <div style={{ textAlign: 'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
               ${profit.toFixed(2)}
@@ -310,153 +287,151 @@ const hasProducts = filteredProducts.length > 0
         )}
       </div>
 
-      {/* Search customer (full width) */}
-      <div style={{ marginTop: 12, position: 'relative' }}>
-        <label>{t('orders.searchCustomer')}</label>
-{!hasCustomers && (
-  <div className="helper" style={{ marginTop: 4 }}>
-    {t('orders.noCustomersYet')}
-  </div>
-)}
-        <input
-          ref={inputRef}
-          placeholder={t('orders.startTyping')}
-          value={query}
-          onChange={(e) => {
-            const val = e.target.value
-            setQuery(val)
-            if (person && !person.name.toLowerCase().includes(val.trim().toLowerCase())) {
-              setEntityId('')
-            }
-          }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 120)}
-          style={{ height: CONTROL_H }}
-        />
-
-        {(focused && query && suggestions.length > 0) && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              marginTop: 4,
-              borderRadius: 10,
-              background: 'rgba(47,109,246,0.90)',
-              color: '#fff',
-              padding: 6,
-              zIndex: 50,
-              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
-            }}
-          >
-            {suggestions.map(s => (
-              <button
-                key={s.id}
-                className="primary"
-                onClick={() => pickSuggestion(s.id, s.name)}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  color: '#fff',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}
-              >
-                {s.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Product | Order date */}
+      {/* Search customer | Order date — 50/50 */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-        <div>
-          <label>{t('orders.productOrService')}</label>
-          <select
-            value={productId}
-            onChange={e => setProductId(e.target.value)}
+        <div style={{ position: 'relative' }}>
+          <label>{t('orders.searchCustomer')}</label>
+          {!hasCustomers && <div className="helper" style={{ marginTop: 4 }}>{t('orders.noCustomersYet')}</div>}
+          <input
+            ref={inputRef}
+            placeholder={t('orders.startTyping')}
+            value={query}
+            onChange={(e) => {
+              const val = e.target.value
+              setQuery(val)
+              if (person && !person.name.toLowerCase().includes(val.trim().toLowerCase())) setEntityId('')
+            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
             style={{ height: CONTROL_H }}
-            disabled={!hasProducts}
-          >
-            {!hasProducts ? (
-              <option value="">{t('orders.noProductsYet')}</option>
-            ) : (
-              <>
-                {productGroup.length > 0 && (
-                  <optgroup label={t('orders.groupProducts')}>
-                    {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </optgroup>
-                )}
-                {serviceGroup.length > 0 && (
-                  <optgroup label={t('orders.groupServices')}>
-                    {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </optgroup>
-                )}
-              </>
-            )}
-          </select>
+          />
+          {(focused && query && suggestions.length > 0) && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+              borderRadius: 10, background: 'rgba(47,109,246,0.90)', color: '#fff',
+              padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
+            }}>
+              {suggestions.map(s => (
+                <button key={s.id} className="primary" onClick={() => pickSuggestion(s.id, s.name)}
+                  style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <label>{t('orders.orderDate')}</label>
-          <DateInput
-            value={orderDate}
-            onChange={v => setOrderDate(v)}
-            style={{ height: CONTROL_H }}
-          />
+          <DateInput value={orderDate} onChange={v => setOrderDate(v)} style={{ height: CONTROL_H }} />
         </div>
       </div>
 
-      {/* Quantity | Price | Price last time - now equal thirds */}
-      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-        <div>
-          <label>{t('quantity')}</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={formattedQty}
-            onChange={e => setQtyStr(parseQty(e.target.value))}
-            style={{ height: CONTROL_H }}
-          />
-        </div>
-        <div>
-          <label>{t('price')}</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={priceStr}
-            onChange={onPriceChange}
-            onKeyDown={onPriceKeyDown}
-            style={{
-              height: CONTROL_H,
-              color: isMinusOnly ? 'var(--text-secondary)' : undefined,
-              opacity: isMinusOnly ? 0.6 : undefined,
-            }}
-          />
-        </div>
-        <div>
-          <label>{t('orders.priceLastTime')}</label>
-          <input
-            type="text"
-            value={
-              historicalPrice !== null
-                ? (isRefundProduct ? (-Math.abs(historicalPrice)).toFixed(2) : historicalPrice.toFixed(2))
-                : '—'
-            }
-            placeholder="—"
-            readOnly
-            style={{ height: CONTROL_H, opacity: 0.6 }}
-          />
-        </div>
-      </div>
+      {/* Line items */}
+      {lines.map((l, idx) => {
+        const isRefund = lineIsRefund(l)
+        const isMinusOnly = isRefund && l.priceStr.trim() === '-'
+        return (
+          <div key={idx} style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--line)', marginTop: idx === 0 ? 12 : 16, paddingTop: idx === 0 ? 0 : 12 }}>
+            {/* Product | Qty | Price | Last price */}
+            <div style={{ marginTop: 0, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 12 }}>
+              <div>
+                <label>{t('orders.productOrService')}</label>
+                <select
+                  value={l.product_id}
+                  onChange={e => onLineProductChange(idx, e.target.value)}
+                  style={{ height: CONTROL_H }}
+                  disabled={!hasProducts}
+                >
+                  {!hasProducts ? (
+                    <option value="">{t('orders.noProductsYet')}</option>
+                  ) : (
+                    <>
+                      {productGroup.length > 0 && (
+                        <optgroup label={t('orders.groupProducts')}>
+                          {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </optgroup>
+                      )}
+                      {serviceGroup.length > 0 && (
+                        <optgroup label={t('orders.groupServices')}>
+                          {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </optgroup>
+                      )}
+                    </>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label>{t('quantity')}</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={l.qtyStr ? intFmt.format(Number(l.qtyStr)) : ''}
+                  onChange={e => {
+                    const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                    updateLine(idx, { qtyStr: digits })
+                  }}
+                  style={{ height: CONTROL_H }}
+                />
+              </div>
+              <div>
+                <label>{t('price')}</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={l.priceStr}
+                  onChange={e => {
+                    const raw = e.target.value
+                    if (isRefund) {
+                      const withoutSigns = raw.replace(/^[+-]+/, '')
+                      const v = '-' + withoutSigns
+                      updateLine(idx, { priceStr: v === '-' ? '-' : v })
+                    } else {
+                      updateLine(idx, { priceStr: raw.replace(/^[+-]+/, '') })
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (!isRefund) return
+                    const target = e.currentTarget
+                    const { selectionStart, selectionEnd, value } = target
+                    if (e.key === 'Backspace' && selectionStart === 1 && selectionEnd === 1 && value.startsWith('-')) { e.preventDefault(); return }
+                    if ((e.key === 'Backspace' || e.key === 'Delete') && selectionStart === 0 && value.startsWith('-')) { e.preventDefault(); return }
+                  }}
+                  style={{ height: CONTROL_H, color: isMinusOnly ? 'var(--text-secondary)' : undefined, opacity: isMinusOnly ? 0.6 : undefined }}
+                />
+              </div>
+              <div>
+                <label>{t('orders.priceLastTime')}</label>
+                <input
+                  type="text"
+                  value={l.historicalPrice !== null ? (isRefund ? (-Math.abs(l.historicalPrice)).toFixed(2) : l.historicalPrice.toFixed(2)) : '—'}
+                  readOnly
+                  style={{ height: CONTROL_H, opacity: 0.6 }}
+                />
+              </div>
+            </div>
 
-      {/* Order value | Delivered */}
+            {/* Add / Remove links */}
+            {allowMultipleRows && (
+              <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
+                <button className="helper" onClick={addLine}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                  + {t('supplierOrders.addProduct')}
+                </button>
+                {lines.length > 1 && (
+                  <button className="helper" onClick={() => removeLine(idx)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    – {t('supplierOrders.removeProduct')}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Order value | Fully delivered | Delivery date */}
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('orders.orderValue')}</label>
@@ -465,14 +440,12 @@ const hasProducts = filteredProducts.length > 0
             value={orderValueStr}
             placeholder="auto"
             readOnly
-            style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(orderValue) && orderValue < 0 ? 'var(--color-error)' : undefined }}
+            style={{ height: CONTROL_H, opacity: 0.9, color: Number.isFinite(totalOrderValue) && totalOrderValue < 0 ? 'var(--color-error)' : undefined }}
           />
         </div>
-
-        {/* Delivered: only the checkbox toggles; show "Yes" only when checked */}
         <div>
           <label>{t('fullyDelivered')}</label>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <input
               type="checkbox"
               checked={delivered}
@@ -490,209 +463,124 @@ const hasProducts = filteredProducts.length > 0
         )}
       </div>
 
-      {/* Partner splits (only when selected customer's customer_type === 'Partner') */}
+      {/* Partner splits */}
       {isPartnerCustomer && (
         <>
-          {/* Partner 1 row: now equal thirds */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <label>{t('orders.partner1')}</label>
-              <select
-                value={partner1Id}
-                onChange={e=>setPartner1Id(e.target.value)}
-                style={{ height: CONTROL_H }}
-              >
+              <select value={partner1Id} onChange={e => setPartner1Id(e.target.value)} style={{ height: CONTROL_H }}>
                 <option value="">—</option>
-                {partners.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
+                {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
               <label>{t('orders.perItem')}</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={partner1PerItemStr}
-                onChange={e=>setPartner1PerItemStr(e.target.value)}
-                style={{ height: CONTROL_H }}
-              />
+              <input type="text" inputMode="decimal" placeholder="0.00" value={partner1PerItemStr}
+                onChange={e => setPartner1PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
             <div>
               <label>{t('orders.toPartner1')}</label>
-              <input
-                type="text"
-                value={partner1TotalStr}
-                placeholder="auto"
-                readOnly
-                style={{ height: CONTROL_H, opacity: 0.6 }}
-              />
+              <input type="text" value={partner1TotalStr} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
             </div>
           </div>
-
-          {/* Partner 2 row: now equal thirds */}
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <label>{t('orders.partner2')}</label>
-              <select
-                value={partner2Id}
-                onChange={e=>setPartner2Id(e.target.value)}
-                style={{ height: CONTROL_H }}
-              >
+              <select value={partner2Id} onChange={e => setPartner2Id(e.target.value)} style={{ height: CONTROL_H }}>
                 <option value="">—</option>
-                {partner2Options.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
+                {partner2Options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
               <label>{t('orders.perItem')}</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={partner2PerItemStr}
-                onChange={e=>setPartner2PerItemStr(e.target.value)}
-                style={{ height: CONTROL_H }}
-              />
+              <input type="text" inputMode="decimal" placeholder="0.00" value={partner2PerItemStr}
+                onChange={e => setPartner2PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
             <div>
               <label>{t('orders.toPartner2')}</label>
-              <input
-                type="text"
-                value={partner2TotalStr}
-                placeholder="auto"
-                readOnly
-                style={{ height: CONTROL_H, opacity: 0.6 }}
-              />
+              <input type="text" value={partner2TotalStr} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
             </div>
           </div>
         </>
       )}
 
-      {/* Notes field - always shows, always last */}
+      {/* Notes */}
       <div style={{ marginTop: 12 }}>
         <label>{t('notesOptional')}</label>
-        <input
-          type="text"
-          placeholder={t('optionalNotesPlaceholder')}
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          style={{ height: CONTROL_H }}
-        />
+        <input type="text" placeholder={t('optionalNotesPlaceholder')} value={notes}
+          onChange={e => setNotes(e.target.value)} style={{ height: CONTROL_H }} />
       </div>
 
-            {/* SPECIAL: Blanco owes Tony $0.50 per item */}
-      {(entityId === 'f4bfabe7-62cb-4e08-b98a-b3faed93278f' || entityId === '9f5b9939-e35f-435f-93aa-0ed5be64b2a1') && qtyInt > 0 && (
-        <div style={{ 
-          marginTop: 12, 
-          padding: '12px 16px', 
-          backgroundColor: 'rgba(255, 193, 7, 0.1)',
-          border: '1px solid rgba(255, 193, 7, 0.3)',
-          borderRadius: 8,
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            fontSize: 14
-          }}>
-            <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-              Owed to Tony by Blanco:
-            </span>
-            <span style={{ fontWeight: 600, color: '#f57c00' }}>
-              {qtyInt} × $0.50 = ${(qtyInt * 0.50).toFixed(2)}
-            </span>
+      {/* Blanco special case */}
+      {BLANCO_IDS.includes(entityId) && totalQty > 0 && (
+        <div style={{ marginTop: 12, padding: '12px 16px', backgroundColor: 'rgba(255,193,7,0.1)', border: '1px solid rgba(255,193,7,0.3)', borderRadius: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14 }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>Owed to Tony by Blanco:</span>
+            <span style={{ fontWeight: 600, color: '#f57c00' }}>{totalQty} × $0.50 = ${(totalQty * 0.50).toFixed(2)}</span>
           </div>
-          <div style={{ 
-            fontSize: 12, 
-            color: 'var(--text-secondary)', 
-            marginTop: 4 
-          }}>
-            This amount will be recorded as partner-to-partner debt
-          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>This amount will be recorded as partner-to-partner debt</div>
         </div>
       )}
 
-      {/* More fields - Product cost and Shipping cost */}
+      {/* More fields */}
       {showMoreFields && (
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
             <label>{t('orders.productCostThisOrder')}</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={productCostStr}
-              onChange={e => setProductCostStr(e.target.value)}
-              style={{ height: CONTROL_H }}
-            />
+            <input type="text" inputMode="decimal" placeholder="0.00" value={productCostStr}
+              onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
           <div>
             <label>{t('orders.shippingCostThisOrder')}</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={shippingCostStr}
-              onChange={e => setShippingCostStr(e.target.value)}
-              style={{ height: CONTROL_H }}
-            />
+            <input type="text" inputMode="decimal" placeholder="0.00" value={shippingCostStr}
+              onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
         </div>
       )}
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button className="primary" onClick={async () => {
-          // save flow
           if (!person) { alert(t('orders.alertSelectCustomer')); return }
-          if (!product) { alert(t('orders.alertPickProduct')); return }
 
-          const qty = parseInt(qtyStr || '0', 10)
-          if (!Number.isInteger(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
+          const validLines = lines.filter(l => {
+            if (!l.product_id) return false
+            const qty = lineQty(l)
+            const price = linePrice(l)
+            if (!Number.isInteger(qty) || qty <= 0) return false
+            if (!Number.isFinite(price)) return false
+            const isRefund = lineIsRefund(l)
+            if (isRefund && !(price < 0)) return false
+            if (!isRefund && !(price > 0)) return false
+            return true
+          })
 
-          const unitPrice = parseAmount(priceStr)
-          if (!Number.isFinite(unitPrice)) { alert(t('orders.alertEnterPrice')); return }
-          if (isRefundProduct) {
-            if (!(unitPrice < 0)) { alert(t('orders.alertRefundNegative')); return }
-          } else {
-            if (!(unitPrice > 0)) { alert(t('orders.alertEnterPositivePrice')); return }
+          if (validLines.length === 0) {
+            alert(t('orders.alertPickProduct')); return
           }
 
-          // Build partner_splits only for Partner customers
+          // Build partner_splits
           const splits: Array<{ partner_id: string; amount: number }> = []
           if (isPartnerCustomer) {
             if (partner1Id && partner1PerItemStr) {
               const per = parseAmount(partner1PerItemStr)
-              if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner1Id, amount: per * qty })
+              if (Number.isFinite(per) && per > 0 && totalQty > 0) splits.push({ partner_id: partner1Id, amount: per * totalQty })
             }
             if (partner2Id && partner2PerItemStr) {
               const per = parseAmount(partner2PerItemStr)
-              if (Number.isFinite(per) && per > 0 && qty > 0) splits.push({ partner_id: partner2Id, amount: per * qty })
+              if (Number.isFinite(per) && per > 0 && totalQty > 0) splits.push({ partner_id: partner2Id, amount: per * totalQty })
             }
           }
 
-          // Parse optional cost overrides
           let productCostToSend: number | undefined = undefined
           let shippingCostToSend: number | undefined = undefined
-
-          if (productCostStr.trim()) {
-            const parsed = parseAmount(productCostStr)
-            if (Number.isFinite(parsed) && parsed > 0) productCostToSend = parsed
-          }
-
-          if (shippingCostStr.trim()) {
-            const parsed = parseAmount(shippingCostStr)
-            if (Number.isFinite(parsed) && parsed >= 0) shippingCostToSend = parsed
-          }
+          if (productCostStr.trim()) { const p = parseAmount(productCostStr); if (Number.isFinite(p) && p > 0) productCostToSend = p }
+          if (shippingCostStr.trim()) { const p = parseAmount(shippingCostStr); if (Number.isFinite(p) && p >= 0) shippingCostToSend = p }
 
           try {
-            const { order_no } = await createOrder({
+            const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+            const body: any = {
               customer_id: person.id,
-              product_id: product.id,
-              qty,
-              unit_price: unitPrice,
               date: orderDate,
               delivered,
               delivered_at: delivered ? deliveredAt : null,
@@ -701,22 +589,31 @@ const hasProducts = filteredProducts.length > 0
               product_cost: productCostToSend,
               shipping_cost: shippingCostToSend,
               partner_splits: splits.length ? splits : undefined,
+              items: validLines.map(l => ({
+                product_id: l.product_id,
+                qty: lineQty(l),
+                unit_price: linePrice(l),
+              })),
+            }
+
+            const res = await fetch(`${base}/api/orders`, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify(body),
             })
+            if (!res.ok) {
+              const text = await res.text().catch(() => '')
+              throw new Error(`Save failed (${res.status}) ${text?.slice(0, 140)}`)
+            }
+            const data = await res.json()
+            alert(t('orders.orderSaved', { number: data.order_no }))
 
-            alert(t('orders.orderSaved', { number: order_no }))
-
-            // Post-save reset
             const params = new URLSearchParams(location.search)
             const returnTo = params.get('return_to')
             const returnId = params.get('return_id')
+            if (returnTo === 'customer' && returnId) { navigate(`/customers/${returnId}`); return }
 
-            if (returnTo === 'customer' && returnId) {
-              navigate(`/customers/${returnId}`)
-              return
-            }
-
-            setQtyStr('')
-            setPriceStr('')
+            setLines([emptyLine(lines[0]?.product_id || '')])
             setOrderDate(todayYMD())
             setDelivered(false)
             setNotes('')
@@ -729,37 +626,17 @@ const hasProducts = filteredProducts.length > 0
           }
         }} style={{ height: CONTROL_H }}>{t('orders.saveOrder')}</button>
 
-        <button
-          onClick={() => {
-            setQtyStr(''); setPriceStr(''); setNotes(''); setQuery(''); setEntityId('');
-            setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('');
-            setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false);
-          }}
-          style={{ height: CONTROL_H }}
-        >
-          {t('clear')}
-        </button>
-        <button
-          onClick={() => setShowMoreFields(v => !v)}
-          style={{ height: CONTROL_H }}
-        >
+        <button onClick={() => {
+          setLines([emptyLine(lines[0]?.product_id || '')])
+          setNotes(''); setQuery(''); setEntityId('')
+          setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('')
+          setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false)
+        }} style={{ height: CONTROL_H }}>{t('clear')}</button>
+
+        <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>
           {showMoreFields ? t('orders.less') : t('orders.more')}
         </button>
       </div>
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
