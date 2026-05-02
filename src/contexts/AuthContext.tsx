@@ -38,28 +38,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Initialize synchronously from localStorage — eliminates the loading flash
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem('userData')
+      return stored ? (JSON.parse(stored) as User) : null
+    } catch { return null }
+  })
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'))
 
-  // Check for existing auth on mount
+  // Verify token in the background on mount (doesn't block rendering)
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken')
-    const storedUser = localStorage.getItem('userData')
-    
-    if (storedToken && storedUser) {
-      try {
-        const userData = JSON.parse(storedUser)
-        setToken(storedToken)
-        setUser(userData)
-        // Optionally verify token is still valid
-        verifyToken(storedToken)
-      } catch (err) {
-        console.error('Failed to parse stored user data:', err)
-        logout()
-      }
+    if (storedToken) {
+      verifyToken(storedToken).catch(() => {})
     }
-    setIsLoading(false)
   }, [])
 
   const verifyToken = async (tokenToVerify: string) => {
@@ -146,10 +139,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     verifyAuth
-  }
-
-  if (isLoading) {
-    return <div>Loading...</div> // Or your loading component
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

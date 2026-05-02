@@ -424,9 +424,9 @@ function MainApp() {
   setActiveTenantId(firstTenantId)
   localStorage.setItem('activeTenantId', firstTenantId)
 
-  // Reload the page ONCE right after the tenant is set (prevents iOS using the default icon)
-  if (!sessionStorage.getItem('didPostLoginReload')) {
-    sessionStorage.setItem('didPostLoginReload', '1')
+  // Reload the page ONCE ever after the first tenant is set (prevents iOS using the default icon)
+  if (!localStorage.getItem('didPostLoginReload')) {
+    localStorage.setItem('didPostLoginReload', '1')
     window.location.reload()
   }
 }

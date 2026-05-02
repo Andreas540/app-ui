@@ -3,6 +3,15 @@ import type { ReactNode } from 'react';
 import i18n from '../i18n/config';
 import { useAuth } from './AuthContext';
 
+// Apply stored language before first render so i18n never starts in the wrong locale
+;(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('userData') || 'null')
+    const lang = u?.preferred_language || u?.tenant_default_language
+    if (lang && lang !== 'en') i18n.changeLanguage(lang)
+  } catch {}
+})()
+
 interface LocaleContextType {
   language: string;
   locale: string;
@@ -23,13 +32,30 @@ const LANGUAGE_TO_LOCALE: Record<string, string> = {
   es: 'es-419',
 };
 
+function getStoredUser() {
+  try { return JSON.parse(localStorage.getItem('userData') || 'null') } catch { return null }
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
-  const [language, setLanguageState] = useState<string>('en');
-  const [locale, setLocaleState] = useState<string>('en-US');
-  const [currency, setCurrencyState] = useState<string>('USD');
-  const [timezone, setTimezoneState] = useState<string>('UTC');
+  const [language, setLanguageState] = useState<string>(() => {
+    const u = getStoredUser()
+    return u?.preferred_language || u?.tenant_default_language || 'en'
+  });
+  const [locale, setLocaleState] = useState<string>(() => {
+    const u = getStoredUser()
+    const lang = u?.preferred_language || u?.tenant_default_language || 'en'
+    return LANGUAGE_TO_LOCALE[lang] || 'en-US'
+  });
+  const [currency, setCurrencyState] = useState<string>(() => {
+    const u = getStoredUser()
+    return u?.preferred_currency ?? u?.tenant_default_currency ?? 'USD'
+  });
+  const [timezone, setTimezoneState] = useState<string>(() => {
+    const u = getStoredUser()
+    return u?.preferred_timezone ?? u?.tenant_default_timezone ?? 'UTC'
+  });
 
   // Load tenant/user preferences on mount or when user changes
   useEffect(() => {
