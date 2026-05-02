@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
-import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS } from './lib/shortcuts'
+import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
 import { getAuthHeaders } from './lib/api'
 
@@ -307,6 +307,16 @@ function MainApp() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(() => !localStorage.getItem('welcomeDismissed') && !sessionStorage.getItem('welcomeClosed'))
   const [userName, setUserName] = useState('')
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>(DEFAULT_SHORTCUTS)
+
+  // Build translated shortcut labels + letters from the current locale
+  const translatedShortcuts = useMemo(() => {
+    const withNames = ALL_SHORTCUTS.map(s => ({
+      ...s,
+      name: t(FEATURE_NAV_KEY[s.id] ?? s.id, { defaultValue: s.label }),
+    }))
+    const letterMap = buildLetterMap(withNames as any)
+    return new Map(withNames.map(s => [s.id, { label: s.name, letter: letterMap.get(s.id as any) ?? s.letter }]))
+  }, [t])
 
   const [externalEvents, setExternalEvents] = useState<any[]>([])
   const [externalSeenAt, setExternalSeenAt] = useState<number>(() => Number(localStorage.getItem('externalSeenAt') || '0'))
@@ -622,16 +632,17 @@ useEffect(() => {
       : selectedShortcuts.map(featureId => {
           const shortcut = ALL_SHORTCUTS.find(s => s.id === featureId)
           if (!shortcut || !hasFeature(featureId as any)) return null
+          const translated = translatedShortcuts.get(featureId as any)
           return (
             <NavLink
               key={featureId}
               to={shortcut.route}
               end={shortcut.route === '/'}
               className={({ isActive }) => `icon-btn ${isActive ? 'active' : ''}`}
-              title={shortcut.label}
+              title={translated?.label ?? shortcut.label}
               onClick={() => setNavOpen(false)}
             >
-              {shortcut.letter}
+              {translated?.letter ?? shortcut.letter}
             </NavLink>
           )
         })

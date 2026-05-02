@@ -5,13 +5,48 @@ export const EXCLUDED_FROM_SHORTCUTS: FeatureId[] = ['tenant-admin', 'settings']
 
 export const DEFAULT_SHORTCUTS: FeatureId[] = []
 
+// Maps each feature ID to its key in the 'navigation' i18n namespace
+export const FEATURE_NAV_KEY: Record<string, string> = {
+  'dashboard':            'mainDashboard',
+  'customers':            'customers',
+  'orders':               'newOrder',
+  'payments':             'newPayment',
+  'partners':             'partners',
+  'products':             'products',
+  'price-checker':        'priceChecker',
+  'invoices':             'createInvoice',
+  'costs':                'newCost',
+  'supply-chain':         'supplyDemand',
+  'production':           'production',
+  'warehouse':            'warehouse',
+  'supplier-orders':      'newOrderSupplier',
+  'suppliers':            'suppliers',
+  'employees':            'employees',
+  'time-approval':        'timeApproval',
+  'time-entry':           'timeEntry',
+  'booking-dashboard':    'bookingDashboard',
+  'bookings':             'bookingList',
+  'booking-customers':    'bookingClients',
+  'booking-payments':     'bookingPayments',
+  'booking-reminders':    'bookingReminders',
+  'booking-sms-usage':    'bookingSmsUsage',
+  'booking-integration':  'bookingIntegrationNav',
+  'new-booking':          'newBooking',
+  'reports':              'reportsSalesProfit',
+  'customer-reports':     'reportsCustomers',
+  'bizwiz':               'reportsBizWiz',
+  'tenant-admin':         'accountAdmin',
+  'settings':             'settings',
+  'contact':              'contact',
+}
+
 // ── Letter assignment ──────────────────────────────────────────────────────────
 // Rules:
 //   Multi-word  → initials of first two words, both caps   (e.g. "New Order"  → NO)
 //   Single-word → first letter, caps                       (e.g. "Warehouse"  → W)
 //   Duplicate   → first + second char of name              (e.g. "Payments" / "Products" → Pa / Pr)
 
-function buildLetterMap(items: Array<{ id: FeatureId; name: string }>): Map<FeatureId, string> {
+export function buildLetterMap(items: Array<{ id: FeatureId; name: string }>): Map<FeatureId, string> {
   // Pass 1 — naive assignment
   const naive = items.map(({ name }) => {
     const words = name.split(' ').filter(w => /^[a-zA-Z]/.test(w))
