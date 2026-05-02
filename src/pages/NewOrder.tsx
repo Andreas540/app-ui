@@ -340,8 +340,8 @@ export default function NewOrder() {
         const isMinusOnly = isRefund && l.priceStr.trim() === '-'
         return (
           <div key={idx} style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--line)', marginTop: idx === 0 ? 12 : 16, paddingTop: idx === 0 ? 0 : 12 }}>
-            {/* Product | Qty | Price | Last price */}
-            <div style={{ marginTop: 0, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 12 }}>
+            {/* Row 1: Product | Qty */}
+            <div className="row row-2col-mobile" style={{ marginTop: 0 }}>
               <div>
                 <label>{t('orders.productOrService')}</label>
                 <select
@@ -382,6 +382,9 @@ export default function NewOrder() {
                   style={{ height: CONTROL_H }}
                 />
               </div>
+            </div>
+            {/* Row 2: Price | Price last time */}
+            <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
               <div>
                 <label>{t('price')}</label>
                 <input
@@ -480,7 +483,7 @@ export default function NewOrder() {
               { label: t('orders.partner2'), id: partner2Id, setId: setPartner2Id, valueStr: partner2PerItemStr, setValueStr: setPartner2PerItemStr, mode: partner2Mode, setMode: setPartner2Mode, totalStr: partner2TotalStr, toLabel: t('orders.toPartner2'), opts: partner2Options },
             ] as const
           ).map((p, i) => (
-            <div key={i} style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div key={i} style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'end' }}>
               <div>
                 <label>{p.label}</label>
                 <select value={p.id} onChange={e => p.setId(e.target.value)} style={{ height: CONTROL_H }}>
