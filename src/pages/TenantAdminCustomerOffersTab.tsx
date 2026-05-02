@@ -115,7 +115,7 @@ function OrderFormTab({ customerId, customers }: { customerId: string; customers
               {p.name}
               <span className="helper" style={{ marginLeft: 6 }}>({t('customerOffers.default')}: {fmtMoney(p.price_amount)})</span>
             </div>
-            <input type="number" step="0.01" min="0" value={e?.price ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [p.id]: { ...prev[p.id], price: ev.target.value } }))} disabled={hidden} style={{ height: 36, fontSize: 14, padding: '0 8px' }} />
+            <input type="number" step="0.01" min="0" value={e?.price ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [p.id]: { ...prev[p.id], price: ev.target.value } }))} disabled={hidden} style={{ height: 36, padding: '0 8px' }} />
           </div>
         )
       })}
@@ -246,13 +246,13 @@ function BookingFormTab({ customerId, customers }: { customerId: string; custome
       </p>
 
       {/* Services list */}
-      <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 130px 130px', gap: '0 12px', paddingBottom: 6, borderBottom: '1px solid var(--line)', fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 80px 80px', gap: '0 12px', paddingBottom: 6, borderBottom: '1px solid var(--line)', fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         <div /><div>{t('customerOffers.service')}</div><div>{t('customerOffers.duration')}</div><div>{t('customerOffers.price')}</div>
       </div>
       {services.map(s => {
         const e = edits[s.id]; const hidden = !(e?.available ?? true)
         return (
-          <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 130px 130px', gap: '0 12px', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--line)', opacity: hidden ? 0.4 : 1 }}>
+          <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 80px 80px', gap: '0 12px', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--line)', opacity: hidden ? 0.4 : 1 }}>
             <input type="checkbox" checked={e?.available ?? true} onChange={ev => setEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], available: ev.target.checked } }))} style={{ width: 16, height: 16, cursor: 'pointer' }} />
             <div style={{ fontSize: 14, fontWeight: hidden ? 400 : 500 }}>
               {s.name}
@@ -261,8 +261,8 @@ function BookingFormTab({ customerId, customers }: { customerId: string; custome
                 {s.price_amount != null && ` · ${fmtMoney(s.price_amount)}`}
               </div>
             </div>
-            <input type="number" min="5" step="5" value={e?.duration ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], duration: ev.target.value } }))} disabled={hidden} style={{ height: 36, fontSize: 14, padding: '0 8px' }} />
-            <input type="number" step="0.01" min="0" value={e?.price ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], price: ev.target.value } }))} disabled={hidden} style={{ height: 36, fontSize: 14, padding: '0 8px' }} />
+            <input type="number" min="5" step="5" value={e?.duration ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], duration: ev.target.value } }))} disabled={hidden} style={{ height: 36, padding: '0 8px' }} />
+            <input type="number" step="0.01" min="0" value={e?.price ?? ''} onChange={ev => setEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], price: ev.target.value } }))} disabled={hidden} style={{ height: 36, padding: '0 8px' }} />
           </div>
         )
       })}
@@ -289,9 +289,9 @@ function BookingFormTab({ customerId, customers }: { customerId: string; custome
                 </label>
                 {day?.active ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="time" value={day.start} onChange={e => setDay(selectedServiceId, dow, { start: e.target.value })} style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }} />
+                    <input type="time" value={day.start} onChange={e => setDay(selectedServiceId, dow, { start: e.target.value })} style={{ width: 120, height: 36, padding: '0 8px' }} />
                     <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('tenantAdmin.booking.to')}</span>
-                    <input type="time" value={day.end} onChange={e => setDay(selectedServiceId, dow, { end: e.target.value })} style={{ width: 120, height: 36, fontSize: 14, padding: '0 8px' }} />
+                    <input type="time" value={day.end} onChange={e => setDay(selectedServiceId, dow, { end: e.target.value })} style={{ width: 120, height: 36, padding: '0 8px' }} />
                   </div>
                 ) : (
                   <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('tenantAdmin.booking.closed')}</span>
