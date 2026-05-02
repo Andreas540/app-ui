@@ -58,6 +58,8 @@ export default function NewOrder() {
   const [partner2Id, setPartner2Id] = useState('')
   const [partner1PerItemStr, setPartner1PerItemStr] = useState('')
   const [partner2PerItemStr, setPartner2PerItemStr] = useState('')
+  const [partner1Mode, setPartner1Mode] = useState<'per-item' | 'percent' | 'fixed'>('per-item')
+  const [partner2Mode, setPartner2Mode] = useState<'per-item' | 'percent' | 'fixed'>('per-item')
 
   // Cost overrides (order-level)
   const [showMoreFields, setShowMoreFields] = useState(false)
@@ -222,11 +224,17 @@ export default function NewOrder() {
 
   const totalQty = useMemo(() => lines.reduce((s, l) => s + (lineQty(l) > 0 ? lineQty(l) : 0), 0), [lines]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Partner totals (per-item × total qty)
-  const partner1PerItem = useMemo(() => parseAmount(partner1PerItemStr), [partner1PerItemStr])
-  const partner2PerItem = useMemo(() => parseAmount(partner2PerItemStr), [partner2PerItemStr])
-  const partner1Total = useMemo(() => Number.isFinite(partner1PerItem) && partner1PerItem > 0 && totalQty > 0 ? partner1PerItem * totalQty : 0, [partner1PerItem, totalQty])
-  const partner2Total = useMemo(() => Number.isFinite(partner2PerItem) && partner2PerItem > 0 && totalQty > 0 ? partner2PerItem * totalQty : 0, [partner2PerItem, totalQty])
+  // Partner totals — mode-aware calculation
+  function computePartnerTotal(mode: 'per-item' | 'percent' | 'fixed', valueStr: string) {
+    const v = parseAmount(valueStr)
+    if (!Number.isFinite(v) || v <= 0) return 0
+    if (mode === 'per-item') return totalQty > 0 ? v * totalQty : 0
+    if (mode === 'percent') return Number.isFinite(totalOrderValue) && totalOrderValue > 0 ? (v / 100) * totalOrderValue : 0
+    if (mode === 'fixed') return v
+    return 0
+  }
+  const partner1Total = useMemo(() => computePartnerTotal(partner1Mode, partner1PerItemStr), [partner1Mode, partner1PerItemStr, totalQty, totalOrderValue]) // eslint-disable-line react-hooks/exhaustive-deps
+  const partner2Total = useMemo(() => computePartnerTotal(partner2Mode, partner2PerItemStr), [partner2Mode, partner2PerItemStr, totalQty, totalOrderValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Effective shipping cost (order-level, per customer)
   const effectiveShippingCost = useMemo(() => {
@@ -466,42 +474,45 @@ export default function NewOrder() {
       {/* Partner splits */}
       {isPartnerCustomer && (
         <>
-          <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <div>
-              <label>{t('orders.partner1')}</label>
-              <select value={partner1Id} onChange={e => setPartner1Id(e.target.value)} style={{ height: CONTROL_H }}>
-                <option value="">—</option>
-                {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+          {(
+            [
+              { label: t('orders.partner1'), id: partner1Id, setId: setPartner1Id, valueStr: partner1PerItemStr, setValueStr: setPartner1PerItemStr, mode: partner1Mode, setMode: setPartner1Mode, totalStr: partner1TotalStr, toLabel: t('orders.toPartner1'), opts: partners },
+              { label: t('orders.partner2'), id: partner2Id, setId: setPartner2Id, valueStr: partner2PerItemStr, setValueStr: setPartner2PerItemStr, mode: partner2Mode, setMode: setPartner2Mode, totalStr: partner2TotalStr, toLabel: t('orders.toPartner2'), opts: partner2Options },
+            ] as const
+          ).map((p, i) => (
+            <div key={i} style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div>
+                <label>{p.label}</label>
+                <select value={p.id} onChange={e => p.setId(e.target.value)} style={{ height: CONTROL_H }}>
+                  <option value="">—</option>
+                  {p.opts.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <select
+                  value={p.mode}
+                  onChange={e => { p.setMode(e.target.value as any); p.setValueStr('') }}
+                  style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', padding: '0 0 4px 0', cursor: 'pointer', width: '100%', display: 'block' }}
+                >
+                  <option value="per-item">{t('orders.perItem')}</option>
+                  <option value="percent">{t('orders.percentOfOrder')}</option>
+                  <option value="fixed">{t('orders.fixedAmount')}</option>
+                </select>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={p.mode === 'percent' ? '0.0' : '0.00'}
+                  value={p.valueStr}
+                  onChange={e => p.setValueStr(e.target.value)}
+                  style={{ height: CONTROL_H }}
+                />
+              </div>
+              <div>
+                <label>{p.toLabel}</label>
+                <input type="text" value={p.totalStr} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
+              </div>
             </div>
-            <div>
-              <label>{t('orders.perItem')}</label>
-              <input type="text" inputMode="decimal" placeholder="0.00" value={partner1PerItemStr}
-                onChange={e => setPartner1PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
-            </div>
-            <div>
-              <label>{t('orders.toPartner1')}</label>
-              <input type="text" value={partner1TotalStr} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
-            </div>
-          </div>
-          <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <div>
-              <label>{t('orders.partner2')}</label>
-              <select value={partner2Id} onChange={e => setPartner2Id(e.target.value)} style={{ height: CONTROL_H }}>
-                <option value="">—</option>
-                {partner2Options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label>{t('orders.perItem')}</label>
-              <input type="text" inputMode="decimal" placeholder="0.00" value={partner2PerItemStr}
-                onChange={e => setPartner2PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
-            </div>
-            <div>
-              <label>{t('orders.toPartner2')}</label>
-              <input type="text" value={partner2TotalStr} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
-            </div>
-          </div>
+          ))}
         </>
       )}
 
@@ -559,17 +570,11 @@ export default function NewOrder() {
             alert(t('orders.alertPickProduct')); return
           }
 
-          // Build partner_splits
+          // Build partner_splits using already-computed totals
           const splits: Array<{ partner_id: string; amount: number }> = []
           if (isPartnerCustomer) {
-            if (partner1Id && partner1PerItemStr) {
-              const per = parseAmount(partner1PerItemStr)
-              if (Number.isFinite(per) && per > 0 && totalQty > 0) splits.push({ partner_id: partner1Id, amount: per * totalQty })
-            }
-            if (partner2Id && partner2PerItemStr) {
-              const per = parseAmount(partner2PerItemStr)
-              if (Number.isFinite(per) && per > 0 && totalQty > 0) splits.push({ partner_id: partner2Id, amount: per * totalQty })
-            }
+            if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
+            if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
           }
 
           let productCostToSend: number | undefined = undefined
@@ -619,6 +624,7 @@ export default function NewOrder() {
             setNotes('')
             setPartner1Id(''); setPartner2Id('')
             setPartner1PerItemStr(''); setPartner2PerItemStr('')
+            setPartner1Mode('per-item'); setPartner2Mode('per-item')
             setProductCostStr(''); setShippingCostStr('')
             setShowMoreFields(false)
           } catch (e: any) {
@@ -630,6 +636,7 @@ export default function NewOrder() {
           setLines([emptyLine(lines[0]?.product_id || '')])
           setNotes(''); setQuery(''); setEntityId('')
           setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('')
+          setPartner1Mode('per-item'); setPartner2Mode('per-item')
           setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false)
         }} style={{ height: CONTROL_H }}>{t('clear')}</button>
 

@@ -421,6 +421,8 @@
     "orderValue": "Beställningsvärde",
     "partner1": "Partner 1",
     "perItem": "Per enhet",
+    "percentOfOrder": "% av ordervärde",
+    "fixedAmount": "Fast belopp",
     "toPartner1": "Till Partner 1",
     "partner2": "Partner 2",
     "toPartner2": "Till Partner 2",

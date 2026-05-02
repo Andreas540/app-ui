@@ -421,6 +421,8 @@
     "orderValue": "Valor del pedido",
     "partner1": "Socio 1",
     "perItem": "Por unidad",
+    "percentOfOrder": "% del pedido",
+    "fixedAmount": "Importe fijo",
     "toPartner1": "Al Socio 1",
     "partner2": "Socio 2",
     "toPartner2": "Al Socio 2",

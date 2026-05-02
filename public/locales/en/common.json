@@ -421,6 +421,8 @@
     "orderValue": "Order value",
     "partner1": "Partner 1",
     "perItem": "Per item",
+    "percentOfOrder": "% of order",
+    "fixedAmount": "Fixed",
     "toPartner1": "To Partner 1",
     "partner2": "Partner 2",
     "toPartner2": "To Partner 2",
