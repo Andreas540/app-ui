@@ -261,7 +261,9 @@ select {
   border: none !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  padding: 0 18px 2px 0 !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="%23555555"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+  background-size: 16px 16px !important;
+  padding: 0 20px 2px 0 !important;
   font-size: 12px !important;
   color: var(--text-secondary) !important;
   cursor: pointer;
