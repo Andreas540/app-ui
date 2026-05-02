@@ -254,6 +254,24 @@ select {
   background-size: 12px 12px;
 }
 
+/* Inline mode selector (partner split type: Per item / % / Fixed) */
+.mode-select {
+  height: auto !important;
+  min-height: unset !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  padding: 0 18px 2px 0 !important;
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer;
+}
+.mode-select:focus,
+.mode-select:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;

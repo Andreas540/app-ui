@@ -495,7 +495,7 @@ export default function NewOrder() {
                 <select
                   value={p.mode}
                   onChange={e => { p.setMode(e.target.value as any); p.setValueStr('') }}
-                  style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', padding: '0 0 4px 0', cursor: 'pointer', width: '100%', display: 'block' }}
+                  className="mode-select"
                 >
                   <option value="per-item">{t('orders.perItem')}</option>
                   <option value="percent">{t('orders.percentOfOrder')}</option>
