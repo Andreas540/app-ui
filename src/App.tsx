@@ -1028,6 +1028,9 @@ useEffect(() => {
 
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />
+
+                {/* Redirect /login to home when already authenticated */}
+                <Route path="/login" element={<Navigate to="/" replace />} />
               </>
             )}
           </Routes>

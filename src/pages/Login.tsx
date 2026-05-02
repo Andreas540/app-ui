@@ -52,8 +52,8 @@ export default function Login() {
       // Use auth context to store token and user data
       login(data.token, data.user)
 
-      // Navigate to home (dashboard)
-      navigate('/')
+      // Replace so /login doesn't stay in browser history — prevents blank screen on back navigation
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('Login error:', err)
       setError(t('login.errorRetry'))
