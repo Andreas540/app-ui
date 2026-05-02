@@ -193,6 +193,7 @@ a {
 /* ===================== Page Width Tiers (desktop only) ===================== */
 /* Applied to the top-level card or wrapper inside .content            */
 /* max-width only kicks in on wide screens; mobile is unaffected       */
+.page-xnarrow { max-width: 440px;  margin-left: auto; margin-right: auto; }
 .page-narrow { max-width: 760px;  margin-left: auto; margin-right: auto; }
 .page-normal { max-width: 1000px; margin-left: auto; margin-right: auto; }
 .page-wide   { max-width: 1400px; margin-left: auto; margin-right: auto; }
