@@ -28,7 +28,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[] }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -206,6 +206,13 @@ export default function TenantCustomization() {
   function setUi(key: keyof NonNullable<UiConfig['ui']>, val: boolean) {
     setCfg(p => ({ ...p, ui: { ...p.ui, [key]: val } }))
   }
+  function toggleDashboardCard(cardId: string) {
+    setCfg(p => {
+      const current = p.ui?.dashboardCards ?? du.dashboardCards
+      const next = current.includes(cardId) ? current.filter(id => id !== cardId) : [...current, cardId]
+      return { ...p, ui: { ...p.ui, dashboardCards: next } }
+    })
+  }
   function setBookingBool(key: 'smsRemindersEnabled' | 'showBookingParticipants', val: boolean) {
     setCfg(p => ({ ...p, booking: { ...p.booking, [key]: val } }))
   }
@@ -250,6 +257,7 @@ export default function TenantCustomization() {
       setCfg(p => {
         const ui = { ...p.ui }
         delete ui.showOwedToSuppliers
+        delete ui.dashboardCards
         return { ...p, ui }
       })
     } else if (section === 'customer-detail') {
@@ -441,10 +449,28 @@ export default function TenantCustomization() {
 
           {/* Pages > Dashboard */}
           {section === 'dashboard' && (
-            <Row label={t('tenantCustom.showOwedToSuppliers')} help={t('tenantCustom.showOwedToSuppliersHelp')}
-              customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
-              <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
-            </Row>
+            <>
+              <Row label={t('tenantCustom.showOwedToSuppliers')} help={t('tenantCustom.showOwedToSuppliersHelp')}
+                customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
+                <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
+              </Row>
+              <Row label={t('tenantCustom.dashboardCards')}
+                customized={cu.dashboardCards !== undefined}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {(['financials', 'charts', 'orders'] as const).map(cardId => {
+                    const cards = cu.dashboardCards ?? du.dashboardCards
+                    return (
+                      <label key={cardId} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={cards.includes(cardId)}
+                          onChange={() => toggleDashboardCard(cardId)}
+                          style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                        <span>{t(`dashboard.card${cardId.charAt(0).toUpperCase() + cardId.slice(1)}`)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </Row>
+            </>
           )}
 
           {/* Pages > New Order */}

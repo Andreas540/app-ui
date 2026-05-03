@@ -220,7 +220,7 @@ function loadDashOrder(): string[] {
   return ALL_CARDS.map(c => c.id)
 }
 
-function loadDashVisible(): string[] {
+function loadDashVisible(defaultCards: string[]): string[] {
   try {
     const s = localStorage.getItem(LS_DASH_HIDDEN)
     if (s) {
@@ -228,7 +228,7 @@ function loadDashVisible(): string[] {
       return ALL_CARDS.map(c => c.id).filter(id => !hidden.includes(id))
     }
   } catch {}
-  return ALL_CARDS.map(c => c.id)
+  return defaultCards
 }
 
 export default function Dashboard() {
@@ -267,7 +267,7 @@ export default function Dashboard() {
 
   // Dashboard card customisation
   const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
-  const [dashVisible,  setDashVisible]  = useState<string[]>(loadDashVisible)
+  const [dashVisible,  setDashVisible]  = useState<string[]>(() => loadDashVisible(config.ui.dashboardCards))
   const [dashDropOpen, setDashDropOpen] = useState(false)
   const dashBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -612,7 +612,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
           )
 
           if (cardId === 'financials') return (
-            <div key="financials" className="card">
+            <div key="financials" className="card" style={{ alignSelf: 'start' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
               {loading ? (
                 <div className="helper">{t('loading')}</div>
@@ -645,7 +645,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'charts') return (
             <div key="charts" className="card"
-              style={{ height: CHART_HEIGHT_CSS, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+              style={{ display: 'flex', flexDirection: 'column', alignSelf: 'start' }}
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}
             >
@@ -660,7 +660,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   {moveArrows}
                 </div>
               </div>
-              <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ height: CHART_HEIGHT_CSS, position: 'relative', overflow: 'hidden' }}>
                 <button onClick={prev} aria-label="Previous" style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', fontSize: 30, color: 'var(--text-secondary)', lineHeight: 1 }}>‹</button>
                 <div style={{ display: 'flex', height: '100%', width: '300%', transform: `translateX(-${slide * 33.3333}%)`, transition: 'transform 220ms ease' }}>
                   <div style={{ width:'33.3333%', height: '100%', paddingLeft: 12, paddingRight: 12, overflow: 'hidden' }}><ChartSlide {...slides[0]} showPct={showPct} /></div>

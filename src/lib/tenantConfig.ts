@@ -30,6 +30,7 @@ export interface TenantConfig {
     showOwedToSuppliers: boolean
     compactCustomerOrderRows: boolean
     multipleOrderRows: boolean
+    dashboardCards: string[]
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -92,6 +93,7 @@ export const defaultConfig: TenantConfig = {
     showOwedToSuppliers: false,
     compactCustomerOrderRows: true,
     multipleOrderRows: true,
+    dashboardCards: ['financials', 'charts'],
   },
   booking: {
     serviceTypeLabel: 'Session',

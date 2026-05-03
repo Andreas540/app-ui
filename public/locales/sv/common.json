@@ -1172,6 +1172,7 @@
     "showBookingParticipants": "Visa bokningsdeltagare",
     "showBookingParticipantsHelp": "Visa deltagarhantering för grupptbokningar.",
     "showOwedToSuppliers": "Visa totalt skyldigt till leverantörer",
+    "dashboardCards": "Kort som visas",
     "showOwedToSuppliersHelp": "Visa en rad 'Totalt skyldigt till leverantörer' på instrumentpanelens finanskort. När den visas minskar den beräkningen av Mitt $.",
     "sectionCustomerDetail": "Kunddetalj",
     "customerOrderRows": "Visning av orderrader",

@@ -1172,6 +1172,7 @@
     "showBookingParticipants": "Mostrar participantes de reserva",
     "showBookingParticipantsHelp": "Mostrar gestión de participantes para reservas grupales.",
     "showOwedToSuppliers": "Mostrar total adeudado a proveedores",
+    "dashboardCards": "Tarjetas mostradas",
     "showOwedToSuppliersHelp": "Mostrar una fila 'Total adeudado a proveedores' en la tarjeta financiera del Dashboard. Cuando se muestra, reduce el cálculo de Mi $.",
     "sectionCustomerDetail": "Detalle de cliente",
     "customerOrderRows": "Visualización de filas de pedido",
