@@ -259,6 +259,7 @@ export default function TenantAdminPaymentProvidersTab() {
               </li>
               <li className="helper">{t('paymentProviders.webhookStep2')}</li>
               <li className="helper">{t('paymentProviders.webhookStep3')}</li>
+              <li className="helper">{t('paymentProviders.webhookStep4')}</li>
             </ol>
           ) : (
             <p className="helper" style={{ marginBottom: 4 }}>
