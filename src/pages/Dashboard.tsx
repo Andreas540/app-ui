@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, type Product, getAuthHeaders } from '../lib/api'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useAuth } from '../contexts/AuthContext'
-import { formatDate, formatMonthYear } from '../lib/time'
+import { useLocale } from '../contexts/LocaleContext'
+import { todayYMD, formatDate, formatMonthYear } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import { useCurrency } from '../lib/useCurrency'
 import {
@@ -256,6 +257,7 @@ export default function Dashboard() {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { user } = useAuth()
+  const { timezone } = useLocale()
   const config = getTenantConfig(user?.tenantId)
   const showOwedToSuppliers = config.ui.showOwedToSuppliers
 
@@ -498,9 +500,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       const res = await fetch(`${base}/api/orders-delivery`, {
   method: 'PUT',
   headers: getAuthHeaders(),
-  body: JSON.stringify({ 
-    order_id: orderId, 
-    delivered: newDeliveredStatus 
+  body: JSON.stringify({
+    order_id: orderId,
+    delivered: newDeliveredStatus,
+    delivered_at: newDeliveredStatus ? todayYMD(timezone) : null,
   }),
 })
       if (!res.ok) {
