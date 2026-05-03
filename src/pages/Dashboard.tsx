@@ -626,15 +626,17 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>{t('dashboard.title')}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
-            {([2, 3] as const).map(n => (
-              <button key={n} onClick={() => saveDashCols(n)}
-                style={{ height: 36, width: 36, fontSize: 13, border: 'none', borderRadius: 0, cursor: 'pointer',
-                  background: dashCols === n ? 'var(--primary)' : 'transparent',
-                  color: dashCols === n ? '#fff' : 'var(--text-secondary)' }}>
-                {n}
-              </button>
-            ))}
+          <div className="desktop-only">
+            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              {([2, 3] as const).map(n => (
+                <button key={n} onClick={() => saveDashCols(n)}
+                  style={{ height: 36, width: 36, fontSize: 13, border: 'none', borderRadius: 0, cursor: 'pointer',
+                    background: dashCols === n ? 'var(--primary)' : 'transparent',
+                    color: dashCols === n ? '#fff' : 'var(--text-secondary)' }}>
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
           <button
             ref={dashBtnRef}
