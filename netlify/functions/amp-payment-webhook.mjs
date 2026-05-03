@@ -103,21 +103,22 @@ export async function handler(event) {
       if (!existingOrder.length) {
         const counterRow = await sql`
           INSERT INTO tenant_order_counters (tenant_id, last_order_no)
-          VALUES (${tenantId}::uuid, (SELECT COALESCE(MAX(order_no),0)+1 FROM orders WHERE tenant_id=${tenantId}::uuid))
+          VALUES (${tenantId}, (SELECT COALESCE(MAX(order_no),0)+1 FROM orders WHERE tenant_id=${tenantId}))
           ON CONFLICT (tenant_id) DO UPDATE
             SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
           RETURNING last_order_no
         `
         const orderRow = await sql`
           INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-          VALUES (${tenantId}::uuid, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.order_date}, FALSE, ${entityId}::uuid)
+          VALUES (${tenantId}, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.order_date}, FALSE, ${entityId})
           RETURNING id
         `
         orderId = orderRow[0].id
         await sql`
-          INSERT INTO order_items (order_id, product_id, qty, unit_price)
-          VALUES (${orderId}::uuid, ${bk.service_id}, 1, ${amountPaid})
+          INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
+          VALUES (${orderId}, ${bk.service_id}, ${bk.service_id}, 1, ${amountPaid})
         `
+        console.log(`Created order ${orderId} for booking ${entityId}`)
       } else {
         orderId = existingOrder[0].id
       }
