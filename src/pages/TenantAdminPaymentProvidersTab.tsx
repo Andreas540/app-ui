@@ -42,7 +42,12 @@ export default function TenantAdminPaymentProvidersTab() {
     const row = storedRows.find(r => r.provider === selectedProvider)
     setPublishableKey(row?.publishable_key || '')
     setSecretKey('')
-    setWebhookSecret('')
+    // AMP: auto-generate a callback secret if one isn't stored yet
+    setWebhookSecret(
+      selectedProvider === 'amp' && !row?.webhook_secret_set
+        ? crypto.randomUUID()
+        : ''
+    )
     setEnabled(row?.enabled ?? false)
   }, [selectedProvider, storedRows])
 
@@ -210,24 +215,31 @@ export default function TenantAdminPaymentProvidersTab() {
           <label className="label">
             {selectedProvider === 'amp' ? t('paymentProviders.callbackSecret') : t('paymentProviders.webhookSecret')}
           </label>
-          {selectedProvider === 'amp' && (
-            <p className="helper" style={{ marginBottom: 4 }}>
-              {t('paymentProviders.callbackSecretHelper')}
-            </p>
+          <p className="helper" style={{ marginBottom: 4 }}>
+            {selectedProvider === 'amp'
+              ? t('paymentProviders.callbackSecretHelper')
+              : storedRow?.webhook_secret_set
+                ? `${t('paymentProviders.keySet')} — ${t('paymentProviders.leaveBlankToKeep')}`
+                : null}
+          </p>
+          {selectedProvider === 'amp' ? (
+            <input
+              type="text"
+              className="input"
+              value={storedRow?.webhook_secret_set ? t('paymentProviders.callbackSecretStored') : webhookSecret}
+              readOnly
+              style={{ fontFamily: 'monospace', fontSize: 13, maxWidth: 480, color: 'var(--text-secondary)', cursor: 'default' }}
+            />
+          ) : (
+            <input
+              type="password"
+              className="input"
+              placeholder={storedRow?.webhook_secret_set ? '••••••••' : 'whsec_...'}
+              value={webhookSecret}
+              onChange={e => setWebhookSecret(e.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: 13, maxWidth: 480 }}
+            />
           )}
-          {storedRow?.webhook_secret_set && (
-            <p className="helper" style={{ marginBottom: 4 }}>
-              {t('paymentProviders.keySet')} — {t('paymentProviders.leaveBlankToKeep')}
-            </p>
-          )}
-          <input
-            type="password"
-            className="input"
-            placeholder={storedRow?.webhook_secret_set ? '••••••••' : selectedProvider === 'stripe' ? 'whsec_...' : ''}
-            value={webhookSecret}
-            onChange={e => setWebhookSecret(e.target.value)}
-            style={{ fontFamily: 'monospace', fontSize: 13, maxWidth: 480 }}
-          />
         </div>
 
         {/* Webhook / Callback URL (read-only, informational) */}
@@ -246,7 +258,11 @@ export default function TenantAdminPaymentProvidersTab() {
             value={webhookUrl}
             readOnly
             onClick={e => (e.target as HTMLInputElement).select()}
-            style={{ fontFamily: 'monospace', fontSize: 12, maxWidth: 480, cursor: 'text' }}
+            style={{
+              fontFamily: 'monospace', fontSize: 12, maxWidth: 480,
+              cursor: selectedProvider === 'amp' ? 'default' : 'text',
+              color: selectedProvider === 'amp' ? 'var(--text-secondary)' : undefined,
+            }}
           />
         </div>
 

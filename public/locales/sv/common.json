@@ -1443,10 +1443,11 @@
     "leaveBlankToKeep": "lämna tomt för att behålla befintlig",
     "accountNumber": "Kontonummer",
     "apiKey": "API-nyckel",
-    "callbackSecret": "Callback-hemlighet",
-    "callbackSecretHelper": "En valfri hemlig sträng. Används för att signera och verifiera betalningsåterkopplingar från AMP Payments, och förhindrar förfalskade notifieringar.",
-    "callbackUrl": "Callback-URL",
-    "callbackUrlHelper": "Denna URL tar emot betalningsbekräftelser från AMP Payments. Den anges automatiskt per transaktion — ingen manuell konfiguration krävs i ditt AMP-konto.",
+    "callbackSecret": "Callback-hemlighet (autogenererad)",
+    "callbackSecretHelper": "Genereras automatiskt av systemet. Används internt för att verifiera att betalningsåterkopplingar verkligen kommer från AMP Payments. Ingen åtgärd krävs.",
+    "callbackSecretStored": "(genererad — sparad säkert)",
+    "callbackUrl": "Callback-URL (information)",
+    "callbackUrlHelper": "Inkluderas automatiskt i varje betalningsbegäran som skickas till AMP. Ingen åtgärd krävs från din sida.",
     "moreProvidersComingSoon": "Fler betalningsleverantörer tillkommer snart."
   },
   "bookingPage": {

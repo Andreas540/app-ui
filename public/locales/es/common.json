@@ -1443,10 +1443,11 @@
     "leaveBlankToKeep": "deja en blanco para mantener la existente",
     "accountNumber": "Número de cuenta",
     "apiKey": "Clave de API",
-    "callbackSecret": "Secreto de callback",
-    "callbackSecretHelper": "Una cadena secreta de tu elección. Se usa para firmar y verificar los callbacks de pago de AMP Payments, evitando notificaciones falsificadas.",
-    "callbackUrl": "URL de callback",
-    "callbackUrlHelper": "Esta URL recibe las confirmaciones de pago de AMP Payments. Se configura automáticamente por transacción — no se necesita configuración manual en tu cuenta AMP.",
+    "callbackSecret": "Secreto de callback (autogenerado)",
+    "callbackSecretHelper": "Generado automáticamente por el sistema. Se usa internamente para verificar que los callbacks de pago provienen genuinamente de AMP Payments. No se requiere ninguna acción.",
+    "callbackSecretStored": "(generado — almacenado de forma segura)",
+    "callbackUrl": "URL de callback (informativa)",
+    "callbackUrlHelper": "Se incluye automáticamente en cada solicitud de pago enviada a AMP. No se requiere ninguna acción por tu parte.",
     "moreProvidersComingSoon": "Más proveedores de pago próximamente."
   },
   "bookingPage": {
