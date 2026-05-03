@@ -38,8 +38,11 @@ export async function handler(event) {
       AuthCode,
       ResponseMsg,
       ExtField1: receivedSig,
-      ExtField2: orderId,
+      ExtField2: entityId,  // booking_id or order_id depending on ExtField3
+      ExtField3: entityType, // 'booking' | undefined (undefined = order)
     } = payload
+
+    const isBooking = entityType === 'booking'
 
     // ── Verify HMAC if callback_secret is configured ──────────────────────────
     const ampRows = await sql`
@@ -50,7 +53,7 @@ export async function handler(event) {
     `
     if (ampRows.length && ampRows[0].callback_secret) {
       const expected = createHmac('sha256', ampRows[0].callback_secret)
-        .update(`${orderId}:${tenantId}`)
+        .update(`${entityId}:${tenantId}`)
         .digest('hex')
       if (receivedSig !== expected) {
         console.error(`AMP callback HMAC mismatch for tenant ${tenantId}`)
@@ -64,37 +67,68 @@ export async function handler(event) {
       return resp(200, { received: true })
     }
 
-    if (!orderId) {
-      console.error('AMP callback missing ExtField2 (order_id)')
-      return resp(400, { error: 'order_id missing from callback' })
+    if (!entityId) {
+      console.error('AMP callback missing ExtField2 (entity id)')
+      return resp(400, { error: 'entity id missing from callback' })
     }
 
-    // ── Look up order ─────────────────────────────────────────────────────────
+    const amountPaid = Number(ApprovedAmount) || 0
+    const txNotes = `AMP Payments TxID:${TransactionID || ''}${AuthCode ? ' AuthCode:' + AuthCode : ''}`
+
+    // ── Booking payment ───────────────────────────────────────────────────────
+    if (isBooking) {
+      const bookingRows = await sql`
+        SELECT id, customer_id FROM bookings
+        WHERE id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
+        LIMIT 1
+      `
+      if (!bookingRows.length) return resp(404, { error: 'Booking not found' })
+      const booking = bookingRows[0]
+
+      await sql`
+        UPDATE bookings
+        SET booking_status = 'confirmed', payment_status = 'paid', updated_at = now()
+        WHERE id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
+          AND booking_status = 'pending_payment'
+      `
+      await sql`
+        UPDATE orders
+        SET payment_status = 'paid', updated_at = now()
+        WHERE booking_id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
+      `.catch(() => {})
+
+      await sql`
+        INSERT INTO payments (tenant_id, customer_id, amount, payment_type, payment_date, notes)
+        VALUES (${tenantId}::uuid, ${booking.customer_id}, ${amountPaid}, 'amp',
+          ${new Date().toISOString().slice(0, 10)}, ${txNotes})
+      `
+      console.log(`AMP booking payment recorded: booking ${entityId}, TxID ${TransactionID}`)
+      return resp(200, { received: true })
+    }
+
+    // ── Order payment ─────────────────────────────────────────────────────────
     const orderRows = await sql`
       SELECT id, customer_id FROM orders
-      WHERE id = ${orderId}::uuid AND tenant_id = ${tenantId}::uuid
+      WHERE id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
       LIMIT 1
     `
     if (!orderRows.length) return resp(404, { error: 'Order not found' })
     const order = orderRows[0]
-
-    const amountPaid = Number(ApprovedAmount) || 0
-    const notes = `AMP Payments TxID:${TransactionID || ''}${AuthCode ? ' AuthCode:' + AuthCode : ''}`
 
     await sql`
       INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
       VALUES (
         ${tenantId}::uuid,
         ${order.customer_id},
-        ${orderId}::uuid,
+        ${entityId}::uuid,
         ${amountPaid},
         'amp',
         ${new Date().toISOString().slice(0, 10)},
-        ${notes}
+        ${txNotes}
       )
     `
 
-    console.log(`AMP payment recorded: order ${orderId}, TxID ${TransactionID}, amount ${amountPaid}`)
+    console.log(`AMP payment recorded: order ${entityId}, TxID ${TransactionID}, amount ${amountPaid}`)
     return resp(200, { received: true })
   } catch (e) {
     console.error('amp-payment-webhook error:', e)

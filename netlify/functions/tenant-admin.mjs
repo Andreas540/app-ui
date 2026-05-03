@@ -83,11 +83,19 @@ async function handleGet(event) {
 
     if (action === 'getBookingConfig') {
       const tenant = await sql`
-        SELECT booking_slug, booking_payment_provider FROM tenants WHERE id = ${tenantId} LIMIT 1
+        SELECT booking_slug FROM tenants WHERE id = ${tenantId} LIMIT 1
       `
+      // Derive active payment provider from actual credentials, not the stale column
+      const providerRow = await sql`
+        SELECT provider FROM tenant_payment_providers
+        WHERE tenant_id = ${tenantId} AND enabled = true
+          AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+        ORDER BY CASE provider WHEN 'stripe' THEN 0 ELSE 1 END
+        LIMIT 1
+      `.catch(() => [])
       return cors(200, {
-        slug:            tenant[0]?.booking_slug             || '',
-        paymentProvider: tenant[0]?.booking_payment_provider || 'none',
+        slug:            tenant[0]?.booking_slug || '',
+        paymentProvider: providerRow[0]?.provider || 'none',
       })
     }
 

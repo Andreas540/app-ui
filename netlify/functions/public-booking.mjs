@@ -258,10 +258,10 @@ async function getBookingData(event) {
       availability[row.service_id].push(row.day_of_week)
     }
 
-    // Check if tenant has an active Stripe provider
+    // Check if tenant has any active payment provider
     const paymentRows = await sql`
       SELECT 1 FROM tenant_payment_providers
-      WHERE tenant_id = ${tenantId}::uuid AND provider = 'stripe' AND enabled = true
+      WHERE tenant_id = ${tenantId}::uuid AND enabled = true
         AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
       LIMIT 1
     `.catch(() => [])
@@ -391,7 +391,7 @@ async function createBooking(event) {
     if (!startAt || isNaN(startAt.getTime())) return cors(400, { error: 'Invalid date or time' })
     const endAt = new Date(startAt.getTime() + durationMin * 60 * 1000)
 
-    // Check if Stripe is enabled for this tenant
+    // Check which payment provider is enabled for this tenant (Stripe preferred)
     const stripeRows = await sql`
       SELECT secret_key FROM tenant_payment_providers
       WHERE tenant_id = ${tenantId}::uuid AND provider = 'stripe' AND enabled = true
@@ -400,9 +400,20 @@ async function createBooking(event) {
     `.catch(() => [])
     const stripeSecretKey = stripeRows[0]?.secret_key || null
 
+    const ampRows = !stripeSecretKey ? await sql`
+      SELECT publishable_key AS account, secret_key AS apikey, webhook_secret AS callback_secret
+      FROM tenant_payment_providers
+      WHERE tenant_id = ${tenantId}::uuid AND provider = 'amp' AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+      LIMIT 1
+    `.catch(() => []) : []
+    const ampConfig = ampRows[0] || null
+
+    const hasPayment = (stripeSecretKey || ampConfig) && price > 0
+
     // Determine initial booking status
-    const bookingStatus = stripeSecretKey && price > 0 ? 'pending_payment' : 'confirmed'
-    const paymentStatus = stripeSecretKey && price > 0 ? 'pending'          : 'unpaid'
+    const bookingStatus = hasPayment ? 'pending_payment' : 'confirmed'
+    const paymentStatus = hasPayment ? 'pending'          : 'unpaid'
 
     // Create booking
     const bkRow = await sql`
@@ -450,15 +461,16 @@ async function createBooking(event) {
       VALUES (${tenantId}, 'booking', ${cleanName}, ${JSON.stringify({ service_name: svc.name, date, start_time: start_time.slice(0, 5) })}::jsonb)
     `.catch(err => console.error('external_events insert failed:', err))
 
+    const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
+
     // ── Stripe Checkout ───────────────────────────────────────────────────────
     if (stripeSecretKey && price > 0) {
       const Stripe = (await import('stripe')).default
       const stripe  = new Stripe(stripeSecretKey)
-      const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
 
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
-        expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30-minute window
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         line_items: [{
           price_data: {
             currency:     currency.toLowerCase(),
@@ -474,6 +486,42 @@ async function createBooking(event) {
       })
 
       return cors(200, { checkout_url: session.url })
+    }
+
+    // ── AMP Payments Checkout ─────────────────────────────────────────────────
+    if (ampConfig && price > 0) {
+      const { createHmac } = await import('crypto')
+      const sig = ampConfig.callback_secret
+        ? createHmac('sha256', ampConfig.callback_secret)
+            .update(`${bookingId}:${tenantId}`)
+            .digest('hex')
+        : null
+
+      const ptkRes = await fetch('https://postransactions.com/cnp/getptk.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ampConfig.apikey },
+        body: JSON.stringify({
+          account:     ampConfig.account,
+          method:      'creditsale',
+          amount:      price,
+          ticketid:    `BK-${bookingId.slice(0, 12)}`,
+          paysource:   'INTERNET',
+          notes:       svc.name,
+          successurl:  `${appBase}/book/${slug}?booking_success=${bookingId}`,
+          failureurl:  `${appBase}/book/${slug}?booking_canceled=1`,
+          responseurl: `${appBase}/api/amp-payment-webhook?tenant_id=${tenantId}`,
+          ...(sig ? { extfield1: sig } : {}),
+          extfield2: bookingId, // echoed back so webhook can identify booking
+          extfield3: 'booking', // signals webhook this is a booking, not an order
+          ...(cleanEmail ? { email: cleanEmail } : {}),
+        }),
+      })
+      const ptkData = await ptkRes.json()
+      if (!ptkData.success || !ptkData.data?.ptk) {
+        console.error('AMP PTK failed for booking:', ptkData)
+        return cors(502, { error: ptkData.message || 'Failed to generate payment session' })
+      }
+      return cors(200, { checkout_url: `https://postransactions.com/cnp/cnp?ptk=${ptkData.data.ptk}` })
     }
 
     // ── No payment required — return confirmation directly ────────────────────
