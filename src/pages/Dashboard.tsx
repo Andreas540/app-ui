@@ -21,7 +21,7 @@ const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K`
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 // Fixed-but-responsive height: shorter on phones, taller on desktop
-const CHART_HEIGHT_CSS = 'clamp(260px, 40vh, 420px)'
+const CHART_HEIGHT_CSS = 260
 
 function getDeliveryVisual(order: any) {
   const deliveredQty = Number(order.delivered_quantity ?? 0)
