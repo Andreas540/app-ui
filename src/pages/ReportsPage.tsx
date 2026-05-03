@@ -218,7 +218,7 @@ function ChartSlide({
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
               strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
               {showPct && (
-                <LabelList dataKey={lineKey} position="top" offset={8}
+                <LabelList dataKey={lineKey} position="bottom" offset={8}
                   formatter={(v: any) => fmtPct1(Number(v))} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
