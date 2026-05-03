@@ -63,13 +63,15 @@ async function getBookingData(event) {
 
     // ── Booking detail fetch (post-payment return) ─────────────────────────
     if (booking_id && slug) {
+      await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
       const rows = await sql`
         SELECT b.id, b.booking_status, b.payment_status,
-               b.total_amount, b.currency,
+               b.total_amount, b.currency, b.service_id, b.customer_id,
+               b.checkout_session_id,
                to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'YYYY-MM-DD') AS booking_date,
                to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'HH24:MI')    AS booking_time,
                p.name AS service_name, p.duration_minutes,
-               t.name AS tenant_name
+               t.name AS tenant_name, t.id AS tenant_id
         FROM bookings b
         JOIN products p  ON p.id = b.service_id
         JOIN tenants  t  ON t.id = b.tenant_id
@@ -79,6 +81,65 @@ async function getBookingData(event) {
       `
       if (!rows.length) return cors(404, { error: 'Booking not found' })
       const bk = rows[0]
+
+      // ── Fallback: if still pending_payment, verify with Stripe directly ──────
+      // This covers the case where the webhook wasn't called (e.g. not yet configured)
+      if (bk.booking_status === 'pending_payment' && bk.checkout_session_id) {
+        const stripeRows = await sql`
+          SELECT secret_key FROM tenant_payment_providers
+          WHERE tenant_id = ${bk.tenant_id} AND provider = 'stripe' AND enabled = true
+            AND secret_key IS NOT NULL
+          LIMIT 1
+        `.catch(() => [])
+
+        if (stripeRows.length) {
+          const Stripe  = (await import('stripe')).default
+          const stripe  = new Stripe(stripeRows[0].secret_key)
+          const session = await stripe.checkout.sessions.retrieve(bk.checkout_session_id).catch(() => null)
+
+          if (session?.payment_status === 'paid') {
+            // Confirm booking
+            await sql`
+              UPDATE bookings SET booking_status = 'confirmed', payment_status = 'paid', updated_at = now()
+              WHERE id = ${booking_id}::uuid AND booking_status = 'pending_payment'
+            `
+            // Create order (idempotent)
+            const existingOrder = await sql`
+              SELECT id FROM orders WHERE booking_id = ${booking_id}::uuid AND tenant_id = ${bk.tenant_id} LIMIT 1
+            `.catch(() => [])
+            if (!existingOrder.length) {
+              const counterRow = await sql`
+                INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+                VALUES (${bk.tenant_id}, (SELECT COALESCE(MAX(order_no),0)+1 FROM orders WHERE tenant_id=${bk.tenant_id}))
+                ON CONFLICT (tenant_id) DO UPDATE
+                  SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
+                RETURNING last_order_no
+              `
+              const orderRow = await sql`
+                INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+                VALUES (${bk.tenant_id}, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.booking_date}, FALSE, ${booking_id})
+                RETURNING id
+              `
+              const orderId = orderRow[0].id
+              await sql`
+                INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
+                VALUES (${orderId}, ${bk.service_id}, ${bk.service_id}, 1, ${Number(bk.total_amount)})
+              `
+              // Record payment
+              await sql`
+                INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
+                VALUES (${bk.tenant_id}, ${bk.customer_id}, ${orderId}, ${session.amount_total / 100},
+                  'stripe', ${new Date().toISOString().slice(0,10)},
+                  ${'Stripe booking ' + (session.payment_intent || bk.checkout_session_id)})
+              `
+              console.log(`Fallback: created order ${orderId} for booking ${booking_id}`)
+            }
+            bk.booking_status = 'confirmed'
+            bk.payment_status = 'paid'
+          }
+        }
+      }
+
       return cors(200, {
         booking_id:       bk.id,
         booking_status:   bk.booking_status,
@@ -517,6 +578,14 @@ async function createBooking(event) {
         success_url: `${appBase}/book/${slug}?booking_success=${bookingId}`,
         cancel_url:  `${appBase}/book/${slug}?booking_canceled=1`,
       })
+
+      // Store session ID on booking so the success page can verify payment without a webhook
+      await sql`
+        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS checkout_session_id text
+      `.catch(() => {})
+      await sql`
+        UPDATE bookings SET checkout_session_id = ${session.id} WHERE id = ${bookingId}
+      `.catch(() => {})
 
       return cors(200, { checkout_url: session.url })
     }
