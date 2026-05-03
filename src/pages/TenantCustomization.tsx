@@ -457,14 +457,19 @@ export default function TenantCustomization() {
               <Row label={t('tenantCustom.dashboardCards')}
                 customized={cu.dashboardCards !== undefined}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {(['financials', 'charts', 'orders'] as const).map(cardId => {
+                  {([
+                    { id: 'financials',    key: 'dashboard.cardFinancials'   },
+                    { id: 'charts',        key: 'dashboard.cardCharts'       },
+                    { id: 'orders',        key: 'dashboard.cardOrders'       },
+                    { id: 'price-checker', key: 'dashboard.cardPriceChecker' },
+                  ] as const).map(({ id: cardId, key }) => {
                     const cards = cu.dashboardCards ?? du.dashboardCards
                     return (
                       <label key={cardId} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                         <input type="checkbox" checked={cards.includes(cardId)}
                           onChange={() => toggleDashboardCard(cardId)}
                           style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-                        <span>{t(`dashboard.card${cardId.charAt(0).toUpperCase() + cardId.slice(1)}`)}</span>
+                        <span>{t(key)}</span>
                       </label>
                     )
                   })}

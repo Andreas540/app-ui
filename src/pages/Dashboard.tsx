@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { listCustomersWithOwed, type CustomerWithOwed, getAuthHeaders } from '../lib/api'
+import { listCustomersWithOwed, type CustomerWithOwed, type Product, getAuthHeaders } from '../lib/api'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useAuth } from '../contexts/AuthContext'
 import { formatDate, formatMonthYear } from '../lib/time'
@@ -199,9 +199,10 @@ function ChartSlide({
 // ── Dashboard card registry ────────────────────────────────────────────────────
 
 const ALL_CARDS = [
-  { id: 'financials', labelKey: 'dashboard.cardFinancials' },
-  { id: 'charts',     labelKey: 'dashboard.cardCharts'     },
-  { id: 'orders',     labelKey: 'dashboard.cardOrders'     },
+  { id: 'financials',    labelKey: 'dashboard.cardFinancials'   },
+  { id: 'charts',        labelKey: 'dashboard.cardCharts'       },
+  { id: 'orders',        labelKey: 'dashboard.cardOrders'       },
+  { id: 'price-checker', labelKey: 'dashboard.cardPriceChecker' },
 ] as const
 
 const LS_DASH_ORDER  = 'dashboard_order'
@@ -265,6 +266,13 @@ export default function Dashboard() {
 
   const [showPct, setShowPct] = useState(false)
 
+  // Price Checker card state
+  const [pcProducts,    setPcProducts]    = useState<Product[]>([])
+  const [pcCustomerId,  setPcCustomerId]  = useState('')
+  const [pcProductId,   setPcProductId]   = useState('')
+  const [pcData,        setPcData]        = useState<{ price_last_time: number | null; average_price: number | null; order_count: number } | null>(null)
+  const [pcLoading,     setPcLoading]     = useState(false)
+
   // Dashboard card customisation
   const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
   const [dashVisible,  setDashVisible]  = useState<string[]>(() => loadDashVisible(config.ui.dashboardCards))
@@ -288,6 +296,37 @@ export default function Dashboard() {
       }
     })()
   }, [])
+
+  // Load products for Price Checker card
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/bootstrap`, { cache: 'no-store', headers: getAuthHeaders() })
+        if (!res.ok) return
+        const data = await res.json()
+        setPcProducts(data.products || [])
+      } catch { /* silent */ }
+    })()
+  }, [])
+
+  // Fetch price data when both IDs selected
+  useEffect(() => {
+    if (!pcCustomerId || !pcProductId) { setPcData(null); return }
+    setPcLoading(true)
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(
+          `${base}/api/price-checker?customer_id=${pcCustomerId}&product_id=${pcProductId}`,
+          { cache: 'no-store', headers: getAuthHeaders() }
+        )
+        if (res.ok) setPcData(await res.json())
+        else setPcData(null)
+      } catch { setPcData(null) }
+      finally { setPcLoading(false) }
+    })()
+  }, [pcCustomerId, pcProductId])
 
   // Load JJ Boston partner net and exclude it from partner totals
   useEffect(() => {
@@ -798,6 +837,64 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     )
                   })}
                 </div>
+              )}
+            </div>
+          )
+
+          if (cardId === 'price-checker') return (
+            <div key="price-checker" className="card" style={{ alignSelf: 'start' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardPriceChecker')}</h3>
+                {moveArrows}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <label>{t('customer')}</label>
+                  <select value={pcCustomerId} onChange={e => setPcCustomerId(e.target.value)} style={{ height: 36 }}>
+                    <option value="">{t('priceChecker.selectCustomer')}</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label>{t('product')}</label>
+                  <select value={pcProductId} onChange={e => setPcProductId(e.target.value)} style={{ height: 36 }}>
+                    <option value="">{t('priceChecker.selectProduct')}</option>
+                    {pcProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {pcCustomerId && pcProductId && (
+                <div style={{ marginTop: 16 }}>
+                  {pcLoading ? (
+                    <span className="helper">{t('loading')}</span>
+                  ) : pcData ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.priceLastTime')}</div>
+                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                          {pcData.price_last_time == null ? '—' : fmtMoney(pcData.price_last_time)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.averagePrice')}</div>
+                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                          {pcData.average_price == null ? '—' : fmtMoney(pcData.average_price)}
+                        </div>
+                        <div className="helper" style={{ marginTop: 4 }}>
+                          {t('priceChecker.previousOrders', { count: pcData.order_count })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="helper">{t('priceChecker.noPriceData')}</span>
+                  )}
+                </div>
+              )}
+
+              {(!pcCustomerId || !pcProductId) && (
+                <p className="helper" style={{ marginTop: 12, marginBottom: 0 }}>{t('priceChecker.selectBoth')}</p>
               )}
             </div>
           )
