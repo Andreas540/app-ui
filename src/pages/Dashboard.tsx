@@ -205,8 +205,9 @@ const ALL_CARDS = [
   { id: 'price-checker', labelKey: 'dashboard.cardPriceChecker' },
 ] as const
 
-const LS_DASH_ORDER  = 'dashboard_order'
-const LS_DASH_HIDDEN = 'dashboard_hidden'
+const LS_DASH_ORDER   = 'dashboard_order'
+const LS_DASH_VISIBLE = 'dashboard_visible'
+const LS_DASH_HIDDEN  = 'dashboard_hidden' // legacy key, migrated on first read
 
 function loadDashOrder(): string[] {
   try {
@@ -222,13 +223,32 @@ function loadDashOrder(): string[] {
 }
 
 function loadDashVisible(defaultCards: string[]): string[] {
+  // New format: explicit visible list — new cards are NOT added automatically
   try {
-    const s = localStorage.getItem(LS_DASH_HIDDEN)
+    const s = localStorage.getItem(LS_DASH_VISIBLE)
     if (s) {
-      const hidden: string[] = JSON.parse(s)
-      return ALL_CARDS.map(c => c.id).filter(id => !hidden.includes(id))
+      const saved: string[] = JSON.parse(s)
+      return saved.filter(id => ALL_CARDS.some(c => c.id === id))
     }
   } catch {}
+
+  // Migrate from old hidden-list format (one-time, then switch to visible-list)
+  try {
+    const h = localStorage.getItem(LS_DASH_HIDDEN)
+    if (h) {
+      const hidden: string[] = JSON.parse(h)
+      // Visible = previously-known cards minus hidden, plus new cards from config default
+      const knownIds = ['financials', 'charts', 'orders']
+      const visible = [
+        ...knownIds.filter(id => !hidden.includes(id)),
+        ...defaultCards.filter(id => !knownIds.includes(id)),
+      ]
+      localStorage.setItem(LS_DASH_VISIBLE, JSON.stringify(visible))
+      localStorage.removeItem(LS_DASH_HIDDEN)
+      return visible
+    }
+  } catch {}
+
   return defaultCards
 }
 
@@ -565,9 +585,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   function toggleDashCard(id: string) {
     setDashVisible(v => {
-      const next   = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
-      const hidden = ALL_CARDS.map(c => c.id).filter(cid => !next.includes(cid))
-      localStorage.setItem(LS_DASH_HIDDEN, JSON.stringify(hidden))
+      const next = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
+      localStorage.setItem(LS_DASH_VISIBLE, JSON.stringify(next))
       return next
     })
   }
