@@ -164,6 +164,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     const {
       id,
       customer_id,
+      // items[] is the new multi-item format; product_id/qty/unit_price kept for legacy callers
+      items,
       product_id,
       qty,
       unit_price,
@@ -179,40 +181,37 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
     if (!id) return cors(400, { error: 'id is required' })
     if (!customer_id) return cors(400, { error: 'customer_id is required' })
-    if (!product_id) return cors(400, { error: 'product_id is required' })
-    if (!qty || qty <= 0) return cors(400, { error: 'qty must be > 0' })
     if (!date) return cors(400, { error: 'date is required' })
+
+    // Normalise to items array — prefer new format, fall back to legacy single-item
+    const itemList = (Array.isArray(items) && items.length > 0)
+      ? items
+      : (product_id ? [{ product_id, qty, unit_price }] : null)
+    if (!itemList) return cors(400, { error: 'product_id or items[] is required' })
 
     const sql = neon(DATABASE_URL)
 
     const authz = await resolveAuthz({ sql, event })
-if (authz.error) return cors(403, { error: authz.error })
+    if (authz.error) return cors(403, { error: authz.error })
+    const TENANT_ID = authz.tenantId
 
-const TENANT_ID = authz.tenantId
-
-    // Look up product name to decide if negative price is allowed
-    const products = await sql`
-  SELECT name
-  FROM products
-  WHERE id = ${product_id} AND tenant_id = ${TENANT_ID}
-  LIMIT 1
-    `
-    if (products.length === 0) return cors(400, { error: 'Invalid product_id' })
-
-    const productName = (products[0].name || '').trim().toLowerCase()
-    const isRefundProduct = productName === 'refund/discount'
-
-    // Validate unit_price according to product type
-    if (typeof unit_price !== 'number' || Number.isNaN(unit_price)) {
-      return cors(400, { error: 'unit_price must be a number' })
-    }
-    if (isRefundProduct) {
-      if (!(unit_price < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' })
-    } else {
-      if (!(unit_price > 0)) return cors(400, { error: 'unit_price must be > 0' })
+    // Validate every item
+    for (const item of itemList) {
+      if (!item.product_id) return cors(400, { error: 'product_id required for each item' })
+      if (!item.qty || item.qty <= 0) return cors(400, { error: 'qty must be > 0' })
+      if (typeof item.unit_price !== 'number' || Number.isNaN(item.unit_price)) {
+        return cors(400, { error: 'unit_price must be a number' })
+      }
+      const prods = await sql`
+        SELECT name FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID} LIMIT 1
+      `
+      if (!prods.length) return cors(400, { error: `Invalid product_id: ${item.product_id}` })
+      const isRefund = (prods[0].name || '').trim().toLowerCase() === 'refund/discount'
+      if (isRefund && !(item.unit_price < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' })
+      if (!isRefund && !(item.unit_price > 0)) return cors(400, { error: 'unit_price must be > 0' })
     }
 
-    // Update order with cost overrides
+    // Update order header
     await sql`
       UPDATE orders
       SET order_date = ${date},
@@ -224,27 +223,18 @@ const TENANT_ID = authz.tenantId
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `
 
-    // Update order_items
-    await sql`
-  UPDATE order_items oi
-  SET product_id = ${product_id},
-      qty = ${qty},
-      unit_price = ${unit_price}
-  FROM orders o
-  WHERE oi.order_id = o.id
-    AND o.id = ${id}
-    AND o.tenant_id = ${TENANT_ID}
-    `
-    // If we have a per-item product cost (override or from history),
-    // persist it to order_items.product_cost only.
-    if (typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost)) {
+    // Replace all order_items
+    await sql`DELETE FROM order_items WHERE order_id = ${id}`
+    for (const item of itemList) {
       await sql`
-  UPDATE order_items oi
-  SET product_cost = ${item_product_cost}
-  FROM orders o
-  WHERE oi.order_id = o.id
-    AND o.id = ${id}
-    AND o.tenant_id = ${TENANT_ID}
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost)
+        VALUES (
+          ${id},
+          ${item.product_id},
+          ${item.qty},
+          ${item.unit_price},
+          ${typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost) ? item_product_cost : null}
+        )
       `
     }
 

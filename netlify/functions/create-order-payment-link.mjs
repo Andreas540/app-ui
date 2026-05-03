@@ -30,21 +30,21 @@ export async function handler(event) {
     const { order_id } = JSON.parse(rawBody)
     if (!order_id) return cors(400, { error: 'order_id is required' })
 
-    // Fetch order
+    // Fetch order — aggregate all items into a single row
     const orderRows = await sql`
       SELECT
         o.id, o.order_no, o.customer_id,
         SUM(oi.qty * oi.unit_price)::numeric AS total_amount,
-        p.name AS product_name,
+        string_agg(DISTINCT p.name, ', ' ORDER BY p.name) AS product_names,
         cu.name AS customer_name,
         cu.email AS customer_email,
-        COALESCE(p.currency, 'USD') AS currency
+        'USD' AS currency
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN products p ON p.id = oi.product_id
       LEFT JOIN customers cu ON cu.id = o.customer_id
       WHERE o.id = ${order_id}::uuid AND o.tenant_id = ${authz.tenantId}::uuid
-      GROUP BY o.id, o.order_no, o.customer_id, p.name, cu.name, cu.email, p.currency
+      GROUP BY o.id, o.order_no, o.customer_id, cu.name, cu.email
       LIMIT 1
     `
     if (!orderRows.length) return cors(404, { error: 'Order not found' })
@@ -70,7 +70,7 @@ export async function handler(event) {
         line_items: [{
           price_data: {
             currency:     order.currency.toLowerCase(),
-            product_data: { name: order.product_name || `Order #${order.order_no}` },
+            product_data: { name: order.product_names || `Order #${order.order_no}` },
             unit_amount:  Math.round(amount * 100),
           },
           quantity: 1,
