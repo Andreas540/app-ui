@@ -673,7 +673,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
           )
 
           if (cardId === 'financials') return (
-            <div key="financials" className="card" style={{ alignSelf: 'start' }}>
+            <div key="financials" className="card">
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
               {loading ? (
                 <div className="helper">{t('loading')}</div>
@@ -706,7 +706,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'charts') return (
             <div key="charts" className="card"
-              style={{ display: 'flex', flexDirection: 'column', alignSelf: 'start' }}
+              style={{ display: 'flex', flexDirection: 'column' }}
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}
             >
@@ -742,7 +742,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
           )
 
           if (cardId === 'orders') return (
-            <div key="orders" className="card">
+            <div key="orders" className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 8 }}>
                 <button className="primary"
@@ -758,6 +758,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   {t('notDelivered')}
                 </button>
               </div>
+              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap: 8, alignItems:'center', marginTop: 12 }}>
                 <h3 style={{ margin:0, fontSize: 16 }}>{ordersTitle}</h3>
                 {recentOrders.length > 5 && (
@@ -860,11 +861,12 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   })}
                 </div>
               )}
+              </div>
             </div>
           )
 
           if (cardId === 'price-checker') return (
-            <div key="price-checker" className="card" style={{ alignSelf: 'start' }}>
+            <div key="price-checker" className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardPriceChecker')}</h3>
                 {moveArrows}

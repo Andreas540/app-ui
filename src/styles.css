@@ -217,6 +217,12 @@ a {
 @media (min-width: 768px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 380px;
+  }
+  .grid > .card {
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 }
 
