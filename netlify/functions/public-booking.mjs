@@ -378,6 +378,7 @@ async function createBooking(event) {
 
     const cleanPhone = phone?.trim() || null
     const cleanName  = name?.trim() || ''
+    const cleanEmail = email?.trim().toLowerCase() || ''
 
     let customerId
     if (tokenCustomerId) {
@@ -391,7 +392,6 @@ async function createBooking(event) {
       `
     } else {
       // Anonymous booking — find or create by email
-      const cleanEmail = email.trim().toLowerCase()
       const existingCust = await sql`
         SELECT id FROM customers
         WHERE tenant_id = ${tenantId} AND email = ${cleanEmail}
