@@ -432,6 +432,8 @@
     "saveOrder": "Save order",
     "more": "More",
     "less": "Less",
+    "addProduct": "Add product",
+    "removeProduct": "Remove",
     "paymentLink": "Payment link",
     "paymentLinkTitle": "Generate a Stripe payment link to share with the customer",
     "generatingLink": "Generating…",

@@ -432,6 +432,8 @@
     "saveOrder": "Spara beställning",
     "more": "Mer",
     "less": "Mindre",
+    "addProduct": "Lägg till produkt",
+    "removeProduct": "Ta bort",
     "paymentLink": "Betalningslänk",
     "paymentLinkTitle": "Generera en Stripe-betalningslänk att dela med kunden",
     "generatingLink": "Genererar…",
