@@ -1441,6 +1441,12 @@
     "statusNotConfigured": "No configurado",
     "keySet": "Clave configurada (oculta)",
     "leaveBlankToKeep": "deja en blanco para mantener la existente",
+    "accountNumber": "Número de cuenta",
+    "apiKey": "Clave de API",
+    "callbackSecret": "Secreto de callback",
+    "callbackSecretHelper": "Una cadena secreta de tu elección. Se usa para firmar y verificar los callbacks de pago de AMP Payments, evitando notificaciones falsificadas.",
+    "callbackUrl": "URL de callback",
+    "callbackUrlHelper": "Esta URL recibe las confirmaciones de pago de AMP Payments. Se configura automáticamente por transacción — no se necesita configuración manual en tu cuenta AMP.",
     "moreProvidersComingSoon": "Más proveedores de pago próximamente."
   },
   "bookingPage": {

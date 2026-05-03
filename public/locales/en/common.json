@@ -1441,6 +1441,12 @@
     "statusNotConfigured": "Not configured",
     "keySet": "Key is set (hidden)",
     "leaveBlankToKeep": "leave blank to keep existing",
+    "accountNumber": "Account Number",
+    "apiKey": "API Key",
+    "callbackSecret": "Callback Secret",
+    "callbackSecretHelper": "A secret string of your choice. Used to sign and verify payment callbacks from AMP Payments, preventing spoofed notifications.",
+    "callbackUrl": "Callback URL",
+    "callbackUrlHelper": "This URL receives payment confirmations from AMP Payments. It is set automatically per transaction — no manual configuration needed in your AMP account.",
     "moreProvidersComingSoon": "More payment providers coming soon."
   },
   "bookingPage": {

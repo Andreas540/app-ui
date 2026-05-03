@@ -1,10 +1,14 @@
 // netlify/functions/create-order-payment-link.mjs
 // POST /api/create-order-payment-link
 // { order_id }
-// Creates a Stripe Checkout Session for an order's outstanding amount.
-// Returns { checkout_url } for the tenant to share with their customer.
+// Creates a payment link for an order. Uses Stripe if configured, AMP Payments otherwise.
+// Returns { checkout_url, provider } for the tenant to share with their customer.
 
 import { resolveAuthz } from './utils/auth.mjs'
+import { createHmac }   from 'crypto'
+
+const EG_PTK_URL = 'https://postransactions.com/cnp/getptk.php'
+const EG_CNP_URL = 'https://postransactions.com/cnp/cnp'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -49,36 +53,84 @@ export async function handler(event) {
     const amount = Number(order.total_amount)
     if (!amount || amount <= 0) return cors(400, { error: 'Order has no payable amount' })
 
-    // Fetch tenant's Stripe config
+    const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
+
+    // ── Try Stripe first ──────────────────────────────────────────────────────
     const stripeRows = await sql`
       SELECT secret_key FROM tenant_payment_providers
       WHERE tenant_id = ${authz.tenantId}::uuid AND provider = 'stripe' AND enabled = true
         AND secret_key IS NOT NULL
       LIMIT 1
     `
-    if (!stripeRows.length) return cors(400, { error: 'Stripe is not configured or enabled for this tenant' })
+    if (stripeRows.length) {
+      const Stripe  = (await import('stripe')).default
+      const stripe  = new Stripe(stripeRows[0].secret_key)
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [{
+          price_data: {
+            currency:     order.currency.toLowerCase(),
+            product_data: { name: order.product_name || `Order #${order.order_no}` },
+            unit_amount:  Math.round(amount * 100),
+          },
+          quantity: 1,
+        }],
+        ...(order.customer_email ? { customer_email: order.customer_email } : {}),
+        metadata: { type: 'order', order_id: order.id, tenant_id: authz.tenantId },
+        success_url: `${appBase}/orders?payment_success=${order.id}`,
+        cancel_url:  `${appBase}/orders?payment_canceled=${order.id}`,
+      })
+      return cors(200, { checkout_url: session.url, provider: 'stripe' })
+    }
 
-    const Stripe = (await import('stripe')).default
-    const stripe  = new Stripe(stripeRows[0].secret_key)
-    const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
+    // ── Fall back to AMP Payments ─────────────────────────────────────────────
+    // publishable_key = EG account number, secret_key = EG API key,
+    // webhook_secret  = HMAC signing secret for callback verification
+    const ampRows = await sql`
+      SELECT publishable_key AS account, secret_key AS apikey, webhook_secret AS callback_secret
+      FROM tenant_payment_providers
+      WHERE tenant_id = ${authz.tenantId}::uuid AND provider = 'amp' AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+      LIMIT 1
+    `
+    if (!ampRows.length) {
+      return cors(400, { error: 'No payment provider is configured or enabled for this tenant' })
+    }
+    const { account, apikey, callback_secret } = ampRows[0]
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [{
-        price_data: {
-          currency:     order.currency.toLowerCase(),
-          product_data: { name: order.product_name || `Order #${order.order_no}` },
-          unit_amount:  Math.round(amount * 100),
-        },
-        quantity: 1,
-      }],
-      ...(order.customer_email ? { customer_email: order.customer_email } : {}),
-      metadata: { type: 'order', order_id: order.id, tenant_id: authz.tenantId },
-      success_url: `${appBase}/orders?payment_success=${order.id}`,
-      cancel_url:  `${appBase}/orders?payment_canceled=${order.id}`,
+    // Sign orderId:tenantId so the callback can be authenticated without DB state
+    const sig = callback_secret
+      ? createHmac('sha256', callback_secret)
+          .update(`${order.id}:${authz.tenantId}`)
+          .digest('hex')
+      : null
+
+    const ptkRes = await fetch(EG_PTK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey },
+      body: JSON.stringify({
+        account,
+        method:      'creditsale',
+        amount,
+        ticketid:    `ORD-${order.order_no}`,
+        paysource:   'INTERNET',
+        notes:       `Order #${order.order_no}`,
+        successurl:  `${appBase}/orders?payment_success=${order.id}`,
+        failureurl:  `${appBase}/orders?payment_failed=${order.id}`,
+        responseurl: `${appBase}/api/amp-payment-webhook?tenant_id=${authz.tenantId}`,
+        ...(sig        ? { extfield1: sig      } : {}),
+        extfield2: order.id, // order UUID echoed back for reliable callback lookup
+        ...(order.customer_email ? { email: order.customer_email } : {}),
+      }),
     })
 
-    return cors(200, { checkout_url: session.url })
+    const ptkData = await ptkRes.json()
+    if (!ptkData.success || !ptkData.data?.ptk) {
+      console.error('EG PTK generation failed:', ptkData)
+      return cors(502, { error: ptkData.message || 'Failed to generate AMP payment session' })
+    }
+
+    return cors(200, { checkout_url: `${EG_CNP_URL}?ptk=${ptkData.data.ptk}`, provider: 'amp' })
   } catch (e) {
     console.error('create-order-payment-link error:', e)
     return cors(500, { error: String(e?.message || e) })

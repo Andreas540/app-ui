@@ -104,7 +104,9 @@ export default function TenantAdminPaymentProvidersTab() {
   }
 
   const storedRow = storedRows.find(r => r.provider === selectedProvider)
-  const isConnected = storedRow?.enabled && !!storedRow?.publishable_key && storedRow?.secret_key_set && storedRow?.webhook_secret_set
+  const isConnected = selectedProvider === 'stripe'
+    ? storedRow?.enabled && !!storedRow?.publishable_key && storedRow?.secret_key_set && storedRow?.webhook_secret_set
+    : storedRow?.enabled && !!storedRow?.publishable_key && storedRow?.secret_key_set
 
   const base = apiBase() || window.location.origin
   const tenantId = localStorage.getItem('activeTenantId') || ''
@@ -168,9 +170,11 @@ export default function TenantAdminPaymentProvidersTab() {
             : t('paymentProviders.ampDescription')}
         </p>
 
-        {/* Publishable key */}
+        {/* Account / Publishable key */}
         <div>
-          <label className="label">{t('paymentProviders.publishableKey')}</label>
+          <label className="label">
+            {selectedProvider === 'amp' ? t('paymentProviders.accountNumber') : t('paymentProviders.publishableKey')}
+          </label>
           <input
             type="text"
             className="input"
@@ -181,9 +185,11 @@ export default function TenantAdminPaymentProvidersTab() {
           />
         </div>
 
-        {/* Secret key */}
+        {/* API key / Secret key */}
         <div>
-          <label className="label">{t('paymentProviders.secretKey')}</label>
+          <label className="label">
+            {selectedProvider === 'amp' ? t('paymentProviders.apiKey') : t('paymentProviders.secretKey')}
+          </label>
           {storedRow?.secret_key_set && (
             <p className="helper" style={{ marginBottom: 4 }}>
               {t('paymentProviders.keySet')} — {t('paymentProviders.leaveBlankToKeep')}
@@ -199,9 +205,16 @@ export default function TenantAdminPaymentProvidersTab() {
           />
         </div>
 
-        {/* Webhook secret */}
+        {/* Callback secret / Webhook secret */}
         <div>
-          <label className="label">{t('paymentProviders.webhookSecret')}</label>
+          <label className="label">
+            {selectedProvider === 'amp' ? t('paymentProviders.callbackSecret') : t('paymentProviders.webhookSecret')}
+          </label>
+          {selectedProvider === 'amp' && (
+            <p className="helper" style={{ marginBottom: 4 }}>
+              {t('paymentProviders.callbackSecretHelper')}
+            </p>
+          )}
           {storedRow?.webhook_secret_set && (
             <p className="helper" style={{ marginBottom: 4 }}>
               {t('paymentProviders.keySet')} — {t('paymentProviders.leaveBlankToKeep')}
@@ -217,23 +230,25 @@ export default function TenantAdminPaymentProvidersTab() {
           />
         </div>
 
-        {/* Webhook URL (read-only) */}
-        {selectedProvider === 'stripe' && (
-          <div>
-            <label className="label">{t('paymentProviders.webhookUrl')}</label>
-            <p className="helper" style={{ marginBottom: 4 }}>
-              {t('paymentProviders.webhookUrlHelper')}
-            </p>
-            <input
-              type="text"
-              className="input"
-              value={webhookUrl}
-              readOnly
-              onClick={e => (e.target as HTMLInputElement).select()}
-              style={{ fontFamily: 'monospace', fontSize: 12, maxWidth: 480, cursor: 'text' }}
-            />
-          </div>
-        )}
+        {/* Webhook / Callback URL (read-only, informational) */}
+        <div>
+          <label className="label">
+            {selectedProvider === 'amp' ? t('paymentProviders.callbackUrl') : t('paymentProviders.webhookUrl')}
+          </label>
+          <p className="helper" style={{ marginBottom: 4 }}>
+            {selectedProvider === 'amp'
+              ? t('paymentProviders.callbackUrlHelper')
+              : t('paymentProviders.webhookUrlHelper')}
+          </p>
+          <input
+            type="text"
+            className="input"
+            value={webhookUrl}
+            readOnly
+            onClick={e => (e.target as HTMLInputElement).select()}
+            style={{ fontFamily: 'monospace', fontSize: 12, maxWidth: 480, cursor: 'text' }}
+          />
+        </div>
 
       </div>
 

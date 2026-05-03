@@ -1441,6 +1441,12 @@
     "statusNotConfigured": "Ej konfigurerad",
     "keySet": "Nyckel är angiven (dold)",
     "leaveBlankToKeep": "lämna tomt för att behålla befintlig",
+    "accountNumber": "Kontonummer",
+    "apiKey": "API-nyckel",
+    "callbackSecret": "Callback-hemlighet",
+    "callbackSecretHelper": "En valfri hemlig sträng. Används för att signera och verifiera betalningsåterkopplingar från AMP Payments, och förhindrar förfalskade notifieringar.",
+    "callbackUrl": "Callback-URL",
+    "callbackUrlHelper": "Denna URL tar emot betalningsbekräftelser från AMP Payments. Den anges automatiskt per transaktion — ingen manuell konfiguration krävs i ditt AMP-konto.",
     "moreProvidersComingSoon": "Fler betalningsleverantörer tillkommer snart."
   },
   "bookingPage": {
