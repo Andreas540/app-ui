@@ -144,10 +144,12 @@ export default function NewOrder() {
     })()
   }
 
-  // Re-fetch last prices for all lines when customer or date changes
+  // Re-fetch last prices for all lines when customer, date, or first product changes.
+  // lines[0]?.product_id is included so the fetch fires when bootstrap sets the default
+  // product after the customer is already known (e.g. navigating from Customer Detail).
   useEffect(() => {
     lines.forEach((l, i) => { if (l.product_id) fetchLastPrice(i, l.product_id) })
-  }, [entityId, orderDate]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entityId, orderDate, lines[0]?.product_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pre-fill price from product's price_amount when product on a line changes
   function onLineProductChange(idx: number, product_id: string) {
