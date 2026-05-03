@@ -179,6 +179,17 @@ async function getBookingData(event) {
       return cors(200, { slots })
     }
 
+    // Fetch known customer info when a valid token is present
+    let knownCustomer = null
+    if (customerId) {
+      const custRows = await sql`
+        SELECT name, email FROM customers
+        WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}
+        LIMIT 1
+      `.catch(() => [])
+      if (custRows.length) knownCustomer = { name: custRows[0].name, email: custRows[0].email }
+    }
+
     // ── Services + availability map request ───────────────────────────────
     let rawServices = await sql`
       SELECT id, name, duration_minutes, price_amount, currency
@@ -271,7 +282,8 @@ async function getBookingData(event) {
       tenant:         { name: tenant.name, icon_url: tenant.app_icon_192 || null, language: tenant.default_language || 'en' },
       services,
       availability,
-      requiresPayment: paymentRows.length > 0,
+      requiresPayment:  paymentRows.length > 0,
+      knownCustomer,   // { name, email } when a valid customer_token is present, else null
     })
 
   } catch (e) {
@@ -301,8 +313,16 @@ async function createBooking(event) {
     if (!service_id) return cors(400, { error: 'service_id is required' })
     if (!date)       return cors(400, { error: 'date is required' })
     if (!start_time) return cors(400, { error: 'start_time is required' })
-    if (!name?.trim()) return cors(400, { error: 'name is required' })
-    if (!email?.trim()) return cors(400, { error: 'email is required' })
+
+    // customer_token in query params identifies an existing customer — skip name/email validation
+    const postToken = (event.queryStringParameters || {}).customer_token || null
+    const postTokenPayload = postToken ? verifyCustomerToken(postToken) : null
+    const tokenCustomerId  = postTokenPayload?.customer_id || null
+
+    if (!tokenCustomerId) {
+      if (!name?.trim())  return cors(400, { error: 'name is required' })
+      if (!email?.trim()) return cors(400, { error: 'email is required' })
+    }
 
     // Look up tenant
     const tenantRows = await sql`
@@ -356,34 +376,44 @@ async function createBooking(event) {
       ON CONFLICT (id) DO NOTHING
     `
 
-    // Find or create customer by email within this tenant
-    const cleanEmail = email.trim().toLowerCase()
     const cleanPhone = phone?.trim() || null
-    const cleanName  = name.trim()
 
     let customerId
-    const existingCust = await sql`
-      SELECT id FROM customers
-      WHERE tenant_id = ${tenantId} AND email = ${cleanEmail}
-      LIMIT 1
-    `
-    if (existingCust.length) {
-      customerId = existingCust[0].id
-      // Update phone if provided and not already set
+    if (tokenCustomerId) {
+      // Known customer from token — use them directly, never create a duplicate
+      customerId = tokenCustomerId
       await sql`
         UPDATE customers
         SET phone       = COALESCE(phone, ${cleanPhone}),
-            name        = COALESCE(NULLIF(name,''), ${cleanName}),
             sms_consent = CASE WHEN ${!!sms_consent} THEN true ELSE sms_consent END
-        WHERE id = ${customerId}
+        WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}
       `
     } else {
-      const newCust = await sql`
-        INSERT INTO customers (tenant_id, name, email, phone, customer_type, sms_consent)
-        VALUES (${tenantId}, ${cleanName}, ${cleanEmail}, ${cleanPhone}, 'Direct', ${!!sms_consent})
-        RETURNING id
+      // Anonymous booking — find or create by email
+      const cleanEmail = email.trim().toLowerCase()
+      const cleanName  = name.trim()
+      const existingCust = await sql`
+        SELECT id FROM customers
+        WHERE tenant_id = ${tenantId} AND email = ${cleanEmail}
+        LIMIT 1
       `
-      customerId = newCust[0].id
+      if (existingCust.length) {
+        customerId = existingCust[0].id
+        await sql`
+          UPDATE customers
+          SET phone       = COALESCE(phone, ${cleanPhone}),
+              name        = COALESCE(NULLIF(name,''), ${cleanName}),
+              sms_consent = CASE WHEN ${!!sms_consent} THEN true ELSE sms_consent END
+          WHERE id = ${customerId}
+        `
+      } else {
+        const newCust = await sql`
+          INSERT INTO customers (tenant_id, name, email, phone, customer_type, sms_consent)
+          VALUES (${tenantId}, ${cleanName}, ${cleanEmail}, ${cleanPhone}, 'Direct', ${!!sms_consent})
+          RETURNING id
+        `
+        customerId = newCust[0].id
+      }
     }
 
     // Convert local date+time to UTC

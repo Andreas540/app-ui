@@ -236,6 +236,7 @@ export default function BookingPage() {
   const [email, setEmail]         = useState('')
   const [phone, setPhone]         = useState('')
   const [smsConsent, setSmsConsent] = useState(false)
+  const [knownCustomer, setKnownCustomer] = useState<{ name: string; email: string } | null>(null)
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -318,6 +319,11 @@ export default function BookingPage() {
         setTenantIcon(d.tenant?.icon_url || null)
         if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
         setRequiresPayment(!!d.requiresPayment)
+        if (d.knownCustomer) {
+          setKnownCustomer(d.knownCustomer)
+          setName(d.knownCustomer.name || '')
+          setEmail(d.knownCustomer.email || '')
+        }
         const serviceList: Service[] = d.services || []
         setServices(serviceList)
         setAvailability(d.availability || {})
@@ -665,22 +671,24 @@ export default function BookingPage() {
               <div>
                 <label style={labelStyle}>{t('bookingPage.fullName')}</label>
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, ...(knownCustomer ? { opacity: 0.7, cursor: 'default' } : {}) }}
                   type="text"
                   placeholder={t('bookingPage.namePlaceholder')}
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={knownCustomer ? undefined : e => setName(e.target.value)}
+                  readOnly={!!knownCustomer}
                   autoComplete="name"
                 />
               </div>
               <div>
                 <label style={labelStyle}>{t('bookingPage.emailAddress')}</label>
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, ...(knownCustomer ? { opacity: 0.7, cursor: 'default' } : {}) }}
                   type="email"
                   placeholder={t('bookingPage.emailPlaceholder')}
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={knownCustomer ? undefined : e => setEmail(e.target.value)}
+                  readOnly={!!knownCustomer}
                   autoComplete="email"
                 />
               </div>

@@ -82,7 +82,8 @@ export async function handler(event) {
           SELECT id, customer_id FROM orders
           WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid
           LIMIT 1
-        `.catch(() => [])
+        `
+        console.log(`Booking ${bookingId}: found ${orderRows.length} linked order(s)`)
 
         if (orderRows.length) {
           const order = orderRows[0]
