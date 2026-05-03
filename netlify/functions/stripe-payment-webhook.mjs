@@ -77,39 +77,57 @@ export async function handler(event) {
             AND booking_status = 'pending_payment'
         `
 
-        // Fetch the linked order so we can record the payment against it
-        const orderRows = await sql`
-          SELECT id, customer_id FROM orders
-          WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid
+        // Create order from booking (order is only created here, after payment confirmed)
+        const bkRows = await sql`
+          SELECT b.customer_id, b.service_id, b.total_amount,
+                 to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone,'UTC'), 'YYYY-MM-DD') AS order_date
+          FROM bookings b
+          JOIN tenants t ON t.id = b.tenant_id
+          WHERE b.id = ${bookingId}::uuid AND b.tenant_id = ${tenantId}::uuid
           LIMIT 1
         `
-        console.log(`Booking ${bookingId}: found ${orderRows.length} linked order(s)`)
-
-        if (orderRows.length) {
-          const order = orderRows[0]
+        let orderId = null
+        if (bkRows.length) {
+          const bk = bkRows[0]
           const amountPaid = session.amount_total != null
             ? session.amount_total / 100
-            : Number(session.amount_subtotal ?? 0) / 100
+            : Number(bk.total_amount)
+
+          // Idempotency: skip if order already exists for this booking
+          const existingOrder = await sql`
+            SELECT id FROM orders WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1
+          `
+          if (!existingOrder.length) {
+            const counterRow = await sql`
+              INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+              VALUES (${tenantId}::uuid, (SELECT COALESCE(MAX(order_no),0)+1 FROM orders WHERE tenant_id=${tenantId}::uuid))
+              ON CONFLICT (tenant_id) DO UPDATE
+                SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
+              RETURNING last_order_no
+            `
+            const orderRow = await sql`
+              INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+              VALUES (${tenantId}::uuid, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.order_date}, FALSE, ${bookingId}::uuid)
+              RETURNING id
+            `
+            orderId = orderRow[0].id
+            await sql`
+              INSERT INTO order_items (order_id, product_id, qty, unit_price)
+              VALUES (${orderId}::uuid, ${bk.service_id}, 1, ${amountPaid})
+            `
+          } else {
+            orderId = existingOrder[0].id
+          }
 
           await sql`
             INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
             VALUES (
-              ${tenantId}::uuid,
-              ${order.customer_id},
-              ${order.id}::uuid,
-              ${amountPaid},
-              'stripe',
-              ${new Date().toISOString().slice(0, 10)},
+              ${tenantId}::uuid, ${bk.customer_id}, ${orderId}::uuid, ${amountPaid},
+              'stripe', ${new Date().toISOString().slice(0, 10)},
               ${'Stripe booking ' + (paymentIntent || session.id)}
             )
           `
         }
-
-        await sql`
-          UPDATE orders
-          SET payment_status = 'paid', updated_at = now()
-          WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid
-        `.catch(() => {})
 
         console.log(`Booking ${bookingId} confirmed (Stripe payment ${paymentIntent})`)
 

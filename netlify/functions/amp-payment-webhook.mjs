@@ -77,13 +77,16 @@ export async function handler(event) {
 
     // ── Booking payment ───────────────────────────────────────────────────────
     if (isBooking) {
-      const bookingRows = await sql`
-        SELECT id, customer_id FROM bookings
-        WHERE id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
+      const bkRows = await sql`
+        SELECT b.customer_id, b.service_id, b.total_amount,
+               to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone,'UTC'), 'YYYY-MM-DD') AS order_date
+        FROM bookings b
+        JOIN tenants t ON t.id = b.tenant_id
+        WHERE b.id = ${entityId}::uuid AND b.tenant_id = ${tenantId}::uuid
         LIMIT 1
       `
-      if (!bookingRows.length) return resp(404, { error: 'Booking not found' })
-      const booking = bookingRows[0]
+      if (!bkRows.length) return resp(404, { error: 'Booking not found' })
+      const bk = bkRows[0]
 
       await sql`
         UPDATE bookings
@@ -91,15 +94,37 @@ export async function handler(event) {
         WHERE id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
           AND booking_status = 'pending_payment'
       `
-      await sql`
-        UPDATE orders
-        SET payment_status = 'paid', updated_at = now()
-        WHERE booking_id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid
-      `.catch(() => {})
+
+      // Create order after payment (idempotent)
+      let orderId = null
+      const existingOrder = await sql`
+        SELECT id FROM orders WHERE booking_id = ${entityId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1
+      `
+      if (!existingOrder.length) {
+        const counterRow = await sql`
+          INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+          VALUES (${tenantId}::uuid, (SELECT COALESCE(MAX(order_no),0)+1 FROM orders WHERE tenant_id=${tenantId}::uuid))
+          ON CONFLICT (tenant_id) DO UPDATE
+            SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
+          RETURNING last_order_no
+        `
+        const orderRow = await sql`
+          INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+          VALUES (${tenantId}::uuid, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.order_date}, FALSE, ${entityId}::uuid)
+          RETURNING id
+        `
+        orderId = orderRow[0].id
+        await sql`
+          INSERT INTO order_items (order_id, product_id, qty, unit_price)
+          VALUES (${orderId}::uuid, ${bk.service_id}, 1, ${amountPaid})
+        `
+      } else {
+        orderId = existingOrder[0].id
+      }
 
       await sql`
-        INSERT INTO payments (tenant_id, customer_id, amount, payment_type, payment_date, notes)
-        VALUES (${tenantId}::uuid, ${booking.customer_id}, ${amountPaid}, 'amp',
+        INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
+        VALUES (${tenantId}::uuid, ${bk.customer_id}, ${orderId}::uuid, ${amountPaid}, 'amp',
           ${new Date().toISOString().slice(0, 10)}, ${txNotes})
       `
       console.log(`AMP booking payment recorded: booking ${entityId}, TxID ${TransactionID}`)

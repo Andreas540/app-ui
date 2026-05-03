@@ -462,29 +462,31 @@ async function createBooking(event) {
     `
     const bookingId = bkRow[0].id
 
-    // Create order + order_item
-    const counterRow = await sql`
-      INSERT INTO tenant_order_counters (tenant_id, last_order_no)
-      VALUES (
-        ${tenantId},
-        (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${tenantId})
-      )
-      ON CONFLICT (tenant_id) DO UPDATE
-        SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
-      RETURNING last_order_no
-    `
-    const orderRow = await sql`
-      INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-      VALUES (${tenantId}, ${customerId}, ${counterRow[0].last_order_no}, ${date}, FALSE, ${bookingId})
-      RETURNING id
-    `
-    const orderId = orderRow[0].id
-
-    await sql`
-      INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-      VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
-    `
-    await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
+    // For free/no-payment bookings, create the order immediately.
+    // For payment-required bookings, the order is created by the payment webhook after confirmation.
+    if (!hasPayment) {
+      const counterRow = await sql`
+        INSERT INTO tenant_order_counters (tenant_id, last_order_no)
+        VALUES (
+          ${tenantId},
+          (SELECT COALESCE(MAX(order_no), 0) + 1 FROM orders WHERE tenant_id = ${tenantId})
+        )
+        ON CONFLICT (tenant_id) DO UPDATE
+          SET last_order_no = GREATEST(EXCLUDED.last_order_no, tenant_order_counters.last_order_no + 1)
+        RETURNING last_order_no
+      `
+      const orderRow = await sql`
+        INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
+        VALUES (${tenantId}, ${customerId}, ${counterRow[0].last_order_no}, ${date}, FALSE, ${bookingId})
+        RETURNING id
+      `
+      const orderId = orderRow[0].id
+      await sql`
+        INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
+        VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
+      `
+      await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
+    }
 
     // Log external event (fire and forget)
     sql`
