@@ -65,7 +65,9 @@ async function getBookingData(event) {
     if (booking_id && slug) {
       const rows = await sql`
         SELECT b.id, b.booking_status, b.payment_status,
-               b.start_at, b.end_at, b.total_amount, b.currency,
+               b.total_amount, b.currency,
+               to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'YYYY-MM-DD') AS booking_date,
+               to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'HH24:MI')    AS booking_time,
                p.name AS service_name, p.duration_minutes,
                t.name AS tenant_name
         FROM bookings b
@@ -77,14 +79,13 @@ async function getBookingData(event) {
       `
       if (!rows.length) return cors(404, { error: 'Booking not found' })
       const bk = rows[0]
-      const startLocal = new Date(bk.start_at).toISOString()
       return cors(200, {
         booking_id:       bk.id,
         booking_status:   bk.booking_status,
         payment_status:   bk.payment_status,
         service_name:     bk.service_name,
-        date:             startLocal.slice(0, 10),
-        start_time:       startLocal.slice(11, 16),
+        date:             bk.booking_date,
+        start_time:       bk.booking_time,
         duration_minutes: bk.duration_minutes || 0,
         price:            Number(bk.total_amount),
         currency:         bk.currency || 'USD',

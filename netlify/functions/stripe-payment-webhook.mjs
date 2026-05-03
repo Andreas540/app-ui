@@ -77,14 +77,38 @@ export async function handler(event) {
             AND booking_status = 'pending_payment'
         `
 
-        // Also confirm the linked order (created alongside the booking)
+        // Fetch the linked order so we can record the payment against it
+        const orderRows = await sql`
+          SELECT id, customer_id FROM orders
+          WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid
+          LIMIT 1
+        `.catch(() => [])
+
+        if (orderRows.length) {
+          const order = orderRows[0]
+          const amountPaid = session.amount_total != null
+            ? session.amount_total / 100
+            : Number(session.amount_subtotal ?? 0) / 100
+
+          await sql`
+            INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
+            VALUES (
+              ${tenantId}::uuid,
+              ${order.customer_id},
+              ${order.id}::uuid,
+              ${amountPaid},
+              'stripe',
+              ${new Date().toISOString().slice(0, 10)},
+              ${'Stripe booking ' + (paymentIntent || session.id)}
+            )
+          `
+        }
+
         await sql`
           UPDATE orders
-          SET payment_status = 'paid',
-              updated_at     = now()
-          WHERE booking_id = ${bookingId}::uuid
-            AND tenant_id  = ${tenantId}::uuid
-        `.catch(() => {}) // orders.payment_status may not exist — non-fatal
+          SET payment_status = 'paid', updated_at = now()
+          WHERE booking_id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid
+        `.catch(() => {})
 
         console.log(`Booking ${bookingId} confirmed (Stripe payment ${paymentIntent})`)
 
