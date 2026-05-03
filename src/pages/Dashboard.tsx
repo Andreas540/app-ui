@@ -209,6 +209,7 @@ const ALL_CARDS = [
 const LS_DASH_ORDER   = 'dashboard_order'
 const LS_DASH_VISIBLE = 'dashboard_visible'
 const LS_DASH_HIDDEN  = 'dashboard_hidden' // legacy key, migrated on first read
+const LS_DASH_COLS    = 'dashboard_cols'
 
 function loadDashOrder(): string[] {
   try {
@@ -299,7 +300,10 @@ export default function Dashboard() {
   const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
   const [dashVisible,  setDashVisible]  = useState<string[]>(() => loadDashVisible(config.ui.dashboardCards))
   const [dashDropOpen, setDashDropOpen] = useState(false)
+  const [dashCols,     setDashCols]     = useState<2|3>(() => localStorage.getItem(LS_DASH_COLS) === '2' ? 2 : 3)
   const dashBtnRef = useRef<HTMLButtonElement>(null)
+
+  function saveDashCols(n: 2|3) { setDashCols(n); localStorage.setItem(LS_DASH_COLS, String(n)) }
 
   // Load customers data for totals
   useEffect(() => {
@@ -621,7 +625,17 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       {/* ── Header: title + card selector ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>{t('dashboard.title')}</h2>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+            {([2, 3] as const).map(n => (
+              <button key={n} onClick={() => saveDashCols(n)}
+                style={{ height: 36, width: 36, fontSize: 13, border: 'none', borderRadius: 0, cursor: 'pointer',
+                  background: dashCols === n ? 'var(--primary)' : 'transparent',
+                  color: dashCols === n ? '#fff' : 'var(--text-secondary)' }}>
+                {n}
+              </button>
+            ))}
+          </div>
           <button
             ref={dashBtnRef}
             onClick={() => setDashDropOpen(o => !o)}
@@ -661,7 +675,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       </div>
 
       {/* ── Cards grid ── */}
-      <div className="grid">
+      <div className={`grid${dashCols === 2 ? ' grid-cols-2' : ''}`}>
         {orderedVisible.map((cardId, idx) => {
           const isFirst = idx === 0
           const isLast  = idx === orderedVisible.length - 1
