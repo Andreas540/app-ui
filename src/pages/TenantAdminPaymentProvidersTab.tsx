@@ -247,11 +247,24 @@ export default function TenantAdminPaymentProvidersTab() {
           <label className="label">
             {selectedProvider === 'amp' ? t('paymentProviders.callbackUrl') : t('paymentProviders.webhookUrl')}
           </label>
-          <p className="helper" style={{ marginBottom: 4 }}>
-            {selectedProvider === 'amp'
-              ? t('paymentProviders.callbackUrlHelper')
-              : t('paymentProviders.webhookUrlHelper')}
-          </p>
+          {selectedProvider === 'stripe' ? (
+            <ol style={{ margin: '4px 0 8px', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <li className="helper">
+                {t('paymentProviders.webhookStep1')}{' '}
+                <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>
+                  dashboard.stripe.com/webhooks
+                </a>
+                {'. '}
+                {t('paymentProviders.webhookStep1b')}
+              </li>
+              <li className="helper">{t('paymentProviders.webhookStep2')}</li>
+              <li className="helper">{t('paymentProviders.webhookStep3')}</li>
+            </ol>
+          ) : (
+            <p className="helper" style={{ marginBottom: 4 }}>
+              {t('paymentProviders.callbackUrlHelper')}
+            </p>
+          )}
           <input
             type="text"
             className="input"
