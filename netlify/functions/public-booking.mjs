@@ -57,6 +57,7 @@ async function getBookingData(event) {
     const service_id     = params.service_id
     const date           = params.date        // YYYY-MM-DD
     const booking_id     = params.booking_id  // post-payment confirmation fetch
+    const session_id     = params.session_id  // Stripe session ID from success URL
     const customerToken  = params.customer_token || null
     const customerPayload = customerToken ? verifyCustomerToken(customerToken) : null
     const customerId     = customerPayload?.customer_id || null
@@ -96,11 +97,17 @@ async function getBookingData(event) {
           const Stripe = (await import('stripe')).default
           const stripe = new Stripe(stripeRows[0].secret_key)
 
-          const result = await stripe.checkout.sessions.search({
-            query: `metadata['booking_id']:'${booking_id}' AND payment_status:'paid'`,
-            limit: 1,
-          }).catch(() => null)
-          const session = result?.data?.[0]
+          let session = null
+          if (session_id) {
+            const s = await stripe.checkout.sessions.retrieve(session_id).catch(() => null)
+            if (s?.payment_status === 'paid') session = s
+          } else {
+            const result = await stripe.checkout.sessions.search({
+              query: `metadata['booking_id']:'${booking_id}' AND payment_status:'paid'`,
+              limit: 1,
+            }).catch(() => null)
+            session = result?.data?.[0] ?? null
+          }
 
           if (session) {
             // Confirm booking
@@ -581,7 +588,7 @@ async function createBooking(event) {
         }],
         customer_email: cleanEmail,
         metadata: { type: 'booking', booking_id: bookingId, tenant_id: tenantId },
-        success_url: `${appBase}/book/${slug}?booking_success=${bookingId}`,
+        success_url: `${appBase}/book/${slug}?booking_success=${bookingId}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url:  `${appBase}/book/${slug}?booking_canceled=1`,
       })
 

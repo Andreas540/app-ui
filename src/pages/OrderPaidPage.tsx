@@ -56,7 +56,9 @@ export default function OrderPaidPage() {
 
     if (canceled) { setStatus('canceled'); return }
 
-    fetch(`${BASE}/api/public-order-status?order_id=${encodeURIComponent(orderId)}`)
+    const sessionId = searchParams.get('session_id')
+    const sessionParam = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ''
+    fetch(`${BASE}/api/public-order-status?order_id=${encodeURIComponent(orderId)}${sessionParam}`)
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         if (!ok) { setStatus('error'); setErrMsg(d.error || 'Order not found'); return }

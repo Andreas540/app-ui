@@ -81,7 +81,7 @@ export async function handler(event) {
         }],
         ...(order.customer_email ? { customer_email: order.customer_email } : {}),
         metadata: { type: 'order', order_id: order.id, tenant_id: authz.tenantId },
-        success_url: `${appBase}/order-paid/${order.id}`,
+        success_url: `${appBase}/order-paid/${order.id}?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url:  `${appBase}/order-paid/${order.id}?canceled=1`,
       })
       // Store session ID so the confirmation page can verify payment without a webhook

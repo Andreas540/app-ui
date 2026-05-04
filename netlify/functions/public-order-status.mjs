@@ -17,7 +17,7 @@ export async function handler(event) {
     if (!DATABASE_URL) return resp(500, { error: 'DATABASE_URL missing' })
     const sql = neon(DATABASE_URL)
 
-    const order_id = (event.queryStringParameters || {}).order_id
+    const { order_id, session_id } = event.queryStringParameters || {}
     if (!order_id) return resp(400, { error: 'order_id required' })
 
     const rows = await sql`
@@ -56,12 +56,20 @@ export async function handler(event) {
         const Stripe = (await import('stripe')).default
         const stripe = new Stripe(stripeRows[0].secret_key)
 
-        const result = await stripe.checkout.sessions.search({
-          query:  `metadata['order_id']:'${order_id}' AND payment_status:'paid'`,
-          limit:  1,
-        }).catch(() => null)
+        // Prefer direct retrieve when session_id is in URL — instant, no index delay.
+        // Fall back to search only when session_id wasn't passed (e.g. webhook flow).
+        let session = null
+        if (session_id) {
+          const s = await stripe.checkout.sessions.retrieve(session_id).catch(() => null)
+          if (s?.payment_status === 'paid') session = s
+        } else {
+          const result = await stripe.checkout.sessions.search({
+            query: `metadata['order_id']:'${order_id}' AND payment_status:'paid'`,
+            limit: 1,
+          }).catch(() => null)
+          session = result?.data?.[0] ?? null
+        }
 
-        const session = result?.data?.[0]
         if (session) {
           const amount = (session.amount_total ?? 0) / 100
           await sql`

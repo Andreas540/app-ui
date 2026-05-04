@@ -255,7 +255,7 @@ async function submitForm(event) {
           }],
           ...(customerRows[0].email ? { customer_email: customerRows[0].email } : {}),
           metadata: { type: 'order', order_id: orderId, tenant_id: verified.tenantId },
-          success_url: `${appBase}/order-paid/${orderId}`,
+          success_url: `${appBase}/order-paid/${orderId}?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url:  `${appBase}/order-form/${body.token}`,
         })
 
