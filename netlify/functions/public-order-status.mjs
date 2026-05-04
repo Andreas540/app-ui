@@ -65,13 +65,6 @@ export async function handler(event) {
           // Direct retrieve — instant, no search-index delay
           const s = await stripe.checkout.sessions.retrieve(session_id).catch(() => null)
           if (s?.payment_status === 'paid') session = s
-        } else {
-          // Search fallback — ~30s delay, used when session_id not in URL
-          const result = await stripe.checkout.sessions.search({
-            query: `metadata['order_id']:'${order_id}' AND payment_status:'paid'`,
-            limit: 1,
-          }).catch(() => null)
-          session = result?.data?.[0] ?? null
         }
 
         if (session) {

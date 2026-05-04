@@ -102,12 +102,6 @@ async function getBookingData(event) {
           if (session_id) {
             const s = await stripe.checkout.sessions.retrieve(session_id).catch(() => null)
             if (s?.payment_status === 'paid') session = s
-          } else {
-            const result = await stripe.checkout.sessions.search({
-              query: `metadata['booking_id']:'${booking_id}' AND payment_status:'paid'`,
-              limit: 1,
-            }).catch(() => null)
-            session = result?.data?.[0] ?? null
           }
 
           if (session) {
@@ -551,7 +545,7 @@ async function createBooking(event) {
       `
       const orderRow = await sql`
         INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-        VALUES (${tenantId}, ${customerId}, ${counterRow[0].last_order_no}, ${date}, FALSE, ${bookingId})
+        VALUES (${tenantId}, ${customerId}, ${counterRow[0].last_order_no}, ${new Date().toLocaleString('en-CA', { timeZone: tenantTz }).slice(0, 10)}, FALSE, ${bookingId})
         RETURNING id
       `
       const orderId = orderRow[0].id

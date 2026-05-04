@@ -298,7 +298,9 @@ export default function BookingPage() {
     }
 
     if (bookingSuccess) {
-      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}&booking_id=${encodeURIComponent(bookingSuccess)}`)
+      const sessionId = searchParams.get('session_id')
+      const sessionParam = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ''
+      fetch(`${apiBase()}/.netlify/functions/public-booking?slug=${encodeURIComponent(slug)}&booking_id=${encodeURIComponent(bookingSuccess)}${sessionParam}`)
         .then(r => r.json().then(d => ({ ok: r.ok, d })))
         .then(({ ok, d }) => {
           if (!ok) { setStep('error'); setErrorMsg(d.error || t('bookingPage.notFound')); return }
