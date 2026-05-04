@@ -1,18 +1,19 @@
 // netlify/functions/public-order-status.mjs
-// GET /api/public-order-status?order_id=UUID
-// Public endpoint — no app auth. Returns minimal order info for the
-// customer-facing payment confirmation page (/order-paid/:orderId).
+// GET /api/public-order-status?order_id=UUID&session_id=cs_xxx
+// Public — no auth. Returns order payment status for /order-paid/:orderId.
 //
-// If no payment is recorded yet, queries Stripe directly using the
-// order_id metadata we embed in every checkout session — no stored
-// session ID needed, works even when the webhook isn't configured.
+// session_id (from Stripe's {CHECKOUT_SESSION_ID} in success_url) allows
+// instant payment verification via retrieve() with no search-index delay.
+// Falls back to search by metadata when session_id is absent.
+// Always runs the Stripe check when session_id is present — this handles
+// partial payments where paidAmount > 0 but < total.
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return resp(204, {})
   if (event.httpMethod !== 'GET') return resp(405, { error: 'Method not allowed' })
 
   try {
-    const { neon }       = await import('@neondatabase/serverless')
+    const { neon }         = await import('@neondatabase/serverless')
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return resp(500, { error: 'DATABASE_URL missing' })
     const sql = neon(DATABASE_URL)
@@ -39,12 +40,14 @@ export async function handler(event) {
     if (!rows.length) return resp(404, { error: 'Order not found' })
     const r = rows[0]
 
-    let paidAmount = Number(r.paid_amount)
+    let paidAmount      = Number(r.paid_amount)
+    const totalAmount   = Number(r.total_amount)
+    let sessionVerified = false
 
     // ── Stripe fallback ───────────────────────────────────────────────────────
-    // If no payment recorded yet, search Stripe for a completed session whose
-    // metadata contains this order_id. No stored session ID required.
-    if (paidAmount === 0) {
+    // Run when session_id is present (handles partial payments too, since
+    // paidAmount > 0 would otherwise skip the check) OR when nothing is paid yet.
+    if (session_id || paidAmount < totalAmount) {
       const stripeRows = await sql`
         SELECT secret_key FROM tenant_payment_providers
         WHERE tenant_id = ${r.tenant_id} AND provider = 'stripe' AND enabled = true
@@ -56,13 +59,13 @@ export async function handler(event) {
         const Stripe = (await import('stripe')).default
         const stripe = new Stripe(stripeRows[0].secret_key)
 
-        // Prefer direct retrieve when session_id is in URL — instant, no index delay.
-        // Fall back to search only when session_id wasn't passed (e.g. webhook flow).
         let session = null
         if (session_id) {
+          // Direct retrieve — instant, no search-index delay
           const s = await stripe.checkout.sessions.retrieve(session_id).catch(() => null)
           if (s?.payment_status === 'paid') session = s
         } else {
+          // Search fallback — ~30s delay, used when session_id not in URL
           const result = await stripe.checkout.sessions.search({
             query: `metadata['order_id']:'${order_id}' AND payment_status:'paid'`,
             limit: 1,
@@ -71,6 +74,7 @@ export async function handler(event) {
         }
 
         if (session) {
+          sessionVerified = true
           const amount = (session.amount_total ?? 0) / 100
           await sql`
             INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
@@ -79,19 +83,20 @@ export async function handler(event) {
               'stripe', ${new Date().toISOString().slice(0, 10)},
               ${'Stripe ' + (session.payment_intent || session.id)}
             )
-          `.catch(() => {}) // ignore if webhook already recorded it
-          paidAmount = amount
+          `.catch(() => {}) // silently ignore if webhook already recorded it
+          paidAmount += amount
         }
       }
     }
 
     return resp(200, {
-      order_no:      r.order_no,
-      total_amount:  Number(r.total_amount),
-      paid_amount:   paidAmount,
-      customer_name: r.customer_name,
-      tenant_name:   r.tenant_name,
-      tenant_icon:   r.tenant_icon || null,
+      order_no:         r.order_no,
+      total_amount:     totalAmount,
+      paid_amount:      paidAmount,
+      session_verified: sessionVerified,
+      customer_name:    r.customer_name,
+      tenant_name:      r.tenant_name,
+      tenant_icon:      r.tenant_icon || null,
     })
   } catch (e) {
     console.error('public-order-status error:', e)

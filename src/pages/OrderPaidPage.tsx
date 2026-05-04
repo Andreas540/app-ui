@@ -13,6 +13,7 @@ type OrderData = {
   order_no: number
   total_amount: number
   paid_amount: number
+  session_verified: boolean
   customer_name: string
   tenant_name: string
   tenant_icon: string | null
@@ -63,7 +64,9 @@ export default function OrderPaidPage() {
       .then(({ ok, d }) => {
         if (!ok) { setStatus('error'); setErrMsg(d.error || 'Order not found'); return }
         setData(d)
-        setStatus(d.paid_amount >= d.total_amount && d.total_amount > 0 ? 'paid' : 'pending')
+        // Show "paid" if this specific session was verified OR the full order is settled
+        const isPaid = d.session_verified || (d.paid_amount >= d.total_amount && d.total_amount > 0)
+        setStatus(isPaid ? 'paid' : 'pending')
       })
       .catch(() => { setStatus('error'); setErrMsg('Could not load order. Please try again.') })
   }, [orderId, canceled])
