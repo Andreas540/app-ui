@@ -2,6 +2,10 @@
 // GET /api/public-order-status?order_id=UUID
 // Public endpoint — no app auth. Returns minimal order info for the
 // customer-facing payment confirmation page (/order-paid/:orderId).
+//
+// If no payment is recorded yet, queries Stripe directly using the
+// order_id metadata we embed in every checkout session — no stored
+// session ID needed, works even when the webhook isn't configured.
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return resp(204, {})
@@ -16,22 +20,20 @@ export async function handler(event) {
     const order_id = (event.queryStringParameters || {}).order_id
     if (!order_id) return resp(400, { error: 'order_id required' })
 
-    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
-
     const rows = await sql`
       SELECT
-        o.id, o.order_no, o.tenant_id, o.customer_id, o.checkout_session_id,
-        SUM(oi.qty * oi.unit_price)::numeric                                                        AS total_amount,
-        COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric     AS paid_amount,
-        c.name  AS customer_name,
-        t.name  AS tenant_name,
+        o.id, o.order_no, o.tenant_id, o.customer_id,
+        SUM(oi.qty * oi.unit_price)::numeric                                                    AS total_amount,
+        COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric AS paid_amount,
+        c.name         AS customer_name,
+        t.name         AS tenant_name,
         t.app_icon_192 AS tenant_icon
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN tenants   t ON t.id = o.tenant_id
       WHERE o.id = ${order_id}::uuid
-      GROUP BY o.id, o.order_no, o.tenant_id, o.customer_id, o.checkout_session_id, c.name, t.name, t.app_icon_192
+      GROUP BY o.id, o.order_no, o.tenant_id, o.customer_id, c.name, t.name, t.app_icon_192
       LIMIT 1
     `
     if (!rows.length) return resp(404, { error: 'Order not found' })
@@ -39,8 +41,10 @@ export async function handler(event) {
 
     let paidAmount = Number(r.paid_amount)
 
-    // ── Stripe fallback: verify directly if no payment recorded yet ──────────
-    if (paidAmount === 0 && r.checkout_session_id) {
+    // ── Stripe fallback ───────────────────────────────────────────────────────
+    // If no payment recorded yet, search Stripe for a completed session whose
+    // metadata contains this order_id. No stored session ID required.
+    if (paidAmount === 0) {
       const stripeRows = await sql`
         SELECT secret_key FROM tenant_payment_providers
         WHERE tenant_id = ${r.tenant_id} AND provider = 'stripe' AND enabled = true
@@ -49,19 +53,25 @@ export async function handler(event) {
       `.catch(() => [])
 
       if (stripeRows.length) {
-        const Stripe  = (await import('stripe')).default
-        const stripe  = new Stripe(stripeRows[0].secret_key)
-        const session = await stripe.checkout.sessions.retrieve(r.checkout_session_id).catch(() => null)
+        const Stripe = (await import('stripe')).default
+        const stripe = new Stripe(stripeRows[0].secret_key)
 
-        if (session?.payment_status === 'paid') {
+        const result = await stripe.checkout.sessions.search({
+          query:  `metadata['order_id']:'${order_id}' AND payment_status:'paid'`,
+          limit:  1,
+        }).catch(() => null)
+
+        const session = result?.data?.[0]
+        if (session) {
           const amount = (session.amount_total ?? 0) / 100
-          // Record the payment so subsequent checks hit the DB
           await sql`
             INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
-            VALUES (${r.tenant_id}, ${r.customer_id}, ${order_id}::uuid, ${amount}, 'stripe',
-              ${new Date().toISOString().slice(0, 10)},
-              ${'Stripe ' + (session.payment_intent || r.checkout_session_id)})
-          `.catch(() => {}) // ignore duplicate if webhook already recorded it
+            VALUES (
+              ${r.tenant_id}, ${r.customer_id}, ${order_id}::uuid, ${amount},
+              'stripe', ${new Date().toISOString().slice(0, 10)},
+              ${'Stripe ' + (session.payment_intent || session.id)}
+            )
+          `.catch(() => {}) // ignore if webhook already recorded it
           paidAmount = amount
         }
       }

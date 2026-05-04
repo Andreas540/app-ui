@@ -82,9 +82,9 @@ async function getBookingData(event) {
       if (!rows.length) return cors(404, { error: 'Booking not found' })
       const bk = rows[0]
 
-      // ── Fallback: if still pending_payment, verify with Stripe directly ──────
-      // This covers the case where the webhook wasn't called (e.g. not yet configured)
-      if (bk.booking_status === 'pending_payment' && bk.checkout_session_id) {
+      // ── Fallback: if still pending_payment, search Stripe by booking_id metadata ──
+      // Works even when the webhook isn't configured — no stored session ID needed.
+      if (bk.booking_status === 'pending_payment') {
         const stripeRows = await sql`
           SELECT secret_key FROM tenant_payment_providers
           WHERE tenant_id = ${bk.tenant_id} AND provider = 'stripe' AND enabled = true
@@ -93,11 +93,16 @@ async function getBookingData(event) {
         `.catch(() => [])
 
         if (stripeRows.length) {
-          const Stripe  = (await import('stripe')).default
-          const stripe  = new Stripe(stripeRows[0].secret_key)
-          const session = await stripe.checkout.sessions.retrieve(bk.checkout_session_id).catch(() => null)
+          const Stripe = (await import('stripe')).default
+          const stripe = new Stripe(stripeRows[0].secret_key)
 
-          if (session?.payment_status === 'paid') {
+          const result = await stripe.checkout.sessions.search({
+            query: `metadata['booking_id']:'${booking_id}' AND payment_status:'paid'`,
+            limit: 1,
+          }).catch(() => null)
+          const session = result?.data?.[0]
+
+          if (session) {
             // Confirm booking
             await sql`
               UPDATE bookings SET booking_status = 'confirmed', payment_status = 'paid', updated_at = now()
@@ -130,7 +135,7 @@ async function getBookingData(event) {
                 INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
                 VALUES (${bk.tenant_id}, ${bk.customer_id}, ${orderId}, ${session.amount_total / 100},
                   'stripe', ${new Date().toISOString().slice(0,10)},
-                  ${'Stripe booking ' + (session.payment_intent || bk.checkout_session_id)})
+                  ${'Stripe booking ' + (session.payment_intent || session.id)})
               `
               console.log(`Fallback: created order ${orderId} for booking ${booking_id}`)
             }
