@@ -116,6 +116,7 @@ export async function handler(event) {
               INSERT INTO order_items (order_id, product_id, qty, unit_price)
               VALUES (${orderId}, ${bk.service_id}, 1, ${amountPaid})
             `
+            await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}::uuid AND tenant_id = ${tenantId}::uuid`
             console.log(`Created order ${orderId} for booking ${bookingId}`)
           } else {
             orderId = existingOrder[0].id

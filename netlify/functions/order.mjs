@@ -87,8 +87,8 @@ ORDER BY oi.created_at ASC NULLS LAST
         p.name AS service_name
       FROM bookings b
       LEFT JOIN products p ON p.id = b.service_id AND p.tenant_id = ${TENANT_ID}
-      WHERE b.order_id = ${id}
-        AND b.tenant_id = ${TENANT_ID}
+      WHERE b.tenant_id = ${TENANT_ID}
+        AND (b.order_id = ${id} OR b.id = (SELECT o.booking_id FROM orders o WHERE o.id = ${id} AND o.tenant_id = ${TENANT_ID} LIMIT 1))
       ORDER BY b.start_at ASC
     `
 

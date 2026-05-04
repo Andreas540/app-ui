@@ -132,6 +132,7 @@ async function getBookingData(event) {
                 INSERT INTO order_items (order_id, product_id, qty, unit_price)
                 VALUES (${orderId}, ${bk.service_id}, 1, ${Number(bk.total_amount)})
               `
+              await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${booking_id}::uuid AND tenant_id = ${bk.tenant_id}`
               // Record payment
               await sql`
                 INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
