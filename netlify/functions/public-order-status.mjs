@@ -26,15 +26,16 @@ export async function handler(event) {
         o.id, o.order_no, o.tenant_id, o.customer_id,
         SUM(oi.qty * oi.unit_price)::numeric                                                    AS total_amount,
         COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric AS paid_amount,
-        c.name         AS customer_name,
-        t.name         AS tenant_name,
-        t.app_icon_192 AS tenant_icon
+        c.name                              AS customer_name,
+        t.name                              AS tenant_name,
+        t.app_icon_192                      AS tenant_icon,
+        COALESCE(t.default_timezone, 'UTC') AS tz
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN tenants   t ON t.id = o.tenant_id
       WHERE o.id = ${order_id}::uuid
-      GROUP BY o.id, o.order_no, o.tenant_id, o.customer_id, c.name, t.name, t.app_icon_192
+      GROUP BY o.id, o.order_no, o.tenant_id, o.customer_id, c.name, t.name, t.app_icon_192, t.default_timezone
       LIMIT 1
     `
     if (!rows.length) return resp(404, { error: 'Order not found' })
@@ -80,7 +81,7 @@ export async function handler(event) {
             INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
             VALUES (
               ${r.tenant_id}, ${r.customer_id}, ${order_id}::uuid, ${amount},
-              'stripe', ${new Date().toISOString().slice(0, 10)},
+              'stripe', ${new Date().toLocaleString('en-CA', { timeZone: r.tz }).slice(0, 10)},
               ${'Stripe ' + (session.payment_intent || session.id)}
             )
           `.catch(() => {}) // silently ignore if webhook already recorded it

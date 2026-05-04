@@ -72,7 +72,8 @@ async function getBookingData(event) {
                to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'YYYY-MM-DD') AS booking_date,
                to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone, 'UTC'), 'HH24:MI')    AS booking_time,
                p.name AS service_name, p.duration_minutes,
-               t.name AS tenant_name, t.id AS tenant_id
+               t.name AS tenant_name, t.id AS tenant_id,
+               COALESCE(t.default_timezone, 'UTC') AS tenant_tz
         FROM bookings b
         JOIN products p  ON p.id = b.service_id
         JOIN tenants  t  ON t.id = b.tenant_id
@@ -129,7 +130,7 @@ async function getBookingData(event) {
               `
               const orderRow = await sql`
                 INSERT INTO orders (tenant_id, customer_id, order_no, order_date, delivered, booking_id)
-                VALUES (${bk.tenant_id}, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${bk.booking_date}, FALSE, ${booking_id})
+                VALUES (${bk.tenant_id}, ${bk.customer_id}, ${counterRow[0].last_order_no}, ${new Date().toLocaleString('en-CA', { timeZone: bk.tenant_tz }).slice(0, 10)}, FALSE, ${booking_id})
                 RETURNING id
               `
               const orderId = orderRow[0].id
@@ -141,7 +142,7 @@ async function getBookingData(event) {
               await sql`
                 INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
                 VALUES (${bk.tenant_id}, ${bk.customer_id}, ${orderId}, ${session.amount_total / 100},
-                  'stripe', ${new Date().toISOString().slice(0,10)},
+                  'stripe', ${new Date().toLocaleString('en-CA', { timeZone: bk.tenant_tz }).slice(0, 10)},
                   ${'Stripe booking ' + (session.payment_intent || session.id)})
               `
               console.log(`Fallback: created order ${orderId} for booking ${booking_id}`)

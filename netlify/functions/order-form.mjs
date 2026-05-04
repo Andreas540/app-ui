@@ -167,7 +167,9 @@ async function submitForm(event) {
     `
     const orderNo = Number(nextNo[0].n) || 1
 
-    const today = new Date().toISOString().slice(0, 10)
+    const tzRows = await sql`SELECT default_timezone FROM tenants WHERE id = ${verified.tenantId}::uuid LIMIT 1`.catch(() => [])
+    const tz    = tzRows[0]?.default_timezone || 'UTC'
+    const today = new Date().toLocaleString('en-CA', { timeZone: tz }).slice(0, 10)
     const notes = body.notes ? `From customer: ${String(body.notes).trim()}` : null
 
     // Create order header

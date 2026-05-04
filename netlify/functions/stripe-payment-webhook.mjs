@@ -80,7 +80,8 @@ export async function handler(event) {
         // Create order from booking (order is only created here, after payment confirmed)
         const bkRows = await sql`
           SELECT b.customer_id, b.service_id, b.total_amount,
-                 to_char(b.start_at AT TIME ZONE COALESCE(t.default_timezone,'UTC'), 'YYYY-MM-DD') AS order_date
+                 COALESCE(t.default_timezone, 'UTC') AS tz,
+                 to_char(NOW() AT TIME ZONE COALESCE(t.default_timezone,'UTC'), 'YYYY-MM-DD') AS order_date
           FROM bookings b
           JOIN tenants t ON t.id = b.tenant_id
           WHERE b.id = ${bookingId}::uuid AND b.tenant_id = ${tenantId}::uuid
@@ -124,7 +125,7 @@ export async function handler(event) {
             INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
             VALUES (
               ${tenantId}::uuid, ${bk.customer_id}, ${orderId}::uuid, ${amountPaid},
-              'stripe', ${new Date().toISOString().slice(0, 10)},
+              'stripe', ${new Date().toLocaleString('en-CA', { timeZone: bk.tz }).slice(0, 10)},
               ${'Stripe booking ' + (paymentIntent || session.id)}
             )
           `
@@ -138,9 +139,11 @@ export async function handler(event) {
 
         // Fetch order to get customer_id and amount
         const orderRows = await sql`
-          SELECT id, customer_id, total_amount
-          FROM orders
-          WHERE id = ${orderId}::uuid AND tenant_id = ${tenantId}::uuid
+          SELECT o.id, o.customer_id, o.total_amount,
+                 COALESCE(t.default_timezone, 'UTC') AS tz
+          FROM orders o
+          JOIN tenants t ON t.id = o.tenant_id
+          WHERE o.id = ${orderId}::uuid AND o.tenant_id = ${tenantId}::uuid
           LIMIT 1
         `
         if (!orderRows.length) return resp(404, { error: 'Order not found' })
@@ -159,7 +162,7 @@ export async function handler(event) {
             ${orderId}::uuid,
             ${amountPaid},
             'stripe',
-            ${new Date().toISOString().slice(0, 10)},
+            ${new Date().toLocaleString('en-CA', { timeZone: order.tz }).slice(0, 10)},
             ${'Stripe checkout ' + (paymentIntent || session.id)}
           )
         `
