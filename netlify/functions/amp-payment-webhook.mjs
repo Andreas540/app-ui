@@ -116,8 +116,8 @@ export async function handler(event) {
         `
         orderId = orderRow[0].id
         await sql`
-          INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-          VALUES (${orderId}, ${bk.service_id}, ${bk.service_id}, 1, ${amountPaid})
+          INSERT INTO order_items (order_id, product_id, qty, unit_price)
+          VALUES (${orderId}, ${bk.service_id}, 1, ${amountPaid})
         `
         console.log(`Created order ${orderId} for booking ${entityId}`)
       } else {

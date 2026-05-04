@@ -49,6 +49,7 @@ async function deleteBooking(event) {
         // This is the only booking — delete the order (and booking with it)
         await sql`DELETE FROM order_items WHERE order_id = ${orderId}`
         await sql`DELETE FROM order_partners WHERE order_id = ${orderId}`
+        await sql`DELETE FROM message_jobs WHERE booking_id = ${id} AND tenant_id = ${TENANT_ID}`
         await sql`DELETE FROM bookings WHERE id = ${id} AND tenant_id = ${TENANT_ID}`
         await sql`DELETE FROM orders WHERE id = ${orderId} AND tenant_id = ${TENANT_ID}`
         return cors(200, { ok: true, order_deleted: true })

@@ -129,8 +129,8 @@ async function getBookingData(event) {
               `
               const orderId = orderRow[0].id
               await sql`
-                INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-                VALUES (${orderId}, ${bk.service_id}, ${bk.service_id}, 1, ${Number(bk.total_amount)})
+                INSERT INTO order_items (order_id, product_id, qty, unit_price)
+                VALUES (${orderId}, ${bk.service_id}, 1, ${Number(bk.total_amount)})
               `
               // Record payment
               await sql`
@@ -550,8 +550,8 @@ async function createBooking(event) {
       `
       const orderId = orderRow[0].id
       await sql`
-        INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-        VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
+        INSERT INTO order_items (order_id, product_id, qty, unit_price)
+        VALUES (${orderId}, ${service_id}, 1, ${price})
       `
       await sql`UPDATE bookings SET order_id = ${orderId} WHERE id = ${bookingId}`
     }

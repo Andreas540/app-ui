@@ -127,8 +127,8 @@ async function createBooking(event) {
 
       // Add order item for the new order only
       await sql`
-        INSERT INTO order_items (order_id, service_id, product_id, qty, unit_price)
-        VALUES (${orderId}, ${service_id}, ${service_id}, 1, ${price})
+        INSERT INTO order_items (order_id, product_id, qty, unit_price)
+        VALUES (${orderId}, ${service_id}, 1, ${price})
       `
 
       // Handle advance payment allocation
