@@ -35,6 +35,7 @@ export default function EditOrder() {
   const [delivered, setDelivered]     = useState(false)
   const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
   const [notes, setNotes]             = useState('')
+  const [paidAmount, setPaidAmount]   = useState(0)
 
   // Line items
   const [lines, setLines] = useState<Line[]>([emptyLine()])
@@ -74,6 +75,7 @@ export default function EditOrder() {
         setDelivered(order.delivered)
         setDeliveredAt(order.delivered_at || todayYMD())
         setNotes(order.notes || '')
+        setPaidAmount(Number(order.paid_amount) || 0)
 
         // Load all items — fall back to legacy single-item fields on order row
         const loadedItems: any[] = orderData.items?.length
@@ -536,14 +538,20 @@ export default function EditOrder() {
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>
         <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>{t('cancel')}</button>
         <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>{t('orders.more')}</button>
-        <button
-          onClick={generatePaymentLink}
-          disabled={generatingLink}
-          style={{ height: CONTROL_H }}
-          title={t('orders.paymentLinkTitle')}
-        >
-          {generatingLink ? t('orders.generatingLink') : t('orders.paymentLink')}
-        </button>
+        {Number.isFinite(orderValue) && orderValue > paidAmount && (
+          <button
+            onClick={generatePaymentLink}
+            disabled={generatingLink}
+            style={{ height: CONTROL_H }}
+            title={t('orders.paymentLinkTitle')}
+          >
+            {generatingLink
+              ? t('orders.generatingLink')
+              : paidAmount > 0
+                ? `${t('orders.paymentLink')} (${(orderValue - paidAmount).toFixed(2)} remaining)`
+                : t('orders.paymentLink')}
+          </button>
+        )}
         <button
           onClick={deleteOrder}
           style={{ height: CONTROL_H, marginLeft: 'auto', backgroundColor: 'var(--color-error)', color: 'white', border: 'none' }}

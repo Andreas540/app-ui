@@ -30,11 +30,12 @@ export async function handler(event) {
     const { order_id } = JSON.parse(rawBody)
     if (!order_id) return cors(400, { error: 'order_id is required' })
 
-    // Fetch order — aggregate all items into a single row
+    // Fetch order — aggregate all items into a single row, subtract already paid
     const orderRows = await sql`
       SELECT
         o.id, o.order_no, o.customer_id,
         SUM(oi.qty * oi.unit_price)::numeric AS total_amount,
+        COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id AND py.tenant_id = o.tenant_id), 0)::numeric AS paid_amount,
         string_agg(DISTINCT p.name, ', ' ORDER BY p.name) AS product_names,
         cu.name AS customer_name,
         cu.email AS customer_email,
@@ -50,8 +51,10 @@ export async function handler(event) {
     if (!orderRows.length) return cors(404, { error: 'Order not found' })
     const order = orderRows[0]
 
-    const amount = Number(order.total_amount)
-    if (!amount || amount <= 0) return cors(400, { error: 'Order has no payable amount' })
+    const totalAmount    = Number(order.total_amount)
+    const paidAmount     = Number(order.paid_amount)
+    const amount         = Math.round((totalAmount - paidAmount) * 100) / 100
+    if (amount <= 0) return cors(400, { error: 'Order is already fully paid' })
 
     const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
 
@@ -77,8 +80,8 @@ export async function handler(event) {
         }],
         ...(order.customer_email ? { customer_email: order.customer_email } : {}),
         metadata: { type: 'order', order_id: order.id, tenant_id: authz.tenantId },
-        success_url: `${appBase}/orders?payment_success=${order.id}`,
-        cancel_url:  `${appBase}/orders?payment_canceled=${order.id}`,
+        success_url: `${appBase}/order-paid/${order.id}`,
+        cancel_url:  `${appBase}/order-paid/${order.id}?canceled=1`,
       })
       return cors(200, { checkout_url: session.url, provider: 'stripe' })
     }
@@ -115,8 +118,8 @@ export async function handler(event) {
         ticketid:    `ORD-${order.order_no}`,
         paysource:   'INTERNET',
         notes:       `Order #${order.order_no}`,
-        successurl:  `${appBase}/orders?payment_success=${order.id}`,
-        failureurl:  `${appBase}/orders?payment_failed=${order.id}`,
+        successurl:  `${appBase}/order-paid/${order.id}`,
+        failureurl:  `${appBase}/order-paid/${order.id}?canceled=1`,
         responseurl: `${appBase}/api/amp-payment-webhook?tenant_id=${authz.tenantId}`,
         ...(sig        ? { extfield1: sig      } : {}),
         extfield2: order.id, // order UUID echoed back for reliable callback lookup

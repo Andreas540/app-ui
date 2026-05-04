@@ -149,6 +149,10 @@ export default function OrderFormPage() {
         body: JSON.stringify({ token, items, notes: notes.trim() || undefined }),
       })
       const data = await res.json()
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url
+        return
+      }
       if (!data.ok) throw new Error(data.error || 'Failed')
       setStatus('done')
     } catch {

@@ -142,12 +142,14 @@ ORDER BY oi.created_at ASC NULLS LAST
       profitPercent = (profit / orderValue) * 100
     }
 
+    const paidRows = await sql`
+      SELECT COALESCE(SUM(amount), 0)::numeric AS paid_amount
+      FROM payments WHERE order_id = ${id} AND tenant_id = ${TENANT_ID}
+    `
+    const paidAmount = Number(paidRows[0]?.paid_amount || 0)
+
     return cors(200, {
-      order: {
-        ...order,
-        profit,
-        profitPercent
-      },
+      order: { ...order, profit, profitPercent, paid_amount: paidAmount },
       items,
       bookings,
       partner_splits: partnerSplits

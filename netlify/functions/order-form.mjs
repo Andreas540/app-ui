@@ -151,7 +151,7 @@ async function submitForm(event) {
 
     // Verify customer belongs to tenant
     const customerRows = await sql`
-      SELECT id, name FROM customers
+      SELECT id, name, email FROM customers
       WHERE id        = ${verified.customerId}::uuid
         AND tenant_id = ${verified.tenantId}::uuid
       LIMIT 1
@@ -222,7 +222,47 @@ async function submitForm(event) {
       VALUES (${verified.tenantId}::uuid, 'order', ${customerName}, ${JSON.stringify({ order_no: orderNo })}::jsonb)
     `.catch(err => console.error('external_events insert failed:', err))
 
-    return cors(201, { ok: true, order_no: orderNo })
+    // Sum from order_items (already inserted)
+    const totalRows = await sql`
+      SELECT COALESCE(SUM(qty * unit_price), 0)::numeric AS total FROM order_items WHERE order_id = ${orderId}
+    `
+    const orderValue = Number(totalRows[0]?.total || 0)
+
+    // Check for active payment provider
+    if (orderValue > 0) {
+      const stripeRows = await sql`
+        SELECT secret_key FROM tenant_payment_providers
+        WHERE tenant_id = ${verified.tenantId}::uuid AND provider = 'stripe' AND enabled = true
+          AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+        LIMIT 1
+      `.catch(() => [])
+
+      if (stripeRows.length) {
+        const Stripe  = (await import('stripe')).default
+        const stripe  = new Stripe(stripeRows[0].secret_key)
+        const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
+
+        const session = await stripe.checkout.sessions.create({
+          mode: 'payment',
+          line_items: [{
+            price_data: {
+              currency:     'usd',
+              product_data: { name: `Order #${orderNo}` },
+              unit_amount:  Math.round(orderValue * 100),
+            },
+            quantity: 1,
+          }],
+          ...(customerRows[0].email ? { customer_email: customerRows[0].email } : {}),
+          metadata: { type: 'order', order_id: orderId, tenant_id: verified.tenantId },
+          success_url: `${appBase}/order-paid/${orderId}`,
+          cancel_url:  `${appBase}/order-form/${body.token}`,
+        })
+
+        return cors(200, { checkout_url: session.url, order_id: orderId, order_no: orderNo })
+      }
+    }
+
+    return cors(201, { ok: true, order_no: orderNo, order_id: orderId })
   } catch (e) {
     console.error('order-form submitForm error:', e)
     return cors(500, { error: String(e?.message || e) })
