@@ -16,9 +16,11 @@ export async function handler(event) {
     const order_id = (event.queryStringParameters || {}).order_id
     if (!order_id) return resp(400, { error: 'order_id required' })
 
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
+
     const rows = await sql`
       SELECT
-        o.id, o.order_no,
+        o.id, o.order_no, o.tenant_id, o.customer_id, o.checkout_session_id,
         SUM(oi.qty * oi.unit_price)::numeric                                                        AS total_amount,
         COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id), 0)::numeric     AS paid_amount,
         c.name  AS customer_name,
@@ -29,16 +31,46 @@ export async function handler(event) {
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN tenants   t ON t.id = o.tenant_id
       WHERE o.id = ${order_id}::uuid
-      GROUP BY o.id, o.order_no, c.name, t.name, t.app_icon_192
+      GROUP BY o.id, o.order_no, o.tenant_id, o.customer_id, o.checkout_session_id, c.name, t.name, t.app_icon_192
       LIMIT 1
     `
     if (!rows.length) return resp(404, { error: 'Order not found' })
     const r = rows[0]
 
+    let paidAmount = Number(r.paid_amount)
+
+    // ── Stripe fallback: verify directly if no payment recorded yet ──────────
+    if (paidAmount === 0 && r.checkout_session_id) {
+      const stripeRows = await sql`
+        SELECT secret_key FROM tenant_payment_providers
+        WHERE tenant_id = ${r.tenant_id} AND provider = 'stripe' AND enabled = true
+          AND secret_key IS NOT NULL
+        LIMIT 1
+      `.catch(() => [])
+
+      if (stripeRows.length) {
+        const Stripe  = (await import('stripe')).default
+        const stripe  = new Stripe(stripeRows[0].secret_key)
+        const session = await stripe.checkout.sessions.retrieve(r.checkout_session_id).catch(() => null)
+
+        if (session?.payment_status === 'paid') {
+          const amount = (session.amount_total ?? 0) / 100
+          // Record the payment so subsequent checks hit the DB
+          await sql`
+            INSERT INTO payments (tenant_id, customer_id, order_id, amount, payment_type, payment_date, notes)
+            VALUES (${r.tenant_id}, ${r.customer_id}, ${order_id}::uuid, ${amount}, 'stripe',
+              ${new Date().toISOString().slice(0, 10)},
+              ${'Stripe ' + (session.payment_intent || r.checkout_session_id)})
+          `.catch(() => {}) // ignore duplicate if webhook already recorded it
+          paidAmount = amount
+        }
+      }
+    }
+
     return resp(200, {
       order_no:      r.order_no,
       total_amount:  Number(r.total_amount),
-      paid_amount:   Number(r.paid_amount),
+      paid_amount:   paidAmount,
       customer_name: r.customer_name,
       tenant_name:   r.tenant_name,
       tenant_icon:   r.tenant_icon || null,

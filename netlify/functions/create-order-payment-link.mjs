@@ -83,6 +83,10 @@ export async function handler(event) {
         success_url: `${appBase}/order-paid/${order.id}`,
         cancel_url:  `${appBase}/order-paid/${order.id}?canceled=1`,
       })
+      // Store session ID so the confirmation page can verify payment without a webhook
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
+      await sql`UPDATE orders SET checkout_session_id = ${session.id} WHERE id = ${order_id}::uuid AND tenant_id = ${authz.tenantId}::uuid`.catch(() => {})
+
       return cors(200, { checkout_url: session.url, provider: 'stripe' })
     }
 

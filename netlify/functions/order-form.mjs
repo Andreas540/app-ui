@@ -258,6 +258,9 @@ async function submitForm(event) {
           cancel_url:  `${appBase}/order-form/${body.token}`,
         })
 
+        await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
+        await sql`UPDATE orders SET checkout_session_id = ${session.id} WHERE id = ${orderId}`.catch(() => {})
+
         return cors(200, { checkout_url: session.url, order_id: orderId, order_no: orderNo })
       }
     }
