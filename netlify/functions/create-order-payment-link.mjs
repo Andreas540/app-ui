@@ -70,6 +70,7 @@ export async function handler(event) {
       const stripe  = new Stripe(stripeRows[0].secret_key)
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
+        customer_creation: 'always',
         line_items: [{
           price_data: {
             currency:     order.currency.toLowerCase(),

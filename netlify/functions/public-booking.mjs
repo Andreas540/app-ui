@@ -564,6 +564,7 @@ async function createBooking(event) {
 
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
+        customer_creation: 'always',
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         line_items: [{
           price_data: {
