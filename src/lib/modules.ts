@@ -26,6 +26,22 @@ export const MODULES: ModuleDef[] = [
     features: featuresForModule('sales'),
   },
   {
+    id: 'cash-management',
+    name: 'Cash Management',
+    pricePerUser: 9.99,
+    description: 'Per-user cash in/out tracking with weekly balance overview',
+    alwaysIncluded: false,
+    features: featuresForModule('cash-management'),
+  },
+  {
+    id: 'reports',
+    name: 'Reports',
+    pricePerUser: 9.99,
+    description: 'Financial reports and analytics',
+    alwaysIncluded: false,
+    features: featuresForModule('reports'),
+  },
+  {
     id: 'supply-chain',
     name: 'Supply Chain',
     pricePerUser: 9.99,
@@ -40,14 +56,6 @@ export const MODULES: ModuleDef[] = [
     description: 'Employees, time entry and time approval',
     alwaysIncluded: false,
     features: featuresForModule('labor'),
-  },
-  {
-    id: 'reports',
-    name: 'Reports',
-    pricePerUser: 9.99,
-    description: 'Financial reports and analytics',
-    alwaysIncluded: false,
-    features: featuresForModule('reports'),
   },
   {
     id: 'booking',

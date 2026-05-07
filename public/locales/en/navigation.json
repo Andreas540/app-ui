@@ -43,5 +43,6 @@
   "reportsCustomers": "Customers",
   "reportsBizWiz": "Ask BizWiz AI",
   "addQuickNavigation": "Add shortcuts",
-  "cashMgmt": "Cash Management"
+  "cashMgmtSection": "Cash Management",
+  "cashMgmt": "Money In / Out"
 }

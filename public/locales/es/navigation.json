@@ -43,5 +43,6 @@
   "reportsCustomers": "Clientes",
   "reportsBizWiz": "Preguntar a BizWiz AI",
   "addQuickNavigation": "Añadir accesos directos",
-  "cashMgmt": "Gestión de Efectivo"
+  "cashMgmtSection": "Gestión de Efectivo",
+  "cashMgmt": "Entrada / Salida"
 }

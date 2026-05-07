@@ -9,7 +9,7 @@ export const AVAILABLE_FEATURES = {
   'price-checker': { id: 'price-checker',   name: 'Price Checker',  route: '/price-checker',       category: 'Sales',  module: 'sales' },
   invoices:        { id: 'invoices',        name: 'Create Invoice', route: '/invoices/create',     category: 'Sales',  module: 'sales' },
   costs:             { id: 'costs',             name: 'Costs',            route: '/costs/new',           category: 'Sales',  module: 'sales' },
-  'cash-management': { id: 'cash-management', name: 'Cash Management',  route: '/cash/money-in-out',   category: 'Sales',  module: 'sales' },
+  'cash-management': { id: 'cash-management', name: 'Money In / Out',   route: '/cash/money-in-out',   category: 'Sales',  module: 'cash-management' },
 
   // Supply Chain
   'supply-chain':    { id: 'supply-chain',    name: 'Supply & Demand', route: '/supply-chain',        category: 'Supply', module: 'supply-chain' },
@@ -45,7 +45,7 @@ export const AVAILABLE_FEATURES = {
 } as const
 
 export type FeatureId = keyof typeof AVAILABLE_FEATURES
-export type ModuleId = 'sales' | 'supply-chain' | 'labor' | 'reports' | 'admin' | 'booking'
+export type ModuleId = 'sales' | 'cash-management' | 'supply-chain' | 'labor' | 'reports' | 'admin' | 'booking'
 
 export const FEATURE_CATEGORIES = {
   Sales:   'Sales & Cash Flow',

@@ -1,6 +1,6 @@
 export interface NavItemDef {
   id: string
-  section: 'sales' | 'reports' | 'supply' | 'labor' | 'booking' | 'admin'
+  section: 'sales' | 'cash-management' | 'reports' | 'supply' | 'labor' | 'booking' | 'admin'
   labelKey: string
 }
 
@@ -15,7 +15,7 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'products',         section: 'sales',   labelKey: 'products' },
   { id: 'invoices',         section: 'sales',   labelKey: 'createInvoice' },
   { id: 'costs',            section: 'sales',   labelKey: 'newCost' },
-  { id: 'cash-management', section: 'sales',   labelKey: 'cashMgmt' },
+  { id: 'cash-management', section: 'cash-management', labelKey: 'cashMgmt' },
   // Reports
   { id: 'bizwiz',           section: 'reports', labelKey: 'reportsBizWiz' },
   { id: 'reports',          section: 'reports', labelKey: 'reportsSalesProfit' },
@@ -41,8 +41,9 @@ export const NAV_ITEMS: NavItemDef[] = [
 ]
 
 export const NAV_SECTIONS: { id: NavItemDef['section']; labelKey: string }[] = [
-  { id: 'sales',   labelKey: 'salesCashFlow' },
-  { id: 'reports', labelKey: 'reportsSection' },
+  { id: 'sales',            labelKey: 'salesCashFlow' },
+  { id: 'cash-management',  labelKey: 'cashMgmtSection' },
+  { id: 'reports',          labelKey: 'reportsSection' },
   { id: 'supply',  labelKey: 'supplyChain' },
   { id: 'labor',   labelKey: 'employeeManagement' },
   { id: 'booking', labelKey: 'bookingSection' },

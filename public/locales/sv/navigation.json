@@ -43,5 +43,6 @@
   "reportsCustomers": "Kunder",
   "reportsBizWiz": "Fråga BizWiz AI",
   "addQuickNavigation": "Lägg till genvägar",
-  "cashMgmt": "Kassahantering"
+  "cashMgmtSection": "Kassahantering",
+  "cashMgmt": "In / Ut"
 }

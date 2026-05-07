@@ -1548,7 +1548,7 @@
     "Check": "Cheque",
     "Credit card": "Tarjeta de crédito"
   },
-  "cashMgmt": "Gestión de efectivo",
+  "cashMgmt": "Entrada / Salida",
   "cashManagement": {
     "title": "Entrada / Salida de Efectivo",
     "registeredBy": "Registrado por",

@@ -774,11 +774,14 @@ useEffect(() => {
                     {t('newCost')}
                   </NavLink>
                 )}
-                {canAccess('cash-management') && (
-                  <NavLink to="/cash/money-in-out" onClick={() => setNavOpen(false)}>
-                    {t('cashMgmt')}
-                  </NavLink>
-                )}
+                </>)}
+                {canAccess('cash-management') && (<>
+                  {sectionHeader('cash-management', t('cashMgmtSection'))}
+                  {!collapsed['cash-management'] && (
+                    <NavLink to="/cash/money-in-out" onClick={() => setNavOpen(false)}>
+                      {t('cashMgmt')}
+                    </NavLink>
+                  )}
                 </>)}
                 {(canAccess('reports') || canAccess('customer-reports') || canAccess('bizwiz')) && (<>
                   {sectionHeader('reports', t('reportsSection'))}
