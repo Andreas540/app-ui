@@ -1562,7 +1562,7 @@
     "salary": "Salarios",
     "expense": "Gastos",
     "amount": "Importe",
-    "commentOptional": "Opcional",
+    "commentOptional": "Comentario (opcional)",
     "add": "Añadir",
     "deleteConfirm": "¿Eliminar esta transacción?"
   }

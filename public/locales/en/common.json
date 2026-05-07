@@ -1551,7 +1551,7 @@
     "salary": "Salaries",
     "expense": "Expenses",
     "amount": "Amount",
-    "commentOptional": "Optional",
+    "commentOptional": "Comment (optional)",
     "add": "Add",
     "deleteConfirm": "Delete this transaction?"
   }

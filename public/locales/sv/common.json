@@ -1562,7 +1562,7 @@
     "salary": "Löner",
     "expense": "Utgifter",
     "amount": "Belopp",
-    "commentOptional": "Valfritt",
+    "commentOptional": "Kommentar (valfritt)",
     "add": "Lägg till",
     "deleteConfirm": "Ta bort transaktionen?"
   }

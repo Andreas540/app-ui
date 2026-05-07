@@ -217,15 +217,20 @@ export default function CashManagementPage() {
       {/* Add transaction form */}
       <form onSubmit={handleAdd} style={{ marginBottom: 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-          <input
-            type="date"
+          <select
             value={formDate}
-            min={bounds.start}
-            max={bounds.end}
             onChange={e => setFormDate(e.target.value)}
             style={{ height: H }}
             required
-          />
+          >
+            {allDates.map(ds => {
+              const [y, m, d] = ds.split('-').map(Number)
+              const dt = new Date(y, m - 1, d)
+              const dayLabel  = dt.toLocaleDateString(locale, { weekday: 'long' })
+              const shortDate = dt.toLocaleDateString(locale, { month: 'numeric', day: 'numeric' })
+              return <option key={ds} value={ds}>{dayLabel} {shortDate}</option>
+            })}
+          </select>
           <select
             value={formType}
             onChange={e => setFormType(e.target.value)}

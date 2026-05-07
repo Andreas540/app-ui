@@ -46,11 +46,11 @@ async function getTransactions(event) {
 
     // All users for this tenant
     const users = await sql`
-      SELECT au.id, au.name
-      FROM app_users au
-      JOIN tenant_memberships tm ON tm.user_id = au.id
+      SELECT u.id, u.name
+      FROM users u
+      JOIN tenant_memberships tm ON tm.user_id = u.id
       WHERE tm.tenant_id = ${TENANT_ID}::uuid
-      ORDER BY au.name
+      ORDER BY u.name
     `
 
     const targetUserId = user_id || users[0]?.id || null
