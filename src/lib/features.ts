@@ -8,7 +8,8 @@ export const AVAILABLE_FEATURES = {
   products:        { id: 'products',        name: 'Products',       route: '/products/new',        category: 'Sales',  module: 'sales' },
   'price-checker': { id: 'price-checker',   name: 'Price Checker',  route: '/price-checker',       category: 'Sales',  module: 'sales' },
   invoices:        { id: 'invoices',        name: 'Create Invoice', route: '/invoices/create',     category: 'Sales',  module: 'sales' },
-  costs:           { id: 'costs',           name: 'Costs',          route: '/costs/new',           category: 'Sales',  module: 'sales' },
+  costs:             { id: 'costs',             name: 'Costs',            route: '/costs/new',           category: 'Sales',  module: 'sales' },
+  'cash-management': { id: 'cash-management', name: 'Cash Management',  route: '/cash/money-in-out',   category: 'Sales',  module: 'sales' },
 
   // Supply Chain
   'supply-chain':    { id: 'supply-chain',    name: 'Supply & Demand', route: '/supply-chain',        category: 'Supply', module: 'supply-chain' },

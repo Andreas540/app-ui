@@ -1536,5 +1536,23 @@
     "Loan/Deposit": "Loan/Deposit",
     "Repayment": "Repayment",
     "Advance Payment": "Advance Payment"
+  },
+  "cashMgmt": "Cash management",
+  "cashManagement": {
+    "title": "Money In / Out",
+    "registeredBy": "Registered by",
+    "thisWeek": "This week",
+    "lastWeek": "Last week",
+    "ingoingBalance": "Ingoing balance",
+    "moneyIn": "Money in",
+    "moneyOut": "Money out",
+    "outgoingBalance": "Outgoing balance",
+    "cashPickup": "Cash pickup",
+    "salary": "Salaries",
+    "expense": "Expenses",
+    "amount": "Amount",
+    "commentOptional": "Optional",
+    "add": "Add",
+    "deleteConfirm": "Delete this transaction?"
   }
 }

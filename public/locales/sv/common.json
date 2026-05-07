@@ -1547,5 +1547,23 @@
     "Bank transfer": "Banköverföring",
     "Check": "Check",
     "Credit card": "Kortbetalning"
+  },
+  "cashMgmt": "Kassahantering",
+  "cashManagement": {
+    "title": "In / Ut",
+    "registeredBy": "Registrerad av",
+    "thisWeek": "Denna vecka",
+    "lastWeek": "Förra veckan",
+    "ingoingBalance": "Ingående saldo",
+    "moneyIn": "Inbetalningar",
+    "moneyOut": "Utbetalningar",
+    "outgoingBalance": "Utgående saldo",
+    "cashPickup": "Kassainlämning",
+    "salary": "Löner",
+    "expense": "Utgifter",
+    "amount": "Belopp",
+    "commentOptional": "Valfritt",
+    "add": "Lägg till",
+    "deleteConfirm": "Ta bort transaktionen?"
   }
 }

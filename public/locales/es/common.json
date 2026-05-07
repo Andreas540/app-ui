@@ -1547,5 +1547,23 @@
     "Bank transfer": "Transferencia bancaria",
     "Check": "Cheque",
     "Credit card": "Tarjeta de crédito"
+  },
+  "cashMgmt": "Gestión de efectivo",
+  "cashManagement": {
+    "title": "Entrada / Salida de Efectivo",
+    "registeredBy": "Registrado por",
+    "thisWeek": "Esta semana",
+    "lastWeek": "Semana pasada",
+    "ingoingBalance": "Saldo inicial",
+    "moneyIn": "Entradas",
+    "moneyOut": "Salidas",
+    "outgoingBalance": "Saldo final",
+    "cashPickup": "Recogida de efectivo",
+    "salary": "Salarios",
+    "expense": "Gastos",
+    "amount": "Importe",
+    "commentOptional": "Opcional",
+    "add": "Añadir",
+    "deleteConfirm": "¿Eliminar esta transacción?"
   }
 }
