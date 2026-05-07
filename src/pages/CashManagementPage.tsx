@@ -49,6 +49,7 @@ function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netli
 export default function CashManagementPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const isAdmin = user?.role === 'tenant_admin' || user?.role === 'super_admin'
   const { locale, timezone } = useLocale()
   const { fmtMoney } = useCurrency()
 
@@ -70,11 +71,15 @@ export default function CashManagementPage() {
     if (user?.id && !selUser) setSelUser(user.id)
   }, [user?.id]) // eslint-disable-line
 
-  // Keep form date inside the selected period
+  // Default date: today for this week, Monday for last week
   useEffect(() => {
     const { start, end } = weekBounds(period, timezone)
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
-    setFormDate(today >= start && today <= end ? today : end)
+    if (period === 'thisWeek') {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
+      setFormDate(today >= start && today <= end ? today : end)
+    } else {
+      setFormDate(start) // Monday of last week
+    }
   }, [period, timezone]) // eslint-disable-line
 
   const load = useCallback(async () => {
@@ -167,13 +172,24 @@ export default function CashManagementPage() {
         <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
           {t('cashManagement.registeredBy')}
         </label>
-        <select
-          value={selUser}
-          onChange={e => setSelUser(e.target.value)}
-          style={{ width: '100%', height: H }}
-        >
-          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
+        {isAdmin ? (
+          <select
+            value={selUser}
+            onChange={e => setSelUser(e.target.value)}
+            style={{ width: '100%', height: H }}
+          >
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        ) : (
+          <div style={{
+            height: H, display: 'flex', alignItems: 'center',
+            padding: '0 10px', border: '1px solid var(--border)',
+            borderRadius: 4, background: 'var(--bg-secondary, #f8f9fa)',
+            color: 'var(--muted)', fontSize: 14,
+          }}>
+            {users.find(u => u.id === selUser)?.name ?? user?.name ?? ''}
+          </div>
+        )}
       </div>
 
       {/* Week filter */}
@@ -236,9 +252,9 @@ export default function CashManagementPage() {
             onChange={e => setFormType(e.target.value)}
             style={{ height: H }}
           >
-            <option value="cash_pickup">{t('cashManagement.cashPickup')} (+)</option>
-            <option value="salary">{t('cashManagement.salary')} (−)</option>
-            <option value="expense">{t('cashManagement.expense')} (−)</option>
+            <option value="cash_pickup">{t('cashManagement.cash_pickup')}</option>
+            <option value="salary">{t('cashManagement.salary')}</option>
+            <option value="expense">{t('cashManagement.expense')}</option>
           </select>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
