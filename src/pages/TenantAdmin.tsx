@@ -30,7 +30,7 @@ interface TenantGeo {
 }
 
 export default function TenantAdmin() {
-  useAuth()
+  const { user, verifyAuth } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -311,6 +311,7 @@ export default function TenantAdmin() {
         throw new Error(data.error || 'Failed to save features')
       }
 
+      if (managingUserId === user?.id) await verifyAuth()
       alert(t('tenantAdmin.permissionsUpdated'))
       setManagingUserId(null)
       await loadData()
