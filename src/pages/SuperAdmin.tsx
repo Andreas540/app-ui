@@ -353,9 +353,11 @@ export default function SuperAdmin() {
       } else {
         const stored: FeatureId[] = data.features
         const expanded = [...stored]
+        // Only auto-add always-included module features (e.g. Admin).
+        // Paid module features are kept exactly as stored — new features must be
+        // explicitly checked by SuperAdmin, never auto-expanded.
         MODULES.forEach(mod => {
-          const hasModule = mod.alwaysIncluded || mod.features.some(f => stored.includes(f))
-          if (hasModule) {
+          if (mod.alwaysIncluded) {
             mod.features.forEach(f => { if (!expanded.includes(f)) expanded.push(f) })
           }
         })
