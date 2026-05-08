@@ -90,7 +90,7 @@ export const defaultConfig: TenantConfig = {
     showInfoIconsReports: true,
     showNavArrowsMobile: true,
     showNavArrowsDesktop: false,
-    showOwedToSuppliers: false,
+    showOwedToSuppliers: true,
     compactCustomerOrderRows: true,
     multipleOrderRows: true,
     dashboardCards: ['financials', 'charts'],
