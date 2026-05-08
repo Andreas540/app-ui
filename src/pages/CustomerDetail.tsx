@@ -32,6 +32,8 @@ export default function CustomerDetailPage() {
   const [showPaymentsInfo, setShowPaymentsInfo] = useState(false)
   const [paymentMenuOrderId, setPaymentMenuOrderId] = useState<string | null>(null)
   const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false)
+  const [paymentLinkUrl, setPaymentLinkUrl] = useState<string | null>(null)
+  const [paymentLinkCopied, setPaymentLinkCopied] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
@@ -117,6 +119,7 @@ export default function CustomerDetailPage() {
 
   async function generatePaymentLink(orderId: string) {
     setGeneratingPaymentLink(true)
+    setPaymentLinkUrl(null)
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/create-order-payment-link`, {
@@ -126,13 +129,20 @@ export default function CustomerDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to generate link')
-      await navigator.clipboard.writeText(data.checkout_url)
-      alert(t('orders.paymentLinkCopied'))
+      setPaymentLinkUrl(data.checkout_url)
     } catch (e: any) {
       alert(e?.message || 'Failed to generate payment link')
     } finally {
       setGeneratingPaymentLink(false)
     }
+  }
+
+  function copyPaymentLink() {
+    if (!paymentLinkUrl) return
+    navigator.clipboard.writeText(paymentLinkUrl).then(() => {
+      setPaymentLinkCopied(true)
+      setTimeout(() => setPaymentLinkCopied(false), 2000)
+    })
   }
 
   function copyBookingLink() {
@@ -373,6 +383,25 @@ export default function CustomerDetailPage() {
             {(['p1','p2','p3'] as const).map(k => (
               <p key={k} style={{ margin: 0 }}>{ti(`customerDetailPayments.${k}`)}</p>
             ))}
+          </div>
+        </div>
+      )}
+
+      {paymentLinkUrl && (
+        <div style={{ marginTop: 12, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input readOnly value={paymentLinkUrl}
+              style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }}
+              onFocus={e => e.target.select()} />
+            <button type="button" onClick={copyPaymentLink}
+              style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+              {paymentLinkCopied ? t('customers.copied') : t('customers.copyLink')}
+            </button>
+            <button type="button" onClick={() => setPaymentLinkUrl(null)}
+              style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+              {t('close')}
+            </button>
           </div>
         </div>
       )}
