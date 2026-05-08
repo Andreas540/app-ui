@@ -13,7 +13,10 @@
     "title": "Kunder",
     "p1": "Alla dina kunder på ett ställe. Sortera på namn eller utestående belopp, och filtrera efter kundtyp.",
     "p2": "Direktkunder gör beställningar utan partnerkommission. Partnerkunder är kopplade till en partner som får en andel på varje order.",
-    "p3": "Tryck på en kund för att se hela orderhistoriken, betalningsstatus och kontaktuppgifter."
+    "p3": "Tryck på en kund för att se hela orderhistoriken, betalningsstatus och kontaktuppgifter.",
+    "p4": "Ny — Lägg till en ny kundprofil.",
+    "p5": "Slå ihop — Kombinera två dubblerade kundposter till en.",
+    "p6": "Rapporter — Se försäljningstotaler, orderhistorik och betalningsanalys per kund."
   },
   "createCustomer": {
     "title": "Skapa kund",

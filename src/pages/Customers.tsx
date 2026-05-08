@@ -180,6 +180,10 @@ export default function Customers() {
             {(['p1', 'p2', 'p3'] as const).map(k => (
               <p key={k} style={{ margin: 0 }}>{ti(`customers.${k}`)}</p>
             ))}
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '2px 0' }} />
+            {(['p4', 'p5', 'p6'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{ti(`customers.${k}`)}</p>
+            ))}
           </div>
         </div>
       )}
