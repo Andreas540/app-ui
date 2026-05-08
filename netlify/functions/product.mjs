@@ -51,7 +51,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const durationMinutes = category === 'service' && body.duration_minutes != null
       ? Math.max(1, parseInt(body.duration_minutes, 10) || 60)
       : null
-    const priceAmount = category === 'service' && body.price_amount != null
+    const priceAmount = body.price_amount != null
       ? Number(body.price_amount)
       : null
 
