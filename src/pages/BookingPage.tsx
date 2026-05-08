@@ -386,7 +386,9 @@ export default function BookingPage() {
     if (!email.trim()) { alert(t('bookingPage.pleaseEnterEmail')); return }
     setSubmitting(true)
     try {
-      const res = await fetch(`${apiBase()}/.netlify/functions/public-booking`, {
+      const customerToken = searchParams.get('customer_token')
+      const tokenParam    = customerToken ? `?customer_token=${encodeURIComponent(customerToken)}` : ''
+      const res = await fetch(`${apiBase()}/.netlify/functions/public-booking${tokenParam}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
