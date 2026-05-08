@@ -931,6 +931,7 @@
     "tabBooking": "Bokning",
     "tabPaymentProviders": "Betalningsleverantörer",
     "tabCustomerOffers": "Kundbud",
+    "tabUiSettings": "UI-inställningar",
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",
@@ -1113,7 +1114,7 @@
     "errorLoad": "Kunde inte ladda. Försök igen."
   },
   "tenantCustom": {
-    "title": "UI-anpassning",
+    "title": "UI-inställningar",
     "selectTenant": "Kund",
     "chooseTenant": "— Välj kund —",
     "noTenantSelected": "Välj en kund ovan för att konfigurera UI-inställningar.",

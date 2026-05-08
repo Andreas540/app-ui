@@ -99,6 +99,12 @@ async function handleGet(event) {
       })
     }
 
+    if (action === 'getUiConfig') {
+      const rows = await sql`SELECT ui_config FROM tenants WHERE id = ${tenantId} LIMIT 1`
+      if (rows.length === 0) return cors(404, { error: 'Tenant not found' })
+      return cors(200, { uiConfig: rows[0].ui_config || {} })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -374,6 +380,13 @@ if (action === 'toggleUserStatus') {
             preferred_timezone = ${timezone ?? null}
         WHERE id = ${targetUserId}
       `
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateUiConfig') {
+      const { uiConfig } = body
+      if (typeof uiConfig !== 'object' || uiConfig === null) return cors(400, { error: 'uiConfig must be an object' })
+      await sql`UPDATE tenants SET ui_config = ${JSON.stringify(uiConfig)}::jsonb WHERE id = ${tenantId}`
       return cors(200, { success: true })
     }
 

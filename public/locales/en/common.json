@@ -931,6 +931,7 @@
     "tabBooking": "Booking",
     "tabPaymentProviders": "Payment Providers",
     "tabCustomerOffers": "Customer Offers",
+    "tabUiSettings": "UI Settings",
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",
@@ -1113,7 +1114,7 @@
     "errorLoad": "Could not load. Please try again."
   },
   "tenantCustom": {
-    "title": "UI Customization",
+    "title": "UI Settings",
     "selectTenant": "Tenant",
     "chooseTenant": "— Select tenant —",
     "noTenantSelected": "Select a tenant above to configure its UI settings.",

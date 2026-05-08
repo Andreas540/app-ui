@@ -9,6 +9,7 @@ import { MODULES } from '../lib/modules'
 import TenantAdminBookingTab from './TenantAdminBookingTab'
 import TenantAdminPaymentProvidersTab from './TenantAdminPaymentProvidersTab'
 import TenantAdminCustomerOffersTab from './TenantAdminCustomerOffersTab'
+import TenantAdminUISettingsTab from './TenantAdminUISettingsTab'
 
 interface TenantUser {
   id: string
@@ -60,7 +61,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings'>('team')
   const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
   const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
 
@@ -805,6 +806,7 @@ export default function TenantAdmin() {
           <option value="booking">{t('tenantAdmin.tabBooking')}</option>
           <option value="payment-providers">{t('tenantAdmin.tabPaymentProviders')}</option>
           <option value="customer-offers">{t('tenantAdmin.tabCustomerOffers')}</option>
+          <option value="ui-settings">{t('tenantAdmin.tabUiSettings')}</option>
         </select>
 
         <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
@@ -834,6 +836,13 @@ export default function TenantAdmin() {
             style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {t('tenantAdmin.tabCustomerOffers')}
+          </button>
+          <button
+            onClick={() => setActiveTab('ui-settings')}
+            className={activeTab === 'ui-settings' ? 'primary' : ''}
+            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {t('tenantAdmin.tabUiSettings')}
           </button>
         </div>
 
@@ -1299,6 +1308,8 @@ export default function TenantAdmin() {
         {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
 
         {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} initialSubTab={offersInitialSubTab} />}
+
+        {activeTab === 'ui-settings' && <TenantAdminUISettingsTab />}
 
         {/* ── Accounting tab ── */}
         {activeTab === 'accounting' && (<>

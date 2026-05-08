@@ -1,0 +1,454 @@
+// src/pages/TenantAdminUISettingsTab.tsx
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  getAuthHeaders,
+  PAYMENT_TYPES, PAYMENT_TYPES_COP, PAYMENT_TYPES_SEK,
+  PARTNER_PAYMENT_TYPES, PARTNER_PAYMENT_TYPES_COP, PARTNER_PAYMENT_TYPES_SEK,
+  SUPPLIER_PAYMENT_TYPES, SUPPLIER_PAYMENT_TYPES_COP, SUPPLIER_PAYMENT_TYPES_SEK,
+} from '../lib/api'
+import { defaultConfig } from '../lib/tenantConfig'
+import { useAuth } from '../contexts/AuthContext'
+
+const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+const H = 40
+
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'new-order' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail'
+
+type UiConfig = {
+  payments?: {
+    showOrderSelection?: boolean
+    visibleCustomerPaymentTypes?: string[] | null
+    visiblePartnerPaymentTypes?: string[] | null
+    visibleSupplierPaymentTypes?: string[] | null
+    showPartnerTransfer?: boolean
+  }
+  labels?: {
+    customer?: string; customers?: string
+    order?: string; orders?: string
+    directLabel?: string
+    directCustomerGroup?: string
+  }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[] }
+  booking?: {
+    serviceTypeLabel?: string; bookingProviderName?: string
+    smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
+  }
+}
+
+function Badge({ customized }: { customized: boolean }) {
+  const { t } = useTranslation()
+  if (!customized) return null
+  return (
+    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent, #5b8dee)', color: '#fff', marginLeft: 8, verticalAlign: 'middle' }}>
+      {t('tenantCustom.customized')}
+    </span>
+  )
+}
+
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <button className={value ? 'primary' : ''} onClick={() => onChange(true)}
+        style={{ height: H, padding: '0 18px', fontSize: 13 }}>
+        {t('tenantCustom.on')}
+      </button>
+      <button className={!value ? 'primary' : ''} onClick={() => onChange(false)}
+        style={{ height: H, padding: '0 18px', fontSize: 13 }}>
+        {t('tenantCustom.off')}
+      </button>
+    </div>
+  )
+}
+
+function CheckboxDropdown({ label, allTypes, visible, onChange }: {
+  label: string
+  allTypes: string[]
+  visible: string[] | null
+  onChange: (v: string[] | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const visibleSet = visible ? new Set(visible) : new Set(allTypes)
+  const checkedCount = allTypes.filter(t => visibleSet.has(t)).length
+  const allChecked = checkedCount === allTypes.length
+
+  function toggle(type: string) {
+    const next = new Set(visibleSet)
+    next.has(type) ? next.delete(type) : next.add(type)
+    onChange(next.size === allTypes.length ? null : [...next])
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', height: H, padding: '0 12px',
+          border: '1px solid var(--line)', borderRadius: 6,
+          background: 'var(--bg, #fff)', cursor: 'pointer', fontSize: 13, textAlign: 'left',
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="helper" style={{ fontSize: 12 }}>
+            {allChecked ? 'All' : `${checkedCount}/${allTypes.length}`}
+          </span>
+          <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+        </span>
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 4, padding: '8px 12px',
+          border: '1px solid var(--line)', borderRadius: 6,
+          background: 'var(--bg, #fff)',
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          {allTypes.map(type => (
+            <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '3px 0', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={visibleSet.has(type)}
+                style={{ width: 14, height: 14, margin: 0, cursor: 'pointer', flexShrink: 0 }}
+                onChange={() => toggle(type)}
+              />
+              {type}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Row({ label, help, customized, children }: { label: string; help?: string; customized: boolean; children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
+      <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+        {label}
+        <Badge customized={customized} />
+      </div>
+      {help && <div className="helper" style={{ marginTop: 2, marginBottom: 8, fontSize: 12 }}>{help}</div>}
+      <div>{children}</div>
+    </div>
+  )
+}
+
+export default function TenantAdminUISettingsTab() {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+
+  const [section, setSection] = useState<Section>('terminology')
+  const [cfg, setCfg]         = useState<UiConfig>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving]   = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
+  const currency = (user as any)?.default_currency || 'USD'
+
+  useEffect(() => { loadCfg() }, [])
+
+  async function loadCfg() {
+    setLoading(true)
+    try {
+      const res = await fetch(`${base}/api/tenant-admin?action=getUiConfig`, { headers: getAuthHeaders() })
+      const data = await res.json()
+      setCfg(data.uiConfig || {})
+    } catch { /* ignore */ }
+    finally { setLoading(false) }
+  }
+
+  async function save() {
+    setSaving(true)
+    setSaveMsg('')
+    try {
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateUiConfig', uiConfig: cfg }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+      setSaveMsg(t('tenantCustom.saved'))
+      setTimeout(() => setSaveMsg(''), 3000)
+    } catch (e: any) {
+      alert(e?.message || 'Save failed')
+    } finally { setSaving(false) }
+  }
+
+  function setLabel(key: keyof NonNullable<UiConfig['labels']>, val: string) {
+    setCfg(p => ({ ...p, labels: { ...p.labels, [key]: val || undefined } }))
+  }
+  function setPayment(key: 'showOrderSelection' | 'showPartnerTransfer', val: boolean) {
+    setCfg(p => ({ ...p, payments: { ...p.payments, [key]: val } }))
+  }
+  function setVisibleTypes(key: 'visibleCustomerPaymentTypes' | 'visiblePartnerPaymentTypes' | 'visibleSupplierPaymentTypes', val: string[] | null) {
+    setCfg(p => ({ ...p, payments: { ...p.payments, [key]: val } }))
+  }
+  function setUi(key: keyof NonNullable<UiConfig['ui']>, val: boolean) {
+    setCfg(p => ({ ...p, ui: { ...p.ui, [key]: val } }))
+  }
+  function toggleDashboardCard(cardId: string) {
+    setCfg(p => {
+      const current = p.ui?.dashboardCards ?? du.dashboardCards
+      const next = current.includes(cardId) ? current.filter(id => id !== cardId) : [...current, cardId]
+      return { ...p, ui: { ...p.ui, dashboardCards: next } }
+    })
+  }
+  function setBookingBool(key: 'smsRemindersEnabled' | 'showBookingParticipants', val: boolean) {
+    setCfg(p => ({ ...p, booking: { ...p.booking, [key]: val } }))
+  }
+  function setBookingText(key: 'serviceTypeLabel' | 'bookingProviderName', val: string) {
+    setCfg(p => ({ ...p, booking: { ...p.booking, [key]: val || undefined } }))
+  }
+
+  function resetSection() {
+    if (section === 'terminology') {
+      setCfg(p => { const next = { ...p }; delete next.labels; return next })
+    } else if (section === 'payments') {
+      setCfg(p => { const next = { ...p }; delete next.payments; return next })
+    } else if (section === 'booking') {
+      setCfg(p => { const next = { ...p }; delete next.booking; return next })
+    } else if (section === 'orders') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.showOrderNumberInList; return { ...p, ui } })
+    } else if (section === 'welcome') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.showWelcomeModal; return { ...p, ui } })
+    } else if (section === 'ui-info') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.showInfoIconsPages; delete ui.showInfoIconsReports; return { ...p, ui } })
+    } else if (section === 'ui-nav') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.showNavArrowsMobile; delete ui.showNavArrowsDesktop; return { ...p, ui } })
+    } else if (section === 'dashboard') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
+    } else if (section === 'customer-detail') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; return { ...p, ui } })
+    } else if (section === 'new-order') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
+    }
+  }
+
+  const dl = defaultConfig.labels
+  const dp = defaultConfig.payments
+  const du = defaultConfig.ui
+  const db = defaultConfig.booking
+  const cl = cfg.labels || {}
+  const cp = cfg.payments || {}
+  const cu = cfg.ui || {}
+  const cb = cfg.booking || {}
+
+  if (loading) return <p className="helper">{t('loadingDots')}</p>
+
+  const isCOP = currency === 'COP'
+  const isSEK = currency === 'SEK'
+  const customerTypes = (isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES) as string[]
+  const partnerTypes  = (isCOP ? PARTNER_PAYMENT_TYPES_COP : isSEK ? PARTNER_PAYMENT_TYPES_SEK : PARTNER_PAYMENT_TYPES) as string[]
+  const supplierTypes = (isCOP ? SUPPLIER_PAYMENT_TYPES_COP : isSEK ? SUPPLIER_PAYMENT_TYPES_SEK : SUPPLIER_PAYMENT_TYPES) as string[]
+
+  return (
+    <div>
+      {/* Section selector */}
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <label style={{ fontWeight: 500, fontSize: 14 }}>{t('tenantCustom.section')}</label>
+        <select value={section} onChange={e => setSection(e.target.value as Section)} style={{ height: H, minWidth: 220 }}>
+          <optgroup label={t('tenantCustom.groupGlobal')}>
+            <option value="terminology">{t('tenantCustom.sectionTerminology')}</option>
+          </optgroup>
+          <optgroup label={t('tenantCustom.groupFunctions')}>
+            <option value="payments">{t('tenantCustom.sectionPayments')}</option>
+            <option value="booking">{t('tenantCustom.sectionBooking')}</option>
+            <option value="ui-nav">{t('tenantCustom.sectionNavigation')}</option>
+          </optgroup>
+          <optgroup label={t('tenantCustom.groupPages')}>
+            <option value="orders">{t('tenantCustom.sectionOrders')}</option>
+            <option value="new-order">{t('tenantCustom.sectionNewOrder')}</option>
+            <option value="dashboard">{t('tenantCustom.sectionDashboard')}</option>
+            <option value="customer-detail">{t('tenantCustom.sectionCustomerDetail')}</option>
+          </optgroup>
+          <optgroup label={t('tenantCustom.groupModals')}>
+            <option value="welcome">{t('tenantCustom.sectionWelcome')}</option>
+          </optgroup>
+          <optgroup label={t('tenantCustom.groupUI')}>
+            <option value="ui-info">{t('tenantCustom.sectionUiInfo')}</option>
+          </optgroup>
+        </select>
+      </div>
+
+      {section === 'terminology' && (
+        <>
+          <Row label={t('tenantCustom.directLabel')} help={t('tenantCustom.directLabelHelp')}
+            customized={cl.directLabel !== undefined && cl.directLabel !== dl.directLabel}>
+            <input value={cl.directLabel ?? dl.directLabel}
+              onChange={e => setLabel('directLabel', e.target.value)}
+              placeholder={dl.directLabel} style={{ height: H, width: 220 }} />
+          </Row>
+          <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
+            customized={cl.directCustomerGroup !== undefined && cl.directCustomerGroup !== dl.directCustomerGroup}>
+            <input value={cl.directCustomerGroup ?? dl.directCustomerGroup}
+              onChange={e => setLabel('directCustomerGroup', e.target.value)}
+              placeholder={dl.directCustomerGroup} style={{ height: H, width: 220 }} />
+          </Row>
+        </>
+      )}
+
+      {section === 'payments' && (
+        <>
+          <Row label={t('tenantCustom.showOrderSelection')} help={t('tenantCustom.showOrderSelectionHelp')}
+            customized={cp.showOrderSelection !== undefined && cp.showOrderSelection !== dp.showOrderSelection}>
+            <Toggle value={cp.showOrderSelection ?? dp.showOrderSelection} onChange={v => setPayment('showOrderSelection', v)} />
+          </Row>
+          <Row label={t('tenantCustom.visiblePaymentTypes')} help={t('tenantCustom.visiblePaymentTypesHelp')}
+            customized={cp.visibleCustomerPaymentTypes != null || cp.visiblePartnerPaymentTypes != null || cp.visibleSupplierPaymentTypes != null}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <CheckboxDropdown label="From customer" allTypes={customerTypes}
+                visible={cp.visibleCustomerPaymentTypes ?? null}
+                onChange={v => setVisibleTypes('visibleCustomerPaymentTypes', v)} />
+              <CheckboxDropdown label="To partner" allTypes={partnerTypes}
+                visible={cp.visiblePartnerPaymentTypes ?? null}
+                onChange={v => setVisibleTypes('visiblePartnerPaymentTypes', v)} />
+              <CheckboxDropdown label="To supplier" allTypes={supplierTypes}
+                visible={cp.visibleSupplierPaymentTypes ?? null}
+                onChange={v => setVisibleTypes('visibleSupplierPaymentTypes', v)} />
+            </div>
+          </Row>
+          <Row label={t('tenantCustom.showPartnerTransfer')} help={t('tenantCustom.showPartnerTransferHelp')}
+            customized={cp.showPartnerTransfer !== undefined && cp.showPartnerTransfer !== dp.showPartnerTransfer}>
+            <Toggle value={cp.showPartnerTransfer ?? dp.showPartnerTransfer} onChange={v => setPayment('showPartnerTransfer', v)} />
+          </Row>
+        </>
+      )}
+
+      {section === 'booking' && (
+        <>
+          <Row label={t('tenantCustom.serviceTypeLabel')} help={t('tenantCustom.serviceTypeLabelHelp')}
+            customized={cb.serviceTypeLabel !== undefined && cb.serviceTypeLabel !== db.serviceTypeLabel}>
+            <input value={cb.serviceTypeLabel ?? db.serviceTypeLabel}
+              onChange={e => setBookingText('serviceTypeLabel', e.target.value)}
+              placeholder={db.serviceTypeLabel} style={{ height: H, width: 220 }} />
+          </Row>
+          <Row label={t('tenantCustom.bookingProviderName')} help={t('tenantCustom.bookingProviderNameHelp')}
+            customized={cb.bookingProviderName !== undefined && cb.bookingProviderName !== db.bookingProviderName}>
+            <input value={cb.bookingProviderName ?? db.bookingProviderName}
+              onChange={e => setBookingText('bookingProviderName', e.target.value)}
+              placeholder={db.bookingProviderName || t('tenantCustom.bookingProviderNamePlaceholder')}
+              style={{ height: H, width: 220 }} />
+          </Row>
+          <Row label={t('tenantCustom.smsRemindersEnabled')}
+            customized={cb.smsRemindersEnabled !== undefined && cb.smsRemindersEnabled !== db.smsRemindersEnabled}>
+            <Toggle value={cb.smsRemindersEnabled ?? db.smsRemindersEnabled} onChange={v => setBookingBool('smsRemindersEnabled', v)} />
+          </Row>
+          <Row label={t('tenantCustom.showBookingParticipants')} help={t('tenantCustom.showBookingParticipantsHelp')}
+            customized={cb.showBookingParticipants !== undefined && cb.showBookingParticipants !== db.showBookingParticipants}>
+            <Toggle value={cb.showBookingParticipants ?? db.showBookingParticipants} onChange={v => setBookingBool('showBookingParticipants', v)} />
+          </Row>
+        </>
+      )}
+
+      {section === 'customer-detail' && (
+        <Row label={t('tenantCustom.customerOrderRows')}
+          customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                onChange={() => setUi('compactCustomerOrderRows', false)}
+                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+              <span>{t('tenantCustom.orderRowsFull')}</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                onChange={() => setUi('compactCustomerOrderRows', true)}
+                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+              <span>{t('tenantCustom.orderRowsCompact')}</span>
+            </label>
+          </div>
+        </Row>
+      )}
+
+      {section === 'dashboard' && (
+        <>
+          <Row label={t('tenantCustom.showOwedToSuppliers')} help={t('tenantCustom.showOwedToSuppliersHelp')}
+            customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
+            <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
+          </Row>
+          <Row label={t('tenantCustom.dashboardCards')} customized={cu.dashboardCards !== undefined}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {([
+                { id: 'financials',    key: 'dashboard.cardFinancials'   },
+                { id: 'charts',        key: 'dashboard.cardCharts'       },
+                { id: 'orders',        key: 'dashboard.cardOrders'       },
+                { id: 'price-checker', key: 'dashboard.cardPriceChecker' },
+              ] as const).map(({ id: cardId, key }) => {
+                const cards = cu.dashboardCards ?? du.dashboardCards
+                return (
+                  <label key={cardId} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={cards.includes(cardId)}
+                      onChange={() => toggleDashboardCard(cardId)}
+                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                    <span>{t(key)}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </Row>
+        </>
+      )}
+
+      {section === 'new-order' && (
+        <Row label={t('tenantCustom.multipleOrderRows')} help={t('tenantCustom.multipleOrderRowsHelp')}
+          customized={cu.multipleOrderRows !== undefined && cu.multipleOrderRows !== du.multipleOrderRows}>
+          <Toggle value={cu.multipleOrderRows ?? du.multipleOrderRows} onChange={v => setUi('multipleOrderRows', v)} />
+        </Row>
+      )}
+
+      {section === 'orders' && (
+        <Row label={t('tenantCustom.showOrderNumber')} help={t('tenantCustom.showOrderNumberHelp')}
+          customized={cu.showOrderNumberInList !== undefined && cu.showOrderNumberInList !== du.showOrderNumberInList}>
+          <Toggle value={cu.showOrderNumberInList ?? du.showOrderNumberInList} onChange={v => setUi('showOrderNumberInList', v)} />
+        </Row>
+      )}
+
+      {section === 'welcome' && (
+        <Row label={t('tenantCustom.showWelcomeModal')} help={t('tenantCustom.showWelcomeModalHelp')}
+          customized={cu.showWelcomeModal !== undefined && cu.showWelcomeModal !== du.showWelcomeModal}>
+          <Toggle value={cu.showWelcomeModal ?? du.showWelcomeModal} onChange={v => setUi('showWelcomeModal', v)} />
+        </Row>
+      )}
+
+      {section === 'ui-nav' && (
+        <>
+          <Row label={t('tenantCustom.showNavArrowsMobile')} help={t('tenantCustom.showNavArrowsMobileHelp')}
+            customized={cu.showNavArrowsMobile !== undefined && cu.showNavArrowsMobile !== du.showNavArrowsMobile}>
+            <Toggle value={cu.showNavArrowsMobile ?? du.showNavArrowsMobile} onChange={v => setUi('showNavArrowsMobile', v)} />
+          </Row>
+          <Row label={t('tenantCustom.showNavArrowsDesktop')} help={t('tenantCustom.showNavArrowsDesktopHelp')}
+            customized={cu.showNavArrowsDesktop !== undefined && cu.showNavArrowsDesktop !== du.showNavArrowsDesktop}>
+            <Toggle value={cu.showNavArrowsDesktop ?? du.showNavArrowsDesktop} onChange={v => setUi('showNavArrowsDesktop', v)} />
+          </Row>
+        </>
+      )}
+
+      {section === 'ui-info' && (
+        <>
+          <Row label={t('tenantCustom.showInfoIconsPages')} help={t('tenantCustom.showInfoIconsPagesHelp')}
+            customized={cu.showInfoIconsPages !== undefined && cu.showInfoIconsPages !== du.showInfoIconsPages}>
+            <Toggle value={cu.showInfoIconsPages ?? du.showInfoIconsPages} onChange={v => setUi('showInfoIconsPages', v)} />
+          </Row>
+          <Row label={t('tenantCustom.showInfoIconsReports')} help={t('tenantCustom.showInfoIconsReportsHelp')}
+            customized={cu.showInfoIconsReports !== undefined && cu.showInfoIconsReports !== du.showInfoIconsReports}>
+            <Toggle value={cu.showInfoIconsReports ?? du.showInfoIconsReports} onChange={v => setUi('showInfoIconsReports', v)} />
+          </Row>
+        </>
+      )}
+
+      {/* Footer actions */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 24, flexWrap: 'wrap' }}>
+        <button className="primary" onClick={save} disabled={saving}
+          style={{ height: H, padding: '0 28px' }}>
+          {saving ? t('saving') : t('save')}
+        </button>
+        <button onClick={resetSection} style={{ height: H, padding: '0 20px' }}>
+          {t('tenantCustom.resetSection')}
+        </button>
+        {saveMsg && <span style={{ color: 'var(--success, #4caf50)', fontSize: 14 }}>{saveMsg}</span>}
+      </div>
+    </div>
+  )
+}
