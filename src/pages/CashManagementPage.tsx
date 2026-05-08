@@ -176,7 +176,7 @@ export default function CashManagementPage() {
           <select
             value={selUser}
             onChange={e => setSelUser(e.target.value)}
-            style={{ width: '100%', height: H }}
+            style={{ width: '100%', height: H, padding: '0 10px' }}
           >
             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
@@ -236,7 +236,7 @@ export default function CashManagementPage() {
           <select
             value={formDate}
             onChange={e => setFormDate(e.target.value)}
-            style={{ height: H }}
+            style={{ padding: '0 10px', height: H }}
             required
           >
             {allDates.map(ds => {
@@ -250,7 +250,7 @@ export default function CashManagementPage() {
           <select
             value={formType}
             onChange={e => setFormType(e.target.value)}
-            style={{ height: H }}
+            style={{ padding: '0 10px', height: H }}
           >
             <option value="cash_pickup">{t('cashManagement.cash_pickup')}</option>
             <option value="salary">{t('cashManagement.salary')}</option>
@@ -329,21 +329,18 @@ export default function CashManagementPage() {
                   <div
                     key={tx.id}
                     style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '3px 0 3px 12px', fontSize: 14,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                      padding: '4px 0 4px 12px', fontSize: 14,
                     }}
                   >
-                    <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0, alignItems: 'center' }}>
-                      <span style={{ color: 'var(--muted)', flexShrink: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: 'var(--muted)' }}>
                         {t(`cashManagement.${tx.transaction_type}`)}
-                      </span>
+                      </div>
                       {tx.comment && (
-                        <span style={{
-                          color: 'var(--muted)', fontSize: 12,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
+                        <div style={{ color: 'var(--muted)', fontSize: 12, wordBreak: 'break-word' }}>
                           {tx.comment}
-                        </span>
+                        </div>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
