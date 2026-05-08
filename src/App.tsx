@@ -249,6 +249,8 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/supplier-orders/new':        'page_view_new_supplier_order',
   '/supplier-orders/:id/edit':   'page_view_edit_supplier_order',
   '/costs/new':                  'page_view_new_cost',
+  '/cash/money-in-out':         'page_view_cash_money_in_out',
+  '/cash/overview':             'page_view_cash_overview',
   '/reports':                    'page_view_reports',
   '/reports/customers':          'page_view_customer_reports',
   '/warehouse':                  'page_view_warehouse',
