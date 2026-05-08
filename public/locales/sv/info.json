@@ -36,6 +36,13 @@
     "p4": "\"Dela ordersida\" genererar en länk för kunden att lägga sin egen order online. Anpassa vilka produkter som visas i Kontoadmin.",
     "p5": "\"Visa info\" expanderar kundprofilen — typ, fraktkostnad, företagsnamn, telefon, e-post och adress."
   },
+  "customerDetailOrders": {
+    "title": "Senaste ordrar",
+    "p1": "Ikonen på varje rad visar leveransstatus: ○ ej levererad, ◐ delvis levererad, ✓ levererad i sin helhet. Tryck på den för att uppdatera — ange levererat antal och ett valfritt leveransdatum.",
+    "p2": "Varje rad visar datum, artiklar (produkt / antal) och total. Med fullständiga orderrader aktiverat i UI-inställningar: visas även enhetspris, och partnerandelen på första raden för partnerkunder. Ordernummerkolumn är valfri och konfigureras också i UI-inställningar.",
+    "p3": "Beloppsfärg: grön = fullt betald, gul = delvis betald, ingen färg = obetald.",
+    "p4": "Tryck på beloppet för att öppna en ny betalning förifylld med utestående saldo för den ordern."
+  },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {
     "title": "Skapa en faktura",

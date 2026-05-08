@@ -36,6 +36,13 @@
     "p4": "\"Compartir página de pedido\" genera un enlace para que el cliente haga su propio pedido online. Personaliza qué productos aparecen en Account Admin.",
     "p5": "\"Mostrar información\" expande el perfil del cliente — tipo, coste de envío, nombre de empresa, teléfono, correo y dirección."
   },
+  "customerDetailOrders": {
+    "title": "Pedidos recientes",
+    "p1": "El icono en cada fila muestra el estado de entrega: ○ no entregado, ◐ parcialmente entregado, ✓ entregado en su totalidad. Tócalo para actualizar — indica la cantidad entregada y una fecha de entrega opcional.",
+    "p2": "Cada fila muestra fecha, artículos (producto / cantidad) y total. Con filas de pedido completas activadas en ajustes de interfaz: también muestra el precio unitario y el importe del socio en la primera línea para clientes de socio. La columna de número de pedido es opcional y también se configura en ajustes de interfaz.",
+    "p3": "Color del importe: verde = totalmente pagado, ámbar = parcialmente pagado, sin color = impagado.",
+    "p4": "Toca el importe para abrir un nuevo pago prellenado con el saldo pendiente de ese pedido."
+  },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
     "title": "Crear una factura",

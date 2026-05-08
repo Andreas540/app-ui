@@ -36,6 +36,13 @@
     "p4": "\"Share order page\" generates a link for the customer to place their own order online. Customize which products appear in Account Admin.",
     "p5": "\"Show info\" expands the customer's profile — type, shipping cost, company name, phone, email, and address."
   },
+  "customerDetailOrders": {
+    "title": "Recent Orders",
+    "p1": "The icon on each row shows delivery status: ○ not delivered, ◐ partially delivered, ✓ delivered in full. Tap it to update — set the quantity delivered and an optional delivery date.",
+    "p2": "Each row shows date, items (product / quantity), and total. With full order rows enabled in UI settings: also shows unit price, and the partner share on the first line for partner customers. An order number column is optional and also set in UI settings.",
+    "p3": "Amount color: green = fully paid, amber = partially paid, no color = unpaid.",
+    "p4": "Tap the amount to open a new payment pre-filled with the outstanding balance for that order."
+  },
   "manageInvoices": "Manage invoices",
   "createInvoice": {
     "title": "Creating an Invoice",

@@ -28,6 +28,7 @@ export default function CustomerDetailPage() {
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [showPageInfo, setShowPageInfo] = useState(false)
+  const [showOrdersInfo, setShowOrdersInfo] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
@@ -279,6 +280,29 @@ export default function CustomerDetailPage() {
           <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(['p1','p2','p3','p4','p5'] as const).map(k => (
               <p key={k} style={{ margin: 0 }}>{ti(`customerDetail.${k}`)}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showOrdersInfo && (
+        <div style={{
+          marginTop: 12, marginBottom: 4,
+          background: 'var(--card, #fff)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          padding: '16px 20px',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('customerDetailOrders.title')}</div>
+            <button
+              onClick={() => setShowOrdersInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1','p2','p3','p4'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{ti(`customerDetailOrders.${k}`)}</p>
             ))}
           </div>
         </div>
@@ -538,7 +562,22 @@ export default function CustomerDetailPage() {
       {/* Recent orders */}
       <div style={{ marginTop: 20 }}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <h4 style={{margin:0}}>{t('customerDetail.recentOrders')}</h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <h4 style={{margin:0}}>{t('customerDetail.recentOrders')}</h4>
+            {tenantUi.showInfoIconsPages && (
+              <button
+                onClick={() => setShowOrdersInfo(v => !v)}
+                style={{
+                  width: 20, height: 20, padding: 0, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%', cursor: 'pointer',
+                  background: 'var(--border, rgba(0,0,0,0.08))',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+                }}
+              >i</button>
+            )}
+          </div>
           {orders.length > 5 && (
             <button
               className="helper"
