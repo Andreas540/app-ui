@@ -308,8 +308,7 @@ export default function CustomerDetailPage() {
                     i18nKey="customerDetailOrders.p2"
                     ns="info"
                     components={{
-                      amber: <span style={{ color: '#f59e0b' }} />,
-                      green: <span style={{ color: '#10b981' }} />,
+                      adminLink: <Link to="/admin" state={{ openTab: 'ui-settings' }} style={{ color: 'var(--accent)' }} onClick={() => setShowOrdersInfo(false)} />,
                     }}
                   />
                 </p>
@@ -319,7 +318,8 @@ export default function CustomerDetailPage() {
                     i18nKey="customerDetailOrders.p3"
                     ns="info"
                     components={{
-                      adminLink: <Link to="/admin" state={{ openTab: 'ui-settings' }} style={{ color: 'var(--accent)' }} onClick={() => setShowOrdersInfo(false)} />,
+                      amber: <span style={{ color: '#f59e0b' }} />,
+                      green: <span style={{ color: '#10b981' }} />,
                     }}
                   />
                 </p>
