@@ -30,12 +30,11 @@
   },
   "customerDetail": {
     "title": "Kund",
-    "p1": "Den här sidan visar en enskild kunds profil — kontaktuppgifter, orderhistorik och betalningshistorik.",
-    "p2": "Ny order och Ny betalning skapar poster som är direkt kopplade till den här kunden. Orderbelopp läggs till totalt skuld; betalningar drar av det.",
-    "p3": "Om du har tillgång till Bokningsmodulen: Ny bokning öppnar bokningsformuläret förifyllt för den här kunden. Dela bokningssida genererar en säker länk du kan skicka så kunden kan boka en tid direkt.",
-    "p4": "Dela ordersida genererar en länk för kunden att lägga sin egen order online. Du kan anpassa vilka produkter som visas i Kontoadmin.",
-    "p5": "Visa info expanderar kundprofilen — typ, fraktkostnad, företagsnamn, telefon, e-post och adress.",
-    "p6": "Totalt skuld av kunden är det löpande saldot: alla orderbelopp minus mottagna betalningar."
+    "p1": "Den här sidan visar en kunds fullständiga profil — kontaktuppgifter, orderhistorik och betalningar.",
+    "p2": "\"Ny order\" och \"Ny betalning\" skapar poster kopplade till den här kunden. Ordrar läggs till — och betalningar drar av — \"Totalt skuld av kunden\".",
+    "p3": "Om du har tillgång till Bokningsmodulen: \"Ny bokning\" öppnar bokningsformuläret förifyllt för den här kunden. \"Dela bokningssida\" genererar en länk för kunden att boka direkt. Du kan anpassa bokningsformuläret per kund i Kontoadmin.",
+    "p4": "\"Dela ordersida\" genererar en länk för kunden att lägga sin egen order online. Anpassa vilka produkter som visas i Kontoadmin.",
+    "p5": "\"Visa info\" expanderar kundprofilen — typ, fraktkostnad, företagsnamn, telefon, e-post och adress."
   },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {

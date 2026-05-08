@@ -277,7 +277,7 @@ export default function CustomerDetailPage() {
             >✕</button>
           </div>
           <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(['p1','p2','p3','p4','p5','p6'] as const).map(k => (
+            {(['p1','p2','p3','p4','p5'] as const).map(k => (
               <p key={k} style={{ margin: 0 }}>{ti(`customerDetail.${k}`)}</p>
             ))}
           </div>
