@@ -42,7 +42,14 @@
     "p2": "Varje rad visar datum, leveransstatus, ordernummer, artiklar (produkt / antal) och totalt belopp. Raderna kan konfigureras i <adminLink>Kontoadmin → UI-inställningar</adminLink>.",
     "p3": "Ikonen på varje rad visar leveransstatus: ○ ej levererad, <amber>◐</amber> delvis levererad, <green>✓</green> levererad i sin helhet. Tryck på den för att uppdatera levererat antal och ett valfritt leveransdatum.",
     "p4": "Orderns belopp har olika färger beroende på betalningsstatus: grön = fullt betald, gul = delvis betald, ingen färg = obetald.",
-    "p5": "Tryck eller klicka på orderbeloppet för att öppna en ny betalning förifylld med utestående saldo för den ordern."
+    "p5": "Tryck eller klicka på orderbeloppet för att öppna en ny betalning förifylld med utestående saldo för den ordern.",
+    "p6": "Tryck eller klicka på en rad för att se orderdetaljer och redigera ordern."
+  },
+  "customerDetailPayments": {
+    "title": "Senaste betalningar",
+    "p1": "Senaste betalningar visar alla mottagna betalningar från den här kunden, nyast först.",
+    "p2": "Varje rad visar datum, betalningstyp och belopp. Ordernumret visar vilken order betalningen gäller.",
+    "p3": "Tryck eller klicka på en rad för att se betalningsdetaljer och redigera betalningen."
   },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {

@@ -42,7 +42,14 @@
     "p2": "Cada fila muestra fecha, estado de entrega, número de pedido, artículos (producto / cantidad) e importe total. Las filas se pueden configurar en <adminLink>Account Admin → Configuración UI</adminLink>.",
     "p3": "El icono en cada fila muestra el estado de entrega: ○ no entregado, <amber>◐</amber> parcialmente entregado, <green>✓</green> entregado en su totalidad. Tócalo para actualizar la cantidad entregada y una fecha de entrega opcional.",
     "p4": "El importe del pedido tiene diferentes colores según el estado de pago: verde = totalmente pagado, ámbar = parcialmente pagado, sin color = impagado.",
-    "p5": "Toca o haz clic en el importe del pedido para abrir un nuevo pago prellenado con el saldo pendiente de ese pedido."
+    "p5": "Toca o haz clic en el importe del pedido para abrir un nuevo pago prellenado con el saldo pendiente de ese pedido.",
+    "p6": "Toca o haz clic en una fila para ver los detalles del pedido y editarlo."
+  },
+  "customerDetailPayments": {
+    "title": "Pagos recientes",
+    "p1": "Pagos recientes muestra todos los pagos recibidos de este cliente, el más reciente primero.",
+    "p2": "Cada fila muestra fecha, tipo de pago e importe. El número de pedido indica a qué pedido se refiere el pago.",
+    "p3": "Toca o haz clic en una fila para ver los detalles del pago y editarlo."
   },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
