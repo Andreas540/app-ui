@@ -322,6 +322,7 @@ export type CustomerDetail = {
   totals: { total_orders: number; total_payments: number; owed_to_me: number }
   orders: OrderSummary[]
   payments: PaymentSummary[]
+  hasPaymentProvider: boolean
 }
 
 export async function fetchCustomerDetail(id: string) {

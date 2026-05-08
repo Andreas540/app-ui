@@ -15,11 +15,9 @@ export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
   const { t: ti } = useTranslation('info')
   const { hasFeature, user } = useAuth()
-  const tenantCfg = getTenantConfig(user?.tenantId)
-  const tenantUi = tenantCfg.ui
+  const tenantUi = getTenantConfig(user?.tenantId).ui
   const compactOrderRows = tenantUi.compactCustomerOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
-  const hasPaymentProvider = tenantCfg.booking.paymentProvider !== 'none'
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -236,7 +234,7 @@ export default function CustomerDetailPage() {
   if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
-  const { customer, totals, orders, payments } = data
+  const { customer, totals, orders, payments, hasPaymentProvider } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
   const isPartnerCustomer = customer.customer_type === 'Partner'

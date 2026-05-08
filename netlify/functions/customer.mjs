@@ -121,7 +121,15 @@ async function getCustomer(event) {
       LIMIT 100
     `
 
-    return cors(200, { customer, totals: totals[0], orders, payments })
+    const providerRows = await sql`
+      SELECT 1 FROM tenant_payment_providers
+      WHERE tenant_id = ${TENANT_ID} AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL
+      LIMIT 1
+    `.catch(() => [])
+    const hasPaymentProvider = providerRows.length > 0
+
+    return cors(200, { customer, totals: totals[0], orders, payments, hasPaymentProvider })
 }
 
 async function updateCustomer(event) {
