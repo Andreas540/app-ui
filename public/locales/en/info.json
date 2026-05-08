@@ -9,6 +9,12 @@
     "close": "Close",
     "dontShowAgain": "Don't show this again"
   },
+  "customers": {
+    "title": "Customers",
+    "p1": "All your customers in one place. Sort by name or amount owed, and filter by customer type.",
+    "p2": "Direct customers place orders without a partner commission. Partner customers are linked to a partner who earns a share on each order.",
+    "p3": "Tap a customer to see their full order history, payment status, and contact details."
+  },
   "createCustomer": {
     "title": "Create Customer",
     "p1": "Add a new customer profile with contact details and address. Once saved, you can register orders and payments for this customer.",

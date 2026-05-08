@@ -13,11 +13,14 @@ function isDirectType(customerType: string | null | undefined) {
 
 export default function Customers() {
   const { t } = useTranslation()
+  const { t: ti } = useTranslation('info')
   const { fmtIntMoney } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const directLabel = config.labels.directLabel
+  const showInfoIcons = config.ui.showInfoIconsPages
 
+  const [showInfo, setShowInfo] = useState(false)
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [partnerTotals, setPartnerTotals] = useState({ owed: 0, paid: 0, net: 0 })
@@ -143,7 +146,43 @@ export default function Customers() {
   return (
     <div className="card page-normal">
 
-      <h3 style={{ margin: '0 0 12px' }}>{t('customers.title')}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>{t('customers.title')}</h3>
+        {showInfoIcons && (
+          <button
+            onClick={() => setShowInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+        )}
+      </div>
+
+      {showInfo && (
+        <div style={{
+          marginBottom: 16, background: 'var(--card, #fff)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('customers.title')}</div>
+            <button
+              onClick={() => setShowInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1', 'p2', 'p3'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{ti(`customers.${k}`)}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Top section — uniform 12px gap between every row */}
       <div style={{ display: 'grid', gap: 12 }}>

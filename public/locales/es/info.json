@@ -9,6 +9,12 @@
     "close": "Cerrar",
     "dontShowAgain": "No mostrar de nuevo"
   },
+  "customers": {
+    "title": "Clientes",
+    "p1": "Todos tus clientes en un solo lugar. Ordena por nombre o importe pendiente, y filtra por tipo de cliente.",
+    "p2": "Los clientes directos realizan pedidos sin comisión de socio. Los clientes de socio están vinculados a un socio que recibe una parte en cada pedido.",
+    "p3": "Toca un cliente para ver su historial de pedidos, estado de pagos y datos de contacto."
+  },
   "createCustomer": {
     "title": "Crear cliente",
     "p1": "Añade un nuevo perfil de cliente con datos de contacto y dirección. Una vez guardado, podrás registrar pedidos y pagos para este cliente.",

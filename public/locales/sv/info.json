@@ -9,6 +9,12 @@
     "close": "Stäng",
     "dontShowAgain": "Visa inte igen"
   },
+  "customers": {
+    "title": "Kunder",
+    "p1": "Alla dina kunder på ett ställe. Sortera på namn eller utestående belopp, och filtrera efter kundtyp.",
+    "p2": "Direktkunder gör beställningar utan partnerkommission. Partnerkunder är kopplade till en partner som får en andel på varje order.",
+    "p3": "Tryck på en kund för att se hela orderhistoriken, betalningsstatus och kontaktuppgifter."
+  },
   "createCustomer": {
     "title": "Skapa kund",
     "p1": "Lägg till en ny kundprofil med kontaktuppgifter och adress. När den sparats kan du registrera ordrar och betalningar för denna kund.",
