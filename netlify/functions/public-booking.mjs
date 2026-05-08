@@ -252,11 +252,11 @@ async function getBookingData(event) {
     let knownCustomer = null
     if (customerId) {
       const custRows = await sql`
-        SELECT name, email FROM customers
+        SELECT name, email, phone FROM customers
         WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}
         LIMIT 1
       `.catch(() => [])
-      if (custRows.length) knownCustomer = { name: custRows[0].name, email: custRows[0].email }
+      if (custRows.length) knownCustomer = { name: custRows[0].name, email: custRows[0].email, phone: custRows[0].phone }
     }
 
     // ── Services + availability map request ───────────────────────────────
@@ -456,6 +456,7 @@ async function createBooking(event) {
       await sql`
         UPDATE customers
         SET phone       = COALESCE(phone, ${cleanPhone}),
+            email       = COALESCE(email, NULLIF(${cleanEmail}, '')),
             sms_consent = CASE WHEN ${!!sms_consent} THEN true ELSE sms_consent END
         WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}
       `

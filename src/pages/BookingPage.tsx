@@ -236,7 +236,7 @@ export default function BookingPage() {
   const [email, setEmail]         = useState('')
   const [phone, setPhone]         = useState('')
   const [smsConsent, setSmsConsent] = useState(false)
-  const [knownCustomer, setKnownCustomer] = useState<{ name: string; email: string } | null>(null)
+  const [knownCustomer, setKnownCustomer] = useState<{ name: string; email: string; phone?: string | null } | null>(null)
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -325,6 +325,7 @@ export default function BookingPage() {
           setKnownCustomer(d.knownCustomer)
           setName(d.knownCustomer.name || '')
           setEmail(d.knownCustomer.email || '')
+          if (d.knownCustomer.phone) setPhone(d.knownCustomer.phone)
         }
         const serviceList: Service[] = d.services || []
         setServices(serviceList)
@@ -685,12 +686,12 @@ export default function BookingPage() {
               <div>
                 <label style={labelStyle}>{t('bookingPage.emailAddress')}</label>
                 <input
-                  style={{ ...inputStyle, ...(knownCustomer ? { opacity: 0.7, cursor: 'default' } : {}) }}
+                  style={{ ...inputStyle, ...(knownCustomer?.email ? { opacity: 0.7, cursor: 'default' } : {}) }}
                   type="email"
                   placeholder={t('bookingPage.emailPlaceholder')}
                   value={email}
-                  onChange={knownCustomer ? undefined : e => setEmail(e.target.value)}
-                  readOnly={!!knownCustomer}
+                  onChange={knownCustomer?.email ? undefined : e => setEmail(e.target.value)}
+                  readOnly={!!knownCustomer?.email}
                   autoComplete="email"
                 />
               </div>

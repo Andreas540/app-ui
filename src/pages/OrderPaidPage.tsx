@@ -21,6 +21,7 @@ type OrderData = {
 
 const cardStyle: React.CSSProperties = {
   background: '#fff',
+  color: '#111827',
   borderRadius: 16,
   padding: '28px 24px',
   boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
@@ -116,8 +117,8 @@ export default function OrderPaidPage() {
 
         {status === 'paid' && data && (
           <>
-            <div style={{ fontSize: 36, marginBottom: 8, textAlign: 'center' }}>✓</div>
-            <h3 style={{ margin: '0 0 4px', fontSize: 20, textAlign: 'center' }}>Payment received</h3>
+            <div style={{ fontSize: 36, marginBottom: 8, textAlign: 'center', color: '#10b981' }}>✓</div>
+            <h3 style={{ margin: '0 0 4px', fontSize: 20, textAlign: 'center', color: '#166534' }}>Payment received</h3>
             <p style={{ ...mutedStyle, textAlign: 'center', marginBottom: 20 }}>
               Thank you — your payment has been confirmed.
             </p>
