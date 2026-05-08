@@ -335,6 +335,7 @@ export default function ReportsPage() {
       document.removeEventListener('mousedown', onDown)
     }
   }, [infoOpen])
+
   const [fromMonth,    setFromMonth]    = useState('')
   const [toMonth,      setToMonth]      = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
@@ -515,7 +516,6 @@ export default function ReportsPage() {
         }}>
           {orderedVisible.map((report, idx) => (
             <div key={report.id} className="card" style={{ padding: '12px 16px 16px', position: 'relative' }}>
-              {/* Info modal overlay */}
               {infoOpen === report.id && (
                 <div ref={infoOverlayRef} style={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -538,7 +538,6 @@ export default function ReportsPage() {
                   </div>
                 </div>
               )}
-
               {/* Card header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -1,5 +1,5 @@
 // src/pages/CreateCustomer.tsx
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createCustomer, updateCustomer, type CustomerType } from '../lib/api'
@@ -49,22 +49,7 @@ export default function CreateCustomer() {
 
   const CONTROL_H = 44
 
-  // Info overlay
   const [showInfo, setShowInfo] = useState(false)
-  const overlayRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!showInfo) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowInfo(false) }
-    const onDown = (e: MouseEvent) => {
-      if (overlayRef.current && !overlayRef.current.contains(e.target as Node)) setShowInfo(false)
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onDown)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onDown)
-    }
-  }, [showInfo])
 
   // Ask customer for information
   const [showAskCustomer, setShowAskCustomer] = useState(false)
@@ -157,17 +142,15 @@ export default function CreateCustomer() {
   }
 
   return (
-    <div className="card page-normal" style={{position: 'relative'}}>
+    <div className="card page-normal">
 
-      {/* Info overlay */}
       {showInfo && (
         <div
-          ref={overlayRef}
           style={{
-            position: 'absolute', top: 0, left: 0, right: 0,
+            marginBottom: 16,
             background: 'var(--card, #fff)',
             border: '1px solid var(--border)', borderRadius: 8,
-            padding: '16px 20px', zIndex: 200,
+            padding: '16px 20px',
             display: 'flex', flexDirection: 'column', gap: 10,
           }}
         >
