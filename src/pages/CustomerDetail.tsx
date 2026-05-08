@@ -727,19 +727,18 @@ export default function CustomerDetailPage() {
                       {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
                     </div>
                     <div className="helper"
-                      onClick={(e) => {
+                      onClick={orderTotal > paid && orderTotal > 0 ? (e) => {
                         e.stopPropagation()
                         if (!hasPaymentProvider) {
-                          const balance = Math.max(0, orderTotal - paid)
-                          const amount = balance > 0 ? balance : orderTotal
-                          navigate(`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`)
+                          const balance = orderTotal - paid
+                          navigate(`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${balance}&return_to=customer&return_id=${customer.id}`)
                         } else {
                           setPaymentMenuOrderId(prev => prev === o.id ? null : o.id)
                         }
-                      }}
+                      } : undefined}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ textAlign: 'right', cursor: 'pointer', color: orderColor, position: 'relative' }}>
+                      style={{ textAlign: 'right', cursor: orderTotal > paid && orderTotal > 0 ? 'pointer' : 'default', color: orderColor, position: 'relative' }}>
                       {fmtMoney(orderTotal)}
                       {paymentMenuOrderId === o.id && (
                         <>
