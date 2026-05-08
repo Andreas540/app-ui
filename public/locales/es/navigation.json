@@ -44,5 +44,6 @@
   "reportsBizWiz": "Preguntar a BizWiz AI",
   "addQuickNavigation": "Añadir accesos directos",
   "cashMgmtSection": "Gestión de Efectivo",
-  "cashMgmt": "Ingresos/Egresos"
+  "cashMgmt": "Ingresos/Egresos",
+  "cashOverviewLink": "Resumen"
 }

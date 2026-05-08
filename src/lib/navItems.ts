@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'invoices',         section: 'sales',   labelKey: 'createInvoice' },
   { id: 'costs',            section: 'sales',   labelKey: 'newCost' },
   { id: 'cash-management', section: 'cash-management', labelKey: 'cashMgmt' },
+  { id: 'cash-overview',   section: 'cash-management', labelKey: 'cashOverviewLink' },
   // Reports
   { id: 'bizwiz',           section: 'reports', labelKey: 'reportsBizWiz' },
   { id: 'reports',          section: 'reports', labelKey: 'reportsSalesProfit' },

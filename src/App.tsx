@@ -37,6 +37,7 @@ import SupplierDetail from './pages/SupplierDetail'
 import EditOrderSupplier from './pages/EditOrderSupplier'
 import NewCost from './pages/NewCost'
 import CashManagementPage from './pages/CashManagementPage'
+import CashOverviewPage from './pages/CashOverviewPage'
 import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
@@ -775,13 +776,20 @@ useEffect(() => {
                   </NavLink>
                 )}
                 </>)}
-                {canAccess('cash-management') && (<>
+                {(canAccess('cash-management') || canAccess('cash-overview')) && (<>
                   {sectionHeader('cash-management', t('cashMgmtSection'))}
-                  {!collapsed['cash-management'] && (
-                    <NavLink to="/cash/money-in-out" onClick={() => setNavOpen(false)}>
-                      {t('cashMgmt')}
-                    </NavLink>
-                  )}
+                  {!collapsed['cash-management'] && (<>
+                    {canAccess('cash-management') && (
+                      <NavLink to="/cash/money-in-out" onClick={() => setNavOpen(false)}>
+                        {t('cashMgmt')}
+                      </NavLink>
+                    )}
+                    {canAccess('cash-overview') && (
+                      <NavLink to="/cash/overview" onClick={() => setNavOpen(false)}>
+                        {t('cashOverviewLink')}
+                      </NavLink>
+                    )}
+                  </>)}
                 </>)}
                 {(canAccess('reports') || canAccess('customer-reports') || canAccess('bizwiz')) && (<>
                   {sectionHeader('reports', t('reportsSection'))}
@@ -1014,6 +1022,7 @@ useEffect(() => {
                 )}
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
                 {hasFeature('cash-management') && <Route path="/cash/money-in-out" element={<CashManagementPage />} />}
+                {hasFeature('cash-overview') && <Route path="/cash/overview" element={<CashOverviewPage />} />}
                 {hasFeature('reports') && <Route path="/reports" element={<ReportsPage />} />}
                 {hasFeature('customer-reports') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
                 {hasFeature('bizwiz') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}

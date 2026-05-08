@@ -53,34 +53,50 @@ async function getTransactions(event) {
       ORDER BY u.name
     `
 
-    const targetUserId = user_id || users[0]?.id || null
-    if (!targetUserId) return cors(200, { users, transactions: [], ingoing_balance: 0 })
+    // user_id='all' or absent → aggregate all users for this tenant
+    const targetUserId = (user_id && user_id !== 'all') ? user_id : null
 
-    // Validate user belongs to tenant
-    const userCheck = await sql`
-      SELECT 1 FROM tenant_memberships
-      WHERE user_id = ${targetUserId}::uuid AND tenant_id = ${TENANT_ID}::uuid
-      LIMIT 1
-    `
-    if (!userCheck.length) return cors(403, { error: 'User not in tenant' })
+    if (targetUserId) {
+      const userCheck = await sql`
+        SELECT 1 FROM tenant_memberships
+        WHERE user_id = ${targetUserId}::uuid AND tenant_id = ${TENANT_ID}::uuid
+        LIMIT 1
+      `
+      if (!userCheck.length) return cors(403, { error: 'User not in tenant' })
+    }
 
-    const transactions = await sql`
-      SELECT id, transaction_date::text, transaction_type, amount::float8, comment
-      FROM cash_transactions
-      WHERE tenant_id        = ${TENANT_ID}::uuid
-        AND user_id          = ${targetUserId}::uuid
-        AND transaction_date >= ${from}::date
-        AND transaction_date <= ${to}::date
-      ORDER BY transaction_date DESC, created_at DESC
-    `
+    const transactions = targetUserId
+      ? await sql`
+          SELECT id, transaction_date::text, transaction_type, amount::float8, comment, NULL::text AS user_name
+          FROM cash_transactions
+          WHERE tenant_id        = ${TENANT_ID}::uuid
+            AND user_id          = ${targetUserId}::uuid
+            AND transaction_date >= ${from}::date
+            AND transaction_date <= ${to}::date
+          ORDER BY transaction_date DESC, created_at DESC
+        `
+      : await sql`
+          SELECT ct.id, ct.transaction_date::text, ct.transaction_type, ct.amount::float8, ct.comment, u.name AS user_name
+          FROM cash_transactions ct
+          JOIN users u ON u.id = ct.user_id
+          WHERE ct.tenant_id        = ${TENANT_ID}::uuid
+            AND ct.transaction_date >= ${from}::date
+            AND ct.transaction_date <= ${to}::date
+          ORDER BY ct.transaction_date DESC, ct.created_at DESC
+        `
 
-    const balRows = await sql`
-      SELECT COALESCE(SUM(amount), 0)::float8 AS ingoing_balance
-      FROM cash_transactions
-      WHERE tenant_id        = ${TENANT_ID}::uuid
-        AND user_id          = ${targetUserId}::uuid
-        AND transaction_date <  ${from}::date
-    `
+    const balRows = targetUserId
+      ? await sql`
+          SELECT COALESCE(SUM(amount), 0)::float8 AS ingoing_balance
+          FROM cash_transactions
+          WHERE tenant_id = ${TENANT_ID}::uuid AND user_id = ${targetUserId}::uuid
+            AND transaction_date < ${from}::date
+        `
+      : await sql`
+          SELECT COALESCE(SUM(amount), 0)::float8 AS ingoing_balance
+          FROM cash_transactions
+          WHERE tenant_id = ${TENANT_ID}::uuid AND transaction_date < ${from}::date
+        `
 
     return cors(200, {
       users,

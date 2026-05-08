@@ -1549,6 +1549,7 @@
     "Credit card": "Kortbetalning"
   },
   "cashMgmt": "In / Ut",
+  "cashOverviewLink": "Översikt",
   "cashManagement": {
     "title": "In / Ut",
     "registeredBy": "Registrerad av",
@@ -1566,5 +1567,11 @@
     "commentOptional": "Kommentar (valfritt)",
     "add": "Lägg till",
     "deleteConfirm": "Ta bort transaktionen?"
+  },
+  "cashOverview": {
+    "title": "Översikt",
+    "from": "Från",
+    "to": "Till",
+    "allUsers": "Alla"
   }
 }

@@ -1549,6 +1549,7 @@
     "Credit card": "Tarjeta de crédito"
   },
   "cashMgmt": "Ingresos/Egresos",
+  "cashOverviewLink": "Resumen",
   "cashManagement": {
     "title": "Ingresos y Egresos",
     "registeredBy": "Registrado por",
@@ -1566,5 +1567,11 @@
     "commentOptional": "Comentario (opcional)",
     "add": "Añadir",
     "deleteConfirm": "¿Eliminar esta transacción?"
+  },
+  "cashOverview": {
+    "title": "Resumen",
+    "from": "Desde",
+    "to": "Hasta",
+    "allUsers": "Todos"
   }
 }

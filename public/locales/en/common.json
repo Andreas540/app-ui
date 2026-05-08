@@ -1538,6 +1538,7 @@
     "Advance Payment": "Advance Payment"
   },
   "cashMgmt": "Money In / Out",
+  "cashOverviewLink": "Overview",
   "cashManagement": {
     "title": "Money In / Out",
     "registeredBy": "Registered by",
@@ -1555,5 +1556,11 @@
     "commentOptional": "Comment (optional)",
     "add": "Add",
     "deleteConfirm": "Delete this transaction?"
+  },
+  "cashOverview": {
+    "title": "Overview",
+    "from": "From",
+    "to": "To",
+    "allUsers": "All"
   }
 }

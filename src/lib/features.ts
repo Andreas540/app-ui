@@ -10,6 +10,7 @@ export const AVAILABLE_FEATURES = {
   invoices:        { id: 'invoices',        name: 'Create Invoice', route: '/invoices/create',     category: 'Sales',  module: 'sales' },
   costs:             { id: 'costs',             name: 'Costs',            route: '/costs/new',           category: 'Sales',  module: 'sales' },
   'cash-management': { id: 'cash-management', name: 'Money In / Out',   route: '/cash/money-in-out',   category: 'Sales',  module: 'cash-management' },
+  'cash-overview':   { id: 'cash-overview',   name: 'Cash Overview',    route: '/cash/overview',       category: 'Sales',  module: 'cash-management' },
 
   // Supply Chain
   'supply-chain':    { id: 'supply-chain',    name: 'Supply & Demand', route: '/supply-chain',        category: 'Supply', module: 'supply-chain' },
