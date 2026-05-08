@@ -13,6 +13,7 @@ import { useCurrency } from '../lib/useCurrency'
 
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
+  const { t: ti } = useTranslation('info')
   const { hasFeature, user } = useAuth()
   const tenantUi = getTenantConfig(user?.tenantId).ui
   const compactOrderRows = tenantUi.compactCustomerOrderRows
@@ -26,6 +27,7 @@ export default function CustomerDetailPage() {
   const [showAllOrders, setShowAllOrders] = useState(false)
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [showPageInfo, setShowPageInfo] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
@@ -244,7 +246,43 @@ export default function CustomerDetailPage() {
         >
           {t('edit')}
         </Link>
+        {tenantUi.showInfoIconsPages && (
+          <button
+            onClick={() => setShowPageInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+        )}
       </div>
+
+      {showPageInfo && (
+        <div style={{
+          marginTop: 12, marginBottom: 4,
+          background: 'var(--card, #fff)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          padding: '16px 20px',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('customerDetail.title')}</div>
+            <button
+              onClick={() => setShowPageInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1','p2','p3','p4','p5','p6'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{ti(`customerDetail.${k}`)}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Action row under name: New order + New payment */}
       <div style={{ display:'flex', gap:8, marginTop: 12 }}>

@@ -28,6 +28,15 @@
     "p5": "Use 'Ask customer for information' to generate a secure link and let the customer fill in their own details.",
     "shippingComingSoon": "Shipping cost per order and shipping cost based on location coming soon."
   },
+  "customerDetail": {
+    "title": "Customer",
+    "p1": "This page shows a single customer's profile — contact details, order history, and payment history.",
+    "p2": "New Order and New Payment create records directly linked to this customer. Order amounts add to the total owed; payments reduce it.",
+    "p3": "If you have access to the Booking module: New Booking pre-fills the booking form for this customer. Share booking page generates a secure link you can send so the customer can book a time directly.",
+    "p4": "Share order page generates a link for the customer to place their own order online. You can customize which products appear in Account Admin.",
+    "p5": "Show info expands the customer's profile — type, shipping cost, company name, phone, email, and address.",
+    "p6": "Total owed by customer is the running balance: all order amounts minus payments received."
+  },
   "manageInvoices": "Manage invoices",
   "createInvoice": {
     "title": "Creating an Invoice",

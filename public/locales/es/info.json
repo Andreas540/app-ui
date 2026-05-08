@@ -28,6 +28,15 @@
     "p5": "Usa 'Pedir al cliente que añada información' para generar un enlace seguro y que el cliente rellene sus propios datos.",
     "shippingComingSoon": "Coste de envío por pedido y coste de envío según ubicación próximamente."
   },
+  "customerDetail": {
+    "title": "Cliente",
+    "p1": "Esta página muestra el perfil de un solo cliente — datos de contacto, historial de pedidos e historial de pagos.",
+    "p2": "Nuevo pedido y Nuevo pago crean registros directamente vinculados a este cliente. Los importes de los pedidos se añaden al total adeudado; los pagos lo reducen.",
+    "p3": "Si tienes acceso al módulo de Reservas: Nueva reserva abre el formulario de reserva prerellenado para este cliente. Compartir página de reserva genera un enlace seguro que puedes enviar para que el cliente reserve directamente.",
+    "p4": "Compartir página de pedido genera un enlace para que el cliente haga su propio pedido online. Puedes personalizar qué productos aparecen en Account Admin.",
+    "p5": "Mostrar información expande el perfil del cliente — tipo, coste de envío, nombre de empresa, teléfono, correo y dirección.",
+    "p6": "Total adeudado por el cliente es el saldo en curso: todos los importes de pedidos menos los pagos recibidos."
+  },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
     "title": "Crear una factura",
