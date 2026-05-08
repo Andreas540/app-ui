@@ -16,7 +16,7 @@
     "p3": "Tap a customer to see their full order history, payment status, and contact details.",
     "p4": "New — Add a new customer profile.",
     "p5": "Merge — Combine two duplicate customer records into one.",
-    "p6": "Reports — View per-customer sales totals, order history, and payment analytics."
+    "p6": "Reports — Rank customers by revenue, profit, or profit %. Tap a customer for a detailed breakdown and AI analysis."
   },
   "createCustomer": {
     "title": "Create Customer",

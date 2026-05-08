@@ -16,7 +16,7 @@
     "p3": "Tryck på en kund för att se hela orderhistoriken, betalningsstatus och kontaktuppgifter.",
     "p4": "Ny — Lägg till en ny kundprofil.",
     "p5": "Slå ihop — Kombinera två dubblerade kundposter till en.",
-    "p6": "Rapporter — Se försäljningstotaler, orderhistorik och betalningsanalys per kund."
+    "p6": "Rapporter — Ranka kunder efter omsättning, vinst eller vinstmarginal. Tryck på en kund för detaljerad uppdelning och AI-analys."
   },
   "createCustomer": {
     "title": "Skapa kund",

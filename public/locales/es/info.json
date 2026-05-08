@@ -16,7 +16,7 @@
     "p3": "Toca un cliente para ver su historial de pedidos, estado de pagos y datos de contacto.",
     "p4": "Nuevo — Añade un nuevo perfil de cliente.",
     "p5": "Fusionar — Combina dos registros de clientes duplicados en uno.",
-    "p6": "Informes — Consulta totales de ventas, historial de pedidos y análisis de pagos por cliente."
+    "p6": "Informes — Clasifica clientes por ingresos, beneficio o % de beneficio. Toca un cliente para ver el desglose detallado y el análisis de IA."
   },
   "createCustomer": {
     "title": "Crear cliente",
