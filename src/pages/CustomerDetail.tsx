@@ -1,7 +1,7 @@
 // src/pages/CustomerDetail.tsx
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
 import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -301,8 +301,20 @@ export default function CustomerDetailPage() {
             >✕</button>
           </div>
           <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(['p1','p2','p3','p4'] as const).map(k => (
-              <p key={k} style={{ margin: 0 }}>{ti(`customerDetailOrders.${k}`)}</p>
+            {(['p1','p2','p3','p4','p5'] as const).map(k => (
+              k === 'p3' ? (
+                <p key={k} style={{ margin: 0 }}>
+                  <Trans
+                    i18nKey="customerDetailOrders.p3"
+                    ns="info"
+                    components={{
+                      adminLink: <Link to="/admin" state={{ openTab: 'ui-settings' }} style={{ color: 'var(--accent)' }} onClick={() => setShowOrdersInfo(false)} />,
+                    }}
+                  />
+                </p>
+              ) : (
+                <p key={k} style={{ margin: 0 }}>{ti(`customerDetailOrders.${k}`)}</p>
+              )
             ))}
           </div>
         </div>

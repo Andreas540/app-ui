@@ -173,6 +173,9 @@ export default function TenantAdmin() {
       if (s?.customerId) setOffersCustomerId(s.customerId)
       if (s?.customerOffersSubTab) setOffersInitialSubTab(s.customerOffersSubTab)
     }
+    if (s?.openTab === 'ui-settings') {
+      setActiveTab('ui-settings')
+    }
   }, [])
 
   async function loadData() {

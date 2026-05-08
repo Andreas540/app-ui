@@ -38,10 +38,11 @@
   },
   "customerDetailOrders": {
     "title": "Senaste ordrar",
-    "p1": "Ikonen på varje rad visar leveransstatus: ○ ej levererad, ◐ delvis levererad, ✓ levererad i sin helhet. Tryck på den för att uppdatera — ange levererat antal och ett valfritt leveransdatum.",
-    "p2": "Varje rad visar datum, artiklar (produkt / antal) och total. Med fullständiga orderrader aktiverat i UI-inställningar: visas även enhetspris, och partnerandelen på första raden för partnerkunder. Ordernummerkolumn är valfri och konfigureras också i UI-inställningar.",
-    "p3": "Beloppsfärg: grön = fullt betald, gul = delvis betald, ingen färg = obetald.",
-    "p4": "Tryck på beloppet för att öppna en ny betalning förifylld med utestående saldo för den ordern."
+    "p1": "Senaste ordrar visar alla ordrar lagda av den här kunden, nyast först.",
+    "p2": "Ikonen på varje rad visar leveransstatus: ○ ej levererad, ◐ delvis levererad, ✓ levererad i sin helhet. Tryck på den för att uppdatera levererat antal och ett valfritt leveransdatum.",
+    "p3": "Varje rad visar datum, artiklar (produkt / antal) och total. Ordernummerkolumn och detaljnivå kan konfigureras i <adminLink>Kontoadmin → UI-inställningar</adminLink>.",
+    "p4": "Orderns belopp har olika färger beroende på betalningsstatus: grön = fullt betald, gul = delvis betald, ingen färg = obetald.",
+    "p5": "Tryck på orderbeloppet för att öppna en ny betalning förifylld med utestående saldo för den ordern."
   },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {
