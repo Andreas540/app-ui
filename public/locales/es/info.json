@@ -39,10 +39,10 @@
   "customerDetailOrders": {
     "title": "Pedidos recientes",
     "p1": "Pedidos recientes muestra todos los pedidos de este cliente, el más reciente primero.",
-    "p2": "El icono en cada fila muestra el estado de entrega: ○ no entregado, ◐ parcialmente entregado, ✓ entregado en su totalidad. Tócalo para actualizar la cantidad entregada y una fecha de entrega opcional.",
-    "p3": "Cada fila muestra fecha, artículos (producto / cantidad) y total. La columna de número de pedido y el nivel de detalle se pueden configurar en <adminLink>Account Admin → Configuración UI</adminLink>.",
+    "p2": "El icono en cada fila muestra el estado de entrega: ○ no entregado, <amber>◐</amber> parcialmente entregado, <green>✓</green> entregado en su totalidad. Tócalo para actualizar la cantidad entregada y una fecha de entrega opcional.",
+    "p3": "Cada fila muestra fecha, artículos (producto / cantidad) y el importe total. Las filas se pueden configurar en <adminLink>Account Admin → Configuración UI</adminLink>.",
     "p4": "El importe del pedido tiene diferentes colores según el estado de pago: verde = totalmente pagado, ámbar = parcialmente pagado, sin color = impagado.",
-    "p5": "Toca el importe del pedido para abrir un nuevo pago prellenado con el saldo pendiente de ese pedido."
+    "p5": "Toca o haz clic en el importe del pedido para abrir un nuevo pago prellenado con el saldo pendiente de ese pedido."
   },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {

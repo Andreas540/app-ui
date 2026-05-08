@@ -39,10 +39,10 @@
   "customerDetailOrders": {
     "title": "Recent Orders",
     "p1": "Recent orders shows all orders placed by this customer, newest first.",
-    "p2": "The icon on each row shows delivery status: ○ not delivered, ◐ partially delivered, ✓ delivered in full. Tap it to update the quantity delivered and an optional delivery date.",
-    "p3": "Each row shows date, items (product / quantity), and total. Order number column and row detail level can be configured in <adminLink>Account Admin → UI Settings</adminLink>.",
+    "p2": "The icon on each row shows delivery status: ○ not delivered, <amber>◐</amber> partially delivered, <green>✓</green> delivered in full. Tap it to update the quantity delivered and an optional delivery date.",
+    "p3": "Each row shows date, items (product / quantity), and total amount. The rows can be configured in <adminLink>Account Admin → UI Settings</adminLink>.",
     "p4": "The order amount has different colors depending on payment status: green = fully paid, amber = partially paid, no color = unpaid.",
-    "p5": "Tap the order amount to open a new payment pre-filled with the outstanding balance for that order."
+    "p5": "Tap or click the order amount to open a new payment pre-filled with the outstanding balance for that order."
   },
   "manageInvoices": "Manage invoices",
   "createInvoice": {

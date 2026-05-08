@@ -302,7 +302,18 @@ export default function CustomerDetailPage() {
           </div>
           <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(['p1','p2','p3','p4','p5'] as const).map(k => (
-              k === 'p3' ? (
+              k === 'p2' ? (
+                <p key={k} style={{ margin: 0 }}>
+                  <Trans
+                    i18nKey="customerDetailOrders.p2"
+                    ns="info"
+                    components={{
+                      amber: <span style={{ color: '#f59e0b' }} />,
+                      green: <span style={{ color: '#10b981' }} />,
+                    }}
+                  />
+                </p>
+              ) : k === 'p3' ? (
                 <p key={k} style={{ margin: 0 }}>
                   <Trans
                     i18nKey="customerDetailOrders.p3"
