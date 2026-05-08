@@ -342,6 +342,8 @@
     "askCustomerLine3": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario.",
     "shareLink": "Crear enlace",
     "generating": "Generando…",
+    "registerPayment": "Registrar pago",
+    "createPaymentLink": "Crear enlace de pago",
     "linkReady": "Enlace listo — envíalo a tu cliente:",
     "copyLink": "Copiar",
     "copied": "¡Copiado!",

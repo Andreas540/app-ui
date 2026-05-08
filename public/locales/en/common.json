@@ -342,6 +342,8 @@
     "askCustomerLine3": "Your customer will not have any access to your app, only the form.",
     "shareLink": "Create link",
     "generating": "Generating…",
+    "registerPayment": "Register payment",
+    "createPaymentLink": "Create payment link",
     "linkReady": "Link ready — send to your customer:",
     "copyLink": "Copy",
     "copied": "Copied!",

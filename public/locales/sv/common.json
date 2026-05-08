@@ -342,6 +342,8 @@
     "askCustomerLine3": "Din kund har inte tillgång till appen, endast formuläret.",
     "shareLink": "Skapa länk",
     "generating": "Genererar…",
+    "registerPayment": "Registrera betalning",
+    "createPaymentLink": "Skapa betalningslänk",
     "linkReady": "Länk klar — skicka till din kund:",
     "copyLink": "Kopiera",
     "copied": "Kopierat!",

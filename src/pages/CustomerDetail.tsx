@@ -15,9 +15,11 @@ export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
   const { t: ti } = useTranslation('info')
   const { hasFeature, user } = useAuth()
-  const tenantUi = getTenantConfig(user?.tenantId).ui
+  const tenantCfg = getTenantConfig(user?.tenantId)
+  const tenantUi = tenantCfg.ui
   const compactOrderRows = tenantUi.compactCustomerOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
+  const hasPaymentProvider = tenantCfg.booking.paymentProvider !== 'none'
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -30,6 +32,8 @@ export default function CustomerDetailPage() {
   const [showPageInfo, setShowPageInfo] = useState(false)
   const [showOrdersInfo, setShowOrdersInfo] = useState(false)
   const [showPaymentsInfo, setShowPaymentsInfo] = useState(false)
+  const [paymentMenuOrderId, setPaymentMenuOrderId] = useState<string | null>(null)
+  const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
@@ -111,6 +115,26 @@ export default function CustomerDetailPage() {
       else setBookingLinkError(j.error || t('customers.bookingLinkError'))
     } catch { setBookingLinkError(t('customers.bookingLinkError')) }
     finally { setGeneratingBookingLink(false) }
+  }
+
+  async function generatePaymentLink(orderId: string) {
+    setGeneratingPaymentLink(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/create-order-payment-link`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate link')
+      await navigator.clipboard.writeText(data.checkout_url)
+      alert(t('orders.paymentLinkCopied'))
+    } catch (e: any) {
+      alert(e?.message || 'Failed to generate payment link')
+    } finally {
+      setGeneratingPaymentLink(false)
+    }
   }
 
   function copyBookingLink() {
@@ -707,16 +731,64 @@ export default function CustomerDetailPage() {
                     <div className="helper"
                       onClick={(e) => {
                         e.stopPropagation()
-                        const balance = Math.max(0, orderTotal - paid)
-                        const amount = balance > 0 ? balance : orderTotal
-                        navigate(
-                          `/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`
-                        )
+                        if (!hasPaymentProvider) {
+                          const balance = Math.max(0, orderTotal - paid)
+                          const amount = balance > 0 ? balance : orderTotal
+                          navigate(`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`)
+                        } else {
+                          setPaymentMenuOrderId(prev => prev === o.id ? null : o.id)
+                        }
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ textAlign: 'right', cursor: 'pointer', color: orderColor }}>
+                      style={{ textAlign: 'right', cursor: 'pointer', color: orderColor, position: 'relative' }}>
                       {fmtMoney(orderTotal)}
+                      {paymentMenuOrderId === o.id && (
+                        <>
+                          <div
+                            style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+                            onClick={(e) => { e.stopPropagation(); setPaymentMenuOrderId(null) }}
+                          />
+                          <div style={{
+                            position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 50,
+                            background: 'var(--card, #1e2130)',
+                            border: '1px solid var(--border)', borderRadius: 8,
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                            minWidth: 190, padding: '4px 0',
+                            textAlign: 'left',
+                          }}>
+                            {[
+                              { label: t('customers.registerPayment'), action: () => {
+                                setPaymentMenuOrderId(null)
+                                const balance = Math.max(0, orderTotal - paid)
+                                const amount = balance > 0 ? balance : orderTotal
+                                navigate(`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`)
+                              }},
+                              { label: generatingPaymentLink ? t('customers.generating') : t('customers.createPaymentLink'), action: () => {
+                                setPaymentMenuOrderId(null)
+                                generatePaymentLink(o.id)
+                              }},
+                            ].map(item => (
+                              <button
+                                key={item.label}
+                                onClick={(e) => { e.stopPropagation(); item.action() }}
+                                disabled={generatingPaymentLink}
+                                style={{
+                                  display: 'block', width: '100%',
+                                  padding: '9px 14px', background: 'transparent',
+                                  border: 'none', textAlign: 'left',
+                                  cursor: 'pointer', fontSize: 13,
+                                  color: 'var(--text)', whiteSpace: 'nowrap',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--panel)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* ADDITIONAL ITEM ROWS: empty | empty | [empty] | item | empty */}
