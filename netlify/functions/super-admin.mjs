@@ -195,9 +195,15 @@ async function handlePost(event) {
       // Generate slug from name
       const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
+      const defaultFeatures = [
+        'dashboard', 'customers', 'orders', 'payments', 'partners',
+        'products', 'price-checker', 'invoices', 'costs',
+        'tenant-admin', 'settings', 'contact',
+      ]
+
       const result = await sql`
-        INSERT INTO tenants (name, slug, business_type)
-        VALUES (${name.trim()}, ${slug}, ${type})
+        INSERT INTO tenants (name, slug, business_type, features)
+        VALUES (${name.trim()}, ${slug}, ${type}, ${JSON.stringify(defaultFeatures)}::jsonb)
         RETURNING id, name, slug, business_type
       `
 
