@@ -28,9 +28,7 @@ export const FEATURE_NAV_KEY: Record<string, string> = {
   'bookings':             'bookingList',
   'booking-customers':    'bookingClients',
   'booking-payments':     'bookingPayments',
-  'booking-reminders':    'bookingReminders',
-  'booking-sms-usage':    'bookingSmsUsage',
-  'booking-integration':  'bookingIntegrationNav',
+
   'new-booking':          'newBooking',
   'reports':              'reportsSalesProfit',
   'customer-reports':     'reportsCustomers',

@@ -270,9 +270,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/bookings/:id':               'page_view_booking_detail',
   '/bookings/clients':           'page_view_booking_clients',
   '/bookings/payments':          'page_view_booking_payments',
-  '/bookings/reminders':         'page_view_booking_reminders',
-  '/bookings/sms-usage':         'page_view_booking_sms_usage',
-  '/bookings/integration':       'page_view_booking_integration',
+
 }
 
 function pathnameToAction(pathname: string): string | null {
@@ -1049,9 +1047,9 @@ useEffect(() => {
                 {hasFeature('bookings') && <Route path="/bookings/:id" element={<BookingDetailPage />} />}
                 {hasFeature('booking-customers') && <Route path="/bookings/clients" element={<BookingCustomersPage />} />}
                 {hasFeature('booking-payments') && <Route path="/bookings/payments" element={<BookingPaymentsPage />} />}
-                {hasFeature('booking-reminders') && <Route path="/bookings/reminders" element={<BookingRemindersPage />} />}
-                {hasFeature('booking-sms-usage') && <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />}
-                {hasFeature('booking-integration') && <Route path="/bookings/integration" element={<BookingIntegrationPage />} />}
+                <Route path="/bookings/reminders" element={<BookingRemindersPage />} />
+                <Route path="/bookings/sms-usage" element={<BookingSmsUsagePage />} />
+                <Route path="/bookings/integration" element={<BookingIntegrationPage />} />
 
                 {/* Time entry simple accessible for testing */}
                 <Route path="/time-entry-simple" element={<TimeEntrySimple />} />

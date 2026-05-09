@@ -29,9 +29,7 @@ export const AVAILABLE_FEATURES = {
   'bookings':            { id: 'bookings',             name: 'Bookings',           route: '/bookings/list',       category: 'Booking', module: 'booking' },
   'booking-customers':   { id: 'booking-customers',   name: 'Booking Clients',    route: '/bookings/clients',    category: 'Booking', module: 'booking' },
   'booking-payments':    { id: 'booking-payments',    name: 'Booking Payments',   route: '/bookings/payments',   category: 'Booking', module: 'booking' },
-  'booking-reminders':   { id: 'booking-reminders',   name: 'Reminders',          route: '/bookings/reminders',  category: 'Booking', module: 'booking' },
-  'booking-sms-usage':   { id: 'booking-sms-usage',   name: 'SMS Usage',          route: '/bookings/sms-usage',  category: 'Booking', module: 'booking' },
-  'booking-integration': { id: 'booking-integration', name: 'Integration',        route: '/bookings/integration',category: 'Booking', module: 'booking' },
+
   'new-booking':         { id: 'new-booking',         name: 'New Booking',        route: '/bookings/new',        category: 'Booking', module: 'booking' },
 
   // Reports
