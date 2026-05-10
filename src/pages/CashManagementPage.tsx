@@ -94,9 +94,14 @@ export default function CashManagementPage() {
       )
       const data = await res.json()
       if (res.ok) {
-        setUsers(data.users ?? [])
+        const userList: CashUser[] = data.users ?? []
+        setUsers(userList)
         setTxs(data.transactions ?? [])
         setIngoing(Number(data.ingoing_balance) || 0)
+        // Admin viewing a user not in the eligible list → snap to first eligible user
+        if (isAdmin && userList.length > 0 && !userList.find(u => u.id === userId)) {
+          setSelUser(userList[0].id)
+        }
       }
     } finally {
       setLoading(false)
