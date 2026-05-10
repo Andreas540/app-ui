@@ -18,7 +18,7 @@ interface Service {
   currency: string | null
 }
 
-type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm' | 'canceled'
+type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm' | 'canceled' | 'payment-pending'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -211,6 +211,7 @@ export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
   const { t, i18n } = useTranslation()
+  const isWidget = searchParams.get('widget') === '1'
 
   // Page data
   const [tenantName, setTenantName]       = useState('')
@@ -414,7 +415,12 @@ export default function BookingPage() {
         return
       }
       if (data.checkout_url) {
-        window.location.href = data.checkout_url
+        if (isWidget) {
+          window.open(data.checkout_url, '_blank')
+          setStep('payment-pending')
+        } else {
+          window.location.href = data.checkout_url
+        }
         return
       }
       setConfirmation(data)
@@ -433,7 +439,13 @@ export default function BookingPage() {
 
   // ── Styles ───────────────────────────────────────────────────────────────────
 
-  const pageStyle: React.CSSProperties = {
+  const pageStyle: React.CSSProperties = isWidget ? {
+    background: 'transparent',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    color: '#1a1a1a',
+    fontSize: 16,
+    padding: '8px 0',
+  } : {
     minHeight: '100vh',
     background: bgColor,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -441,7 +453,12 @@ export default function BookingPage() {
     fontSize: 16,
   }
 
-  const cardStyle: React.CSSProperties = {
+  const cardStyle: React.CSSProperties = isWidget ? {
+    background: '#fff',
+    borderRadius: 12,
+    padding: '24px 20px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+  } : {
     background: '#fff',
     borderRadius: 12,
     padding: '28px 24px',
@@ -779,6 +796,19 @@ export default function BookingPage() {
 
             <p style={{ color: '#888', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
               {t('bookingPage.contactFor', { name: confirmation.tenant_name })}
+            </p>
+          </div>
+        )}
+
+        {/* ── Payment pending (widget mode — opened in new tab) ── */}
+        {step === 'payment-pending' && (
+          <div style={{ ...cardStyle, textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔗</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111' }}>
+              {t('bookingPage.paymentNewTabTitle')}
+            </h3>
+            <p style={{ color: '#555', marginBottom: 0, fontSize: 14, lineHeight: 1.6 }}>
+              {t('bookingPage.paymentNewTabDesc')}
             </p>
           </div>
         )}

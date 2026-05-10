@@ -35,7 +35,7 @@ function dowLabel(dow: number, locale: string) {
   )
 }
 
-type BookingSubTab = 'availability' | 'booking-page' | 'sms' | 'simplybook' | 'connect-site'
+type BookingSubTab = 'availability' | 'booking-page' | 'widget' | 'sms' | 'simplybook' | 'connect-site'
 type SmsView = 'usage' | 'reminders'
 
 export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab?: BookingSubTab }) {
@@ -139,6 +139,7 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   }
 
   const [copiedUrl, setCopiedUrl] = useState(false)
+  const [copiedWidget, setCopiedWidget] = useState(false)
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
   const [copiedSnippet, setCopiedSnippet] = useState(false)
 
@@ -175,6 +176,17 @@ ${entries}
     setTimeout(() => setCopiedSnippet(false), 2000)
   }
 
+  const widgetUrl = publicUrl ? `${publicUrl}?widget=1` : ''
+  const widgetEmbedCode = widgetUrl
+    ? `<iframe\n  src="${widgetUrl}"\n  style="width: 100%; min-height: 650px; border: none; border-radius: 12px;"\n  loading="lazy"\n></iframe>`
+    : ''
+
+  function copyWidgetCode() {
+    navigator.clipboard.writeText(widgetEmbedCode)
+    setCopiedWidget(true)
+    setTimeout(() => setCopiedWidget(false), 2000)
+  }
+
   function toggleConnectService(id: string) {
     setSelectedServiceIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -184,6 +196,7 @@ ${entries}
   const SUB_TABS: { id: BookingSubTab; label: string }[] = [
     { id: 'availability',  label: t('tenantAdmin.booking.tabAvailability') },
     { id: 'booking-page',  label: t('tenantAdmin.booking.tabBookingPage') },
+    { id: 'widget',        label: t('tenantAdmin.booking.tabWidget') },
     { id: 'sms',           label: t('tenantAdmin.booking.tabSms') },
     { id: 'simplybook',    label: t('tenantAdmin.booking.tabSimplyBook') },
     { id: 'connect-site',  label: t('tenantAdmin.booking.tabConnectSite') },
@@ -334,6 +347,48 @@ ${entries}
           <button className="primary" onClick={saveConfig} disabled={savingConfig || !configLoaded}>
             {savingConfig ? t('tenantAdmin.booking.saving') : t('tenantAdmin.booking.saveSettings')}
           </button>
+        </div>
+      )}
+
+      {/* ── Widget ── */}
+      {subTab === 'widget' && (
+        <div>
+          <p style={{ marginTop: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {t('tenantAdmin.booking.widgetDesc')}
+          </p>
+          {!widgetUrl ? (
+            <p style={{ fontSize: 14, color: 'var(--color-error)' }}>
+              {t('tenantAdmin.booking.widgetNoSlug')}
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('tenantAdmin.booking.widgetEmbedCode')}</div>
+                <pre style={{
+                  background: 'var(--panel, #f5f5f5)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '12px 14px',
+                  fontSize: 12,
+                  overflowX: 'auto',
+                  margin: 0,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  color: 'var(--text)',
+                }}>{widgetEmbedCode}</pre>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={copyWidgetCode} style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
+                  {copiedWidget ? t('customers.copied') : t('tenantAdmin.booking.widgetCopyCode')}
+                </button>
+                <a href={widgetUrl} target="_blank" rel="noreferrer">
+                  <button style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
+                    {t('tenantAdmin.booking.widgetPreview')}
+                  </button>
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
