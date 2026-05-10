@@ -1,8 +1,13 @@
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 
 export default function WidgetPreviewPage() {
   const [searchParams] = useSearchParams()
   const src = searchParams.get('src') || ''
+  const navigate = useNavigate()
+
+  function closePreview() {
+    navigate('/admin', { state: { openTab: 'booking', openBookingSubTab: 'widget' } })
+  }
 
   return (
     <>
@@ -44,6 +49,24 @@ export default function WidgetPreviewPage() {
         }
         .wp-content { display: flex; flex-direction: column; gap: 14px; }
 
+        /* ── Close button shared ── */
+        .wp-close-btn {
+          margin-left: auto;
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: #e2e8f0;
+          border-radius: 6px;
+          padding: 0 12px;
+          height: 32px;
+          font-size: 13px;
+          cursor: pointer;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .wp-close-btn:hover { background: rgba(255,255,255,0.2); }
+
         /* ── Preview banner ── */
         .wp-banner {
           position: fixed;
@@ -72,7 +95,6 @@ export default function WidgetPreviewPage() {
             padding: 20px 12px;
             gap: 20px;
           }
-          /* on mobile show widget first, then the dummy content below */
           .wp-widget-col { order: -1; }
         }
       `}</style>
@@ -86,6 +108,7 @@ export default function WidgetPreviewPage() {
           <div style={{ width: 60, height: 10, background: '#475569', borderRadius: 4 }} />
           <div style={{ width: 60, height: 10, background: '#475569', borderRadius: 4 }} />
           <div style={{ width: 60, height: 10, background: '#475569', borderRadius: 4 }} />
+          <button className="wp-close-btn" onClick={closePreview}>✕ Close preview</button>
         </div>
 
         {/* Mobile header */}
@@ -94,12 +117,7 @@ export default function WidgetPreviewPage() {
             <div style={{ width: 24, height: 24, background: '#6366f1', borderRadius: 5 }} />
             <div style={{ width: 60, height: 11, background: '#475569', borderRadius: 4 }} />
           </div>
-          {/* Hamburger */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer' }}>
-            <div style={{ width: 20, height: 2, background: '#94a3b8', borderRadius: 2 }} />
-            <div style={{ width: 20, height: 2, background: '#94a3b8', borderRadius: 2 }} />
-            <div style={{ width: 14, height: 2, background: '#94a3b8', borderRadius: 2 }} />
-          </div>
+          <button className="wp-close-btn" style={{ marginLeft: 0 }} onClick={closePreview}>✕ Close preview</button>
         </div>
 
         {/* Hero */}
