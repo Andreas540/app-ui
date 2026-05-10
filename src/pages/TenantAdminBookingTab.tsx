@@ -381,7 +381,7 @@ ${entries}
                 <button onClick={copyWidgetCode} style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
                   {copiedWidget ? t('customers.copied') : t('tenantAdmin.booking.widgetCopyCode')}
                 </button>
-                <a href={widgetUrl} target="_blank" rel="noreferrer">
+                <a href={`/widget-preview?src=${encodeURIComponent(widgetUrl)}`} target="_blank" rel="noreferrer">
                   <button style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
                     {t('tenantAdmin.booking.widgetPreview')}
                   </button>

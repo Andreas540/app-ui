@@ -48,6 +48,7 @@ import CustomerFormPage from './pages/CustomerFormPage'
 import OrderFormPage from './pages/OrderFormPage'
 import OrderPaidPage from './pages/OrderPaidPage'
 import PayRedirectPage from './pages/PayRedirectPage'
+import WidgetPreviewPage from './pages/WidgetPreviewPage'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
@@ -94,6 +95,10 @@ export default function App() {
 
   const isPayPath = useMemo(() =>
     (location.pathname || '/').startsWith('/pay/'),
+  [location.pathname])
+
+  const isWidgetPreviewPath = useMemo(() =>
+    (location.pathname || '/').startsWith('/widget-preview'),
   [location.pathname])
 
   const isBookingPath = useMemo(() =>
@@ -161,6 +166,7 @@ export default function App() {
   if (isOrderFormPath) return <OrderFormShell />
   if (isOrderPaidPath) return <Routes><Route path="/order-paid/:orderId" element={<OrderPaidPage />} /></Routes>
   if (isPayPath) return <Routes><Route path="/pay/:token" element={<PayRedirectPage />} /></Routes>
+  if (isWidgetPreviewPath) return <Routes><Route path="/widget-preview" element={<WidgetPreviewPage />} /></Routes>
   if (isBookingPath) return <BookingShell />
 
   if (employeeMode === null) {
