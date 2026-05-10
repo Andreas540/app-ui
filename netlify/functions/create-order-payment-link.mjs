@@ -5,7 +5,12 @@
 // Returns { checkout_url, provider } for the tenant to share with their customer.
 
 import { resolveAuthz } from './utils/auth.mjs'
-import { createHmac }   from 'crypto'
+import { createHmac, randomBytes } from 'crypto'
+
+const TOKEN_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+function generateToken() {
+  return Array.from(randomBytes(8)).map(b => TOKEN_CHARS[b % TOKEN_CHARS.length]).join('')
+}
 
 const EG_PTK_URL = 'https://postransactions.com/cnp/getptk.php'
 const EG_CNP_URL = 'https://postransactions.com/cnp/cnp'
@@ -88,7 +93,16 @@ export async function handler(event) {
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_session_id text`.catch(() => {})
       await sql`UPDATE orders SET checkout_session_id = ${session.id} WHERE id = ${order_id}::uuid AND tenant_id = ${authz.tenantId}::uuid`.catch(() => {})
 
-      return cors(200, { checkout_url: session.url, provider: 'stripe' })
+      await sql`CREATE TABLE IF NOT EXISTS order_payment_links (
+        token TEXT PRIMARY KEY, order_id UUID NOT NULL, tenant_id UUID NOT NULL,
+        checkout_url TEXT NOT NULL, provider TEXT NOT NULL DEFAULT 'stripe',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`.catch(() => {})
+      const token = generateToken()
+      await sql`INSERT INTO order_payment_links (token, order_id, tenant_id, checkout_url, provider)
+        VALUES (${token}, ${order.id}::uuid, ${authz.tenantId}::uuid, ${session.url}, 'stripe')`
+
+      return cors(200, { checkout_url: `${appBase}/pay/${token}`, provider: 'stripe' })
     }
 
     // ── Fall back to AMP Payments ─────────────────────────────────────────────
@@ -138,7 +152,12 @@ export async function handler(event) {
       return cors(502, { error: ptkData.message || 'Failed to generate AMP payment session' })
     }
 
-    return cors(200, { checkout_url: `${EG_CNP_URL}?ptk=${ptkData.data.ptk}`, provider: 'amp' })
+    const ampCheckoutUrl = `${EG_CNP_URL}?ptk=${ptkData.data.ptk}`
+    const token = generateToken()
+    await sql`INSERT INTO order_payment_links (token, order_id, tenant_id, checkout_url, provider)
+      VALUES (${token}, ${order.id}::uuid, ${authz.tenantId}::uuid, ${ampCheckoutUrl}, 'amp')`
+
+    return cors(200, { checkout_url: `${appBase}/pay/${token}`, provider: 'amp' })
   } catch (e) {
     console.error('create-order-payment-link error:', e)
     return cors(500, { error: String(e?.message || e) })

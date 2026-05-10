@@ -47,6 +47,7 @@ import TenantCustomization from './pages/TenantCustomization'
 import CustomerFormPage from './pages/CustomerFormPage'
 import OrderFormPage from './pages/OrderFormPage'
 import OrderPaidPage from './pages/OrderPaidPage'
+import PayRedirectPage from './pages/PayRedirectPage'
 import DashboardStore from './pages/DashboardStore'
 import LaborProduction from './pages/LaborProduction'
 import TimeEntry from './pages/TimeEntry'
@@ -91,6 +92,10 @@ export default function App() {
     (location.pathname || '/').startsWith('/order-paid'),
   [location.pathname])
 
+  const isPayPath = useMemo(() =>
+    (location.pathname || '/').startsWith('/pay/'),
+  [location.pathname])
+
   const isBookingPath = useMemo(() =>
     (location.pathname || '/').startsWith('/book/'),
   [location.pathname])
@@ -114,7 +119,7 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
-      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath) {
+      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath || isPayPath) {
         if (alive) setEmployeeMode(false)
         return
       }
@@ -155,6 +160,7 @@ export default function App() {
   if (isCustomerFormPath) return <CustomerFormShell />
   if (isOrderFormPath) return <OrderFormShell />
   if (isOrderPaidPath) return <Routes><Route path="/order-paid/:orderId" element={<OrderPaidPage />} /></Routes>
+  if (isPayPath) return <Routes><Route path="/pay/:token" element={<PayRedirectPage />} /></Routes>
   if (isBookingPath) return <BookingShell />
 
   if (employeeMode === null) {
