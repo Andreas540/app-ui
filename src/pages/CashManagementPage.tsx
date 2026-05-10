@@ -82,14 +82,14 @@ export default function CashManagementPage() {
     }
   }, [period, timezone]) // eslint-disable-line
 
-  const load = useCallback(async () => {
-    if (!selUser) return
+  const load = useCallback(async (userId: string) => {
+    if (!userId) return
     const { start, end } = weekBounds(period, timezone)
     setLoading(true)
     try {
       const res = await fetch(
         `${apiBase()}/.netlify/functions/cash-transactions` +
-        `?user_id=${encodeURIComponent(selUser)}&from=${start}&to=${end}`,
+        `?user_id=${encodeURIComponent(userId)}&from=${start}&to=${end}`,
         { headers: getAuthHeaders() }
       )
       const data = await res.json()
@@ -101,9 +101,9 @@ export default function CashManagementPage() {
     } finally {
       setLoading(false)
     }
-  }, [selUser, period, timezone])
+  }, [period, timezone]) // selUser intentionally excluded — passed as explicit parameter
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(selUser) }, [selUser, period, timezone]) // eslint-disable-line
 
   const bounds   = weekBounds(period, timezone)
   const allDates = datesInRange(bounds.start, bounds.end)
@@ -131,7 +131,7 @@ export default function CashManagementPage() {
       })
       setFormAmount('')
       setFormComment('')
-      await load()
+      await load(selUser)
     } finally {
       setSaving(false)
     }
@@ -144,7 +144,7 @@ export default function CashManagementPage() {
       headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
       body: JSON.stringify({ id }),
     })
-    await load()
+    await load(selUser)
   }
 
   function dayName(ds: string) {
