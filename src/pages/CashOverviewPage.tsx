@@ -212,7 +212,7 @@ export default function CashOverviewPage() {
           onChange={e => setSelectedUser(e.target.value)}
           style={{ width: '100%', padding: '0 10px', height: H }}
         >
-          <option value="all">{t('cashOverview.allUsers')}</option>
+          {users.length > 1 && <option value="all">{t('cashOverview.allUsers')}</option>}
           {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>

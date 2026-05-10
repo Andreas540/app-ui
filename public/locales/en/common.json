@@ -934,6 +934,13 @@
     "tabPaymentProviders": "Payment Providers",
     "tabCustomerOffers": "Customer Offers",
     "tabUiSettings": "UI Settings",
+    "tabCash": "Cash Management",
+    "cash": {
+      "title": "Cash Management",
+      "desc": "Select which users can register cash transactions.",
+      "noUsers": "No users found.",
+      "saved": "Saved"
+    },
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
     "roleLabel": "Role:",
@@ -1566,7 +1573,8 @@
     "amount": "Amount",
     "commentOptional": "Comment (optional)",
     "add": "Add",
-    "deleteConfirm": "Delete this transaction?"
+    "deleteConfirm": "Delete this transaction?",
+    "noAccess": "You are not authorised to register cash transactions. Contact your admin."
   },
   "cashOverview": {
     "title": "Overview",

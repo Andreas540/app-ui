@@ -156,6 +156,8 @@ export default function CashManagementPage() {
     return new Date(y, m - 1, d).toLocaleDateString(locale, { month: 'numeric', day: 'numeric' })
   }
 
+  const canRegister = isAdmin || (!loading && !!users.find(u => u.id === selUser))
+
   const summaryRows: [string, number, string | undefined][] = [
     ['ingoingBalance', ingoing,  undefined],
     ['moneyIn',        moneyIn,  '#10b981'],
@@ -167,7 +169,18 @@ export default function CashManagementPage() {
     <div className="card page-narrow">
       <h2 style={{ marginBottom: 16 }}>{t('cashManagement.title')}</h2>
 
+      {/* No-access guard for non-admin users not in the eligible list */}
+      {!loading && !isAdmin && !users.find(u => u.id === selUser) && (
+        <div style={{
+          padding: '12px 14px', borderRadius: 8, background: 'var(--bg-secondary, #f8f9fa)',
+          border: '1px solid var(--border)', color: 'var(--muted)', fontSize: 14, marginBottom: 16,
+        }}>
+          {t('cashManagement.noAccess')}
+        </div>
+      )}
+
       {/* Registered by */}
+      {(isAdmin || (!loading && users.find(u => u.id === selUser))) && (
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
           {t('cashManagement.registeredBy')}
@@ -191,6 +204,9 @@ export default function CashManagementPage() {
           </div>
         )}
       </div>
+      )}
+
+      {canRegister && <>
 
       {/* Week filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -365,6 +381,7 @@ export default function CashManagementPage() {
           })}
         </div>
       )}
+      </>}
     </div>
   )
 }

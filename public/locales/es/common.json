@@ -934,6 +934,13 @@
     "tabPaymentProviders": "Proveedores de pago",
     "tabCustomerOffers": "Ofertas de cliente",
     "tabUiSettings": "Configuración UI",
+    "tabCash": "Gestión de Caja",
+    "cash": {
+      "title": "Gestión de Caja",
+      "desc": "Selecciona qué usuarios pueden registrar transacciones de caja.",
+      "noUsers": "No se encontraron usuarios.",
+      "saved": "Guardado"
+    },
     "createUserButton": "+ Crear Usuario",
     "noUsers": "Sin usuarios aún",
     "roleLabel": "Rol:",
@@ -1577,7 +1584,8 @@
     "amount": "Importe",
     "commentOptional": "Comentario (opcional)",
     "add": "Añadir",
-    "deleteConfirm": "¿Eliminar esta transacción?"
+    "deleteConfirm": "¿Eliminar esta transacción?",
+    "noAccess": "No tienes autorización para registrar transacciones de caja. Contacta a tu administrador."
   },
   "cashOverview": {
     "title": "Resumen",

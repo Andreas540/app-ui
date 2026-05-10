@@ -105,6 +105,18 @@ async function handleGet(event) {
       return cors(200, { uiConfig: rows[0].ui_config || {} })
     }
 
+    if (action === 'getCashReporters') {
+      await sql`ALTER TABLE tenant_memberships ADD COLUMN IF NOT EXISTS can_report_cash BOOLEAN NOT NULL DEFAULT TRUE`.catch(() => {})
+      const users = await sql`
+        SELECT u.id, u.name, tm.can_report_cash
+        FROM users u
+        JOIN tenant_memberships tm ON tm.user_id = u.id
+        WHERE tm.tenant_id = ${tenantId}::uuid
+        ORDER BY u.name
+      `
+      return cors(200, { users })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -387,6 +399,19 @@ if (action === 'toggleUserStatus') {
       const { uiConfig } = body
       if (typeof uiConfig !== 'object' || uiConfig === null) return cors(400, { error: 'uiConfig must be an object' })
       await sql`UPDATE tenants SET ui_config = ${JSON.stringify(uiConfig)}::jsonb WHERE id = ${tenantId}`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'setCashReporters') {
+      const { userIds } = body
+      if (!Array.isArray(userIds)) return cors(400, { error: 'userIds must be an array' })
+      await sql`ALTER TABLE tenant_memberships ADD COLUMN IF NOT EXISTS can_report_cash BOOLEAN NOT NULL DEFAULT TRUE`.catch(() => {})
+      // Set true for listed users, false for all others in this tenant
+      await sql`
+        UPDATE tenant_memberships
+        SET can_report_cash = (user_id = ANY(${userIds}::uuid[]))
+        WHERE tenant_id = ${tenantId}::uuid
+      `
       return cors(200, { success: true })
     }
 

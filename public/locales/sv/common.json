@@ -934,6 +934,13 @@
     "tabPaymentProviders": "Betalningsleverantörer",
     "tabCustomerOffers": "Kundbud",
     "tabUiSettings": "UI-inställningar",
+    "tabCash": "Kassahantering",
+    "cash": {
+      "title": "Kassahantering",
+      "desc": "Välj vilka användare som får registrera kassatransaktioner.",
+      "noUsers": "Inga användare hittades.",
+      "saved": "Sparad"
+    },
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
     "roleLabel": "Roll:",
@@ -1577,7 +1584,8 @@
     "amount": "Belopp",
     "commentOptional": "Kommentar (valfritt)",
     "add": "Lägg till",
-    "deleteConfirm": "Ta bort transaktionen?"
+    "deleteConfirm": "Ta bort transaktionen?",
+    "noAccess": "Du har inte behörighet att registrera kassatransaktioner. Kontakta din administratör."
   },
   "cashOverview": {
     "title": "Översikt",

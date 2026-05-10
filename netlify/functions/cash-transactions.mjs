@@ -44,12 +44,13 @@ async function getTransactions(event) {
       return cors(400, { error: 'Invalid date format' })
     }
 
-    // All users for this tenant
+    // Users eligible to report cash transactions for this tenant
     const users = await sql`
       SELECT u.id, u.name
       FROM users u
       JOIN tenant_memberships tm ON tm.user_id = u.id
       WHERE tm.tenant_id = ${TENANT_ID}::uuid
+        AND tm.can_report_cash = true
       ORDER BY u.name
     `
 
@@ -136,9 +137,10 @@ async function createTransaction(event) {
     const userCheck = await sql`
       SELECT 1 FROM tenant_memberships
       WHERE user_id = ${user_id}::uuid AND tenant_id = ${TENANT_ID}::uuid
+        AND can_report_cash = true
       LIMIT 1
     `
-    if (!userCheck.length) return cors(403, { error: 'User not in tenant' })
+    if (!userCheck.length) return cors(403, { error: 'User not authorised to report cash' })
 
     const row = await sql`
       INSERT INTO cash_transactions (tenant_id, user_id, transaction_date, transaction_type, amount, comment)
