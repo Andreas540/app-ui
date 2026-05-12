@@ -51,6 +51,9 @@
     "p2": "Cada fila muestra fecha, tipo de pago e importe. El número de pedido indica a qué pedido se refiere el pago.",
     "p3": "Toca o haz clic en una fila para ver los detalles del pago y editarlo."
   },
+  "supplyChain": {
+    "orderedFromSuppliers": "Los pedidos realizados a proveedores se muestran aquí cuando se realizan, y también cuando el pedido se ha marcado como Enviado. Cuando el pedido ha sido Recibido (o marcado como En aduana) ya no se mostrará aquí."
+  },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
     "title": "Crear una factura",

@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTime } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 import { DateInput } from '../components/DateInput'
 import {
   ResponsiveContainer,
@@ -102,6 +104,9 @@ function shouldHideProduct(name: string) {
 }
 export default function SupplyChainOverview() {
   const { t } = useTranslation()
+  const { t: ti } = useTranslation('info')
+  const { user } = useAuth()
+  const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
   const [data, setData] = useState<SupplyChainData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -154,6 +159,8 @@ export default function SupplyChainOverview() {
   
   // Track week offset for production chart
   const [productionWeekOffset, setProductionWeekOffset] = useState(0)
+
+  const [showOrderedInfo, setShowOrderedInfo] = useState(false)
 
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
@@ -1320,10 +1327,48 @@ export default function SupplyChainOverview() {
 
       {/* Section 5: Ordered from suppliers */}
       <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
-          <span>{t('supplyChain.orderedFromSuppliers')}</span>
-          <span style={expandIconStyle}>{expandedSections.orderedFromSuppliers ? '−' : '+'}</span>
+        <div style={sectionHeaderStyle}>
+          <span onClick={() => toggleSection('orderedFromSuppliers')} style={{ cursor: 'pointer', flex: 1 }}>
+            {t('supplyChain.orderedFromSuppliers')}
+          </span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {showInfoIcons && (
+              <button
+                onClick={e => { e.stopPropagation(); setShowOrderedInfo(v => !v) }}
+                style={{
+                  width: 20, height: 20, padding: 0, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%', cursor: 'pointer',
+                  background: 'var(--border, rgba(0,0,0,0.08))',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+                }}
+              >i</button>
+            )}
+            <span style={expandIconStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
+              {expandedSections.orderedFromSuppliers ? '−' : '+'}
+            </span>
+          </div>
         </div>
+
+        {showOrderedInfo && (
+          <div style={{
+            marginTop: 8, background: 'var(--card, #fff)',
+            border: '1px solid var(--border)', borderRadius: 8,
+            padding: '12px 16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{t('supplyChain.orderedFromSuppliers')}</div>
+              <button
+                onClick={() => setShowOrderedInfo(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+              >✕</button>
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
+              <p style={{ margin: 0 }}>{ti('supplyChain.orderedFromSuppliers')}</p>
+            </div>
+          </div>
+        )}
 
         {expandedSections.orderedFromSuppliers && (
           <div style={{ marginTop: 12 }}>

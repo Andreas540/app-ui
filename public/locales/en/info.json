@@ -51,6 +51,9 @@
     "p2": "Each row shows date, payment type, and amount. The order number indicates which order the payment refers to.",
     "p3": "Tap or click a row to see payment details and to edit the payment."
   },
+  "supplyChain": {
+    "orderedFromSuppliers": "Orders placed with suppliers show here when the order is placed, and also when the order has been marked as Shipped. When the order has been Received (or marked as being in Customs) it will no longer show here."
+  },
   "manageInvoices": "Manage invoices",
   "createInvoice": {
     "title": "Creating an Invoice",

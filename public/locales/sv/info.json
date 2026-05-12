@@ -51,6 +51,9 @@
     "p2": "Varje rad visar datum, betalningstyp och belopp. Ordernumret visar vilken order betalningen gäller.",
     "p3": "Tryck eller klicka på en rad för att se betalningsdetaljer och redigera betalningen."
   },
+  "supplyChain": {
+    "orderedFromSuppliers": "Ordrar lagda hos leverantörer visas här när ordern läggs, och även när ordern markerats som Skickad. När ordern har Mottagits (eller markerats som I tull) visas den inte längre här."
+  },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {
     "title": "Skapa en faktura",
