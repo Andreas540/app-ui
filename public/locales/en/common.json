@@ -949,7 +949,8 @@
       "confirmWarning": "Both Pre-prod and Finished will be set to 0. This cannot be undone.",
       "confirmButton": "Yes, clear",
       "clearDone": "Done — {{count}} product(s) cleared.",
-      "noProducts": "No products found."
+      "noProducts": "No products found.",
+      "selectAll": "Select all"
     },
     "cash": {
       "title": "Cash Management",

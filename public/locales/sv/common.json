@@ -949,7 +949,8 @@
       "confirmWarning": "Både Förproduktion och Färdig sätts till 0. Detta kan inte ångras.",
       "confirmButton": "Ja, rensa",
       "clearDone": "Klart — {{count}} produkt(er) rensade.",
-      "noProducts": "Inga produkter hittades."
+      "noProducts": "Inga produkter hittades.",
+      "selectAll": "Markera alla"
     },
     "cash": {
       "title": "Kassahantering",

@@ -121,17 +121,26 @@ export default function TenantAdminInventoryTab() {
         <p style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.inventory.noProducts')}</p>
       ) : (
         <>
+          {/* Select all */}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              style={{ width: 16, height: 16, cursor: 'pointer' }}
+            />
+            {t('tenantAdmin.inventory.selectAll')}
+          </label>
+
           {/* Product table */}
           <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
             {/* Header row */}
             <div style={{
-              display: 'grid', gridTemplateColumns: '36px 1fr 80px 80px',
+              display: 'grid', gridTemplateColumns: '24px 1fr 80px 80px',
               padding: '8px 12px', background: 'var(--bg-secondary, #f8f9fa)',
               borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600,
             }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ cursor: 'pointer' }} />
-              </label>
+              <span />
               <span>{t('tenantAdmin.inventory.product')}</span>
               <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.preProd')}</span>
               <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.finished')}</span>
@@ -145,7 +154,7 @@ export default function TenantAdminInventoryTab() {
                 <div
                   key={row.product_id}
                   style={{
-                    display: 'grid', gridTemplateColumns: '36px 1fr 80px 80px',
+                    display: 'grid', gridTemplateColumns: '24px 1fr 80px 80px',
                     padding: '8px 12px', fontSize: 14,
                     borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                     opacity: isZero ? 0.45 : 1,
@@ -156,7 +165,7 @@ export default function TenantAdminInventoryTab() {
                       type="checkbox"
                       checked={checked.has(row.product_id)}
                       onChange={() => toggle(row.product_id)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ width: 16, height: 16, cursor: 'pointer' }}
                     />
                   </label>
                   <span style={{ alignSelf: 'center' }}>{row.product}</span>
