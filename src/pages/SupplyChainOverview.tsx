@@ -1,6 +1,7 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTime } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -105,6 +106,7 @@ function shouldHideProduct(name: string) {
 export default function SupplyChainOverview() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
+  const navigate = useNavigate()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
   const [data, setData] = useState<SupplyChainData | null>(null)
@@ -160,6 +162,7 @@ export default function SupplyChainOverview() {
   // Track week offset for production chart
   const [productionWeekOffset, setProductionWeekOffset] = useState(0)
 
+  const [showWarehouseInfo, setShowWarehouseInfo] = useState(false)
   const [showOrderedInfo, setShowOrderedInfo] = useState(false)
 
   // Track expanded state for each section
@@ -1196,10 +1199,55 @@ export default function SupplyChainOverview() {
 
       {/* Section 3: In the warehouse */}
 <div style={{ marginTop: 20 }}>
-  <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
-    <span>{t('supplyChain.inWarehouse')}</span>
-    <span style={expandIconStyle}>{expandedSections.warehouse ? '−' : '+'}</span>
+  <div style={sectionHeaderStyle}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }} onClick={() => toggleSection('warehouse')}>
+      <span>{t('supplyChain.inWarehouse')}</span>
+      {showInfoIcons && (
+        <button
+          onClick={e => { e.stopPropagation(); setShowWarehouseInfo(v => !v) }}
+          style={{
+            width: 20, height: 20, padding: 0, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: '50%', cursor: 'pointer',
+            background: 'var(--border, rgba(0,0,0,0.08))',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+          }}
+        >i</button>
+      )}
+    </div>
+    <span style={expandIconStyle} onClick={() => toggleSection('warehouse')}>
+      {expandedSections.warehouse ? '−' : '+'}
+    </span>
   </div>
+
+  {showWarehouseInfo && (
+    <div style={{
+      marginTop: 8, background: 'var(--card, #fff)',
+      border: '1px solid var(--border)', borderRadius: 8,
+      padding: '12px 16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{t('supplyChain.inWarehouse')}</div>
+        <button
+          onClick={() => setShowWarehouseInfo(false)}
+          style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+        >✕</button>
+      </div>
+      <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <p style={{ margin: 0 }}>
+          <Trans i18nKey="supplyChain.warehouse.p1" ns="info" components={{
+            productionLink: <button onClick={() => { setShowWarehouseInfo(false); navigate('/labor-production') }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }} />,
+          }} />
+        </p>
+        <p style={{ margin: 0 }}>
+          <Trans i18nKey="supplyChain.warehouse.p2" ns="info" components={{
+            inventoryLink: <button onClick={() => { setShowWarehouseInfo(false); navigate('/warehouse') }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }} />,
+          }} />
+        </p>
+      </div>
+    </div>
+  )}
 
   {expandedSections.warehouse && (
     <div style={{ marginTop: 12 }}>

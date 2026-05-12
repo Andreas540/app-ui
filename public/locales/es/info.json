@@ -52,6 +52,10 @@
     "p3": "Toca o haz clic en una fila para ver los detalles del pago y editarlo."
   },
   "supplyChain": {
+    "warehouse": {
+      "p1": "Cuando un pedido de proveedor se marca como Recibido, los artículos aparecen en la columna Pre-producción. Registrar <productionLink>Producción</productionLink> mueve los artículos de Pre-producción a Terminados. Cuando un pedido de cliente se marca como entregado, esos productos se deducen de Terminados.",
+      "p2": "Las cifras mostradas aquí son idénticas a la tabla de la página <inventoryLink>Inventario</inventoryLink>, donde también se pueden realizar ajustes manuales al inventario."
+    },
     "orderedFromSuppliers": "Un pedido aparece aquí en cuanto se realiza con un proveedor, y permanece visible después de marcarse como Enviado. Una vez que el pedido se marca como En aduana o Recibido, dejará de mostrarse aquí."
   },
   "manageInvoices": "Gestionar facturas",

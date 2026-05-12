@@ -52,6 +52,10 @@
     "p3": "Tap or click a row to see payment details and to edit the payment."
   },
   "supplyChain": {
+    "warehouse": {
+      "p1": "When a supplier order is marked as Received, the goods appear in the Pre-production column. Registering <productionLink>Production</productionLink> moves items from Pre-production to Finished. When a customer order is marked as delivered, those products are deducted from Finished.",
+      "p2": "The figures shown here are identical to the table on the <inventoryLink>Inventory</inventoryLink> page, where manual adjustments to the inventory can also be made."
+    },
     "orderedFromSuppliers": "An order appears here as soon as it is placed with a supplier, and remains visible after it has been marked as Shipped. Once the order is marked as In Customs or Received, it will no longer show here."
   },
   "manageInvoices": "Manage invoices",
