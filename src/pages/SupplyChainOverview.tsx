@@ -1360,7 +1360,7 @@ export default function SupplyChainOverview() {
                           display: 'inline-block',
                         }}
                       >
-                        Delivered: {formatDate(item.delivery_date)}
+                        {t('shipped')}: {formatDate(item.delivery_date)}
                       </span>
                     )
                   } else if (item.est_delivery_date) {

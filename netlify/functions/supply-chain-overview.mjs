@@ -132,9 +132,9 @@ const warehouse_inventory = await sql`
       ORDER BY lp.date DESC
     `
 
-    // 4. In customs
+    // 4. In customs — exclude orders that have since been received
     const in_customs = await sql`
-      SELECT 
+      SELECT
         p.name as product,
         SUM(ois.qty) as qty
       FROM orders_suppliers os
@@ -142,13 +142,15 @@ const warehouse_inventory = await sql`
       JOIN products p ON p.id = ois.product_id
       WHERE os.tenant_id = ${TENANT_ID}
         AND os.in_customs = TRUE
+        AND os.received = FALSE
       GROUP BY p.name
       ORDER BY p.name ASC
     `
 
-    // 5. Ordered from suppliers (delivered OR (not delivered, not in customs, not received))
+    // 5. Ordered from suppliers — only orders not yet in customs and not received.
+    //    Shipped (delivered=TRUE) orders remain here until they reach customs.
     const ordered_from_suppliers = await sql`
-      SELECT 
+      SELECT
         p.name as product,
         os.est_delivery_date,
         os.delivery_date,
@@ -158,10 +160,8 @@ const warehouse_inventory = await sql`
       JOIN order_items_suppliers ois ON ois.order_id = os.id
       JOIN products p ON p.id = ois.product_id
       WHERE os.tenant_id = ${TENANT_ID}
-        AND (
-          os.delivered = TRUE
-          OR (os.delivered = FALSE AND os.in_customs = FALSE AND os.received = FALSE)
-        )
+        AND os.in_customs = FALSE
+        AND os.received = FALSE
       GROUP BY p.name, os.est_delivery_date, os.delivery_date, os.delivered
       ORDER BY p.name ASC
     `
