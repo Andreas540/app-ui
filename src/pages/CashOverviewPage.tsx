@@ -8,7 +8,7 @@ interface CashUser { id: string; name: string }
 interface CashTx {
   id: string
   transaction_date: string
-  transaction_type: 'cash_pickup' | 'salary' | 'expense'
+  transaction_type: 'cash_pickup' | 'salary' | 'expense' | 'remittance'
   amount: number
   comment: string | null
   user_name?: string | null
@@ -77,8 +77,9 @@ export default function CashOverviewPage() {
   const [selectedUser, setSelectedUser] = useState('all')
   const [users,        setUsers]        = useState<CashUser[]>([])
   const [txs,          setTxs]          = useState<CashTx[]>([])
-  const [ingoing,      setIngoing]      = useState(0)
-  const [loading,      setLoading]      = useState(true)
+  const [ingoing,            setIngoing]            = useState(0)
+  const [remittancesBefore,  setRemittancesBefore]  = useState(0)
+  const [loading,            setLoading]            = useState(true)
   const [expandedWeeks, setExpandedWeeks] = useState(new Set<string>())
   const [expandedDays,  setExpandedDays]  = useState(new Set<string>())
 
@@ -112,6 +113,7 @@ export default function CashOverviewPage() {
         setUsers(data.users ?? [])
         setTxs(data.transactions ?? [])
         setIngoing(Number(data.ingoing_balance) || 0)
+        setRemittancesBefore(Number(data.remittances_before) || 0)
       }
     } finally {
       setLoading(false)
@@ -133,9 +135,13 @@ export default function CashOverviewPage() {
     setExpandedDays(prev => { const n = new Set(prev); n.has(ds) ? n.delete(ds) : n.add(ds); return n })
   }
 
-  const moneyIn  = txs.reduce((s, tx) => s + (tx.amount > 0 ? tx.amount : 0), 0)
-  const moneyOut = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
-  const outgoing = ingoing + moneyIn - moneyOut
+  const moneyIn          = txs.reduce((s, tx) => s + (tx.amount > 0 && tx.transaction_type !== 'remittance' ? tx.amount : 0), 0)
+  const moneyOut         = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
+  const outgoing         = ingoing + moneyIn - moneyOut
+  const remittancePeriod = txs.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
+  const netPeriod        = moneyIn - moneyOut
+  const ingoingSurplus   = ingoing - remittancesBefore
+  const owedToEmployer   = ingoingSurplus + netPeriod - remittancePeriod
 
   const weeks = from && to ? weeksInRange(from, to) : []
 
@@ -219,22 +225,47 @@ export default function CashOverviewPage() {
 
       {/* Summary */}
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
         background: 'var(--bg-secondary, #f8f9fa)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
-        {summaryRows.map(([key, val, color]) => (
-          <div key={key}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
-              {t(`cashManagement.${key}`)}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {summaryRows.map(([key, val, color]) => (
+            <div key={key}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+                {t(`cashManagement.${key}`)}
+              </div>
+              <div style={{ fontWeight: 700, color }}>
+                {key === 'moneyIn'  && `+${fmtMoney(val)}`}
+                {key === 'moneyOut' && `−${fmtMoney(val)}`}
+                {key !== 'moneyIn' && key !== 'moneyOut' && fmtMoney(val)}
+              </div>
             </div>
-            <div style={{ fontWeight: 700, color }}>
-              {key === 'moneyIn'  && `+${fmtMoney(val)}`}
-              {key === 'moneyOut' && `−${fmtMoney(val)}`}
-              {key !== 'moneyIn' && key !== 'moneyOut' && fmtMoney(val)}
+          ))}
+        </div>
+
+        {/* Remittance section */}
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.ingoingSurplus')}</div>
+              <div style={{ fontWeight: 700 }}>{fmtMoney(ingoingSurplus)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.collectedSpent')}</div>
+              <div style={{ fontWeight: 700, color: netPeriod > 0 ? '#10b981' : netPeriod < 0 ? '#ef4444' : undefined }}>
+                {netPeriod > 0 ? `+${fmtMoney(netPeriod)}` : netPeriod < 0 ? `−${fmtMoney(Math.abs(netPeriod))}` : fmtMoney(0)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.remitted')}</div>
+              <div style={{ fontWeight: 700, color: '#3b82f6' }}>−{fmtMoney(remittancePeriod)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.owedToEmployer')}</div>
+              <div style={{ fontWeight: 700 }}>{fmtMoney(owedToEmployer)}</div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Weekly breakdown */}
@@ -244,7 +275,7 @@ export default function CashOverviewPage() {
         <div>
           {weeks.map((week, wi) => {
             const weekTxs    = txs.filter(tx => tx.transaction_date.slice(0, 10) >= week.start && tx.transaction_date.slice(0, 10) <= week.end)
-            const weekNet    = weekTxs.reduce((s, tx) => s + tx.amount, 0)
+            const weekNet    = weekTxs.reduce((s, tx) => tx.transaction_type === 'remittance' ? s : s + tx.amount, 0)
             const isExpanded = expandedWeeks.has(week.start)
 
             // Week label from options, fallback to date range
@@ -283,7 +314,7 @@ export default function CashOverviewPage() {
                   <div style={{ paddingLeft: 20 }}>
                     {[...daysInWeek].reverse().map(ds => {
                       const dayTxs    = weekTxs.filter(tx => tx.transaction_date.slice(0, 10) === ds)
-                      const dayNet    = dayTxs.reduce((s, tx) => s + tx.amount, 0)
+                      const dayNet    = dayTxs.reduce((s, tx) => tx.transaction_type === 'remittance' ? s : s + tx.amount, 0)
                       const isDayExp  = expandedDays.has(ds)
 
                       return (
@@ -324,9 +355,13 @@ export default function CashOverviewPage() {
                                   </div>
                                 )}
                               </div>
-                              <span style={{ color: tx.amount >= 0 ? '#10b981' : '#ef4444', flexShrink: 0, marginLeft: 8 }}>
-                                {tx.amount >= 0 ? `+${fmtMoney(tx.amount)}` : `−${fmtMoney(Math.abs(tx.amount))}`}
-                              </span>
+                              {tx.transaction_type === 'remittance' ? (
+                                <span style={{ color: '#3b82f6', flexShrink: 0, marginLeft: 8 }}>{fmtMoney(tx.amount)}</span>
+                              ) : (
+                                <span style={{ color: tx.amount >= 0 ? '#10b981' : '#ef4444', flexShrink: 0, marginLeft: 8 }}>
+                                  {tx.amount >= 0 ? `+${fmtMoney(tx.amount)}` : `−${fmtMoney(Math.abs(tx.amount))}`}
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
