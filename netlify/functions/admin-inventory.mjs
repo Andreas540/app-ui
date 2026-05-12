@@ -34,7 +34,7 @@ export async function handler(event) {
           product_id,
           SUM(CASE WHEN supplier_manual_delivered IN ('M','S') THEN qty ELSE 0 END) AS pre_from_m,
           SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END)        AS finished_from_p,
-          SUM(CASE WHEN supplier_manual_delivered = 'D' THEN qty ELSE 0 END)        AS outbound_qty
+          SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
         FROM warehouse_deliveries
         WHERE tenant_id = ${TENANT_ID}
         GROUP BY product_id
