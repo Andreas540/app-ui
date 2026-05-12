@@ -505,16 +505,16 @@ export default function SupplyChainOverview() {
       </html>
     `
 
-    printWindow.document.write(html)
-    printWindow.document.close()
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    printWindow.location.href = url
 
     printWindow.onload = () => {
+      URL.revokeObjectURL(url)
       printWindow.focus()
       const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
       if (isDesktop) {
-        setTimeout(() => {
-          printWindow.print()
-        }, 250)
+        printWindow.print()
       }
     }
   }
@@ -1127,21 +1127,14 @@ export default function SupplyChainOverview() {
           </span>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                printNotDelivered()
-              }}
+              onClick={(e) => { e.stopPropagation(); printNotDelivered() }}
               style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 20,
-                padding: '4px 8px',
-                color: 'var(--text, inherit)',
+                background: 'none', border: 'none', padding: 0,
+                cursor: 'pointer', color: 'var(--accent)',
+                textDecoration: 'underline', fontSize: 14, fontWeight: 500,
               }}
-              title={t('supplyChain.printNotDelivered')}
             >
-              🖨️
+              {t('print')}
             </button>
             <span style={expandIconStyle} onClick={() => toggleSection('notDelivered')}>
               {expandedSections.notDelivered ? '−' : '+'}

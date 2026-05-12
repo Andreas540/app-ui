@@ -65,11 +65,16 @@ async function getSupplyChainOverview(event) {
         WHERE o.tenant_id = ${TENANT_ID}
           AND oi.qty > COALESCE(o.delivered_quantity, 0)
       )
-      SELECT 
+      SELECT
         p.name as product,
         SUM(remaining_qty) as qty
       FROM order_remaining
       JOIN products p ON p.id = order_remaining.product_id
+      WHERE (p.category IS NULL OR p.category != 'service')
+        AND LOWER(p.name) NOT LIKE '%refund%'
+        AND LOWER(p.name) NOT LIKE '%discount%'
+        AND LOWER(p.name) NOT LIKE '%other product%'
+        AND LOWER(p.name) NOT LIKE '%other service%'
       GROUP BY p.name
       HAVING SUM(remaining_qty) > 0
       ORDER BY p.name ASC
