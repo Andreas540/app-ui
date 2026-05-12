@@ -226,6 +226,8 @@ async function handleLogin(event) {
         t.business_type,
         t.features as tenant_features,
         t.default_language as tenant_default_language,
+        t.default_currency as tenant_default_currency,
+        t.default_timezone as tenant_default_timezone,
         t.ui_config
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
@@ -278,6 +280,8 @@ async function handleLogin(event) {
         preferred_currency: user.preferred_currency,
         preferred_timezone: user.preferred_timezone,
         tenant_default_language: primaryMembership.tenant_default_language,
+        tenant_default_currency: primaryMembership.tenant_default_currency,
+        tenant_default_timezone: primaryMembership.tenant_default_timezone,
         uiConfig: primaryMembership.ui_config || {}
       },
       // Also return all memberships for multi-tenant switching

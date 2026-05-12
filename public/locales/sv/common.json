@@ -1585,7 +1585,10 @@
     "commentOptional": "Kommentar (valfritt)",
     "add": "Lägg till",
     "deleteConfirm": "Ta bort transaktionen?",
-    "noAccess": "Du har inte behörighet att registrera kassatransaktioner. Kontakta din administratör."
+    "noAccess": "Du har inte behörighet att registrera kassatransaktioner. Kontakta din administratör.",
+    "remittance": "Inleverans",
+    "ingoingSurplus": "Ingående överskott",
+    "owedToEmployer": "Skyldig arbetsgivaren"
   },
   "cashOverview": {
     "title": "Översikt",

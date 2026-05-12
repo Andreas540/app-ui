@@ -1585,7 +1585,10 @@
     "commentOptional": "Comentario (opcional)",
     "add": "Añadir",
     "deleteConfirm": "¿Eliminar esta transacción?",
-    "noAccess": "No tienes autorización para registrar transacciones de caja. Contacta a tu administrador."
+    "noAccess": "No tienes autorización para registrar transacciones de caja. Contacta a tu administrador.",
+    "remittance": "Remesa",
+    "ingoingSurplus": "Superávit inicial",
+    "owedToEmployer": "Adeudado al empleador"
   },
   "cashOverview": {
     "title": "Resumen",

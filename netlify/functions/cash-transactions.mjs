@@ -86,23 +86,43 @@ async function getTransactions(event) {
           ORDER BY ct.transaction_date DESC, ct.created_at DESC
         `
 
+    // Ingoing balance excludes remittances (they are tracked separately)
     const balRows = targetUserId
       ? await sql`
           SELECT COALESCE(SUM(amount), 0)::float8 AS ingoing_balance
           FROM cash_transactions
           WHERE tenant_id = ${TENANT_ID}::uuid AND user_id = ${targetUserId}::uuid
             AND transaction_date < ${from}::date
+            AND transaction_type != 'remittance'
         `
       : await sql`
           SELECT COALESCE(SUM(amount), 0)::float8 AS ingoing_balance
           FROM cash_transactions
           WHERE tenant_id = ${TENANT_ID}::uuid AND transaction_date < ${from}::date
+            AND transaction_type != 'remittance'
+        `
+
+    // All remittances before the period (for ingoing surplus calculation)
+    const remitRows = targetUserId
+      ? await sql`
+          SELECT COALESCE(SUM(amount), 0)::float8 AS remittances_before
+          FROM cash_transactions
+          WHERE tenant_id = ${TENANT_ID}::uuid AND user_id = ${targetUserId}::uuid
+            AND transaction_date < ${from}::date
+            AND transaction_type = 'remittance'
+        `
+      : await sql`
+          SELECT COALESCE(SUM(amount), 0)::float8 AS remittances_before
+          FROM cash_transactions
+          WHERE tenant_id = ${TENANT_ID}::uuid AND transaction_date < ${from}::date
+            AND transaction_type = 'remittance'
         `
 
     return cors(200, {
       users,
       transactions,
-      ingoing_balance: balRows[0].ingoing_balance,
+      ingoing_balance:    balRows[0].ingoing_balance,
+      remittances_before: remitRows[0].remittances_before,
     })
   } catch (e) {
     console.error('cash-transactions GET error:', e)
@@ -127,7 +147,7 @@ async function createTransaction(event) {
     if (!user_id || !transaction_date || !transaction_type || amount === undefined || amount === null) {
       return cors(400, { error: 'Missing required fields' })
     }
-    if (!['cash_pickup', 'salary', 'expense'].includes(transaction_type)) {
+    if (!['cash_pickup', 'salary', 'expense', 'remittance'].includes(transaction_type)) {
       return cors(400, { error: 'Invalid transaction_type' })
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(transaction_date)) {

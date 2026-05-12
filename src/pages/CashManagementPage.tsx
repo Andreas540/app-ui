@@ -9,7 +9,7 @@ interface CashUser { id: string; name: string }
 interface CashTx {
   id: string
   transaction_date: string
-  transaction_type: 'cash_pickup' | 'salary' | 'expense'
+  transaction_type: 'cash_pickup' | 'salary' | 'expense' | 'remittance'
   amount: number
   comment: string | null
 }
@@ -56,9 +56,10 @@ export default function CashManagementPage() {
   const [period, setPeriod]   = useState<'thisWeek' | 'lastWeek'>('thisWeek')
   const [users, setUsers]     = useState<CashUser[]>([])
   const [selUser, setSelUser] = useState('')
-  const [txs, setTxs]         = useState<CashTx[]>([])
-  const [ingoing, setIngoing] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [txs, setTxs]                       = useState<CashTx[]>([])
+  const [ingoing, setIngoing]               = useState(0)
+  const [remittancesBefore, setRemittancesBefore] = useState(0)
+  const [loading, setLoading]               = useState(true)
 
   const [formDate,    setFormDate]    = useState('')
   const [formType,    setFormType]    = useState('cash_pickup')
@@ -98,6 +99,7 @@ export default function CashManagementPage() {
         setUsers(userList)
         setTxs(data.transactions ?? [])
         setIngoing(Number(data.ingoing_balance) || 0)
+        setRemittancesBefore(Number(data.remittances_before) || 0)
         // Admin viewing a user not in the eligible list → snap to first eligible user
         if (isAdmin && userList.length > 0 && !userList.find(u => u.id === userId)) {
           setSelUser(userList[0].id)
@@ -113,9 +115,12 @@ export default function CashManagementPage() {
   const bounds   = weekBounds(period, timezone)
   const allDates = datesInRange(bounds.start, bounds.end)
 
-  const moneyIn  = txs.reduce((s, tx) => s + (tx.amount > 0 ? tx.amount : 0), 0)
-  const moneyOut = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
-  const outgoing = ingoing + moneyIn - moneyOut
+  const moneyIn          = txs.reduce((s, tx) => s + (tx.amount > 0 && tx.transaction_type !== 'remittance' ? tx.amount : 0), 0)
+  const moneyOut         = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
+  const outgoing         = ingoing + moneyIn - moneyOut
+  const remittancePeriod = txs.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
+  const ingoingSurplus   = ingoing - remittancesBefore
+  const owedToEmployer   = ingoingSurplus - remittancePeriod
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -233,22 +238,41 @@ export default function CashManagementPage() {
 
       {/* Summary */}
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
         background: 'var(--bg-secondary, #f8f9fa)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
-        {summaryRows.map(([key, val, color]) => (
-          <div key={key}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
-              {t(`cashManagement.${key}`)}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {summaryRows.map(([key, val, color]) => (
+            <div key={key}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+                {t(`cashManagement.${key}`)}
+              </div>
+              <div style={{ fontWeight: 700, color }}>
+                {key === 'moneyIn'  && `+${fmtMoney(val)}`}
+                {key === 'moneyOut' && `−${fmtMoney(val)}`}
+                {key !== 'moneyIn' && key !== 'moneyOut' && fmtMoney(val)}
+              </div>
             </div>
-            <div style={{ fontWeight: 700, color }}>
-              {key === 'moneyIn'  && `+${fmtMoney(val)}`}
-              {key === 'moneyOut' && `−${fmtMoney(val)}`}
-              {key !== 'moneyIn' && key !== 'moneyOut' && fmtMoney(val)}
+          ))}
+        </div>
+
+        {/* Remittance section */}
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.ingoingSurplus')}</div>
+              <div style={{ fontWeight: 700 }}>{fmtMoney(ingoingSurplus)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.remittance')}</div>
+              <div style={{ fontWeight: 700, color: '#3b82f6' }}>{fmtMoney(remittancePeriod)}</div>
             </div>
           </div>
-        ))}
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.owedToEmployer')}</div>
+            <div style={{ fontWeight: 700 }}>{fmtMoney(owedToEmployer)}</div>
+          </div>
+        </div>
       </div>
 
       {/* Add transaction form */}
@@ -276,6 +300,7 @@ export default function CashManagementPage() {
             <option value="cash_pickup">{t('cashManagement.cash_pickup')}</option>
             <option value="salary">{t('cashManagement.salary')}</option>
             <option value="expense">{t('cashManagement.expense')}</option>
+            <option value="remittance">{t('cashManagement.remittance')}</option>
           </select>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
@@ -326,7 +351,7 @@ export default function CashManagementPage() {
         <div>
           {[...allDates].reverse().map((ds, idx) => {
             const dayTxs = txs.filter(tx => tx.transaction_date.slice(0, 10) === ds)
-            const net    = dayTxs.reduce((s, tx) => s + tx.amount, 0)
+            const net    = dayTxs.reduce((s, tx) => tx.transaction_type === 'remittance' ? s : s + tx.amount, 0)
             return (
               <div key={ds}>
                 {idx > 0 && (
@@ -365,11 +390,13 @@ export default function CashManagementPage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                      <span style={{ color: tx.amount >= 0 ? '#10b981' : '#ef4444' }}>
-                        {tx.amount >= 0
-                          ? `+${fmtMoney(tx.amount)}`
-                          : `−${fmtMoney(Math.abs(tx.amount))}`}
-                      </span>
+                      {tx.transaction_type === 'remittance' ? (
+                        <span style={{ color: '#3b82f6' }}>{fmtMoney(tx.amount)}</span>
+                      ) : (
+                        <span style={{ color: tx.amount >= 0 ? '#10b981' : '#ef4444' }}>
+                          {tx.amount >= 0 ? `+${fmtMoney(tx.amount)}` : `−${fmtMoney(Math.abs(tx.amount))}`}
+                        </span>
+                      )}
                       <button
                         onClick={() => handleDelete(tx.id)}
                         title={t('delete')}

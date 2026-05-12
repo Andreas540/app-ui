@@ -1574,7 +1574,10 @@
     "commentOptional": "Comment (optional)",
     "add": "Add",
     "deleteConfirm": "Delete this transaction?",
-    "noAccess": "You are not authorised to register cash transactions. Contact your admin."
+    "noAccess": "You are not authorised to register cash transactions. Contact your admin.",
+    "remittance": "Remittance",
+    "ingoingSurplus": "Ingoing surplus",
+    "owedToEmployer": "Owed to employer"
   },
   "cashOverview": {
     "title": "Overview",
