@@ -1587,6 +1587,8 @@
     "deleteConfirm": "Ta bort transaktionen?",
     "noAccess": "Du har inte behörighet att registrera kassatransaktioner. Kontakta din administratör.",
     "remittance": "Inleverans",
+    "remitted": "Inlevererat",
+    "collectedSpent": "Insamlat − Utbetalt",
     "ingoingSurplus": "Ingående överskott",
     "owedToEmployer": "Skyldig arbetsgivaren"
   },

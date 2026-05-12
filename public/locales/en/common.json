@@ -1576,6 +1576,8 @@
     "deleteConfirm": "Delete this transaction?",
     "noAccess": "You are not authorised to register cash transactions. Contact your admin.",
     "remittance": "Remittance",
+    "remitted": "Remitted",
+    "collectedSpent": "Collected − Spent",
     "ingoingSurplus": "Ingoing surplus",
     "owedToEmployer": "Owed to employer"
   },

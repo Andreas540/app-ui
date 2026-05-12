@@ -119,8 +119,9 @@ export default function CashManagementPage() {
   const moneyOut         = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
   const outgoing         = ingoing + moneyIn - moneyOut
   const remittancePeriod = txs.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
+  const netPeriod        = moneyIn - moneyOut
   const ingoingSurplus   = ingoing - remittancesBefore
-  const owedToEmployer   = ingoingSurplus - remittancePeriod
+  const owedToEmployer   = ingoingSurplus - netPeriod - remittancePeriod
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -264,13 +265,17 @@ export default function CashManagementPage() {
               <div style={{ fontWeight: 700 }}>{fmtMoney(ingoingSurplus)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.remittance')}</div>
-              <div style={{ fontWeight: 700, color: '#3b82f6' }}>{fmtMoney(remittancePeriod)}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.collectedSpent')}</div>
+              <div style={{ fontWeight: 700 }}>{fmtMoney(netPeriod)}</div>
             </div>
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.owedToEmployer')}</div>
-            <div style={{ fontWeight: 700 }}>{fmtMoney(owedToEmployer)}</div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.remitted')}</div>
+              <div style={{ fontWeight: 700, color: '#3b82f6' }}>−{fmtMoney(remittancePeriod)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.owedToEmployer')}</div>
+              <div style={{ fontWeight: 700 }}>{fmtMoney(owedToEmployer)}</div>
+            </div>
           </div>
         </div>
       </div>
