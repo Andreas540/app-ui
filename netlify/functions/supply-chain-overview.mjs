@@ -99,7 +99,7 @@ async function getSupplyChainOverview(event) {
         AND LOWER(p.name) NOT LIKE '%discount%'
         AND LOWER(p.name) NOT LIKE '%other product%'
         AND LOWER(p.name) NOT LIKE '%other service%'
-      ORDER BY p.name ASC, o.date ASC
+      ORDER BY p.name ASC, o.order_date ASC
     `
 
     // 3. In the warehouse (split inventory: pre_prod + finished, total = qty)
