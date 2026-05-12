@@ -52,7 +52,7 @@
     "p3": "Tryck eller klicka på en rad för att se betalningsdetaljer och redigera betalningen."
   },
   "supplyChain": {
-    "orderedFromSuppliers": "Ordrar lagda hos leverantörer visas här när ordern läggs, och även när ordern markerats som Skickad. När ordern har Mottagits (eller markerats som I tull) visas den inte längre här."
+    "orderedFromSuppliers": "En order visas här så snart den läggs hos en leverantör, och finns kvar även efter att den markerats som Skickad. När ordern markeras som I tull eller Mottagen försvinner den härifrån."
   },
   "manageInvoices": "Hantera fakturor",
   "createInvoice": {

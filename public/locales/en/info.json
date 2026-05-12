@@ -52,7 +52,7 @@
     "p3": "Tap or click a row to see payment details and to edit the payment."
   },
   "supplyChain": {
-    "orderedFromSuppliers": "Orders placed with suppliers show here when the order is placed, and also when the order has been marked as Shipped. When the order has been Received (or marked as being in Customs) it will no longer show here."
+    "orderedFromSuppliers": "An order appears here as soon as it is placed with a supplier, and remains visible after it has been marked as Shipped. Once the order is marked as In Customs or Received, it will no longer show here."
   },
   "manageInvoices": "Manage invoices",
   "createInvoice": {

@@ -1328,10 +1328,8 @@ export default function SupplyChainOverview() {
       {/* Section 5: Ordered from suppliers */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle}>
-          <span onClick={() => toggleSection('orderedFromSuppliers')} style={{ cursor: 'pointer', flex: 1 }}>
-            {t('supplyChain.orderedFromSuppliers')}
-          </span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }} onClick={() => toggleSection('orderedFromSuppliers')}>
+            <span>{t('supplyChain.orderedFromSuppliers')}</span>
             {showInfoIcons && (
               <button
                 onClick={e => { e.stopPropagation(); setShowOrderedInfo(v => !v) }}
@@ -1345,10 +1343,10 @@ export default function SupplyChainOverview() {
                 }}
               >i</button>
             )}
-            <span style={expandIconStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
-              {expandedSections.orderedFromSuppliers ? '−' : '+'}
-            </span>
           </div>
+          <span style={expandIconStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
+            {expandedSections.orderedFromSuppliers ? '−' : '+'}
+          </span>
         </div>
 
         {showOrderedInfo && (

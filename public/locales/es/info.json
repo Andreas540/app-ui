@@ -52,7 +52,7 @@
     "p3": "Toca o haz clic en una fila para ver los detalles del pago y editarlo."
   },
   "supplyChain": {
-    "orderedFromSuppliers": "Los pedidos realizados a proveedores se muestran aquí cuando se realizan, y también cuando el pedido se ha marcado como Enviado. Cuando el pedido ha sido Recibido (o marcado como En aduana) ya no se mostrará aquí."
+    "orderedFromSuppliers": "Un pedido aparece aquí en cuanto se realiza con un proveedor, y permanece visible después de marcarse como Enviado. Una vez que el pedido se marca como En aduana o Recibido, dejará de mostrarse aquí."
   },
   "manageInvoices": "Gestionar facturas",
   "createInvoice": {
