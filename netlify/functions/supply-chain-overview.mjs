@@ -80,6 +80,27 @@ async function getSupplyChainOverview(event) {
       ORDER BY p.name ASC
     `
 
+    // 2b. Not delivered — order-level breakdown (same filter, no aggregation)
+    const not_delivered_orders = await sql`
+      SELECT
+        p.name as product,
+        o.id as order_id,
+        o.customer,
+        o.date as order_date,
+        GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0) as qty
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.id
+      JOIN products p ON p.id = oi.product_id
+      WHERE o.tenant_id = ${TENANT_ID}
+        AND oi.qty > COALESCE(o.delivered_quantity, 0)
+        AND (p.category IS NULL OR p.category != 'service')
+        AND LOWER(p.name) NOT LIKE '%refund%'
+        AND LOWER(p.name) NOT LIKE '%discount%'
+        AND LOWER(p.name) NOT LIKE '%other product%'
+        AND LOWER(p.name) NOT LIKE '%other service%'
+      ORDER BY p.name ASC, o.date ASC
+    `
+
     // 3. In the warehouse (split inventory: pre_prod + finished, total = qty)
 const warehouse_inventory = await sql`
   WITH wd AS (
@@ -174,6 +195,7 @@ const warehouse_inventory = await sql`
     return cors(200, {
       recent_deliveries,
       not_delivered,
+      not_delivered_orders,
       warehouse_inventory,
       production_data,
       in_customs,

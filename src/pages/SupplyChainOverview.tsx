@@ -41,6 +41,14 @@ interface InCustoms {
   qty: number
 }
 
+interface NotDeliveredOrder {
+  product: string
+  order_id: string
+  customer: string
+  order_date: string
+  qty: number
+}
+
 interface OrderedFromSuppliers {
   product: string
   est_delivery_date: string | null
@@ -63,6 +71,7 @@ interface DemandData {
 interface SupplyChainData {
   recent_deliveries: RecentDelivery[]
   not_delivered: NotDelivered[]
+  not_delivered_orders: NotDeliveredOrder[]
   warehouse_inventory: WarehouseInventory[]
   production_data?: ProductionData[]
   in_customs: InCustoms[]
@@ -162,6 +171,7 @@ export default function SupplyChainOverview() {
   // Track week offset for production chart
   const [productionWeekOffset, setProductionWeekOffset] = useState(0)
 
+  const [expandedNotDeliveredProduct, setExpandedNotDeliveredProduct] = useState<string | null>(null)
   const [showWarehouseInfo, setShowWarehouseInfo] = useState(false)
   const [showOrderedInfo, setShowOrderedInfo] = useState(false)
 
@@ -1166,21 +1176,48 @@ export default function SupplyChainOverview() {
                   const warehouseQty = Number(warehouseInventoryMap.get(item.product) ?? 0)
                   const notDeliveredQty = Number(item.qty)
                   const rowColor = warehouseQty >= notDeliveredQty ? '#22c55e' : '#ef4444'
+                  const isExpanded = expandedNotDeliveredProduct === item.product
+                  const orders = (data.not_delivered_orders ?? []).filter(o => o.product === item.product)
 
                   return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 100px',
-                        gap: 12,
-                        ...tableRowStyle,
-                        color: rowColor,
-                        fontWeight: 500,
-                      }}
-                    >
-                      <div>{item.product}</div>
-                      <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                    <div key={idx}>
+                      <div
+                        onClick={() => setExpandedNotDeliveredProduct(isExpanded ? null : item.product)}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 100px',
+                          gap: 12,
+                          ...tableRowStyle,
+                          color: rowColor,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div>{item.product}</div>
+                        <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                      </div>
+
+                      {isExpanded && orders.length > 0 && (
+                        <div style={{ background: 'var(--panel)', borderRadius: 6, margin: '4px 0 8px 0', overflow: 'hidden' }}>
+                          {orders.map((o, oidx) => (
+                            <div
+                              key={oidx}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '70px 1fr 80px',
+                                gap: 8,
+                                padding: '8px 12px',
+                                borderBottom: oidx < orders.length - 1 ? '1px solid var(--border)' : 'none',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <div className="helper" style={{ fontSize: 12 }}>{formatDate(o.order_date)}</div>
+                              <div style={{ fontSize: 14 }}><strong>{o.customer}</strong></div>
+                              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{intFmt.format(Number(o.qty))}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
