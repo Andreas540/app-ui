@@ -1,7 +1,7 @@
 // src/pages/SupplyChainOverview.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTime } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -44,6 +44,8 @@ interface InCustoms {
 interface NotDeliveredOrder {
   product: string
   order_id: string
+  order_no: number
+  customer_id: string
   customer: string
   order_date: string
   qty: number
@@ -1204,7 +1206,7 @@ export default function SupplyChainOverview() {
                               key={oidx}
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '70px 1fr 80px',
+                                gridTemplateColumns: '60px auto 1fr 80px',
                                 gap: 8,
                                 padding: '8px 12px',
                                 borderBottom: oidx < orders.length - 1 ? '1px solid var(--border)' : 'none',
@@ -1212,7 +1214,8 @@ export default function SupplyChainOverview() {
                               }}
                             >
                               <div className="helper" style={{ fontSize: 12 }}>{formatDate(o.order_date)}</div>
-                              <div style={{ fontSize: 14 }}><strong>{o.customer}</strong></div>
+                              <div className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>#{o.order_no}</div>
+                              <Link to={`/customers/${o.customer_id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', textDecoration: 'underline' }}>{o.customer}</Link>
                               <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{intFmt.format(Number(o.qty))}</div>
                             </div>
                           ))}
