@@ -935,6 +935,22 @@
     "tabCustomerOffers": "Customer Offers",
     "tabUiSettings": "UI Settings",
     "tabCash": "Cash Management",
+    "tabInventory": "Inventory",
+    "inventory": {
+      "title": "Inventory",
+      "clearDesc": "Clear inventory sets the stock level to 0 for the selected products. A compensating adjustment is inserted — the transaction history is preserved.",
+      "product": "Product",
+      "preProd": "Pre-prod",
+      "finished": "Finished",
+      "clearSelected": "Clear selected ({{count}})",
+      "clearAll": "Clear all",
+      "confirmAll": "Clear all inventory?",
+      "confirmSelected": "Clear inventory for {{count}} product(s)?",
+      "confirmWarning": "Both Pre-prod and Finished will be set to 0. This cannot be undone.",
+      "confirmButton": "Yes, clear",
+      "clearDone": "Done — {{count}} product(s) cleared.",
+      "noProducts": "No products found."
+    },
     "cash": {
       "title": "Cash Management",
       "desc": "Select which users can register cash transactions.",

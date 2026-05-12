@@ -935,6 +935,22 @@
     "tabCustomerOffers": "Ofertas de cliente",
     "tabUiSettings": "Configuración UI",
     "tabCash": "Gestión de Caja",
+    "tabInventory": "Inventario",
+    "inventory": {
+      "title": "Inventario",
+      "clearDesc": "Limpiar inventario establece el nivel de stock en 0 para los productos seleccionados. Se inserta un ajuste compensatorio — el historial de transacciones se conserva.",
+      "product": "Producto",
+      "preProd": "Pre-prod",
+      "finished": "Terminado",
+      "clearSelected": "Limpiar seleccionados ({{count}})",
+      "clearAll": "Limpiar todo",
+      "confirmAll": "¿Limpiar todo el inventario?",
+      "confirmSelected": "¿Limpiar inventario para {{count}} producto(s)?",
+      "confirmWarning": "Tanto Pre-prod como Terminado se establecerán en 0. Esto no se puede deshacer.",
+      "confirmButton": "Sí, limpiar",
+      "clearDone": "Listo — {{count}} producto(s) limpiados.",
+      "noProducts": "No se encontraron productos."
+    },
     "cash": {
       "title": "Gestión de Caja",
       "desc": "Selecciona qué usuarios pueden registrar transacciones de caja.",
