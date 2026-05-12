@@ -71,9 +71,9 @@ export default function CashOverviewPage() {
     [i18n.language, timezone] // eslint-disable-line
   )
 
-  const [currentWeekOwed, setCurrentWeekOwed] = useState<number | null>(null)
+  const [employeeOwed, setEmployeeOwed] = useState<Array<{id: string; name: string; owed: number}>>([])
 
-  // Always show this week's total owed (all employees) regardless of the filter selection
+  // Per-employee owed figures for this week — fetched independently of the filter
   useEffect(() => {
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
     const [y, m, d] = todayStr.split('-').map(Number)
@@ -83,19 +83,36 @@ export default function CashOverviewPage() {
     const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6)
     const fmt = (x: Date) =>
       `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
-    fetch(
-      `${apiBase()}/.netlify/functions/cash-transactions?from=${fmt(mon)}&to=${fmt(sun)}`,
-      { headers: getAuthHeaders() }
-    )
+    const from = fmt(mon)
+    const to   = fmt(sun)
+    const base = `${apiBase()}/.netlify/functions/cash-transactions`
+
+    const calcOwed = (data: any) => {
+      const txs: CashTx[] = data.transactions ?? []
+      const ib = Number(data.ingoing_balance)    || 0
+      const rb = Number(data.remittances_before) || 0
+      const mIn   = txs.reduce((s, tx) => s + (tx.amount > 0 && tx.transaction_type !== 'remittance' ? tx.amount : 0), 0)
+      const mOut  = txs.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
+      const remit = txs.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
+      return (ib - rb) + (mIn - mOut) - remit
+    }
+
+    // First call: get eligible users list
+    fetch(`${base}?from=${from}&to=${to}`, { headers: getAuthHeaders() })
       .then(r => r.json())
-      .then(data => {
-        const t: CashTx[] = data.transactions ?? []
-        const ib = Number(data.ingoing_balance)  || 0
-        const rb = Number(data.remittances_before) || 0
-        const mIn  = t.reduce((s, tx) => s + (tx.amount > 0 && tx.transaction_type !== 'remittance' ? tx.amount : 0), 0)
-        const mOut = t.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
-        const remit = t.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
-        setCurrentWeekOwed((ib - rb) + (mIn - mOut) - remit)
+      .then(async (overview) => {
+        const eligibleUsers: CashUser[] = overview.users ?? []
+        const results = await Promise.all(
+          eligibleUsers.map(async u => {
+            const r = await fetch(
+              `${base}?from=${from}&to=${to}&user_id=${encodeURIComponent(u.id)}`,
+              { headers: getAuthHeaders() }
+            )
+            const data = await r.json()
+            return { id: u.id, name: u.name, owed: calcOwed(data) }
+          })
+        )
+        setEmployeeOwed(results)
       })
       .catch(() => {})
   }, [timezone]) // eslint-disable-line
@@ -195,10 +212,14 @@ export default function CashOverviewPage() {
   return (
     <div className="card page-narrow">
       <h2 style={{ marginBottom: 6 }}>{t('cashOverview.title')}</h2>
-      {currentWeekOwed !== null && (
-        <div style={{ marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)' }}>
-          {t('cashOverview.owedByEmployees')}:{' '}
-          <strong style={{ color: 'var(--text)' }}>{fmtMoney(currentWeekOwed)}</strong>
+      {employeeOwed.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          {employeeOwed.map(e => (
+            <div key={e.id} style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 2 }}>
+              {t('cashOverview.owedBy', { name: e.name })}:{' '}
+              <strong style={{ color: 'var(--text)' }}>{fmtMoney(e.owed)}</strong>
+            </div>
+          ))}
         </div>
       )}
 
@@ -263,6 +284,9 @@ export default function CashOverviewPage() {
         background: 'var(--line)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {t('cashManagement.sectionCashFlow')}
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {summaryRows.map(([key, val, color]) => (
             <div key={key}>
@@ -280,6 +304,9 @@ export default function CashOverviewPage() {
 
         {/* Remittance section */}
         <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {t('cashManagement.sectionRemittance')}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.ingoingSurplus')}</div>

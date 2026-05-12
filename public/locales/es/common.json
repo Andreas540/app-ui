@@ -1607,13 +1607,15 @@
     "remitted": "Remitido",
     "collectedSpent": "Cobrado − Gastado",
     "ingoingSurplus": "Superávit inicial",
-    "owedToEmployer": "Adeudado al empleador"
+    "owedToEmployer": "Adeudado al empleador",
+    "sectionCashFlow": "Cobrado − gastos",
+    "sectionRemittance": "Cobrado − gastos − remitido al empleador"
   },
   "cashOverview": {
     "title": "Resumen",
     "from": "Desde",
     "to": "Hasta",
     "allUsers": "Todos",
-    "owedByEmployees": "Adeudado por empleado(s)"
+    "owedBy": "Adeudado por {{name}}"
   }
 }

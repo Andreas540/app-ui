@@ -242,6 +242,9 @@ export default function CashManagementPage() {
         background: 'var(--line)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {t('cashManagement.sectionCashFlow')}
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {summaryRows.map(([key, val, color]) => (
             <div key={key}>
@@ -259,6 +262,9 @@ export default function CashManagementPage() {
 
         {/* Remittance section */}
         <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {t('cashManagement.sectionRemittance')}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.ingoingSurplus')}</div>

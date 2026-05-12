@@ -1596,13 +1596,15 @@
     "remitted": "Remitted",
     "collectedSpent": "Collected − Spent",
     "ingoingSurplus": "Ingoing surplus",
-    "owedToEmployer": "Owed to employer"
+    "owedToEmployer": "Owed to employer",
+    "sectionCashFlow": "Cash collected − expenses",
+    "sectionRemittance": "Cash collected − expenses − remitted to employer"
   },
   "cashOverview": {
     "title": "Overview",
     "from": "From",
     "to": "To",
     "allUsers": "All",
-    "owedByEmployees": "Owed by employee(s)"
+    "owedBy": "Owed by {{name}}"
   }
 }

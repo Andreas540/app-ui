@@ -1607,13 +1607,15 @@
     "remitted": "Inlevererat",
     "collectedSpent": "Insamlat − Utbetalt",
     "ingoingSurplus": "Ingående överskott",
-    "owedToEmployer": "Skyldig arbetsgivaren"
+    "owedToEmployer": "Skyldig arbetsgivaren",
+    "sectionCashFlow": "Insamlat − utgifter",
+    "sectionRemittance": "Insamlat − utgifter − inlevererat till arbetsgivaren"
   },
   "cashOverview": {
     "title": "Översikt",
     "from": "Från",
     "to": "Till",
     "allUsers": "Alla",
-    "owedByEmployees": "Skyldig av anställd(a)"
+    "owedBy": "Skyldig av {{name}}"
   }
 }
