@@ -85,12 +85,13 @@ async function getSupplyChainOverview(event) {
       SELECT
         p.name as product,
         o.id as order_id,
-        o.customer,
+        c.name as customer,
         o.date as order_date,
         GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0) as qty
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
+      LEFT JOIN customers c ON c.id = o.customer_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND oi.qty > COALESCE(o.delivered_quantity, 0)
         AND (p.category IS NULL OR p.category != 'service')
