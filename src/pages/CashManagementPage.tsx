@@ -183,7 +183,7 @@ export default function CashManagementPage() {
       {/* No-access guard for non-admin users not in the eligible list */}
       {!loading && !isAdmin && !users.find(u => u.id === selUser) && (
         <div style={{
-          padding: '12px 14px', borderRadius: 8, background: 'var(--bg-secondary, #f8f9fa)',
+          padding: '12px 14px', borderRadius: 8, background: 'var(--line)',
           border: '1px solid var(--border)', color: 'var(--muted)', fontSize: 14, marginBottom: 16,
         }}>
           {t('cashManagement.noAccess')}
@@ -208,7 +208,7 @@ export default function CashManagementPage() {
           <div style={{
             height: H, display: 'flex', alignItems: 'center',
             padding: '0 10px', border: '1px solid var(--border)',
-            borderRadius: 4, background: 'var(--bg-secondary, #f8f9fa)',
+            borderRadius: 4, background: 'var(--line)',
             color: 'var(--muted)', fontSize: 14,
           }}>
             {users.find(u => u.id === selUser)?.name ?? user?.name ?? ''}
@@ -239,7 +239,7 @@ export default function CashManagementPage() {
 
       {/* Summary */}
       <div style={{
-        background: 'var(--bg-secondary, #f8f9fa)', borderRadius: 8,
+        background: 'var(--line)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

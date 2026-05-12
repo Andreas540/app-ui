@@ -225,7 +225,7 @@ export default function CashOverviewPage() {
 
       {/* Summary */}
       <div style={{
-        background: 'var(--bg-secondary, #f8f9fa)', borderRadius: 8,
+        background: 'var(--line)', borderRadius: 8,
         padding: 12, marginBottom: 20,
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
