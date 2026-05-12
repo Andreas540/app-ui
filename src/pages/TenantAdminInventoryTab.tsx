@@ -87,32 +87,34 @@ export default function TenantAdminInventoryTab() {
         </div>
       )}
 
-      {/* Confirmation warning */}
+      {/* Confirmation modal */}
       {confirm && (
-        <div style={{
-          padding: '12px 14px', borderRadius: 8, background: '#fef9c3',
-          border: '1px solid #fde047', color: '#713f12', fontSize: 14, marginBottom: 16,
-        }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>
-            {confirm === 'all'
-              ? t('tenantAdmin.inventory.confirmAll')
-              : t('tenantAdmin.inventory.confirmSelected', { count: checked.size })}
-          </div>
-          <div style={{ marginBottom: 10 }}>{t('tenantAdmin.inventory.confirmWarning')}</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => executeClear(confirm)}
-              disabled={clearing}
-              style={{ height: 32, padding: '0 16px', fontSize: 13, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-            >
-              {t('tenantAdmin.inventory.confirmButton')}
-            </button>
-            <button
-              onClick={() => setConfirm(null)}
-              style={{ height: 32, padding: '0 16px', fontSize: 13, cursor: 'pointer' }}
-            >
-              {t('cancel')}
-            </button>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setConfirm(null)}
+        >
+          <div className="card" style={{ maxWidth: 420, width: '100%' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>
+              {confirm === 'all'
+                ? t('tenantAdmin.inventory.confirmAll')
+                : t('tenantAdmin.inventory.confirmSelected', { count: checked.size })}
+            </h3>
+            <p style={{ marginTop: 0, marginBottom: 20, fontSize: 14, color: 'var(--text-secondary)' }}>
+              {t('tenantAdmin.inventory.confirmWarning')}
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirm(null)} style={{ height: 36, padding: '0 16px', fontSize: 14 }}>
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => executeClear(confirm)}
+                disabled={clearing}
+                className="primary"
+                style={{ height: 36, padding: '0 16px', fontSize: 14, background: 'var(--danger)', borderColor: 'var(--danger)' }}
+              >
+                {t('tenantAdmin.inventory.confirmButton')}
+              </button>
+            </div>
           </div>
         </div>
       )}
