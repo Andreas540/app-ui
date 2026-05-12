@@ -86,7 +86,7 @@ async function getSupplyChainOverview(event) {
         p.name as product,
         o.id as order_id,
         c.name as customer,
-        o.date as order_date,
+        o.order_date,
         GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0) as qty
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id
