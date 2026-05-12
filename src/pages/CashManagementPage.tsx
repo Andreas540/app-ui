@@ -121,7 +121,7 @@ export default function CashManagementPage() {
   const remittancePeriod = txs.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
   const netPeriod        = moneyIn - moneyOut
   const ingoingSurplus   = ingoing - remittancesBefore
-  const owedToEmployer   = ingoingSurplus - netPeriod - remittancePeriod
+  const owedToEmployer   = ingoingSurplus + netPeriod - remittancePeriod
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -266,7 +266,9 @@ export default function CashManagementPage() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.collectedSpent')}</div>
-              <div style={{ fontWeight: 700 }}>{fmtMoney(netPeriod)}</div>
+              <div style={{ fontWeight: 700, color: netPeriod > 0 ? '#10b981' : netPeriod < 0 ? '#ef4444' : undefined }}>
+                {netPeriod > 0 ? `+${fmtMoney(netPeriod)}` : netPeriod < 0 ? `−${fmtMoney(Math.abs(netPeriod))}` : fmtMoney(0)}
+              </div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('cashManagement.remitted')}</div>
