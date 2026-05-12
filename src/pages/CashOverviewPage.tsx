@@ -71,6 +71,35 @@ export default function CashOverviewPage() {
     [i18n.language, timezone] // eslint-disable-line
   )
 
+  const [currentWeekOwed, setCurrentWeekOwed] = useState<number | null>(null)
+
+  // Always show this week's total owed (all employees) regardless of the filter selection
+  useEffect(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
+    const [y, m, d] = todayStr.split('-').map(Number)
+    const dow = new Date(y, m - 1, d).getDay()
+    const delta = dow === 0 ? -6 : 1 - dow
+    const mon = new Date(y, m - 1, d + delta)
+    const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6)
+    const fmt = (x: Date) =>
+      `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+    fetch(
+      `${apiBase()}/.netlify/functions/cash-transactions?from=${fmt(mon)}&to=${fmt(sun)}`,
+      { headers: getAuthHeaders() }
+    )
+      .then(r => r.json())
+      .then(data => {
+        const t: CashTx[] = data.transactions ?? []
+        const ib = Number(data.ingoing_balance)  || 0
+        const rb = Number(data.remittances_before) || 0
+        const mIn  = t.reduce((s, tx) => s + (tx.amount > 0 && tx.transaction_type !== 'remittance' ? tx.amount : 0), 0)
+        const mOut = t.reduce((s, tx) => s + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0)
+        const remit = t.reduce((s, tx) => s + (tx.transaction_type === 'remittance' ? tx.amount : 0), 0)
+        setCurrentWeekOwed((ib - rb) + (mIn - mOut) - remit)
+      })
+      .catch(() => {})
+  }, [timezone]) // eslint-disable-line
+
   const [activePeriod, setActivePeriod] = useState<'thisWeek' | 'lastWeek' | null>('thisWeek')
   const [fromWeekVal,  setFromWeekVal]  = useState('')
   const [toWeekVal,    setToWeekVal]    = useState('')
@@ -165,7 +194,13 @@ export default function CashOverviewPage() {
 
   return (
     <div className="card page-narrow">
-      <h2 style={{ marginBottom: 16 }}>{t('cashOverview.title')}</h2>
+      <h2 style={{ marginBottom: 6 }}>{t('cashOverview.title')}</h2>
+      {currentWeekOwed !== null && (
+        <div style={{ marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)' }}>
+          {t('cashOverview.owedByEmployees')}:{' '}
+          <strong style={{ color: 'var(--text)' }}>{fmtMoney(currentWeekOwed)}</strong>
+        </div>
+      )}
 
       {/* This week / Last week preset buttons */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

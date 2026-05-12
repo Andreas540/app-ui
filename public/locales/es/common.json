@@ -1613,6 +1613,7 @@
     "title": "Resumen",
     "from": "Desde",
     "to": "Hasta",
-    "allUsers": "Todos"
+    "allUsers": "Todos",
+    "owedByEmployees": "Adeudado por empleado(s)"
   }
 }

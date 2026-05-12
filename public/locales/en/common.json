@@ -1602,6 +1602,7 @@
     "title": "Overview",
     "from": "From",
     "to": "To",
-    "allUsers": "All"
+    "allUsers": "All",
+    "owedByEmployees": "Owed by employee(s)"
   }
 }

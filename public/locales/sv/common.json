@@ -1613,6 +1613,7 @@
     "title": "Översikt",
     "from": "Från",
     "to": "Till",
-    "allUsers": "Alla"
+    "allUsers": "Alla",
+    "owedByEmployees": "Skyldig av anställd(a)"
   }
 }
