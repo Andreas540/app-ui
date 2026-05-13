@@ -56,6 +56,10 @@ console.log('Loading customers for tenant:', tenantId);
               AND p.customer_id = c.id) AS total_payments
       ) t ON TRUE
       WHERE c.tenant_id = ${tenantId}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_customers thc
+          WHERE thc.tenant_id = ${tenantId} AND thc.customer_id = c.id
+        )
         ${like ? sql`AND LOWER(c.name) LIKE ${like}` : sql``}
       ORDER BY c.name
     `;

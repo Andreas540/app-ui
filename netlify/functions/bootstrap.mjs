@@ -59,6 +59,10 @@ export async function handler(event) {
       SELECT id, name, customer_type
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_customers thc
+          WHERE thc.tenant_id = ${TENANT_ID} AND thc.customer_id = id
+        )
       ORDER BY name
     `;
 

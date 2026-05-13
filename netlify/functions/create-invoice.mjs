@@ -40,6 +40,10 @@ async function getData(event) {
       SELECT id, name, company_name, address1, address2, city, state, postal_code, country
       FROM customers
       WHERE tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_customers thc
+          WHERE thc.tenant_id = ${TENANT_ID} AND thc.customer_id = id
+        )
       ORDER BY name ASC
     `;
 
