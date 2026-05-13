@@ -275,29 +275,21 @@ export default function ManageUserModal({ userId, onClose, onUpdate }: ManageUse
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        padding: '12px',
-                        background: 'var(--bg-secondary, #f5f5f5)',
-                        borderRadius: 4,
-                        border: '1px solid var(--border)'
+                        padding: '10px 14px',
+                        background: 'var(--panel)',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
                       }}
                     >
                       <div>
-                        <strong>{m.tenant_name}</strong>
-                        <span className="helper" style={{ marginLeft: 12 }}>
-                          ({m.role === 'tenant_admin' ? t('manageUserModal.adminRole') : t('manageUserModal.userRole')})
+                        <strong style={{ fontSize: 14 }}>{m.tenant_name}</strong>
+                        <span className="helper" style={{ marginLeft: 10, fontSize: 12 }}>
+                          {m.role === 'tenant_admin' ? t('manageUserModal.adminRole') : t('manageUserModal.userRole')}
                         </span>
                       </div>
                       <button
                         onClick={() => handleRemoveMembership(m.tenant_id)}
-                        style={{
-                          padding: '6px 12px',
-                          background: 'var(--color-error)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          fontSize: 13
-                        }}
+                        style={{ height: 32, padding: '0 12px', fontSize: 13, background: 'var(--danger)', borderColor: 'var(--danger)', color: 'white' }}
                       >
                         {t('remove')}
                       </button>
