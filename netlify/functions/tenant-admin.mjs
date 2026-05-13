@@ -105,6 +105,21 @@ async function handleGet(event) {
       return cors(200, { uiConfig: rows[0].ui_config || {} })
     }
 
+    if (action === 'getShippingSettings') {
+      await sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS default_shipping_method TEXT NOT NULL DEFAULT 'per_item'`.catch(() => {})
+      const tenantRow = await sql`SELECT default_shipping_method FROM tenants WHERE id = ${tenantId}::uuid LIMIT 1`
+      const customers = await sql`
+        SELECT id, name, customer_type, shipping_cost
+        FROM customers
+        WHERE tenant_id = ${tenantId}::uuid
+        ORDER BY name ASC
+      `
+      return cors(200, {
+        defaultShippingMethod: tenantRow[0]?.default_shipping_method || 'per_item',
+        customers,
+      })
+    }
+
     if (action === 'getCustomerSettings') {
       await sql`
         CREATE TABLE IF NOT EXISTS tenant_hidden_customers (
@@ -422,6 +437,65 @@ if (action === 'toggleUserStatus') {
       if (typeof uiConfig !== 'object' || uiConfig === null) return cors(400, { error: 'uiConfig must be an object' })
       await sql`UPDATE tenants SET ui_config = ${JSON.stringify(uiConfig)}::jsonb WHERE id = ${tenantId}`
       return cors(200, { success: true })
+    }
+
+    if (action === 'saveDefaultShippingMethod') {
+      const { method } = body
+      if (!['per_item', 'per_order'].includes(method)) return cors(400, { error: 'Invalid method' })
+      await sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS default_shipping_method TEXT NOT NULL DEFAULT 'per_item'`.catch(() => {})
+      await sql`UPDATE tenants SET default_shipping_method = ${method} WHERE id = ${tenantId}::uuid`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'setBulkShippingCost') {
+      const { shippingCost, target, customerIds, applyToHistory, effectiveDate } = body
+      const sc = shippingCost === null || shippingCost === undefined ? null : Number(shippingCost)
+      if (shippingCost != null && !Number.isFinite(sc)) return cors(400, { error: 'shippingCost must be a number' })
+
+      // Resolve which customers to target
+      let targetIds = []
+      if (target === 'all') {
+        const rows = await sql`SELECT id FROM customers WHERE tenant_id = ${tenantId}::uuid`
+        targetIds = rows.map(r => r.id)
+      } else if (target === 'direct') {
+        const rows = await sql`SELECT id FROM customers WHERE tenant_id = ${tenantId}::uuid AND customer_type IN ('Direct', 'BLV')`
+        targetIds = rows.map(r => r.id)
+      } else if (target === 'partner') {
+        const rows = await sql`SELECT id FROM customers WHERE tenant_id = ${tenantId}::uuid AND customer_type = 'Partner'`
+        targetIds = rows.map(r => r.id)
+      } else if (target === 'custom') {
+        targetIds = Array.isArray(customerIds) ? customerIds : []
+      }
+
+      if (targetIds.length === 0) return cors(400, { error: 'No customers matched the selected target' })
+
+      // Determine whether to update customers.shipping_cost immediately
+      let shouldUpdateNow = false
+      if (applyToHistory) {
+        shouldUpdateNow = true
+      } else if (effectiveDate) {
+        const effDate = new Date(effectiveDate + 'T00:00:00Z')
+        const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+        shouldUpdateNow = effDate <= today
+      } else {
+        shouldUpdateNow = true // next order = effective now
+      }
+
+      for (const customerId of targetIds) {
+        if (shouldUpdateNow) {
+          await sql`UPDATE customers SET shipping_cost = ${sc} WHERE tenant_id = ${tenantId}::uuid AND id = ${customerId}::uuid`
+        }
+        if (applyToHistory) {
+          await sql`DELETE FROM shipping_cost_history WHERE tenant_id = ${tenantId}::uuid AND customer_id = ${customerId}::uuid`
+          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, '1970-01-01')`
+        } else if (effectiveDate) {
+          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, ${effectiveDate})`
+        } else {
+          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, NOW())`
+        }
+      }
+
+      return cors(200, { success: true, updated: targetIds.length })
     }
 
     if (action === 'setHiddenCustomers') {
