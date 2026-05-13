@@ -105,6 +105,28 @@ async function handleGet(event) {
       return cors(200, { uiConfig: rows[0].ui_config || {} })
     }
 
+    if (action === 'getCustomerSettings') {
+      await sql`
+        CREATE TABLE IF NOT EXISTS tenant_hidden_customers (
+          tenant_id   UUID NOT NULL,
+          customer_id UUID NOT NULL,
+          PRIMARY KEY (tenant_id, customer_id)
+        )
+      `.catch(() => {})
+      const customers = await sql`
+        SELECT
+          c.id,
+          c.name,
+          (thc.customer_id IS NOT NULL) AS hidden
+        FROM customers c
+        LEFT JOIN tenant_hidden_customers thc
+          ON thc.customer_id = c.id AND thc.tenant_id = ${tenantId}::uuid
+        WHERE c.tenant_id = ${tenantId}::uuid
+        ORDER BY c.name ASC
+      `
+      return cors(200, { customers })
+    }
+
     if (action === 'getCashReporters') {
       await sql`ALTER TABLE tenant_memberships ADD COLUMN IF NOT EXISTS can_report_cash BOOLEAN NOT NULL DEFAULT TRUE`.catch(() => {})
       const users = await sql`
@@ -399,6 +421,19 @@ if (action === 'toggleUserStatus') {
       const { uiConfig } = body
       if (typeof uiConfig !== 'object' || uiConfig === null) return cors(400, { error: 'uiConfig must be an object' })
       await sql`UPDATE tenants SET ui_config = ${JSON.stringify(uiConfig)}::jsonb WHERE id = ${tenantId}`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'setHiddenCustomers') {
+      const { hiddenCustomerIds } = body
+      if (!Array.isArray(hiddenCustomerIds)) return cors(400, { error: 'hiddenCustomerIds must be an array' })
+      await sql`CREATE TABLE IF NOT EXISTS tenant_hidden_customers (tenant_id UUID NOT NULL, customer_id UUID NOT NULL, PRIMARY KEY (tenant_id, customer_id))`.catch(() => {})
+      await sql`DELETE FROM tenant_hidden_customers WHERE tenant_id = ${tenantId}::uuid`
+      if (hiddenCustomerIds.length > 0) {
+        for (const customerId of hiddenCustomerIds) {
+          await sql`INSERT INTO tenant_hidden_customers (tenant_id, customer_id) VALUES (${tenantId}::uuid, ${customerId}::uuid) ON CONFLICT DO NOTHING`
+        }
+      }
       return cors(200, { success: true })
     }
 

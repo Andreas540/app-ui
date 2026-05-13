@@ -936,6 +936,18 @@
     "tabUiSettings": "UI-inställningar",
     "tabCash": "Kassahantering",
     "tabInventory": "Lager",
+    "tabCustomerSettings": "Kundinställningar",
+    "customerSettings": {
+      "showHideTitle": "Visa / Dölj kunder",
+      "showHideDesc": "Avmarkera en kund för att dölja dem i hela appen. Nya kunder visas alltid som standard.",
+      "search": "Sök kunder...",
+      "customer": "Kund",
+      "noCustomers": "Inga kunder hittades.",
+      "noMatch": "Inga kunder matchar sökningen.",
+      "hiddenCount": "{{count}} dolda",
+      "saveChanges": "Spara ändringar",
+      "saved": "Ändringar sparade."
+    },
     "inventory": {
       "title": "Lager",
       "clearDesc": "Rensa lager sätter lagernivån till 0 för valda produkter. En kompenserande transaktion läggs in — historiken bevaras.",

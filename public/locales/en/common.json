@@ -936,6 +936,18 @@
     "tabUiSettings": "UI Settings",
     "tabCash": "Cash Management",
     "tabInventory": "Inventory",
+    "tabCustomerSettings": "Customer Settings",
+    "customerSettings": {
+      "showHideTitle": "Show / Hide Customers",
+      "showHideDesc": "Uncheck a customer to hide them across the app. New customers are always visible by default.",
+      "search": "Search customers...",
+      "customer": "Customer",
+      "noCustomers": "No customers found.",
+      "noMatch": "No customers match your search.",
+      "hiddenCount": "{{count}} hidden",
+      "saveChanges": "Save changes",
+      "saved": "Changes saved."
+    },
     "inventory": {
       "title": "Inventory",
       "clearDesc": "Clear inventory sets the stock level to 0 for the selected products. A compensating adjustment is inserted — the transaction history is preserved.",

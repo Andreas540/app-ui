@@ -936,6 +936,18 @@
     "tabUiSettings": "Configuración UI",
     "tabCash": "Gestión de Caja",
     "tabInventory": "Inventario",
+    "tabCustomerSettings": "Configuración de Clientes",
+    "customerSettings": {
+      "showHideTitle": "Mostrar / Ocultar Clientes",
+      "showHideDesc": "Desmarca un cliente para ocultarlo en toda la app. Los nuevos clientes siempre son visibles de forma predeterminada.",
+      "search": "Buscar clientes...",
+      "customer": "Cliente",
+      "noCustomers": "No se encontraron clientes.",
+      "noMatch": "Ningún cliente coincide con la búsqueda.",
+      "hiddenCount": "{{count}} ocultos",
+      "saveChanges": "Guardar cambios",
+      "saved": "Cambios guardados."
+    },
     "inventory": {
       "title": "Inventario",
       "clearDesc": "Limpiar inventario establece el nivel de stock en 0 para los productos seleccionados. Se inserta un ajuste compensatorio — el historial de transacciones se conserva.",

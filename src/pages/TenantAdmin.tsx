@@ -12,6 +12,7 @@ import TenantAdminCustomerOffersTab from './TenantAdminCustomerOffersTab'
 import TenantAdminUISettingsTab from './TenantAdminUISettingsTab'
 import TenantAdminCashTab from './TenantAdminCashTab'
 import TenantAdminInventoryTab from './TenantAdminInventoryTab'
+import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
 
 interface TenantUser {
   id: string
@@ -63,7 +64,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings'>('team')
   const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
   const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
 
@@ -814,6 +815,7 @@ export default function TenantAdmin() {
           <option value="ui-settings">{t('tenantAdmin.tabUiSettings')}</option>
           <option value="cash">{t('tenantAdmin.tabCash')}</option>
           <option value="inventory">{t('tenantAdmin.tabInventory')}</option>
+          <option value="customer-settings">{t('tenantAdmin.tabCustomerSettings')}</option>
         </select>
 
         <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
@@ -864,6 +866,13 @@ export default function TenantAdmin() {
             style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {t('tenantAdmin.tabInventory')}
+          </button>
+          <button
+            onClick={() => setActiveTab('customer-settings')}
+            className={activeTab === 'customer-settings' ? 'primary' : ''}
+            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {t('tenantAdmin.tabCustomerSettings')}
           </button>
         </div>
 
@@ -1344,6 +1353,13 @@ export default function TenantAdmin() {
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.inventory.title')}</h4>
             <TenantAdminInventoryTab />
+          </>
+        )}
+
+        {activeTab === 'customer-settings' && (
+          <>
+            <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabCustomerSettings')}</h4>
+            <TenantAdminCustomerSettingsTab />
           </>
         )}
 
