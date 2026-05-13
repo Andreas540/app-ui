@@ -799,82 +799,48 @@ export default function TenantAdmin() {
       {/* Tabbed card: Users | Invoicing | Data */}
       <div className="card">
 
-        {/* Tab row — dropdown on mobile, buttons on desktop */}
-        <select
-          className="tenant-admin-tab-select"
-          value={activeTab}
-          onChange={e => setActiveTab(e.target.value as typeof activeTab)}
-          style={{ marginBottom: 20 }}
-        >
-          <option value="team">{t('tenantAdmin.tabUsers')}</option>
-          <option value="invoicing">{t('tenantAdmin.invoicingTab')}</option>
-          <option value="accounting">{t('tenantAdmin.tabData')}</option>
-          <option value="booking">{t('tenantAdmin.tabBooking')}</option>
-          <option value="payment-providers">{t('tenantAdmin.tabPaymentProviders')}</option>
-          <option value="customer-offers">{t('tenantAdmin.tabCustomerOffers')}</option>
-          <option value="ui-settings">{t('tenantAdmin.tabUiSettings')}</option>
-          <option value="cash">{t('tenantAdmin.tabCash')}</option>
-          <option value="inventory">{t('tenantAdmin.tabInventory')}</option>
-          <option value="customer-settings">{t('tenantAdmin.tabCustomerSettings')}</option>
-        </select>
+        {/* Tab row — dropdown on mobile, grid buttons on desktop (max 8 per row, alphabetical) */}
+        {(() => {
+          const tabs: { id: typeof activeTab; label: string }[] = [
+            { id: 'booking',           label: t('tenantAdmin.tabBooking') },
+            { id: 'cash',              label: t('tenantAdmin.tabCash') },
+            { id: 'customer-offers',   label: t('tenantAdmin.tabCustomerOffers') },
+            { id: 'customer-settings', label: t('tenantAdmin.tabCustomerSettings') },
+            { id: 'accounting',        label: t('tenantAdmin.tabData') },
+            { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
+            { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
+            { id: 'payment-providers', label: t('tenantAdmin.tabPaymentProviders') },
+            { id: 'ui-settings',       label: t('tenantAdmin.tabUiSettings') },
+            { id: 'team',              label: t('tenantAdmin.tabUsers') },
+          ]
+          return (
+            <>
+              <select
+                className="tenant-admin-tab-select"
+                value={activeTab}
+                onChange={e => setActiveTab(e.target.value as typeof activeTab)}
+                style={{ marginBottom: 20 }}
+              >
+                {tabs.map(tab => (
+                  <option key={tab.id} value={tab.id}>{tab.label}</option>
+                ))}
+              </select>
 
-        <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
-          {(['team', 'invoicing', 'accounting', 'booking'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={activeTab === tab ? 'primary' : ''}
-              style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            >
-              {tab === 'team' ? t('tenantAdmin.tabUsers')
-                : tab === 'invoicing' ? t('tenantAdmin.invoicingTab')
-                : tab === 'booking' ? t('tenantAdmin.tabBooking')
-                : t('tenantAdmin.tabData')}
-            </button>
-          ))}
-          <button
-            onClick={() => setActiveTab('payment-providers')}
-            className={activeTab === 'payment-providers' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabPaymentProviders')}
-          </button>
-          <button
-            onClick={() => setActiveTab('customer-offers')}
-            className={activeTab === 'customer-offers' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabCustomerOffers')}
-          </button>
-          <button
-            onClick={() => setActiveTab('ui-settings')}
-            className={activeTab === 'ui-settings' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabUiSettings')}
-          </button>
-          <button
-            onClick={() => setActiveTab('cash')}
-            className={activeTab === 'cash' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabCash')}
-          </button>
-          <button
-            onClick={() => setActiveTab('inventory')}
-            className={activeTab === 'inventory' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabInventory')}
-          </button>
-          <button
-            onClick={() => setActiveTab('customer-settings')}
-            className={activeTab === 'customer-settings' ? 'primary' : ''}
-            style={{ height: 36, flex: 1, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {t('tenantAdmin.tabCustomerSettings')}
-          </button>
-        </div>
+              <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
+                {tabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={activeTab === tab.id ? 'primary' : ''}
+                    style={{ height: 36, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )
+        })()}
 
         {/* ── Team Members tab ── */}
         {activeTab === 'team' && (<>
