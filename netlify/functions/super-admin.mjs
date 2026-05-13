@@ -453,6 +453,20 @@ if (action === 'updateStripeCustomerId') {
       return cors(200, { success: true })
     }
 
+    if (action === 'deleteUser') {
+      const { userId: targetUserId } = body
+      if (!targetUserId) return cors(400, { error: 'userId is required' })
+
+      // Prevent super admin from deleting themselves
+      if (targetUserId === userId) return cors(400, { error: 'Cannot delete your own account' })
+
+      await sql`DELETE FROM tenant_memberships WHERE user_id = ${targetUserId}`
+      await sql`DELETE FROM app_users WHERE id = ${targetUserId}`
+      await sql`DELETE FROM users WHERE id = ${targetUserId}`
+
+      return cors(200, { success: true })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handlePost error:', e)

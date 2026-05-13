@@ -107,6 +107,8 @@ export default function SuperAdmin() {
   const [webhookExpandedId, setWebhookExpandedId] = useState<string | null>(null)
   const [managingUserId, setManagingUserId] = useState<string | null>(null)
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null)
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null)
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   
   // Tenant features management
   const [managingTenantId, setManagingTenantId] = useState<string | null>(null)
@@ -287,6 +289,28 @@ export default function SuperAdmin() {
       alert(e?.message || 'Failed to create user')
     } finally {
       setCreatingUser(false)
+    }
+  }
+
+  async function handleDeleteUser(user: User) {
+    try {
+      setDeletingUserId(user.id)
+      setConfirmDeleteUser(null)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'deleteUser', userId: user.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete user')
+      }
+      await loadData()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to delete user')
+    } finally {
+      setDeletingUserId(null)
     }
   }
 
@@ -1081,13 +1105,16 @@ async function handleSaveStripeCustomerId() {
                       </button>
                       <button
                         onClick={() => setManagingUserId(user.id)}
-                        style={{
-                          height: 36,
-                          padding: '0 16px',
-                          fontSize: 13,
-                        }}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                       >
                         {t('superAdmin.manage')}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteUser(user)}
+                        disabled={deletingUserId === user.id}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13, background: 'var(--danger)', borderColor: 'var(--danger)', color: 'white' }}
+                      >
+                        {deletingUserId === user.id ? '...' : t('delete')}
                       </button>
                     </div>
                   </div>
@@ -1242,6 +1269,37 @@ async function handleSaveStripeCustomerId() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {confirmDeleteUser && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setConfirmDeleteUser(null)}
+        >
+          <div className="card" style={{ maxWidth: 420, width: '100%' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Delete user?</h3>
+            <p style={{ margin: '0 0 4px', fontSize: 14 }}>
+              <strong>{confirmDeleteUser.email}</strong>
+              {confirmDeleteUser.name && <span style={{ color: 'var(--text-secondary)' }}> ({confirmDeleteUser.name})</span>}
+            </p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              This removes the login and all tenant access for this user. No orders, payments, or other business data will be affected.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDeleteUser(null)} style={{ height: 36, padding: '0 16px', fontSize: 14 }}>
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => handleDeleteUser(confirmDeleteUser)}
+                className="primary"
+                style={{ height: 36, padding: '0 16px', fontSize: 14, background: 'var(--danger)', borderColor: 'var(--danger)' }}
+              >
+                {t('delete')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
