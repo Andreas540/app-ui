@@ -66,7 +66,7 @@ async function handleGet(event) {
 
       // Get user info
       const user = await sql`
-        SELECT id, email, name
+        SELECT id, email, name, active
         FROM users
         WHERE id = ${userId}
       `
