@@ -809,11 +809,11 @@ useEffect(() => {
                   {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (<>
                     {canAccess('bizwiz') && (
-                      <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)} style={{ paddingLeft: 0 }}>
+                      <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)}>
                         <img
                           src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                           alt={t('reportsBizWiz')}
-                          style={{ height: 36, width: 'auto', display: 'block' }}
+                          style={{ height: 40, width: 'auto', display: 'block' }}
                         />
                       </NavLink>
                     )}
