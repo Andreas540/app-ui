@@ -638,7 +638,7 @@ export default function SupplyChainOverview() {
               title={t('supplyChain.aiAnalyze')}
             >
               <img
-                src={theme === 'dark' ? '/images/bizwiz-ai-dark.svg' : '/images/bizwiz-ai-light.svg'}
+                src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                 alt="BizWiz AI"
                 style={{ height: 22, width: 'auto', display: 'block' }}
               />
