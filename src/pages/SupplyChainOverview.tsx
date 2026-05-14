@@ -622,7 +622,7 @@ export default function SupplyChainOverview() {
           <span onClick={() => toggleSection('demand')} style={{ cursor: 'pointer', flex: 1 }}>
             {t('supplyChain.demand')}
           </span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <button
               onClick={e => { e.stopPropagation(); runDemandAnalysis() }}
               disabled={aiLoading}
