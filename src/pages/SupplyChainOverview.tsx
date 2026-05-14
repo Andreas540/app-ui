@@ -180,7 +180,6 @@ export default function SupplyChainOverview() {
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
     demand: false,
-    payAttention: false,
     recentDeliveries: false,
     production: false,
     notDelivered: false,
@@ -798,20 +797,6 @@ export default function SupplyChainOverview() {
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* Section: Pay attention to */}
-      <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle} onClick={() => toggleSection('payAttention')}>
-          <span>{t('supplyChain.payAttentionTo')}</span>
-          <span style={expandIconStyle}>{expandedSections.payAttention ? '−' : '+'}</span>
-        </div>
-
-        {expandedSections.payAttention && (
-          <div style={{ marginTop: 12 }}>
-            <p className="helper">Content coming soon...</p>
           </div>
         )}
       </div>
