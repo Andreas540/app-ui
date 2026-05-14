@@ -638,7 +638,7 @@ export default function SupplyChainOverview() {
               <img
                 src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                 alt="BizWiz AI"
-                style={{ height: '1.4em', width: 'auto', display: 'block' }}
+                style={{ height: 28, width: 'auto', display: 'block' }}
               />
             </button>
             <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
