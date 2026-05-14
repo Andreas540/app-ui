@@ -444,6 +444,12 @@ button.primary:focus-visible,
   border-radius: 6px;
 }
 
+/* BizWiz logo: show correct variant based on active theme */
+.bizwiz-logo-dark  { display: block; }
+.bizwiz-logo-light { display: none;  }
+html[data-theme="light"] .bizwiz-logo-dark  { display: none;  }
+html[data-theme="light"] .bizwiz-logo-light { display: block; }
+
 /* TenantAdmin tab row: dropdown on mobile, buttons on desktop */
 .tenant-admin-tab-select  { display: none; width: 100%; }
 .tenant-admin-tab-buttons { display: grid; grid-template-columns: repeat(8, 1fr); }

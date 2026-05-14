@@ -73,7 +73,6 @@ import NewBookingPage from './pages/NewBookingPage'
 import ReportsPage from './pages/ReportsPage'
 import CustomerReportsPage from './pages/CustomerReportsPage'
 import BizWizPage from './pages/BizWizPage'
-import { useTheme } from './lib/theme'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -322,7 +321,6 @@ function MainApp() {
   const { t } = useTranslation('navigation')
   const { t: ti, ready: tiReady } = useTranslation('info')
   const { t: tc, i18n } = useTranslation('common')
-  const { theme } = useTheme()
   const location = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -810,11 +808,8 @@ useEffect(() => {
                   {!collapsed['reports'] && (<>
                     {canAccess('bizwiz') && (
                       <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)} style={{ padding: '6px 12px 4px 7px' }}>
-                        <img
-                          src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
-                          alt={t('reportsBizWiz')}
-                          style={{ height: 40, width: 'auto', display: 'block' }}
-                        />
+                        <img src="/images/bizwiz_ai_dark.svg"  alt={t('reportsBizWiz')} className="bizwiz-logo-dark"  style={{ height: 40, width: 'auto' }} />
+                        <img src="/images/bizwiz_ai_light.svg" alt=""                   className="bizwiz-logo-light" style={{ height: 40, width: 'auto' }} />
                       </NavLink>
                     )}
                     {canAccess('reports') && (
