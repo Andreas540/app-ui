@@ -413,43 +413,40 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
 
         {/* ── Analyze section ──────────────────────────────────────────── */}
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>
-              {t('customers.customer_ranking.detail.analysis_title')}
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {analyzeState === 'done' && (
-                <button
-                  onClick={toggleSpeak}
-                  title={speaking ? t('customers.customer_ranking.detail.stop_reading') : t('customers.customer_ranking.detail.read_aloud')}
-                  style={{
-                    height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6,
-                    background: speaking ? 'var(--accent, #6366f1)' : 'transparent',
-                    color: speaking ? '#fff' : 'var(--text-secondary)',
-                    border: '1px solid var(--border)', cursor: 'pointer',
-                  }}
-                >
-                  {speaking ? '⏹ ' + t('customers.customer_ranking.detail.stop_reading')
-                            : '🔊 ' + t('customers.customer_ranking.detail.read_aloud')}
-                </button>
-              )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+            {analyzeState === 'done' && (
               <button
-                onClick={runAnalyze}
-                disabled={analyzeState === 'loading'}
+                onClick={toggleSpeak}
+                title={speaking ? t('customers.customer_ranking.detail.stop_reading') : t('customers.customer_ranking.detail.read_aloud')}
                 style={{
-                  height: 28, padding: '0 12px', fontSize: 12, borderRadius: 6,
-                  background: 'var(--accent, #6366f1)', color: '#fff',
-                  border: 'none', cursor: analyzeState === 'loading' ? 'not-allowed' : 'pointer',
-                  opacity: analyzeState === 'loading' ? 0.7 : 1,
+                  height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6,
+                  background: speaking ? 'var(--accent, #6366f1)' : 'transparent',
+                  color: speaking ? '#fff' : 'var(--text-secondary)',
+                  border: '1px solid var(--border)', cursor: 'pointer',
                 }}
               >
-                {analyzeState === 'loading'
-                  ? t('customers.customer_ranking.detail.analyzing')
-                  : analyzeState === 'done'
-                  ? t('customers.customer_ranking.detail.re_analyze')
-                  : t('customers.customer_ranking.detail.analyze')}
+                {speaking ? '⏹ ' + t('customers.customer_ranking.detail.stop_reading')
+                          : '🔊 ' + t('customers.customer_ranking.detail.read_aloud')}
               </button>
-            </div>
+            )}
+            <button
+              onClick={runAnalyze}
+              disabled={analyzeState === 'loading'}
+              title={analyzeState === 'loading'
+                ? t('customers.customer_ranking.detail.analyzing')
+                : analyzeState === 'done'
+                ? t('customers.customer_ranking.detail.re_analyze')
+                : t('customers.customer_ranking.detail.analyze')}
+              style={{
+                background: 'none', border: 'none', padding: 0,
+                cursor: analyzeState === 'loading' ? 'not-allowed' : 'pointer',
+                opacity: analyzeState === 'loading' ? 0.5 : 1,
+                display: 'flex', alignItems: 'center',
+              }}
+            >
+              <img src="/images/bizwiz_ai_dark.svg"  alt="BizWiz AI" className="bizwiz-logo-dark"  style={{ height: 32, width: 'auto' }} />
+              <img src="/images/bizwiz_ai_light.svg" alt=""           className="bizwiz-logo-light" style={{ height: 32, width: 'auto' }} />
+            </button>
           </div>
 
           {analyzeState === 'done' && (
