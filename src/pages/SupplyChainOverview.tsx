@@ -622,7 +622,7 @@ export default function SupplyChainOverview() {
           <span onClick={() => toggleSection('demand')} style={{ cursor: 'pointer', flex: 1 }}>
             {t('supplyChain.demand')}
           </span>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               onClick={e => { e.stopPropagation(); runDemandAnalysis() }}
               disabled={aiLoading}
@@ -634,13 +634,14 @@ export default function SupplyChainOverview() {
                 opacity: aiLoading ? 0.5 : 1,
                 display: 'flex',
                 alignItems: 'center',
+                marginTop: 3,
               }}
               title={t('supplyChain.aiAnalyze')}
             >
               <img
                 src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                 alt="BizWiz AI"
-                style={{ height: 32, width: 'auto' }}
+                style={{ height: 36, width: 'auto' }}
               />
             </button>
             <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
