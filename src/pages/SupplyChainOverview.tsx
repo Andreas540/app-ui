@@ -6,6 +6,7 @@ import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTim
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useTheme } from '../lib/theme'
 import { DateInput } from '../components/DateInput'
 import {
   ResponsiveContainer,
@@ -117,6 +118,7 @@ function shouldHideProduct(name: string) {
 export default function SupplyChainOverview() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
+  const { theme } = useTheme()
   const navigate = useNavigate()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
@@ -628,14 +630,18 @@ export default function SupplyChainOverview() {
                 background: 'transparent',
                 border: 'none',
                 cursor: aiLoading ? 'default' : 'pointer',
-                fontSize: 18,
                 padding: '4px 8px',
-                color: 'var(--text)',
                 opacity: aiLoading ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
               }}
               title={t('supplyChain.aiAnalyze')}
             >
-              🤖
+              <img
+                src={theme === 'dark' ? '/images/bizwiz-ai-dark.svg' : '/images/bizwiz-ai-light.svg'}
+                alt="BizWiz AI"
+                style={{ height: 22, width: 'auto', display: 'block' }}
+              />
             </button>
             <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
               {expandedSections.demand ? '−' : '+'}

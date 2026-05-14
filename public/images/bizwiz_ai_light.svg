@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 204 72" width="204" height="72">
+  <rect x="8" y="22" width="28" height="28" rx="7" fill="#4A90E2"/>
+  <path d="M22,29.5 L22.71,35.29 L28.5,36 L22.71,36.71 L22,42.5 L21.29,36.71 L15.5,36 L21.29,35.29Z" fill="white"/>
+  <path d="M27.5,24.5 L27.85,26.15 L29.5,26.5 L27.85,26.85 L27.5,28.5 L27.15,26.85 L25.5,26.5 L27.15,26.15Z" fill="white"/>
+  <circle cx="16.5" cy="43.5" r="1.1" fill="white"/>
+  <text x="46" y="46" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="28" font-weight="700" letter-spacing="-0.3" fill="#0D0A1E">BizWiz<tspan fill="#4A90E2"> AI</tspan></text>
+</svg>
