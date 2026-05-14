@@ -632,13 +632,15 @@ export default function SupplyChainOverview() {
                 cursor: aiLoading ? 'default' : 'pointer',
                 padding: 0,
                 opacity: aiLoading ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
               }}
               title={t('supplyChain.aiAnalyze')}
             >
               <img
                 src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                 alt="BizWiz AI"
-                style={{ height: 28, width: 'auto', display: 'block' }}
+                style={{ height: 32, width: 'auto' }}
               />
             </button>
             <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
