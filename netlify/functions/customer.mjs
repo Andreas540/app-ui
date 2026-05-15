@@ -78,7 +78,7 @@ async function getCustomer(event) {
         o.delivery_status,
         o.notes,
         COALESCE(SUM(oi.qty * oi.unit_price),0)::numeric(12,2) AS total,
-        COALESCE(SUM(oi.qty),0)::integer AS total_qty,
+        COALESCE(SUM(oi.qty),0)::numeric(10,2) AS total_qty,
         COALESCE(
           json_agg(
             json_build_object('product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price)

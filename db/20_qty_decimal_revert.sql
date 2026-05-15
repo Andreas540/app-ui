@@ -1,16 +1,13 @@
--- Allow order item quantities to have up to 2 decimal places.
--- Existing integer values (e.g. 5) become 5.00 — fully backwards compatible.
---
--- Three views reference order_items.qty and must be dropped and recreated.
--- Their definitions are semantically identical to before — all three already
--- cast qty::numeric internally, so the arithmetic result is unchanged.
+-- Revert 20_qty_decimal.sql
+-- Restores order_items.qty to INTEGER and recreates the three dependent views.
+-- Any existing decimal quantities are rounded to the nearest integer.
 
 DROP VIEW IF EXISTS revenue_profit_surplus_by_month;
 DROP VIEW IF EXISTS v_customer_product_monthly;
 DROP VIEW IF EXISTS revenue_profit_surplus;
 DROP VIEW IF EXISTS order_revenue_cogs_by_day;
 
-ALTER TABLE order_items ALTER COLUMN qty TYPE NUMERIC(10,2);
+ALTER TABLE order_items ALTER COLUMN qty TYPE INTEGER USING round(qty)::integer;
 
 CREATE VIEW order_revenue_cogs_by_day AS
 WITH lines AS (
