@@ -498,6 +498,7 @@
     "currentCosts": "Aktuella kostnader",
     "historicalCosts": "Historiska kostnader",
     "created": "Produkt skapad!",
+    "serviceCreated": "Tjänst skapad!",
     "noProducts": "Inga produkter ännu.",
     "noHistoricalCosts": "Inga historiska kostnader ännu.",
     "editProductTitle": "Redigera produkt",

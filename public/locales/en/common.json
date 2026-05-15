@@ -498,6 +498,7 @@
     "currentCosts": "Current costs",
     "historicalCosts": "Historical costs",
     "created": "Product created!",
+    "serviceCreated": "Service created!",
     "noProducts": "No products yet.",
     "noHistoricalCosts": "No historical costs yet.",
     "editProductTitle": "Edit Product",

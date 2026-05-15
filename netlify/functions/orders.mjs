@@ -158,9 +158,9 @@ const TENANT_ID = authz.tenantId;
     // Validate each item
     const validatedItems = [];
     for (const item of rawItems) {
-      const qtyInt = parseInt(item.qty, 10);
+      const qtyNum = Number(item.qty);
       const unitPriceNum = Number(item.unit_price);
-      if (!item.product_id || !(qtyInt > 0) || !Number.isFinite(unitPriceNum)) {
+      if (!item.product_id || !(qtyNum > 0) || !Number.isFinite(unitPriceNum)) {
         return cors(400, { error: 'Each item needs product_id, qty > 0, and a numeric unit_price' });
       }
       const prodRows = await sql`
@@ -170,10 +170,10 @@ const TENANT_ID = authz.tenantId;
       const isRefund = (prodRows[0].name || '').trim().toLowerCase() === 'refund/discount';
       if (isRefund && !(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
       if (!isRefund && !(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
-      validatedItems.push({ product_id: item.product_id, qtyInt, unitPriceNum });
+      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum });
     }
 
-    const totalQty = validatedItems.reduce((s, i) => s + i.qtyInt, 0);
+    const totalQty = validatedItems.reduce((s, i) => s + i.qtyNum, 0);
 
     // Next order number per-tenant
     const nextNo = await sql`
@@ -215,7 +215,7 @@ const TENANT_ID = authz.tenantId;
       await sql`
         INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
         VALUES (
-          ${orderId}, ${item.product_id}, ${item.qtyInt}, ${item.unitPriceNum},
+          ${orderId}, ${item.product_id}, ${item.qtyNum}, ${item.unitPriceNum},
           (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID})
         )
       `;
@@ -292,7 +292,7 @@ if (BLANCO_CUSTOMER_IDS.includes(customer_id)) {
             'D',
             p.name,
             c.name,
-            ${-item.qtyInt},
+            ${-item.qtyNum},
             ${orderId},
             ${item.product_id}
           FROM products p

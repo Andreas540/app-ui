@@ -105,7 +105,7 @@ export default function NewProduct() {
     try {
       setSaving(true)
       await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount })
-      alert(t('products.created'))
+      alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
       setDurationStr('')

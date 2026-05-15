@@ -27,7 +27,7 @@ export default function NewOrder() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtMoney } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const allowMultipleRows = config.ui.multipleOrderRows
@@ -67,8 +67,6 @@ export default function NewOrder() {
   const [shippingCostStr, setShippingCostStr] = useState('')
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
-  const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
-  const usdFmt = useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }), [])
 
   // Read URL parameters for pre-populating customer
   useEffect(() => {
@@ -181,11 +179,11 @@ export default function NewOrder() {
   function lineIsRefund(l: Line) {
     return (lineProduct(l)?.name || '').trim().toLowerCase() === 'refund/discount'
   }
-  function lineQty(l: Line) { return parseInt(l.qtyStr || '0', 10) }
+  function lineQty(l: Line) { return parseAmount(l.qtyStr || '0') }
   function linePrice(l: Line) { return parseAmount(l.priceStr) }
   function lineValue(l: Line) {
     const q = lineQty(l); const p = linePrice(l)
-    return Number.isInteger(q) && q > 0 && Number.isFinite(p) ? q * p : NaN
+    return q > 0 && Number.isFinite(q) && Number.isFinite(p) ? q * p : NaN
   }
 
   // Filter and group products
@@ -275,9 +273,9 @@ export default function NewOrder() {
   const hasProducts = filteredProducts.length > 0
   const CONTROL_H = 44
 
-  const orderValueStr = Number.isFinite(totalOrderValue) ? usdFmt.format(totalOrderValue) : ''
-  const partner1TotalStr = partner1Total > 0 ? usdFmt.format(partner1Total) : ''
-  const partner2TotalStr = partner2Total > 0 ? usdFmt.format(partner2Total) : ''
+  const orderValueStr = Number.isFinite(totalOrderValue) ? fmtMoney(totalOrderValue) : ''
+  const partner1TotalStr = partner1Total > 0 ? fmtMoney(partner1Total) : ''
+  const partner2TotalStr = partner2Total > 0 ? fmtMoney(partner2Total) : ''
 
   return (
     <div className="card page-normal">
@@ -374,12 +372,12 @@ export default function NewOrder() {
                 <label>{t('quantity')}</label>
                 <input
                   type="text"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   placeholder="0"
-                  value={l.qtyStr ? intFmt.format(Number(l.qtyStr)) : ''}
+                  value={l.qtyStr}
                   onChange={e => {
-                    const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-                    updateLine(idx, { qtyStr: digits })
+                    const v = e.target.value.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '')
+                    updateLine(idx, { qtyStr: v })
                   }}
                   style={{ height: CONTROL_H }}
                 />
@@ -563,7 +561,7 @@ export default function NewOrder() {
             if (!l.product_id) return false
             const qty = lineQty(l)
             const price = linePrice(l)
-            if (!Number.isInteger(qty) || qty <= 0) return false
+            if (!Number.isFinite(qty) || qty <= 0) return false
             if (!Number.isFinite(price)) return false
             const isRefund = lineIsRefund(l)
             if (isRefund && !(price < 0)) return false

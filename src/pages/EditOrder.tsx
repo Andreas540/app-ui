@@ -138,19 +138,19 @@ export default function EditOrder() {
   const partner2Options   = useMemo(() => partners.filter(p => p.id !== partner1Id), [partners, partner1Id])
 
   function parsePriceToNumber(s: string) { return parseAmount(s) }
-  function parseQty(s: string) { return s.replace(/\D/g, '').replace(/^0+(?=\d)/, '') }
+  function parseQty(s: string) { return s.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '') }
 
   const totalQty = useMemo(() =>
-    lines.reduce((s, l) => s + (parseInt(l.qtyStr || '0', 10) || 0), 0),
+    lines.reduce((s, l) => s + (parseAmount(l.qtyStr || '0') || 0), 0),
     [lines]
   )
 
   const orderValue = useMemo(() => {
     let sum = 0; let valid = 0
     for (const l of lines) {
-      const q = parseInt(l.qtyStr || '0', 10)
+      const q = parseAmount(l.qtyStr || '0')
       const p = parsePriceToNumber(l.priceStr)
-      if (!Number.isInteger(q) || q <= 0 || !Number.isFinite(p)) continue
+      if (!Number.isFinite(q) || q <= 0 || !Number.isFinite(p)) continue
       sum += q * p; valid++
     }
     return valid > 0 ? sum : NaN
@@ -233,8 +233,8 @@ export default function EditOrder() {
 
     for (const l of lines) {
       if (!l.product_id) { alert(t('orders.productMissing')); return }
-      const qty = parseInt(l.qtyStr || '0', 10)
-      if (!Number.isInteger(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
+      const qty = parseAmount(l.qtyStr || '0')
+      if (!Number.isFinite(qty) || qty <= 0) { alert(t('orders.alertEnterQuantity')); return }
       const unitPrice = parsePriceToNumber(l.priceStr)
       if (!Number.isFinite(unitPrice)) { alert(t('orders.alertEnterPrice')); return }
       const prod = products.find(p => p.id === l.product_id)
@@ -276,7 +276,7 @@ export default function EditOrder() {
           customer_id: person.id,
           items: lines.map(l => ({
             product_id: l.product_id,
-            qty:        parseInt(l.qtyStr, 10),
+            qty:        parseAmount(l.qtyStr),
             unit_price: parsePriceToNumber(l.priceStr),
           })),
           date:           orderDate,
