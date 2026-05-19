@@ -292,6 +292,17 @@ select {
   box-shadow: none !important;
 }
 
+input[type="checkbox"] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
