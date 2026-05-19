@@ -10,6 +10,7 @@ import { getAuthHeaders } from '../lib/api'
 import { formatMonthYear } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,10 +39,7 @@ type Totals = { revenue: number; gross_profit: number }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmt$   = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : `$${n.toFixed(0)}`
 const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
-const fmtFull$ = (n: number) =>
-  `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -169,6 +167,8 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   onClose: () => void
 }) {
   const { t, i18n } = useTranslation('reports')
+  const { fmtMoney } = useCurrency()
+  const fmtCompact = (n: number) => n >= 1000 ? `${fmtMoney(n / 1000, 1)}K` : fmtMoney(n, 0)
 
   function fmtMonth(ym: string): string {
     const [y, m] = ym.split('-').map(Number)
@@ -263,7 +263,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
     const v = Number(label)
     if (chartMetric === 'profit_pct') return `${v.toFixed(1)}%`
     if (chartMetric === 'qty')        return String(Math.round(v))
-    return fmt$(v)
+    return fmtCompact(v)
   }
 
   const pctRevenue = totals.revenue      > 0 ? customer.revenue      / totals.revenue      : 0
@@ -278,14 +278,14 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   const summaryRows = [
     {
       label: t('customers.customer_ranking.col_revenue'),
-      value: fmtFull$(customer.revenue),
+      value: fmtMoney(customer.revenue),
       pct: totals.revenue > 0
         ? `${(pctRevenue * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_revenue')}`
         : '',
     },
     {
       label: t('customers.customer_ranking.col_profit'),
-      value: fmtFull$(customer.gross_profit),
+      value: fmtMoney(customer.gross_profit),
       pct: totals.gross_profit > 0
         ? `${(pctProfit * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_profit')}`
         : '',
@@ -489,6 +489,8 @@ function RankingCard({ customers, totals, from, to }: {
   to: string
 }) {
   const { t }             = useTranslation('reports')
+  const { fmtMoney }      = useCurrency()
+  const fmtCompact = (n: number) => n >= 1000 ? `${fmtMoney(n / 1000, 1)}K` : fmtMoney(n, 0)
   const [sortMetric, setSortMetric] = useState<SortMetric>('revenue')
   const [selected,   setSelected]   = useState<CustomerRow | null>(null)
 
@@ -504,8 +506,8 @@ function RankingCard({ customers, totals, from, to }: {
                                   t('customers.customer_ranking.col_profit_pct')
 
   const getValue = (c: CustomerRow) =>
-    sortMetric === 'revenue'    ? fmt$(c.revenue)      :
-    sortMetric === 'profit'     ? fmt$(c.gross_profit) :
+    sortMetric === 'revenue'    ? fmtCompact(c.revenue)      :
+    sortMetric === 'profit'     ? fmtCompact(c.gross_profit) :
                                   fmtPct(c.profit_pct)
 
   const th: React.CSSProperties = {
