@@ -438,18 +438,23 @@ function MainApp() {
           const data = await res.json()
           setAvailableTenants(data.tenants || [])
 
-          if (!activeTenantId && data.tenants.length > 0) {
-  const firstTenantId = data.tenants[0].id
-
-  setActiveTenantId(firstTenantId)
-  localStorage.setItem('activeTenantId', firstTenantId)
-
-  // Reload the page ONCE ever after the first tenant is set (prevents iOS using the default icon)
-  if (!localStorage.getItem('didPostLoginReload')) {
-    localStorage.setItem('didPostLoginReload', '1')
-    window.location.reload()
-  }
-}
+          if (!activeTenantId) {
+            // login() may have already written activeTenantId to localStorage
+            // after this component mounted (state init) — read it fresh here.
+            const storedId = localStorage.getItem('activeTenantId')
+            if (storedId) {
+              setActiveTenantId(storedId)
+            } else if (data.tenants.length > 0) {
+              const firstTenantId = data.tenants[0].id
+              setActiveTenantId(firstTenantId)
+              localStorage.setItem('activeTenantId', firstTenantId)
+              // Reload once after first tenant is set (prevents iOS using the default icon)
+              if (!localStorage.getItem('didPostLoginReload')) {
+                localStorage.setItem('didPostLoginReload', '1')
+                window.location.reload()
+              }
+            }
+          }
 
         }
       } catch (e) {
