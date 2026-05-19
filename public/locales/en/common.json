@@ -760,6 +760,7 @@
   "settingsPage": {
     "title": "App Settings",
     "company": "Company",
+    "setDefaultAtLogin": "Set as default at login",
     "user": "User",
     "enterName": "Enter your name",
     "quickAccess": "Quick access buttons ({{count}}/4 selected)",

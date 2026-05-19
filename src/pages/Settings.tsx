@@ -26,6 +26,9 @@ export default function Settings() {
 
   const { theme, setTheme } = useTheme()
 
+  const [defaultTenantId, setDefaultTenantId]     = useState<string | null>(null)
+  const [loadedDefaultTenantId, setLoadedDefaultTenantId] = useState<string | null>(null)
+
   const [currentPassword, setCurrentPassword]   = useState('')
   const [newPassword, setNewPassword]           = useState('')
   const [confirmPassword, setConfirmPassword]   = useState('')
@@ -53,6 +56,8 @@ export default function Settings() {
       if (tenantsRes.ok) {
         const td = await tenantsRes.json()
         setAllTenants(td.tenants || [])
+        setDefaultTenantId(td.default_tenant_id ?? null)
+        setLoadedDefaultTenantId(td.default_tenant_id ?? null)
       }
     } catch (err) {
       console.error('Failed to load tenant info:', err)
@@ -78,8 +83,9 @@ export default function Settings() {
   useEffect(() => {
     const shortcutsChanged = JSON.stringify(selectedShortcuts) !== JSON.stringify(loadedShortcuts)
     const navChanged = JSON.stringify([...hiddenNavItems].sort()) !== JSON.stringify([...loadedHiddenNav].sort())
-    setHasChanges(userName.trim() !== '' || shortcutsChanged || navChanged)
-  }, [userName, selectedShortcuts, loadedShortcuts, hiddenNavItems, loadedHiddenNav])
+    const defaultTenantChanged = defaultTenantId !== loadedDefaultTenantId
+    setHasChanges(userName.trim() !== '' || shortcutsChanged || navChanged || defaultTenantChanged)
+  }, [userName, selectedShortcuts, loadedShortcuts, hiddenNavItems, loadedHiddenNav, defaultTenantId, loadedDefaultTenantId])
 
   // ── Shortcuts ─────────────────────────────────────────────────────────────
 
@@ -107,10 +113,21 @@ export default function Settings() {
     if (!hasChanges) return
     setSaving(true)
     try {
-      localStorage.setItem('userSettings', JSON.stringify({ userName: userName.trim(), selectedShortcuts, hiddenNavItems }))
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const saves: Promise<any>[] = [
+        Promise.resolve(localStorage.setItem('userSettings', JSON.stringify({ userName: userName.trim(), selectedShortcuts, hiddenNavItems }))),
+      ]
+      if (defaultTenantId !== loadedDefaultTenantId) {
+        saves.push(
+          fetch(`${base}/api/user-tenants`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ default_tenant_id: defaultTenantId }),
+          })
+        )
+      }
+      await Promise.all(saves)
       window.location.reload()
-      await new Promise(r => setTimeout(r, 500))
-      setHasChanges(false)
     } catch (err) {
       console.error('Failed to save settings:', err)
       alert(t('settingsPage.savingFailed'))
@@ -193,14 +210,27 @@ export default function Settings() {
         <div>
           <label>{t('settingsPage.company')}</label>
           {!tenantLoading && allTenants.length > 1 ? (
-            <select
-              value={localStorage.getItem('activeTenantId') || ''}
-              onChange={e => handleTenantSwitch(e.target.value)}
-            >
-              {allTenants.map(tenant => (
-                <option key={tenant.id} value={tenant.id}>{tenant.display_name || tenant.name}</option>
-              ))}
-            </select>
+            <>
+              <select
+                value={localStorage.getItem('activeTenantId') || ''}
+                onChange={e => handleTenantSwitch(e.target.value)}
+              >
+                {allTenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>{tenant.display_name || tenant.name}</option>
+                ))}
+              </select>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, cursor: 'pointer', fontSize: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={defaultTenantId === (localStorage.getItem('activeTenantId') || allTenants[0]?.id)}
+                  onChange={e => {
+                    const activeId = localStorage.getItem('activeTenantId') || allTenants[0]?.id
+                    setDefaultTenantId(e.target.checked ? activeId : null)
+                  }}
+                />
+                {t('settingsPage.setDefaultAtLogin')}
+              </label>
+            </>
           ) : (
             <input
               value={tenantLoading ? t('loadingDots') : tenantName}

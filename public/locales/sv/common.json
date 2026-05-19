@@ -760,6 +760,7 @@
   "settingsPage": {
     "title": "Appinställningar",
     "company": "Företag",
+    "setDefaultAtLogin": "Ange som standard vid inloggning",
     "user": "Användare",
     "enterName": "Ange ditt namn",
     "quickAccess": "Snabbknappar ({{count}}/4 valda)",

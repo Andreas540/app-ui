@@ -74,7 +74,8 @@ async function handleLogin(event) {
         u.preferred_language,
         u.preferred_locale,
         u.preferred_currency,
-        u.preferred_timezone
+        u.preferred_timezone,
+        u.default_tenant_id::text as default_tenant_id
       FROM users u
       WHERE u.email = ${emailSearch}
       LIMIT 1
@@ -242,8 +243,10 @@ async function handleLogin(event) {
       return cors(403, { error: 'No tenant access. Contact administrator.' })
     }
 
-    // Use first membership as default tenant
-    const primaryMembership = memberships[0]
+    // Use saved default tenant if set and still accessible, otherwise first alphabetically
+    const primaryMembership =
+      (user.default_tenant_id && memberships.find(m => m.tenant_id === user.default_tenant_id))
+      || memberships[0]
     const tenantFeatures = primaryMembership.tenant_features || []
     const userFeatures = primaryMembership.user_features
     const effectiveFeatures =

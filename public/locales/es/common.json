@@ -760,6 +760,7 @@
   "settingsPage": {
     "title": "Configuración de la App",
     "company": "Empresa",
+    "setDefaultAtLogin": "Establecer como predeterminada al iniciar sesión",
     "user": "Usuario",
     "enterName": "Ingresa tu nombre",
     "quickAccess": "Botones de acceso rápido ({{count}}/4 seleccionados)",
