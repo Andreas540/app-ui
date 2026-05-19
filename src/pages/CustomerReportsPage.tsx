@@ -167,8 +167,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   onClose: () => void
 }) {
   const { t, i18n } = useTranslation('reports')
-  const { fmtMoney } = useCurrency()
-  const fmtCompact = (n: number) => n >= 1000 ? `${fmtMoney(n / 1000, 1)}K` : fmtMoney(n, 0)
+  const { fmtMoney, fmtCompact } = useCurrency()
 
   function fmtMonth(ym: string): string {
     const [y, m] = ym.split('-').map(Number)
@@ -489,8 +488,7 @@ function RankingCard({ customers, totals, from, to }: {
   to: string
 }) {
   const { t }             = useTranslation('reports')
-  const { fmtMoney }      = useCurrency()
-  const fmtCompact = (n: number) => n >= 1000 ? `${fmtMoney(n / 1000, 1)}K` : fmtMoney(n, 0)
+  const { fmtCompact }    = useCurrency()
   const [sortMetric, setSortMetric] = useState<SortMetric>('revenue')
   const [selected,   setSelected]   = useState<CustomerRow | null>(null)
 

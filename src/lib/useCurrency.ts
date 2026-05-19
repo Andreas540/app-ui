@@ -56,5 +56,21 @@ export function useCurrency() {
     return parseFloat(normalized) || 0
   }
 
-  return { fmtMoney, fmtIntMoney, fmtInput, parseAmount }
+  function fmtCompact(n: number): string {
+    if (Math.abs(n) >= 1000) {
+      const parts = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }).formatToParts(n / 1000)
+      const isSuffix = parts[parts.length - 1].type === 'currency'
+      const sym = parts.find(p => p.type === 'currency')?.value ?? ''
+      const num = parts.filter(p => p.type !== 'currency').map(p => p.value).join('')
+      return isSuffix ? `${num}K${sym}` : `${sym}${num.trimStart()}K`
+    }
+    return fmtMoney(n, 0)
+  }
+
+  return { fmtMoney, fmtIntMoney, fmtInput, fmtCompact, parseAmount }
 }

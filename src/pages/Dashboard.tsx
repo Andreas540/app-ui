@@ -18,7 +18,7 @@ import {
 } from 'recharts'
 
 // --- Chart label helpers ---
-const fmtK1 = (n: number) => `${(n / 1000).toFixed(1)}K`
+
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 // Fixed-but-responsive height: shorter on phones, taller on desktop
@@ -137,6 +137,7 @@ function ChartSlide({
   computePct,
   showPct,
 }: ChartSlideProps) {
+  const { fmtCompact } = useCurrency()
   const enriched = useMemo(() => {
     if (!computePct) return data
     return (data || []).map((r: any) => ({
@@ -182,10 +183,10 @@ function ChartSlide({
             />
 
             <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false} barSize={33}>
-              {!showPct && <LabelList dataKey={bar1Key} position="top" offset={8} formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
+              {!showPct && <LabelList dataKey={bar1Key} position="top" offset={8} formatter={(v: any) => fmtCompact(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
             <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false} barSize={33}>
-              {!showPct && <LabelList dataKey={bar2Key} position="top" offset={8} formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
+              {!showPct && <LabelList dataKey={bar2Key} position="top" offset={8} formatter={(v: any) => fmtCompact(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
               {showPct && <LabelList dataKey={lineKey} position="bottom" offset={8} formatter={(v: any) => fmtPct1(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}

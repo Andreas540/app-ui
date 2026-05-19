@@ -7,6 +7,7 @@ import { getAuthHeaders } from '../lib/api'
 import { formatMonthYear } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -19,7 +20,7 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmtK1   = (n: number) => `${(n / 1000).toFixed(1)}K`
+
 const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 // ── Month picker — single select, last 24 months ──────────────────────────────
@@ -118,6 +119,7 @@ function ChartSlide({
   needsScroll, canPrev, canNext, onPrev, onNext, showHint,
 }: ChartSlideProps) {
   const { t } = useTranslation('reports')
+  const { fmtCompact } = useCurrency()
   const [showPct, setShowPct] = useState(false)
   const touchStartX = useRef<number | null>(null)
 
@@ -204,14 +206,14 @@ function ChartSlide({
             <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}>
               {!showPct && (
                 <LabelList dataKey={bar1Key} position="top" offset={8}
-                  formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff"
+                  formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
             </Bar>
             <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}>
               {!showPct && (
                 <LabelList dataKey={bar2Key} position="top" offset={8}
-                  formatter={(v: any) => `$${fmtK1(Number(v))}`} fill="#fff"
+                  formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
             </Bar>
