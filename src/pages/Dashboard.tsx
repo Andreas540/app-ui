@@ -785,17 +785,17 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     >✕</button>
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('dashboard.chartSwitchHint')}</p>
                     {slide === 0 && ['description_revenue','description_profit','description_note'].map(k => (
                       <p key={k} style={{ margin: 0 }}>{tr(`revenue_gross_profit.${k}`)}</p>
                     ))}
                     {slide === 1 && ['description_revenue','description_profit','description_note'].map(k => (
                       <p key={k} style={{ margin: 0 }}>{tr(`revenue_operating_profit.${k}`)}</p>
                     ))}
+                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('dashboard.chartSwitchHint')}</p>
                   </div>
                 </div>
               )}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', marginBottom: 6, gap: 8 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', paddingBottom: 8, marginBottom: 6, borderBottom: '1px solid var(--line)', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <h3 style={{ margin: 0, fontSize: 16 }}>{slides[slide].title}</h3>
                   {showInfoIconsPages && slide !== 2 && (
