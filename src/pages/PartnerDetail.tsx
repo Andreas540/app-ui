@@ -410,6 +410,18 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         </button>
       </div>
 
+      {/* Action row under name */}
+      <div style={{ display:'flex', gap:8, marginTop: 12 }}>
+        <Link
+          to={`/payments?partner_id=${partner.id}&partner_name=${encodeURIComponent(partner.name)}&return_to=partner&return_id=${partner.id}`}
+          style={{ textDecoration:'none' }}
+        >
+          <button className="primary" style={{ height:28, fontSize:12, padding:'0 10px', borderRadius:6, whiteSpace:'nowrap' }}>
+            {t('newPayment')}
+          </button>
+        </Link>
+      </div>
+
       {/* P to P Transfer and P to P Payment buttons */}
       {showPartnerTransfer && (<>
         <div style={{ display:'flex', gap:8, marginTop: 12 }}>

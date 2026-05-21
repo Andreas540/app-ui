@@ -117,6 +117,7 @@ useEffect(() => {
       // Check URL params for preselection
       const params = new URLSearchParams(location.search)
       const preselectedCustomerId = params.get('customer_id')
+      const preselectedPartnerId  = params.get('partner_id')
       const preselectedSupplierId = params.get('supplier_id')
       const paramOrderId = params.get('order_id')
       const paramAmount = params.get('amount')
@@ -126,6 +127,9 @@ useEffect(() => {
       if (preselectedCustomerId) {
         setEntityId(preselectedCustomerId)
         setPaymentDirection('customer')
+      } else if (preselectedPartnerId) {
+        setPartnerId(preselectedPartnerId)
+        setPaymentDirection('partner')
       } else if (preselectedSupplierId) {
         setSupplierId(preselectedSupplierId)
         setPaymentDirection('supplier')
@@ -133,9 +137,9 @@ useEffect(() => {
         const firstDirect = (customers as any[]).find(p => p.customer_type === 'BLV' || p.customer_type === 'Direct')
         setEntityId((firstDirect?.id ?? customers[0]?.id ?? '') as string)
       }
-      
+
       if (bootPartners && bootPartners.length > 0) {
-        setPartnerId(bootPartners[0].id)
+        if (!preselectedPartnerId) setPartnerId(bootPartners[0].id)
         setPartnerForCreditId(bootPartners[0].id)
       }
       if (bootSuppliers && bootSuppliers.length > 0) {
@@ -465,6 +469,13 @@ useEffect(() => {
         order_id: selectedPartnerOrderId || null,
       })
       alert(t('payments.partnerSaved'))
+      const params = new URLSearchParams(location.search)
+      const returnTo = params.get('return_to')
+      const returnId = params.get('return_id')
+      if (returnTo === 'partner' && returnId) {
+        navigate(`/partners/${returnId}`)
+        return
+      }
       setPartnerAmountStr('')
       setPartnerPaymentType('Cash')
       setPartnerNotes('')
