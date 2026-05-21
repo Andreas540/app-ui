@@ -488,7 +488,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
   // My $
   const myDollars = useMemo(
-    () => Math.max(0, Number(totalOwedToMe) - Number(owedToPartnersExJJ) - (showOwedToSuppliers ? Number(owedToSuppliers) : 0)),
+    () => Number(totalOwedToMe) - Number(owedToPartnersExJJ) - (showOwedToSuppliers ? Number(owedToSuppliers) : 0),
     [totalOwedToMe, owedToPartnersExJJ, owedToSuppliers, showOwedToSuppliers]
   )
 
@@ -714,7 +714,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid #eee' }}>
                     <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
-                    <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
+                    <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: myDollars < 0 ? 'var(--danger)' : 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
                   </div>
                 </div>
               )}
