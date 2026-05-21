@@ -702,17 +702,17 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               ) : (
                 <div style={{ display: 'grid', gap: 12 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.totalOwedToMe')}</div>
-                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(totalOwedToMe)}</div>
+                    <div>{t('dashboard.totalOwedToMe')}</div>
+                    <div style={{ textAlign: 'right', fontSize: 18 }}>{fmtIntMoney(totalOwedToMe)}</div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToPartners')}</div>
-                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToPartnersExJJ)}</div>
+                    <div>{t('dashboard.owedToPartners')}</div>
+                    <div style={{ textAlign: 'right', fontSize: 18 }}>{fmtIntMoney(owedToPartnersExJJ)}</div>
                   </div>
                   {showOwedToSuppliers && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.owedToSuppliers')}</div>
-                      <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToSuppliers)}</div>
+                      <div>{t('dashboard.owedToSuppliers')}</div>
+                      <div style={{ textAlign: 'right', fontSize: 18 }}>{fmtIntMoney(owedToSuppliers)}</div>
                     </div>
                   )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--line)' }}>
