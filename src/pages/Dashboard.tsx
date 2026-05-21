@@ -261,7 +261,9 @@ export default function Dashboard() {
   const { user } = useAuth()
   const { timezone } = useLocale()
   const config = getTenantConfig(user?.tenantId)
-  const showOwedToSuppliers = config.ui.showOwedToSuppliers
+  const showOwedToSuppliers  = config.ui.showOwedToSuppliers
+  const showInfoIconsPages   = config.ui.showInfoIconsPages
+  const [netBalanceInfoOpen, setNetBalanceInfoOpen] = useState(false)
 
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [owedToSuppliers, setOwedToSuppliers] = useState(0)
@@ -690,9 +692,44 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
           )
 
           if (cardId === 'financials') return (
-            <div key="financials" className="card">
+            <div key="financials" className="card" style={{ position: 'relative' }}>
+              {netBalanceInfoOpen && (
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'var(--card, var(--bg))',
+                  border: '1px solid var(--border)', borderRadius: 14,
+                  padding: '16px 20px', zIndex: 200,
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{t('dashboard.netBalance')}</div>
+                    <button
+                      onClick={() => setNetBalanceInfoOpen(false)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                    >✕</button>
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
+                    {t('dashboard.netBalanceInfo')}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', paddingBottom: 8, marginBottom: 12, borderBottom: '1px solid var(--line)' }}>
-                <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.netBalance')}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.netBalance')}</h3>
+                  {showInfoIconsPages && (
+                    <button
+                      onClick={() => setNetBalanceInfoOpen(o => !o)}
+                      style={{
+                        width: 20, height: 20, padding: 0, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '50%', cursor: 'pointer',
+                        background: 'var(--border, rgba(255,255,255,0.15))',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+                      }}
+                    >i</button>
+                  )}
+                </div>
                 {moveArrows}
               </div>
               {loading ? (
