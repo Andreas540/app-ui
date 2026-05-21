@@ -763,7 +763,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'orders') return (
             <div key="orders" className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', marginBottom: 6 }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardOrders')}</h3>
+                {moveArrows}
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 8 }}>
                 <button className="primary"
                   onClick={() => { setOrderFilter('Most recent'); setOrderDisplayCount(5) }}
