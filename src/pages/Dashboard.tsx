@@ -691,7 +691,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'financials') return (
             <div key="financials" className="card">
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>{moveArrows}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', marginBottom: 6 }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.netBalance')}</h3>
+                {moveArrows}
+              </div>
               {loading ? (
                 <div className="helper">{t('loading')}</div>
               ) : err ? (
