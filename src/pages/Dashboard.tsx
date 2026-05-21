@@ -691,7 +691,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'financials') return (
             <div key="financials" className="card">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', paddingBottom: 8, marginBottom: 12, borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.netBalance')}</h3>
                 {moveArrows}
               </div>
@@ -715,7 +715,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                       <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 18 }}>{fmtIntMoney(owedToSuppliers)}</div>
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid #eee' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--line)' }}>
                     <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('dashboard.myDollars')}</div>
                     <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: myDollars < 0 ? 'var(--danger)' : 'var(--primary)' }}>{fmtIntMoney(myDollars)}</div>
                   </div>
@@ -763,7 +763,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'orders') return (
             <div key="orders" className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', paddingBottom: 8, marginBottom: 12, borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardOrders')}</h3>
                 {moveArrows}
               </div>
@@ -834,7 +834,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                       </div>
                     )
                     return (
-                      <div key={o.id} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
+                      <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: cols, gap: LINE_GAP, rowGap: LINE_GAP }}>
                           <div className="helper">{formatDate(o.order_date)}</div>
                           {deliveryIcon}
@@ -890,7 +890,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'price-checker') return (
             <div key="price-checker" className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, marginBottom: 12, borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardPriceChecker')}</h3>
                 {moveArrows}
               </div>
