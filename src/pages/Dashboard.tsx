@@ -257,6 +257,7 @@ function loadDashVisible(defaultCards: string[]): string[] {
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const { t: tr } = useTranslation('reports')
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { user } = useAuth()
   const { timezone } = useLocale()
@@ -264,6 +265,7 @@ export default function Dashboard() {
   const showOwedToSuppliers  = config.ui.showOwedToSuppliers
   const showInfoIconsPages   = config.ui.showInfoIconsPages
   const [netBalanceInfoOpen, setNetBalanceInfoOpen] = useState(false)
+  const [chartInfoOpen,     setChartInfoOpen]     = useState(false)
 
   const [customers, setCustomers] = useState<CustomerWithOwed[]>([])
   const [owedToSuppliers, setOwedToSuppliers] = useState(0)
@@ -548,8 +550,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
       : t('dashboard.mostRecentOrders')
 
   // --- Carousel interactions ---
-  function next() { setSlide(s => (s === 2 ? 0 : ((s + 1) as 0 | 1 | 2))) }
-  function prev() { setSlide(s => (s === 0 ? 2 : ((s - 1) as 0 | 1 | 2))) }
+  function next() { setSlide(s => { const n = (s === 2 ? 0 : (s + 1)) as 0|1|2; if (n === 2) setChartInfoOpen(false); return n }) }
+  function prev() { setSlide(s => { const n = (s === 0 ? 2 : (s - 1)) as 0|1|2; if (n === 2) setChartInfoOpen(false); return n }) }
 
   const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
     touchStartX.current = e.touches[0]?.clientX ?? null
@@ -763,12 +765,53 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
           if (cardId === 'charts') return (
             <div key="charts" className="card"
-              style={{ display: 'flex', flexDirection: 'column' }}
+              style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}
             >
+              {chartInfoOpen && (
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'var(--card, var(--bg))',
+                  border: '1px solid var(--border)', borderRadius: 14,
+                  padding: '16px 20px', zIndex: 200,
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{slides[slide].title}</div>
+                    <button
+                      onClick={() => setChartInfoOpen(false)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                    >✕</button>
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('dashboard.chartSwitchHint')}</p>
+                    {slide === 0 && ['description_revenue','description_profit','description_note'].map(k => (
+                      <p key={k} style={{ margin: 0 }}>{tr(`revenue_gross_profit.${k}`)}</p>
+                    ))}
+                    {slide === 1 && ['description_revenue','description_profit','description_note'].map(k => (
+                      <p key={k} style={{ margin: 0 }}>{tr(`revenue_operating_profit.${k}`)}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', marginBottom: 6, gap: 8 }}>
-                <h3 style={{ margin: 0, fontSize: 16 }}>{slides[slide].title}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{slides[slide].title}</h3>
+                  {showInfoIconsPages && slide !== 2 && (
+                    <button
+                      onClick={() => setChartInfoOpen(o => !o)}
+                      style={{
+                        width: 20, height: 20, padding: 0, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '50%', cursor: 'pointer',
+                        background: 'var(--border, rgba(255,255,255,0.15))',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+                      }}
+                    >i</button>
+                  )}
+                </div>
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                   {rpsLoading && <span className="helper">Loading…</span>}
                   {rpsErr && <span style={{ color: 'var(--color-error)' }}>{rpsErr}</span>}
@@ -789,7 +832,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               </div>
               <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
                 {[0,1,2].map(i => (
-                  <button key={i} onClick={() => setSlide(i as 0|1|2)} aria-pressed={slide===i}
+                  <button key={i} onClick={() => { if (i === 2) setChartInfoOpen(false); setSlide(i as 0|1|2) }} aria-pressed={slide===i}
                     style={{ width: 6, height: 6, borderRadius: '50%', border: 'none', background: slide===i ? 'var(--primary)' : '#d1d5db', cursor: 'pointer', padding: 0 }}
                     title={`Go to slide ${i+1}`}
                   />

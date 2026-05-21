@@ -253,6 +253,7 @@
     "owedToSuppliers": "Totalt skyldigt till leverantörer",
     "netBalance": "Nettosaldo",
     "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "chartSwitchHint": "Klicka på pilarna/svep för att byta diagram.",
     "myDollars": "Nettoskuld",
     "revenueGrossProfit": "Intäkter och bruttovinst",
     "revenueOperatingProfit": "Intäkter och rörelsevinst",

@@ -253,6 +253,7 @@
     "owedToSuppliers": "Total adeudado a proveedores",
     "netBalance": "Saldo neto",
     "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "chartSwitchHint": "Haz clic en las flechas/desliza para cambiar el gráfico.",
     "myDollars": "Neto adeudado",
     "revenueGrossProfit": "Ingresos y ganancia bruta",
     "revenueOperatingProfit": "Ingresos y ganancia operativa",

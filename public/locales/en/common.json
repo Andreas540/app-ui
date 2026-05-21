@@ -253,6 +253,7 @@
     "owedToSuppliers": "Total owed to suppliers",
     "netBalance": "Net balance",
     "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "chartSwitchHint": "Click arrows/swipe to switch chart.",
     "myDollars": "Net owed",
     "revenueGrossProfit": "Revenue & Gross profit",
     "revenueOperatingProfit": "Revenue & Operating profit",
