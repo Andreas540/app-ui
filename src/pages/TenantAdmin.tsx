@@ -1924,6 +1924,7 @@ export default function TenantAdmin() {
                   <option value="America/New_York">America/New_York (ET)</option>
                   <option value="America/Chicago">America/Chicago (CT)</option>
                   <option value="America/Denver">America/Denver (MT)</option>
+                  <option value="America/Phoenix">America/Phoenix (MT, no DST)</option>
                   <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
                   <option value="America/Toronto">America/Toronto</option>
                   <option value="America/Vancouver">America/Vancouver</option>
