@@ -292,11 +292,11 @@ export default function CustomerFormPage() {
           <div style={{ ...row2, marginBottom: 14 }}>
             <div>
               <label style={lbl}>{t('companyName')}</label>
-              <input style={inp} value={form.company_name} onChange={set('company_name')} autoComplete="organization" />
+              <input style={inp} value={form.name} onChange={set('name')} autoComplete="organization" />
             </div>
             <div>
               <label style={lbl}>{t('name')}</label>
-              <input style={inp} value={form.name} onChange={set('name')} autoComplete="name" />
+              <input style={inp} value={form.company_name} onChange={set('company_name')} autoComplete="name" />
             </div>
           </div>
 
