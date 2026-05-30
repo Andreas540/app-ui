@@ -205,6 +205,23 @@ const res = await fetch(`${base}/api/create-invoice`, {
   }, [invoiceUnregistered, unregProductsLoaded])
 
   useEffect(() => {
+    if (!unregProductsLoaded || unregProducts.length === 0) return
+    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
+    const sorted = unregProducts
+      .filter(p => !excludedNames.includes(p.name.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    const first = sorted.find(p => (p.category ?? 'product') === 'product') ?? sorted[0]
+    if (!first) return
+    setUnregLines(prev => prev.map(l =>
+      l.product_id ? l : {
+        ...l,
+        product_id: first.id,
+        priceStr: (first.price_amount && first.price_amount > 0) ? String(first.price_amount) : '',
+      }
+    ))
+  }, [unregProductsLoaded])
+
+  useEffect(() => {
     if (!invoiceConfig.autoInvoiceNumber) return
     if (invoiceDate && dueDate && selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId)
@@ -246,6 +263,15 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
   function updateUnregLine(idx: number, patch: Partial<UnregLine>) {
     setUnregLines(prev => prev.map((l, i) => i === idx ? { ...l, ...patch } : l))
+  }
+
+  function addUnregLine() {
+    const first = unregProductGroup[0] ?? filteredUnregProducts[0]
+    setUnregLines(prev => [...prev, {
+      ...emptyUnregLine(),
+      product_id: first?.id ?? '',
+      priceStr: (first?.price_amount && first.price_amount > 0) ? String(first.price_amount) : '',
+    }])
   }
 
   function onUnregProductChange(idx: number, product_id: string) {
@@ -487,32 +513,19 @@ const res = await fetch(`${base}/api/create-invoice`, {
               {invoiceUnregistered && !showingConfirmed && (
                 <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
 
-                  {unregLines.map((line, idx) => (
-                    <div key={line.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', marginBottom: 12 }}>
+                  {/* Row 1: Order date (order-level) */}
+                  <div>
+                    <label>{t('orders.orderDate')}</label>
+                    <DateInput value={unregDate} onChange={setUnregDate} />
+                  </div>
 
-                      {/* Group 1: date (first line only) + product — both columns on mobile via row-2col-mobile */}
-                      <div
-                        className="row row-2col-mobile"
-                        style={{ flex: idx === 0 ? '3 1 300px' : '3 1 200px', minWidth: 0 }}
-                      >
-                        {idx === 0 ? (
-                          <div>
-                            <label>
-                              {t('orders.orderDate')}
-                            </label>
-                            <DateInput value={unregDate} onChange={setUnregDate} />
-                          </div>
-                        ) : (
-                          <div style={{ display: 'none' }} />
-                        )}
-                        <div style={idx === 0 ? undefined : { gridColumn: '1 / -1' }}>
-                          {idx === 0 && (
-                            <label>
-                              {t('orders.productOrService')}
-                            </label>
-                          )}
+                  {/* Product lines — each line: product | qty | price */}
+                  {unregLines.map((line, idx) => (
+                    <div key={line.id} style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                      <div className="row-3col">
+                        <div>
+                          <label>{t('orders.productOrService')}</label>
                           <select value={line.product_id} onChange={e => onUnregProductChange(idx, e.target.value)}>
-                            <option value="">— {t('orders.productOrService')} —</option>
                             {unregProductGroup.length > 0 && (
                               <optgroup label={t('orders.groupProducts')}>
                                 {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -525,61 +538,55 @@ const res = await fetch(`${base}/api/create-invoice`, {
                             )}
                           </select>
                         </div>
-                      </div>
-
-                      {/* Group 2: qty + price + remove btn — wraps to own row on mobile */}
-                      <div style={{ flex: '2 1 180px', minWidth: 0, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          {idx === 0 && (
-                            <label>
-                              {t('quantity')}
-                            </label>
-                          )}
+                        <div>
+                          <label>{t('quantity')}</label>
                           <input
                             type="text" inputMode="decimal" placeholder="0"
                             value={line.qtyStr}
                             onChange={e => updateUnregLine(idx, { qtyStr: e.target.value.replace(/[^0-9.,]/g, '') })}
                           />
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          {idx === 0 && (
-                            <label>
-                              {t('price')}
-                            </label>
-                          )}
+                        <div>
+                          <label>{t('price')}</label>
                           <input
                             type="text" inputMode="decimal" placeholder="0.00"
                             value={line.priceStr}
                             onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
                           />
                         </div>
-                        {unregLines.length > 1 && (
-                          <button
-                            onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
-                            style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0 4px', marginBottom: 0, height: 44, fontSize: 16 }}
-                          >✕</button>
-                        )}
                       </div>
+                      {unregLines.length > 1 && (
+                        <div style={{ marginTop: 6 }}>
+                          <button className="helper" onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                            – {t('supplierOrders.removeProduct')}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
 
-                  {/* Notes — order-level, one field for the whole order */}
-                  <input
-                    type="text"
-                    placeholder={t('notesOptional')}
-                    value={unregNotes}
-                    onChange={e => setUnregNotes(e.target.value)}
-                    style={{ marginBottom: 12 }}
-                  />
+                  {/* Notes — order-level */}
+                  <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                    <label>{t('notes')}</label>
+                    <input
+                      type="text"
+                      placeholder={t('optionalNotesPlaceholder')}
+                      value={unregNotes}
+                      onChange={e => setUnregNotes(e.target.value)}
+                    />
+                  </div>
 
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="helper" onClick={() => setUnregLines(prev => [...prev, emptyUnregLine()])}>
+                  {/* Actions */}
+                  <div style={{ marginTop: 12, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button className="helper" onClick={addUnregLine}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
                       + {t('orders.addProduct')}
                     </button>
                     <button
                       onClick={handleCreateUnregOrders}
                       disabled={!canCreateOrders}
-                      style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: canCreateOrders ? 'var(--accent)' : '#ccc', color: '#fff', cursor: canCreateOrders ? 'pointer' : 'not-allowed', fontSize: 14, fontWeight: 500 }}
+                      style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: canCreateOrders ? 'var(--accent)' : '#ccc', color: '#fff', cursor: canCreateOrders ? 'pointer' : 'not-allowed', fontWeight: 500 }}
                     >
                       {savingLines ? t('invoice.saving') : t('invoice.createOrders')}
                     </button>
