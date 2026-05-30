@@ -29,7 +29,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[] }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -138,7 +138,7 @@ function Row({ label, help, customized, children }: { label: string; help?: stri
 
 export default function TenantAdminUISettingsTab({ initialSection }: { initialSection?: Section }) {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, hasFeature } = useAuth()
 
   const [section, setSection] = useState<Section>(initialSection ?? 'terminology')
   const [cfg, setCfg]         = useState<UiConfig>({})
@@ -220,7 +220,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'dashboard') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
     } else if (section === 'customer-detail') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     }
@@ -343,23 +343,53 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
       )}
 
       {section === 'customer-detail' && (
-        <Row label={t('tenantCustom.customerOrderRows')}
-          customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                onChange={() => setUi('compactCustomerOrderRows', false)}
-                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-              <span>{t('tenantCustom.orderRowsFull')}</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                onChange={() => setUi('compactCustomerOrderRows', true)}
-                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-              <span>{t('tenantCustom.orderRowsCompact')}</span>
-            </label>
-          </div>
-        </Row>
+        <>
+          <Row label={t('tenantCustom.customerDetailButtons')}
+            customized={
+              cu.customerDetailShowNewOrder !== undefined ||
+              cu.customerDetailShowNewPayment !== undefined ||
+              cu.customerDetailShowNewBooking !== undefined ||
+              cu.customerDetailShowShareBooking !== undefined ||
+              cu.customerDetailShowShareOrder !== undefined
+            }>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {([
+                { key: 'customerDetailShowNewOrder',    label: t('tenantCustom.customerDetailNewOrder') },
+                { key: 'customerDetailShowNewPayment',  label: t('tenantCustom.customerDetailNewPayment') },
+                ...(hasFeature('new-booking') ? [
+                  { key: 'customerDetailShowNewBooking',   label: t('tenantCustom.customerDetailNewBooking') },
+                  { key: 'customerDetailShowShareBooking', label: t('tenantCustom.customerDetailShareBooking') },
+                ] : []),
+                { key: 'customerDetailShowShareOrder',  label: t('tenantCustom.customerDetailShareOrder') },
+              ] as { key: keyof typeof cu; label: string }[]).map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={!!(cu[key] ?? du[key as keyof typeof du])}
+                    onChange={e => setUi(key as any, e.target.checked)}
+                    style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </Row>
+          <Row label={t('tenantCustom.customerOrderRows')}
+            customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                  onChange={() => setUi('compactCustomerOrderRows', false)}
+                  style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                <span>{t('tenantCustom.orderRowsFull')}</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
+                  onChange={() => setUi('compactCustomerOrderRows', true)}
+                  style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                <span>{t('tenantCustom.orderRowsCompact')}</span>
+              </label>
+            </div>
+          </Row>
+        </>
       )}
 
       {section === 'dashboard' && (

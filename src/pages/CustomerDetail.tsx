@@ -18,6 +18,11 @@ export default function CustomerDetailPage() {
   const tenantUi = getTenantConfig(user?.tenantId).ui
   const compactOrderRows = tenantUi.compactCustomerOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
+  const cfgShowNewOrder      = tenantUi.customerDetailShowNewOrder
+  const cfgShowNewPayment    = tenantUi.customerDetailShowNewPayment
+  const cfgShowNewBooking    = tenantUi.customerDetailShowNewBooking && hasFeature('new-booking')
+  const cfgShowShareBooking  = tenantUi.customerDetailShowShareBooking && hasFeature('new-booking')
+  const cfgShowShareOrder    = tenantUi.customerDetailShowShareOrder
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -427,45 +432,35 @@ export default function CustomerDetailPage() {
 
       {/* Action row under name: New order + New payment */}
       <div style={{ display:'flex', gap:8, marginTop: 12 }}>
-        <Link
-          to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
-          style={{ textDecoration: 'none' }}
-        >
-          <button
-            className="primary"
-            style={{
-              width: 100,           // equal width
-              height: 28,
-              fontSize: 12,
-              padding: '0 10px',
-              borderRadius: 6,
-              whiteSpace: 'nowrap'
-            }}
+        {cfgShowNewOrder && (
+          <Link
+            to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
+            style={{ textDecoration: 'none' }}
           >
-            {t('newOrder')}
-          </button>
-        </Link>
+            <button
+              className="primary"
+              style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
+            >
+              {t('newOrder')}
+            </button>
+          </Link>
+        )}
 
-        <Link
-          to={`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
-          style={{ textDecoration: 'none' }}
-        >
-          <button
-            className="primary"
-            style={{
-              width: 100,           // equal width; wide enough for full label
-              height: 28,
-              fontSize: 12,
-              padding: '0 10px',
-              borderRadius: 6,
-              whiteSpace: 'nowrap'
-            }}
+        {cfgShowNewPayment && (
+          <Link
+            to={`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
+            style={{ textDecoration: 'none' }}
           >
-            {t('newPayment')}
-          </button>
-        </Link>
+            <button
+              className="primary"
+              style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
+            >
+              {t('newPayment')}
+            </button>
+          </Link>
+        )}
 
-        {hasFeature('new-booking') && (
+        {cfgShowNewBooking && (
           <Link
             to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
             style={{ textDecoration: 'none' }}
@@ -487,7 +482,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Share links */}
-      {hasFeature('new-booking') && (
+      {cfgShowShareBooking && (
         <div style={{ marginTop: 4, marginBottom: 4 }}>
           <button
             type="button"
@@ -540,7 +535,7 @@ export default function CustomerDetailPage() {
         </div>
       )}
       {/* Share order page with customer */}
-      <div style={{ marginTop: 4, marginBottom: 4 }}>
+      {cfgShowShareOrder && <div style={{ marginTop: 4, marginBottom: 4 }}>
         <button
           type="button"
           onClick={() => setShowShareOrder(v => !v)}
@@ -603,7 +598,7 @@ export default function CustomerDetailPage() {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Collapsible info */}
       <div style={{ marginTop: 12 }}>
