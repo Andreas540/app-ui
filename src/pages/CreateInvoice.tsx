@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { Trans, useTranslation } from 'react-i18next'
 import { formatDate } from '../lib/time'
@@ -36,6 +36,8 @@ export default function CreateInvoicePage() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const preselectedCustomerId = searchParams.get('customer_id') ?? ''
   const [showInfo, setShowInfo] = useState(false)
   const { user } = useAuth()
   const tenantUi = getTenantConfig(user?.tenantId).ui
@@ -110,6 +112,9 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
         const data = await res.json()
         setCustomers(data.customers)
+        if (preselectedCustomerId && data.customers.some((c: Customer) => c.id === preselectedCustomerId)) {
+          setSelectedCustomerId(preselectedCustomerId)
+        }
 
         // Load last invoice number and invoiced order mapping in background
         const base2 = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''

@@ -29,7 +29,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -226,7 +226,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'dashboard') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
     } else if (section === 'customer-detail') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     }
@@ -354,6 +354,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
             customized={
               cu.customerDetailShowNewOrder !== undefined ||
               cu.customerDetailShowNewPayment !== undefined ||
+              cu.customerDetailShowNewInvoice !== undefined ||
               cu.customerDetailShowNewBooking !== undefined ||
               cu.customerDetailShowShareBooking !== undefined ||
               cu.customerDetailShowShareOrder !== undefined
@@ -362,6 +363,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
               {([
                 { key: 'customerDetailShowNewOrder',    label: t('tenantCustom.customerDetailNewOrder') },
                 { key: 'customerDetailShowNewPayment',  label: t('tenantCustom.customerDetailNewPayment') },
+                { key: 'customerDetailShowNewInvoice',  label: t('tenantCustom.customerDetailNewInvoice') },
                 ...(hasFeature('new-booking') ? [
                   { key: 'customerDetailShowNewBooking',   label: t('tenantCustom.customerDetailNewBooking') },
                   { key: 'customerDetailShowShareBooking', label: t('tenantCustom.customerDetailShareBooking') },

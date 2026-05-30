@@ -56,6 +56,7 @@ export default function CustomerDetailPage() {
   const platform = getPlatform()
   const cfgShowNewOrder      = tenantUi.customerDetailShowNewOrder
   const cfgShowNewPayment    = tenantUi.customerDetailShowNewPayment
+  const cfgShowNewInvoice    = tenantUi.customerDetailShowNewInvoice
   const cfgShowNewBooking    = tenantUi.customerDetailShowNewBooking && hasFeature('new-booking')
   const cfgShowShareBooking  = tenantUi.customerDetailShowShareBooking && hasFeature('new-booking')
   const cfgShowShareOrder    = tenantUi.customerDetailShowShareOrder
@@ -485,6 +486,16 @@ export default function CustomerDetailPage() {
           >
             <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
               {t('newPayment')}
+            </button>
+          </Link>
+        )}
+        {cfgShowNewInvoice && (
+          <Link
+            to={`/invoices/create?customer_id=${customer.id}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+              {t('newInvoice')}
             </button>
           </Link>
         )}

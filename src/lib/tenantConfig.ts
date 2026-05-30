@@ -33,6 +33,7 @@ export interface TenantConfig {
     dashboardCards: string[]
     customerDetailShowNewOrder: boolean
     customerDetailShowNewPayment: boolean
+    customerDetailShowNewInvoice: boolean
     customerDetailShowNewBooking: boolean
     customerDetailShowShareBooking: boolean
     customerDetailShowShareOrder: boolean
@@ -101,6 +102,7 @@ export const defaultConfig: TenantConfig = {
     dashboardCards: ['financials', 'charts'],
     customerDetailShowNewOrder: true,
     customerDetailShowNewPayment: true,
+    customerDetailShowNewInvoice: false,
     customerDetailShowNewBooking: false,
     customerDetailShowShareBooking: false,
     customerDetailShowShareOrder: false,
