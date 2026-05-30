@@ -430,22 +430,13 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
       {!loading && !error && (
         <>
-          <div style={{ display: 'flex', gap: 40, marginBottom: 20 }}>
-            <div style={{ flex: 1 }}>
-              <label htmlFor="customer-select" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                {t('invoice.selectCustomer')}
-              </label>
+          <div className="row" style={{ marginBottom: 20 }}>
+            <div>
+              <label htmlFor="customer-select">{t('invoice.selectCustomer')}</label>
               <select
                 id="customer-select"
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: 14,
-                  border: '1px solid #ddd',
-                  borderRadius: 4,
-                }}
               >
                 <option value="">{t('invoice.selectCustomerPlaceholder')}</option>
                 {customers.map(customer => (
@@ -456,27 +447,24 @@ const res = await fetch(`${base}/api/create-invoice`, {
               </select>
             </div>
 
-            {selectedCustomer && (
-              <div style={{ flex: 1 }}>
-                <div style={{ marginBottom: 8, height: 21 }}></div>
-                <div style={{ fontSize: 14 }}>
-                  {selectedCustomer.company_name && <div>{selectedCustomer.company_name}</div>}
-                  {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
-                  {selectedCustomer.address2 && <div>{selectedCustomer.address2}</div>}
-                  {(selectedCustomer.city || selectedCustomer.state || selectedCustomer.postal_code) && (
-                    <div>
-                      {[selectedCustomer.city, selectedCustomer.state, selectedCustomer.postal_code]
-                        .filter(Boolean)
-                        .join(' ')}
-                    </div>
-                  )}
-                  {selectedCustomer.country && <div>{selectedCustomer.country}</div>}
-                  {!selectedCustomer.company_name && !selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
-                    <div className="helper">{t('invoice.noAddressOnFile')}</div>
-                  )}
-                </div>
+            {selectedCustomer ? (
+              <div style={{ paddingTop: 20, fontSize: 14 }}>
+                {selectedCustomer.company_name && <div>{selectedCustomer.company_name}</div>}
+                {selectedCustomer.address1 && <div>{selectedCustomer.address1}</div>}
+                {selectedCustomer.address2 && <div>{selectedCustomer.address2}</div>}
+                {(selectedCustomer.city || selectedCustomer.state || selectedCustomer.postal_code) && (
+                  <div>
+                    {[selectedCustomer.city, selectedCustomer.state, selectedCustomer.postal_code]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </div>
+                )}
+                {selectedCustomer.country && <div>{selectedCustomer.country}</div>}
+                {!selectedCustomer.company_name && !selectedCustomer.address1 && !selectedCustomer.address2 && !selectedCustomer.city && (
+                  <div className="helper">{t('invoice.noAddressOnFile')}</div>
+                )}
               </div>
-            )}
+            ) : <div />}
           </div>
 
           {selectedCustomerId && (
@@ -509,7 +497,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                       >
                         {idx === 0 ? (
                           <div>
-                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                            <label>
                               {t('orders.orderDate')}
                             </label>
                             <DateInput value={unregDate} onChange={setUnregDate} />
@@ -519,7 +507,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                         )}
                         <div style={idx === 0 ? undefined : { gridColumn: '1 / -1' }}>
                           {idx === 0 && (
-                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                            <label>
                               {t('orders.productOrService')}
                             </label>
                           )}
@@ -543,24 +531,24 @@ const res = await fetch(`${base}/api/create-invoice`, {
                       <div style={{ flex: '2 1 180px', minWidth: 0, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {idx === 0 && (
-                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                            <label>
                               {t('quantity')}
                             </label>
                           )}
                           <input
-                            type="text" inputMode="decimal" placeholder={t('quantity')}
+                            type="text" inputMode="decimal" placeholder="0"
                             value={line.qtyStr}
                             onChange={e => updateUnregLine(idx, { qtyStr: e.target.value.replace(/[^0-9.,]/g, '') })}
                           />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {idx === 0 && (
-                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                            <label>
                               {t('price')}
                             </label>
                           )}
                           <input
-                            type="text" inputMode="decimal" placeholder={t('price')}
+                            type="text" inputMode="decimal" placeholder="0.00"
                             value={line.priceStr}
                             onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
                           />
@@ -614,10 +602,10 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
                   {!ordersLoading && (orders.length > 0 || createdOrders.length > 0) && (
                     <>
-                      <div style={{ border: '1px solid #ddd', borderRadius: 4, maxHeight: 300, overflowY: 'auto', marginBottom: 12 }}>
+                      <div style={{ border: '1px solid var(--border)', borderRadius: 10, maxHeight: 300, overflowY: 'auto', marginBottom: 12 }}>
                         {/* Newly created orders — always pre-checked */}
                         {createdOrders.map(order => (
-                          <div key={order.item_id} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #eee', alignItems: 'flex-start', fontSize: 14, background: 'var(--new-row-bg, rgba(40,167,69,0.06))' }}>
+                          <div key={order.item_id} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--line)', alignItems: 'flex-start', fontSize: 14, background: 'var(--new-row-bg, rgba(40,167,69,0.06))' }}>
                             <input type="checkbox" checked readOnly style={{ cursor: 'default', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
@@ -639,7 +627,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                           const isInvoiced = invNo !== undefined
                           return (
                             <div key={order.item_id}>
-                              <div style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: isInvoiced ? 'none' : '1px solid #eee', alignItems: 'flex-start', fontSize: 14, color: 'var(--text, inherit)', background: isInvoiced ? 'var(--invoiced-row-bg, rgba(13,110,253,0.06))' : undefined }}>
+                              <div style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: isInvoiced ? 'none' : '1px solid var(--line)', alignItems: 'flex-start', fontSize: 14, color: 'var(--text, inherit)', background: isInvoiced ? 'var(--invoiced-row-bg, rgba(13,110,253,0.06))' : undefined }}>
                                 <input type="checkbox" checked={selectedOrders.has(order.item_id)} onChange={() => toggleOrder(order.item_id)} style={{ cursor: 'pointer', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
@@ -655,7 +643,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                                 </div>
                               </div>
                               {isInvoiced && (
-                                <div style={{ padding: '3px 16px 6px 42px', fontSize: 11, color: 'var(--text-secondary)', background: 'var(--invoiced-row-bg, rgba(13,110,253,0.06))', borderBottom: '1px solid #eee', fontStyle: 'italic' }}>
+                                <div style={{ padding: '3px 16px 6px 42px', fontSize: 11, color: 'var(--text-secondary)', background: 'var(--invoiced-row-bg, rgba(13,110,253,0.06))', borderBottom: '1px solid var(--line)', fontStyle: 'italic' }}>
                                   {t('invoice.invoicedAs')} {invNo || '—'}
                                 </div>
                               )}
@@ -694,33 +682,25 @@ const res = await fetch(`${base}/api/create-invoice`, {
                     {t('invoice.newSelection')}
                   </button>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                  <div className="row" style={{ marginBottom: 16 }}>
                     <div>
-                      <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        {t('invoice.invoiceDate')}
-                      </label>
-                      <DateInput value={invoiceDate} onChange={v => setInvoiceDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                      <label htmlFor="invoice-date">{t('invoice.invoiceDate')}</label>
+                      <DateInput value={invoiceDate} onChange={v => setInvoiceDate(v)} />
                     </div>
                     <div>
-                      <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        {t('invoice.dueDate')}
-                      </label>
-                      <DateInput value={dueDate} onChange={v => setDueDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                      <label htmlFor="due-date">{t('invoice.dueDate')}</label>
+                      <DateInput value={dueDate} onChange={v => setDueDate(v)} />
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="row">
                     <div>
-                      <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        {t('invoice.estDeliveryDate')} (optional)
-                      </label>
-                      <DateInput value={deliveryDate} onChange={v => setDeliveryDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                      <label htmlFor="delivery-date">{t('invoice.estDeliveryDate')} (optional)</label>
+                      <DateInput value={deliveryDate} onChange={v => setDeliveryDate(v)} />
                     </div>
                     <div>
-                      <label htmlFor="payment-method" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        {t('invoice.paymentMethod')}
-                      </label>
-                      <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }}>
+                      <label htmlFor="payment-method">{t('invoice.paymentMethod')}</label>
+                      <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                         {(invoiceConfig.enabledPaymentMethods.length > 0 ? invoiceConfig.enabledPaymentMethods : ['wire_transfer']).map(method => (
                           <option key={method} value={method}>
                             {method === 'wire_transfer' ? 'Wire Transfer' : method === 'ach' ? 'ACH' : method}
@@ -732,11 +712,11 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
                   {(invoiceDate && dueDate) && (
                     <div style={{ marginTop: 16 }}>
-                      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('invoice.invoiceNo')}</label>
+                      <label>{t('invoice.invoiceNo')}</label>
                       {invoiceConfig.autoInvoiceNumber ? (
                         <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>{invoiceNo}</div>
                       ) : (
-                        <input type="text" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} placeholder={lastInvoiceNo ? `${t('invoice.lastSaved')}: ${lastInvoiceNo}` : t('invoice.invoiceNoPlaceholder')} style={{ marginBottom: 20, fontSize: 16 }} />
+                        <input type="text" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} placeholder={lastInvoiceNo ? `${t('invoice.lastSaved')}: ${lastInvoiceNo}` : t('invoice.invoiceNoPlaceholder')} style={{ marginBottom: 20 }} />
                       )}
 
                       <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
