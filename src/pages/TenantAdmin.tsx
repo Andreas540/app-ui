@@ -1305,7 +1305,7 @@ export default function TenantAdmin() {
 
         {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} initialSubTab={offersInitialSubTab} />}
 
-        {activeTab === 'ui-settings' && <TenantAdminUISettingsTab />}
+        {activeTab === 'ui-settings' && <TenantAdminUISettingsTab initialSection={(location.state as any)?.uiSection} />}
 
         {/* ── Cash Management tab ── */}
         {activeTab === 'cash' && (

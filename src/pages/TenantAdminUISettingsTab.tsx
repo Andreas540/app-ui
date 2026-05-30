@@ -136,11 +136,11 @@ function Row({ label, help, customized, children }: { label: string; help?: stri
   )
 }
 
-export default function TenantAdminUISettingsTab() {
+export default function TenantAdminUISettingsTab({ initialSection }: { initialSection?: Section }) {
   const { t } = useTranslation()
   const { user } = useAuth()
 
-  const [section, setSection] = useState<Section>('terminology')
+  const [section, setSection] = useState<Section>(initialSection ?? 'terminology')
   const [cfg, setCfg]         = useState<UiConfig>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
