@@ -224,7 +224,7 @@ export default function NewProduct() {
 
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving}>
-          {saving ? t('saving') : t('products.saveProduct')}
+          {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
         <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr('') }} disabled={saving}>
           {t('clear')}

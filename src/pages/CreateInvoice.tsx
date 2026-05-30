@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
+import { getAuthHeaders, listProducts, createProduct, type ProductWithCost } from '../lib/api'
 import { Trans, useTranslation } from 'react-i18next'
 import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -79,6 +79,14 @@ export default function CreateInvoicePage() {
   const [unregProducts, setUnregProducts] = useState<ProductWithCost[]>([])
   const [unregProductsLoaded, setUnregProductsLoaded] = useState(false)
   const [createdOrders, setCreatedOrders] = useState<Order[]>([])
+  const [showNewProductForm, setShowNewProductForm] = useState(false)
+  const [newProdCategory, setNewProdCategory] = useState<'product' | 'service'>('product')
+  const [newProdName, setNewProdName] = useState('')
+  const [newProdPriceStr, setNewProdPriceStr] = useState('')
+  const [newProdCostStr, setNewProdCostStr] = useState('')
+  const [newProdDurationStr, setNewProdDurationStr] = useState('')
+  const [savingNewProd, setSavingNewProd] = useState(false)
+  const [newProdTargetIdx, setNewProdTargetIdx] = useState(0)
 
   // Load invoice config from DB; fall back to tenantConfig.ts if absent
   useEffect(() => {
@@ -275,10 +283,56 @@ const res = await fetch(`${base}/api/create-invoice`, {
   }
 
   function onUnregProductChange(idx: number, product_id: string) {
+    if (product_id === '__new_product__') {
+      setNewProdCategory('product')
+      setNewProdTargetIdx(idx)
+      setShowNewProductForm(true)
+      return
+    }
+    if (product_id === '__new_service__') {
+      setNewProdCategory('service')
+      setNewProdTargetIdx(idx)
+      setShowNewProductForm(true)
+      return
+    }
     const prod = unregProducts.find(p => p.id === product_id)
     const pa = prod?.price_amount
     const priceStr = (pa != null && pa > 0) ? String(pa) : ''
     setUnregLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr } : l))
+  }
+
+  async function handleSaveNewProduct() {
+    const nm = newProdName.trim()
+    if (!nm) { alert(t('products.alertEnterName')); return }
+    const priceAmount = newProdPriceStr ? parseAmount(newProdPriceStr) : null
+    const costNum = newProdCostStr ? parseAmount(newProdCostStr) : 0
+    const durationMinutes = newProdCategory === 'service' && newProdDurationStr
+      ? Math.max(1, parseInt(newProdDurationStr, 10) || 60)
+      : null
+    setSavingNewProd(true)
+    try {
+      const created = await createProduct({ name: nm, cost: costNum, category: newProdCategory, duration_minutes: durationMinutes, price_amount: priceAmount })
+      const { products: refreshed } = await listProducts()
+      setUnregProducts(refreshed)
+      const newProd = refreshed.find(p => p.id === created.product.id)
+      if (newProd) {
+        const pa = newProd.price_amount
+        setUnregLines(prev => prev.map((l, i) => i === newProdTargetIdx ? {
+          ...l,
+          product_id: newProd.id,
+          priceStr: (pa != null && pa > 0) ? String(pa) : '',
+        } : l))
+      }
+      setNewProdName('')
+      setNewProdPriceStr('')
+      setNewProdCostStr('')
+      setNewProdDurationStr('')
+      setShowNewProductForm(false)
+    } catch (e: any) {
+      alert(e?.message || t('payments.alertSaveFailed'))
+    } finally {
+      setSavingNewProd(false)
+    }
   }
 
   const handleCreateUnregOrders = async () => {
@@ -509,6 +563,62 @@ const res = await fetch(`${base}/api/create-invoice`, {
                 </div>
               )}
 
+              {/* Inline new product/service form */}
+              {showNewProductForm && invoiceUnregistered && !showingConfirmed && (
+                <div style={{ marginBottom: 16, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  <div style={{ marginBottom: 12, fontWeight: 500 }}>
+                    {newProdCategory === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}
+                  </div>
+                  {newProdCategory === 'product' ? (
+                    <div className="row-3col">
+                      <div>
+                        <label>{t('products.productName')}</label>
+                        <input type="text" value={newProdName} onChange={e => setNewProdName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label>{t('products.servicePrice')}</label>
+                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                      </div>
+                      <div>
+                        <label>{t('products.productCostUSD')}</label>
+                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="row-4col">
+                      <div>
+                        <label>{t('products.serviceName')}</label>
+                        <input type="text" value={newProdName} onChange={e => setNewProdName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label>{t('products.duration')}</label>
+                        <input type="number" min={1} placeholder="60" value={newProdDurationStr} onChange={e => setNewProdDurationStr(e.target.value)} />
+                      </div>
+                      <div>
+                        <label>{t('products.servicePrice')}</label>
+                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                      </div>
+                      <div>
+                        <label>{t('products.directServiceCost')}</label>
+                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={handleSaveNewProduct}
+                      disabled={savingNewProd}
+                      style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: 'var(--accent)', color: '#fff', cursor: savingNewProd ? 'not-allowed' : 'pointer', fontWeight: 500 }}
+                    >
+                      {savingNewProd ? t('saving') : t(newProdCategory === 'service' ? 'products.saveService' : 'products.saveProduct')}
+                    </button>
+                    <button onClick={() => setShowNewProductForm(false)} disabled={savingNewProd}>
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Compact form for not-yet-registered orders */}
               {invoiceUnregistered && !showingConfirmed && (
                 <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
@@ -526,16 +636,14 @@ const res = await fetch(`${base}/api/create-invoice`, {
                         <div>
                           <label>{t('orders.productOrService')}</label>
                           <select value={line.product_id} onChange={e => onUnregProductChange(idx, e.target.value)}>
-                            {unregProductGroup.length > 0 && (
-                              <optgroup label={t('orders.groupProducts')}>
-                                {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                              </optgroup>
-                            )}
-                            {unregServiceGroup.length > 0 && (
-                              <optgroup label={t('orders.groupServices')}>
-                                {unregServiceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                              </optgroup>
-                            )}
+                            <optgroup label={t('orders.groupProducts')}>
+                              {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              <option value="__new_product__">{t('products.newProductTitle')}</option>
+                            </optgroup>
+                            <optgroup label={t('orders.groupServices')}>
+                              {unregServiceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              <option value="__new_service__">{t('products.newServiceTitle')}</option>
+                            </optgroup>
                           </select>
                         </div>
                         <div>

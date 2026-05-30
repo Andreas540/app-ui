@@ -342,6 +342,19 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
+/* 4-column row that collapses to 2-col on mobile */
+.row-4col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .row-4col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ===================== Buttons ===================== */
 button {
   padding: 8px 12px;

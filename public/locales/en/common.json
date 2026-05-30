@@ -500,6 +500,7 @@
     "productCostUSD": "Production cost per unit",
     "directServiceCost": "Direct Service Cost",
     "saveProduct": "Save product",
+    "saveService": "Save service",
     "productCosts": "Product costs",
     "currentCosts": "Current costs",
     "historicalCosts": "Historical costs",
