@@ -726,7 +726,10 @@
     "saving": "Saving...",
     "saved": "Saved ✓",
     "saveFailed": "Save failed",
-    "achInstructions": "ACH Instructions:"
+    "achInstructions": "ACH Instructions:",
+    "invoiceRegistered": "Invoice registered orders",
+    "invoiceUnregistered": "Invoice not yet registered orders",
+    "createOrders": "Create order(s)"
   },
   "supplierOrders": {
     "newTitle": "New Order (S)",

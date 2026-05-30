@@ -512,7 +512,14 @@ export default function CustomerDetailPage() {
         {cfgShowShareBooking && (
           <button
             type="button"
-            onClick={() => setShowShareBooking(v => !v)}
+            onClick={() => {
+              if (!showShareBooking) {
+                setShowShareBooking(true)
+                if (!bookingLink) generateBookingLink()
+              } else {
+                setShowShareBooking(false)
+              }
+            }}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
           >
             <PlatformShareIcon platform={platform} />
@@ -522,7 +529,14 @@ export default function CustomerDetailPage() {
         {cfgShowShareOrder && (
           <button
             type="button"
-            onClick={() => setShowShareOrder(v => !v)}
+            onClick={() => {
+              if (!showShareOrder) {
+                setShowShareOrder(true)
+                if (!orderLink) generateOrderLink()
+              } else {
+                setShowShareOrder(false)
+              }
+            }}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
           >
             <PlatformShareIcon platform={platform} />
@@ -534,9 +548,24 @@ export default function CustomerDetailPage() {
       {/* Share booking expand panel */}
       {cfgShowShareBooking && showShareBooking && (
         <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
-          <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine1')}</p>
-          <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine2')}</p>
-          <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine1')}</p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+            <input
+              readOnly
+              value={bookingLink ?? ''}
+              placeholder={generatingBookingLink ? t('customers.generating') : ''}
+              style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }}
+              onFocus={e => e.target.select()}
+            />
+            <button type="button" onClick={copyBookingLink} disabled={!bookingLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+              {bookingLinkCopied ? t('customers.copied') : t('customers.copyLink')}
+            </button>
+          </div>
+          {bookingLinkError && (
+            <p style={{ margin: '0 0 8px', color: 'var(--color-error)', fontSize: 12 }}>{bookingLinkError}</p>
+          )}
+          <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareBookingLine2')}</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
             {t('customers.shareBookingCustomizeText')}{' '}
             <button
               type="button"
@@ -546,44 +575,27 @@ export default function CustomerDetailPage() {
               {t('customers.shareOrderCustomizeLink')}
             </button>
           </p>
-          {bookingLinkError && (
-            <p style={{ margin: '0 0 8px', color: 'var(--color-error)', fontSize: 12 }}>{bookingLinkError}</p>
-          )}
-          {!bookingLink ? (
-            <button type="button" onClick={generateBookingLink} disabled={generatingBookingLink} style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
-              {generatingBookingLink ? t('customers.generating') : t('customers.shareLink')}
-            </button>
-          ) : (
-            <div>
-              <p style={{ margin: '0 0 6px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input readOnly value={bookingLink} style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }} onFocus={e => e.target.select()} />
-                <button type="button" onClick={copyBookingLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
-                  {bookingLinkCopied ? t('customers.copied') : t('customers.copyLink')}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
       {/* Share order expand panel */}
       {cfgShowShareOrder && showShareOrder && (
         <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}>
-          <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
-          <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
-          <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
-            {t('customers.shareOrderCustomizeText')}{' '}
-            <button
-              type="button"
-              onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
-              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
-            >
-              {t('customers.shareOrderCustomizeLink')}
+          <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine1')}</p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+            <input
+              readOnly
+              value={orderLink ?? ''}
+              placeholder={generatingOrderLink ? t('customers.generating') : ''}
+              style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }}
+              onFocus={e => e.target.select()}
+            />
+            <button type="button" onClick={copyOrderLink} disabled={!orderLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
+              {orderLinkCopied ? t('customers.copied') : t('customers.copyLink')}
             </button>
-          </p>
+          </div>
           {productsNeedingPrice.length > 0 && (
-            <div style={{ marginBottom: 12, padding: '8px 10px', background: 'var(--color-warning-bg)', borderRadius: 6, fontSize: 12 }}>
+            <div style={{ marginBottom: 10, padding: '8px 10px', background: 'var(--color-warning-bg)', borderRadius: 6, fontSize: 12 }}>
               <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{t('customers.shareOrderMissingPrices')}</p>
               <ul style={{ margin: 0, paddingLeft: 16 }}>
                 {productsNeedingPrice.map(p => (
@@ -594,21 +606,17 @@ export default function CustomerDetailPage() {
               </ul>
             </div>
           )}
-          {!orderLink ? (
-            <button type="button" onClick={generateOrderLink} disabled={generatingOrderLink} style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
-              {generatingOrderLink ? t('customers.generating') : t('customers.shareLink')}
+          <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>{t('customers.shareOrderLine2')}</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+            {t('customers.shareOrderCustomizeText')}{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
+            >
+              {t('customers.shareOrderCustomizeLink')}
             </button>
-          ) : (
-            <div>
-              <p style={{ margin: '0 0 6px', fontWeight: 500 }}>{t('customers.linkReady')}</p>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input readOnly value={orderLink} style={{ flex: 1, minWidth: 0, height: 36, fontSize: 12, padding: '0 8px' }} onFocus={e => e.target.select()} />
-                <button type="button" onClick={copyOrderLink} style={{ height: 36, padding: '0 14px', fontSize: 13, flexShrink: 0 }}>
-                  {orderLinkCopied ? t('customers.copied') : t('customers.copyLink')}
-                </button>
-              </div>
-            </div>
-          )}
+          </p>
         </div>
       )}
 

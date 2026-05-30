@@ -726,7 +726,10 @@
     "saving": "Guardando...",
     "saved": "Guardado ✓",
     "saveFailed": "Error al guardar",
-    "achInstructions": "Instrucciones ACH:"
+    "achInstructions": "Instrucciones ACH:",
+    "invoiceRegistered": "Facturar pedidos registrados",
+    "invoiceUnregistered": "Facturar pedidos aún no registrados",
+    "createOrders": "Crear pedido(s)"
   },
   "supplierOrders": {
     "newTitle": "Nuevo Pedido (P)",

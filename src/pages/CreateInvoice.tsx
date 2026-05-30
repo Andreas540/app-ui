@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { getAuthHeaders } from '../lib/api'
+import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
 import { Trans, useTranslation } from 'react-i18next'
-import { formatDate } from '../lib/time'
+import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -32,6 +32,19 @@ type Order = {
   order_date: string
 }
 
+type UnregLine = {
+  id: string
+  date: string
+  product_id: string
+  qtyStr: string
+  priceStr: string
+  notes: string
+}
+
+function emptyUnregLine(): UnregLine {
+  return { id: Math.random().toString(36).slice(2), date: todayYMD(), product_id: '', qtyStr: '', priceStr: '', notes: '' }
+}
+
 export default function CreateInvoicePage() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
@@ -59,6 +72,13 @@ export default function CreateInvoicePage() {
   const [error, setError] = useState<string | null>(null)
   const [invoicedOrders, setInvoicedOrders] = useState<Map<string, string>>(new Map()) // order_id → invoice_no
   const [lastInvoiceNo, setLastInvoiceNo] = useState<string | null>(null)
+  const [invoiceRegistered, setInvoiceRegistered] = useState(true)
+  const [invoiceUnregistered, setInvoiceUnregistered] = useState(false)
+  const [unregLines, setUnregLines] = useState<UnregLine[]>(() => [emptyUnregLine()])
+  const [savingLines, setSavingLines] = useState(false)
+  const [unregProducts, setUnregProducts] = useState<ProductWithCost[]>([])
+  const [unregProductsLoaded, setUnregProductsLoaded] = useState(false)
+  const [createdOrders, setCreatedOrders] = useState<Order[]>([])
 
   // Load invoice config from DB; fall back to tenantConfig.ts if absent
   useEffect(() => {
@@ -143,7 +163,8 @@ const res = await fetch(`${base}/api/create-invoice`, {
   useEffect(() => {
     setConfirmedOrders([])
     setShowingConfirmed(false)
-    if (!selectedCustomerId) {
+    setCreatedOrders([])
+    if (!selectedCustomerId || !invoiceRegistered) {
       setOrders([])
       setSelectedOrders(new Set())
       return
@@ -155,10 +176,10 @@ const res = await fetch(`${base}/api/create-invoice`, {
         setError(null)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, {
-  cache: 'no-store',
-  headers: getAuthHeaders(),
-})
+        const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, {
+          cache: 'no-store',
+          headers: getAuthHeaders(),
+        })
 
         if (!res.ok) {
           const text = await res.text().catch(() => '')
@@ -174,7 +195,14 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
         setOrdersLoading(false)
       }
     })()
-  }, [selectedCustomerId])
+  }, [selectedCustomerId, invoiceRegistered])
+
+  useEffect(() => {
+    if (!invoiceUnregistered || unregProductsLoaded) return
+    listProducts()
+      .then(d => { setUnregProducts(d.products); setUnregProductsLoaded(true) })
+      .catch(() => {})
+  }, [invoiceUnregistered, unregProductsLoaded])
 
   useEffect(() => {
     if (!invoiceConfig.autoInvoiceNumber) return
@@ -211,9 +239,67 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
   }
 
   const handleChooseSelected = () => {
-    const selected = orders.filter(o => selectedOrders.has(o.item_id))
-    setConfirmedOrders(selected)
+    const selectedRegistered = orders.filter(o => selectedOrders.has(o.item_id))
+    setConfirmedOrders([...createdOrders, ...selectedRegistered])
     setShowingConfirmed(true)
+  }
+
+  function updateUnregLine(idx: number, patch: Partial<UnregLine>) {
+    setUnregLines(prev => prev.map((l, i) => i === idx ? { ...l, ...patch } : l))
+  }
+
+  function onUnregProductChange(idx: number, product_id: string) {
+    const prod = unregProducts.find(p => p.id === product_id)
+    const pa = prod?.price_amount
+    const priceStr = (pa != null && pa > 0) ? String(pa) : ''
+    setUnregLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr } : l))
+  }
+
+  const handleCreateUnregOrders = async () => {
+    const validLines = unregLines.filter(l => l.product_id && parseAmount(l.qtyStr) > 0)
+    if (!validLines.length || !selectedCustomerId) return
+    setSavingLines(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const createdIds: string[] = []
+      for (const l of validLines) {
+        const res = await fetch(`${base}/api/orders`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            customer_id: selectedCustomerId,
+            date: l.date,
+            delivered: false,
+            delivered_at: null,
+            discount: 0,
+            notes: l.notes.trim() || undefined,
+            items: [{ product_id: l.product_id, qty: parseAmount(l.qtyStr), unit_price: parseAmount(l.priceStr) }],
+          }),
+        })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(`Failed to save order (${res.status}) ${text?.slice(0, 140)}`)
+        }
+        const data = await res.json()
+        createdIds.push(data.order_id)
+      }
+      const fetchRes = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, {
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      })
+      if (fetchRes.ok) {
+        const data = await fetchRes.json()
+        const allOrders: Order[] = data.orders
+        const newOrders = allOrders.filter(o => createdIds.includes(o.order_id))
+        setCreatedOrders(prev => [...prev, ...newOrders])
+        if (invoiceRegistered) setOrders(allOrders)
+      }
+      setUnregLines([emptyUnregLine()])
+    } catch (e: any) {
+      alert(e?.message || 'Failed to create orders')
+    } finally {
+      setSavingLines(false)
+    }
   }
 
   const handleNewSelection = () => {
@@ -259,8 +345,15 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
     navigate('/invoices/preview', { state: invoiceData })
   }
 
-  const { fmtMoney } = useCurrency()
+  const { fmtMoney, parseAmount } = useCurrency()
 
+  const excludedProductNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
+  const filteredUnregProducts = unregProducts
+    .filter(p => !excludedProductNames.includes(p.name.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const unregProductGroup = filteredUnregProducts.filter(p => (p.category ?? 'product') === 'product')
+  const unregServiceGroup = filteredUnregProducts.filter(p => p.category === 'service')
+  const canCreateOrders = !savingLines && unregLines.some(l => l.product_id && parseAmount(l.qtyStr) > 0)
 
   return (
     <div className="card page-normal">
@@ -387,50 +480,130 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
           {selectedCustomerId && (
             <>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                {t('invoice.selectOrders')}
-              </label>
-
-              {ordersLoading && <p>{t('invoice.loadingOrders')}</p>}
-
-              {!ordersLoading && orders.length === 0 && (
-                <p className="helper">{t('invoice.noOrdersForCustomer')}</p>
+              {/* Invoice type checkboxes */}
+              {!showingConfirmed && (
+                <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 500 }}>
+                    <input type="checkbox" checked={invoiceRegistered} onChange={e => setInvoiceRegistered(e.target.checked)} />
+                    {t('invoice.invoiceRegistered')}
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 500 }}>
+                    <input type="checkbox" checked={invoiceUnregistered} onChange={e => setInvoiceUnregistered(e.target.checked)} />
+                    {t('invoice.invoiceUnregistered')}
+                  </label>
+                </div>
               )}
 
-              {!ordersLoading && orders.length > 0 && (
+              {/* Compact form for not-yet-registered orders */}
+              {invoiceUnregistered && !showingConfirmed && (
+                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--border, #ddd)', borderRadius: 8 }}>
+                  {unregLines.map((line, idx) => (
+                    <div key={line.id} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <DateInput
+                        value={line.date}
+                        onChange={v => updateUnregLine(idx, { date: v })}
+                        style={{ width: 130, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                      />
+                      <select
+                        value={line.product_id}
+                        onChange={e => onUnregProductChange(idx, e.target.value)}
+                        style={{ flex: '2 1 140px', padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                      >
+                        <option value="">— {t('orders.productOrService')} —</option>
+                        {unregProductGroup.length > 0 && (
+                          <optgroup label={t('orders.groupProducts')}>
+                            {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </optgroup>
+                        )}
+                        {unregServiceGroup.length > 0 && (
+                          <optgroup label={t('orders.groupServices')}>
+                            {unregServiceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </optgroup>
+                        )}
+                      </select>
+                      <input
+                        type="text" inputMode="decimal" placeholder={t('quantity')}
+                        value={line.qtyStr}
+                        onChange={e => updateUnregLine(idx, { qtyStr: e.target.value.replace(/[^0-9.,]/g, '') })}
+                        style={{ width: 60, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                      />
+                      <input
+                        type="text" inputMode="decimal" placeholder={t('price')}
+                        value={line.priceStr}
+                        onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
+                        style={{ width: 80, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                      />
+                      <input
+                        type="text" placeholder={t('notesOptional')}
+                        value={line.notes}
+                        onChange={e => updateUnregLine(idx, { notes: e.target.value })}
+                        style={{ flex: '3 1 100px', padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                      />
+                      {unregLines.length > 1 && (
+                        <button
+                          onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, padding: '0 4px', lineHeight: 1 }}
+                        >✕</button>
+                      )}
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 6 }}>
+                    <button className="helper" onClick={() => setUnregLines(prev => [...prev, emptyUnregLine()])}>
+                      + {t('orders.addProduct')}
+                    </button>
+                    <button
+                      onClick={handleCreateUnregOrders}
+                      disabled={!canCreateOrders}
+                      style={{ padding: '6px 16px', border: 'none', borderRadius: 8, background: canCreateOrders ? 'var(--accent)' : '#ccc', color: '#fff', cursor: canCreateOrders ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 500 }}
+                    >
+                      {savingLines ? t('invoice.saving') : t('invoice.createOrders')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Order selection list */}
+              {(invoiceRegistered || createdOrders.length > 0) && !showingConfirmed && (
                 <>
-                  {!showingConfirmed ? (
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                    {t('invoice.selectOrders')}
+                  </label>
+
+                  {ordersLoading && <p>{t('invoice.loadingOrders')}</p>}
+
+                  {!ordersLoading && orders.length === 0 && createdOrders.length === 0 && (
+                    <p className="helper">{t('invoice.noOrdersForCustomer')}</p>
+                  )}
+
+                  {!ordersLoading && (orders.length > 0 || createdOrders.length > 0) && (
                     <>
-                      <div style={{
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                        maxHeight: 300,
-                        overflowY: 'auto',
-                        marginBottom: 12
-                      }}>
+                      <div style={{ border: '1px solid #ddd', borderRadius: 4, maxHeight: 300, overflowY: 'auto', marginBottom: 12 }}>
+                        {/* Newly created orders — always pre-checked */}
+                        {createdOrders.map(order => (
+                          <div key={order.item_id} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #eee', alignItems: 'flex-start', fontSize: 14, background: 'var(--new-row-bg, rgba(40,167,69,0.06))' }}>
+                            <input type="checkbox" checked readOnly style={{ cursor: 'default', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
+                                <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
+                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.product}</div>
+                                <div style={{ textAlign: 'right', fontWeight: 500 }}>{fmtMoney(order.amount)}</div>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12 }}>
+                                <div>{order.quantity}</div>
+                                <div>{fmtMoney(order.unit_price)}</div>
+                                <div></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Registered orders */}
                         {orders.map(order => {
-                          const invoiceNo = invoicedOrders.get(order.order_id)
-                          const isInvoiced = invoiceNo !== undefined
+                          const invNo = invoicedOrders.get(order.order_id)
+                          const isInvoiced = invNo !== undefined
                           return (
                             <div key={order.item_id}>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: 12,
-                                  padding: '12px 16px',
-                                  borderBottom: isInvoiced ? 'none' : '1px solid #eee',
-                                  alignItems: 'flex-start',
-                                  fontSize: 14,
-                                  color: 'var(--text, inherit)',
-                                  background: isInvoiced ? 'var(--invoiced-row-bg, rgba(13,110,253,0.06))' : undefined,
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedOrders.has(order.item_id)}
-                                  onChange={() => toggleOrder(order.item_id)}
-                                  style={{ cursor: 'pointer', width: 14, height: 14, marginTop: 2, flexShrink: 0 }}
-                                />
+                              <div style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: isInvoiced ? 'none' : '1px solid #eee', alignItems: 'flex-start', fontSize: 14, color: 'var(--text, inherit)', background: isInvoiced ? 'var(--invoiced-row-bg, rgba(13,110,253,0.06))' : undefined }}>
+                                <input type="checkbox" checked={selectedOrders.has(order.item_id)} onChange={() => toggleOrder(order.item_id)} style={{ cursor: 'pointer', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
                                     <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
@@ -445,15 +618,8 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
                                 </div>
                               </div>
                               {isInvoiced && (
-                                <div style={{
-                                  padding: '3px 16px 6px 42px',
-                                  fontSize: 11,
-                                  color: 'var(--text-secondary)',
-                                  background: 'var(--invoiced-row-bg, rgba(13,110,253,0.06))',
-                                  borderBottom: '1px solid #eee',
-                                  fontStyle: 'italic',
-                                }}>
-                                  {t('invoice.invoicedAs')} {invoiceNo || '—'}
+                                <div style={{ padding: '3px 16px 6px 42px', fontSize: 11, color: 'var(--text-secondary)', background: 'var(--invoiced-row-bg, rgba(13,110,253,0.06))', borderBottom: '1px solid #eee', fontStyle: 'italic' }}>
+                                  {t('invoice.invoicedAs')} {invNo || '—'}
                                 </div>
                               )}
                             </div>
@@ -463,203 +629,114 @@ const res = await fetch(`${base}/api/create-invoice?customerId=${selectedCustome
 
                       <button
                         onClick={handleChooseSelected}
-                        disabled={selectedOrders.size === 0}
-                        style={{
-                          padding: '10px 20px',
-                          border: 'none',
-                          borderRadius: 10,
-                          background: selectedOrders.size === 0 ? '#ccc' : 'var(--accent)',
-                          color: '#fff',
-                          cursor: selectedOrders.size === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: 14,
-                          fontWeight: 500
-                        }}
+                        disabled={selectedOrders.size === 0 && createdOrders.length === 0}
+                        style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: (selectedOrders.size > 0 || createdOrders.length > 0) ? 'var(--accent)' : '#ccc', color: '#fff', cursor: (selectedOrders.size === 0 && createdOrders.length === 0) ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 500 }}
                       >
                         {t('invoice.chooseSelected')}
                       </button>
                     </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: 14, marginBottom: 20 }}>
-                        {confirmedOrders.map(order => (
-                          <div key={order.item_id} style={{ marginBottom: 8 }}>
-                            <div>{formatDate(order.order_date)} - {order.product}</div>
-                            <div style={{ marginLeft: 20 }}>
-                              {t('invoice.qty')}: {order.quantity} × {fmtMoney(order.unit_price)} = {fmtMoney(order.amount)}
-                            </div>
-                          </div>
+                  )}
+                </>
+              )}
+
+              {/* Confirmed view — invoice details + preview */}
+              {showingConfirmed && (
+                <>
+                  <div style={{ fontSize: 14, marginBottom: 20 }}>
+                    {confirmedOrders.map(order => (
+                      <div key={order.item_id} style={{ marginBottom: 8 }}>
+                        <div>{formatDate(order.order_date)} - {order.product}</div>
+                        <div style={{ marginLeft: 20 }}>
+                          {t('invoice.qty')}: {order.quantity} × {fmtMoney(order.unit_price)} = {fmtMoney(order.amount)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button onClick={handleNewSelection} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500, marginBottom: 20 }}>
+                    {t('invoice.newSelection')}
+                  </button>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <div>
+                      <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        {t('invoice.invoiceDate')}
+                      </label>
+                      <DateInput value={invoiceDate} onChange={v => setInvoiceDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                    </div>
+                    <div>
+                      <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        {t('invoice.dueDate')}
+                      </label>
+                      <DateInput value={dueDate} onChange={v => setDueDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div>
+                      <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        {t('invoice.estDeliveryDate')} (optional)
+                      </label>
+                      <DateInput value={deliveryDate} onChange={v => setDeliveryDate(v)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }} />
+                    </div>
+                    <div>
+                      <label htmlFor="payment-method" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        {t('invoice.paymentMethod')}
+                      </label>
+                      <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '1px solid #ddd', borderRadius: 4 }}>
+                        {(invoiceConfig.enabledPaymentMethods.length > 0 ? invoiceConfig.enabledPaymentMethods : ['wire_transfer']).map(method => (
+                          <option key={method} value={method}>
+                            {method === 'wire_transfer' ? 'Wire Transfer' : method === 'ach' ? 'ACH' : method}
+                          </option>
                         ))}
-                      </div>
+                      </select>
+                    </div>
+                  </div>
 
-                      <button
-                        onClick={handleNewSelection}
-                        style={{
-                          padding: '10px 20px',
-                          border: 'none',
-                          borderRadius: 10,
-                          background: 'var(--accent)',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 500,
-                          marginBottom: 20
-                        }}
-                      >
-                        {t('invoice.newSelection')}
-                      </button>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                        <div>
-                          <label htmlFor="invoice-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.invoiceDate')}
-                          </label>
-                          <DateInput
-                            value={invoiceDate}
-                            onChange={v => setInvoiceDate(v)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              fontSize: 14,
-                              border: '1px solid #ddd',
-                              borderRadius: 4,
-                            }}
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="due-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.dueDate')}
-                          </label>
-                          <DateInput
-                            value={dueDate}
-                            onChange={v => setDueDate(v)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              fontSize: 14,
-                              border: '1px solid #ddd',
-                              borderRadius: 4,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <div>
-                          <label htmlFor="delivery-date" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.estDeliveryDate')} (optional)
-                          </label>
-                          <DateInput
-                            value={deliveryDate}
-                            onChange={v => setDeliveryDate(v)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              fontSize: 14,
-                              border: '1px solid #ddd',
-                              borderRadius: 4,
-                            }}
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="payment-method" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.paymentMethod')}
-                          </label>
-                          <select
-                            id="payment-method"
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              fontSize: 14,
-                              border: '1px solid #ddd',
-                              borderRadius: 4,
-                            }}
-                          >
-                            {(invoiceConfig.enabledPaymentMethods.length > 0
-                              ? invoiceConfig.enabledPaymentMethods
-                              : ['wire_transfer']
-                            ).map(method => (
-                              <option key={method} value={method}>
-                                {method === 'wire_transfer' ? 'Wire Transfer' : method === 'ach' ? 'ACH' : method}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {(invoiceDate && dueDate) && (
-                        <div style={{ marginTop: 16 }}>
-                          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                            {t('invoice.invoiceNo')}
-                          </label>
-                          {invoiceConfig.autoInvoiceNumber ? (
-                            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
-                              {invoiceNo}
-                            </div>
-                          ) : (
-                            <input
-                              type="text"
-                              value={invoiceNo}
-                              onChange={e => setInvoiceNo(e.target.value)}
-                              placeholder={lastInvoiceNo ? `${t('invoice.lastSaved')}: ${lastInvoiceNo}` : t('invoice.invoiceNoPlaceholder')}
-                              style={{ marginBottom: 20, fontSize: 16 }}
-                            />
-                          )}
-
-                          <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.companyInfo')}</div>
-                              {invoiceConfig.companyName && <div>{invoiceConfig.companyName}</div>}
-                              {invoiceConfig.companyAddress1 && <div>{invoiceConfig.companyAddress1}</div>}
-                              {invoiceConfig.companyAddress2 && <div>{invoiceConfig.companyAddress2}</div>}
-                              {invoiceConfig.companyPhone && <div>{invoiceConfig.companyPhone}</div>}
-                            </div>
-
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.ourContact')}</div>
-                              {invoiceConfig.contactName && <div>{invoiceConfig.contactName}</div>}
-                            </div>
-
-                            <div>
-                              {paymentMethod === 'ach' ? (<>
-                                <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.achInstructions')}</div>
-                                {invoiceConfig.achBankName && <div>{t('invoice.bankName')} {invoiceConfig.achBankName}</div>}
-                                {invoiceConfig.achBranch && <div>{t('tenantAdmin.achBranch')}: {invoiceConfig.achBranch}</div>}
-                                {invoiceConfig.achCityState && <div>{t('tenantAdmin.achCityState')}: {invoiceConfig.achCityState}</div>}
-                                {invoiceConfig.achAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.achAccountNumber}</div>}
-                                {invoiceConfig.achAba && <div>{t('tenantAdmin.achAba')}: {invoiceConfig.achAba}</div>}
-                              </>) : (<>
-                                <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
-                                {invoiceConfig.companyName && <div>{t('invoice.companyName')} {invoiceConfig.companyName}</div>}
-                                {invoiceConfig.bankName && <div>{t('invoice.bankName')} {invoiceConfig.bankName}</div>}
-                                {invoiceConfig.bankAccountName && <div>{t('invoice.accountName')} {invoiceConfig.bankAccountName}</div>}
-                                {invoiceConfig.bankAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.bankAccountNumber}</div>}
-                                {invoiceConfig.bankRoutingNumber && <div>{t('invoice.routingNumber')} {invoiceConfig.bankRoutingNumber}</div>}
-                              </>)}
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={handlePreviewInvoice}
-                            style={{
-                              padding: '10px 20px',
-                              border: 'none',
-                              borderRadius: 10,
-                              background: 'var(--accent)',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              fontSize: 14,
-                              fontWeight: 500
-                            }}
-                          >
-                            {t('invoice.previewInvoice')}
-                          </button>
-                        </div>
+                  {(invoiceDate && dueDate) && (
+                    <div style={{ marginTop: 16 }}>
+                      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('invoice.invoiceNo')}</label>
+                      {invoiceConfig.autoInvoiceNumber ? (
+                        <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>{invoiceNo}</div>
+                      ) : (
+                        <input type="text" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} placeholder={lastInvoiceNo ? `${t('invoice.lastSaved')}: ${lastInvoiceNo}` : t('invoice.invoiceNoPlaceholder')} style={{ marginBottom: 20, fontSize: 16 }} />
                       )}
-                    </>
+
+                      <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.companyInfo')}</div>
+                          {invoiceConfig.companyName && <div>{invoiceConfig.companyName}</div>}
+                          {invoiceConfig.companyAddress1 && <div>{invoiceConfig.companyAddress1}</div>}
+                          {invoiceConfig.companyAddress2 && <div>{invoiceConfig.companyAddress2}</div>}
+                          {invoiceConfig.companyPhone && <div>{invoiceConfig.companyPhone}</div>}
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.ourContact')}</div>
+                          {invoiceConfig.contactName && <div>{invoiceConfig.contactName}</div>}
+                        </div>
+                        <div>
+                          {paymentMethod === 'ach' ? (<>
+                            <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.achInstructions')}</div>
+                            {invoiceConfig.achBankName && <div>{t('invoice.bankName')} {invoiceConfig.achBankName}</div>}
+                            {invoiceConfig.achBranch && <div>{t('tenantAdmin.achBranch')}: {invoiceConfig.achBranch}</div>}
+                            {invoiceConfig.achCityState && <div>{t('tenantAdmin.achCityState')}: {invoiceConfig.achCityState}</div>}
+                            {invoiceConfig.achAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.achAccountNumber}</div>}
+                            {invoiceConfig.achAba && <div>{t('tenantAdmin.achAba')}: {invoiceConfig.achAba}</div>}
+                          </>) : (<>
+                            <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('invoice.wireInstructions')}</div>
+                            {invoiceConfig.companyName && <div>{t('invoice.companyName')} {invoiceConfig.companyName}</div>}
+                            {invoiceConfig.bankName && <div>{t('invoice.bankName')} {invoiceConfig.bankName}</div>}
+                            {invoiceConfig.bankAccountName && <div>{t('invoice.accountName')} {invoiceConfig.bankAccountName}</div>}
+                            {invoiceConfig.bankAccountNumber && <div>{t('invoice.accountNumber')} {invoiceConfig.bankAccountNumber}</div>}
+                            {invoiceConfig.bankRoutingNumber && <div>{t('invoice.routingNumber')} {invoiceConfig.bankRoutingNumber}</div>}
+                          </>)}
+                        </div>
+                      </div>
+
+                      <button onClick={handlePreviewInvoice} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}>
+                        {t('invoice.previewInvoice')}
+                      </button>
+                    </div>
                   )}
                 </>
               )}

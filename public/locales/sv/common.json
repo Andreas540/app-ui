@@ -726,7 +726,10 @@
     "saving": "Sparar...",
     "saved": "Sparad ✓",
     "saveFailed": "Kunde inte spara",
-    "achInstructions": "ACH-instruktioner:"
+    "achInstructions": "ACH-instruktioner:",
+    "invoiceRegistered": "Fakturera registrerade ordrar",
+    "invoiceUnregistered": "Fakturera ej registrerade ordrar",
+    "createOrders": "Skapa order(s)"
   },
   "supplierOrders": {
     "newTitle": "Ny beställning (L)",
