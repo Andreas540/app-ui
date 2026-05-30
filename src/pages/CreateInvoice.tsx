@@ -34,15 +34,13 @@ type Order = {
 
 type UnregLine = {
   id: string
-  date: string
   product_id: string
   qtyStr: string
   priceStr: string
-  notes: string
 }
 
 function emptyUnregLine(): UnregLine {
-  return { id: Math.random().toString(36).slice(2), date: todayYMD(), product_id: '', qtyStr: '', priceStr: '', notes: '' }
+  return { id: Math.random().toString(36).slice(2), product_id: '', qtyStr: '', priceStr: '' }
 }
 
 export default function CreateInvoicePage() {
@@ -74,6 +72,8 @@ export default function CreateInvoicePage() {
   const [lastInvoiceNo, setLastInvoiceNo] = useState<string | null>(null)
   const [invoiceRegistered, setInvoiceRegistered] = useState(true)
   const [invoiceUnregistered, setInvoiceUnregistered] = useState(false)
+  const [unregDate, setUnregDate] = useState(() => todayYMD())
+  const [unregNotes, setUnregNotes] = useState('')
   const [unregLines, setUnregLines] = useState<UnregLine[]>(() => [emptyUnregLine()])
   const [savingLines, setSavingLines] = useState(false)
   const [unregProducts, setUnregProducts] = useState<ProductWithCost[]>([])
@@ -261,40 +261,41 @@ const res = await fetch(`${base}/api/create-invoice`, {
     setSavingLines(true)
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const createdIds: string[] = []
-      for (const l of validLines) {
-        const res = await fetch(`${base}/api/orders`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            customer_id: selectedCustomerId,
-            date: l.date,
-            delivered: false,
-            delivered_at: null,
-            discount: 0,
-            notes: l.notes.trim() || undefined,
-            items: [{ product_id: l.product_id, qty: parseAmount(l.qtyStr), unit_price: parseAmount(l.priceStr) }],
-          }),
-        })
-        if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          throw new Error(`Failed to save order (${res.status}) ${text?.slice(0, 140)}`)
-        }
-        const data = await res.json()
-        createdIds.push(data.order_id)
+      const res = await fetch(`${base}/api/orders`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          customer_id: selectedCustomerId,
+          date: unregDate,
+          delivered: false,
+          delivered_at: null,
+          discount: 0,
+          notes: unregNotes.trim() || undefined,
+          items: validLines.map(l => ({
+            product_id: l.product_id,
+            qty: parseAmount(l.qtyStr),
+            unit_price: parseAmount(l.priceStr),
+          })),
+        }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Failed to save order (${res.status}) ${text?.slice(0, 140)}`)
       }
+      const data = await res.json()
       const fetchRes = await fetch(`${base}/api/create-invoice?customerId=${selectedCustomerId}`, {
         cache: 'no-store',
         headers: getAuthHeaders(),
       })
       if (fetchRes.ok) {
-        const data = await fetchRes.json()
-        const allOrders: Order[] = data.orders
-        const newOrders = allOrders.filter(o => createdIds.includes(o.order_id))
+        const fetchData = await fetchRes.json()
+        const allOrders: Order[] = fetchData.orders
+        const newOrders = allOrders.filter(o => o.order_id === data.order_id)
         setCreatedOrders(prev => [...prev, ...newOrders])
         if (invoiceRegistered) setOrders(allOrders)
       }
       setUnregLines([emptyUnregLine()])
+      setUnregNotes('')
     } catch (e: any) {
       alert(e?.message || 'Failed to create orders')
     } finally {
@@ -496,65 +497,101 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
               {/* Compact form for not-yet-registered orders */}
               {invoiceUnregistered && !showingConfirmed && (
-                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--border, #ddd)', borderRadius: 8 }}>
+                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
+
                   {unregLines.map((line, idx) => (
-                    <div key={line.id} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <DateInput
-                        value={line.date}
-                        onChange={v => updateUnregLine(idx, { date: v })}
-                        style={{ width: 130, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
-                      />
-                      <select
-                        value={line.product_id}
-                        onChange={e => onUnregProductChange(idx, e.target.value)}
-                        style={{ flex: '2 1 140px', padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
+                    <div key={line.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', marginBottom: 12 }}>
+
+                      {/* Group 1: date (first line only) + product — both columns on mobile via row-2col-mobile */}
+                      <div
+                        className="row row-2col-mobile"
+                        style={{ flex: idx === 0 ? '3 1 300px' : '3 1 200px', minWidth: 0 }}
                       >
-                        <option value="">— {t('orders.productOrService')} —</option>
-                        {unregProductGroup.length > 0 && (
-                          <optgroup label={t('orders.groupProducts')}>
-                            {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </optgroup>
+                        {idx === 0 ? (
+                          <div>
+                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                              {t('orders.orderDate')}
+                            </label>
+                            <DateInput value={unregDate} onChange={setUnregDate} />
+                          </div>
+                        ) : (
+                          <div style={{ display: 'none' }} />
                         )}
-                        {unregServiceGroup.length > 0 && (
-                          <optgroup label={t('orders.groupServices')}>
-                            {unregServiceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </optgroup>
+                        <div style={idx === 0 ? undefined : { gridColumn: '1 / -1' }}>
+                          {idx === 0 && (
+                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                              {t('orders.productOrService')}
+                            </label>
+                          )}
+                          <select value={line.product_id} onChange={e => onUnregProductChange(idx, e.target.value)}>
+                            <option value="">— {t('orders.productOrService')} —</option>
+                            {unregProductGroup.length > 0 && (
+                              <optgroup label={t('orders.groupProducts')}>
+                                {unregProductGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              </optgroup>
+                            )}
+                            {unregServiceGroup.length > 0 && (
+                              <optgroup label={t('orders.groupServices')}>
+                                {unregServiceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              </optgroup>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Group 2: qty + price + remove btn — wraps to own row on mobile */}
+                      <div style={{ flex: '2 1 180px', minWidth: 0, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {idx === 0 && (
+                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                              {t('quantity')}
+                            </label>
+                          )}
+                          <input
+                            type="text" inputMode="decimal" placeholder={t('quantity')}
+                            value={line.qtyStr}
+                            onChange={e => updateUnregLine(idx, { qtyStr: e.target.value.replace(/[^0-9.,]/g, '') })}
+                          />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {idx === 0 && (
+                            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                              {t('price')}
+                            </label>
+                          )}
+                          <input
+                            type="text" inputMode="decimal" placeholder={t('price')}
+                            value={line.priceStr}
+                            onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
+                          />
+                        </div>
+                        {unregLines.length > 1 && (
+                          <button
+                            onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
+                            style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0 4px', marginBottom: 0, height: 44, fontSize: 16 }}
+                          >✕</button>
                         )}
-                      </select>
-                      <input
-                        type="text" inputMode="decimal" placeholder={t('quantity')}
-                        value={line.qtyStr}
-                        onChange={e => updateUnregLine(idx, { qtyStr: e.target.value.replace(/[^0-9.,]/g, '') })}
-                        style={{ width: 60, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
-                      />
-                      <input
-                        type="text" inputMode="decimal" placeholder={t('price')}
-                        value={line.priceStr}
-                        onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
-                        style={{ width: 80, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
-                      />
-                      <input
-                        type="text" placeholder={t('notesOptional')}
-                        value={line.notes}
-                        onChange={e => updateUnregLine(idx, { notes: e.target.value })}
-                        style={{ flex: '3 1 100px', padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 4 }}
-                      />
-                      {unregLines.length > 1 && (
-                        <button
-                          onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, padding: '0 4px', lineHeight: 1 }}
-                        >✕</button>
-                      )}
+                      </div>
                     </div>
                   ))}
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 6 }}>
+
+                  {/* Notes — order-level, one field for the whole order */}
+                  <input
+                    type="text"
+                    placeholder={t('notesOptional')}
+                    value={unregNotes}
+                    onChange={e => setUnregNotes(e.target.value)}
+                    style={{ marginBottom: 12 }}
+                  />
+
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button className="helper" onClick={() => setUnregLines(prev => [...prev, emptyUnregLine()])}>
                       + {t('orders.addProduct')}
                     </button>
                     <button
                       onClick={handleCreateUnregOrders}
                       disabled={!canCreateOrders}
-                      style={{ padding: '6px 16px', border: 'none', borderRadius: 8, background: canCreateOrders ? 'var(--accent)' : '#ccc', color: '#fff', cursor: canCreateOrders ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 500 }}
+                      style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: canCreateOrders ? 'var(--accent)' : '#ccc', color: '#fff', cursor: canCreateOrders ? 'pointer' : 'not-allowed', fontSize: 14, fontWeight: 500 }}
                     >
                       {savingLines ? t('invoice.saving') : t('invoice.createOrders')}
                     </button>
