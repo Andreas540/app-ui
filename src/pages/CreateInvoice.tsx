@@ -264,8 +264,14 @@ const res = await fetch(`${base}/api/create-invoice`, {
   }
 
   const handleChooseSelected = () => {
-    const selectedRegistered = orders.filter(o => selectedOrders.has(o.item_id))
-    setConfirmedOrders([...createdOrders, ...selectedRegistered])
+    const allOrders = [...createdOrders, ...orders]
+    const seen = new Set<string>()
+    const deduped = allOrders.filter(o => {
+      if (seen.has(o.item_id)) return false
+      seen.add(o.item_id)
+      return true
+    })
+    setConfirmedOrders(deduped.filter(o => selectedOrders.has(o.item_id)))
     setShowingConfirmed(true)
   }
 
@@ -372,6 +378,11 @@ const res = await fetch(`${base}/api/create-invoice`, {
         const allOrders: Order[] = fetchData.orders
         const newOrders = allOrders.filter(o => o.order_id === data.order_id)
         setCreatedOrders(prev => [...prev, ...newOrders])
+        setSelectedOrders(prev => {
+          const next = new Set(prev)
+          newOrders.forEach(o => next.add(o.item_id))
+          return next
+        })
         if (invoiceRegistered) setOrders(allOrders)
       }
       setUnregLines([emptyUnregLine()])
@@ -718,10 +729,10 @@ const res = await fetch(`${base}/api/create-invoice`, {
                   {!ordersLoading && (orders.length > 0 || createdOrders.length > 0) && (
                     <>
                       <div style={{ border: '1px solid var(--border)', borderRadius: 10, maxHeight: 300, overflowY: 'auto', marginBottom: 12 }}>
-                        {/* Newly created orders — always pre-checked */}
+                        {/* Newly created orders */}
                         {createdOrders.map(order => (
-                          <div key={order.item_id} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--line)', alignItems: 'flex-start', fontSize: 14, background: 'var(--new-row-bg, rgba(40,167,69,0.06))' }}>
-                            <input type="checkbox" checked readOnly style={{ cursor: 'default', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
+                          <div key={order.item_id} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--line)', alignItems: 'flex-start', fontSize: 14 }}>
+                            <input type="checkbox" checked={selectedOrders.has(order.item_id)} onChange={() => toggleOrder(order.item_id)} style={{ cursor: 'pointer', width: 14, height: 14, marginTop: 2, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 12, marginBottom: 4 }}>
                                 <div style={{ whiteSpace: 'nowrap' }}>{formatDate(order.order_date)}</div>
@@ -736,8 +747,8 @@ const res = await fetch(`${base}/api/create-invoice`, {
                             </div>
                           </div>
                         ))}
-                        {/* Registered orders */}
-                        {orders.map(order => {
+                        {/* Registered orders (exclude any already shown in createdOrders) */}
+                        {orders.filter(o => !createdOrders.some(c => c.item_id === o.item_id)).map(order => {
                           const invNo = invoicedOrders.get(order.order_id)
                           const isInvoiced = invNo !== undefined
                           return (
