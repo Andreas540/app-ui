@@ -11,6 +11,41 @@ import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useCurrency } from '../lib/useCurrency'
 
+type Platform = 'ios' | 'android' | 'mac' | 'windows' | 'other'
+
+function getPlatform(): Platform {
+  const ua = navigator.userAgent
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'
+  if (/Android/i.test(ua)) return 'android'
+  if (/Macintosh|MacIntel/i.test(ua)) return 'mac'
+  if (/Windows/i.test(ua)) return 'windows'
+  return 'other'
+}
+
+function PlatformShareIcon({ platform }: { platform: Platform }) {
+  const p = { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  if (platform === 'android') return (
+    // Three connected circles — standard Android share
+    <svg {...p}>
+      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  )
+  if (platform === 'windows') return (
+    // Send/forward arrow — Windows share style
+    <svg {...p}>
+      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  )
+  // iOS / macOS / other: box with upward arrow — Apple share icon
+  return (
+    <svg {...p}>
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+  )
+}
+
 export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
   const { t: ti } = useTranslation('info')
@@ -18,6 +53,7 @@ export default function CustomerDetailPage() {
   const tenantUi = getTenantConfig(user?.tenantId).ui
   const compactOrderRows = tenantUi.compactCustomerOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
+  const platform = getPlatform()
   const cfgShowNewOrder      = tenantUi.customerDetailShowNewOrder
   const cfgShowNewPayment    = tenantUi.customerDetailShowNewPayment
   const cfgShowNewBooking    = tenantUi.customerDetailShowNewBooking && hasFeature('new-booking')
@@ -483,13 +519,13 @@ export default function CustomerDetailPage() {
 
       {/* Share links */}
       {cfgShowShareBooking && (
-        <div style={{ marginTop: 4, marginBottom: 4 }}>
+        <div style={{ marginTop: 8, marginBottom: 4 }}>
           <button
             type="button"
             onClick={() => setShowShareBooking(v => !v)}
-            className="helper"
-            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
           >
+            <PlatformShareIcon platform={platform} />
             {t('customers.shareBookingPage')}
           </button>
 
@@ -535,13 +571,13 @@ export default function CustomerDetailPage() {
         </div>
       )}
       {/* Share order page with customer */}
-      {cfgShowShareOrder && <div style={{ marginTop: 4, marginBottom: 4 }}>
+      {cfgShowShareOrder && <div style={{ marginTop: 8, marginBottom: 4 }}>
         <button
           type="button"
           onClick={() => setShowShareOrder(v => !v)}
-          className="helper"
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
         >
+          <PlatformShareIcon platform={platform} />
           {t('customers.shareOrderPage')}
         </button>
 
