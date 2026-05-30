@@ -33,6 +33,7 @@ interface AuthContextType {
   login: (token: string, userData: User) => void
   logout: () => void
   verifyAuth: () => Promise<boolean>
+  refreshConfig: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -120,6 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return verifyToken(token)
   }
 
+  const refreshConfig = () => {
+    try {
+      const stored = localStorage.getItem('userData')
+      if (stored) setUser(JSON.parse(stored) as User)
+    } catch { /* ignore */ }
+  }
+
   const hasFeature = (featureId: FeatureId): boolean => {
     if (!user) return false
     // Super admins with tenant selected have access to all features
@@ -138,7 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasFeature,
     login,
     logout,
-    verifyAuth
+    verifyAuth,
+    refreshConfig,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

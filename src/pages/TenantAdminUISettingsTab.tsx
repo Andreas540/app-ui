@@ -138,7 +138,7 @@ function Row({ label, help, customized, children }: { label: string; help?: stri
 
 export default function TenantAdminUISettingsTab({ initialSection }: { initialSection?: Section }) {
   const { t } = useTranslation()
-  const { user, hasFeature } = useAuth()
+  const { user, hasFeature, refreshConfig } = useAuth()
 
   const [section, setSection] = useState<Section>(initialSection ?? 'terminology')
   const [cfg, setCfg]         = useState<UiConfig>({})
@@ -169,6 +169,12 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
         body: JSON.stringify({ action: 'updateUiConfig', uiConfig: cfg }),
       })
       if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+      try {
+        const stored = JSON.parse(localStorage.getItem('userData') || '{}')
+        stored.uiConfig = cfg
+        localStorage.setItem('userData', JSON.stringify(stored))
+      } catch { /* ignore */ }
+      refreshConfig()
       setSaveMsg(t('tenantCustom.saved'))
       setTimeout(() => setSaveMsg(''), 3000)
     } catch (e: any) {
