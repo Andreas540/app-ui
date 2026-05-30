@@ -354,6 +354,8 @@
     "askCustomerToUpdate": "Pedir al cliente que añada información faltante",
     "shareOrderPage": "Compartir página de pedido con el cliente",
     "shareBookingPage": "Compartir página de reserva con el cliente",
+    "shareOrderShort": "Pedido",
+    "shareBookingShort": "Reserva",
     "shareOrderLine1": "Envía este enlace a tu cliente para que pueda hacer un pedido.",
     "shareOrderLine2": "Tu cliente no tendrá acceso a tu aplicación, solo al formulario de pedido.",
     "shareOrderCustomizeText": "Puedes personalizar los precios y productos disponibles para este cliente",

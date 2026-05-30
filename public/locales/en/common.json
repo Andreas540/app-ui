@@ -354,6 +354,8 @@
     "askCustomerToUpdate": "Ask customer to add missing information",
     "shareOrderPage": "Share order page with customer",
     "shareBookingPage": "Share booking page with customer",
+    "shareOrderShort": "Order",
+    "shareBookingShort": "Booking",
     "shareOrderLine1": "Send this link to your customer so they can place an order.",
     "shareOrderLine2": "Your customer will not have access to your app, only the order form.",
     "shareOrderCustomizeText": "You can customize prices and available products for this customer",
