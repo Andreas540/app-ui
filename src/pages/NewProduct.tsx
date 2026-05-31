@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
+import { ImagePicker } from '../components/ImagePicker'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
 
@@ -28,6 +29,8 @@ export default function NewProduct() {
 
   const [durationStr, setDurationStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
+
+  const [imageData, setImageData] = useState<string | null>(null)
 
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
@@ -104,12 +107,13 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
       setDurationStr('')
       setPriceStr('')
+      setImageData(null)
       await loadProducts()
       if (showHistorical) {
         await loadHistoricalCosts()
@@ -222,11 +226,17 @@ export default function NewProduct() {
         />
       </div>
 
+      <ImagePicker
+        label={category === 'service' ? t('products.serviceImage') : t('products.productImage')}
+        value={imageData}
+        onChange={setImageData}
+      />
+
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr('') }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null) }} disabled={saving}>
           {t('clear')}
         </button>
       </div>

@@ -261,7 +261,8 @@ async function getBookingData(event) {
 
     // ── Services + availability map request ───────────────────────────────
     let rawServices = await sql`
-      SELECT id, name, duration_minutes, price_amount, currency
+      SELECT id, name, duration_minutes, price_amount, currency,
+             (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${tenantId} AND category = 'service'
       ORDER BY name

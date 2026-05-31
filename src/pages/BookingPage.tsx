@@ -16,6 +16,7 @@ interface Service {
   duration_minutes: number | null
   price_amount: string | null
   currency: string | null
+  has_image?: boolean
 }
 
 type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm' | 'canceled' | 'payment-pending'
@@ -601,7 +602,16 @@ export default function BookingPage() {
                     onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
                   >
-                    <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{svc.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {svc.has_image && (
+                        <img
+                          src={`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}`}
+                          alt=""
+                          style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      )}
+                      <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{svc.name}</div>
+                    </div>
                     <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', gap: 12 }}>
                       {svc.duration_minutes != null && <span>{t('bookingPage.min', { n: svc.duration_minutes })}</span>}
                       {svc.price_amount != null && Number(svc.price_amount) > 0 && (

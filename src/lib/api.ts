@@ -353,7 +353,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -370,7 +370,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
@@ -389,6 +389,7 @@ export async function updateProduct(input: {
   effective_date?: string
   duration_minutes?: number | null
   price_amount?: number | null
+  image_data?: string | null
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
   const r = await apiFetch(`${base}/api/product`, {
     method: 'PUT',

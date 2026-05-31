@@ -78,7 +78,7 @@ function resolveLang(param: string | null): Lang {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Product = { id: string; name: string; price_amount: number }
+type Product = { id: string; name: string; price_amount: number; has_image?: boolean }
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -279,7 +279,16 @@ export default function OrderFormPage() {
                   borderBottom: '1px solid #f0f0f0',
                 }}
               >
-                <span style={{ fontSize: 15, color: '#1a1a2e' }}>{p.name}</span>
+                <span style={{ fontSize: 15, color: '#1a1a2e', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {p.has_image && (
+                    <img
+                      src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`}
+                      alt=""
+                      style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  )}
+                  {p.name}
+                </span>
                 <span style={{ fontSize: 14, color: '#555', textAlign: 'right' }}>
                   {fmtMoney(p.price_amount)}
                 </span>

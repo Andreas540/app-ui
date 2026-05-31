@@ -24,7 +24,8 @@ if (authz.error) return cors(403, { error: authz.error });
 const TENANT_ID = authz.tenantId;
 
     const rows = await sql`
-      SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id
+      SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id,
+             (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
       ORDER BY category, name
@@ -54,6 +55,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const priceAmount = body.price_amount != null
       ? Number(body.price_amount)
       : null
+    const imageData = typeof body.image_data === 'string' ? body.image_data : null
 
     const sql = neon(DATABASE_URL);
 
@@ -64,9 +66,10 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount})
-      RETURNING id, name, cost, category, duration_minutes, price_amount
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData})
+      RETURNING id, name, cost, category, duration_minutes, price_amount,
+                (image_data IS NOT NULL AND image_data != '') AS has_image
     `;
     const product = rows[0];
 
@@ -109,6 +112,9 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const rawApply = body.apply_to_history;
     const applyToHistory =
       rawApply === true || rawApply === 'true' || rawApply === 1 || rawApply === '1';
+
+    const hasImageChange = 'image_data' in body
+    const newImageData = hasImageChange ? (body.image_data === null ? null : typeof body.image_data === 'string' ? body.image_data : undefined) : undefined
 
     let newCostNum = undefined;
     if (body.cost !== undefined) {
@@ -170,9 +176,11 @@ const TENANT_ID = authz.tenantId;
   SET name             = COALESCE(${effectiveName ?? null}, name),
       cost             = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE cost END,
       duration_minutes = CASE WHEN ${newDurationMinutes !== undefined} THEN ${newDurationMinutes ?? null} ELSE duration_minutes END,
-      price_amount     = CASE WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null} ELSE price_amount END
+      price_amount     = CASE WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null} ELSE price_amount END,
+      image_data       = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN ${newImageData ?? null} ELSE image_data END
   WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-  RETURNING id, name, cost, duration_minutes, price_amount
+  RETURNING id, name, cost, duration_minutes, price_amount,
+            (image_data IS NOT NULL AND image_data != '') AS has_image
 `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 

@@ -99,7 +99,8 @@ async function getForm(event) {
           p.id,
           p.name,
           COALESCE(o.price_amount, p.price_amount)::float8 AS price_amount,
-          COALESCE(o.is_available, true) AS is_available
+          COALESCE(o.is_available, true) AS is_available,
+          (p.image_data IS NOT NULL AND p.image_data != '') AS has_image
         FROM products p
         LEFT JOIN customer_product_offers o
           ON  o.product_id   = p.id

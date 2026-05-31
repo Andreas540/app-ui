@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
+import { ImagePicker } from '../components/ImagePicker'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
@@ -26,6 +27,10 @@ export default function EditProduct() {
 
   const [durationStr, setDurationStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
+
+  const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const [imageDisplayUrl, setImageDisplayUrl] = useState<string | null>(null)
+  const [imageChangeData, setImageChangeData] = useState<string | null | undefined>(undefined)
 
   useEffect(() => {
     (async () => {
@@ -61,6 +66,8 @@ export default function EditProduct() {
     } else {
       setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
     }
+    setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}` : null)
+    setImageChangeData(undefined)
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseCostInput(s: string) {
@@ -95,6 +102,7 @@ export default function EditProduct() {
         effective_date: costOption === 'specific' ? specificDate : undefined,
         duration_minutes: durationMinutes,
         price_amount: priceAmount,
+        ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -250,6 +258,12 @@ export default function EditProduct() {
         </div>
       </div>
 
+      <ImagePicker
+        label={type === 'service' ? t('products.serviceImage') : t('products.productImage')}
+        value={imageDisplayUrl}
+        onChange={dataUrl => { setImageDisplayUrl(dataUrl); setImageChangeData(dataUrl) }}
+      />
+
       <div style={{ marginTop: 16, display:'flex', gap:8 }}>
         <button className="primary" onClick={save} disabled={saving} style={{ height: BTN_H }}>
           {saving ? t('saving') : t('saveChanges')}
@@ -265,9 +279,11 @@ export default function EditProduct() {
               } else {
                 setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
               }
+              setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}` : null)
             }
             setCostOption('next')
             setSpecificDate(todayYMD())
+            setImageChangeData(undefined)
           }}
           disabled={saving}
         >
