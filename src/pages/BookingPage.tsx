@@ -4,6 +4,7 @@
 // Steps: service → date → time → contact → confirmation
 
 import { useEffect, useRef, useState } from 'react'
+import { Lightbox } from '../components/Lightbox'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Vibrant } from 'node-vibrant/browser'
@@ -241,6 +242,7 @@ export default function BookingPage() {
   const [knownCustomer, setKnownCustomer] = useState<{ name: string; email: string; phone?: string | null } | null>(null)
 
   // Submission
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [confirmation, setConfirmation] = useState<{
     booking_id: string
@@ -532,6 +534,7 @@ export default function BookingPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
+    <>
     <div style={pageStyle}>
       {/* Reset global button hover/focus rules that leak into this public page */}
       <style>{`
@@ -607,7 +610,8 @@ export default function BookingPage() {
                         <img
                           src={`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}`}
                           alt=""
-                          style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                          onClick={e => { e.stopPropagation(); setLightboxSrc(`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}`) }}
+                          style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0, cursor: 'zoom-in' }}
                         />
                       )}
                       <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{svc.name}</div>
@@ -843,5 +847,7 @@ export default function BookingPage() {
         )}
       </div>
     </div>
+    {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+    </>
   )
 }

@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Vibrant } from 'node-vibrant/browser'
+import { Lightbox } from '../components/Lightbox'
 
 // ── Inline translations ───────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ export default function OrderFormPage() {
   }
   const fmtMoney = (n: number) => new Intl.NumberFormat(lang, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0)
 
+  const [lightboxSrc,  setLightboxSrc]  = useState<string | null>(null)
   const [status,       setStatus]       = useState<'loading' | 'ready' | 'submitting' | 'done' | 'error' | 'invalid'>('loading')
   const [errMsg,       setErrMsg]       = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -232,6 +234,7 @@ export default function OrderFormPage() {
   }
 
   return (
+    <>
     <div style={page}>
       <div style={{ maxWidth: 520, width: '100%' }}>
         {(tenantIcon || tenantName) && (
@@ -284,7 +287,8 @@ export default function OrderFormPage() {
                     <img
                       src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`}
                       alt=""
-                      style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                      onClick={() => setLightboxSrc(`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`)}
+                      style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0, cursor: 'zoom-in' }}
                     />
                   )}
                   {p.name}
@@ -371,5 +375,7 @@ export default function OrderFormPage() {
       </div>
       </div>
     </div>
+    {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+    </>
   )
 }

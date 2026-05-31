@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cropToSquare } from '../lib/imageUtils'
+import { Lightbox } from './Lightbox'
 
 interface ImagePickerProps {
   label: string
@@ -11,6 +12,7 @@ interface ImagePickerProps {
 export function ImagePicker({ label, value, onChange }: ImagePickerProps) {
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [lightbox, setLightbox] = useState(false)
 
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return
@@ -25,12 +27,12 @@ export function ImagePicker({ label, value, onChange }: ImagePickerProps) {
       <label>{label}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
         <div
-          onClick={() => inputRef.current?.click()}
+          onClick={() => value ? setLightbox(true) : inputRef.current?.click()}
           style={{
             width: 80, height: 80,
             border: '1.5px dashed var(--border)',
             borderRadius: 10,
-            cursor: 'pointer',
+            cursor: value ? 'zoom-in' : 'pointer',
             overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--input-bg)',
@@ -70,6 +72,7 @@ export function ImagePicker({ label, value, onChange }: ImagePickerProps) {
           if (e.target.files?.[0]) { handleFile(e.target.files[0]); e.target.value = '' }
         }}
       />
+      {lightbox && value && <Lightbox src={value} onClose={() => setLightbox(false)} />}
     </div>
   )
 }
