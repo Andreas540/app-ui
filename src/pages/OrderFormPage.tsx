@@ -79,7 +79,7 @@ function resolveLang(param: string | null): Lang {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Product = { id: string; name: string; price_amount: number; has_image?: boolean }
+type Product = { id: string; name: string; price_amount: number; has_image?: boolean; image_version?: number }
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -285,9 +285,9 @@ export default function OrderFormPage() {
                 <span style={{ fontSize: 15, color: '#1a1a2e', display: 'flex', alignItems: 'center', gap: 8 }}>
                   {p.has_image && (
                     <img
-                      src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`}
+                      src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}${p.image_version ? `&v=${p.image_version}` : ''}`}
                       alt=""
-                      onClick={() => setLightboxSrc(`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`)}
+                      onClick={() => setLightboxSrc(`${BASE}/.netlify/functions/serve-product-image?id=${p.id}${p.image_version ? `&v=${p.image_version}` : ''}`)}
                       style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0, cursor: 'zoom-in' }}
                     />
                   )}

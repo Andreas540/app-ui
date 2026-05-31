@@ -18,6 +18,7 @@ interface Service {
   price_amount: string | null
   currency: string | null
   has_image?: boolean
+  image_version?: number
 }
 
 type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'confirm' | 'canceled' | 'payment-pending'
@@ -608,9 +609,9 @@ export default function BookingPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {svc.has_image && (
                         <img
-                          src={`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}`}
+                          src={`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}${svc.image_version ? `&v=${svc.image_version}` : ''}`}
                           alt=""
-                          onClick={e => { e.stopPropagation(); setLightboxSrc(`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}`) }}
+                          onClick={e => { e.stopPropagation(); setLightboxSrc(`${apiBase()}/.netlify/functions/serve-product-image?id=${svc.id}${svc.image_version ? `&v=${svc.image_version}` : ''}`) }}
                           style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', flexShrink: 0, cursor: 'zoom-in' }}
                         />
                       )}

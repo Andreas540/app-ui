@@ -262,7 +262,8 @@ async function getBookingData(event) {
     // ── Services + availability map request ───────────────────────────────
     let rawServices = await sql`
       SELECT id, name, duration_minutes, price_amount, currency,
-             (image_data IS NOT NULL AND image_data != '') AS has_image
+             (image_data IS NOT NULL AND image_data != '') AS has_image,
+             EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
       FROM products
       WHERE tenant_id = ${tenantId} AND category = 'service'
       ORDER BY name

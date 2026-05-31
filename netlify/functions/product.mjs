@@ -66,10 +66,11 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData})
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null})
       RETURNING id, name, cost, category, duration_minutes, price_amount,
-                (image_data IS NOT NULL AND image_data != '') AS has_image
+                (image_data IS NOT NULL AND image_data != '') AS has_image,
+                EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
     `;
     const product = rows[0];
 
@@ -177,10 +178,12 @@ const TENANT_ID = authz.tenantId;
       cost             = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE cost END,
       duration_minutes = CASE WHEN ${newDurationMinutes !== undefined} THEN ${newDurationMinutes ?? null} ELSE duration_minutes END,
       price_amount     = CASE WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null} ELSE price_amount END,
-      image_data       = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN ${newImageData ?? null} ELSE image_data END
+      image_data         = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN ${newImageData ?? null} ELSE image_data END,
+      image_updated_at   = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN now() ELSE image_updated_at END
   WHERE tenant_id = ${TENANT_ID} AND id = ${id}
   RETURNING id, name, cost, duration_minutes, price_amount,
-            (image_data IS NOT NULL AND image_data != '') AS has_image
+            (image_data IS NOT NULL AND image_data != '') AS has_image,
+            EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
 `;
     if (updatedRows.length === 0) return cors(404, { error: 'Not found' });
 
