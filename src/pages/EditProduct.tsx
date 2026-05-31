@@ -66,7 +66,7 @@ export default function EditProduct() {
     } else {
       setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
     }
-    setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}` : null)
+    setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
     setImageChangeData(undefined)
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -279,7 +279,7 @@ export default function EditProduct() {
               } else {
                 setPriceStr(selected.price_amount == null ? '' : String(selected.price_amount))
               }
-              setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}` : null)
+              setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
             }
             setCostOption('next')
             setSpecificDate(todayYMD())
