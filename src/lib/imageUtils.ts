@@ -18,7 +18,7 @@ export function cropToSquare(file: File, targetSize = 120): Promise<string> {
           0, 0,
           targetSize, targetSize,
         )
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
+        resolve(canvas.toDataURL('image/jpeg', 0.90))
       }
       img.onerror = reject
       img.src = e.target?.result as string

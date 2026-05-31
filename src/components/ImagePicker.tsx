@@ -17,7 +17,7 @@ export function ImagePicker({ label, value, onChange }: ImagePickerProps) {
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return
     try {
-      const dataUrl = await cropToSquare(file, 600)
+      const dataUrl = await cropToSquare(file, 1600)
       onChange(dataUrl)
     } catch {}
   }
