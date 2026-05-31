@@ -20,6 +20,7 @@ export function Lightbox({ src, onClose }: LightboxProps) {
         background: 'rgba(0,0,0,0.85)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'zoom-out',
+        overflow: 'hidden',
       }}
     >
       <img

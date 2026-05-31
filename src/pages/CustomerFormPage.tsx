@@ -189,6 +189,7 @@ export default function CustomerFormPage() {
     position: 'fixed',
     inset: 0,
     overflowY: 'auto',
+    overflowX: 'hidden',
     background: bgColor,
     display: 'flex',
     alignItems: 'flex-start',

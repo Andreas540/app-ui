@@ -169,6 +169,7 @@ export default function OrderFormPage() {
     position: 'fixed',
     inset: 0,
     overflowY: 'auto',
+    overflowX: 'hidden',
     background: bgColor,
     display: 'flex',
     alignItems: 'flex-start',
