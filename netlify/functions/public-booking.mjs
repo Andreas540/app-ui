@@ -59,8 +59,19 @@ async function getBookingData(event) {
     const booking_id     = params.booking_id  // post-payment confirmation fetch
     const session_id     = params.session_id  // Stripe session ID from success URL
     const customerToken  = params.customer_token || null
-    const customerPayload = customerToken ? verifyCustomerToken(customerToken) : null
-    const customerId     = customerPayload?.customer_id || null
+    let customerId = null
+    if (customerToken) {
+      if (String(customerToken).includes('.')) {
+        const p = verifyCustomerToken(customerToken)
+        customerId = p?.customer_id || null
+      } else {
+        const rows = await sql`
+          SELECT customer_id::text FROM customer_links
+          WHERE id = ${customerToken} AND expires_at > now() LIMIT 1
+        `
+        customerId = rows[0]?.customer_id || null
+      }
+    }
 
     // ── Booking detail fetch (post-payment return) ─────────────────────────
     if (booking_id && slug) {

@@ -61,16 +61,31 @@ function verifyToken(token) {
   return { tenantId: String(payload.tenant_id), customerId: String(payload.customer_id) }
 }
 
+// ── Link resolution: short DB ID (new) or legacy JWT (old) ───────────────────
+
+async function resolveLink(sql, token) {
+  if (!token) return { error: 'Missing token' }
+  if (String(token).includes('.')) return verifyToken(token)
+  const rows = await sql`
+    SELECT tenant_id::text, customer_id::text FROM customer_links
+    WHERE id = ${token} AND expires_at > now() LIMIT 1
+  `
+  if (!rows.length) return { error: 'Link expired or invalid' }
+  return { tenantId: rows[0].tenant_id, customerId: rows[0].customer_id }
+}
+
 // ── GET /api/order-form?token=… ───────────────────────────────────────────────
 
 async function getForm(event) {
   try {
-    const token    = event.queryStringParameters?.token
-    const verified = verifyToken(token)
-    if (verified.error) return cors(401, { error: verified.error })
+    const token = event.queryStringParameters?.token
+    if (!token) return cors(401, { error: 'Missing token' })
 
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
+
+    const verified = await resolveLink(sql, token)
+    if (verified.error) return cors(401, { error: verified.error })
 
     // Ensure offers table exists
     await sql`
@@ -140,16 +155,16 @@ async function getForm(event) {
 
 async function submitForm(event) {
   try {
-    const body     = JSON.parse(event.body || '{}')
-    const verified = verifyToken(body.token)
-    if (verified.error) return cors(401, { error: verified.error })
-
+    const body  = JSON.parse(event.body || '{}')
     const items = Array.isArray(body.items) ? body.items : []
     const validItems = items.filter(i => i?.product_id && Number.isInteger(Number(i.qty)) && Number(i.qty) > 0)
     if (validItems.length === 0) return cors(400, { error: 'No valid items' })
 
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
+
+    const verified = await resolveLink(sql, body.token)
+    if (verified.error) return cors(401, { error: verified.error })
 
     // Verify customer belongs to tenant
     const customerRows = await sql`

@@ -1,5 +1,5 @@
 // netlify/functions/customer-link.mjs
-// POST: app auth required — creates a draft customer record and returns a signed share link.
+// POST: app auth required — creates a short share link for a customer-specific page.
 import crypto from 'crypto'
 import { resolveAuthz } from './utils/auth.mjs'
 
@@ -9,24 +9,19 @@ export async function handler(event) {
   return cors(405, { error: 'Method not allowed' }, event)
 }
 
-// ── Token helpers (must match customer-form.mjs verify) ───────────────────────
+// ── Short link helpers ────────────────────────────────────────────────────────
 
-function base64urlEncode(bufOrStr) {
-  const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
-  return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+function generateShortId() {
+  return crypto.randomBytes(7).toString('base64url') // 10 URL-safe chars
 }
 
-function generateCustomerToken({ tenantId, customerId, expiresInDays = 30 }) {
-  const secret = process.env.CUSTOMER_TOKEN_SECRET
-  if (!secret) throw new Error('CUSTOMER_TOKEN_SECRET missing')
-
-  const exp = Math.floor(Date.now() / 1000) + expiresInDays * 24 * 60 * 60
-  const payload = { tenant_id: String(tenantId), customer_id: String(customerId), exp }
-  const payloadB64 = base64urlEncode(JSON.stringify(payload))
-  const sigB64 = base64urlEncode(
-    crypto.createHmac('sha256', secret).update(payloadB64).digest()
-  )
-  return `${payloadB64}.${sigB64}`
+async function storeLink(sql, { tenantId, customerId, type, lang }) {
+  const id = generateShortId()
+  await sql`
+    INSERT INTO customer_links (id, tenant_id, customer_id, type, lang)
+    VALUES (${id}, ${tenantId}::uuid, ${customerId}::uuid, ${type}, ${lang || null})
+  `
+  return id
 }
 
 // ── POST /api/customer-link ───────────────────────────────────────────────────
@@ -55,7 +50,7 @@ async function createLink(event) {
 
     const lang = body.lang ? String(body.lang) : ''
 
-    // ── If customer_id provided, generate token for existing customer ─────
+    // ── If customer_id provided, generate link for existing customer ──────
     if (body.customer_id) {
       const rows = await sql`
         SELECT id, name FROM customers
@@ -64,13 +59,11 @@ async function createLink(event) {
       `
       if (rows.length === 0) return cors(404, { error: 'Customer not found' }, event)
       const existing = rows[0]
-      const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: existing.id })
 
-      // type=order → order form page; type=booking → customer booking page; default → customer info form
       if (body.type === 'order') {
-        const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : ''].filter(Boolean)
-        const qs = queryParts.length ? `?${queryParts.join('&')}` : ''
-        const url = `${baseUrl}/order-form/${encodeURIComponent(token)}${qs}`
+        const id = await storeLink(sql, { tenantId: TENANT_ID, customerId: existing.id, type: 'order', lang })
+        const qs = lang ? `?lang=${encodeURIComponent(lang)}` : ''
+        const url = `${baseUrl}/order-form/${id}${qs}`
         return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
       }
 
@@ -78,12 +71,15 @@ async function createLink(event) {
         const tenantRows = await sql`SELECT booking_slug FROM tenants WHERE id = ${TENANT_ID}::uuid LIMIT 1`
         const slug = tenantRows[0]?.booking_slug
         if (!slug) return cors(400, { error: 'Booking page URL not configured. Set it in Account Admin → Booking.' }, event)
-        const url = `${baseUrl}/book/${slug}?customer_token=${encodeURIComponent(token)}`
+        const id = await storeLink(sql, { tenantId: TENANT_ID, customerId: existing.id, type: 'booking', lang })
+        const url = `${baseUrl}/book/${slug}?customer_token=${id}`
         return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
       }
 
+      // default → customer info form
+      const id = await storeLink(sql, { tenantId: TENANT_ID, customerId: existing.id, type: 'info', lang })
       const queryParts = [lang ? `lang=${encodeURIComponent(lang)}` : '', 'type=update'].filter(Boolean)
-      const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}?${queryParts.join('&')}`
+      const url = `${baseUrl}/customer-form/${id}?${queryParts.join('&')}`
       return cors(200, { ok: true, url, customer_id: existing.id, name: existing.name }, event)
     }
 
@@ -91,7 +87,6 @@ async function createLink(event) {
     let name        = body.name         ? String(body.name).trim()         : ''
     let companyName = body.company_name ? String(body.company_name).trim() : ''
 
-    // Assign temporary name "Customer #X" for any empty name fields
     if (!name || !companyName) {
       const [{ count }] = await sql`
         SELECT COUNT(*)::int AS count FROM customers WHERE tenant_id = ${TENANT_ID}::uuid
@@ -124,9 +119,8 @@ async function createLink(event) {
       RETURNING id
     `
 
-    const token = generateCustomerToken({ tenantId: TENANT_ID, customerId: customer.id })
-
-    const url = `${baseUrl}/customer-form/${encodeURIComponent(token)}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
+    const id = await storeLink(sql, { tenantId: TENANT_ID, customerId: customer.id, type: 'info', lang })
+    const url = `${baseUrl}/customer-form/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`
 
     return cors(200, { ok: true, url, customer_id: customer.id, name }, event)
   } catch (e) {

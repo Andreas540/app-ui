@@ -59,16 +59,31 @@ function verifyCustomerToken(token) {
   return { tenantId: String(payload.tenant_id), customerId: String(payload.customer_id) }
 }
 
+// ── Link resolution: short DB ID (new) or legacy JWT (old) ───────────────────
+
+async function resolveLink(sql, token) {
+  if (!token) return { error: 'Missing token' }
+  if (String(token).includes('.')) return verifyCustomerToken(token)
+  const rows = await sql`
+    SELECT tenant_id::text, customer_id::text FROM customer_links
+    WHERE id = ${token} AND expires_at > now() LIMIT 1
+  `
+  if (!rows.length) return { error: 'Link expired or invalid' }
+  return { tenantId: rows[0].tenant_id, customerId: rows[0].customer_id }
+}
+
 // ── GET /api/customer-form?token=… ───────────────────────────────────────────
 
 async function getForm(event) {
   try {
-    const token    = event.queryStringParameters?.token
-    const verified = verifyCustomerToken(token)
-    if (verified.error) return cors(401, { error: verified.error }, event)
+    const token = event.queryStringParameters?.token
+    if (!token) return cors(401, { error: 'Missing token' }, event)
 
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
+
+    const verified = await resolveLink(sql, token)
+    if (verified.error) return cors(401, { error: verified.error }, event)
 
     const [rows, tenantRows] = await Promise.all([
       sql`
@@ -104,12 +119,13 @@ async function getForm(event) {
 
 async function submitForm(event) {
   try {
-    const body     = JSON.parse(event.body || '{}')
-    const verified = verifyCustomerToken(body.token)
-    if (verified.error) return cors(401, { error: verified.error }, event)
+    const body = JSON.parse(event.body || '{}')
 
     const { neon } = await import('@neondatabase/serverless')
     const sql = neon(process.env.DATABASE_URL)
+
+    const verified = await resolveLink(sql, body.token)
+    if (verified.error) return cors(401, { error: verified.error }, event)
 
     const existing = await sql`
       SELECT name, company_name, email, phone, address1, address2, city, state, postal_code, country
