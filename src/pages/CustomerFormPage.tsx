@@ -186,9 +186,7 @@ export default function CustomerFormPage() {
   // ── Styles — always explicit, no CSS variables, works outside app theme ──────
 
   const page: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    overflowY: 'auto',
+    minHeight: '100vh',
     overflowX: 'hidden',
     background: bgColor,
     display: 'flex',
