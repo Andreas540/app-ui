@@ -166,8 +166,10 @@ export default function OrderFormPage() {
   // ── Styles ────────────────────────────────────────────────────────────────────
 
   const page: React.CSSProperties = {
-    minHeight: '100vh',
-    overflowX: 'hidden',
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    overflow: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: bgColor,
     display: 'flex',
     alignItems: 'flex-start',
