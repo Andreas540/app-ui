@@ -513,7 +513,7 @@ export default function BookingPage() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '10px 12px',
-    fontSize: 15,
+    fontSize: 16,
     border: '1px solid #ddd',
     borderRadius: 8,
     boxSizing: 'border-box',

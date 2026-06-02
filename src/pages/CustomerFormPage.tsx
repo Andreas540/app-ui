@@ -219,7 +219,7 @@ export default function CustomerFormPage() {
     padding: '10px 12px',
     border: '1px solid #d0d0d0',
     borderRadius: 6,
-    fontSize: 15,
+    fontSize: 16,
     outline: 'none',
     boxSizing: 'border-box',
     background: '#ffffff',
