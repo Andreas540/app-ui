@@ -1721,6 +1721,7 @@
     "conflictsDesc": "Some rows share the same email or phone. Choose how to handle each group.",
     "conflictEmail": "Duplicate email: {{val}}",
     "conflictPhone": "Duplicate phone: {{val}}",
+    "conflictName": "Duplicate name: {{val}}",
     "conflictMerge": "Merge into one customer",
     "conflictMergeDesc": "Keeps the most complete data from all matching rows",
     "conflictSeparate": "Keep as separate customers",

@@ -1732,6 +1732,7 @@
     "conflictsDesc": "Algunas filas comparten el mismo correo o teléfono. Elige cómo manejar cada grupo.",
     "conflictEmail": "Correo duplicado: {{val}}",
     "conflictPhone": "Teléfono duplicado: {{val}}",
+    "conflictName": "Nombre duplicado: {{val}}",
     "conflictMerge": "Combinar en un cliente",
     "conflictMergeDesc": "Conserva los datos más completos de todas las filas coincidentes",
     "conflictSeparate": "Mantener como clientes separados",

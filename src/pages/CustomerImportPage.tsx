@@ -74,29 +74,67 @@ type ImportResult = {
 
 type ConflictGroup = {
   key: string
-  keyType: 'email' | 'phone'
+  keyType: 'email' | 'phone' | 'name'
   rowIndices: number[]  // indices into validRows
 }
 
 // ── Conflict detection & resolution ──────────────────────────────────────────
 
+const LEGAL_SUFFIXES = new Set([
+  'llc', 'inc', 'ltd', 'limited', 'corp', 'corporation', 'co', 'company',
+  'ab', 'hb', 'kb', 'as', 'oy', 'aps',
+  'gmbh', 'bv', 'nv', 'sas', 'sarl', 'sa', 'ag', 'plc',
+  'lp', 'llp', 'pc', 'pllc', 'pte', 'sdn', 'bhd', 'pty',
+])
+
+function normalizeName(name: string): string {
+  let n = name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  let changed = true
+  while (changed) {
+    changed = false
+    const words = n.split(' ')
+    if (words.length > 1 && LEGAL_SUFFIXES.has(words[words.length - 1])) {
+      words.pop()
+      n = words.join(' ')
+      changed = true
+    }
+  }
+  return n
+}
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  // Compare on the last 9 digits — strips country code prefixes (+1, 001, +46 etc.)
+  // without needing to know the country, while keeping enough digits to avoid false matches
+  return digits.length >= 9 ? digits.slice(-9) : digits
+}
+
 function detectConflicts(rows: MappedRow[]): ConflictGroup[] {
   const emailMap = new Map<string, number[]>()
   const phoneMap = new Map<string, number[]>()
+  const nameMap  = new Map<string, number[]>()
   rows.forEach((row, i) => {
     if (!row.name) return
-    const email = row.email?.toLowerCase().trim()
-    const phone = row.phone?.trim()
-    if (email) { if (!emailMap.has(email)) emailMap.set(email, []); emailMap.get(email)!.push(i) }
-    if (phone) { if (!phoneMap.has(phone)) phoneMap.set(phone, []); phoneMap.get(phone)!.push(i) }
+    const email     = row.email?.toLowerCase().trim()
+    const normPhone = row.phone ? normalizePhone(row.phone) : undefined
+    const normName  = normalizeName(row.name)
+    if (email)     { if (!emailMap.has(email))     emailMap.set(email, []);     emailMap.get(email)!.push(i)     }
+    if (normPhone) { if (!phoneMap.has(normPhone)) phoneMap.set(normPhone, []); phoneMap.get(normPhone)!.push(i) }
+    if (normName)  { if (!nameMap.has(normName))   nameMap.set(normName, []);   nameMap.get(normName)!.push(i)  }
   })
   const groups: ConflictGroup[] = []
   emailMap.forEach((indices, key) => { if (indices.length > 1) groups.push({ key, keyType: 'email', rowIndices: indices }) })
   phoneMap.forEach((indices, key) => {
     if (indices.length > 1) {
-      // Skip if all these rows are already covered by an email conflict group
       const alreadyCovered = groups.some(g => g.keyType === 'email' && indices.every(i => g.rowIndices.includes(i)))
       if (!alreadyCovered) groups.push({ key, keyType: 'phone', rowIndices: indices })
+    }
+  })
+  nameMap.forEach((indices, key) => {
+    if (indices.length > 1) {
+      // Skip if the exact same set of rows is already flagged by an email or phone conflict
+      const alreadyCovered = groups.some(g => indices.every(i => g.rowIndices.includes(i)))
+      if (!alreadyCovered) groups.push({ key, keyType: 'name', rowIndices: indices })
     }
   })
   return groups
@@ -610,13 +648,17 @@ export default function CustomerImportPage() {
                     const grpRows = grp.rowIndices.map(i => validRows[i])
                     const displayVal = grp.keyType === 'email'
                       ? (grpRows[0]?.email ?? grp.key)
-                      : (grpRows[0]?.phone ?? grp.key)
+                      : grp.keyType === 'phone'
+                        ? (grpRows[0]?.phone ?? grp.key)
+                        : (grpRows[0]?.name ?? grp.key)  // show original name, not normalized key
                     return (
                       <div key={grp.key} style={{ border: '1px solid var(--color-warning)', borderRadius: 8, padding: '12px 14px', background: 'var(--color-warning-bg)' }}>
                         <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
                           {grp.keyType === 'email'
                             ? t('customerImport.conflictEmail', { val: displayVal })
-                            : t('customerImport.conflictPhone', { val: displayVal })}
+                            : grp.keyType === 'phone'
+                              ? t('customerImport.conflictPhone', { val: displayVal })
+                              : t('customerImport.conflictName', { val: displayVal })}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>
                           {grpRows.map(r => r?.name || '—').join(' · ')}

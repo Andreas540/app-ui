@@ -1732,6 +1732,7 @@
     "conflictsDesc": "Vissa rader delar samma e-post eller telefon. Välj hur varje grupp ska hanteras.",
     "conflictEmail": "Dubblettmail: {{val}}",
     "conflictPhone": "Dubbletttelefon: {{val}}",
+    "conflictName": "Dubblettnamn: {{val}}",
     "conflictMerge": "Slå ihop till en kund",
     "conflictMergeDesc": "Behåller den mest kompletta datan från alla matchande rader",
     "conflictSeparate": "Behåll som separata kunder",
