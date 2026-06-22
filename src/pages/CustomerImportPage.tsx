@@ -503,7 +503,7 @@ export default function CustomerImportPage() {
             />
 
             {parseError && (
-              <p style={{ color: 'var(--color-error, #c0392b)', fontSize: 14, margin: '0 0 12px' }}>{parseError}</p>
+              <p style={{ color: 'var(--color-error)', fontSize: 14, margin: '0 0 12px' }}>{parseError}</p>
             )}
 
             <button onClick={downloadTemplate} style={{ height: 36, padding: '0 16px', fontSize: 14 }}>
@@ -589,22 +589,20 @@ export default function CustomerImportPage() {
         {/* ── Step 3: Preview & validate ── */}
         {step === 3 && (
           <>
-            <h4 style={{ margin: '0 0 8px' }}>{t('customerImport.previewTitle')}</h4>
-
             {/* Summary */}
-            <div style={{ background: 'var(--bg, var(--hover))', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ background: 'var(--surface-subtle)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div><strong>{summary.total}</strong> {t('customerImport.summaryTotal')}</div>
               {summary.withEmail > 0 && <div className="helper">{t('customerImport.summaryWithEmail', { n: summary.withEmail })}</div>}
               {summary.withPhone > 0 && <div className="helper">{t('customerImport.summaryWithPhone', { n: summary.withPhone })}</div>}
-              {summary.noContact > 0 && <div className="helper" style={{ color: 'var(--color-warning, #b45309)' }}>{t('customerImport.summaryNoContact', { n: summary.noContact })}</div>}
+              {summary.noContact > 0 && <div className="helper" style={{ color: 'var(--color-warning)' }}>{t('customerImport.summaryNoContact', { n: summary.noContact })}</div>}
             </div>
 
             {/* Conflict groups */}
             {conflicts.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <h5 style={{ margin: '0 0 4px', color: 'var(--color-warning, #b45309)' }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: 'var(--color-warning)' }}>
                   {t('customerImport.conflictsTitle', { n: conflicts.length })}
-                </h5>
+                </div>
                 <p className="helper" style={{ marginBottom: 12 }}>{t('customerImport.conflictsDesc')}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {conflicts.map(grp => {
@@ -614,42 +612,42 @@ export default function CustomerImportPage() {
                       ? (grpRows[0]?.email ?? grp.key)
                       : (grpRows[0]?.phone ?? grp.key)
                     return (
-                      <div key={grp.key} style={{ border: '1px solid var(--color-warning, #b45309)', borderRadius: 8, padding: '12px 14px', background: 'rgba(180,83,9,0.04)' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                      <div key={grp.key} style={{ border: '1px solid var(--color-warning)', borderRadius: 8, padding: '12px 14px', background: 'var(--color-warning-bg)' }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
                           {grp.keyType === 'email'
                             ? t('customerImport.conflictEmail', { val: displayVal })
                             : t('customerImport.conflictPhone', { val: displayVal })}
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>
                           {grpRows.map(r => r?.name || '—').join(' · ')}
                         </div>
                         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 7, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', margin: 0 }}>
                             <input
                               type="radio"
                               name={`conflict-${grp.key}`}
                               value="merge"
                               checked={res === 'merge'}
                               onChange={() => setConflictResolutions(prev => ({ ...prev, [grp.key]: 'merge' }))}
-                              style={{ marginTop: 2 }}
+                              style={{ width: 16, height: 16, flexShrink: 0, marginTop: 3 }}
                             />
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('customerImport.conflictMerge')}</div>
-                              <div className="helper" style={{ fontSize: 12 }}>{t('customerImport.conflictMergeDesc')}</div>
+                              <div style={{ fontWeight: 600, fontSize: 14 }}>{t('customerImport.conflictMerge')}</div>
+                              <div className="helper">{t('customerImport.conflictMergeDesc')}</div>
                             </div>
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 7, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', margin: 0 }}>
                             <input
                               type="radio"
                               name={`conflict-${grp.key}`}
                               value="separate"
                               checked={res === 'separate'}
                               onChange={() => setConflictResolutions(prev => ({ ...prev, [grp.key]: 'separate' }))}
-                              style={{ marginTop: 2 }}
+                              style={{ width: 16, height: 16, flexShrink: 0, marginTop: 3 }}
                             />
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('customerImport.conflictSeparate')}</div>
-                              <div className="helper" style={{ fontSize: 12 }}>{t('customerImport.conflictSeparateDesc')}</div>
+                              <div style={{ fontWeight: 600, fontSize: 14 }}>{t('customerImport.conflictSeparate')}</div>
+                              <div className="helper">{t('customerImport.conflictSeparateDesc')}</div>
                             </div>
                           </label>
                         </div>
@@ -663,10 +661,10 @@ export default function CustomerImportPage() {
             {/* Validation errors */}
             {rowErrors.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <h5 style={{ margin: '0 0 8px', color: 'var(--color-error, #c0392b)' }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: 'var(--color-error)' }}>
                   {t('customerImport.validationErrors', { n: rowErrors.length })}
-                </h5>
-                <div style={{ maxHeight: 160, overflowY: 'auto', fontSize: 13, color: 'var(--color-error, #c0392b)' }}>
+                </div>
+                <div style={{ maxHeight: 160, overflowY: 'auto', fontSize: 13, color: 'var(--color-error)' }}>
                   {rowErrors.slice(0, 20).map((e, i) => (
                     <div key={i}>{e.message}</div>
                   ))}
@@ -733,7 +731,7 @@ export default function CustomerImportPage() {
                   : t('customerImport.commit', { count: validRows.filter(r => r.name).length })}
               </button>
               {importError && (
-                <span style={{ color: 'var(--color-error, #c0392b)', fontSize: 14 }}>{importError}</span>
+                <span style={{ color: 'var(--color-error)', fontSize: 14 }}>{importError}</span>
               )}
             </div>
           </>
@@ -756,8 +754,8 @@ export default function CustomerImportPage() {
 
               {importResult.errors.length > 0 && (
                 <div style={{ marginTop: 20, textAlign: 'left' }}>
-                  <h5 style={{ margin: '0 0 8px', color: 'var(--color-error, #c0392b)' }}>{t('customerImport.doneErrors')}</h5>
-                  <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, color: 'var(--color-error, #c0392b)' }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: 'var(--color-error)' }}>{t('customerImport.doneErrors')}</div>
+                  <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, color: 'var(--color-error)' }}>
                     {importResult.errors.map((e, i) => (
                       <div key={i}>Row {e.row}: {e.message}</div>
                     ))}
