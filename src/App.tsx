@@ -274,6 +274,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/settings':                   'page_view_settings',
   '/contact':                    'page_view_contact',
   '/admin':                      'page_view_tenant_admin',
+  '/admin/import/customers':     'page_view_data_import_customers',
   '/super-admin':                'page_view_super_admin',
   '/messages':                   'page_view_messages',
   '/stats-logs':                 'page_view_stats_logs',

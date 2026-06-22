@@ -954,6 +954,13 @@
     "tabCash": "Kassahantering",
     "tabInventory": "Lager",
     "tabCustomerSettings": "Kundinställningar",
+    "tabDataImport": "Dataimport",
+    "dataImport": {
+      "title": "Dataimport",
+      "selectType": "Välj vad du vill importera",
+      "customerData": "Kunddata",
+      "customerDataDesc": "Importera kunder från en Excel- eller CSV-fil."
+    },
     "customerSettings": {
       "showHideTitle": "Visa / Dölj kunder",
       "showHideDesc": "Avmarkera en kund för att dölja dem i hela appen. Nya kunder visas alltid som standard.",

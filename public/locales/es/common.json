@@ -954,6 +954,13 @@
     "tabCash": "Gestión de Caja",
     "tabInventory": "Inventario",
     "tabCustomerSettings": "Configuración de Clientes",
+    "tabDataImport": "Importación de Datos",
+    "dataImport": {
+      "title": "Importación de Datos",
+      "selectType": "Selecciona qué importar",
+      "customerData": "Datos de Clientes",
+      "customerDataDesc": "Importa clientes desde un archivo Excel o CSV."
+    },
     "customerSettings": {
       "showHideTitle": "Mostrar / Ocultar Clientes",
       "showHideDesc": "Desmarca un cliente para ocultarlo en toda la app. Los nuevos clientes siempre son visibles de forma predeterminada.",

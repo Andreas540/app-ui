@@ -64,7 +64,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import'>('team')
   const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
   const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
 
@@ -807,6 +807,7 @@ export default function TenantAdmin() {
             { id: 'customer-offers',   label: t('tenantAdmin.tabCustomerOffers') },
             { id: 'customer-settings', label: t('tenantAdmin.tabCustomerSettings') },
             { id: 'accounting',        label: t('tenantAdmin.tabData') },
+            { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
             { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
             { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
             { id: 'payment-providers', label: t('tenantAdmin.tabPaymentProviders') },
@@ -1326,6 +1327,45 @@ export default function TenantAdmin() {
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabCustomerSettings')}</h4>
             <TenantAdminCustomerSettingsTab />
+          </>
+        )}
+
+        {/* ── Data Import tab ── */}
+        {activeTab === 'data-import' && (
+          <>
+            <h4 style={{ margin: '0 0 4px' }}>{t('tenantAdmin.dataImport.title')}</h4>
+            <p className="helper" style={{ marginBottom: 20 }}>{t('tenantAdmin.dataImport.selectType')}</p>
+            <div
+              style={{
+                display: 'inline-flex',
+                flexDirection: 'column',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                overflow: 'hidden',
+                minWidth: 260,
+                maxWidth: 360,
+              }}
+            >
+              <button
+                onClick={() => navigate('/admin/import/customers')}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 4,
+                  padding: '14px 18px',
+                  height: 'auto',
+                  background: 'var(--card)',
+                  border: 'none',
+                  borderRadius: 0,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 15 }}>{t('tenantAdmin.dataImport.customerData')}</span>
+                <span className="helper" style={{ fontSize: 13 }}>{t('tenantAdmin.dataImport.customerDataDesc')}</span>
+              </button>
+            </div>
           </>
         )}
 

@@ -954,6 +954,13 @@
     "tabCash": "Cash Management",
     "tabInventory": "Inventory",
     "tabCustomerSettings": "Customer Settings",
+    "tabDataImport": "Data Import",
+    "dataImport": {
+      "title": "Data Import",
+      "selectType": "Select what to import",
+      "customerData": "Customer Data",
+      "customerDataDesc": "Import customers from an Excel or CSV file."
+    },
     "customerSettings": {
       "showHideTitle": "Show / Hide Customers",
       "showHideDesc": "Uncheck a customer to hide them across the app. New customers are always visible by default.",
