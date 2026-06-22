@@ -1,6 +1,6 @@
 // src/pages/CustomerImportPage.tsx
 // 4-step wizard: Upload → Map columns → Preview/validate → Commit
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
@@ -156,6 +156,16 @@ export default function CustomerImportPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
 
+  // Saved custom field defs from previous imports
+  const [savedDefs, setSavedDefs] = useState<{ field_key: string; label: string }[]>([])
+
+  useEffect(() => {
+    fetch(`${BASE}/api/customers-import`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data.defs)) setSavedDefs(data.defs) })
+      .catch(() => {})
+  }, [])
+
   // ── File parsing ────────────────────────────────────────────────────────────
 
   async function parseFile(file: File) {
@@ -191,6 +201,18 @@ export default function CustomerImportPage() {
         let detected: KnownField | 'ignore' = detectField(header, samples)
         if (detected !== 'ignore' && usedFields.has(detected)) detected = 'ignore'
         if (detected !== 'ignore') usedFields.add(detected)
+
+        // Match against previously saved custom field defs
+        if (detected === 'ignore') {
+          const h = header.toLowerCase().trim()
+          const matched = savedDefs.find(d =>
+            d.label.toLowerCase() === h ||
+            d.field_key === labelToKey(h)
+          )
+          if (matched) {
+            return { fileHeader: header, sampleValues: samples, mappedTo: 'custom' as const, customKey: matched.field_key, customLabel: matched.label }
+          }
+        }
 
         return { fileHeader: header, sampleValues: samples, mappedTo: detected, customKey: '', customLabel: '' }
       })
@@ -240,9 +262,17 @@ export default function CustomerImportPage() {
   )
 
   function setMapping(colIdx: number, mappedTo: KnownField | 'ignore' | 'custom') {
-    setMappings(prev => prev.map((m, i) =>
-      i === colIdx ? { ...m, mappedTo, customKey: mappedTo === 'custom' ? m.customKey : '', customLabel: mappedTo === 'custom' ? m.customLabel : '' } : m
-    ))
+    setMappings(prev => prev.map((m, i) => {
+      if (i !== colIdx) return m
+      if (mappedTo !== 'custom') return { ...m, mappedTo, customKey: '', customLabel: '' }
+      // Pre-fill label from saved defs or fall back to the column header from the file
+      const defaultLabel = m.customLabel || (() => {
+        const h = m.fileHeader.toLowerCase().trim()
+        const saved = savedDefs.find(d => d.label.toLowerCase() === h || d.field_key === labelToKey(h))
+        return saved ? saved.label : m.fileHeader
+      })()
+      return { ...m, mappedTo, customLabel: defaultLabel, customKey: labelToKey(defaultLabel) }
+    }))
   }
 
   function setCustomLabel(colIdx: number, label: string) {

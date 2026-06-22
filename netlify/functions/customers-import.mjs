@@ -7,8 +7,28 @@ import { resolveAuthz } from './utils/auth.mjs'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
+  if (event.httpMethod === 'GET')  return getCustomFieldDefs(event)
   if (event.httpMethod === 'POST') return importCustomers(event)
   return cors(405, { error: 'Method not allowed' })
+}
+
+async function getCustomFieldDefs(event) {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const sql = neon(process.env.DATABASE_URL)
+    const authz = await resolveAuthz({ sql, event })
+    if (authz.error) return cors(403, { error: authz.error })
+    const tenantId = authz.tenantId
+    if (!tenantId) return cors(403, { error: 'Tenant required' })
+    const defs = await sql`
+      SELECT field_key, label FROM tenant_custom_field_defs
+      WHERE tenant_id = ${tenantId}::uuid
+      ORDER BY label ASC
+    `.catch(() => [])
+    return cors(200, { ok: true, defs })
+  } catch (e) {
+    return cors(500, { error: String(e?.message || e) })
+  }
 }
 
 async function importCustomers(event) {
@@ -206,7 +226,7 @@ function cors(status, body) {
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'POST,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
       'access-control-allow-headers': 'content-type,authorization,x-active-tenant',
     },
     body: status === 204 ? '' : JSON.stringify(body),
