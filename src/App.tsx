@@ -41,6 +41,7 @@ import CashOverviewPage from './pages/CashOverviewPage'
 import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
+import CustomerImportPage from './pages/CustomerImportPage'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import TenantCustomization from './pages/TenantCustomization'
@@ -1049,6 +1050,9 @@ useEffect(() => {
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
                   <Route path="/admin" element={<TenantAdmin />} />
+                )}
+                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
+                  <Route path="/admin/import/customers" element={<CustomerImportPage />} />
                 )}
                 {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
                 {user?.role === 'super_admin' && <Route path="/tenant-customization" element={<TenantCustomization />} />}
