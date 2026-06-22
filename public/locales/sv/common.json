@@ -1727,6 +1727,14 @@
     "doneSkipped": "rader hoppades över (fel)",
     "doneErrors": "Radfel",
     "goToCustomers": "Gå till kunder",
-    "importAnother": "Importera en till fil"
+    "importAnother": "Importera en till fil",
+    "conflictsTitle": "{{n}} konflikt(er) hittades i filen",
+    "conflictsDesc": "Vissa rader delar samma e-post eller telefon. Välj hur varje grupp ska hanteras.",
+    "conflictEmail": "Dubblettmail: {{val}}",
+    "conflictPhone": "Dubbletttelefon: {{val}}",
+    "conflictMerge": "Slå ihop till en kund",
+    "conflictMergeDesc": "Behåller den mest kompletta datan från alla matchande rader",
+    "conflictSeparate": "Behåll som separata kunder",
+    "conflictSeparateDesc": "Importerar varje rad som en separat kund"
   }
 }

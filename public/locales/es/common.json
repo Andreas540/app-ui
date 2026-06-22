@@ -1727,6 +1727,14 @@
     "doneSkipped": "filas omitidas (errores)",
     "doneErrors": "Errores de fila",
     "goToCustomers": "Ir a clientes",
-    "importAnother": "Importar otro archivo"
+    "importAnother": "Importar otro archivo",
+    "conflictsTitle": "{{n}} conflicto(s) detectado(s) en tu archivo",
+    "conflictsDesc": "Algunas filas comparten el mismo correo o teléfono. Elige cómo manejar cada grupo.",
+    "conflictEmail": "Correo duplicado: {{val}}",
+    "conflictPhone": "Teléfono duplicado: {{val}}",
+    "conflictMerge": "Combinar en un cliente",
+    "conflictMergeDesc": "Conserva los datos más completos de todas las filas coincidentes",
+    "conflictSeparate": "Mantener como clientes separados",
+    "conflictSeparateDesc": "Importa cada fila como un cliente distinto"
   }
 }

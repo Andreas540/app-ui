@@ -118,21 +118,23 @@ async function importCustomers(event) {
 
           // ── Dedup: email first, then phone ──────────────────────────────────
           let existingId = null
-          if (email) {
-            const r = await sql`
-              SELECT id FROM customers
-              WHERE tenant_id = ${tenantId}::uuid AND lower(email) = lower(${email})
-              LIMIT 1
-            `
-            if (r.length) existingId = r[0].id
-          }
-          if (!existingId && phone) {
-            const r = await sql`
-              SELECT id FROM customers
-              WHERE tenant_id = ${tenantId}::uuid AND phone = ${phone}
-              LIMIT 1
-            `
-            if (r.length) existingId = r[0].id
+          if (!row._no_dedup) {
+            if (email) {
+              const r = await sql`
+                SELECT id FROM customers
+                WHERE tenant_id = ${tenantId}::uuid AND lower(email) = lower(${email})
+                LIMIT 1
+              `
+              if (r.length) existingId = r[0].id
+            }
+            if (!existingId && phone) {
+              const r = await sql`
+                SELECT id FROM customers
+                WHERE tenant_id = ${tenantId}::uuid AND phone = ${phone}
+                LIMIT 1
+              `
+              if (r.length) existingId = r[0].id
+            }
           }
 
           if (existingId) {

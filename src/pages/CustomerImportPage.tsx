@@ -72,6 +72,82 @@ type ImportResult = {
   errors: Array<{ row: number; message: string }>
 }
 
+type ConflictGroup = {
+  key: string
+  keyType: 'email' | 'phone'
+  rowIndices: number[]  // indices into validRows
+}
+
+// ── Conflict detection & resolution ──────────────────────────────────────────
+
+function detectConflicts(rows: MappedRow[]): ConflictGroup[] {
+  const emailMap = new Map<string, number[]>()
+  const phoneMap = new Map<string, number[]>()
+  rows.forEach((row, i) => {
+    if (!row.name) return
+    const email = row.email?.toLowerCase().trim()
+    const phone = row.phone?.trim()
+    if (email) { if (!emailMap.has(email)) emailMap.set(email, []); emailMap.get(email)!.push(i) }
+    if (phone) { if (!phoneMap.has(phone)) phoneMap.set(phone, []); phoneMap.get(phone)!.push(i) }
+  })
+  const groups: ConflictGroup[] = []
+  emailMap.forEach((indices, key) => { if (indices.length > 1) groups.push({ key, keyType: 'email', rowIndices: indices }) })
+  phoneMap.forEach((indices, key) => {
+    if (indices.length > 1) {
+      // Skip if all these rows are already covered by an email conflict group
+      const alreadyCovered = groups.some(g => g.keyType === 'email' && indices.every(i => g.rowIndices.includes(i)))
+      if (!alreadyCovered) groups.push({ key, keyType: 'phone', rowIndices: indices })
+    }
+  })
+  return groups
+}
+
+function mergeRows(rows: MappedRow[]): MappedRow {
+  const merged: MappedRow = {}
+  const fields: (keyof MappedRow)[] = ['name', 'email', 'phone', 'company_name', 'address1', 'address2', 'city', 'state', 'postal_code', 'country', 'customer_type', 'shipping_cost']
+  for (const field of fields) {
+    for (const row of rows) {
+      const val = (row as any)[field]
+      if (val && !(merged as any)[field]) { (merged as any)[field] = val; break }
+    }
+  }
+  const custom: Record<string, string> = {}
+  for (const row of rows) {
+    if (row.custom_fields) Object.entries(row.custom_fields).forEach(([k, v]) => { if (v && !custom[k]) custom[k] = v })
+  }
+  if (Object.keys(custom).length > 0) merged.custom_fields = custom
+  return merged
+}
+
+function applyResolutions(
+  rows: MappedRow[],
+  conflicts: ConflictGroup[],
+  resolutions: Record<string, 'merge' | 'separate'>
+): (MappedRow & { _no_dedup?: boolean })[] {
+  const mergedOverrides = new Map<number, MappedRow>()
+  const skipIndices = new Set<number>()
+  const nodedupIndices = new Set<number>()
+
+  for (const g of conflicts) {
+    const res = resolutions[g.key] ?? 'merge'
+    if (res === 'merge') {
+      mergedOverrides.set(g.rowIndices[0], mergeRows(g.rowIndices.map(i => rows[i])))
+      g.rowIndices.slice(1).forEach(i => skipIndices.add(i))
+    } else {
+      g.rowIndices.forEach(i => nodedupIndices.add(i))
+    }
+  }
+
+  return rows
+    .map((row, i): (MappedRow & { _no_dedup?: boolean }) | null => {
+      if (skipIndices.has(i)) return null
+      if (mergedOverrides.has(i)) return mergedOverrides.get(i)!
+      if (nodedupIndices.has(i)) return { ...row, _no_dedup: true }
+      return row
+    })
+    .filter((r): r is MappedRow & { _no_dedup?: boolean } => r !== null)
+}
+
 // ── Auto-detection helpers ────────────────────────────────────────────────────
 
 function detectField(header: string, samples: string[]): KnownField | 'ignore' {
@@ -150,6 +226,8 @@ export default function CustomerImportPage() {
   // Step 3
   const [validRows, setValidRows] = useState<MappedRow[]>([])
   const [rowErrors, setRowErrors] = useState<RowError[]>([])
+  const [conflicts, setConflicts] = useState<ConflictGroup[]>([])
+  const [conflictResolutions, setConflictResolutions] = useState<Record<string, 'merge' | 'separate'>>({})
 
   // Step 4
   const [importing, setImporting] = useState(false)
@@ -285,6 +363,8 @@ export default function CustomerImportPage() {
     const { rows, errors } = buildMappedRows(rawRows, mappings)
     setValidRows(rows)
     setRowErrors(errors)
+    setConflicts(detectConflicts(rows))
+    setConflictResolutions({})
     setStep(3)
   }
 
@@ -298,10 +378,12 @@ export default function CustomerImportPage() {
         .filter(m => m.mappedTo === 'custom' && m.customKey && m.customLabel)
         .map(m => ({ field_key: m.customKey, label: m.customLabel }))
 
+      const resolvedRows = applyResolutions(validRows, conflicts, conflictResolutions)
+
       const res = await fetch(`${BASE}/api/customers-import`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ rows: validRows, customFieldDefs }),
+        body: JSON.stringify({ rows: resolvedRows, customFieldDefs }),
       })
       const data = await res.json()
       if (!res.ok || !data.ok) throw new Error(data.error || 'Import failed')
@@ -517,6 +599,67 @@ export default function CustomerImportPage() {
               {summary.noContact > 0 && <div className="helper" style={{ color: 'var(--color-warning, #b45309)' }}>{t('customerImport.summaryNoContact', { n: summary.noContact })}</div>}
             </div>
 
+            {/* Conflict groups */}
+            {conflicts.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h5 style={{ margin: '0 0 4px', color: 'var(--color-warning, #b45309)' }}>
+                  {t('customerImport.conflictsTitle', { n: conflicts.length })}
+                </h5>
+                <p className="helper" style={{ marginBottom: 12 }}>{t('customerImport.conflictsDesc')}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {conflicts.map(grp => {
+                    const res = conflictResolutions[grp.key] ?? 'merge'
+                    const grpRows = grp.rowIndices.map(i => validRows[i])
+                    const displayVal = grp.keyType === 'email'
+                      ? (grpRows[0]?.email ?? grp.key)
+                      : (grpRows[0]?.phone ?? grp.key)
+                    return (
+                      <div key={grp.key} style={{ border: '1px solid var(--color-warning, #b45309)', borderRadius: 8, padding: '12px 14px', background: 'rgba(180,83,9,0.04)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                          {grp.keyType === 'email'
+                            ? t('customerImport.conflictEmail', { val: displayVal })
+                            : t('customerImport.conflictPhone', { val: displayVal })}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                          {grpRows.map(r => r?.name || '—').join(' · ')}
+                        </div>
+                        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 7, cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name={`conflict-${grp.key}`}
+                              value="merge"
+                              checked={res === 'merge'}
+                              onChange={() => setConflictResolutions(prev => ({ ...prev, [grp.key]: 'merge' }))}
+                              style={{ marginTop: 2 }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('customerImport.conflictMerge')}</div>
+                              <div className="helper" style={{ fontSize: 12 }}>{t('customerImport.conflictMergeDesc')}</div>
+                            </div>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 7, cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name={`conflict-${grp.key}`}
+                              value="separate"
+                              checked={res === 'separate'}
+                              onChange={() => setConflictResolutions(prev => ({ ...prev, [grp.key]: 'separate' }))}
+                              style={{ marginTop: 2 }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('customerImport.conflictSeparate')}</div>
+                              <div className="helper" style={{ fontSize: 12 }}>{t('customerImport.conflictSeparateDesc')}</div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Validation errors */}
             {rowErrors.length > 0 && (
               <div style={{ marginBottom: 20 }}>
@@ -635,6 +778,8 @@ export default function CustomerImportPage() {
                   setMappings([])
                   setValidRows([])
                   setRowErrors([])
+                  setConflicts([])
+                  setConflictResolutions({})
                   setImportResult(null)
                   setImportError(null)
                 }}

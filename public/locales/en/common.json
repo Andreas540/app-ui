@@ -1716,6 +1716,14 @@
     "doneSkipped": "rows skipped (errors)",
     "doneErrors": "Row errors",
     "goToCustomers": "Go to Customers",
-    "importAnother": "Import another file"
+    "importAnother": "Import another file",
+    "conflictsTitle": "{{n}} conflict(s) detected in your file",
+    "conflictsDesc": "Some rows share the same email or phone. Choose how to handle each group.",
+    "conflictEmail": "Duplicate email: {{val}}",
+    "conflictPhone": "Duplicate phone: {{val}}",
+    "conflictMerge": "Merge into one customer",
+    "conflictMergeDesc": "Keeps the most complete data from all matching rows",
+    "conflictSeparate": "Keep as separate customers",
+    "conflictSeparateDesc": "Imports each row as a distinct customer"
   }
 }
