@@ -1691,7 +1691,7 @@
     "errorEmptyFile": "Filen verkar vara tom",
     "errorNoRows": "Inga datarader hittades i filen",
     "errorParse": "Det gick inte att läsa filen",
-    "mapDesc": "Vi har automatiskt identifierat kolumnerna från "{{file}}". Granska och justera vid behov.",
+    "mapDesc": "Vi har automatiskt identifierat kolumnerna från \"{{file}}\". Granska och justera vid behov.",
     "colHeader": "Din kolumn",
     "colMapsTo": "Mappas till",
     "colSamples": "Exempelvärden",

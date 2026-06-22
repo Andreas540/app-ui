@@ -1680,7 +1680,7 @@
     "errorEmptyFile": "The file appears to be empty",
     "errorNoRows": "No data rows found in the file",
     "errorParse": "Could not read the file",
-    "mapDesc": "We've auto-detected your columns from "{{file}}". Review and adjust if needed.",
+    "mapDesc": "We've auto-detected your columns from \"{{file}}\". Review and adjust if needed.",
     "colHeader": "Your column",
     "colMapsTo": "Maps to",
     "colSamples": "Sample values",

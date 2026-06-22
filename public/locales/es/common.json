@@ -1691,7 +1691,7 @@
     "errorEmptyFile": "El archivo parece estar vacío",
     "errorNoRows": "No se encontraron filas de datos en el archivo",
     "errorParse": "No se pudo leer el archivo",
-    "mapDesc": "Hemos detectado automáticamente las columnas de "{{file}}". Revisa y ajusta si es necesario.",
+    "mapDesc": "Hemos detectado automáticamente las columnas de \"{{file}}\". Revisa y ajusta si es necesario.",
     "colHeader": "Tu columna",
     "colMapsTo": "Se mapea a",
     "colSamples": "Valores de muestra",
