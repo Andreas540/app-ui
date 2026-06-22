@@ -142,7 +142,6 @@ export default function CustomerImportPage() {
   const [parseError, setParseError] = useState<string | null>(null)
 
   // Step 1 → 2
-  const [rawHeaders, setRawHeaders] = useState<string[]>([])
   const [rawRows, setRawRows] = useState<string[][]>([])
 
   // Step 2
@@ -196,7 +195,6 @@ export default function CustomerImportPage() {
         return { fileHeader: header, sampleValues: samples, mappedTo: detected, customKey: '', customLabel: '' }
       })
 
-      setRawHeaders(headers)
       setRawRows(dataRows)
       setMappings(autoMappings)
       setFileName(file.name)
@@ -603,7 +601,6 @@ export default function CustomerImportPage() {
                 onClick={() => {
                   setStep(1)
                   setFileName(null)
-                  setRawHeaders([])
                   setRawRows([])
                   setMappings([])
                   setValidRows([])
