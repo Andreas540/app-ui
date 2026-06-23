@@ -143,7 +143,7 @@ async function handleGet(event) {
     }
 
     if (action === 'getCustomerRecordCounts') {
-      const customerId = qs.customer_id
+      const customerId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('customer_id')
       if (!customerId) return cors(400, { error: 'customer_id required' })
       const [[orders], [payments], [bookings]] = await Promise.all([
         sql`SELECT COUNT(*)::int AS n FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
