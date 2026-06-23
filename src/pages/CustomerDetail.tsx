@@ -508,7 +508,17 @@ export default function CustomerDetailPage() {
             </button>
           </Link>
         )}
-        {/* Non-default buttons — alphabetical: Booking (share), New Booking, Order (share) */}
+        {/* Non-default buttons — New Booking first, then share buttons together (alphabetical) */}
+        {cfgShowNewBooking && (
+          <Link
+            to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+              {t('newBooking.title', 'New Booking')}
+            </button>
+          </Link>
+        )}
         {cfgShowShareBooking && (
           <button
             type="button"
@@ -525,16 +535,6 @@ export default function CustomerDetailPage() {
             <PlatformShareIcon platform={platform} />
             {t('customers.shareBookingShort')}
           </button>
-        )}
-        {cfgShowNewBooking && (
-          <Link
-            to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
-            style={{ textDecoration: 'none' }}
-          >
-            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-              {t('newBooking.title', 'New Booking')}
-            </button>
-          </Link>
         )}
         {cfgShowShareOrder && (
           <button
