@@ -159,7 +159,7 @@ export default function CustomerConversationPage() {
             onChange={e => setBody(e.target.value)}
             placeholder={t('conversation.placeholder')}
             rows={7}
-            style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 14, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg, var(--card))', color: 'var(--text)', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 'auto', resize: 'vertical', fontFamily: 'inherit', fontSize: 14, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg, var(--card))', color: 'var(--text)', boxSizing: 'border-box' }}
           />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
