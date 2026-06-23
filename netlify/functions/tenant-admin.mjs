@@ -545,9 +545,13 @@ if (action === 'toggleUserStatus') {
       if (!owns.length) return cors(404, { error: 'Customer not found' })
       // Cascade in order — FK constraints on orders/payments are RESTRICT so must delete those first.
       // Nullable booking FK fields are set to NULL to avoid cascading into complex booking trees.
-      await sql`UPDATE bookings             SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
-      await sql`UPDATE booking_participants SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
-      await sql`UPDATE message_jobs         SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      // Delete booking dependents first (all RESTRICT), then bookings themselves
+      // orders.booking_id and payments.booking_id are SET NULL so they handle themselves
+      await sql`DELETE FROM booking_participants  WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid)`
+      await sql`DELETE FROM payment_transactions  WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid)`
+      await sql`DELETE FROM payment_obligations   WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid)`
+      await sql`DELETE FROM message_jobs          WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid)`
+      await sql`DELETE FROM bookings              WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM booking_customer_links  WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM tenant_hidden_customers WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM payments WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
