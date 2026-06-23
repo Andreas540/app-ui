@@ -470,6 +470,24 @@ export default function CustomerDetailPage() {
 
       {/* Unified action row — wraps to 3 per row on mobile (3×100px + 2×8px gap = 316px) */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        {/* Default buttons — alphabetical: Message, New Invoice, New Order, New Payment */}
+        {cfgShowConversation && (
+          <Link to={`/customers/${customer.id}/conversation`} style={{ textDecoration: 'none' }}>
+            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+              {t('conversation.button')}
+            </button>
+          </Link>
+        )}
+        {cfgShowNewInvoice && (
+          <Link
+            to={`/invoices/create?customer_id=${customer.id}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+              {t('newInvoice')}
+            </button>
+          </Link>
+        )}
         {cfgShowNewOrder && (
           <Link
             to={`/orders/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&return_to=customer&return_id=${customer.id}`}
@@ -490,26 +508,7 @@ export default function CustomerDetailPage() {
             </button>
           </Link>
         )}
-        {cfgShowNewInvoice && (
-          <Link
-            to={`/invoices/create?customer_id=${customer.id}`}
-            style={{ textDecoration: 'none' }}
-          >
-            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-              {t('newInvoice')}
-            </button>
-          </Link>
-        )}
-        {cfgShowNewBooking && (
-          <Link
-            to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
-            style={{ textDecoration: 'none' }}
-          >
-            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-              {t('newBooking.title', 'New Booking')}
-            </button>
-          </Link>
-        )}
+        {/* Non-default buttons — alphabetical: Booking (share), New Booking, Order (share) */}
         {cfgShowShareBooking && (
           <button
             type="button"
@@ -527,10 +526,13 @@ export default function CustomerDetailPage() {
             {t('customers.shareBookingShort')}
           </button>
         )}
-        {cfgShowConversation && (
-          <Link to={`/customers/${customer.id}/conversation`} style={{ textDecoration: 'none' }}>
+        {cfgShowNewBooking && (
+          <Link
+            to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
+            style={{ textDecoration: 'none' }}
+          >
             <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-              {t('conversation.button')}
+              {t('newBooking.title', 'New Booking')}
             </button>
           </Link>
         )}
