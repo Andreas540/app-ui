@@ -191,8 +191,8 @@ async function handlePost(event) {
         RETURNING id
       `
 
-      // Alert the tenant — same external_events pattern used by orders/bookings/customer-form
-      sql`
+      // Alert the tenant — must be awaited; fire-and-forget is abandoned in serverless before it completes
+      await sql`
         INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
         VALUES (
           ${link.tenantId}::uuid,

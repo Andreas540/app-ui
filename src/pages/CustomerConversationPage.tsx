@@ -2,7 +2,7 @@
 // Admin-side conversation thread with a single customer.
 // Route: /customers/:id/conversation
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
@@ -18,7 +18,6 @@ type Message = {
 
 export default function CustomerConversationPage() {
   const { id: customerId } = useParams<{ id: string }>()
-  const navigate            = useNavigate()
   const { t }              = useTranslation()
   const bottomRef           = useRef<HTMLDivElement>(null)
   const textareaRef         = useRef<HTMLTextAreaElement>(null)
@@ -103,21 +102,10 @@ export default function CustomerConversationPage() {
     }
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSend()
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="page-narrow">
-      <button
-        onClick={() => navigate(`/customers/${customerId}`)}
-        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 0 16px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        ← {t('conversation.backToCustomer')}
-      </button>
-
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: 0, overflow: 'hidden' }}>
 
         {/* Header */}
@@ -169,10 +157,9 @@ export default function CustomerConversationPage() {
             ref={textareaRef}
             value={body}
             onChange={e => setBody(e.target.value)}
-            onKeyDown={onKeyDown}
             placeholder={t('conversation.placeholder')}
-            rows={3}
-            style={{ width: '100%', resize: 'vertical', fontSize: 14, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg, var(--card))', color: 'var(--text)', boxSizing: 'border-box' }}
+            rows={7}
+            style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 14, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg, var(--card))', color: 'var(--text)', boxSizing: 'border-box' }}
           />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -190,14 +177,14 @@ export default function CustomerConversationPage() {
                   onChange={e => setChannelEmail(e.target.checked)}
                   style={{ width: 14, height: 14 }}
                 />
-                <span style={{ fontSize: 13 }}>✉️ {t('conversation.email')}</span>
+                <span style={{ fontSize: 13 }}>{t('conversation.email')}</span>
               </label>
               <label
                 title={t('conversation.smsComing')}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'default', opacity: 0.35 }}
               >
                 <input type="checkbox" checked={false} disabled style={{ width: 14, height: 14 }} />
-                <span style={{ fontSize: 13 }}>📱 {t('conversation.sms')}</span>
+                <span style={{ fontSize: 13 }}>{t('conversation.sms')}</span>
               </label>
             </div>
 
@@ -215,7 +202,6 @@ export default function CustomerConversationPage() {
               {sending ? t('conversation.sending') : t('conversation.send')}
             </button>
           </div>
-          <div className="helper" style={{ fontSize: 11 }}>{t('conversation.sendHint')}</div>
         </div>
       </div>
     </div>
