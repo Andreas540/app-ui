@@ -12,7 +12,7 @@ interface CustomerRow {
   shipping_cost?: number | null
 }
 
-type CustomerSubTab = 'show-hide' | 'shipping'
+type CustomerSubTab = 'hide-delete' | 'shipping'
 type ShippingTarget = 'all' | 'direct' | 'partner' | 'custom'
 type CostOption = 'history' | 'next' | 'specific'
 
@@ -22,20 +22,25 @@ function todayYMD() { return new Date().toISOString().slice(0, 10) }
 export default function TenantAdminCustomerSettingsTab() {
   const { t } = useTranslation()
   const { fmtInput, parseAmount } = useCurrency()
-  const [subTab, setSubTab] = useState<CustomerSubTab>('show-hide')
+  const [subTab, setSubTab] = useState<CustomerSubTab>('hide-delete')
 
   const SUB_TABS: { id: CustomerSubTab; label: string }[] = [
-    { id: 'show-hide', label: t('tenantAdmin.customerSettings.showHideTitle') },
-    { id: 'shipping',  label: t('tenantAdmin.customerSettings.shippingTitle') },
+    { id: 'hide-delete', label: t('tenantAdmin.customerSettings.hideDeleteTitle') },
+    { id: 'shipping',    label: t('tenantAdmin.customerSettings.shippingTitle') },
   ]
 
-  // ── Show/Hide state ───────────────────────────────────────────────────────
+  // ── Hide/Delete state ─────────────────────────────────────────────────────
   const [showHideCustomers, setShowHideCustomers] = useState<CustomerRow[]>([])
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
   const [showHideSearch, setShowHideSearch] = useState('')
   const [showHideLoading, setShowHideLoading] = useState(false)
-  const [showHideSaving, setShowHideSaving] = useState(false)
-  const [showHideDone, setShowHideDone] = useState('')
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<CustomerRow | null>(null)
+  const [deleteCounts, setDeleteCounts] = useState<{ orders: number; payments: number; bookings: number } | null>(null)
+  const [deleteCountsLoading, setDeleteCountsLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // ── Shipping state ────────────────────────────────────────────────────────
   const [defaultMethod, setDefaultMethod] = useState<'per_item' | 'per_order'>('per_item')
@@ -53,9 +58,9 @@ export default function TenantAdminCustomerSettingsTab() {
   const [applying, setApplying] = useState(false)
   const [applyDone, setApplyDone] = useState('')
 
-  // ── Load show/hide data on first visit ───────────────────────────────────
+  // ── Load hide/delete data on first visit ─────────────────────────────────
   useEffect(() => {
-    if (subTab !== 'show-hide' || showHideCustomers.length > 0) return
+    if (subTab !== 'hide-delete' || showHideCustomers.length > 0) return
     setShowHideLoading(true)
     fetch(`${apiBase()}/.netlify/functions/tenant-admin?action=getCustomerSettings`, { headers: getAuthHeaders() })
       .then(r => r.json())
@@ -80,29 +85,53 @@ export default function TenantAdminCustomerSettingsTab() {
       .finally(() => setShippingLoading(false))
   }, [subTab])
 
-  // ── Show/Hide helpers ─────────────────────────────────────────────────────
+  // ── Hide/Delete helpers ───────────────────────────────────────────────────
   const filteredShowHide = useMemo(() => {
     const q = showHideSearch.trim().toLowerCase()
     return q ? showHideCustomers.filter(c => c.name.toLowerCase().includes(q)) : showHideCustomers
   }, [showHideCustomers, showHideSearch])
 
-  function toggleHidden(id: string) {
-    setHiddenIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-    setShowHideDone('')
-  }
-
-  async function saveShowHide() {
-    setShowHideSaving(true); setShowHideDone('')
+  async function toggleHide(id: string, hide: boolean) {
+    setTogglingId(id)
     try {
       const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'setHiddenCustomers', hiddenCustomerIds: [...hiddenIds] }),
+        body: JSON.stringify({ action: 'toggleHideCustomer', customerId: id, hide }),
       })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to save') }
-      setShowHideDone(t('tenantAdmin.customerSettings.saved'))
-    } catch (e: any) { alert(e?.message || 'Failed to save') }
-    finally { setShowHideSaving(false) }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      setHiddenIds(prev => { const n = new Set(prev); hide ? n.add(id) : n.delete(id); return n })
+    } catch (e: any) { alert(e?.message || 'Failed to update') }
+    finally { setTogglingId(null) }
+  }
+
+  async function openDeleteModal(customer: CustomerRow) {
+    setDeleteTarget(customer)
+    setDeleteCounts(null)
+    setDeleteCountsLoading(true)
+    try {
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin?action=getCustomerRecordCounts&customer_id=${customer.id}`, { headers: getAuthHeaders() })
+      const data = await res.json()
+      setDeleteCounts({ orders: data.orders ?? 0, payments: data.payments ?? 0, bookings: data.bookings ?? 0 })
+    } catch { setDeleteCounts({ orders: 0, payments: 0, bookings: 0 }) }
+    finally { setDeleteCountsLoading(false) }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'deleteCustomer', customerId: deleteTarget.id }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to delete') }
+      setShowHideCustomers(prev => prev.filter(c => c.id !== deleteTarget.id))
+      setHiddenIds(prev => { const n = new Set(prev); n.delete(deleteTarget.id); return n })
+      setDeleteTarget(null)
+    } catch (e: any) { alert(e?.message || 'Failed to delete') }
+    finally { setDeleting(false) }
   }
 
   // ── Shipping helpers ──────────────────────────────────────────────────────
@@ -200,43 +229,87 @@ export default function TenantAdminCustomerSettingsTab() {
         </div>
       </div>
 
-      {/* ── Show / Hide Customers ── */}
-      {subTab === 'show-hide' && (
+      {/* ── Hide / Delete Customers ── */}
+      {subTab === 'hide-delete' && (
         <div>
           <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            {t('tenantAdmin.customerSettings.showHideDesc')}
+            {t('tenantAdmin.customerSettings.hideDeleteDesc')}
           </p>
           {showHideLoading ? <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div> : (
             <>
-              {showHideDone && <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #86efac', color: '#166534', fontSize: 14, marginBottom: 12 }}>{showHideDone}</div>}
               <input type="search" placeholder={t('tenantAdmin.customerSettings.search')} value={showHideSearch} onChange={e => setShowHideSearch(e.target.value)} style={{ marginBottom: 12 }} />
               {showHideCustomers.length === 0 ? (
                 <p style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.customerSettings.noCustomers')}</p>
               ) : (
-                <>
-                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr', padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>
-                      <span /><span>{t('tenantAdmin.customerSettings.customer')}</span>
-                    </div>
-                    {filteredShowHide.length === 0
-                      ? <div style={{ padding: '12px', fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.customerSettings.noMatch')}</div>
-                      : filteredShowHide.map((c, i) => (
-                        <label key={c.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr', padding: '8px 12px', fontSize: 14, cursor: 'pointer', borderTop: i === 0 ? 'none' : '1px solid var(--border)', opacity: hiddenIds.has(c.id) ? 0.45 : 1 }}>
-                          <input type="checkbox" checked={!hiddenIds.has(c.id)} onChange={() => toggleHidden(c.id)} style={{ width: 16, height: 16, cursor: 'pointer', marginTop: 1 }} />
-                          <span style={{ alignSelf: 'center' }}>{c.name}</span>
-                        </label>
-                      ))
-                    }
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>
+                    <span>{t('tenantAdmin.customerSettings.customer')}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    {hiddenIds.size > 0 ? <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('tenantAdmin.customerSettings.hiddenCount', { count: hiddenIds.size })}</span> : <span />}
-                    <button className="primary" onClick={saveShowHide} disabled={showHideSaving} style={{ height: 36, padding: '0 20px', fontSize: 13 }}>
-                      {showHideSaving ? t('saving') : t('tenantAdmin.customerSettings.saveChanges')}
-                    </button>
-                  </div>
-                </>
+                  {filteredShowHide.length === 0
+                    ? <div style={{ padding: '12px', fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.customerSettings.noMatch')}</div>
+                    : filteredShowHide.map((c, i) => {
+                      const isHidden = hiddenIds.has(c.id)
+                      const isToggling = togglingId === c.id
+                      return (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', opacity: isHidden ? 0.45 : 1 }}>
+                          <span style={{ fontSize: 14 }}>{c.name}</span>
+                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                            <button
+                              onClick={() => toggleHide(c.id, !isHidden)}
+                              disabled={isToggling}
+                              style={{ height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: isToggling ? 'default' : 'pointer', opacity: isToggling ? 0.5 : 1, whiteSpace: 'nowrap' }}
+                            >
+                              {isHidden ? t('tenantAdmin.customerSettings.unhide') : t('tenantAdmin.customerSettings.hide')}
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(c)}
+                              style={{ height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--color-error)', background: 'transparent', color: 'var(--color-error)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              {t('tenantAdmin.customerSettings.delete')}
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })
+                  }
+                </div>
               )}
             </>
+          )}
+
+          {/* Delete confirmation modal */}
+          {deleteTarget && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+              <div className="card" style={{ maxWidth: 440, width: '100%', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ fontWeight: 600, fontSize: 16 }}>{t('tenantAdmin.customerSettings.deleteTitle')}</div>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  {t('tenantAdmin.customerSettings.deleteConfirm', { name: deleteTarget.name })}
+                </p>
+                {deleteCountsLoading ? (
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t('loading')}</div>
+                ) : deleteCounts && (deleteCounts.orders > 0 || deleteCounts.payments > 0 || deleteCounts.bookings > 0) ? (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', fontSize: 13, lineHeight: 1.6 }}>
+                    {t('tenantAdmin.customerSettings.deleteRecordsWarning')}
+                    <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                      {deleteCounts.orders   > 0 && <li>{t('tenantAdmin.customerSettings.deleteOrders',   { count: deleteCounts.orders })}</li>}
+                      {deleteCounts.payments > 0 && <li>{t('tenantAdmin.customerSettings.deletePayments', { count: deleteCounts.payments })}</li>}
+                      {deleteCounts.bookings > 0 && <li>{t('tenantAdmin.customerSettings.deleteBookings', { count: deleteCounts.bookings })}</li>}
+                    </ul>
+                  </div>
+                ) : null}
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-error)', fontWeight: 500 }}>
+                  {t('tenantAdmin.customerSettings.deleteCannotUndo')}
+                </p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setDeleteTarget(null)} disabled={deleting} style={{ height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer' }}>
+                    {t('cancel')}
+                  </button>
+                  <button onClick={confirmDelete} disabled={deleting} style={{ height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8, border: 'none', background: 'var(--color-error)', color: '#fff', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.7 : 1 }}>
+                    {deleting ? t('tenantAdmin.customerSettings.deleting') : t('tenantAdmin.customerSettings.deletePermanently')}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

@@ -142,6 +142,17 @@ async function handleGet(event) {
       return cors(200, { customers })
     }
 
+    if (action === 'getCustomerRecordCounts') {
+      const customerId = qs.customer_id
+      if (!customerId) return cors(400, { error: 'customer_id required' })
+      const [[orders], [payments], [bookings]] = await Promise.all([
+        sql`SELECT COUNT(*)::int AS n FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
+        sql`SELECT COUNT(*)::int AS n FROM payments WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
+        sql`SELECT COUNT(*)::int AS n FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
+      ])
+      return cors(200, { orders: orders.n, payments: payments.n, bookings: bookings.n })
+    }
+
     if (action === 'getCashReporters') {
       await sql`ALTER TABLE tenant_memberships ADD COLUMN IF NOT EXISTS can_report_cash BOOLEAN NOT NULL DEFAULT TRUE`.catch(() => {})
       const users = await sql`
@@ -508,6 +519,41 @@ if (action === 'toggleUserStatus') {
           await sql`INSERT INTO tenant_hidden_customers (tenant_id, customer_id) VALUES (${tenantId}::uuid, ${customerId}::uuid) ON CONFLICT DO NOTHING`
         }
       }
+      return cors(200, { success: true })
+    }
+
+    if (action === 'toggleHideCustomer') {
+      const { customerId, hide } = body
+      if (!customerId) return cors(400, { error: 'customerId required' })
+      // Verify customer belongs to this tenant
+      const owns = await sql`SELECT id FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!owns.length) return cors(404, { error: 'Customer not found' })
+      await sql`CREATE TABLE IF NOT EXISTS tenant_hidden_customers (tenant_id UUID NOT NULL, customer_id UUID NOT NULL, PRIMARY KEY (tenant_id, customer_id))`.catch(() => {})
+      if (hide) {
+        await sql`INSERT INTO tenant_hidden_customers (tenant_id, customer_id) VALUES (${tenantId}::uuid, ${customerId}::uuid) ON CONFLICT DO NOTHING`
+      } else {
+        await sql`DELETE FROM tenant_hidden_customers WHERE tenant_id = ${tenantId}::uuid AND customer_id = ${customerId}::uuid`
+      }
+      return cors(200, { success: true })
+    }
+
+    if (action === 'deleteCustomer') {
+      const { customerId } = body
+      if (!customerId) return cors(400, { error: 'customerId required' })
+      // Verify customer belongs to this tenant
+      const owns = await sql`SELECT id FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!owns.length) return cors(404, { error: 'Customer not found' })
+      // Cascade in order — FK constraints on orders/payments are RESTRICT so must delete those first.
+      // Nullable booking FK fields are set to NULL to avoid cascading into complex booking trees.
+      await sql`UPDATE bookings             SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`UPDATE booking_participants SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`UPDATE message_jobs         SET customer_id = NULL WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM booking_customer_links  WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM tenant_hidden_customers WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM payments WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      // Deleting the customer row cascades to: customer_links, customer_messages, shipping_cost_history
+      await sql`DELETE FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       return cors(200, { success: true })
     }
 

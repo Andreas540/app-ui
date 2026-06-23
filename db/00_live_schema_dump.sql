@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict lT0E0R5YA4pglIncAgM3krQetJMpLNDeT1XhQkPM7KZaIgE20WngeXHTCK88ji8
+\restrict Eo0F3ZHwvAE1sBAmmoA6zrHgOAgliH4t19P6KmtCKXk2KgwUntk15aWEaU066D7
 
--- Dumped from database version 17.8 (a284a84)
+-- Dumped from database version 17.10 (21f7c76)
 -- Dumped by pg_dump version 18.3
 
 SET statement_timeout = 0;
@@ -20,18 +20,22 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: backup_test_data; Type: SCHEMA; Schema: -; Owner: -
+-- Name: backup_test_data; Type: SCHEMA; Schema: -; Owner: neondb_owner
 --
 
 CREATE SCHEMA backup_test_data;
 
 
+ALTER SCHEMA backup_test_data OWNER TO neondb_owner;
+
 --
--- Name: pos; Type: SCHEMA; Schema: -; Owner: -
+-- Name: pos; Type: SCHEMA; Schema: -; Owner: neondb_owner
 --
 
 CREATE SCHEMA pos;
 
+
+ALTER SCHEMA pos OWNER TO neondb_owner;
 
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
@@ -41,14 +45,14 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: -
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
--- Name: _compat_mirror_cost(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: _compat_mirror_cost(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public._compat_mirror_cost() RETURNS trigger
@@ -60,8 +64,10 @@ BEGIN
 END $$;
 
 
+ALTER FUNCTION public._compat_mirror_cost() OWNER TO neondb_owner;
+
 --
--- Name: after_product_cost_history_change(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: after_product_cost_history_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.after_product_cost_history_change() RETURNS trigger
@@ -107,8 +113,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.after_product_cost_history_change() OWNER TO neondb_owner;
+
 --
--- Name: after_shipping_cost_history_change(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: after_shipping_cost_history_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.after_shipping_cost_history_change() RETURNS trigger
@@ -153,8 +161,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.after_shipping_cost_history_change() OWNER TO neondb_owner;
+
 --
--- Name: blv_set_order_item_amounts(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: blv_set_order_item_amounts(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.blv_set_order_item_amounts() RETURNS trigger
@@ -292,8 +302,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.blv_set_order_item_amounts() OWNER TO neondb_owner;
+
 --
--- Name: blv_set_order_item_cost(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: blv_set_order_item_cost(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.blv_set_order_item_cost() RETURNS trigger
@@ -334,8 +346,10 @@ BEGIN
 END; $$;
 
 
+ALTER FUNCTION public.blv_set_order_item_cost() OWNER TO neondb_owner;
+
 --
--- Name: calculate_time_entry_totals(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: calculate_time_entry_totals(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.calculate_time_entry_totals() RETURNS trigger
@@ -394,8 +408,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.calculate_time_entry_totals() OWNER TO neondb_owner;
+
 --
--- Name: handle_customer_order_delivered(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: handle_customer_order_delivered(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.handle_customer_order_delivered() RETURNS trigger
@@ -462,8 +478,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.handle_customer_order_delivered() OWNER TO neondb_owner;
+
 --
--- Name: handle_supplier_order_received(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: handle_supplier_order_received(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.handle_supplier_order_received() RETURNS trigger
@@ -518,8 +536,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.handle_supplier_order_received() OWNER TO neondb_owner;
+
 --
--- Name: next_order_no(uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: next_order_no(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.next_order_no(p_tenant uuid) RETURNS bigint
@@ -540,8 +560,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.next_order_no(p_tenant uuid) OWNER TO neondb_owner;
+
 --
--- Name: orders_suppliers_set_orderno(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: orders_suppliers_set_orderno(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.orders_suppliers_set_orderno() RETURNS trigger
@@ -555,8 +577,10 @@ BEGIN
 END$$;
 
 
+ALTER FUNCTION public.orders_suppliers_set_orderno() OWNER TO neondb_owner;
+
 --
--- Name: recalculate_time_entries_on_salary_change(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: recalculate_time_entries_on_salary_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.recalculate_time_entries_on_salary_change() RETURNS trigger
@@ -594,8 +618,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.recalculate_time_entries_on_salary_change() OWNER TO neondb_owner;
+
 --
--- Name: set_supplier_order_dates(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: set_supplier_order_dates(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.set_supplier_order_dates() RETURNS trigger
@@ -634,8 +660,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.set_supplier_order_dates() OWNER TO neondb_owner;
+
 --
--- Name: set_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: set_updated_at(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.set_updated_at() RETURNS trigger
@@ -648,8 +676,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.set_updated_at() OWNER TO neondb_owner;
+
 --
--- Name: sync_item_amounts_from_order(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: sync_item_amounts_from_order(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.sync_item_amounts_from_order() RETURNS trigger
@@ -691,8 +721,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.sync_item_amounts_from_order() OWNER TO neondb_owner;
+
 --
--- Name: update_tenant_config_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: update_tenant_config_updated_at(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.update_tenant_config_updated_at() RETURNS trigger
@@ -705,8 +737,10 @@ END;
 $$;
 
 
+ALTER FUNCTION public.update_tenant_config_updated_at() OWNER TO neondb_owner;
+
 --
--- Name: update_users_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: update_users_updated_at(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
 CREATE FUNCTION public.update_users_updated_at() RETURNS trigger
@@ -719,12 +753,14 @@ END;
 $$;
 
 
+ALTER FUNCTION public.update_users_updated_at() OWNER TO neondb_owner;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: customers; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: customers; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.customers (
@@ -743,8 +779,10 @@ CREATE TABLE backup_test_data.customers (
 );
 
 
+ALTER TABLE backup_test_data.customers OWNER TO neondb_owner;
+
 --
--- Name: order_counters; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: order_counters; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.order_counters (
@@ -753,8 +791,10 @@ CREATE TABLE backup_test_data.order_counters (
 );
 
 
+ALTER TABLE backup_test_data.order_counters OWNER TO neondb_owner;
+
 --
--- Name: order_items; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: order_items; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.order_items (
@@ -768,8 +808,10 @@ CREATE TABLE backup_test_data.order_items (
 );
 
 
+ALTER TABLE backup_test_data.order_items OWNER TO neondb_owner;
+
 --
--- Name: order_partners; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: order_partners; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.order_partners (
@@ -781,8 +823,10 @@ CREATE TABLE backup_test_data.order_partners (
 );
 
 
+ALTER TABLE backup_test_data.order_partners OWNER TO neondb_owner;
+
 --
--- Name: orders; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: orders; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.orders (
@@ -800,8 +844,10 @@ CREATE TABLE backup_test_data.orders (
 );
 
 
+ALTER TABLE backup_test_data.orders OWNER TO neondb_owner;
+
 --
--- Name: partner_payments; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: partner_payments; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.partner_payments (
@@ -816,8 +862,10 @@ CREATE TABLE backup_test_data.partner_payments (
 );
 
 
+ALTER TABLE backup_test_data.partner_payments OWNER TO neondb_owner;
+
 --
--- Name: partners; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: partners; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.partners (
@@ -834,8 +882,10 @@ CREATE TABLE backup_test_data.partners (
 );
 
 
+ALTER TABLE backup_test_data.partners OWNER TO neondb_owner;
+
 --
--- Name: payments; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: payments; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.payments (
@@ -851,8 +901,10 @@ CREATE TABLE backup_test_data.payments (
 );
 
 
+ALTER TABLE backup_test_data.payments OWNER TO neondb_owner;
+
 --
--- Name: playing_with_neon; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: playing_with_neon; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.playing_with_neon (
@@ -862,8 +914,10 @@ CREATE TABLE backup_test_data.playing_with_neon (
 );
 
 
+ALTER TABLE backup_test_data.playing_with_neon OWNER TO neondb_owner;
+
 --
--- Name: product_cost_history; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: product_cost_history; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.product_cost_history (
@@ -875,8 +929,10 @@ CREATE TABLE backup_test_data.product_cost_history (
 );
 
 
+ALTER TABLE backup_test_data.product_cost_history OWNER TO neondb_owner;
+
 --
--- Name: products; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: products; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.products (
@@ -889,8 +945,10 @@ CREATE TABLE backup_test_data.products (
 );
 
 
+ALTER TABLE backup_test_data.products OWNER TO neondb_owner;
+
 --
--- Name: shipping_cost_history; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: shipping_cost_history; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.shipping_cost_history (
@@ -903,8 +961,10 @@ CREATE TABLE backup_test_data.shipping_cost_history (
 );
 
 
+ALTER TABLE backup_test_data.shipping_cost_history OWNER TO neondb_owner;
+
 --
--- Name: tenants; Type: TABLE; Schema: backup_test_data; Owner: -
+-- Name: tenants; Type: TABLE; Schema: backup_test_data; Owner: neondb_owner
 --
 
 CREATE TABLE backup_test_data.tenants (
@@ -914,8 +974,10 @@ CREATE TABLE backup_test_data.tenants (
 );
 
 
+ALTER TABLE backup_test_data.tenants OWNER TO neondb_owner;
+
 --
--- Name: pos_catalog; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_catalog; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_catalog (
@@ -933,8 +995,10 @@ CREATE TABLE pos.pos_catalog (
 );
 
 
+ALTER TABLE pos.pos_catalog OWNER TO neondb_owner;
+
 --
--- Name: pos_categories; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_categories; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_categories (
@@ -952,8 +1016,10 @@ CREATE TABLE pos.pos_categories (
 );
 
 
+ALTER TABLE pos.pos_categories OWNER TO neondb_owner;
+
 --
--- Name: pos_inventory; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_inventory; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_inventory (
@@ -972,8 +1038,10 @@ CREATE TABLE pos.pos_inventory (
 );
 
 
+ALTER TABLE pos.pos_inventory OWNER TO neondb_owner;
+
 --
--- Name: pos_item_cost; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_item_cost; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_item_cost (
@@ -988,8 +1056,10 @@ CREATE TABLE pos.pos_item_cost (
 );
 
 
+ALTER TABLE pos.pos_item_cost OWNER TO neondb_owner;
+
 --
--- Name: pos_locations; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_locations; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_locations (
@@ -1007,8 +1077,10 @@ CREATE TABLE pos.pos_locations (
 );
 
 
+ALTER TABLE pos.pos_locations OWNER TO neondb_owner;
+
 --
--- Name: pos_order_items; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_order_items; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_order_items (
@@ -1030,8 +1102,10 @@ CREATE TABLE pos.pos_order_items (
 );
 
 
+ALTER TABLE pos.pos_order_items OWNER TO neondb_owner;
+
 --
--- Name: pos_payments; Type: TABLE; Schema: pos; Owner: -
+-- Name: pos_payments; Type: TABLE; Schema: pos; Owner: neondb_owner
 --
 
 CREATE TABLE pos.pos_payments (
@@ -1052,8 +1126,10 @@ CREATE TABLE pos.pos_payments (
 );
 
 
+ALTER TABLE pos.pos_payments OWNER TO neondb_owner;
+
 --
--- Name: vw_inventory; Type: VIEW; Schema: pos; Owner: -
+-- Name: vw_inventory; Type: VIEW; Schema: pos; Owner: neondb_owner
 --
 
 CREATE VIEW pos.vw_inventory AS
@@ -1101,8 +1177,10 @@ CREATE VIEW pos.vw_inventory AS
   WHERE (inv.state = 'IN_STOCK'::text);
 
 
+ALTER VIEW pos.vw_inventory OWNER TO neondb_owner;
+
 --
--- Name: vw_sales_with_cost; Type: VIEW; Schema: pos; Owner: -
+-- Name: vw_sales_with_cost; Type: VIEW; Schema: pos; Owner: neondb_owner
 --
 
 CREATE VIEW pos.vw_sales_with_cost AS
@@ -1136,8 +1214,28 @@ CREATE VIEW pos.vw_sales_with_cost AS
      LEFT JOIN pos.pos_item_cost ic ON (((ic.tenant_id = oi.tenant_id) AND (ic.provider = oi.provider) AND (ic.provider_account_id = oi.provider_account_id) AND (ic.catalog_object_id = oi.catalog_object_id) AND (ic.valid_from <= ((p.created_at AT TIME ZONE 'America/New_York'::text))::date) AND ((ic.valid_to IS NULL) OR (ic.valid_to >= ((p.created_at AT TIME ZONE 'America/New_York'::text))::date)))));
 
 
+ALTER VIEW pos.vw_sales_with_cost OWNER TO neondb_owner;
+
 --
--- Name: app_users; Type: TABLE; Schema: public; Owner: -
+-- Name: ai_usage_log; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.ai_usage_log (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    feature text NOT NULL,
+    model text NOT NULL,
+    input_tokens integer DEFAULT 0 NOT NULL,
+    output_tokens integer DEFAULT 0 NOT NULL,
+    stripe_reported boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.ai_usage_log OWNER TO neondb_owner;
+
+--
+-- Name: app_users; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.app_users (
@@ -1148,8 +1246,10 @@ CREATE TABLE public.app_users (
 );
 
 
+ALTER TABLE public.app_users OWNER TO neondb_owner;
+
 --
--- Name: booking_customer_links; Type: TABLE; Schema: public; Owner: -
+-- Name: booking_customer_links; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.booking_customer_links (
@@ -1164,8 +1264,10 @@ CREATE TABLE public.booking_customer_links (
 );
 
 
+ALTER TABLE public.booking_customer_links OWNER TO neondb_owner;
+
 --
--- Name: booking_participants; Type: TABLE; Schema: public; Owner: -
+-- Name: booking_participants; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.booking_participants (
@@ -1178,8 +1280,10 @@ CREATE TABLE public.booking_participants (
 );
 
 
+ALTER TABLE public.booking_participants OWNER TO neondb_owner;
+
 --
--- Name: bookings; Type: TABLE; Schema: public; Owner: -
+-- Name: bookings; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.bookings (
@@ -1205,12 +1309,35 @@ CREATE TABLE public.bookings (
     notes text,
     raw_payload jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    order_id uuid,
+    checkout_session_id text
 );
 
 
+ALTER TABLE public.bookings OWNER TO neondb_owner;
+
 --
--- Name: contact_messages; Type: TABLE; Schema: public; Owner: -
+-- Name: cash_transactions; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.cash_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    transaction_date date NOT NULL,
+    transaction_type text NOT NULL,
+    amount numeric(12,2) NOT NULL,
+    comment text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_transactions_transaction_type_check CHECK ((transaction_type = ANY (ARRAY['cash_pickup'::text, 'salary'::text, 'expense'::text, 'remittance'::text])))
+);
+
+
+ALTER TABLE public.cash_transactions OWNER TO neondb_owner;
+
+--
+-- Name: contact_messages; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.contact_messages (
@@ -1220,12 +1347,16 @@ CREATE TABLE public.contact_messages (
     topic text NOT NULL,
     message text NOT NULL,
     sent_at timestamp with time zone DEFAULT now(),
-    answered_at timestamp with time zone
+    answered_at timestamp with time zone,
+    reply text,
+    replied_at timestamp with time zone
 );
 
 
+ALTER TABLE public.contact_messages OWNER TO neondb_owner;
+
 --
--- Name: costs; Type: TABLE; Schema: public; Owner: -
+-- Name: costs; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.costs (
@@ -1243,8 +1374,10 @@ CREATE TABLE public.costs (
 );
 
 
+ALTER TABLE public.costs OWNER TO neondb_owner;
+
 --
--- Name: costs_recurring; Type: TABLE; Schema: public; Owner: -
+-- Name: costs_recurring; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.costs_recurring (
@@ -1267,8 +1400,10 @@ CREATE TABLE public.costs_recurring (
 );
 
 
+ALTER TABLE public.costs_recurring OWNER TO neondb_owner;
+
 --
--- Name: costs_all; Type: VIEW; Schema: public; Owner: -
+-- Name: costs_all; Type: VIEW; Schema: public; Owner: neondb_owner
 --
 
 CREATE VIEW public.costs_all AS
@@ -1373,8 +1508,10 @@ UNION ALL
    FROM rec_yearly;
 
 
+ALTER VIEW public.costs_all OWNER TO neondb_owner;
+
 --
--- Name: costs_all_with_date_key; Type: VIEW; Schema: public; Owner: -
+-- Name: costs_all_with_date_key; Type: VIEW; Schema: public; Owner: neondb_owner
 --
 
 CREATE VIEW public.costs_all_with_date_key AS
@@ -1391,8 +1528,119 @@ CREATE VIEW public.costs_all_with_date_key AS
    FROM public.costs_all;
 
 
+ALTER VIEW public.costs_all_with_date_key OWNER TO neondb_owner;
+
 --
--- Name: customers; Type: TABLE; Schema: public; Owner: -
+-- Name: customer_links; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_links (
+    id text NOT NULL,
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    type text NOT NULL,
+    lang text,
+    expires_at timestamp with time zone DEFAULT (now() + '30 days'::interval) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT customer_links_type_check CHECK ((type = ANY (ARRAY['order'::text, 'booking'::text, 'info'::text, 'message'::text])))
+);
+
+
+ALTER TABLE public.customer_links OWNER TO neondb_owner;
+
+--
+-- Name: customer_message_notifications; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_message_notifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    message_id uuid NOT NULL,
+    channel text NOT NULL,
+    status text NOT NULL,
+    error text,
+    sent_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT customer_message_notifications_channel_check CHECK ((channel = ANY (ARRAY['sms'::text, 'email'::text, 'whatsapp'::text]))),
+    CONSTRAINT customer_message_notifications_status_check CHECK ((status = ANY (ARRAY['sent'::text, 'failed'::text])))
+);
+
+
+ALTER TABLE public.customer_message_notifications OWNER TO neondb_owner;
+
+--
+-- Name: customer_messages; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    direction text NOT NULL,
+    body text NOT NULL,
+    sent_by_user_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    read_at timestamp with time zone,
+    CONSTRAINT customer_messages_direction_check CHECK ((direction = ANY (ARRAY['inbound'::text, 'outbound'::text])))
+);
+
+
+ALTER TABLE public.customer_messages OWNER TO neondb_owner;
+
+--
+-- Name: customer_product_offers; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_product_offers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    price_amount numeric(12,2),
+    is_available boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.customer_product_offers OWNER TO neondb_owner;
+
+--
+-- Name: customer_service_availability; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_service_availability (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    service_id uuid NOT NULL,
+    day_of_week integer NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone NOT NULL
+);
+
+
+ALTER TABLE public.customer_service_availability OWNER TO neondb_owner;
+
+--
+-- Name: customer_service_offers; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customer_service_offers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    service_id uuid NOT NULL,
+    price_amount numeric(12,2),
+    duration_minutes integer,
+    is_available boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.customer_service_offers OWNER TO neondb_owner;
+
+--
+-- Name: customers; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.customers (
@@ -1412,12 +1660,17 @@ CREATE TABLE public.customers (
     partner_id uuid,
     sms_consent boolean DEFAULT false NOT NULL,
     sms_consent_at timestamp with time zone,
+    country text,
+    email character varying(255),
+    custom_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT customers_customer_type_check CHECK ((customer_type = ANY (ARRAY['BLV'::text, 'Direct'::text, 'Partner'::text])))
 );
 
 
+ALTER TABLE public.customers OWNER TO neondb_owner;
+
 --
--- Name: employee_sessions; Type: TABLE; Schema: public; Owner: -
+-- Name: employee_sessions; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.employee_sessions (
@@ -1430,8 +1683,10 @@ CREATE TABLE public.employee_sessions (
 );
 
 
+ALTER TABLE public.employee_sessions OWNER TO neondb_owner;
+
 --
--- Name: employees; Type: TABLE; Schema: public; Owner: -
+-- Name: employees; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.employees (
@@ -1450,8 +1705,47 @@ CREATE TABLE public.employees (
 );
 
 
+ALTER TABLE public.employees OWNER TO neondb_owner;
+
 --
--- Name: labor_production; Type: TABLE; Schema: public; Owner: -
+-- Name: external_events; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.external_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    event_type text NOT NULL,
+    customer_name text,
+    extra jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT external_events_event_type_check CHECK ((event_type = ANY (ARRAY['order'::text, 'customer_info'::text, 'booking'::text, 'message_reply'::text, 'customer_message'::text])))
+);
+
+
+ALTER TABLE public.external_events OWNER TO neondb_owner;
+
+--
+-- Name: invoices; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.invoices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    invoice_no text,
+    invoice_date date,
+    due_date date,
+    customer_id uuid,
+    customer_name text,
+    total_amount numeric(12,2),
+    invoice_data jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.invoices OWNER TO neondb_owner;
+
+--
+-- Name: labor_production; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.labor_production (
@@ -1469,8 +1763,10 @@ CREATE TABLE public.labor_production (
 );
 
 
+ALTER TABLE public.labor_production OWNER TO neondb_owner;
+
 --
--- Name: message_jobs; Type: TABLE; Schema: public; Owner: -
+-- Name: message_jobs; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.message_jobs (
@@ -1496,8 +1792,10 @@ CREATE TABLE public.message_jobs (
 );
 
 
+ALTER TABLE public.message_jobs OWNER TO neondb_owner;
+
 --
--- Name: message_templates; Type: TABLE; Schema: public; Owner: -
+-- Name: message_templates; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.message_templates (
@@ -1512,8 +1810,10 @@ CREATE TABLE public.message_templates (
 );
 
 
+ALTER TABLE public.message_templates OWNER TO neondb_owner;
+
 --
--- Name: order_counters; Type: TABLE; Schema: public; Owner: -
+-- Name: order_counters; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.order_counters (
@@ -1522,26 +1822,32 @@ CREATE TABLE public.order_counters (
 );
 
 
+ALTER TABLE public.order_counters OWNER TO neondb_owner;
+
 --
--- Name: order_items; Type: TABLE; Schema: public; Owner: -
+-- Name: order_items; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.order_items (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     order_id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    qty integer NOT NULL,
+    product_id uuid,
+    qty numeric(10,2) NOT NULL,
     unit_price numeric(10,2) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     product_cost numeric,
     shipping_cost numeric,
     cost numeric,
-    CONSTRAINT order_items_qty_check CHECK ((qty > 0))
+    service_id uuid,
+    CONSTRAINT order_items_product_or_service CHECK (((product_id IS NOT NULL) OR (service_id IS NOT NULL))),
+    CONSTRAINT order_items_qty_check CHECK ((qty > (0)::numeric))
 );
 
 
+ALTER TABLE public.order_items OWNER TO neondb_owner;
+
 --
--- Name: order_items_suppliers; Type: TABLE; Schema: public; Owner: -
+-- Name: order_items_suppliers; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.order_items_suppliers (
@@ -1561,8 +1867,10 @@ CREATE TABLE public.order_items_suppliers (
 );
 
 
+ALTER TABLE public.order_items_suppliers OWNER TO neondb_owner;
+
 --
--- Name: order_partners; Type: TABLE; Schema: public; Owner: -
+-- Name: order_partners; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.order_partners (
@@ -1575,8 +1883,26 @@ CREATE TABLE public.order_partners (
 );
 
 
+ALTER TABLE public.order_partners OWNER TO neondb_owner;
+
 --
--- Name: orders; Type: TABLE; Schema: public; Owner: -
+-- Name: order_payment_links; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.order_payment_links (
+    token text NOT NULL,
+    order_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    checkout_url text NOT NULL,
+    provider text DEFAULT 'stripe'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.order_payment_links OWNER TO neondb_owner;
+
+--
+-- Name: orders; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.orders (
@@ -1591,20 +1917,25 @@ CREATE TABLE public.orders (
     notes text,
     product_cost numeric(10,2),
     shipping_cost numeric(10,2),
-    delivered_quantity integer DEFAULT 0 NOT NULL,
+    delivered_quantity numeric(10,2) DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    booking_id uuid,
+    delivered_at date,
+    checkout_session_id text,
     delivery_status text GENERATED ALWAYS AS (
 CASE
     WHEN (delivered = true) THEN 'delivered'::text
-    WHEN (delivered_quantity > 0) THEN 'partial'::text
+    WHEN (delivered_quantity > (0)::numeric) THEN 'partial'::text
     ELSE 'not_delivered'::text
 END) STORED,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT delivered_quantity_nonnegative CHECK ((delivered_quantity >= 0))
+    CONSTRAINT delivered_quantity_nonnegative CHECK ((delivered_quantity >= (0)::numeric))
 );
 
 
+ALTER TABLE public.orders OWNER TO neondb_owner;
+
 --
--- Name: order_revenue_cogs_by_day; Type: VIEW; Schema: public; Owner: -
+-- Name: order_revenue_cogs_by_day; Type: VIEW; Schema: public; Owner: neondb_owner
 --
 
 CREATE VIEW public.order_revenue_cogs_by_day AS
@@ -1627,8 +1958,10 @@ CREATE VIEW public.order_revenue_cogs_by_day AS
   GROUP BY tenant_id, d, date_key;
 
 
+ALTER VIEW public.order_revenue_cogs_by_day OWNER TO neondb_owner;
+
 --
--- Name: orders_suppliers; Type: TABLE; Schema: public; Owner: -
+-- Name: orders_suppliers; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.orders_suppliers (
@@ -1653,8 +1986,10 @@ CREATE TABLE public.orders_suppliers (
 );
 
 
+ALTER TABLE public.orders_suppliers OWNER TO neondb_owner;
+
 --
--- Name: partner_payments; Type: TABLE; Schema: public; Owner: -
+-- Name: partner_payments; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.partner_payments (
@@ -1665,12 +2000,15 @@ CREATE TABLE public.partner_payments (
     amount numeric(10,2) NOT NULL,
     payment_date date NOT NULL,
     notes text,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    order_id uuid
 );
 
 
+ALTER TABLE public.partner_payments OWNER TO neondb_owner;
+
 --
--- Name: partner_to_partner_debt_payments; Type: TABLE; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.partner_to_partner_debt_payments (
@@ -1686,8 +2024,10 @@ CREATE TABLE public.partner_to_partner_debt_payments (
 );
 
 
+ALTER TABLE public.partner_to_partner_debt_payments OWNER TO neondb_owner;
+
 --
--- Name: partners; Type: TABLE; Schema: public; Owner: -
+-- Name: partners; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.partners (
@@ -1704,8 +2044,10 @@ CREATE TABLE public.partners (
 );
 
 
+ALTER TABLE public.partners OWNER TO neondb_owner;
+
 --
--- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: -
+-- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.password_reset_tokens (
@@ -1718,8 +2060,10 @@ CREATE TABLE public.password_reset_tokens (
 );
 
 
+ALTER TABLE public.password_reset_tokens OWNER TO neondb_owner;
+
 --
--- Name: payment_obligations; Type: TABLE; Schema: public; Owner: -
+-- Name: payment_obligations; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.payment_obligations (
@@ -1736,8 +2080,10 @@ CREATE TABLE public.payment_obligations (
 );
 
 
+ALTER TABLE public.payment_obligations OWNER TO neondb_owner;
+
 --
--- Name: payment_transactions; Type: TABLE; Schema: public; Owner: -
+-- Name: payment_transactions; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.payment_transactions (
@@ -1757,8 +2103,10 @@ CREATE TABLE public.payment_transactions (
 );
 
 
+ALTER TABLE public.payment_transactions OWNER TO neondb_owner;
+
 --
--- Name: payments; Type: TABLE; Schema: public; Owner: -
+-- Name: payments; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.payments (
@@ -1770,12 +2118,15 @@ CREATE TABLE public.payments (
     payment_date date NOT NULL,
     order_id uuid,
     notes text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    booking_id uuid
 );
 
 
+ALTER TABLE public.payments OWNER TO neondb_owner;
+
 --
--- Name: playing_with_neon; Type: TABLE; Schema: public; Owner: -
+-- Name: playing_with_neon; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.playing_with_neon (
@@ -1785,8 +2136,10 @@ CREATE TABLE public.playing_with_neon (
 );
 
 
+ALTER TABLE public.playing_with_neon OWNER TO neondb_owner;
+
 --
--- Name: playing_with_neon_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: playing_with_neon_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
 --
 
 CREATE SEQUENCE public.playing_with_neon_id_seq
@@ -1798,15 +2151,17 @@ CREATE SEQUENCE public.playing_with_neon_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.playing_with_neon_id_seq OWNER TO neondb_owner;
+
 --
--- Name: playing_with_neon_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: playing_with_neon_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
 
 ALTER SEQUENCE public.playing_with_neon_id_seq OWNED BY public.playing_with_neon.id;
 
 
 --
--- Name: product_cost_history; Type: TABLE; Schema: public; Owner: -
+-- Name: product_cost_history; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.product_cost_history (
@@ -1820,8 +2175,10 @@ CREATE TABLE public.product_cost_history (
 );
 
 
+ALTER TABLE public.product_cost_history OWNER TO neondb_owner;
+
 --
--- Name: products; Type: TABLE; Schema: public; Owner: -
+-- Name: products; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.products (
@@ -1829,12 +2186,29 @@ CREATE TABLE public.products (
     tenant_id uuid NOT NULL,
     name text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    cost numeric(11,3)
+    cost numeric(11,3),
+    category text DEFAULT 'product'::text NOT NULL,
+    external_provider text,
+    external_service_id text,
+    service_type text,
+    description text,
+    duration_minutes integer,
+    price_amount numeric(12,2),
+    currency text,
+    capacity integer,
+    deposit_type text,
+    deposit_value numeric(12,2),
+    active boolean DEFAULT true,
+    image_data text,
+    image_updated_at timestamp with time zone,
+    CONSTRAINT products_category_check CHECK ((category = ANY (ARRAY['product'::text, 'service'::text])))
 );
 
 
+ALTER TABLE public.products OWNER TO neondb_owner;
+
 --
--- Name: provider_connections; Type: TABLE; Schema: public; Owner: -
+-- Name: provider_connections; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.provider_connections (
@@ -1855,12 +2229,15 @@ CREATE TABLE public.provider_connections (
     last_sync_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    user_login text
+    user_login text,
+    simplybook_sms_confirmation boolean DEFAULT true
 );
 
 
+ALTER TABLE public.provider_connections OWNER TO neondb_owner;
+
 --
--- Name: reminder_rules; Type: TABLE; Schema: public; Owner: -
+-- Name: reminder_rules; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.reminder_rules (
@@ -1878,8 +2255,10 @@ CREATE TABLE public.reminder_rules (
 );
 
 
+ALTER TABLE public.reminder_rules OWNER TO neondb_owner;
+
 --
--- Name: revenue_profit_surplus; Type: VIEW; Schema: public; Owner: -
+-- Name: revenue_profit_surplus; Type: VIEW; Schema: public; Owner: neondb_owner
 --
 
 CREATE VIEW public.revenue_profit_surplus AS
@@ -1948,8 +2327,10 @@ CREATE VIEW public.revenue_profit_surplus AS
      LEFT JOIN costs_split_by_day cs ON (((cs.tenant_id = ad.tenant_id) AND (cs.d = ad.d))));
 
 
+ALTER VIEW public.revenue_profit_surplus OWNER TO neondb_owner;
+
 --
--- Name: revenue_profit_surplus_by_month; Type: VIEW; Schema: public; Owner: -
+-- Name: revenue_profit_surplus_by_month; Type: VIEW; Schema: public; Owner: neondb_owner
 --
 
 CREATE VIEW public.revenue_profit_surplus_by_month AS
@@ -1969,8 +2350,10 @@ CREATE VIEW public.revenue_profit_surplus_by_month AS
   GROUP BY tenant_id, (date_trunc('month'::text, (order_date)::timestamp with time zone));
 
 
+ALTER VIEW public.revenue_profit_surplus_by_month OWNER TO neondb_owner;
+
 --
--- Name: salary_cost_history; Type: TABLE; Schema: public; Owner: -
+-- Name: salary_cost_history; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.salary_cost_history (
@@ -1983,8 +2366,28 @@ CREATE TABLE public.salary_cost_history (
 );
 
 
+ALTER TABLE public.salary_cost_history OWNER TO neondb_owner;
+
 --
--- Name: services; Type: TABLE; Schema: public; Owner: -
+-- Name: service_availability; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.service_availability (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    service_id uuid NOT NULL,
+    day_of_week integer NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.service_availability OWNER TO neondb_owner;
+
+--
+-- Name: services; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.services (
@@ -2003,12 +2406,15 @@ CREATE TABLE public.services (
     deposit_value numeric(12,2),
     active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    product_id uuid
 );
 
 
+ALTER TABLE public.services OWNER TO neondb_owner;
+
 --
--- Name: shipping_cost_history; Type: TABLE; Schema: public; Owner: -
+-- Name: shipping_cost_history; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.shipping_cost_history (
@@ -2021,8 +2427,10 @@ CREATE TABLE public.shipping_cost_history (
 );
 
 
+ALTER TABLE public.shipping_cost_history OWNER TO neondb_owner;
+
 --
--- Name: supplier_payments; Type: TABLE; Schema: public; Owner: -
+-- Name: supplier_payments; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.supplier_payments (
@@ -2038,8 +2446,10 @@ CREATE TABLE public.supplier_payments (
 );
 
 
+ALTER TABLE public.supplier_payments OWNER TO neondb_owner;
+
 --
--- Name: suppliers; Type: TABLE; Schema: public; Owner: -
+-- Name: suppliers; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.suppliers (
@@ -2059,8 +2469,10 @@ CREATE TABLE public.suppliers (
 );
 
 
+ALTER TABLE public.suppliers OWNER TO neondb_owner;
+
 --
--- Name: sync_runs; Type: TABLE; Schema: public; Owner: -
+-- Name: sync_runs; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.sync_runs (
@@ -2076,8 +2488,10 @@ CREATE TABLE public.sync_runs (
 );
 
 
+ALTER TABLE public.sync_runs OWNER TO neondb_owner;
+
 --
--- Name: tenant_billing_settings; Type: TABLE; Schema: public; Owner: -
+-- Name: tenant_billing_settings; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.tenant_billing_settings (
@@ -2089,12 +2503,43 @@ CREATE TABLE public.tenant_billing_settings (
     booking_addon_enabled boolean DEFAULT false NOT NULL,
     booking_addon_price numeric(12,2),
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    stripe_ai_subscription_item_id text,
+    ai_price_per_1k_tokens numeric(12,6) DEFAULT 0.005000 NOT NULL
 );
 
 
+ALTER TABLE public.tenant_billing_settings OWNER TO neondb_owner;
+
 --
--- Name: tenant_memberships; Type: TABLE; Schema: public; Owner: -
+-- Name: tenant_custom_field_defs; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.tenant_custom_field_defs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    field_key text NOT NULL,
+    label text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.tenant_custom_field_defs OWNER TO neondb_owner;
+
+--
+-- Name: tenant_hidden_customers; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.tenant_hidden_customers (
+    tenant_id uuid NOT NULL,
+    customer_id uuid NOT NULL
+);
+
+
+ALTER TABLE public.tenant_hidden_customers OWNER TO neondb_owner;
+
+--
+-- Name: tenant_memberships; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.tenant_memberships (
@@ -2103,12 +2548,15 @@ CREATE TABLE public.tenant_memberships (
     role text DEFAULT 'tenant_user'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     features jsonb,
-    modules jsonb
+    modules jsonb,
+    can_report_cash boolean DEFAULT true NOT NULL
 );
 
 
+ALTER TABLE public.tenant_memberships OWNER TO neondb_owner;
+
 --
--- Name: tenant_module_quotas; Type: TABLE; Schema: public; Owner: -
+-- Name: tenant_module_quotas; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.tenant_module_quotas (
@@ -2118,8 +2566,10 @@ CREATE TABLE public.tenant_module_quotas (
 );
 
 
+ALTER TABLE public.tenant_module_quotas OWNER TO neondb_owner;
+
 --
--- Name: tenant_order_counters; Type: TABLE; Schema: public; Owner: -
+-- Name: tenant_order_counters; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.tenant_order_counters (
@@ -2128,8 +2578,29 @@ CREATE TABLE public.tenant_order_counters (
 );
 
 
+ALTER TABLE public.tenant_order_counters OWNER TO neondb_owner;
+
 --
--- Name: tenants; Type: TABLE; Schema: public; Owner: -
+-- Name: tenant_payment_providers; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.tenant_payment_providers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    provider text DEFAULT 'stripe'::text NOT NULL,
+    publishable_key text,
+    secret_key text,
+    webhook_secret text,
+    enabled boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.tenant_payment_providers OWNER TO neondb_owner;
+
+--
+-- Name: tenants; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.tenants (
@@ -2149,33 +2620,40 @@ CREATE TABLE public.tenants (
     stripe_customer_id character varying,
     default_currency character varying(10) DEFAULT 'USD'::character varying,
     default_timezone character varying(100) DEFAULT 'UTC'::character varying,
+    invoice_config jsonb,
+    ui_config jsonb,
+    booking_slug text,
+    booking_payment_provider text DEFAULT 'none'::text,
+    default_shipping_method text DEFAULT 'per_item'::text NOT NULL,
     CONSTRAINT valid_business_type CHECK ((business_type = ANY (ARRAY['general'::text, 'physical_store'::text])))
 );
 
 
+ALTER TABLE public.tenants OWNER TO neondb_owner;
+
 --
--- Name: COLUMN tenants.default_language; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN tenants.default_language; Type: COMMENT; Schema: public; Owner: neondb_owner
 --
 
 COMMENT ON COLUMN public.tenants.default_language IS 'Default language code (ISO 639-1): en, sv, es';
 
 
 --
--- Name: COLUMN tenants.default_locale; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN tenants.default_locale; Type: COMMENT; Schema: public; Owner: neondb_owner
 --
 
 COMMENT ON COLUMN public.tenants.default_locale IS 'Default locale code (ISO 639-1 + ISO 3166-1): en-US, sv-SE, es-ES';
 
 
 --
--- Name: COLUMN tenants.available_languages; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN tenants.available_languages; Type: COMMENT; Schema: public; Owner: neondb_owner
 --
 
 COMMENT ON COLUMN public.tenants.available_languages IS 'Array of language codes available for this tenant';
 
 
 --
--- Name: time_entries; Type: TABLE; Schema: public; Owner: -
+-- Name: time_entries; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.time_entries (
@@ -2196,8 +2674,10 @@ CREATE TABLE public.time_entries (
 );
 
 
+ALTER TABLE public.time_entries OWNER TO neondb_owner;
+
 --
--- Name: usage_snapshots_monthly; Type: TABLE; Schema: public; Owner: -
+-- Name: usage_snapshots_monthly; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.usage_snapshots_monthly (
@@ -2208,12 +2688,16 @@ CREATE TABLE public.usage_snapshots_monthly (
     sms_billable_count integer DEFAULT 0 NOT NULL,
     sms_billed_amount numeric(12,2) DEFAULT 0 NOT NULL,
     stripe_invoice_id text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    ai_calls_count integer DEFAULT 0 NOT NULL,
+    ai_billed_amount numeric(12,4) DEFAULT 0 NOT NULL
 );
 
 
+ALTER TABLE public.usage_snapshots_monthly OWNER TO neondb_owner;
+
 --
--- Name: user_activity_log; Type: TABLE; Schema: public; Owner: -
+-- Name: user_activity_log; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.user_activity_log (
@@ -2236,8 +2720,10 @@ CREATE TABLE public.user_activity_log (
 );
 
 
+ALTER TABLE public.user_activity_log OWNER TO neondb_owner;
+
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
+-- Name: users; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.users (
@@ -2257,28 +2743,79 @@ CREATE TABLE public.users (
     disabled boolean DEFAULT false NOT NULL,
     preferred_currency character varying(10) DEFAULT NULL::character varying,
     preferred_timezone character varying(100) DEFAULT NULL::character varying,
+    default_tenant_id uuid,
     CONSTRAINT tenant_users_must_have_tenant CHECK (((((role)::text = 'super_admin'::text) AND (tenant_id IS NULL)) OR (((role)::text <> 'super_admin'::text) AND (tenant_id IS NOT NULL)))),
     CONSTRAINT users_access_level_check CHECK (((access_level)::text = ANY ((ARRAY['admin'::character varying, 'inventory'::character varying])::text[]))),
     CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['super_admin'::character varying, 'tenant_admin'::character varying, 'tenant_user'::character varying])::text[])))
 );
 
 
+ALTER TABLE public.users OWNER TO neondb_owner;
+
 --
--- Name: COLUMN users.preferred_language; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN users.preferred_language; Type: COMMENT; Schema: public; Owner: neondb_owner
 --
 
 COMMENT ON COLUMN public.users.preferred_language IS 'User-specific language override. NULL uses tenant default.';
 
 
 --
--- Name: COLUMN users.preferred_locale; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN users.preferred_locale; Type: COMMENT; Schema: public; Owner: neondb_owner
 --
 
 COMMENT ON COLUMN public.users.preferred_locale IS 'User-specific locale override. NULL uses tenant default.';
 
 
 --
--- Name: warehouse_deliveries; Type: TABLE; Schema: public; Owner: -
+-- Name: v_customer_product_monthly; Type: VIEW; Schema: public; Owner: neondb_owner
+--
+
+CREATE VIEW public.v_customer_product_monthly AS
+ WITH partner_by_order AS (
+         SELECT order_partners.order_id,
+            sum(COALESCE(order_partners.amount, (0)::numeric)) AS partner_amount
+           FROM public.order_partners
+          GROUP BY order_partners.order_id
+        ), order_rev AS (
+         SELECT order_items.order_id,
+            sum(((order_items.qty)::numeric * COALESCE(order_items.unit_price, (0)::numeric))) AS order_revenue
+           FROM public.order_items
+          GROUP BY order_items.order_id
+        )
+ SELECT o.tenant_id,
+    (date_trunc('month'::text, (o.order_date)::timestamp with time zone))::date AS month,
+    c.id AS customer_id,
+    c.name AS customer_name,
+    c.customer_type,
+    p.id AS product_id,
+    p.name AS product_name,
+    sum(oi.qty) AS qty,
+    sum(((oi.qty)::numeric * COALESCE(oi.unit_price, (0)::numeric))) AS revenue,
+    sum(((oi.qty)::numeric * (COALESCE(oi.product_cost, (0)::numeric) + COALESCE(oi.shipping_cost, (0)::numeric)))) AS cogs,
+    sum(
+        CASE
+            WHEN (COALESCE(orv.order_revenue, (0)::numeric) > (0)::numeric) THEN ((COALESCE(po.partner_amount, (0)::numeric) * ((oi.qty)::numeric * COALESCE(oi.unit_price, (0)::numeric))) / orv.order_revenue)
+            ELSE (0)::numeric
+        END) AS partner_amount,
+    ((sum(((oi.qty)::numeric * COALESCE(oi.unit_price, (0)::numeric))) - sum(((oi.qty)::numeric * (COALESCE(oi.product_cost, (0)::numeric) + COALESCE(oi.shipping_cost, (0)::numeric))))) - sum(
+        CASE
+            WHEN (COALESCE(orv.order_revenue, (0)::numeric) > (0)::numeric) THEN ((COALESCE(po.partner_amount, (0)::numeric) * ((oi.qty)::numeric * COALESCE(oi.unit_price, (0)::numeric))) / orv.order_revenue)
+            ELSE (0)::numeric
+        END)) AS gross_profit
+   FROM (((((public.orders o
+     JOIN public.customers c ON ((c.id = o.customer_id)))
+     JOIN public.order_items oi ON ((oi.order_id = o.id)))
+     JOIN public.products p ON ((p.id = oi.product_id)))
+     LEFT JOIN partner_by_order po ON ((po.order_id = o.id)))
+     LEFT JOIN order_rev orv ON ((orv.order_id = o.id)))
+  WHERE ((o.order_date IS NOT NULL) AND (o.notes IS DISTINCT FROM 'Old tab'::text))
+  GROUP BY o.tenant_id, (date_trunc('month'::text, (o.order_date)::timestamp with time zone)), c.id, c.name, c.customer_type, p.id, p.name;
+
+
+ALTER VIEW public.v_customer_product_monthly OWNER TO neondb_owner;
+
+--
+-- Name: warehouse_deliveries; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.warehouse_deliveries (
@@ -2288,7 +2825,7 @@ CREATE TABLE public.warehouse_deliveries (
     supplier_manual_delivered character(1) NOT NULL,
     product text NOT NULL,
     customer text,
-    qty integer NOT NULL,
+    qty numeric(10,2) NOT NULL,
     product_cost numeric(10,3),
     labor_cost numeric(10,3),
     order_supplier_id uuid,
@@ -2303,8 +2840,10 @@ CREATE TABLE public.warehouse_deliveries (
 );
 
 
+ALTER TABLE public.warehouse_deliveries OWNER TO neondb_owner;
+
 --
--- Name: webhook_events; Type: TABLE; Schema: public; Owner: -
+-- Name: webhook_events; Type: TABLE; Schema: public; Owner: neondb_owner
 --
 
 CREATE TABLE public.webhook_events (
@@ -2322,15 +2861,17 @@ CREATE TABLE public.webhook_events (
 );
 
 
+ALTER TABLE public.webhook_events OWNER TO neondb_owner;
+
 --
--- Name: playing_with_neon id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: playing_with_neon id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.playing_with_neon ALTER COLUMN id SET DEFAULT nextval('public.playing_with_neon_id_seq'::regclass);
 
 
 --
--- Name: pos_catalog pos_catalog_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_catalog pos_catalog_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_catalog
@@ -2338,7 +2879,7 @@ ALTER TABLE ONLY pos.pos_catalog
 
 
 --
--- Name: pos_categories pos_categories_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_categories pos_categories_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_categories
@@ -2346,7 +2887,7 @@ ALTER TABLE ONLY pos.pos_categories
 
 
 --
--- Name: pos_inventory pos_inventory_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_inventory pos_inventory_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_inventory
@@ -2354,7 +2895,7 @@ ALTER TABLE ONLY pos.pos_inventory
 
 
 --
--- Name: pos_item_cost pos_item_cost_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_item_cost pos_item_cost_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_item_cost
@@ -2362,7 +2903,7 @@ ALTER TABLE ONLY pos.pos_item_cost
 
 
 --
--- Name: pos_locations pos_locations_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_locations pos_locations_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_locations
@@ -2370,7 +2911,7 @@ ALTER TABLE ONLY pos.pos_locations
 
 
 --
--- Name: pos_order_items pos_order_items_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_order_items pos_order_items_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_order_items
@@ -2378,7 +2919,7 @@ ALTER TABLE ONLY pos.pos_order_items
 
 
 --
--- Name: pos_payments pos_payments_pkey; Type: CONSTRAINT; Schema: pos; Owner: -
+-- Name: pos_payments pos_payments_pkey; Type: CONSTRAINT; Schema: pos; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY pos.pos_payments
@@ -2386,7 +2927,15 @@ ALTER TABLE ONLY pos.pos_payments
 
 
 --
--- Name: app_users app_users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: ai_usage_log ai_usage_log_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.ai_usage_log
+    ADD CONSTRAINT ai_usage_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: app_users app_users_email_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.app_users
@@ -2394,7 +2943,7 @@ ALTER TABLE ONLY public.app_users
 
 
 --
--- Name: app_users app_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: app_users app_users_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.app_users
@@ -2402,7 +2951,7 @@ ALTER TABLE ONLY public.app_users
 
 
 --
--- Name: booking_customer_links booking_customer_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_customer_links booking_customer_links_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_customer_links
@@ -2410,7 +2959,7 @@ ALTER TABLE ONLY public.booking_customer_links
 
 
 --
--- Name: booking_customer_links booking_customer_links_tenant_id_external_provider_external_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_customer_links booking_customer_links_tenant_id_external_provider_external_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_customer_links
@@ -2418,7 +2967,7 @@ ALTER TABLE ONLY public.booking_customer_links
 
 
 --
--- Name: booking_participants booking_participants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_participants booking_participants_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_participants
@@ -2426,7 +2975,7 @@ ALTER TABLE ONLY public.booking_participants
 
 
 --
--- Name: bookings bookings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: bookings bookings_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.bookings
@@ -2434,7 +2983,15 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- Name: contact_messages contact_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: cash_transactions cash_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.cash_transactions
+    ADD CONSTRAINT cash_transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_messages contact_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.contact_messages
@@ -2442,7 +2999,7 @@ ALTER TABLE ONLY public.contact_messages
 
 
 --
--- Name: costs costs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: costs costs_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.costs
@@ -2450,7 +3007,7 @@ ALTER TABLE ONLY public.costs
 
 
 --
--- Name: costs_recurring costs_recurring_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: costs_recurring costs_recurring_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.costs_recurring
@@ -2458,7 +3015,79 @@ ALTER TABLE ONLY public.costs_recurring
 
 
 --
--- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: customer_links customer_links_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_links
+    ADD CONSTRAINT customer_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_message_notifications customer_message_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_message_notifications
+    ADD CONSTRAINT customer_message_notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_messages customer_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_messages
+    ADD CONSTRAINT customer_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_product_offers customer_product_offers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_product_offers
+    ADD CONSTRAINT customer_product_offers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_product_offers customer_product_offers_tenant_id_customer_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_product_offers
+    ADD CONSTRAINT customer_product_offers_tenant_id_customer_id_product_id_key UNIQUE (tenant_id, customer_id, product_id);
+
+
+--
+-- Name: customer_service_availability customer_service_availability_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_service_availability
+    ADD CONSTRAINT customer_service_availability_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_service_availability customer_service_availability_tenant_id_customer_id_service_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_service_availability
+    ADD CONSTRAINT customer_service_availability_tenant_id_customer_id_service_key UNIQUE (tenant_id, customer_id, service_id, day_of_week);
+
+
+--
+-- Name: customer_service_offers customer_service_offers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_service_offers
+    ADD CONSTRAINT customer_service_offers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customer_service_offers customer_service_offers_tenant_id_customer_id_service_id_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_service_offers
+    ADD CONSTRAINT customer_service_offers_tenant_id_customer_id_service_id_key UNIQUE (tenant_id, customer_id, service_id);
+
+
+--
+-- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.customers
@@ -2466,7 +3095,7 @@ ALTER TABLE ONLY public.customers
 
 
 --
--- Name: employee_sessions employee_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: employee_sessions employee_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.employee_sessions
@@ -2474,7 +3103,7 @@ ALTER TABLE ONLY public.employee_sessions
 
 
 --
--- Name: employee_sessions employee_sessions_session_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: employee_sessions employee_sessions_session_token_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.employee_sessions
@@ -2482,7 +3111,7 @@ ALTER TABLE ONLY public.employee_sessions
 
 
 --
--- Name: employees employees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: employees employees_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.employees
@@ -2490,7 +3119,23 @@ ALTER TABLE ONLY public.employees
 
 
 --
--- Name: labor_production labor_production_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: external_events external_events_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.external_events
+    ADD CONSTRAINT external_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invoices invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: labor_production labor_production_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.labor_production
@@ -2498,7 +3143,7 @@ ALTER TABLE ONLY public.labor_production
 
 
 --
--- Name: message_jobs message_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: message_jobs message_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.message_jobs
@@ -2506,7 +3151,7 @@ ALTER TABLE ONLY public.message_jobs
 
 
 --
--- Name: message_templates message_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: message_templates message_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.message_templates
@@ -2514,7 +3159,7 @@ ALTER TABLE ONLY public.message_templates
 
 
 --
--- Name: order_counters order_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: order_counters order_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_counters
@@ -2522,7 +3167,7 @@ ALTER TABLE ONLY public.order_counters
 
 
 --
--- Name: order_items order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items
@@ -2530,7 +3175,7 @@ ALTER TABLE ONLY public.order_items
 
 
 --
--- Name: order_items_suppliers order_items_suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items_suppliers order_items_suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items_suppliers
@@ -2538,7 +3183,7 @@ ALTER TABLE ONLY public.order_items_suppliers
 
 
 --
--- Name: order_partners order_partners_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: order_partners order_partners_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_partners
@@ -2546,7 +3191,15 @@ ALTER TABLE ONLY public.order_partners
 
 
 --
--- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: order_payment_links order_payment_links_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.order_payment_links
+    ADD CONSTRAINT order_payment_links_pkey PRIMARY KEY (token);
+
+
+--
+-- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders
@@ -2554,7 +3207,7 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: orders_suppliers orders_suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: orders_suppliers orders_suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders_suppliers
@@ -2562,7 +3215,7 @@ ALTER TABLE ONLY public.orders_suppliers
 
 
 --
--- Name: orders orders_tenant_id_order_no_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: orders orders_tenant_id_order_no_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders
@@ -2570,7 +3223,7 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: partner_payments partner_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_payments partner_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_payments
@@ -2578,7 +3231,7 @@ ALTER TABLE ONLY public.partner_payments
 
 
 --
--- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_to_partner_debt_payments
@@ -2586,7 +3239,7 @@ ALTER TABLE ONLY public.partner_to_partner_debt_payments
 
 
 --
--- Name: partners partners_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: partners partners_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partners
@@ -2594,7 +3247,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- Name: partners partners_tenant_id_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: partners partners_tenant_id_name_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partners
@@ -2602,7 +3255,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.password_reset_tokens
@@ -2610,7 +3263,7 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 
 --
--- Name: password_reset_tokens password_reset_tokens_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: password_reset_tokens password_reset_tokens_token_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.password_reset_tokens
@@ -2618,7 +3271,7 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 
 --
--- Name: payment_obligations payment_obligations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: payment_obligations payment_obligations_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payment_obligations
@@ -2626,7 +3279,7 @@ ALTER TABLE ONLY public.payment_obligations
 
 
 --
--- Name: payment_transactions payment_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: payment_transactions payment_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payment_transactions
@@ -2634,7 +3287,7 @@ ALTER TABLE ONLY public.payment_transactions
 
 
 --
--- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payments
@@ -2642,7 +3295,7 @@ ALTER TABLE ONLY public.payments
 
 
 --
--- Name: playing_with_neon playing_with_neon_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: playing_with_neon playing_with_neon_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.playing_with_neon
@@ -2650,7 +3303,7 @@ ALTER TABLE ONLY public.playing_with_neon
 
 
 --
--- Name: product_cost_history product_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: product_cost_history product_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.product_cost_history
@@ -2658,7 +3311,7 @@ ALTER TABLE ONLY public.product_cost_history
 
 
 --
--- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.products
@@ -2666,7 +3319,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- Name: products products_tenant_id_id_uniq; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: products products_tenant_id_id_uniq; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.products
@@ -2674,7 +3327,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- Name: provider_connections provider_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: provider_connections provider_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.provider_connections
@@ -2682,7 +3335,7 @@ ALTER TABLE ONLY public.provider_connections
 
 
 --
--- Name: reminder_rules reminder_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: reminder_rules reminder_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.reminder_rules
@@ -2690,7 +3343,7 @@ ALTER TABLE ONLY public.reminder_rules
 
 
 --
--- Name: salary_cost_history salary_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: salary_cost_history salary_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.salary_cost_history
@@ -2698,7 +3351,23 @@ ALTER TABLE ONLY public.salary_cost_history
 
 
 --
--- Name: services services_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: service_availability service_availability_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.service_availability
+    ADD CONSTRAINT service_availability_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: service_availability service_availability_tenant_id_service_id_day_of_week_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.service_availability
+    ADD CONSTRAINT service_availability_tenant_id_service_id_day_of_week_key UNIQUE (tenant_id, service_id, day_of_week);
+
+
+--
+-- Name: services services_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.services
@@ -2706,7 +3375,7 @@ ALTER TABLE ONLY public.services
 
 
 --
--- Name: shipping_cost_history shipping_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: shipping_cost_history shipping_cost_history_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.shipping_cost_history
@@ -2714,7 +3383,7 @@ ALTER TABLE ONLY public.shipping_cost_history
 
 
 --
--- Name: supplier_payments supplier_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: supplier_payments supplier_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.supplier_payments
@@ -2722,7 +3391,7 @@ ALTER TABLE ONLY public.supplier_payments
 
 
 --
--- Name: suppliers suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: suppliers suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.suppliers
@@ -2730,7 +3399,7 @@ ALTER TABLE ONLY public.suppliers
 
 
 --
--- Name: sync_runs sync_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: sync_runs sync_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.sync_runs
@@ -2738,7 +3407,7 @@ ALTER TABLE ONLY public.sync_runs
 
 
 --
--- Name: tenant_billing_settings tenant_billing_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_billing_settings tenant_billing_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_billing_settings
@@ -2746,7 +3415,31 @@ ALTER TABLE ONLY public.tenant_billing_settings
 
 
 --
--- Name: tenant_memberships tenant_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_custom_field_defs tenant_custom_field_defs_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_custom_field_defs
+    ADD CONSTRAINT tenant_custom_field_defs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tenant_custom_field_defs tenant_custom_field_defs_tenant_id_field_key_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_custom_field_defs
+    ADD CONSTRAINT tenant_custom_field_defs_tenant_id_field_key_key UNIQUE (tenant_id, field_key);
+
+
+--
+-- Name: tenant_hidden_customers tenant_hidden_customers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_hidden_customers
+    ADD CONSTRAINT tenant_hidden_customers_pkey PRIMARY KEY (tenant_id, customer_id);
+
+
+--
+-- Name: tenant_memberships tenant_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_memberships
@@ -2754,7 +3447,7 @@ ALTER TABLE ONLY public.tenant_memberships
 
 
 --
--- Name: tenant_module_quotas tenant_module_quotas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_module_quotas tenant_module_quotas_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_module_quotas
@@ -2762,7 +3455,7 @@ ALTER TABLE ONLY public.tenant_module_quotas
 
 
 --
--- Name: tenant_order_counters tenant_order_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_order_counters tenant_order_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_order_counters
@@ -2770,7 +3463,23 @@ ALTER TABLE ONLY public.tenant_order_counters
 
 
 --
--- Name: tenants tenants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_payment_providers tenant_payment_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_payment_providers
+    ADD CONSTRAINT tenant_payment_providers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tenant_payment_providers tenant_payment_providers_tenant_id_provider_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_payment_providers
+    ADD CONSTRAINT tenant_payment_providers_tenant_id_provider_key UNIQUE (tenant_id, provider);
+
+
+--
+-- Name: tenants tenants_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenants
@@ -2778,7 +3487,7 @@ ALTER TABLE ONLY public.tenants
 
 
 --
--- Name: time_entries time_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: time_entries time_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.time_entries
@@ -2786,7 +3495,7 @@ ALTER TABLE ONLY public.time_entries
 
 
 --
--- Name: salary_cost_history unique_employee_salary_effective_from; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: salary_cost_history unique_employee_salary_effective_from; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.salary_cost_history
@@ -2794,7 +3503,7 @@ ALTER TABLE ONLY public.salary_cost_history
 
 
 --
--- Name: employees uq_employees_tenant_code; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: employees uq_employees_tenant_code; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.employees
@@ -2802,7 +3511,7 @@ ALTER TABLE ONLY public.employees
 
 
 --
--- Name: labor_production uq_labor_production_tenant_date_product; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: labor_production uq_labor_production_tenant_date_product; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.labor_production
@@ -2810,7 +3519,7 @@ ALTER TABLE ONLY public.labor_production
 
 
 --
--- Name: time_entries uq_time_entries_employee_date; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: time_entries uq_time_entries_employee_date; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.time_entries
@@ -2818,7 +3527,7 @@ ALTER TABLE ONLY public.time_entries
 
 
 --
--- Name: usage_snapshots_monthly usage_snapshots_monthly_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: usage_snapshots_monthly usage_snapshots_monthly_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.usage_snapshots_monthly
@@ -2826,7 +3535,7 @@ ALTER TABLE ONLY public.usage_snapshots_monthly
 
 
 --
--- Name: usage_snapshots_monthly usage_snapshots_monthly_tenant_id_period_start_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: usage_snapshots_monthly usage_snapshots_monthly_tenant_id_period_start_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.usage_snapshots_monthly
@@ -2834,7 +3543,7 @@ ALTER TABLE ONLY public.usage_snapshots_monthly
 
 
 --
--- Name: user_activity_log user_activity_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: user_activity_log user_activity_log_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.user_activity_log
@@ -2842,7 +3551,7 @@ ALTER TABLE ONLY public.user_activity_log
 
 
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.users
@@ -2850,7 +3559,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.users
@@ -2858,7 +3567,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: warehouse_deliveries warehouse_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: warehouse_deliveries warehouse_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.warehouse_deliveries
@@ -2866,7 +3575,7 @@ ALTER TABLE ONLY public.warehouse_deliveries
 
 
 --
--- Name: webhook_events webhook_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: webhook_events webhook_events_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.webhook_events
@@ -2874,966 +3583,1100 @@ ALTER TABLE ONLY public.webhook_events
 
 
 --
--- Name: idx_pos_catalog_category; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_catalog_category; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_catalog_category ON pos.pos_catalog USING btree (tenant_id, provider, category_id);
 
 
 --
--- Name: idx_pos_categories_name; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_categories_name; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_categories_name ON pos.pos_categories USING btree (tenant_id, provider, category_name);
 
 
 --
--- Name: idx_pos_categories_parent; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_categories_parent; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_categories_parent ON pos.pos_categories USING btree (tenant_id, provider, parent_category_id);
 
 
 --
--- Name: idx_pos_inventory_catalog_object; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_inventory_catalog_object; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_inventory_catalog_object ON pos.pos_inventory USING btree (tenant_id, provider, catalog_object_id);
 
 
 --
--- Name: idx_pos_inventory_location; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_inventory_location; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_inventory_location ON pos.pos_inventory USING btree (tenant_id, provider, location_id);
 
 
 --
--- Name: idx_pos_locations_name; Type: INDEX; Schema: pos; Owner: -
+-- Name: idx_pos_locations_name; Type: INDEX; Schema: pos; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pos_locations_name ON pos.pos_locations USING btree (tenant_id, provider, location_name);
 
 
 --
--- Name: costs_cost_category_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_cost_category_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_cost_category_idx ON public.costs USING btree (cost_category);
 
 
 --
--- Name: costs_cost_date_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_cost_date_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_cost_date_idx ON public.costs USING btree (cost_date);
 
 
 --
--- Name: costs_recurring_end_date_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_recurring_end_date_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_recurring_end_date_idx ON public.costs_recurring USING btree (end_date);
 
 
 --
--- Name: costs_recurring_start_date_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_recurring_start_date_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_recurring_start_date_idx ON public.costs_recurring USING btree (start_date);
 
 
 --
--- Name: costs_recurring_tenant_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_recurring_tenant_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_recurring_tenant_idx ON public.costs_recurring USING btree (tenant_id);
 
 
 --
--- Name: costs_tenant_date_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: costs_tenant_date_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX costs_tenant_date_idx ON public.costs USING btree (tenant_id, cost_date);
 
 
 --
--- Name: employee_sessions_employee_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: customers_tenant_email_idx; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX customers_tenant_email_idx ON public.customers USING btree (tenant_id, email);
+
+
+--
+-- Name: employee_sessions_employee_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX employee_sessions_employee_idx ON public.employee_sessions USING btree (employee_id);
 
 
 --
--- Name: employee_sessions_token_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: employee_sessions_token_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX employee_sessions_token_idx ON public.employee_sessions USING btree (session_token);
 
 
 --
--- Name: idx_booking_customer_links_customer; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_ai_usage_log_tenant_unreported; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_ai_usage_log_tenant_unreported ON public.ai_usage_log USING btree (tenant_id, stripe_reported, created_at DESC);
+
+
+--
+-- Name: idx_booking_customer_links_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_booking_customer_links_customer ON public.booking_customer_links USING btree (customer_id);
 
 
 --
--- Name: idx_booking_customer_links_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_booking_customer_links_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_booking_customer_links_tenant ON public.booking_customer_links USING btree (tenant_id);
 
 
 --
--- Name: idx_booking_participants_booking; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_booking_participants_booking; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_booking_participants_booking ON public.booking_participants USING btree (booking_id);
 
 
 --
--- Name: idx_booking_participants_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_booking_participants_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_booking_participants_tenant ON public.booking_participants USING btree (tenant_id);
 
 
 --
--- Name: idx_bookings_customer; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_bookings_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_bookings_customer ON public.bookings USING btree (customer_id);
 
 
 --
--- Name: idx_bookings_service; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_bookings_order; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_bookings_order ON public.bookings USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: idx_bookings_service; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_bookings_service ON public.bookings USING btree (service_id);
 
 
 --
--- Name: idx_bookings_start_at; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_bookings_start_at; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_bookings_start_at ON public.bookings USING btree (tenant_id, start_at);
 
 
 --
--- Name: idx_bookings_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_bookings_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_bookings_tenant ON public.bookings USING btree (tenant_id);
 
 
 --
--- Name: idx_costs_category; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_cash_tx_date; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_cash_tx_date ON public.cash_transactions USING btree (transaction_date DESC);
+
+
+--
+-- Name: idx_cash_tx_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_cash_tx_tenant ON public.cash_transactions USING btree (tenant_id);
+
+
+--
+-- Name: idx_cash_tx_user; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_cash_tx_user ON public.cash_transactions USING btree (user_id);
+
+
+--
+-- Name: idx_costs_category; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_costs_category ON public.costs USING btree (cost_category);
 
 
 --
--- Name: idx_costs_cost_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_costs_cost_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_costs_cost_date ON public.costs USING btree (cost_date);
 
 
 --
--- Name: idx_customers_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_customer_links_expires; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customer_links_expires ON public.customer_links USING btree (expires_at);
+
+
+--
+-- Name: idx_customer_messages_thread; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customer_messages_thread ON public.customer_messages USING btree (tenant_id, customer_id, created_at);
+
+
+--
+-- Name: idx_customers_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_customers_tenant ON public.customers USING btree (tenant_id);
 
 
 --
--- Name: idx_employees_email; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_customers_tenant_email; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customers_tenant_email ON public.customers USING btree (tenant_id, lower((email)::text));
+
+
+--
+-- Name: idx_customers_tenant_phone; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customers_tenant_phone ON public.customers USING btree (tenant_id, phone);
+
+
+--
+-- Name: idx_employees_email; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_employees_email ON public.employees USING btree (email);
 
 
 --
--- Name: idx_employees_share_token_hash; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_employees_share_token_hash; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_employees_share_token_hash ON public.employees USING btree (share_token_hash) WHERE (share_token_hash IS NOT NULL);
 
 
 --
--- Name: idx_employees_tenant_active; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_employees_tenant_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_employees_tenant_active ON public.employees USING btree (tenant_id, active);
 
 
 --
--- Name: idx_labor_production_tenant_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_external_events_tenant_created; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_external_events_tenant_created ON public.external_events USING btree (tenant_id, created_at DESC);
+
+
+--
+-- Name: idx_labor_production_tenant_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_labor_production_tenant_date ON public.labor_production USING btree (tenant_id, date DESC);
 
 
 --
--- Name: idx_labor_production_tenant_product; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_labor_production_tenant_product; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_labor_production_tenant_product ON public.labor_production USING btree (tenant_id, product_id);
 
 
 --
--- Name: idx_message_jobs_scheduled; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_message_jobs_scheduled; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_message_jobs_scheduled ON public.message_jobs USING btree (status, scheduled_for) WHERE (status = 'queued'::text);
 
 
 --
--- Name: idx_message_jobs_stripe; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_message_jobs_stripe; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_message_jobs_stripe ON public.message_jobs USING btree (tenant_id, billable, stripe_reported) WHERE ((billable = true) AND (stripe_reported = false));
 
 
 --
--- Name: idx_message_jobs_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_message_jobs_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_message_jobs_tenant ON public.message_jobs USING btree (tenant_id);
 
 
 --
--- Name: idx_message_templates_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_message_templates_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_message_templates_tenant ON public.message_templates USING btree (tenant_id);
 
 
 --
--- Name: idx_order_items_order; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_order_items_order; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_order_items_order ON public.order_items USING btree (order_id);
 
 
 --
--- Name: idx_order_partners_order; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_order_items_service; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_order_items_service ON public.order_items USING btree (service_id) WHERE (service_id IS NOT NULL);
+
+
+--
+-- Name: idx_order_partners_order; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_order_partners_order ON public.order_partners USING btree (order_id);
 
 
 --
--- Name: idx_orders_customer; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_orders_booking; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_orders_booking ON public.orders USING btree (booking_id) WHERE (booking_id IS NOT NULL);
+
+
+--
+-- Name: idx_orders_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_orders_customer ON public.orders USING btree (customer_id);
 
 
 --
--- Name: idx_orders_order_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_orders_order_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_orders_order_date ON public.orders USING btree (order_date);
 
 
 --
--- Name: idx_orders_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_orders_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_orders_tenant ON public.orders USING btree (tenant_id);
 
 
 --
--- Name: idx_partner_payments_partner; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_partner_payments_partner; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_partner_payments_partner ON public.partner_payments USING btree (partner_id, payment_date DESC);
 
 
 --
--- Name: idx_partner_payments_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_partner_payments_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_partner_payments_tenant ON public.partner_payments USING btree (tenant_id);
 
 
 --
--- Name: idx_partner_to_partner_debt_payments_partner_payment_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_partner_to_partner_debt_payments_partner_payment_id; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_partner_to_partner_debt_payments_partner_payment_id ON public.partner_to_partner_debt_payments USING btree (partner_payment_id);
 
 
 --
--- Name: idx_partners_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_partners_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_partners_tenant ON public.partners USING btree (tenant_id);
 
 
 --
--- Name: idx_password_reset_token; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_password_reset_token; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_password_reset_token ON public.password_reset_tokens USING btree (token);
 
 
 --
--- Name: idx_password_reset_user; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_password_reset_user; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_password_reset_user ON public.password_reset_tokens USING btree (user_id);
 
 
 --
--- Name: idx_payment_obligations_booking; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payment_obligations_booking; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payment_obligations_booking ON public.payment_obligations USING btree (booking_id);
 
 
 --
--- Name: idx_payment_obligations_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payment_obligations_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payment_obligations_tenant ON public.payment_obligations USING btree (tenant_id);
 
 
 --
--- Name: idx_payment_transactions_booking; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payment_transactions_booking; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payment_transactions_booking ON public.payment_transactions USING btree (booking_id);
 
 
 --
--- Name: idx_payment_transactions_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payment_transactions_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payment_transactions_tenant ON public.payment_transactions USING btree (tenant_id);
 
 
 --
--- Name: idx_payments_customer; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payments_booking; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_payments_booking ON public.payments USING btree (booking_id) WHERE (booking_id IS NOT NULL);
+
+
+--
+-- Name: idx_payments_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payments_customer ON public.payments USING btree (customer_id);
 
 
 --
--- Name: idx_payments_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payments_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payments_date ON public.payments USING btree (payment_date DESC);
 
 
 --
--- Name: idx_payments_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_payments_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_payments_tenant ON public.payments USING btree (tenant_id);
 
 
 --
--- Name: idx_pch_product_from; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_pch_product_from; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pch_product_from ON public.product_cost_history USING btree (product_id, effective_from DESC);
 
 
 --
--- Name: idx_pch_product_time; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_pch_product_time; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_pch_product_time ON public.product_cost_history USING btree (product_id, effective_from DESC);
 
 
 --
--- Name: idx_products_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_products_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_products_tenant ON public.products USING btree (tenant_id);
 
 
 --
--- Name: idx_provider_connections_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_provider_connections_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_provider_connections_tenant ON public.provider_connections USING btree (tenant_id);
 
 
 --
--- Name: idx_recurring_start_end; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_recurring_start_end; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_recurring_start_end ON public.costs_recurring USING btree (start_date, end_date);
 
 
 --
--- Name: idx_reminder_rules_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_reminder_rules_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_reminder_rules_tenant ON public.reminder_rules USING btree (tenant_id);
 
 
 --
--- Name: idx_salary_cost_history_effective_from; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_salary_cost_history_effective_from; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_salary_cost_history_effective_from ON public.salary_cost_history USING btree (effective_from DESC);
 
 
 --
--- Name: idx_salary_cost_history_employee_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_salary_cost_history_employee_id; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_salary_cost_history_employee_id ON public.salary_cost_history USING btree (employee_id);
 
 
 --
--- Name: idx_salary_cost_history_tenant_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_salary_cost_history_tenant_id; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_salary_cost_history_tenant_id ON public.salary_cost_history USING btree (tenant_id);
 
 
 --
--- Name: idx_sch_customer_from; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_sch_customer_from; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_sch_customer_from ON public.shipping_cost_history USING btree (customer_id, effective_from DESC);
 
 
 --
--- Name: idx_services_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_services_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_services_tenant ON public.services USING btree (tenant_id);
 
 
 --
--- Name: idx_shipping_cost_history_customer; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_shipping_cost_history_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_shipping_cost_history_customer ON public.shipping_cost_history USING btree (customer_id, effective_from DESC);
 
 
 --
--- Name: idx_shipping_cost_history_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_shipping_cost_history_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_shipping_cost_history_tenant ON public.shipping_cost_history USING btree (tenant_id);
 
 
 --
--- Name: idx_supplier_payments_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_supplier_payments_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_supplier_payments_date ON public.supplier_payments USING btree (payment_date);
 
 
 --
--- Name: idx_supplier_payments_order; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_supplier_payments_order; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_supplier_payments_order ON public.supplier_payments USING btree (order_id);
 
 
 --
--- Name: idx_supplier_payments_supplier; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_supplier_payments_supplier; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_supplier_payments_supplier ON public.supplier_payments USING btree (supplier_id);
 
 
 --
--- Name: idx_supplier_payments_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_supplier_payments_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_supplier_payments_tenant ON public.supplier_payments USING btree (tenant_id);
 
 
 --
--- Name: idx_sync_runs_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_sync_runs_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_sync_runs_tenant ON public.sync_runs USING btree (tenant_id);
 
 
 --
--- Name: idx_tenant_memberships_features; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_tenant_memberships_features; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_tenant_memberships_features ON public.tenant_memberships USING gin (features);
 
 
 --
--- Name: idx_tenants_features; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_tenants_features; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_tenants_features ON public.tenants USING gin (features);
 
 
 --
--- Name: idx_time_entries_approved; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_time_entries_approved; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_time_entries_approved ON public.time_entries USING btree (tenant_id, approved, work_date DESC);
 
 
 --
--- Name: idx_time_entries_employee_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_time_entries_employee_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_time_entries_employee_date ON public.time_entries USING btree (employee_id, work_date DESC);
 
 
 --
--- Name: idx_time_entries_tenant_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_time_entries_tenant_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_time_entries_tenant_date ON public.time_entries USING btree (tenant_id, work_date DESC);
 
 
 --
--- Name: idx_usage_snapshots_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_usage_snapshots_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_usage_snapshots_tenant ON public.usage_snapshots_monthly USING btree (tenant_id);
 
 
 --
--- Name: idx_user_activity_log_action; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_log_action; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_log_action ON public.user_activity_log USING btree (action);
 
 
 --
--- Name: idx_user_activity_log_email; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_log_email; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_log_email ON public.user_activity_log USING btree (email);
 
 
 --
--- Name: idx_user_activity_log_tenant_name; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_log_tenant_name; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_log_tenant_name ON public.user_activity_log USING btree (tenant_name);
 
 
 --
--- Name: idx_user_activity_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_tenant ON public.user_activity_log USING btree (tenant_id);
 
 
 --
--- Name: idx_user_activity_timestamp; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_timestamp; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_timestamp ON public.user_activity_log USING btree ("timestamp");
 
 
 --
--- Name: idx_user_activity_user_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_activity_user_id; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_user_activity_user_id ON public.user_activity_log USING btree (user_id);
 
 
 --
--- Name: idx_users_email; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_users_email; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_users_email ON public.users USING btree (email);
 
 
 --
--- Name: idx_users_role; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_users_role; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_users_role ON public.users USING btree (role);
 
 
 --
--- Name: idx_users_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_users_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_users_tenant ON public.users USING btree (tenant_id);
 
 
 --
--- Name: idx_warehouse_deliveries_date; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_warehouse_deliveries_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_warehouse_deliveries_date ON public.warehouse_deliveries USING btree (date);
 
 
 --
--- Name: idx_warehouse_deliveries_product_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_warehouse_deliveries_product_id; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_warehouse_deliveries_product_id ON public.warehouse_deliveries USING btree (product_id);
 
 
 --
--- Name: idx_warehouse_deliveries_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_warehouse_deliveries_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_warehouse_deliveries_tenant ON public.warehouse_deliveries USING btree (tenant_id);
 
 
 --
--- Name: idx_warehouse_deliveries_type; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_warehouse_deliveries_type; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_warehouse_deliveries_type ON public.warehouse_deliveries USING btree (supplier_manual_delivered);
 
 
 --
--- Name: idx_webhook_events_tenant; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_webhook_events_tenant; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_webhook_events_tenant ON public.webhook_events USING btree (tenant_id);
 
 
 --
--- Name: idx_webhook_events_unprocessed; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_webhook_events_unprocessed; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX idx_webhook_events_unprocessed ON public.webhook_events USING btree (processed, created_at) WHERE (processed = false);
 
 
 --
--- Name: ois_tenant_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: invoices_tenant_date; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX invoices_tenant_date ON public.invoices USING btree (tenant_id, invoice_date DESC);
+
+
+--
+-- Name: ois_tenant_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX ois_tenant_idx ON public.order_items_suppliers USING btree (tenant_id);
 
 
 --
--- Name: ois_tenant_order_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: ois_tenant_order_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX ois_tenant_order_idx ON public.order_items_suppliers USING btree (tenant_id, order_id);
 
 
 --
--- Name: ois_tenant_product_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: ois_tenant_product_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX ois_tenant_product_idx ON public.order_items_suppliers USING btree (tenant_id, product_id);
 
 
 --
--- Name: orders_suppliers_dates_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: order_payment_links_order_id; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX order_payment_links_order_id ON public.order_payment_links USING btree (order_id);
+
+
+--
+-- Name: orders_suppliers_dates_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX orders_suppliers_dates_idx ON public.orders_suppliers USING btree (tenant_id, order_date, est_delivery_date);
 
 
 --
--- Name: orders_suppliers_delivered_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: orders_suppliers_delivered_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX orders_suppliers_delivered_idx ON public.orders_suppliers USING btree (tenant_id, delivered);
 
 
 --
--- Name: orders_suppliers_tenant_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: orders_suppliers_tenant_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX orders_suppliers_tenant_idx ON public.orders_suppliers USING btree (tenant_id);
 
 
 --
--- Name: orders_suppliers_tenant_orderno_key; Type: INDEX; Schema: public; Owner: -
+-- Name: orders_suppliers_tenant_orderno_key; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX orders_suppliers_tenant_orderno_key ON public.orders_suppliers USING btree (tenant_id, order_no);
 
 
 --
--- Name: orders_suppliers_tenant_supplier_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: orders_suppliers_tenant_supplier_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX orders_suppliers_tenant_supplier_idx ON public.orders_suppliers USING btree (tenant_id, supplier_id);
 
 
 --
--- Name: pch_tenant_product_effective_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: pch_tenant_product_effective_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX pch_tenant_product_effective_idx ON public.product_cost_history USING btree (tenant_id, product_id, effective_from DESC);
 
 
 --
--- Name: suppliers_email_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: suppliers_email_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX suppliers_email_idx ON public.suppliers USING btree (lower(email));
 
 
 --
--- Name: suppliers_tenant_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: suppliers_tenant_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX suppliers_tenant_idx ON public.suppliers USING btree (tenant_id);
 
 
 --
--- Name: suppliers_tenant_name_key; Type: INDEX; Schema: public; Owner: -
+-- Name: suppliers_tenant_name_key; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX suppliers_tenant_name_key ON public.suppliers USING btree (tenant_id, lower(name));
 
 
 --
--- Name: tenant_memberships_tenant_id_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: tenant_memberships_tenant_id_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX tenant_memberships_tenant_id_idx ON public.tenant_memberships USING btree (tenant_id);
 
 
 --
--- Name: tenant_memberships_user_id_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: tenant_memberships_user_id_idx; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE INDEX tenant_memberships_user_id_idx ON public.tenant_memberships USING btree (user_id);
 
 
 --
--- Name: tenants_slug_uq; Type: INDEX; Schema: public; Owner: -
+-- Name: tenants_booking_slug_unique; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE UNIQUE INDEX tenants_booking_slug_unique ON public.tenants USING btree (booking_slug) WHERE (booking_slug IS NOT NULL);
+
+
+--
+-- Name: tenants_slug_uq; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX tenants_slug_uq ON public.tenants USING btree (slug) WHERE (slug IS NOT NULL);
 
 
 --
--- Name: uq_bookings_external; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_bookings_external; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_bookings_external ON public.bookings USING btree (tenant_id, external_provider, external_booking_id) WHERE (external_booking_id IS NOT NULL);
 
 
 --
--- Name: uq_employees_tenant_employee_code; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_employees_tenant_employee_code; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_employees_tenant_employee_code ON public.employees USING btree (tenant_id, employee_code);
 
 
 --
--- Name: uq_message_jobs_dedup; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_message_jobs_dedup; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_message_jobs_dedup ON public.message_jobs USING btree (tenant_id, booking_id, template_key, channel, scheduled_for) WHERE (booking_id IS NOT NULL);
 
 
 --
--- Name: uq_message_templates_key; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_message_templates_key; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_message_templates_key ON public.message_templates USING btree (tenant_id, template_key, channel);
 
 
 --
--- Name: uq_pch_product_from; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_pch_product_from; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_pch_product_from ON public.product_cost_history USING btree (product_id, effective_from);
 
 
 --
--- Name: uq_provider_connections_tenant_provider; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_products_external_service; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE UNIQUE INDEX uq_products_external_service ON public.products USING btree (tenant_id, external_provider, external_service_id) WHERE (external_service_id IS NOT NULL);
+
+
+--
+-- Name: uq_provider_connections_tenant_provider; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_provider_connections_tenant_provider ON public.provider_connections USING btree (tenant_id, provider);
 
 
 --
--- Name: uq_sch_customer_from; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_sch_customer_from; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_sch_customer_from ON public.shipping_cost_history USING btree (customer_id, effective_from);
 
 
 --
--- Name: uq_services_external; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_services_external; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
 CREATE UNIQUE INDEX uq_services_external ON public.services USING btree (tenant_id, external_provider, external_service_id) WHERE (external_service_id IS NOT NULL);
 
 
 --
--- Name: order_items blv_set_order_item_amounts_ins; Type: TRIGGER; Schema: public; Owner: -
+-- Name: order_items blv_set_order_item_amounts_ins; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER blv_set_order_item_amounts_ins BEFORE INSERT ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.blv_set_order_item_amounts();
 
 
 --
--- Name: order_items blv_set_order_item_amounts_upd; Type: TRIGGER; Schema: public; Owner: -
+-- Name: order_items blv_set_order_item_amounts_upd; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER blv_set_order_item_amounts_upd BEFORE UPDATE ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.blv_set_order_item_amounts();
 
 
 --
--- Name: orders blv_sync_item_amounts_from_order; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders blv_sync_item_amounts_from_order; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER blv_sync_item_amounts_from_order AFTER UPDATE OF product_cost, shipping_cost, order_date ON public.orders FOR EACH ROW EXECUTE FUNCTION public.sync_item_amounts_from_order();
 
 
 --
--- Name: product_cost_history blv_touch_orders_on_pcost_history; Type: TRIGGER; Schema: public; Owner: -
+-- Name: product_cost_history blv_touch_orders_on_pcost_history; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER blv_touch_orders_on_pcost_history AFTER INSERT OR DELETE OR UPDATE ON public.product_cost_history FOR EACH ROW EXECUTE FUNCTION public.after_product_cost_history_change();
 
 
 --
--- Name: shipping_cost_history blv_touch_orders_on_ship_history; Type: TRIGGER; Schema: public; Owner: -
+-- Name: shipping_cost_history blv_touch_orders_on_ship_history; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER blv_touch_orders_on_ship_history AFTER INSERT OR DELETE OR UPDATE ON public.shipping_cost_history FOR EACH ROW EXECUTE FUNCTION public.after_shipping_cost_history_change();
 
 
 --
--- Name: orders set_orders_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders set_orders_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER set_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: costs_recurring trg_costs_recurring_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: costs_recurring trg_costs_recurring_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_costs_recurring_updated_at BEFORE UPDATE ON public.costs_recurring FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: costs trg_costs_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: costs trg_costs_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_costs_updated_at BEFORE UPDATE ON public.costs FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: employees trg_employees_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: employees trg_employees_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_employees_updated_at BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: labor_production trg_labor_production_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: labor_production trg_labor_production_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_labor_production_updated_at BEFORE UPDATE ON public.labor_production FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: order_items_suppliers trg_ois_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: order_items_suppliers trg_ois_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_ois_updated_at BEFORE UPDATE ON public.order_items_suppliers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: orders_suppliers trg_orders_suppliers_set_orderno; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders_suppliers trg_orders_suppliers_set_orderno; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_orders_suppliers_set_orderno BEFORE INSERT ON public.orders_suppliers FOR EACH ROW EXECUTE FUNCTION public.orders_suppliers_set_orderno();
 
 
 --
--- Name: orders_suppliers trg_orders_suppliers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders_suppliers trg_orders_suppliers_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_orders_suppliers_updated_at BEFORE UPDATE ON public.orders_suppliers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: suppliers trg_suppliers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: suppliers trg_suppliers_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_suppliers_updated_at BEFORE UPDATE ON public.suppliers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: time_entries trg_time_entries_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: time_entries trg_time_entries_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trg_time_entries_updated_at BEFORE UPDATE ON public.time_entries FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
--- Name: time_entries trigger_calculate_time_entry_totals; Type: TRIGGER; Schema: public; Owner: -
+-- Name: time_entries trigger_calculate_time_entry_totals; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_calculate_time_entry_totals BEFORE INSERT OR UPDATE ON public.time_entries FOR EACH ROW EXECUTE FUNCTION public.calculate_time_entry_totals();
 
 
 --
--- Name: orders trigger_customer_order_delivered; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders trigger_customer_order_delivered; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_customer_order_delivered AFTER INSERT OR UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.handle_customer_order_delivered();
 
 
 --
--- Name: salary_cost_history trigger_recalc_on_salary_history_change; Type: TRIGGER; Schema: public; Owner: -
+-- Name: salary_cost_history trigger_recalc_on_salary_history_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_recalc_on_salary_history_change AFTER INSERT OR DELETE OR UPDATE ON public.salary_cost_history FOR EACH ROW EXECUTE FUNCTION public.recalculate_time_entries_on_salary_change();
 
 
 --
--- Name: orders_suppliers trigger_set_supplier_order_dates; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders_suppliers trigger_set_supplier_order_dates; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_set_supplier_order_dates BEFORE UPDATE ON public.orders_suppliers FOR EACH ROW EXECUTE FUNCTION public.set_supplier_order_dates();
 
 
 --
--- Name: orders_suppliers trigger_set_supplier_order_dates_insert; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders_suppliers trigger_set_supplier_order_dates_insert; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_set_supplier_order_dates_insert BEFORE INSERT ON public.orders_suppliers FOR EACH ROW EXECUTE FUNCTION public.set_supplier_order_dates();
 
 
 --
--- Name: orders_suppliers trigger_supplier_order_received; Type: TRIGGER; Schema: public; Owner: -
+-- Name: orders_suppliers trigger_supplier_order_received; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER trigger_supplier_order_received AFTER INSERT OR UPDATE ON public.orders_suppliers FOR EACH ROW EXECUTE FUNCTION public.handle_supplier_order_received();
 
 
 --
--- Name: users users_updated_at; Type: TRIGGER; Schema: public; Owner: -
+-- Name: users users_updated_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.update_users_updated_at();
 
 
 --
--- Name: order_items z_compat_mirror_cost; Type: TRIGGER; Schema: public; Owner: -
+-- Name: order_items z_compat_mirror_cost; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
 CREATE TRIGGER z_compat_mirror_cost BEFORE INSERT OR UPDATE OF product_cost, cost ON public.order_items FOR EACH ROW EXECUTE FUNCTION public._compat_mirror_cost();
 
 
 --
--- Name: booking_customer_links booking_customer_links_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: ai_usage_log ai_usage_log_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.ai_usage_log
+    ADD CONSTRAINT ai_usage_log_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: booking_customer_links booking_customer_links_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_customer_links
@@ -3841,7 +4684,7 @@ ALTER TABLE ONLY public.booking_customer_links
 
 
 --
--- Name: booking_participants booking_participants_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_participants booking_participants_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_participants
@@ -3849,7 +4692,7 @@ ALTER TABLE ONLY public.booking_participants
 
 
 --
--- Name: booking_participants booking_participants_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_participants booking_participants_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.booking_participants
@@ -3857,7 +4700,7 @@ ALTER TABLE ONLY public.booking_participants
 
 
 --
--- Name: bookings bookings_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: bookings bookings_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.bookings
@@ -3865,7 +4708,15 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- Name: bookings bookings_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: bookings bookings_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.bookings
+    ADD CONSTRAINT bookings_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
+
+
+--
+-- Name: bookings bookings_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.bookings
@@ -3873,7 +4724,7 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- Name: bookings bookings_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: bookings bookings_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.bookings
@@ -3881,7 +4732,23 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- Name: contact_messages contact_messages_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: cash_transactions cash_transactions_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.cash_transactions
+    ADD CONSTRAINT cash_transactions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: cash_transactions cash_transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.cash_transactions
+    ADD CONSTRAINT cash_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.app_users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: contact_messages contact_messages_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.contact_messages
@@ -3889,7 +4756,55 @@ ALTER TABLE ONLY public.contact_messages
 
 
 --
--- Name: customers customers_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: customer_links customer_links_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_links
+    ADD CONSTRAINT customer_links_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: customer_links customer_links_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_links
+    ADD CONSTRAINT customer_links_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: customer_message_notifications customer_message_notifications_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_message_notifications
+    ADD CONSTRAINT customer_message_notifications_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.customer_messages(id) ON DELETE CASCADE;
+
+
+--
+-- Name: customer_messages customer_messages_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_messages
+    ADD CONSTRAINT customer_messages_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: customer_messages customer_messages_sent_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_messages
+    ADD CONSTRAINT customer_messages_sent_by_user_id_fkey FOREIGN KEY (sent_by_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: customer_messages customer_messages_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customer_messages
+    ADD CONSTRAINT customer_messages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: customers customers_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.customers
@@ -3897,7 +4812,7 @@ ALTER TABLE ONLY public.customers
 
 
 --
--- Name: customers customers_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: customers customers_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.customers
@@ -3905,7 +4820,7 @@ ALTER TABLE ONLY public.customers
 
 
 --
--- Name: employees fk_employees_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: employees fk_employees_tenant; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.employees
@@ -3913,7 +4828,7 @@ ALTER TABLE ONLY public.employees
 
 
 --
--- Name: labor_production fk_labor_production_product; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: labor_production fk_labor_production_product; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.labor_production
@@ -3921,7 +4836,7 @@ ALTER TABLE ONLY public.labor_production
 
 
 --
--- Name: labor_production fk_labor_production_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: labor_production fk_labor_production_tenant; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.labor_production
@@ -3929,7 +4844,7 @@ ALTER TABLE ONLY public.labor_production
 
 
 --
--- Name: time_entries fk_time_entries_employee; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: time_entries fk_time_entries_employee; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.time_entries
@@ -3937,7 +4852,7 @@ ALTER TABLE ONLY public.time_entries
 
 
 --
--- Name: time_entries fk_time_entries_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: time_entries fk_time_entries_tenant; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.time_entries
@@ -3945,7 +4860,7 @@ ALTER TABLE ONLY public.time_entries
 
 
 --
--- Name: warehouse_deliveries fk_warehouse_deliveries_order_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: warehouse_deliveries fk_warehouse_deliveries_order_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.warehouse_deliveries
@@ -3953,7 +4868,7 @@ ALTER TABLE ONLY public.warehouse_deliveries
 
 
 --
--- Name: warehouse_deliveries fk_warehouse_deliveries_order_supplier_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: warehouse_deliveries fk_warehouse_deliveries_order_supplier_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.warehouse_deliveries
@@ -3961,7 +4876,7 @@ ALTER TABLE ONLY public.warehouse_deliveries
 
 
 --
--- Name: message_jobs message_jobs_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: message_jobs message_jobs_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.message_jobs
@@ -3969,7 +4884,7 @@ ALTER TABLE ONLY public.message_jobs
 
 
 --
--- Name: message_jobs message_jobs_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: message_jobs message_jobs_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.message_jobs
@@ -3977,7 +4892,7 @@ ALTER TABLE ONLY public.message_jobs
 
 
 --
--- Name: order_items_suppliers ois_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items_suppliers ois_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items_suppliers
@@ -3985,7 +4900,7 @@ ALTER TABLE ONLY public.order_items_suppliers
 
 
 --
--- Name: order_items_suppliers ois_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items_suppliers ois_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items_suppliers
@@ -3993,7 +4908,7 @@ ALTER TABLE ONLY public.order_items_suppliers
 
 
 --
--- Name: order_items order_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items order_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items
@@ -4001,7 +4916,7 @@ ALTER TABLE ONLY public.order_items
 
 
 --
--- Name: order_items order_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items order_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_items
@@ -4009,7 +4924,15 @@ ALTER TABLE ONLY public.order_items
 
 
 --
--- Name: order_partners order_partners_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_items order_items_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.order_items
+    ADD CONSTRAINT order_items_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_partners order_partners_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_partners
@@ -4017,7 +4940,7 @@ ALTER TABLE ONLY public.order_partners
 
 
 --
--- Name: order_partners order_partners_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: order_partners order_partners_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.order_partners
@@ -4025,7 +4948,15 @@ ALTER TABLE ONLY public.order_partners
 
 
 --
--- Name: orders orders_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: orders orders_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE SET NULL;
+
+
+--
+-- Name: orders orders_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders
@@ -4033,7 +4964,7 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: orders_suppliers orders_suppliers_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: orders_suppliers orders_suppliers_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders_suppliers
@@ -4041,7 +4972,7 @@ ALTER TABLE ONLY public.orders_suppliers
 
 
 --
--- Name: orders orders_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: orders orders_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.orders
@@ -4049,7 +4980,15 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: partner_payments partner_payments_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_payments partner_payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.partner_payments
+    ADD CONSTRAINT partner_payments_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: partner_payments partner_payments_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_payments
@@ -4057,7 +4996,7 @@ ALTER TABLE ONLY public.partner_payments
 
 
 --
--- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_from_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_from_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_to_partner_debt_payments
@@ -4065,7 +5004,7 @@ ALTER TABLE ONLY public.partner_to_partner_debt_payments
 
 
 --
--- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_partner_payment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_partner_payment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_to_partner_debt_payments
@@ -4073,7 +5012,7 @@ ALTER TABLE ONLY public.partner_to_partner_debt_payments
 
 
 --
--- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_to_partner_debt_payments
@@ -4081,7 +5020,7 @@ ALTER TABLE ONLY public.partner_to_partner_debt_payments
 
 
 --
--- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_to_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partner_to_partner_debt_payments partner_to_partner_debt_payments_to_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partner_to_partner_debt_payments
@@ -4089,7 +5028,7 @@ ALTER TABLE ONLY public.partner_to_partner_debt_payments
 
 
 --
--- Name: partners partners_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: partners partners_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.partners
@@ -4097,7 +5036,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- Name: password_reset_tokens password_reset_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: password_reset_tokens password_reset_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.password_reset_tokens
@@ -4105,7 +5044,7 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 
 --
--- Name: payment_obligations payment_obligations_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payment_obligations payment_obligations_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payment_obligations
@@ -4113,7 +5052,7 @@ ALTER TABLE ONLY public.payment_obligations
 
 
 --
--- Name: payment_transactions payment_transactions_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payment_transactions payment_transactions_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payment_transactions
@@ -4121,7 +5060,7 @@ ALTER TABLE ONLY public.payment_transactions
 
 
 --
--- Name: payment_transactions payment_transactions_obligation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payment_transactions payment_transactions_obligation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payment_transactions
@@ -4129,7 +5068,15 @@ ALTER TABLE ONLY public.payment_transactions
 
 
 --
--- Name: payments payments_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payments payments_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT payments_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE SET NULL;
+
+
+--
+-- Name: payments payments_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payments
@@ -4137,7 +5084,7 @@ ALTER TABLE ONLY public.payments
 
 
 --
--- Name: payments payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payments payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payments
@@ -4145,7 +5092,7 @@ ALTER TABLE ONLY public.payments
 
 
 --
--- Name: payments payments_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: payments payments_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.payments
@@ -4153,7 +5100,7 @@ ALTER TABLE ONLY public.payments
 
 
 --
--- Name: product_cost_history product_cost_history_tenant_product_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: product_cost_history product_cost_history_tenant_product_fk; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.product_cost_history
@@ -4161,7 +5108,7 @@ ALTER TABLE ONLY public.product_cost_history
 
 
 --
--- Name: products products_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: products products_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.products
@@ -4169,7 +5116,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- Name: reminder_rules reminder_rules_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: reminder_rules reminder_rules_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.reminder_rules
@@ -4177,7 +5124,7 @@ ALTER TABLE ONLY public.reminder_rules
 
 
 --
--- Name: salary_cost_history salary_cost_history_employee_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: salary_cost_history salary_cost_history_employee_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.salary_cost_history
@@ -4185,7 +5132,15 @@ ALTER TABLE ONLY public.salary_cost_history
 
 
 --
--- Name: shipping_cost_history shipping_cost_history_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: services services_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+
+
+--
+-- Name: shipping_cost_history shipping_cost_history_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.shipping_cost_history
@@ -4193,7 +5148,7 @@ ALTER TABLE ONLY public.shipping_cost_history
 
 
 --
--- Name: supplier_payments supplier_payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: supplier_payments supplier_payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.supplier_payments
@@ -4201,7 +5156,7 @@ ALTER TABLE ONLY public.supplier_payments
 
 
 --
--- Name: supplier_payments supplier_payments_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: supplier_payments supplier_payments_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.supplier_payments
@@ -4209,7 +5164,7 @@ ALTER TABLE ONLY public.supplier_payments
 
 
 --
--- Name: sync_runs sync_runs_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: sync_runs sync_runs_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.sync_runs
@@ -4217,7 +5172,15 @@ ALTER TABLE ONLY public.sync_runs
 
 
 --
--- Name: tenant_memberships tenant_memberships_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_custom_field_defs tenant_custom_field_defs_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.tenant_custom_field_defs
+    ADD CONSTRAINT tenant_custom_field_defs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: tenant_memberships tenant_memberships_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_memberships
@@ -4225,7 +5188,7 @@ ALTER TABLE ONLY public.tenant_memberships
 
 
 --
--- Name: tenant_memberships tenant_memberships_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_memberships tenant_memberships_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_memberships
@@ -4233,7 +5196,7 @@ ALTER TABLE ONLY public.tenant_memberships
 
 
 --
--- Name: tenant_module_quotas tenant_module_quotas_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: tenant_module_quotas tenant_module_quotas_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.tenant_module_quotas
@@ -4241,7 +5204,7 @@ ALTER TABLE ONLY public.tenant_module_quotas
 
 
 --
--- Name: user_activity_log user_activity_log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: user_activity_log user_activity_log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.user_activity_log
@@ -4249,7 +5212,15 @@ ALTER TABLE ONLY public.user_activity_log
 
 
 --
--- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: users users_default_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_default_tenant_id_fkey FOREIGN KEY (default_tenant_id) REFERENCES public.tenants(id) ON DELETE SET NULL;
+
+
+--
+-- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.users
@@ -4257,7 +5228,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: webhook_events webhook_events_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: webhook_events webhook_events_provider_connection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE ONLY public.webhook_events
@@ -4265,47 +5236,61 @@ ALTER TABLE ONLY public.webhook_events
 
 
 --
--- Name: employees; Type: ROW SECURITY; Schema: public; Owner: -
+-- Name: employees; Type: ROW SECURITY; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: employees employees_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+-- Name: employees employees_tenant_isolation; Type: POLICY; Schema: public; Owner: neondb_owner
 --
 
 CREATE POLICY employees_tenant_isolation ON public.employees USING ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid));
 
 
 --
--- Name: labor_production; Type: ROW SECURITY; Schema: public; Owner: -
+-- Name: labor_production; Type: ROW SECURITY; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE public.labor_production ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: labor_production labor_production_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+-- Name: labor_production labor_production_tenant_isolation; Type: POLICY; Schema: public; Owner: neondb_owner
 --
 
 CREATE POLICY labor_production_tenant_isolation ON public.labor_production USING ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid));
 
 
 --
--- Name: time_entries; Type: ROW SECURITY; Schema: public; Owner: -
+-- Name: time_entries; Type: ROW SECURITY; Schema: public; Owner: neondb_owner
 --
 
 ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: time_entries time_entries_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+-- Name: time_entries time_entries_tenant_isolation; Type: POLICY; Schema: public; Owner: neondb_owner
 --
 
 CREATE POLICY time_entries_tenant_isolation ON public.time_entries USING ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid));
 
 
 --
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO neon_superuser WITH GRANT OPTION;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON TABLES TO neon_superuser WITH GRANT OPTION;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict lT0E0R5YA4pglIncAgM3krQetJMpLNDeT1XhQkPM7KZaIgE20WngeXHTCK88ji8
+\unrestrict Eo0F3ZHwvAE1sBAmmoA6zrHgOAgliH4t19P6KmtCKXk2KgwUntk15aWEaU066D7
 
