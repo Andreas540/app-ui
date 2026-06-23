@@ -59,7 +59,8 @@ export default function CustomerDetailPage() {
   const cfgShowNewInvoice    = tenantUi.customerDetailShowNewInvoice
   const cfgShowNewBooking    = tenantUi.customerDetailShowNewBooking && hasFeature('new-booking')
   const cfgShowShareBooking  = tenantUi.customerDetailShowShareBooking && hasFeature('new-booking')
-  const cfgShowShareOrder    = tenantUi.customerDetailShowShareOrder
+  const cfgShowShareOrder      = tenantUi.customerDetailShowShareOrder
+  const cfgShowConversation    = tenantUi.customerDetailShowConversation
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -525,6 +526,13 @@ export default function CustomerDetailPage() {
             <PlatformShareIcon platform={platform} />
             {t('customers.shareBookingShort')}
           </button>
+        )}
+        {cfgShowConversation && (
+          <Link to={`/customers/${customer.id}/conversation`} style={{ textDecoration: 'none' }}>
+            <button className="primary" style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+              {t('conversation.button')}
+            </button>
+          </Link>
         )}
         {cfgShowShareOrder && (
           <button

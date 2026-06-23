@@ -37,6 +37,7 @@ export interface TenantConfig {
     customerDetailShowNewBooking: boolean
     customerDetailShowShareBooking: boolean
     customerDetailShowShareOrder: boolean
+    customerDetailShowConversation: boolean
   }
   booking: {
     serviceTypeLabel: string         // e.g. "Lesson", "Session", "Appointment"
@@ -106,6 +107,7 @@ export const defaultConfig: TenantConfig = {
     customerDetailShowNewBooking: false,
     customerDetailShowShareBooking: false,
     customerDetailShowShareOrder: false,
+    customerDetailShowConversation: true,
   },
   booking: {
     serviceTypeLabel: 'Session',

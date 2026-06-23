@@ -29,7 +29,7 @@ type UiConfig = {
     directLabel?: string
     directCustomerGroup?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -226,7 +226,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'dashboard') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
     } else if (section === 'customer-detail') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     }
@@ -357,18 +357,20 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
               cu.customerDetailShowNewInvoice !== undefined ||
               cu.customerDetailShowNewBooking !== undefined ||
               cu.customerDetailShowShareBooking !== undefined ||
-              cu.customerDetailShowShareOrder !== undefined
+              cu.customerDetailShowShareOrder !== undefined ||
+              cu.customerDetailShowConversation !== undefined
             }>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {([
-                { key: 'customerDetailShowNewOrder',    label: t('tenantCustom.customerDetailNewOrder') },
-                { key: 'customerDetailShowNewPayment',  label: t('tenantCustom.customerDetailNewPayment') },
-                { key: 'customerDetailShowNewInvoice',  label: t('tenantCustom.customerDetailNewInvoice') },
+                { key: 'customerDetailShowNewOrder',      label: t('tenantCustom.customerDetailNewOrder') },
+                { key: 'customerDetailShowNewPayment',    label: t('tenantCustom.customerDetailNewPayment') },
+                { key: 'customerDetailShowNewInvoice',    label: t('tenantCustom.customerDetailNewInvoice') },
                 ...(hasFeature('new-booking') ? [
                   { key: 'customerDetailShowNewBooking',   label: t('tenantCustom.customerDetailNewBooking') },
                   { key: 'customerDetailShowShareBooking', label: t('tenantCustom.customerDetailShareBooking') },
                 ] : []),
-                { key: 'customerDetailShowShareOrder',  label: t('tenantCustom.customerDetailShareOrder') },
+                { key: 'customerDetailShowShareOrder',    label: t('tenantCustom.customerDetailShareOrder') },
+                { key: 'customerDetailShowConversation',  label: t('tenantCustom.customerDetailConversation') },
               ] as { key: keyof typeof cu; label: string }[]).map(({ key, label }) => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="checkbox"

@@ -10,6 +10,7 @@
     "order": "Nuevo pedido de {{name}}",
     "customerInfo": "Info de cliente actualizada por {{name}}",
     "booking": "Nueva reserva de {{service}} por {{name}}",
+    "customerMessage": "Nueva respuesta de {{name}}",
     "messageReplyEmail": "Se ha enviado una respuesta a tu mensaje a {{email}}",
     "messageReplyApp": "Tu mensaje ha sido respondido. Ver página de Contacto."
   },
@@ -293,6 +294,20 @@
     "inStock": "En stock",
     "willLast": "Durará",
     "days": "{{n}} días"
+  },
+  "conversation": {
+    "button": "Mensaje",
+    "backToCustomer": "Volver al cliente",
+    "noMessages": "Aún no hay mensajes. Envía el primero abajo.",
+    "placeholder": "Escribe un mensaje…",
+    "notifyVia": "Notificar por",
+    "email": "Correo",
+    "sms": "SMS",
+    "noEmail": "El cliente no tiene correo electrónico",
+    "smsComing": "SMS próximamente",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "sendHint": "Ctrl+Enter / ⌘+Enter para enviar"
   },
   "customers": {
     "smsConsent": "Ha dado consentimiento por SMS",
@@ -1270,6 +1285,7 @@
     "customerDetailNewBooking": "Nueva reserva (requiere módulo de reservas)",
     "customerDetailShareBooking": "Compartir página de reservas con el cliente (requiere módulo de reservas)",
     "customerDetailShareOrder": "Compartir página de pedido con el cliente",
+    "customerDetailConversation": "Botón de mensaje (conversación)",
     "customerOrderRows": "Visualización de filas de pedido",
     "orderRowsFull": "Mostrar toda la info en filas de pedido (producto, cantidad, precio, parte del socio)",
     "orderRowsCompact": "Mostrar menos info en filas de pedido (solo producto y cantidad)",

@@ -42,6 +42,8 @@ import Warehouse from './pages/Warehouse'
 import SupplyChainOverview from './pages/SupplyChainOverview'
 import TenantAdmin from './pages/TenantAdmin'
 import CustomerImportPage from './pages/CustomerImportPage'
+import CustomerConversationPage from './pages/CustomerConversationPage'
+import ConversationPortalPage from './pages/ConversationPortalPage'
 import EditSupplier from './pages/EditSupplier'
 import SuperAdmin from './pages/SuperAdmin'
 import TenantCustomization from './pages/TenantCustomization'
@@ -106,6 +108,10 @@ export default function App() {
     (location.pathname || '/').startsWith('/book/'),
   [location.pathname])
 
+  const isConversationPortalPath = useMemo(() =>
+    (location.pathname || '/').startsWith('/conversation/'),
+  [location.pathname])
+
   const isEmployeePath = useMemo(() => {
   const p = location.pathname || '/'
   const hash = window.location.hash || ''
@@ -125,7 +131,7 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
-      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath || isPayPath) {
+      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath || isPayPath || isConversationPortalPath) {
         if (alive) setEmployeeMode(false)
         return
       }
@@ -161,7 +167,7 @@ export default function App() {
     return () => {
       alive = false
     }
-  }, [isEmployeePath, isCustomerFormPath, isOrderFormPath, isOrderPaidPath, isBookingPath])
+  }, [isEmployeePath, isCustomerFormPath, isOrderFormPath, isOrderPaidPath, isBookingPath, isConversationPortalPath])
 
   if (isCustomerFormPath) return <CustomerFormShell />
   if (isOrderFormPath) return <OrderFormShell />
@@ -169,6 +175,7 @@ export default function App() {
   if (isPayPath) return <Routes><Route path="/pay/:token" element={<PayRedirectPage />} /></Routes>
   if (isWidgetPreviewPath) return <Routes><Route path="/widget-preview" element={<WidgetPreviewPage />} /></Routes>
   if (isBookingPath) return <BookingShell />
+  if (isConversationPortalPath) return <ConversationPortalShell />
 
   if (employeeMode === null) {
     return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
@@ -235,6 +242,15 @@ function BookingShell() {
   )
 }
 
+function ConversationPortalShell() {
+  return (
+    <Routes>
+      <Route path="/conversation/:token" element={<ConversationPortalPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 // ── Page-view action mapping ───────────────────────────────────────────────────
 const PAGE_ACTIONS: Record<string, string> = {
   '/':                           'page_view_dashboard',
@@ -242,6 +258,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/customers/new':              'page_view_create_customer',
   '/customers/:id':              'page_view_customer_detail',
   '/customers/:id/edit':         'page_view_edit_customer',
+  '/customers/:id/conversation': 'page_view_customer_conversation',
   '/partners':                   'page_view_partners',
   '/partners/new':               'page_view_create_partner',
   '/partners/:id':               'page_view_partner_detail',
@@ -1007,6 +1024,7 @@ useEffect(() => {
                     <Route path="/customers/merge" element={<MergeCustomer />} />
                     <Route path="/customers/:id" element={<CustomerDetail />} />
                     <Route path="/customers/:id/edit" element={<EditCustomer />} />
+                    <Route path="/customers/:id/conversation" element={<CustomerConversationPage />} />
                   </>
                 )}
                 {hasFeature('settings') && <Route path="/settings" element={<Settings />} />}
@@ -1112,6 +1130,7 @@ useEffect(() => {
                         name: ev.customer_name,
                         service: ev.extra?.service_name || '',
                       })}
+                      {ev.event_type === 'customer_message' && tc('externalEvents.customerMessage', { name: ev.customer_name })}
                       {ev.event_type === 'message_reply' && ev.extra?.via === 'email' && tc('externalEvents.messageReplyEmail', { email: ev.customer_name })}
                       {ev.event_type === 'message_reply' && ev.extra?.via === 'app' && tc('externalEvents.messageReplyApp')}
                     </span>

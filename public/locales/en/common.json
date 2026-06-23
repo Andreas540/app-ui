@@ -10,6 +10,7 @@
     "order": "New order placed by {{name}}",
     "customerInfo": "Customer info updated by {{name}}",
     "booking": "New booking for {{service}} by {{name}}",
+    "customerMessage": "New message reply from {{name}}",
     "messageReplyEmail": "Reply to your message has been sent to {{email}}",
     "messageReplyApp": "Your message has been answered. See Contact page."
   },
@@ -293,6 +294,20 @@
     "inStock": "In Stock",
     "willLast": "Will Last",
     "days": "{{n}} days"
+  },
+  "conversation": {
+    "button": "Message",
+    "backToCustomer": "Back to customer",
+    "noMessages": "No messages yet. Send the first message below.",
+    "placeholder": "Write a message…",
+    "notifyVia": "Notify via",
+    "email": "Email",
+    "sms": "SMS",
+    "noEmail": "Customer has no email address",
+    "smsComing": "SMS coming soon",
+    "send": "Send",
+    "sending": "Sending…",
+    "sendHint": "Ctrl+Enter / ⌘+Enter to send"
   },
   "customers": {
     "smsConsent": "Has given SMS consent",
@@ -1270,6 +1285,7 @@
     "customerDetailNewBooking": "New Booking (requires Booking module)",
     "customerDetailShareBooking": "Share booking page with customer (requires Booking module)",
     "customerDetailShareOrder": "Share order page with customer",
+    "customerDetailConversation": "Message button (conversation)",
     "customerOrderRows": "Order row display",
     "orderRowsFull": "Show all info on order rows (product, quantity, price, partner share)",
     "orderRowsCompact": "Show less info on order rows (product and quantity only)",
