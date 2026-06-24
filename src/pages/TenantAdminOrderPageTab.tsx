@@ -551,15 +551,12 @@ export default function TenantAdminOrderPageTab() {
                         </select>
                       </div>
 
-                      {/* Price label — row 1, col 4 */}
-                      <label className="op-r1-plabel">{t('tenantAdmin.orderPage.overridePrice')}</label>
-
-                      {/* Qty label — row 1, col 5 */}
-                      <label className="op-r1-qlabel">{t('tenantAdmin.orderPage.overrideQty')}</label>
-
-                      {/* Price + qty — display:contents on desktop (children become direct grid items);
-                              display:flex on mobile (50/50 full-width row) */}
+                      {/* Price + qty — display:contents on desktop (labels+inputs become direct grid items);
+                              2×2 grid on mobile (label row + input row, 50/50) */}
                       <div className="op-r1-overrides">
+                        {/* labels: row 1 col 4/5 on desktop; row 1 col 1/2 of overrides grid on mobile */}
+                        <label className="op-r1-plabel">{t('tenantAdmin.orderPage.overridePrice')}</label>
+                        <label className="op-r1-qlabel">{t('tenantAdmin.orderPage.overrideQty')}</label>
                         <div className="op-r1-price">
                           <input
                             type="text"
