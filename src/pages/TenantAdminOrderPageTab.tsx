@@ -174,7 +174,7 @@ interface OrderProduct {
   is_visible: boolean
   label_text: string | null
   label_text_style: 'plain' | 'badge'
-  label_text_color: 'orange' | 'green' | 'grey' | 'black'
+  label_text_color: 'orange' | 'green' | 'grey' | 'black' | 'none'
   label_image_data: string | null
   sort_order: number | null
 }
@@ -611,12 +611,12 @@ export default function TenantAdminOrderPageTab() {
                         <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelBackground')}</label>
                         <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                           {([
-                            { key: 'none',   bg: '#fff',    fg: '#fff', none: true },
-                            { key: 'orange', bg: '#ff6b35', fg: '#fff' },
-                            { key: 'green',  bg: '#22a861', fg: '#fff' },
-                            { key: 'grey',   bg: '#888',    fg: '#fff' },
-                            { key: 'black',  bg: '#1a1a2e', fg: '#fff' },
-                          ] as const).map(({ key, bg, none: isNone }) => {
+                            { key: 'none',   bg: '#fff',    isNone: true  },
+                            { key: 'orange', bg: '#ff6b35', isNone: false },
+                            { key: 'green',  bg: '#22a861', isNone: false },
+                            { key: 'grey',   bg: '#888',    isNone: false },
+                            { key: 'black',  bg: '#1a1a2e', isNone: false },
+                          ] as { key: string; bg: string; isNone: boolean }[]).map(({ key, bg, isNone }) => {
                             const currentColor = e.label_text_color || 'none'
                             const currentStyle = e.label_text_style || 'plain'
                             const selected = isNone ? currentStyle === 'plain' : (currentStyle === 'badge' && currentColor === key)
@@ -628,7 +628,7 @@ export default function TenantAdminOrderPageTab() {
                                   if (isNone) {
                                     patchEdit(product.id, { label_text_style: 'plain' })
                                   } else {
-                                    patchEdit(product.id, { label_text_style: 'badge', label_text_color: key })
+                                    patchEdit(product.id, { label_text_style: 'badge', label_text_color: key as 'orange' | 'green' | 'grey' | 'black' })
                                   }
                                 }}
                                 title={isNone ? t('tenantAdmin.orderPage.labelStylePlain') : t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
