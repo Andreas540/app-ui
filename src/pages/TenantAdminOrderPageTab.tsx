@@ -460,7 +460,7 @@ export default function TenantAdminOrderPageTab() {
                               step="1"
                               value={e.display_qty != null ? e.display_qty : ''}
                               onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                              placeholder={t('tenantAdmin.orderPage.qtyPlaceholder')}
+                              placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
                               style={{ maxWidth: 100 }}
                             />
                             {product.inventory_qty != null && (
@@ -527,10 +527,12 @@ export default function TenantAdminOrderPageTab() {
                                   onClick={() => patchEdit(product.id, { label_text_color: key })}
                                   title={t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
                                   style={{
-                                    width: 26, height: 26, borderRadius: 6, border: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : '2px solid transparent',
+                                    width: 26, height: 26, borderRadius: 6,
+                                    border: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : '2px solid transparent',
                                     background: bg, color: fg, cursor: 'pointer', fontSize: 10, fontWeight: 700,
                                     outline: (e.label_text_color || 'orange') === key ? '1px solid var(--primary)' : 'none',
                                     outlineOffset: 1,
+                                    boxShadow: key === 'black' ? 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 0 1px rgba(0,0,0,0.35)' : undefined,
                                   }}
                                 />
                               ))}

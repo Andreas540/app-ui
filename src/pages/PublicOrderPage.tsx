@@ -539,7 +539,13 @@ export default function PublicOrderPage() {
                           <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle', width: 72 }}>
                             <input
                               type="number" min="0" max={effectiveMax} step="1" value={qty}
-                              onChange={e => { const v = e.target.value; if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v })) }}
+                              onChange={e => {
+                                const v = e.target.value
+                                if (v === '') { setQtys(prev => ({ ...prev, [p.id]: '' })); return }
+                                const n = Math.max(0, Math.floor(Number(v)))
+                                const clamped = effectiveMax !== undefined ? Math.min(n, effectiveMax) : n
+                                setQtys(prev => ({ ...prev, [p.id]: String(clamped) }))
+                              }}
                               style={{ width: '100%', height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e' }}
                             />
                           </td>
@@ -549,7 +555,7 @@ export default function PublicOrderPage() {
                   </tbody>
                 </table>
 
-                {total > 0 && (
+                {showPrice && total > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid #eee' }}>
                     <span style={{ fontWeight: 700, fontSize: 16 }}>{t('total')}: {fmtMoney(total)}</span>
                   </div>

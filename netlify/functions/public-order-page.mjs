@@ -129,7 +129,7 @@ async function loadProducts(sql, tenantId) {
       )::integer                                           AS available_qty,
       COALESCE(op.is_visible, true)                       AS is_visible,
       op.label_text,
-      COALESCE(op.label_text_style, 'badge')              AS label_text_style,
+      COALESCE(op.label_text_style, 'plain')              AS label_text_style,
       COALESCE(op.label_text_color, 'orange')             AS label_text_color,
       op.label_image_data,
       (p.image_data IS NOT NULL AND p.image_data != '')   AS has_image,

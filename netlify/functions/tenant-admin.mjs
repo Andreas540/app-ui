@@ -203,7 +203,7 @@ async function handleGet(event) {
         PRIMARY KEY (tenant_id, product_id)
       )`.catch(() => {})
       await Promise.all([
-        sql`ALTER TABLE order_page_products ADD COLUMN IF NOT EXISTS label_text_style TEXT NOT NULL DEFAULT 'badge'`.catch(() => {}),
+        sql`ALTER TABLE order_page_products ADD COLUMN IF NOT EXISTS label_text_style TEXT NOT NULL DEFAULT 'plain'`.catch(() => {}),
         sql`ALTER TABLE order_page_products ADD COLUMN IF NOT EXISTS label_text_color TEXT NOT NULL DEFAULT 'orange'`.catch(() => {}),
       ])
       const products = await sql`
@@ -222,7 +222,7 @@ async function handleGet(event) {
           (p.image_data IS NOT NULL AND p.image_data != '') AS has_image,
           EXTRACT(EPOCH FROM p.image_updated_at)::bigint AS image_version,
           op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order,
-          COALESCE(op.label_text_style, 'badge') AS label_text_style,
+          COALESCE(op.label_text_style, 'plain') AS label_text_style,
           COALESCE(op.label_text_color, 'orange') AS label_text_color,
           CASE WHEN wd.product_id IS NOT NULL OR lp.product_id IS NOT NULL
             THEN GREATEST(0, COALESCE(wd.finished_from_p,0) + COALESCE(lp.produced_qty,0) - COALESCE(wd.outbound_qty,0))
