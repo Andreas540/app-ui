@@ -777,7 +777,15 @@ export default function TenantAdminOrderPageTab() {
                   <input
                     type="checkbox"
                     checked={config[key]}
-                    onChange={e => setConfig(c => ({ ...c, [key]: e.target.checked }))}
+                    onChange={e => {
+                      const checked = e.target.checked
+                      setConfig(c => ({
+                        ...c,
+                        [key]: checked,
+                        // When hiding # Available, also uncheck cap
+                        ...(key === 'show_available' && !checked ? { cap_qty_at_available: false } : {}),
+                      }))
+                    }}
                     style={{ width: 16, height: 16, cursor: 'pointer' }}
                   />
                   <span style={{ fontSize: 14 }}>{t(`tenantAdmin.orderPage.${label}`)}</span>
@@ -785,21 +793,20 @@ export default function TenantAdminOrderPageTab() {
               ))}
             </div>
 
-            {/* Cap qty */}
-            {config.show_available && (
-              <div style={{ marginTop: 12, marginLeft: 0 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={config.cap_qty_at_available}
-                    onChange={e => setConfig(c => ({ ...c, cap_qty_at_available: e.target.checked }))}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 14 }}>{t('tenantAdmin.orderPage.capQtyAtAvailable')}</span>
-                </label>
-                <p className="helper" style={{ marginTop: 4, marginLeft: 26, fontSize: 12 }}>{t('tenantAdmin.orderPage.capQtyHelp')}</p>
-              </div>
-            )}
+            {/* Cap qty — always shown, auto-unchecked when show_available is off */}
+            <div style={{ marginTop: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: config.show_available ? 'pointer' : 'default', margin: 0, opacity: config.show_available ? 1 : 0.45 }}>
+                <input
+                  type="checkbox"
+                  checked={config.cap_qty_at_available}
+                  disabled={!config.show_available}
+                  onChange={e => setConfig(c => ({ ...c, cap_qty_at_available: e.target.checked }))}
+                  style={{ width: 16, height: 16, cursor: config.show_available ? 'pointer' : 'default' }}
+                />
+                <span style={{ fontSize: 14 }}>{t('tenantAdmin.orderPage.capQtyAtAvailable')}</span>
+              </label>
+              <p className="helper" style={{ marginTop: 4, marginLeft: 26, fontSize: 12 }}>{t('tenantAdmin.orderPage.capQtyHelp')}</p>
+            </div>
           </div>
 
           {/* Available wording */}
