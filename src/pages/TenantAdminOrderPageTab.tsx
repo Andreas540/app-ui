@@ -500,44 +500,44 @@ export default function TenantAdminOrderPageTab() {
                     {/* Row 1: CSS grid — label headers thin row, inputs row, visible spans both */}
                     <div className="op-row1">
 
-                      {/* Name+pos — grid row 2, col 1 */}
-                      <div className="op-r1-name">
-                        <div style={{ position: 'relative', flexShrink: 0 }}>
-                          {product.has_image ? (
-                            <img
-                              src={`${apiBase()}/.netlify/functions/serve-product-image?id=${product.id}&v=${product.image_version || 0}`}
-                              alt=""
-                              style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
-                            />
-                          ) : (
-                            <div style={{ width: 40, height: 40, borderRadius: 8, border: '2px dashed var(--border)', background: 'var(--btn-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 18 }}>+</div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => productImgInputRefs.current[product.id]?.click()}
-                            disabled={uploadingProductImage === product.id}
-                            title={t('tenantAdmin.orderPage.changeImage')}
-                            style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: 'var(--primary)', color: '#fff', border: '2px solid var(--bg)', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                          >
-                            {uploadingProductImage === product.id ? '…' : '✎'}
-                          </button>
-                          <input
-                            ref={el => { productImgInputRefs.current[product.id] = el }}
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={ev => handleProductImageUpload(product.id, ev.target.files?.[0] || null)}
+                      {/* Image — own grid cell, spans both rows, top-aligned */}
+                      <div className="op-r1-img" style={{ position: 'relative' }}>
+                        {product.has_image ? (
+                          <img
+                            src={`${apiBase()}/.netlify/functions/serve-product-image?id=${product.id}&v=${product.image_version || 0}`}
+                            alt=""
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
                           />
-                        </div>
-                        <div style={{ minWidth: 0, overflow: 'hidden', flex: 1 }}>
-                          <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
-                        </div>
+                        ) : (
+                          <div style={{ width: 40, height: 40, borderRadius: 8, border: '2px dashed var(--border)', background: 'var(--btn-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 18 }}>+</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => productImgInputRefs.current[product.id]?.click()}
+                          disabled={uploadingProductImage === product.id}
+                          title={t('tenantAdmin.orderPage.changeImage')}
+                          style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: 'var(--primary)', color: '#fff', border: '2px solid var(--bg)', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                        >
+                          {uploadingProductImage === product.id ? '…' : '✎'}
+                        </button>
+                        <input
+                          ref={el => { productImgInputRefs.current[product.id] = el }}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={ev => handleProductImageUpload(product.id, ev.target.files?.[0] || null)}
+                        />
+                      </div>
+
+                      {/* Name + pos — own grid cell, spans both rows, top-aligned */}
+                      <div className="op-r1-info">
+                        <div className="op-r1-name-text">{product.name}</div>
+                        <div className="op-r1-base-price">{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
                         <select
                           value={e.sort_order ?? 0}
                           onChange={ev => patchEdit(product.id, { sort_order: Number(ev.target.value) })}
                           title={t('tenantAdmin.orderPage.position')}
-                          style={{ flexShrink: 0, width: 52, height: 'var(--control-h)', fontSize: 12, textAlign: 'center' }}
+                          style={{ display: 'block', width: 52, height: 'var(--control-h)', fontSize: 12, textAlign: 'center', marginTop: 4 }}
                         >
                           {products.map((_, idx) => (
                             <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
