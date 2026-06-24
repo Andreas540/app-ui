@@ -214,6 +214,9 @@ export default function TenantAdminOrderPageTab() {
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
   const [countrySearch, setCountrySearch] = useState('')
   const countryDropdownRef = useRef<HTMLDivElement>(null)
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
+  const [stateSearch, setStateSearch] = useState('')
+  const stateDropdownRef = useRef<HTMLDivElement>(null)
 
   const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   const publicUrl  = config.slug ? `${siteOrigin}/order/${config.slug}` : ''
@@ -231,6 +234,17 @@ export default function TenantAdminOrderPageTab() {
     document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
   }, [countryDropdownOpen])
+
+  useEffect(() => {
+    if (!stateDropdownOpen) return
+    function onOutside(e: MouseEvent) {
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(e.target as Node)) {
+        setStateDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [stateDropdownOpen])
 
   async function loadConfig() {
     try {
@@ -624,8 +638,9 @@ export default function TenantAdminOrderPageTab() {
                                     background: bg, color: fg, cursor: 'pointer',
                                     outline: (e.label_text_color || 'orange') === key
                                       ? '2px solid var(--primary)'
-                                      : key === 'black' ? '1px solid rgba(0,0,0,0.28)' : 'none',
-                                    outlineOffset: 1,
+                                      : 'none',
+                                    outlineOffset: 2,
+                                    boxShadow: key === 'black' ? '0 0 0 1px #777' : undefined,
                                   }}
                                 />
                               ))}
@@ -915,23 +930,109 @@ export default function TenantAdminOrderPageTab() {
                   <div style={{ marginTop: 16 }}>
                     <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 8 }}>
                       {t('tenantAdmin.orderPage.allowedStates')}
-                      <span className="helper" style={{ fontWeight: 400, marginLeft: 8 }}>
-                        ({t('tenantAdmin.orderPage.allowedStatesHelp')})
-                      </span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '6px 16px' }}>
-                      {US_STATES.map(s => (
-                        <label key={s.code} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', margin: 0 }}>
-                          <input
-                            type="checkbox"
-                            checked={config.geo_states.includes(s.code)}
-                            onChange={() => toggleState(s.code)}
-                            style={{ width: 15, height: 15, cursor: 'pointer' }}
-                          />
-                          {s.label}
-                        </label>
-                      ))}
+
+                    {/* State dropdown */}
+                    <div ref={stateDropdownRef} style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={() => { setStateDropdownOpen(o => !o); setStateSearch('') }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '0 12px', height: 'var(--control-h)', fontSize: 14,
+                          border: '1px solid var(--border)', borderRadius: 10,
+                          background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span>
+                          {config.geo_states.length === 0
+                            ? t('tenantAdmin.orderPage.allStates')
+                            : config.geo_states.length === 1
+                              ? US_STATES.find(s => s.code === config.geo_states[0])?.label ?? config.geo_states[0]
+                              : `${config.geo_states.length} ${t('tenantAdmin.orderPage.statesSelected')}`
+                          }
+                        </span>
+                        <span style={{ fontSize: 10, marginLeft: 8, opacity: 0.6 }}>▾</span>
+                      </button>
+
+                      {stateDropdownOpen && (
+                        <div style={{
+                          position: 'absolute', zIndex: 200, left: 0, right: 0, top: 'calc(100% + 4px)',
+                          background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10,
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                          display: 'flex', flexDirection: 'column', maxHeight: 280, overflow: 'hidden',
+                        }}>
+                          <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+                            <input
+                              type="text"
+                              value={stateSearch}
+                              onChange={e => setStateSearch(e.target.value)}
+                              placeholder={t('tenantAdmin.orderPage.searchStates')}
+                              autoFocus
+                              style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8 }}
+                            />
+                          </div>
+                          <div style={{ overflowY: 'auto', flex: 1 }}>
+                            {/* All States option */}
+                            {!stateSearch && (
+                              <label style={{
+                                display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                                cursor: 'pointer', margin: 0, padding: '7px 12px',
+                                borderBottom: '1px solid var(--border)',
+                                background: config.geo_states.length === 0 ? 'var(--hover)' : 'transparent',
+                              }}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.geo_states.length === 0}
+                                  onChange={() => setConfig(c => ({ ...c, geo_states: [] }))}
+                                  style={{ cursor: 'pointer', flexShrink: 0 }}
+                                />
+                                <span style={{ fontWeight: 500 }}>{t('tenantAdmin.orderPage.allStates')}</span>
+                              </label>
+                            )}
+                            {US_STATES
+                              .filter(s => s.label.toLowerCase().includes(stateSearch.toLowerCase()) || s.code.toLowerCase().includes(stateSearch.toLowerCase()))
+                              .map(s => (
+                                <label key={s.code} style={{
+                                  display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                                  cursor: 'pointer', margin: 0, padding: '7px 12px',
+                                  background: config.geo_states.includes(s.code) ? 'var(--hover)' : 'transparent',
+                                }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={config.geo_states.includes(s.code)}
+                                    onChange={() => toggleState(s.code)}
+                                    style={{ cursor: 'pointer', flexShrink: 0 }}
+                                  />
+                                  {s.label}
+                                </label>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Selected state tags */}
+                    {config.geo_states.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {config.geo_states.map(code => {
+                          const label = US_STATES.find(s => s.code === code)?.label ?? code
+                          return (
+                            <span key={code} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              background: 'var(--btn-bg)', border: '1px solid var(--border)',
+                              borderRadius: 6, padding: '2px 8px', fontSize: 12,
+                            }}>
+                              {label}
+                              <button type="button" onClick={() => toggleState(code)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1 }}>
+                                ✕
+                              </button>
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
