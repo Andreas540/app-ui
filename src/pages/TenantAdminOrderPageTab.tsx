@@ -192,6 +192,7 @@ export default function TenantAdminOrderPageTab() {
   const [products, setProducts] = useState<OrderProduct[]>([])
   const [productsLoading, setProductsLoading] = useState(true)
   const [savingProduct, setSavingProduct] = useState<string | null>(null)
+  const [savingAll, setSavingAll] = useState(false)
   const [uploadingProductImage, setUploadingProductImage] = useState<string | null>(null)
   const [priceStrings, setPriceStrings] = useState<Record<string, string>>({})
 
@@ -330,6 +331,15 @@ export default function TenantAdminOrderPageTab() {
     } finally { setSavingProduct(null) }
   }
 
+  async function saveAllProducts() {
+    setSavingAll(true)
+    try {
+      for (const product of products) {
+        await saveProduct(product)
+      }
+    } finally { setSavingAll(false) }
+  }
+
   async function handleSaveConfig() {
     setSavingConfig(true)
     try {
@@ -466,8 +476,14 @@ export default function TenantAdminOrderPageTab() {
           ) : products.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>{t('tenantAdmin.orderPage.noProducts')}</p>
           ) : (
-            <div style={{ display: 'grid', gap: 16 }}>
-              {products.map(product => {
+            <>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                <button onClick={saveAllProducts} disabled={savingAll || savingProduct !== null} style={{ minWidth: 140 }}>
+                  {savingAll ? t('saving') : t('tenantAdmin.orderPage.saveAll')}
+                </button>
+              </div>
+              <div style={{ display: 'grid', gap: 16 }}>
+                {products.map(product => {
                 const e = edits[product.id] || {}
                 const isVisible = e.is_visible !== false
                 return (
@@ -694,8 +710,14 @@ export default function TenantAdminOrderPageTab() {
                     </div>
                   </div>
                 )
-              })}
-            </div>
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                <button onClick={saveAllProducts} disabled={savingAll || savingProduct !== null} style={{ minWidth: 140 }}>
+                  {savingAll ? t('saving') : t('tenantAdmin.orderPage.saveAll')}
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
