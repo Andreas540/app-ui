@@ -487,9 +487,10 @@ export default function PublicOrderPage() {
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
                                 {(p.label_image_data || p.label_text) && (
-                                  p.label_image_data
-                                    ? <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain', marginTop: 3 }} />
-                                    : <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, marginTop: 3, textTransform: 'uppercase' }}>{p.label_text}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>
+                                    {p.label_image_data && <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain' }} />}
+                                    {p.label_text && <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' }}>{p.label_text}</span>}
+                                  </div>
                                 )}
                                 {maxQty != null && <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>}
                               </div>
@@ -498,11 +499,11 @@ export default function PublicOrderPage() {
                           <td style={{ padding: '10px 6px', textAlign: 'right', fontSize: 14, color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             {fmtMoney(p.price_amount)}
                           </td>
-                          <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle', width: 72 }}>
                             <input
                               type="number" min="0" max={maxQty} step="1" value={qty}
                               onChange={e => { const v = e.target.value; if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v })) }}
-                              style={{ width: 60, height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e' }}
+                              style={{ width: '100%', height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e' }}
                             />
                           </td>
                         </tr>

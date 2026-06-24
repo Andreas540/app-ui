@@ -435,26 +435,30 @@ export default function TenantAdminOrderPageTab() {
                         </div>
                       </div>
 
-                      {/* Label section */}
-                      <div style={{ display: 'grid', gap: 8 }}>
-                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.label')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <input
-                            type="text"
-                            value={e.label_text || ''}
-                            onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
-                            placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
-                            style={{ maxWidth: 160 }}
-                          />
-                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('tenantAdmin.orderPage.labelOr')}</span>
+                      {/* Label text */}
+                      <div>
+                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelText')}</label>
+                        <input
+                          type="text"
+                          value={e.label_text || ''}
+                          onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
+                          placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
+                          style={{ marginTop: 4, maxWidth: 180 }}
+                        />
+                      </div>
+
+                      {/* Label badge (image) */}
+                      <div>
+                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelBadge')}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                           {e.label_image_data ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <>
                               <img src={e.label_image_data} alt="" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
                               <button
                                 onClick={() => { patchEdit(product.id, { label_image_data: '' }); if (imgInputRefs.current[product.id]) imgInputRefs.current[product.id]!.value = '' }}
                                 style={{ height: 26, padding: '0 8px', fontSize: 12 }}
                               >✕</button>
-                            </div>
+                            </>
                           ) : (
                             <button
                               onClick={() => imgInputRefs.current[product.id]?.click()}
@@ -471,7 +475,7 @@ export default function TenantAdminOrderPageTab() {
                             onChange={ev => handleLabelImage(product.id, ev.target.files?.[0] || null)}
                           />
                         </div>
-                        <p className="helper" style={{ margin: 0, fontSize: 11 }}>{t('tenantAdmin.orderPage.labelHelp')}</p>
+                        <p className="helper" style={{ margin: '4px 0 0', fontSize: 11 }}>{t('tenantAdmin.orderPage.labelHelp')}</p>
                       </div>
                     </div>
 
