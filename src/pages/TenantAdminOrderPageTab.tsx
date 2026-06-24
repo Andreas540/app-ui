@@ -498,7 +498,7 @@ export default function TenantAdminOrderPageTab() {
                   }}>
 
                     {/* Row 1: [img+name+pos] [price override] [qty override] →auto→ [Visible] */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
                       {/* Name+pos cluster — shrinks, name truncates */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 1, minWidth: 0 }}>
                         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -614,7 +614,7 @@ export default function TenantAdminOrderPageTab() {
                       </div>
                       <div>
                         <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelBackground')}</label>
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                        <div style={{ display: 'flex', gap: 4, marginTop: 9 }}>
                           {([
                             { key: 'none',   bg: '#fff',    isNone: true  },
                             { key: 'orange', bg: '#ff6b35', isNone: false },
