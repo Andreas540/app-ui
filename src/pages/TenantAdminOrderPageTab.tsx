@@ -557,38 +557,40 @@ export default function TenantAdminOrderPageTab() {
                       {/* Qty label — row 1, col 5 */}
                       <label className="op-r1-qlabel">{t('tenantAdmin.orderPage.overrideQty')}</label>
 
-                      {/* Price input — grid row 2, col 2 */}
-                      <div className="op-r1-price">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={priceStrings[product.id] ?? ''}
-                          onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
-                          onBlur={ev => {
-                            const raw = ev.target.value.trim()
-                            if (!raw) {
-                              patchEdit(product.id, { display_price: null })
-                              setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
-                            } else {
-                              const n = parseAmount(raw)
-                              patchEdit(product.id, { display_price: n })
-                              setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
-                            }
-                          }}
-                          placeholder={fmtInput(product.product_price)}
-                        />
-                      </div>
+                      {/* Price + qty — display:contents on desktop (children become direct grid items);
+                              display:flex on mobile (50/50 full-width row) */}
+                      <div className="op-r1-overrides">
+                        <div className="op-r1-price">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={priceStrings[product.id] ?? ''}
+                            onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
+                            onBlur={ev => {
+                              const raw = ev.target.value.trim()
+                              if (!raw) {
+                                patchEdit(product.id, { display_price: null })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
+                              } else {
+                                const n = parseAmount(raw)
+                                patchEdit(product.id, { display_price: n })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
+                              }
+                            }}
+                            placeholder={fmtInput(product.product_price)}
+                          />
+                        </div>
 
-                      {/* Qty input — grid row 2, col 3 */}
-                      <div className="op-r1-qty">
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={e.display_qty != null ? e.display_qty : ''}
-                          onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                          placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
-                        />
+                        <div className="op-r1-qty">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={e.display_qty != null ? e.display_qty : ''}
+                            onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
+                            placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
+                          />
+                        </div>
                       </div>
 
                       {/* Visible checkbox — spans both grid rows, col 4 */}

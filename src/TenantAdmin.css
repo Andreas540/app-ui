@@ -262,14 +262,16 @@
   }
 }
 
-/* ─── Order page product card — row 1 ───────────────────────────────────────
+/* ─── Order page product card — row 1 ────────────────────────────────────────
    Desktop 7 cols × 2 rows (row 1 = thin labels, row 2 = controls):
-     col1:img  col2:name  col3:pos  col4:price(110px)  col5:qty(90px)  col6:1fr gap  col7:visible
-   Mobile 4 cols × 4 rows:
-     row1: [img spans 1-4] [name spans cols2-3] [vis spans 1-4]
-     row2: [pos label col2] [pos select col3]
-     row3: [price label 1fr] [qty label 1fr]
-     row4: [price input 1fr] [qty input 1fr]   ← true 50/50 full width
+     [img] [name] [pos lbl/sel] [price 110px] [qty 90px] [1fr gap] [visible]
+   .op-r1-overrides uses display:contents so price/qty are direct grid items.
+
+   Mobile 4 cols × 2 rows:
+     row 1: [img auto] [name 1fr] [pos select auto] [visible auto]
+     row 2: [price flex:1] [qty flex:1]  ← 50/50, full available width
+   .op-r1-overrides becomes a flex row spanning the full width.
+   Standalone labels (poslabel/plabel/qlabel) are hidden on mobile.
 */
 .op-row1 {
   display: grid;
@@ -278,36 +280,37 @@
   column-gap: 10px;
   row-gap: 2px;
 }
-.op-r1-img      { grid-area: 1 / 1 / 3 / 2; align-self: start; }
-.op-r1-info     { grid-area: 1 / 2 / 3 / 3; align-self: start; max-width: 200px; min-width: 0; overflow: hidden; }
+.op-r1-img        { grid-area: 1 / 1 / 3 / 2; align-self: start; }
+.op-r1-info       { grid-area: 1 / 2 / 3 / 3; align-self: start; max-width: 200px; min-width: 0; overflow: hidden; }
 .op-r1-name-text  { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op-r1-base-price { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.op-r1-poslabel { grid-area: 1 / 3; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
-.op-r1-pos      { grid-area: 2 / 3; }
-.op-r1-plabel   { grid-area: 1 / 4; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
-.op-r1-qlabel   { grid-area: 1 / 5; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
-.op-r1-price    { grid-area: 2 / 4; }
-.op-r1-qty      { grid-area: 2 / 5; }
+.op-r1-poslabel   { grid-area: 1 / 3; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.op-r1-pos        { grid-area: 2 / 3; }
+.op-r1-plabel     { grid-area: 1 / 4; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.op-r1-qlabel     { grid-area: 1 / 5; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.op-r1-overrides  { display: contents; } /* transparent to grid — price/qty are direct grid items */
+.op-r1-price      { grid-area: 2 / 4; }
+.op-r1-qty        { grid-area: 2 / 5; }
 .op-r1-price input, .op-r1-qty input { width: 100%; display: block; }
-/* col6 = 1fr empty spacer; col7 = visible at far right */
-.op-r1-vis      { grid-area: 1 / 7 / 3 / 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+/* col 6 = 1fr empty spacer; col 7 = visible at far right */
+.op-r1-vis        { grid-area: 1 / 7 / 3 / 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 
 @media (max-width: 768px) {
   .op-row1 {
-    grid-template-columns: auto 1fr 1fr auto;
-    grid-template-rows: auto auto auto auto;
-    row-gap: 6px;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-rows: auto auto;
+    row-gap: 8px;
   }
-  .op-r1-img      { grid-area: 1 / 1 / 5 / 2; align-self: start; }
-  .op-r1-info     { grid-area: 1 / 2 / 2 / 4; max-width: none; overflow: visible; }
-  .op-r1-vis      { grid-area: 1 / 4 / 5 / 5; align-self: center; }
-  .op-r1-poslabel { grid-area: 2 / 2; }
-  .op-r1-pos      { grid-area: 2 / 3; }
-  .op-r1-plabel   { grid-area: 3 / 2; }
-  .op-r1-qlabel   { grid-area: 3 / 3; }
-  .op-r1-price    { grid-area: 4 / 2; }
-  .op-r1-qty      { grid-area: 4 / 3; }
-  .op-r1-price input, .op-r1-qty input { width: 100%; }
+  .op-r1-img      { grid-area: 1 / 1; align-self: center; }
+  .op-r1-info     { grid-area: 1 / 2; max-width: none; overflow: visible; }
+  .op-r1-poslabel { display: none; }
+  .op-r1-pos      { grid-area: 1 / 3; align-self: center; }
+  .op-r1-plabel   { display: none; }
+  .op-r1-qlabel   { display: none; }
+  .op-r1-overrides { display: flex; grid-area: 2 / 1 / 3 / 5; gap: 8px; }
+  .op-r1-price    { flex: 1; min-width: 0; }
+  .op-r1-qty      { flex: 1; min-width: 0; }
+  .op-r1-vis      { grid-area: 1 / 4; align-self: center; }
 }
 
 /* Label row — 50/50, titles top-aligned */
