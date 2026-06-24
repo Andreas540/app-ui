@@ -986,6 +986,7 @@
       "labelTextPlaceholder": "e.g. NEW, SALE",
       "labelOr": "or image:",
       "uploadLabelImage": "Upload image",
+      "changeImage": "Change image",
       "labelHelp": "Image takes priority over text. Leave both empty for no badge.",
       "pageUrl": "Order page URL",
       "yourOrderPage": "Your order page",

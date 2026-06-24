@@ -986,6 +986,7 @@
       "labelTextPlaceholder": "t.ex. NY, REA",
       "labelOr": "eller bild:",
       "uploadLabelImage": "Ladda upp bild",
+      "changeImage": "Byt bild",
       "labelHelp": "Bild prioriteras över text. Lämna båda tomma för inget märke.",
       "pageUrl": "Beställningssidans URL",
       "yourOrderPage": "Din beställningssida",

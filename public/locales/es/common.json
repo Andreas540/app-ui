@@ -986,6 +986,7 @@
       "labelTextPlaceholder": "ej. NUEVO, OFERTA",
       "labelOr": "o imagen:",
       "uploadLabelImage": "Subir imagen",
+      "changeImage": "Cambiar imagen",
       "labelHelp": "La imagen tiene prioridad sobre el texto. Deja ambos vacíos para sin insignia.",
       "pageUrl": "URL de la página de pedidos",
       "yourOrderPage": "Tu página de pedidos",

@@ -95,11 +95,28 @@ async function loadConfig(sql, slug) {
 
 async function loadProducts(sql, tenantId) {
   return sql`
+    WITH
+    wd AS (
+      SELECT product_id,
+        SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END)        AS finished_from_p,
+        SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
+      FROM warehouse_deliveries WHERE tenant_id = ${tenantId}::uuid GROUP BY product_id
+    ),
+    lp AS (
+      SELECT product_id, SUM(qty_produced) AS produced_qty
+      FROM labor_production WHERE tenant_id = ${tenantId}::uuid GROUP BY product_id
+    )
     SELECT
       p.id,
       p.name,
       COALESCE(op.display_price, p.price_amount)::float8  AS price_amount,
-      op.display_qty                                       AS available_qty,
+      COALESCE(
+        op.display_qty,
+        CASE WHEN wd.product_id IS NOT NULL OR lp.product_id IS NOT NULL
+          THEN GREATEST(0, COALESCE(wd.finished_from_p,0) + COALESCE(lp.produced_qty,0) - COALESCE(wd.outbound_qty,0))
+          ELSE NULL
+        END
+      )::integer                                           AS available_qty,
       COALESCE(op.is_visible, true)                       AS is_visible,
       op.label_text,
       op.label_image_data,
@@ -108,6 +125,8 @@ async function loadProducts(sql, tenantId) {
     FROM products p
     LEFT JOIN order_page_products op
       ON op.product_id = p.id AND op.tenant_id = p.tenant_id
+    LEFT JOIN wd ON wd.product_id = p.id
+    LEFT JOIN lp ON lp.product_id = p.id
     WHERE p.tenant_id   = ${tenantId}::uuid
       AND p.category    = 'product'
       AND p.price_amount IS NOT NULL
@@ -151,8 +170,12 @@ async function handleGet(event) {
       if (!session) return cors(200, { ...base, requires_password: true })
     }
 
-    const products = await loadProducts(sql, cfg.tenant_id)
-    return cors(200, { ...base, products })
+    const [products, stripeRows] = await Promise.all([
+      loadProducts(sql, cfg.tenant_id),
+      sql`SELECT 1 FROM tenant_payment_providers WHERE tenant_id = ${cfg.tenant_id}::uuid AND provider = 'stripe' AND enabled = true AND publishable_key IS NOT NULL AND secret_key IS NOT NULL LIMIT 1`.catch(() => []),
+    ])
+    const has_payment = stripeRows.length > 0
+    return cors(200, { ...base, products, has_payment })
   } catch (e) {
     console.error('public-order-page GET error:', e)
     return cors(500, { error: String(e?.message || e) })

@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getAuthHeaders } from '../lib/api'
+import { getAuthHeaders, updateProduct } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 
 function apiBase() {
@@ -104,6 +104,7 @@ export default function TenantAdminOrderPageTab() {
   const [products, setProducts] = useState<OrderProduct[]>([])
   const [productsLoading, setProductsLoading] = useState(true)
   const [savingProduct, setSavingProduct] = useState<string | null>(null)
+  const [uploadingProductImage, setUploadingProductImage] = useState<string | null>(null)
 
   // Per-product row edits (keyed by product id)
   const [edits, setEdits] = useState<Record<string, Partial<OrderProduct>>>({})
@@ -236,6 +237,28 @@ export default function TenantAdminOrderPageTab() {
   }
 
   const imgInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const productImgInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  async function handleProductImageUpload(productId: string, file: File | null) {
+    if (!file) return
+    setUploadingProductImage(productId)
+    try {
+      const imageData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (ev) => resolve(String(ev.target?.result || ''))
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      await updateProduct({ id: productId, image_data: imageData })
+      setProducts(prev => prev.map(p =>
+        p.id === productId ? { ...p, has_image: true, image_version: Math.floor(Date.now() / 1000) } : p
+      ))
+    } catch (err: any) {
+      alert(err?.message || 'Failed to upload image')
+    } finally {
+      setUploadingProductImage(null)
+    }
+  }
 
   function toggleCountry(code: string) {
     setConfig(c => {
@@ -317,13 +340,33 @@ export default function TenantAdminOrderPageTab() {
                     {/* Product header row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {product.has_image && (
-                          <img
-                            src={`${apiBase()}/api/product-image?id=${product.id}&v=${product.image_version || 0}`}
-                            alt=""
-                            style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }}
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          {product.has_image ? (
+                            <img
+                              src={`${apiBase()}/.netlify/functions/serve-product-image?id=${product.id}&v=${product.image_version || 0}`}
+                              alt=""
+                              style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+                            />
+                          ) : (
+                            <div style={{ width: 44, height: 44, borderRadius: 8, border: '2px dashed var(--border)', background: 'var(--btn-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 18 }}>+</div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => productImgInputRefs.current[product.id]?.click()}
+                            disabled={uploadingProductImage === product.id}
+                            title={t('tenantAdmin.orderPage.changeImage')}
+                            style={{ position: 'absolute', bottom: -5, right: -5, width: 20, height: 20, borderRadius: '50%', background: 'var(--primary)', color: '#fff', border: '2px solid var(--bg)', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                          >
+                            {uploadingProductImage === product.id ? '…' : '✎'}
+                          </button>
+                          <input
+                            ref={el => { productImgInputRefs.current[product.id] = el }}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={ev => handleProductImageUpload(product.id, ev.target.files?.[0] || null)}
                           />
-                        )}
+                        </div>
                         <div>
                           <div style={{ fontWeight: 600 }}>{product.name}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>

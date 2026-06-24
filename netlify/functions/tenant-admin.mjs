@@ -191,12 +191,29 @@ async function handleGet(event) {
         PRIMARY KEY (tenant_id, product_id)
       )`.catch(() => {})
       const products = await sql`
+        WITH
+        wd AS (
+          SELECT product_id,
+            SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END)        AS finished_from_p,
+            SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
+          FROM warehouse_deliveries WHERE tenant_id = ${tenantId}::uuid GROUP BY product_id
+        ),
+        lp AS (
+          SELECT product_id, SUM(qty_produced) AS produced_qty
+          FROM labor_production WHERE tenant_id = ${tenantId}::uuid GROUP BY product_id
+        )
         SELECT p.id, p.name, p.price_amount::float8 AS product_price,
           (p.image_data IS NOT NULL AND p.image_data != '') AS has_image,
           EXTRACT(EPOCH FROM p.image_updated_at)::bigint AS image_version,
-          op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order
+          op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order,
+          CASE WHEN wd.product_id IS NOT NULL OR lp.product_id IS NOT NULL
+            THEN GREATEST(0, COALESCE(wd.finished_from_p,0) + COALESCE(lp.produced_qty,0) - COALESCE(wd.outbound_qty,0))
+            ELSE NULL
+          END AS inventory_qty
         FROM products p
         LEFT JOIN order_page_products op ON op.product_id = p.id AND op.tenant_id = p.tenant_id
+        LEFT JOIN wd ON wd.product_id = p.id
+        LEFT JOIN lp ON lp.product_id = p.id
         WHERE p.tenant_id = ${tenantId}::uuid AND p.category = 'product' AND p.price_amount IS NOT NULL
         ORDER BY COALESCE(op.sort_order, 999) ASC, p.name ASC
       `

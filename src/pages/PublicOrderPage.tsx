@@ -31,7 +31,10 @@ const T: Record<Lang, Record<string, string>> = {
     email:           'Email',
     phone:           'Phone (optional)',
     notes:           'Notes (optional)',
-    submit:          'Submit order',
+    next:            'Next',
+    back:            'Back',
+    placeOrder:      'Place Order',
+    bookAndPay:      'Book & Pay',
     submitting:      'Submitting…',
     successTitle:    'Order received!',
     successMsg:      'Your order has been submitted. We will be in touch.',
@@ -62,7 +65,10 @@ const T: Record<Lang, Record<string, string>> = {
     email:           'Correo electrónico',
     phone:           'Teléfono (opcional)',
     notes:           'Notas (opcional)',
-    submit:          'Enviar pedido',
+    next:            'Siguiente',
+    back:            'Atrás',
+    placeOrder:      'Realizar pedido',
+    bookAndPay:      'Reservar y pagar',
     submitting:      'Enviando…',
     successTitle:    '¡Pedido recibido!',
     successMsg:      'Tu pedido ha sido enviado. Nos pondremos en contacto contigo.',
@@ -93,7 +99,10 @@ const T: Record<Lang, Record<string, string>> = {
     email:           'E-post',
     phone:           'Telefon (valfritt)',
     notes:           'Anteckningar (valfritt)',
-    submit:          'Skicka beställning',
+    next:            'Nästa',
+    back:            'Tillbaka',
+    placeOrder:      'Lägg beställning',
+    bookAndPay:      'Boka & betala',
     submitting:      'Skickar…',
     successTitle:    'Beställning mottagen!',
     successMsg:      'Din beställning har skickats. Vi hör av oss.',
@@ -134,6 +143,7 @@ type PageStatus =
   | 'geo_blocked'
   | 'password'
   | 'order'
+  | 'details'
   | 'submitting'
   | 'done'
   | 'error'
@@ -185,6 +195,7 @@ export default function PublicOrderPage() {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [sessionMinutes] = useState(60)
+  const [hasPayment, setHasPayment]   = useState(false)
 
   // Password form
   const [password, setPassword]       = useState('')
@@ -244,6 +255,7 @@ export default function PublicOrderPage() {
       }
 
       setProducts(data.products || [])
+      setHasPayment(!!data.has_payment)
       setStatus('order')
     } catch {
       setStatus('error')
@@ -277,6 +289,13 @@ export default function PublicOrderPage() {
     }
   }
 
+  function handleNext() {
+    const hasItems = Object.values(qtys).some(v => Number(v) > 0)
+    if (!hasItems) { setSubmitError(t('errorNoItems')); return }
+    setSubmitError('')
+    setStatus('details')
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError('')
@@ -300,7 +319,7 @@ export default function PublicOrderPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setSubmitError(data.error || t('errorSubmit')); setStatus('order'); return }
+      if (!res.ok) { setSubmitError(data.error || t('errorSubmit')); setStatus('details'); return }
 
       if (data.checkout_url) {
         setOrderNo(data.order_no ?? null)
@@ -313,7 +332,7 @@ export default function PublicOrderPage() {
       setStatus('done')
     } catch {
       setSubmitError(t('errorSubmit'))
-      setStatus('order')
+      setStatus('details')
     }
   }
 
@@ -322,15 +341,22 @@ export default function PublicOrderPage() {
     return sum + (p ? p.price_amount * (Number(qty) || 0) : 0)
   }, 0)
 
-  // ── Shell layout (matches BookingPage / OrderFormPage pattern) ────────────
+  // ── Shell layout ──────────────────────────────────────────────────────────
   const shellStyle: React.CSSProperties = {
-    minHeight: '100dvh',
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    overflow: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: bgColor,
+    fontFamily: 'system-ui, sans-serif',
+  }
+
+  const innerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     padding: '24px 16px 48px',
-    fontFamily: 'system-ui, sans-serif',
+    minHeight: '100%',
   }
 
   const cardStyle: React.CSSProperties = {
@@ -351,37 +377,44 @@ export default function PublicOrderPage() {
     textAlign: 'center',
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box', height: 44,
+    padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8,
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (status === 'loading') {
     return (
       <div style={shellStyle}>
-        <div style={{ color: '#fff', marginTop: 60, fontSize: 16 }}>{t('loading')}</div>
+        <div style={innerStyle}>
+          <div style={{ color: '#fff', marginTop: 60, fontSize: 16 }}>{t('loading')}</div>
+        </div>
       </div>
     )
   }
 
   if (status === 'not_found') {
     return (
-      <div style={shellStyle}>
+      <div style={shellStyle}><div style={innerStyle}>
         <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('pageNotFound')}</p></div>
-      </div>
+      </div></div>
     )
   }
 
   if (status === 'inactive') {
     return (
-      <div style={shellStyle}>
+      <div style={shellStyle}><div style={innerStyle}>
         <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('pageNotActive')}</p></div>
-      </div>
+      </div></div>
     )
   }
 
   if (status === 'geo_blocked') {
     return (
-      <div style={shellStyle}>
+      <div style={shellStyle}><div style={innerStyle}>
         <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('geoBlocked')}</p></div>
-      </div>
+      </div></div>
     )
   }
 
@@ -389,34 +422,36 @@ export default function PublicOrderPage() {
     return (
       <div style={shellStyle}>
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-        <div style={cardStyle}>
-          <div style={headerStyle}>
-            {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-            {tenantName && <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{tenantName}</div>}
-          </div>
-          <form onSubmit={handlePasswordSubmit} style={{ display: 'grid', gap: 14 }}>
-            <div style={{ fontWeight: 600, fontSize: 16, textAlign: 'center', color: '#1a1a2e' }}>{t('passwordTitle')}</div>
-            <div>
-              <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#333', marginBottom: 6 }}>{t('passwordLabel')}</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoFocus
-                autoComplete="current-password"
-                style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8 }}
-              />
+        <div style={innerStyle}>
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
+              {tenantName && <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{tenantName}</div>}
             </div>
-            {pwError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13, textAlign: 'center' }}>{pwError}</p>}
-            <button
-              type="submit"
-              disabled={pwChecking || !password}
-              style={{ height: 46, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
-            >
-              {pwChecking ? t('passwordChecking') : t('passwordSubmit')}
-            </button>
-          </form>
+            <form onSubmit={handlePasswordSubmit} style={{ display: 'grid', gap: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: 16, textAlign: 'center', color: '#1a1a2e' }}>{t('passwordTitle')}</div>
+              <div>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#333', marginBottom: 6 }}>{t('passwordLabel')}</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoFocus
+                  autoComplete="current-password"
+                  style={inputStyle}
+                />
+              </div>
+              {pwError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13, textAlign: 'center' }}>{pwError}</p>}
+              <button
+                type="submit"
+                disabled={pwChecking || !password}
+                style={{ height: 46, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {pwChecking ? t('passwordChecking') : t('passwordSubmit')}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     )
@@ -424,7 +459,7 @@ export default function PublicOrderPage() {
 
   if (status === 'done') {
     return (
-      <div style={shellStyle}>
+      <div style={shellStyle}><div style={innerStyle}>
         <div style={cardStyle}>
           <div style={headerStyle}>
             {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
@@ -437,152 +472,168 @@ export default function PublicOrderPage() {
             {orderNo != null && <div style={{ marginTop: 12, color: '#999', fontSize: 13 }}>#{orderNo}</div>}
           </div>
         </div>
+      </div></div>
+    )
+  }
+
+  // ── Step 1: Product selection ─────────────────────────────────────────────
+  if (status === 'order') {
+    return (
+      <div style={shellStyle}>
+        {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+        <div style={innerStyle}>
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
+              {tenantName && <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{tenantName}</div>}
+              <div style={{ fontSize: 15, color: '#555' }}>{t('title')}</div>
+            </div>
+
+            {products.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#666' }}>{t('noProducts')}</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 20 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #eee' }}>
+                      <th style={{ textAlign: 'left', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('product')}</th>
+                      <th style={{ textAlign: 'right', padding: '6px 6px', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('price')}</th>
+                      <th style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('qty')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map(p => {
+                      const qty = qtys[p.id] || ''
+                      const maxQty = p.available_qty ?? undefined
+                      const imgUrl = `${BASE}/.netlify/functions/serve-product-image?id=${p.id}&v=${p.image_version || 0}`
+                      return (
+                        <tr key={p.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ padding: '10px 0', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {p.has_image && (
+                                <img
+                                  src={imgUrl}
+                                  alt=""
+                                  onClick={() => setLightboxSrc(imgUrl)}
+                                  style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
+                                />
+                              )}
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a2e' }}>{p.name}</div>
+                                {(p.label_image_data || p.label_text) && (
+                                  p.label_image_data
+                                    ? <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain', marginTop: 3 }} />
+                                    : <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, marginTop: 3, textTransform: 'uppercase' }}>{p.label_text}</span>
+                                )}
+                                {maxQty != null && (
+                                  <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 6px', textAlign: 'right', fontSize: 14, color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                            {fmtMoney(p.price_amount)}
+                          </td>
+                          <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              max={maxQty}
+                              step="1"
+                              value={qty}
+                              onChange={e => {
+                                const v = e.target.value
+                                if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v }))
+                              }}
+                              style={{ width: 60, height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+
+                {total > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid #eee' }}>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>
+                      {t('total')}: {fmtMoney(total)}
+                    </span>
+                  </div>
+                )}
+
+                {submitError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{submitError}</p>}
+
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  style={{ height: 50, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {t('next')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     )
   }
 
-  // ── Order form ────────────────────────────────────────────────────────────
+  // ── Step 2: Contact details + submit ──────────────────────────────────────
   return (
     <div style={shellStyle}>
-      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-      <div style={cardStyle}>
-        <div style={headerStyle}>
-          {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-          {tenantName && <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{tenantName}</div>}
-          <div style={{ fontSize: 15, color: '#555' }}>{t('title')}</div>
-        </div>
+      <div style={innerStyle}>
+        <div style={cardStyle}>
+          <div style={headerStyle}>
+            {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
+            {tenantName && <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{tenantName}</div>}
+          </div>
 
-        {products.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666' }}>{t('noProducts')}</p>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
+          <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>{t('yourInfo')}</div>
 
-            {/* Product table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #eee' }}>
-                  <th style={{ textAlign: 'left', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('product')}</th>
-                  <th style={{ textAlign: 'right', padding: '6px 6px', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('price')}</th>
-                  <th style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('qty')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p => {
-                  const qty = qtys[p.id] || ''
-                  const maxQty = p.available_qty ?? undefined
-                  return (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '10px 0', verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          {p.has_image && (
-                            <img
-                              src={`${BASE}/api/product-image?id=${p.id}&v=${p.image_version || 0}`}
-                              alt=""
-                              onClick={() => setLightboxSrc(`${BASE}/api/product-image?id=${p.id}&v=${p.image_version || 0}`)}
-                              style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
-                            />
-                          )}
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a2e' }}>{p.name}</div>
-                            {/* Label badge */}
-                            {(p.label_image_data || p.label_text) && (
-                              p.label_image_data
-                                ? <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain', marginTop: 3 }} />
-                                : <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, marginTop: 3, textTransform: 'uppercase' }}>{p.label_text}</span>
-                            )}
-                            {maxQty != null && (
-                              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '10px 6px', textAlign: 'right', fontSize: 14, color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                        {fmtMoney(p.price_amount)}
-                      </td>
-                      <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <input
-                          type="number"
-                          min="0"
-                          max={maxQty}
-                          step="1"
-                          value={qty}
-                          onChange={e => {
-                            const v = e.target.value
-                            if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v }))
-                          }}
-                          style={{ width: 60, height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            {/* Total */}
-            {total > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid #eee' }}>
-                <span style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>
-                  {t('total')}: {fmtMoney(total)}
-                </span>
-              </div>
-            )}
-
-            <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: 0 }} />
-
-            {/* Contact form */}
-            <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a2e' }}>{t('yourInfo')}</div>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('name')}</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                  style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8 }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('email')}</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8 }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('phone')}</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8 }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('notes')}</label>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  rows={3}
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8, resize: 'vertical', height: 'auto', fontFamily: 'inherit' }}
-                />
-              </div>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('name')} *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('email')}</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('phone')}</label>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('notes')}</label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={3}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8, resize: 'vertical', fontFamily: 'inherit' }}
+              />
             </div>
 
             {submitError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{submitError}</p>}
 
-            <button
-              type="submit"
-              disabled={status === 'submitting'}
-              style={{ height: 50, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
-            >
-              {status === 'submitting' ? t('submitting') : t('submit')}
-            </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => { setSubmitError(''); setStatus('order') }}
+                style={{ flex: 1, height: 50, background: '#f0f2f5', color: '#333', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 500, cursor: 'pointer' }}
+              >
+                {t('back')}
+              </button>
+              <button
+                type="submit"
+                disabled={status === 'submitting'}
+                style={{ flex: 2, height: 50, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {status === 'submitting' ? t('submitting') : hasPayment ? t('bookAndPay') : t('placeOrder')}
+              </button>
+            </div>
           </form>
-        )}
+        </div>
       </div>
     </div>
   )
