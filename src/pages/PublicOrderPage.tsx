@@ -183,9 +183,8 @@ export default function PublicOrderPage() {
   const [products, setProducts]       = useState<OrderProduct[]>([])
   const [qtys, setQtys]               = useState<Record<string, string>>({})
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
-  const [errMsg, setErrMsg]           = useState('')
   const [sessionToken, setSessionToken] = useState<string | null>(null)
-  const [sessionMinutes, setSessionMinutes] = useState(60)
+  const [sessionMinutes] = useState(60)
 
   // Password form
   const [password, setPassword]       = useState('')
@@ -201,7 +200,6 @@ export default function PublicOrderPage() {
 
   // Confirmation
   const [orderNo, setOrderNo] = useState<number | null>(null)
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!slug) { setStatus('not_found'); return }
@@ -220,7 +218,7 @@ export default function PublicOrderPage() {
       if (res.status === 404 || data.error === 'not_found') { setStatus('not_found'); return }
       if (data.error === 'inactive') { setStatus('inactive'); return }
       if (data.error === 'geo_blocked') { setStatus('geo_blocked'); return }
-      if (!res.ok) { setErrMsg(data.error || 'Error loading page'); setStatus('error'); return }
+      if (!res.ok) { setStatus('error'); return }
 
       setTenantName(data.tenant_name || '')
       setTenantIcon(data.tenant_icon || null)
@@ -247,8 +245,7 @@ export default function PublicOrderPage() {
 
       setProducts(data.products || [])
       setStatus('order')
-    } catch (e: any) {
-      setErrMsg(e?.message || 'Load error')
+    } catch {
       setStatus('error')
     }
   }
@@ -306,7 +303,6 @@ export default function PublicOrderPage() {
       if (!res.ok) { setSubmitError(data.error || t('errorSubmit')); setStatus('order'); return }
 
       if (data.checkout_url) {
-        setCheckoutUrl(data.checkout_url)
         setOrderNo(data.order_no ?? null)
         setStatus('done')
         window.location.href = data.checkout_url
