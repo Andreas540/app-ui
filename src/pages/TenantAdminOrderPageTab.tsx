@@ -529,15 +529,21 @@ export default function TenantAdminOrderPageTab() {
                         />
                       </div>
 
-                      {/* Name + pos — own grid cell, spans both rows, top-aligned */}
+                      {/* Name — col 2, spans both rows, top-aligned */}
                       <div className="op-r1-info">
                         <div className="op-r1-name-text">{product.name}</div>
                         <div className="op-r1-base-price">{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
+                      </div>
+
+                      {/* Position label — row 1, col 3 */}
+                      <label className="op-r1-poslabel">{t('tenantAdmin.orderPage.position')}</label>
+
+                      {/* Position select — row 2, col 3 */}
+                      <div className="op-r1-pos">
                         <select
                           value={e.sort_order ?? 0}
                           onChange={ev => patchEdit(product.id, { sort_order: Number(ev.target.value) })}
-                          title={t('tenantAdmin.orderPage.position')}
-                          style={{ display: 'block', width: 52, height: 'var(--control-h)', fontSize: 12, textAlign: 'center', marginTop: 4 }}
+                          style={{ width: 52, height: 'var(--control-h)', fontSize: 12, textAlign: 'center' }}
                         >
                           {products.map((_, idx) => (
                             <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
@@ -545,10 +551,10 @@ export default function TenantAdminOrderPageTab() {
                         </select>
                       </div>
 
-                      {/* Price label — grid row 1, col 2 */}
+                      {/* Price label — row 1, col 4 */}
                       <label className="op-r1-plabel">{t('tenantAdmin.orderPage.overridePrice')}</label>
 
-                      {/* Qty label — grid row 1, col 3 */}
+                      {/* Qty label — row 1, col 5 */}
                       <label className="op-r1-qlabel">{t('tenantAdmin.orderPage.overrideQty')}</label>
 
                       {/* Price input — grid row 2, col 2 */}
