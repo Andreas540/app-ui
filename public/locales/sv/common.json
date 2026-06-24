@@ -1018,6 +1018,7 @@
       "saveAll": "Spara alla ändringar",
       "stockRef": "Lager",
       "position": "Position",
+      "labelBackground": "Etikettbakgrund",
       "labelStylePlain": "Vanlig text",
       "labelStyleBadge": "Text på bakgrund",
       "labelColorOrange": "Orange",

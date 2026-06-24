@@ -1018,6 +1018,7 @@
       "saveAll": "Guardar todos los cambios",
       "stockRef": "Stock",
       "position": "Posición",
+      "labelBackground": "Fondo de etiqueta",
       "labelStylePlain": "Texto simple",
       "labelStyleBadge": "Texto en fondo",
       "labelColorOrange": "Naranja",

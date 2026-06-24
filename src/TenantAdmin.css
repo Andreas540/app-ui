@@ -262,6 +262,58 @@
   }
 }
 
+/* Order page product card responsive rows */
+.op-card-row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.op-card-row1 .op-name-pos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.op-card-row1 .op-overrides {
+  display: flex;
+  gap: 12px;
+}
+.op-card-row1 .op-overrides > div {
+  flex: 1;
+  min-width: 90px;
+}
+.op-card-row1 .op-overrides input {
+  margin-top: 4px;
+  width: 100%;
+  display: block;
+}
+/* label row 50/50 */
+.op-label-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.op-label-row > div {
+  flex: 1;
+  min-width: 0;
+}
+/* On mobile: override fields become a standalone 50/50 row */
+@media (max-width: 768px) {
+  .op-card-row1 .op-overrides {
+    width: 100%;
+    order: 10;
+  }
+  .op-card-row1 .op-visible-btn {
+    order: 5;
+  }
+  .op-label-row {
+    flex-direction: column;
+  }
+}
+
 /* Desktop enhancements */
 @media (min-width: 1024px) {
   .config-editor {

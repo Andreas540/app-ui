@@ -1018,6 +1018,7 @@
       "saveAll": "Save all changes",
       "stockRef": "Stock",
       "position": "Position",
+      "labelBackground": "Label background",
       "labelStylePlain": "Plain text",
       "labelStyleBadge": "Text on background",
       "labelColorOrange": "Orange",
