@@ -66,6 +66,7 @@ import StatsLogs from './pages/StatsLogs'
 import BookingIntegrationPage from './pages/BookingIntegrationPage'
 import BookingDashboardPage from './pages/BookingDashboardPage'
 import BookingPage from './pages/BookingPage'
+import PublicOrderPage from './pages/PublicOrderPage'
 import BookingsPage from './pages/BookingsPage'
 import BookingCustomersPage from './pages/BookingCustomersPage'
 import BookingPaymentsPage from './pages/BookingPaymentsPage'
@@ -108,6 +109,10 @@ export default function App() {
     (location.pathname || '/').startsWith('/book/'),
   [location.pathname])
 
+  const isPublicOrderPagePath = useMemo(() =>
+    (location.pathname || '/').startsWith('/order/'),
+  [location.pathname])
+
   const isConversationPortalPath = useMemo(() =>
     (location.pathname || '/').startsWith('/conversation/'),
   [location.pathname])
@@ -131,7 +136,7 @@ export default function App() {
     let alive = true
 
     async function decideEmployeeMode() {
-      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath || isPayPath || isConversationPortalPath) {
+      if (isCustomerFormPath || isOrderFormPath || isOrderPaidPath || isBookingPath || isPayPath || isConversationPortalPath || isPublicOrderPagePath) {
         if (alive) setEmployeeMode(false)
         return
       }
@@ -167,7 +172,7 @@ export default function App() {
     return () => {
       alive = false
     }
-  }, [isEmployeePath, isCustomerFormPath, isOrderFormPath, isOrderPaidPath, isBookingPath, isConversationPortalPath])
+  }, [isEmployeePath, isCustomerFormPath, isOrderFormPath, isOrderPaidPath, isBookingPath, isConversationPortalPath, isPublicOrderPagePath])
 
   if (isCustomerFormPath) return <CustomerFormShell />
   if (isOrderFormPath) return <OrderFormShell />
@@ -176,6 +181,7 @@ export default function App() {
   if (isWidgetPreviewPath) return <Routes><Route path="/widget-preview" element={<WidgetPreviewPage />} /></Routes>
   if (isBookingPath) return <BookingShell />
   if (isConversationPortalPath) return <ConversationPortalShell />
+  if (isPublicOrderPagePath) return <PublicOrderPageShell />
 
   if (employeeMode === null) {
     return <div style={{ padding: 16, color: '#fff' }}>Loading…</div>
@@ -251,6 +257,15 @@ function ConversationPortalShell() {
   )
 }
 
+function PublicOrderPageShell() {
+  return (
+    <Routes>
+      <Route path="/order/:slug" element={<PublicOrderPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 // ── Page-view action mapping ───────────────────────────────────────────────────
 const PAGE_ACTIONS: Record<string, string> = {
   '/':                           'page_view_dashboard',
@@ -301,6 +316,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/bookings/:id':               'page_view_booking_detail',
   '/bookings/clients':           'page_view_booking_clients',
   '/bookings/payments':          'page_view_booking_payments',
+  '/order/:slug':                'page_view_public_order_page',
 
 }
 

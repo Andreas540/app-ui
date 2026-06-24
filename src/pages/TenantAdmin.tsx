@@ -13,6 +13,7 @@ import TenantAdminUISettingsTab from './TenantAdminUISettingsTab'
 import TenantAdminCashTab from './TenantAdminCashTab'
 import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
+import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
 
 interface TenantUser {
   id: string
@@ -64,7 +65,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import' | 'order-page'>('team')
   const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
   const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
 
@@ -810,6 +811,7 @@ export default function TenantAdmin() {
             { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
             { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
             { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
+            { id: 'order-page',        label: t('tenantAdmin.tabOrderPage') },
             { id: 'payment-providers', label: t('tenantAdmin.tabPaymentProviders') },
             { id: 'ui-settings',       label: t('tenantAdmin.tabUiSettings') },
             { id: 'team',              label: t('tenantAdmin.tabUsers') },
@@ -1327,6 +1329,13 @@ export default function TenantAdmin() {
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabCustomerSettings')}</h4>
             <TenantAdminCustomerSettingsTab />
+          </>
+        )}
+
+        {activeTab === 'order-page' && (
+          <>
+            <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabOrderPage')}</h4>
+            <TenantAdminOrderPageTab />
           </>
         )}
 

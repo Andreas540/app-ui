@@ -165,6 +165,44 @@ async function handleGet(event) {
       return cors(200, { users })
     }
 
+    if (action === 'getOrderPageConfig') {
+      await sql`CREATE TABLE IF NOT EXISTS order_page_config (
+        tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+        slug TEXT UNIQUE, is_active BOOLEAN NOT NULL DEFAULT false,
+        password_hash TEXT, session_minutes INTEGER,
+        geo_countries TEXT[], geo_states TEXT[],
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`.catch(() => {})
+      const rows = await sql`SELECT slug, is_active, password_hash IS NOT NULL AS has_password, session_minutes, geo_countries, geo_states FROM order_page_config WHERE tenant_id = ${tenantId}::uuid LIMIT 1`
+      const tenantRow = await sql`SELECT name FROM tenants WHERE id = ${tenantId}::uuid LIMIT 1`
+      const suggestedSlug = (tenantRow[0]?.name || '').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
+      if (!rows.length) return cors(200, { config: { slug: suggestedSlug, is_active: false, has_password: false, session_minutes: 60, geo_countries: [], geo_states: [] } })
+      return cors(200, { config: rows[0] })
+    }
+
+    if (action === 'getOrderPageProducts') {
+      await sql`CREATE TABLE IF NOT EXISTS order_page_products (
+        tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        display_price NUMERIC(12,2), display_qty INTEGER,
+        is_visible BOOLEAN NOT NULL DEFAULT true,
+        label_text TEXT, label_image_data TEXT, sort_order INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (tenant_id, product_id)
+      )`.catch(() => {})
+      const products = await sql`
+        SELECT p.id, p.name, p.price_amount::float8 AS product_price, p.available_quantity,
+          (p.image_data IS NOT NULL AND p.image_data != '') AS has_image,
+          EXTRACT(EPOCH FROM p.image_updated_at)::bigint AS image_version,
+          op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order
+        FROM products p
+        LEFT JOIN order_page_products op ON op.product_id = p.id AND op.tenant_id = p.tenant_id
+        WHERE p.tenant_id = ${tenantId}::uuid AND p.category = 'product' AND p.price_amount IS NOT NULL
+        ORDER BY COALESCE(op.sort_order, 999) ASC, p.name ASC
+      `
+      return cors(200, { products })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handleGet error:', e)
@@ -572,6 +610,99 @@ if (action === 'toggleUserStatus') {
         WHERE tenant_id = ${tenantId}::uuid
       `
       return cors(200, { success: true })
+    }
+
+    if (action === 'saveOrderPageConfig') {
+      const { slug, isActive, password, clearPassword, sessionMinutes, geoCountries, geoStates } = body
+
+      await sql`CREATE TABLE IF NOT EXISTS order_page_config (
+        tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+        slug TEXT UNIQUE, is_active BOOLEAN NOT NULL DEFAULT false,
+        password_hash TEXT, session_minutes INTEGER,
+        geo_countries TEXT[], geo_states TEXT[],
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`.catch(() => {})
+
+      const cleanSlug = (slug || '').toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '').slice(0, 60)
+      if (cleanSlug) {
+        const existing = await sql`SELECT tenant_id FROM order_page_config WHERE slug = ${cleanSlug} AND tenant_id != ${tenantId}::uuid LIMIT 1`
+        if (existing.length) return cors(400, { error: 'That URL is already taken. Please choose another.' })
+      }
+
+      // Compute password hash if a new password was provided
+      const secret = process.env.ORDER_PAGE_SECRET || process.env.CUSTOMER_TOKEN_SECRET || 'fallback-secret'
+      let passwordHash = undefined
+      if (clearPassword) {
+        passwordHash = null
+      } else if (password) {
+        const crypto = await import('crypto')
+        passwordHash = crypto.createHmac('sha256', secret).update(`${tenantId}:${password}`).digest('hex')
+      }
+
+      const geoArr = Array.isArray(geoCountries) ? geoCountries.filter(Boolean) : []
+      const stateArr = Array.isArray(geoStates) ? geoStates.filter(Boolean) : []
+      const sessMins = Number.isFinite(Number(sessionMinutes)) ? Number(sessionMinutes) : 60
+
+      const existing = await sql`SELECT tenant_id FROM order_page_config WHERE tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!existing.length) {
+        await sql`
+          INSERT INTO order_page_config (tenant_id, slug, is_active, password_hash, session_minutes, geo_countries, geo_states)
+          VALUES (${tenantId}::uuid, ${cleanSlug || null}, ${!!isActive},
+            ${passwordHash !== undefined ? passwordHash : null},
+            ${sessMins}, ${geoArr.length ? geoArr : null}, ${stateArr.length ? stateArr : null})
+        `
+      } else {
+        if (passwordHash !== undefined) {
+          await sql`
+            UPDATE order_page_config SET slug = ${cleanSlug || null}, is_active = ${!!isActive},
+              password_hash = ${passwordHash}, session_minutes = ${sessMins},
+              geo_countries = ${geoArr.length ? geoArr : null}, geo_states = ${stateArr.length ? stateArr : null},
+              updated_at = now()
+            WHERE tenant_id = ${tenantId}::uuid
+          `
+        } else {
+          await sql`
+            UPDATE order_page_config SET slug = ${cleanSlug || null}, is_active = ${!!isActive},
+              session_minutes = ${sessMins},
+              geo_countries = ${geoArr.length ? geoArr : null}, geo_states = ${stateArr.length ? stateArr : null},
+              updated_at = now()
+            WHERE tenant_id = ${tenantId}::uuid
+          `
+        }
+      }
+      return cors(200, { ok: true, slug: cleanSlug })
+    }
+
+    if (action === 'saveOrderPageProduct') {
+      const { productId, displayPrice, displayQty, isVisible, labelText, labelImageData, sortOrder } = body
+      if (!productId) return cors(400, { error: 'productId required' })
+
+      await sql`CREATE TABLE IF NOT EXISTS order_page_products (
+        tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        display_price NUMERIC(12,2), display_qty INTEGER,
+        is_visible BOOLEAN NOT NULL DEFAULT true,
+        label_text TEXT, label_image_data TEXT, sort_order INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (tenant_id, product_id)
+      )`.catch(() => {})
+
+      const price = displayPrice != null && displayPrice !== '' ? Number(displayPrice) : null
+      const qty   = displayQty  != null && displayQty  !== '' ? Number(displayQty)   : null
+
+      await sql`
+        INSERT INTO order_page_products (tenant_id, product_id, display_price, display_qty, is_visible, label_text, label_image_data, sort_order)
+        VALUES (${tenantId}::uuid, ${productId}::uuid, ${price}, ${qty}, ${isVisible !== false},
+          ${labelText || null}, ${labelImageData || null}, ${sortOrder ?? 0})
+        ON CONFLICT (tenant_id, product_id) DO UPDATE SET
+          display_price    = EXCLUDED.display_price,
+          display_qty      = EXCLUDED.display_qty,
+          is_visible       = EXCLUDED.is_visible,
+          label_text       = EXCLUDED.label_text,
+          label_image_data = EXCLUDED.label_image_data,
+          sort_order       = EXCLUDED.sort_order
+      `
+      return cors(200, { ok: true })
     }
 
     return cors(400, { error: 'Invalid action' })
