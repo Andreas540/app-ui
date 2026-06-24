@@ -29,7 +29,7 @@ const T: Record<Lang, Record<string, string>> = {
     yourInfo:        'Your information',
     name:            'Name',
     email:           'Email',
-    phone:           'Phone (optional)',
+    phone:           'Phone',
     notes:           'Notes (optional)',
     next:            'Next',
     back:            'Back',
@@ -40,8 +40,7 @@ const T: Record<Lang, Record<string, string>> = {
     successMsg:      'Your order has been submitted. We will be in touch.',
     errorNoItems:       'Please select at least one product.',
     errorNoName:        'Please enter your name.',
-    errorEmailOrPhone:  'Please enter your email or phone number.',
-    emailOrPhoneHint:   '* Email or phone required for order tracking.',
+    errorEmailOrPhone:  'Please enter your email address.',
     errorSubmit:        'Submission failed. Please try again.',
     loading:         'Loading…',
     noProducts:      'No products are currently available.',
@@ -65,7 +64,7 @@ const T: Record<Lang, Record<string, string>> = {
     yourInfo:        'Tu información',
     name:            'Nombre',
     email:           'Correo electrónico',
-    phone:           'Teléfono (opcional)',
+    phone:           'Teléfono',
     notes:           'Notas (opcional)',
     next:            'Siguiente',
     back:            'Atrás',
@@ -76,8 +75,7 @@ const T: Record<Lang, Record<string, string>> = {
     successMsg:      'Tu pedido ha sido enviado. Nos pondremos en contacto contigo.',
     errorNoItems:       'Selecciona al menos un producto.',
     errorNoName:        'Por favor ingresa tu nombre.',
-    errorEmailOrPhone:  'Por favor ingresa tu correo electrónico o teléfono.',
-    emailOrPhoneHint:   '* Se requiere correo o teléfono para el seguimiento del pedido.',
+    errorEmailOrPhone:  'Por favor ingresa tu correo electrónico.',
     errorSubmit:        'Error al enviar. Inténtalo de nuevo.',
     loading:         'Cargando…',
     noProducts:      'No hay productos disponibles actualmente.',
@@ -101,7 +99,7 @@ const T: Record<Lang, Record<string, string>> = {
     yourInfo:        'Din information',
     name:            'Namn',
     email:           'E-post',
-    phone:           'Telefon (valfritt)',
+    phone:           'Telefon',
     notes:           'Anteckningar (valfritt)',
     next:            'Nästa',
     back:            'Tillbaka',
@@ -112,8 +110,7 @@ const T: Record<Lang, Record<string, string>> = {
     successMsg:      'Din beställning har skickats. Vi hör av oss.',
     errorNoItems:       'Välj minst en produkt.',
     errorNoName:        'Vänligen ange ditt namn.',
-    errorEmailOrPhone:  'Vänligen ange din e-post eller telefon.',
-    emailOrPhoneHint:   '* E-post eller telefon krävs för orderuppföljning.',
+    errorEmailOrPhone:  'Vänligen ange din e-postadress.',
     errorSubmit:        'Det gick inte att skicka. Försök igen.',
     loading:         'Laddar…',
     noProducts:      'Inga produkter är tillgängliga just nu.',
@@ -242,13 +239,16 @@ export default function PublicOrderPage() {
       if (!searchParams.get('lang') && data.tenant_language) setLang(resolveLang(data.tenant_language))
       if (data.tenant_currency) setCurrency(data.tenant_currency.toUpperCase())
 
-      // Extract background colour from tenant icon
+      // Extract background tint from tenant icon (12% vibrant blended with 88% white)
       if (data.tenant_icon) {
-        try {
-          const palette = await Vibrant.from(data.tenant_icon).getPalette()
-          const color = palette.LightVibrant?.hex || palette.Vibrant?.hex
-          if (color) setBgColor(color)
-        } catch { /* ignore */ }
+        Vibrant.from(data.tenant_icon).getPalette()
+          .then(palette => {
+            const swatch = palette.Vibrant ?? palette.LightVibrant ?? palette.Muted
+            if (!swatch) return
+            const { r, g, b } = swatch
+            setBgColor(`rgb(${Math.round(r * 0.12 + 255 * 0.88)},${Math.round(g * 0.12 + 255 * 0.88)},${Math.round(b * 0.12 + 255 * 0.88)})`)
+          })
+          .catch(() => {})
       }
 
       if (data.requires_password) {
@@ -311,7 +311,7 @@ export default function PublicOrderPage() {
 
     if (!items.length) { setSubmitError(t('errorNoItems')); return }
     if (!name.trim()) { setSubmitError(t('errorNoName')); return }
-    if (!email.trim() && !phone.trim()) { setSubmitError(t('errorEmailOrPhone')); return }
+    if (!email.trim()) { setSubmitError(t('errorEmailOrPhone')); return }
     if (!slug) return
 
     setStatus('submitting')
@@ -541,13 +541,12 @@ export default function PublicOrderPage() {
             </div>
             <div>
               <label style={lbl}>{t('email')} *</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inp} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inp} />
             </div>
             <div>
-              <label style={lbl}>{t('phone')} *</label>
+              <label style={lbl}>{t('phone')}</label>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inp} />
             </div>
-            <p style={{ margin: '-6px 0 0', fontSize: 12, color: '#888' }}>{t('emailOrPhoneHint')}</p>
             <div>
               <label style={lbl}>{t('notes')}</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}

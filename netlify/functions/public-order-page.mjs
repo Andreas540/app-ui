@@ -235,8 +235,8 @@ async function handlePost(event) {
       const name  = String(body.name  || '').trim()
       const email = String(body.email || '').trim()
       const phone = String(body.phone || '').trim()
-      if (!name) return cors(400, { error: 'name required' })
-      if (!email && !phone) return cors(400, { error: 'email or phone required' })
+      if (!name)  return cors(400, { error: 'name required' })
+      if (!email) return cors(400, { error: 'email required' })
 
       const tenantId = cfg.tenant_id
 
