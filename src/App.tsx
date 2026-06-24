@@ -1118,24 +1118,40 @@ useEffect(() => {
             <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {externalEvents.length === 0
                 ? <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{tc('externalEvents.noEvents')}</p>
-                : externalEvents.map(ev => (
-                  <div key={ev.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                      {new Date(ev.created_at).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
-                    </span>
-                    <span>
-                      {ev.event_type === 'order' && tc('externalEvents.order', { name: ev.customer_name })}
-                      {ev.event_type === 'customer_info' && tc('externalEvents.customerInfo', { name: ev.customer_name })}
-                      {ev.event_type === 'booking' && tc('externalEvents.booking', {
-                        name: ev.customer_name,
-                        service: ev.extra?.service_name || '',
-                      })}
-                      {ev.event_type === 'customer_message' && tc('externalEvents.customerMessage', { name: ev.customer_name })}
-                      {ev.event_type === 'message_reply' && ev.extra?.via === 'email' && tc('externalEvents.messageReplyEmail', { email: ev.customer_name })}
-                      {ev.event_type === 'message_reply' && ev.extra?.via === 'app' && tc('externalEvents.messageReplyApp')}
-                    </span>
-                  </div>
-                ))
+                : externalEvents.map(ev => {
+                  const linkStyle: React.CSSProperties = { color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }
+                  let label: React.ReactNode = null
+                  let href: string | null = null
+                  if (ev.event_type === 'order') {
+                    label = tc('externalEvents.order', { name: ev.customer_name })
+                    href = ev.extra?.order_id ? `/orders/${ev.extra.order_id}/edit` : null
+                  } else if (ev.event_type === 'customer_info') {
+                    label = tc('externalEvents.customerInfo', { name: ev.customer_name })
+                    href = ev.extra?.customer_id ? `/customers/${ev.extra.customer_id}` : null
+                  } else if (ev.event_type === 'booking') {
+                    label = tc('externalEvents.booking', { name: ev.customer_name, service: ev.extra?.service_name || '' })
+                    href = ev.extra?.booking_id ? `/bookings/${ev.extra.booking_id}` : null
+                  } else if (ev.event_type === 'customer_message') {
+                    label = tc('externalEvents.customerMessage', { name: ev.customer_name })
+                    href = ev.extra?.customer_id ? `/customers/${ev.extra.customer_id}/conversation` : null
+                  } else if (ev.event_type === 'message_reply' && ev.extra?.via === 'email') {
+                    label = tc('externalEvents.messageReplyEmail', { email: ev.customer_name })
+                  } else if (ev.event_type === 'message_reply' && ev.extra?.via === 'app') {
+                    label = tc('externalEvents.messageReplyApp')
+                    href = '/messages'
+                  }
+                  return (
+                    <div key={ev.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {new Date(ev.created_at).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                      {href
+                        ? <Link to={href} style={linkStyle} onClick={() => setShowExternalOverlay(false)}>{label}</Link>
+                        : <span>{label}</span>
+                      }
+                    </div>
+                  )
+                })
               }
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

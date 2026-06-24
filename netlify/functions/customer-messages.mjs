@@ -198,7 +198,7 @@ async function handlePost(event) {
           ${link.tenantId}::uuid,
           'customer_message',
           ${customerRows[0].name},
-          ${JSON.stringify({ message_id: msg.id })}::jsonb
+          ${JSON.stringify({ message_id: msg.id, customer_id: link.customerId })}::jsonb
         )
       `.catch(err => console.error('external_events insert failed:', err))
 

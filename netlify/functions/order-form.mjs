@@ -238,7 +238,7 @@ async function submitForm(event) {
     // Log external event (fire and forget)
     sql`
       INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
-      VALUES (${verified.tenantId}::uuid, 'order', ${customerName}, ${JSON.stringify({ order_no: orderNo })}::jsonb)
+      VALUES (${verified.tenantId}::uuid, 'order', ${customerName}, ${JSON.stringify({ order_no: orderNo, order_id: orderId, customer_id: verified.customerId })}::jsonb)
     `.catch(err => console.error('external_events insert failed:', err))
 
     // Sum from order_items (already inserted)

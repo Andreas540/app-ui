@@ -574,7 +574,7 @@ async function createBooking(event) {
     // Log external event (fire and forget)
     sql`
       INSERT INTO external_events (tenant_id, event_type, customer_name, extra)
-      VALUES (${tenantId}, 'booking', ${cleanName}, ${JSON.stringify({ service_name: svc.name, date, start_time: start_time.slice(0, 5) })}::jsonb)
+      VALUES (${tenantId}, 'booking', ${cleanName}, ${JSON.stringify({ service_name: svc.name, date, start_time: start_time.slice(0, 5), booking_id: bookingId, customer_id: customerId })}::jsonb)
     `.catch(err => console.error('external_events insert failed:', err))
 
     const appBase = `https://${event.headers['x-forwarded-host'] || event.headers.host}`
