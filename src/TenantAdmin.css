@@ -265,7 +265,7 @@
 /* Order page product card responsive rows */
 .op-card-row1 {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
   min-width: 0;
@@ -275,11 +275,11 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex: 1;
+  max-width: 320px;
 }
 .op-card-row1 .op-overrides {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 .op-card-row1 .op-overrides > div {
   flex: 1;
@@ -290,11 +290,16 @@
   width: 100%;
   display: block;
 }
-/* label row 50/50 */
+.op-card-row1 .op-visible-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+/* label row 50/50, color icons vertically centered with input */
 .op-label-row {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
 }
 .op-label-row > div {
   flex: 1;
@@ -308,9 +313,6 @@
   }
   .op-card-row1 .op-visible-btn {
     order: 5;
-  }
-  .op-label-row {
-    flex-direction: column;
   }
 }
 

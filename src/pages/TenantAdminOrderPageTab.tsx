@@ -535,7 +535,7 @@ export default function TenantAdminOrderPageTab() {
                           value={e.sort_order ?? 0}
                           onChange={ev => patchEdit(product.id, { sort_order: Number(ev.target.value) })}
                           title={t('tenantAdmin.orderPage.position')}
-                          style={{ flexShrink: 0, width: 52, height: 30, fontSize: 12, textAlign: 'center' }}
+                          style={{ flexShrink: 0, width: 52, height: 'var(--control-h)', fontSize: 12, textAlign: 'center' }}
                         >
                           {products.map((_, idx) => (
                             <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
