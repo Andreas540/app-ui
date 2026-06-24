@@ -17,25 +17,103 @@ function sanitizeSlug(raw: string) {
 // ── Country / state data ──────────────────────────────────────────────────────
 
 const COUNTRIES = [
-  { code: 'AR', label: 'Argentina' }, { code: 'AU', label: 'Australia' },
-  { code: 'AT', label: 'Austria' },   { code: 'BE', label: 'Belgium' },
-  { code: 'BR', label: 'Brazil' },    { code: 'CA', label: 'Canada' },
-  { code: 'CL', label: 'Chile' },     { code: 'CN', label: 'China' },
-  { code: 'CO', label: 'Colombia' },  { code: 'DK', label: 'Denmark' },
-  { code: 'FI', label: 'Finland' },   { code: 'FR', label: 'France' },
-  { code: 'DE', label: 'Germany' },   { code: 'GH', label: 'Ghana' },
-  { code: 'IN', label: 'India' },     { code: 'IE', label: 'Ireland' },
-  { code: 'IL', label: 'Israel' },    { code: 'IT', label: 'Italy' },
-  { code: 'JP', label: 'Japan' },     { code: 'KE', label: 'Kenya' },
-  { code: 'KR', label: 'South Korea' }, { code: 'MX', label: 'Mexico' },
-  { code: 'NL', label: 'Netherlands' }, { code: 'NZ', label: 'New Zealand' },
-  { code: 'NG', label: 'Nigeria' },   { code: 'NO', label: 'Norway' },
-  { code: 'PE', label: 'Peru' },      { code: 'PL', label: 'Poland' },
-  { code: 'PT', label: 'Portugal' },  { code: 'SG', label: 'Singapore' },
-  { code: 'ZA', label: 'South Africa' }, { code: 'ES', label: 'Spain' },
-  { code: 'SE', label: 'Sweden' },    { code: 'CH', label: 'Switzerland' },
-  { code: 'AE', label: 'UAE' },       { code: 'GB', label: 'United Kingdom' },
-  { code: 'US', label: 'United States' },
+  { code: 'AF', label: 'Afghanistan' },     { code: 'AL', label: 'Albania' },
+  { code: 'DZ', label: 'Algeria' },         { code: 'AD', label: 'Andorra' },
+  { code: 'AO', label: 'Angola' },          { code: 'AR', label: 'Argentina' },
+  { code: 'AM', label: 'Armenia' },         { code: 'AU', label: 'Australia' },
+  { code: 'AT', label: 'Austria' },         { code: 'AZ', label: 'Azerbaijan' },
+  { code: 'BS', label: 'Bahamas' },         { code: 'BH', label: 'Bahrain' },
+  { code: 'BD', label: 'Bangladesh' },      { code: 'BB', label: 'Barbados' },
+  { code: 'BY', label: 'Belarus' },         { code: 'BE', label: 'Belgium' },
+  { code: 'BZ', label: 'Belize' },          { code: 'BJ', label: 'Benin' },
+  { code: 'BT', label: 'Bhutan' },          { code: 'BO', label: 'Bolivia' },
+  { code: 'BA', label: 'Bosnia & Herzegovina' }, { code: 'BW', label: 'Botswana' },
+  { code: 'BR', label: 'Brazil' },          { code: 'BN', label: 'Brunei' },
+  { code: 'BG', label: 'Bulgaria' },        { code: 'BF', label: 'Burkina Faso' },
+  { code: 'BI', label: 'Burundi' },         { code: 'KH', label: 'Cambodia' },
+  { code: 'CM', label: 'Cameroon' },        { code: 'CA', label: 'Canada' },
+  { code: 'CV', label: 'Cape Verde' },      { code: 'CF', label: 'Central African Republic' },
+  { code: 'TD', label: 'Chad' },            { code: 'CL', label: 'Chile' },
+  { code: 'CN', label: 'China' },           { code: 'CO', label: 'Colombia' },
+  { code: 'KM', label: 'Comoros' },         { code: 'CG', label: 'Congo' },
+  { code: 'CR', label: 'Costa Rica' },      { code: 'HR', label: 'Croatia' },
+  { code: 'CU', label: 'Cuba' },            { code: 'CY', label: 'Cyprus' },
+  { code: 'CZ', label: 'Czech Republic' },  { code: 'CD', label: 'DR Congo' },
+  { code: 'DK', label: 'Denmark' },         { code: 'DJ', label: 'Djibouti' },
+  { code: 'DM', label: 'Dominica' },        { code: 'DO', label: 'Dominican Republic' },
+  { code: 'EC', label: 'Ecuador' },         { code: 'EG', label: 'Egypt' },
+  { code: 'SV', label: 'El Salvador' },     { code: 'GQ', label: 'Equatorial Guinea' },
+  { code: 'ER', label: 'Eritrea' },         { code: 'EE', label: 'Estonia' },
+  { code: 'SZ', label: 'Eswatini' },        { code: 'ET', label: 'Ethiopia' },
+  { code: 'FJ', label: 'Fiji' },            { code: 'FI', label: 'Finland' },
+  { code: 'FR', label: 'France' },          { code: 'GA', label: 'Gabon' },
+  { code: 'GM', label: 'Gambia' },          { code: 'GE', label: 'Georgia' },
+  { code: 'DE', label: 'Germany' },         { code: 'GH', label: 'Ghana' },
+  { code: 'GR', label: 'Greece' },          { code: 'GD', label: 'Grenada' },
+  { code: 'GT', label: 'Guatemala' },       { code: 'GN', label: 'Guinea' },
+  { code: 'GW', label: 'Guinea-Bissau' },   { code: 'GY', label: 'Guyana' },
+  { code: 'HT', label: 'Haiti' },           { code: 'HN', label: 'Honduras' },
+  { code: 'HU', label: 'Hungary' },         { code: 'IS', label: 'Iceland' },
+  { code: 'IN', label: 'India' },           { code: 'ID', label: 'Indonesia' },
+  { code: 'IR', label: 'Iran' },            { code: 'IQ', label: 'Iraq' },
+  { code: 'IE', label: 'Ireland' },         { code: 'IL', label: 'Israel' },
+  { code: 'IT', label: 'Italy' },           { code: 'CI', label: 'Ivory Coast' },
+  { code: 'JM', label: 'Jamaica' },         { code: 'JP', label: 'Japan' },
+  { code: 'JO', label: 'Jordan' },          { code: 'KZ', label: 'Kazakhstan' },
+  { code: 'KE', label: 'Kenya' },           { code: 'KI', label: 'Kiribati' },
+  { code: 'KW', label: 'Kuwait' },          { code: 'KG', label: 'Kyrgyzstan' },
+  { code: 'LA', label: 'Laos' },            { code: 'LV', label: 'Latvia' },
+  { code: 'LB', label: 'Lebanon' },         { code: 'LS', label: 'Lesotho' },
+  { code: 'LR', label: 'Liberia' },         { code: 'LY', label: 'Libya' },
+  { code: 'LI', label: 'Liechtenstein' },   { code: 'LT', label: 'Lithuania' },
+  { code: 'LU', label: 'Luxembourg' },      { code: 'MG', label: 'Madagascar' },
+  { code: 'MW', label: 'Malawi' },          { code: 'MY', label: 'Malaysia' },
+  { code: 'MV', label: 'Maldives' },        { code: 'ML', label: 'Mali' },
+  { code: 'MT', label: 'Malta' },           { code: 'MH', label: 'Marshall Islands' },
+  { code: 'MR', label: 'Mauritania' },      { code: 'MU', label: 'Mauritius' },
+  { code: 'MX', label: 'Mexico' },          { code: 'FM', label: 'Micronesia' },
+  { code: 'MD', label: 'Moldova' },         { code: 'MC', label: 'Monaco' },
+  { code: 'MN', label: 'Mongolia' },        { code: 'ME', label: 'Montenegro' },
+  { code: 'MA', label: 'Morocco' },         { code: 'MZ', label: 'Mozambique' },
+  { code: 'MM', label: 'Myanmar' },         { code: 'NA', label: 'Namibia' },
+  { code: 'NR', label: 'Nauru' },           { code: 'NP', label: 'Nepal' },
+  { code: 'NL', label: 'Netherlands' },     { code: 'NZ', label: 'New Zealand' },
+  { code: 'NI', label: 'Nicaragua' },       { code: 'NE', label: 'Niger' },
+  { code: 'NG', label: 'Nigeria' },         { code: 'MK', label: 'North Macedonia' },
+  { code: 'NO', label: 'Norway' },          { code: 'OM', label: 'Oman' },
+  { code: 'PK', label: 'Pakistan' },        { code: 'PW', label: 'Palau' },
+  { code: 'PS', label: 'Palestine' },       { code: 'PA', label: 'Panama' },
+  { code: 'PG', label: 'Papua New Guinea' },{ code: 'PY', label: 'Paraguay' },
+  { code: 'PE', label: 'Peru' },            { code: 'PH', label: 'Philippines' },
+  { code: 'PL', label: 'Poland' },          { code: 'PT', label: 'Portugal' },
+  { code: 'QA', label: 'Qatar' },           { code: 'RO', label: 'Romania' },
+  { code: 'RU', label: 'Russia' },          { code: 'RW', label: 'Rwanda' },
+  { code: 'KN', label: 'Saint Kitts & Nevis' }, { code: 'LC', label: 'Saint Lucia' },
+  { code: 'VC', label: 'Saint Vincent' },   { code: 'WS', label: 'Samoa' },
+  { code: 'SM', label: 'San Marino' },      { code: 'ST', label: 'São Tomé & Príncipe' },
+  { code: 'SA', label: 'Saudi Arabia' },    { code: 'SN', label: 'Senegal' },
+  { code: 'RS', label: 'Serbia' },          { code: 'SC', label: 'Seychelles' },
+  { code: 'SL', label: 'Sierra Leone' },    { code: 'SG', label: 'Singapore' },
+  { code: 'SK', label: 'Slovakia' },        { code: 'SI', label: 'Slovenia' },
+  { code: 'SB', label: 'Solomon Islands' }, { code: 'SO', label: 'Somalia' },
+  { code: 'ZA', label: 'South Africa' },    { code: 'KR', label: 'South Korea' },
+  { code: 'SS', label: 'South Sudan' },     { code: 'ES', label: 'Spain' },
+  { code: 'LK', label: 'Sri Lanka' },       { code: 'SD', label: 'Sudan' },
+  { code: 'SR', label: 'Suriname' },        { code: 'SE', label: 'Sweden' },
+  { code: 'CH', label: 'Switzerland' },     { code: 'SY', label: 'Syria' },
+  { code: 'TW', label: 'Taiwan' },          { code: 'TJ', label: 'Tajikistan' },
+  { code: 'TZ', label: 'Tanzania' },        { code: 'TH', label: 'Thailand' },
+  { code: 'TL', label: 'Timor-Leste' },     { code: 'TG', label: 'Togo' },
+  { code: 'TO', label: 'Tonga' },           { code: 'TT', label: 'Trinidad & Tobago' },
+  { code: 'TN', label: 'Tunisia' },         { code: 'TR', label: 'Turkey' },
+  { code: 'TM', label: 'Turkmenistan' },    { code: 'TV', label: 'Tuvalu' },
+  { code: 'UG', label: 'Uganda' },          { code: 'UA', label: 'Ukraine' },
+  { code: 'AE', label: 'UAE' },             { code: 'GB', label: 'United Kingdom' },
+  { code: 'US', label: 'United States' },   { code: 'UY', label: 'Uruguay' },
+  { code: 'UZ', label: 'Uzbekistan' },      { code: 'VU', label: 'Vanuatu' },
+  { code: 'VE', label: 'Venezuela' },       { code: 'VN', label: 'Vietnam' },
+  { code: 'YE', label: 'Yemen' },           { code: 'ZM', label: 'Zambia' },
+  { code: 'ZW', label: 'Zimbabwe' },
 ]
 
 const US_STATES = [
@@ -133,12 +211,26 @@ export default function TenantAdminOrderPageTab() {
   const [showPassword, setShowPassword] = useState(false)
   const [geoEnabled, setGeoEnabled] = useState(false)
   const [sessionMinutesStr, setSessionMinutesStr] = useState('60')
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const countryDropdownRef = useRef<HTMLDivElement>(null)
 
   const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   const publicUrl  = config.slug ? `${siteOrigin}/order/${config.slug}` : ''
   const [copiedUrl, setCopiedUrl] = useState(false)
 
   useEffect(() => { loadConfig(); loadProducts() }, [])
+
+  useEffect(() => {
+    if (!countryDropdownOpen) return
+    function onOutside(e: MouseEvent) {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setCountryDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [countryDropdownOpen])
 
   async function loadConfig() {
     try {
@@ -528,11 +620,12 @@ export default function TenantAdminOrderPageTab() {
                                   title={t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
                                   style={{
                                     width: 26, height: 26, borderRadius: 6,
-                                    border: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : '2px solid transparent',
-                                    background: bg, color: fg, cursor: 'pointer', fontSize: 10, fontWeight: 700,
-                                    outline: (e.label_text_color || 'orange') === key ? '1px solid var(--primary)' : 'none',
+                                    border: 'none',
+                                    background: bg, color: fg, cursor: 'pointer',
+                                    outline: (e.label_text_color || 'orange') === key
+                                      ? '2px solid var(--primary)'
+                                      : key === 'black' ? '1px solid rgba(0,0,0,0.28)' : 'none',
                                     outlineOffset: 1,
-                                    boxShadow: key === 'black' ? 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 0 1px rgba(0,0,0,0.35)' : undefined,
                                   }}
                                 />
                               ))}
@@ -720,20 +813,103 @@ export default function TenantAdminOrderPageTab() {
 
             {geoEnabled && (
               <div style={{ marginTop: 14, marginLeft: 28 }}>
-                <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 10 }}>{t('tenantAdmin.orderPage.allowedCountries')}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px 16px' }}>
-                  {COUNTRIES.map(c => (
-                    <label key={c.code} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', margin: 0 }}>
-                      <input
-                        type="checkbox"
-                        checked={config.geo_countries.includes(c.code)}
-                        onChange={() => toggleCountry(c.code)}
-                        style={{ width: 15, height: 15, cursor: 'pointer' }}
-                      />
-                      {c.label}
-                    </label>
-                  ))}
+                <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 8 }}>{t('tenantAdmin.orderPage.allowedCountries')}</div>
+
+                {/* Country dropdown */}
+                <div ref={countryDropdownRef} style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setCountryDropdownOpen(o => !o); setCountrySearch('') }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0 12px', height: 'var(--control-h)', fontSize: 14,
+                      border: '1px solid var(--border)', borderRadius: 10,
+                      background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <span>
+                      {config.geo_countries.length === 0
+                        ? t('tenantAdmin.orderPage.selectCountries')
+                        : config.geo_countries.length === 1
+                          ? COUNTRIES.find(c => c.code === config.geo_countries[0])?.label ?? config.geo_countries[0]
+                          : `${config.geo_countries.length} ${t('tenantAdmin.orderPage.countriesSelected')}`
+                      }
+                    </span>
+                    <span style={{ fontSize: 10, marginLeft: 8, opacity: 0.6 }}>▾</span>
+                  </button>
+
+                  {countryDropdownOpen && (
+                    <div style={{
+                      position: 'absolute', zIndex: 200, left: 0, right: 0, top: 'calc(100% + 4px)',
+                      background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                      display: 'flex', flexDirection: 'column', maxHeight: 280, overflow: 'hidden',
+                    }}>
+                      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+                        <input
+                          type="text"
+                          value={countrySearch}
+                          onChange={e => setCountrySearch(e.target.value)}
+                          placeholder={t('tenantAdmin.orderPage.searchCountries')}
+                          autoFocus
+                          style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8 }}
+                        />
+                      </div>
+                      <div style={{ overflowY: 'auto', flex: 1 }}>
+                        {COUNTRIES
+                          .filter(c => c.label.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.toLowerCase().includes(countrySearch.toLowerCase()))
+                          .map(c => (
+                            <label
+                              key={c.code}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                                cursor: 'pointer', margin: 0, padding: '7px 12px',
+                                background: config.geo_countries.includes(c.code) ? 'var(--hover)' : 'transparent',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={config.geo_countries.includes(c.code)}
+                                onChange={() => toggleCountry(c.code)}
+                                style={{ cursor: 'pointer', flexShrink: 0 }}
+                              />
+                              {c.label}
+                            </label>
+                          ))}
+                      </div>
+                      {config.geo_countries.length > 0 && (
+                        <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button type="button" onClick={() => setConfig(c => ({ ...c, geo_countries: [], geo_states: [] }))}
+                            style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>
+                            {t('tenantAdmin.orderPage.clearAll')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                {/* Selected country tags */}
+                {config.geo_countries.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    {config.geo_countries.map(code => {
+                      const label = COUNTRIES.find(c => c.code === code)?.label ?? code
+                      return (
+                        <span key={code} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          background: 'var(--btn-bg)', border: '1px solid var(--border)',
+                          borderRadius: 6, padding: '2px 8px', fontSize: 12,
+                        }}>
+                          {label}
+                          <button type="button" onClick={() => toggleCountry(code)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1 }}>
+                            ✕
+                          </button>
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
 
                 {config.geo_countries.includes('US') && (
                   <div style={{ marginTop: 16 }}>
@@ -743,7 +919,7 @@ export default function TenantAdminOrderPageTab() {
                         ({t('tenantAdmin.orderPage.allowedStatesHelp')})
                       </span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px 16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '6px 16px' }}>
                       {US_STATES.map(s => (
                         <label key={s.code} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', margin: 0 }}>
                           <input

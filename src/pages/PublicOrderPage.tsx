@@ -265,7 +265,8 @@ export default function PublicOrderPage() {
       }
 
       if (data.requires_password) {
-        // Check if stored session expired
+        setLightboxSrc(null)
+        setQtys({})
         if (token && !overrideSession) {
           setPwError(t('sessionExpired'))
         }
@@ -371,7 +372,7 @@ export default function PublicOrderPage() {
   // ── Styles (explicit light-mode so dark-mode system themes don't override) ─
   const page: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    overflow: 'auto', WebkitOverflowScrolling: 'touch',
+    overflowX: 'hidden', overflowY: 'auto', WebkitOverflowScrolling: 'touch',
     background: bgColor,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     color: '#1a1a2e',

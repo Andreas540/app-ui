@@ -57,7 +57,11 @@ function hashPassword(tenantId, password) {
 
 async function checkGeo(event, geoCountries, geoStates) {
   if (!geoCountries || geoCountries.length === 0) return { allowed: true }
-  const ip = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || '').split(',')[0].trim()
+  const ip = (
+    event.headers['x-nf-client-connection-ip'] ||
+    (event.headers['x-forwarded-for'] || '').split(',')[0] ||
+    event.headers['client-ip'] || ''
+  ).trim()
   if (!ip || ip === '127.0.0.1' || ip === '::1') return { allowed: true } // localhost always allowed
   try {
     const res = await fetch(`https://ipapi.co/${ip}/json/`)
