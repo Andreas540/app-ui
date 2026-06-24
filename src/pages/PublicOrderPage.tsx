@@ -38,9 +38,11 @@ const T: Record<Lang, Record<string, string>> = {
     submitting:      'Submitting…',
     successTitle:    'Order received!',
     successMsg:      'Your order has been submitted. We will be in touch.',
-    errorNoItems:    'Please select at least one product.',
-    errorNoName:     'Please enter your name.',
-    errorSubmit:     'Submission failed. Please try again.',
+    errorNoItems:       'Please select at least one product.',
+    errorNoName:        'Please enter your name.',
+    errorEmailOrPhone:  'Please enter your email or phone number.',
+    emailOrPhoneHint:   '* Email or phone required for order tracking.',
+    errorSubmit:        'Submission failed. Please try again.',
     loading:         'Loading…',
     noProducts:      'No products are currently available.',
     total:           'Total',
@@ -72,9 +74,11 @@ const T: Record<Lang, Record<string, string>> = {
     submitting:      'Enviando…',
     successTitle:    '¡Pedido recibido!',
     successMsg:      'Tu pedido ha sido enviado. Nos pondremos en contacto contigo.',
-    errorNoItems:    'Selecciona al menos un producto.',
-    errorNoName:     'Por favor ingresa tu nombre.',
-    errorSubmit:     'Error al enviar. Inténtalo de nuevo.',
+    errorNoItems:       'Selecciona al menos un producto.',
+    errorNoName:        'Por favor ingresa tu nombre.',
+    errorEmailOrPhone:  'Por favor ingresa tu correo electrónico o teléfono.',
+    emailOrPhoneHint:   '* Se requiere correo o teléfono para el seguimiento del pedido.',
+    errorSubmit:        'Error al enviar. Inténtalo de nuevo.',
     loading:         'Cargando…',
     noProducts:      'No hay productos disponibles actualmente.',
     total:           'Total',
@@ -106,9 +110,11 @@ const T: Record<Lang, Record<string, string>> = {
     submitting:      'Skickar…',
     successTitle:    'Beställning mottagen!',
     successMsg:      'Din beställning har skickats. Vi hör av oss.',
-    errorNoItems:    'Välj minst en produkt.',
-    errorNoName:     'Vänligen ange ditt namn.',
-    errorSubmit:     'Det gick inte att skicka. Försök igen.',
+    errorNoItems:       'Välj minst en produkt.',
+    errorNoName:        'Vänligen ange ditt namn.',
+    errorEmailOrPhone:  'Vänligen ange din e-post eller telefon.',
+    emailOrPhoneHint:   '* E-post eller telefon krävs för orderuppföljning.',
+    errorSubmit:        'Det gick inte att skicka. Försök igen.',
     loading:         'Laddar…',
     noProducts:      'Inga produkter är tillgängliga just nu.',
     total:           'Totalt',
@@ -305,6 +311,7 @@ export default function PublicOrderPage() {
 
     if (!items.length) { setSubmitError(t('errorNoItems')); return }
     if (!name.trim()) { setSubmitError(t('errorNoName')); return }
+    if (!email.trim() && !phone.trim()) { setSubmitError(t('errorEmailOrPhone')); return }
     if (!slug) return
 
     setStatus('submitting')
@@ -341,113 +348,86 @@ export default function PublicOrderPage() {
     return sum + (p ? p.price_amount * (Number(qty) || 0) : 0)
   }, 0)
 
-  // ── Shell layout ──────────────────────────────────────────────────────────
-  const shellStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    overflow: 'auto',
-    WebkitOverflowScrolling: 'touch',
+  // ── Styles (explicit light-mode so dark-mode system themes don't override) ─
+  const page: React.CSSProperties = {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    overflow: 'auto', WebkitOverflowScrolling: 'touch',
     background: bgColor,
-    fontFamily: 'system-ui, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    color: '#1a1a2e',
+  }
+  const wrap: React.CSSProperties = { padding: '40px 16px 48px' }
+  const maxW: React.CSSProperties = { maxWidth: 520, margin: '0 auto' }
+  const card: React.CSSProperties = {
+    background: '#fff', borderRadius: 12, padding: '28px 24px',
+    boxShadow: '0 2px 16px rgba(0,0,0,0.10)', color: '#1a1a2e',
+  }
+  const inp: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+    fontSize: 16, border: '1px solid #ddd', borderRadius: 8,
+    background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e',
+    outline: 'none', appearance: 'none' as any,
+  }
+  const lbl: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#333' }
+  const ghostBtn: React.CSSProperties = {
+    background: 'transparent', color: '#555', border: '1px solid #ddd',
+    borderRadius: 8, padding: '10px 18px', fontSize: 14, cursor: 'pointer',
+  }
+  const primaryBtn: React.CSSProperties = {
+    width: '100%', padding: '13px 0', background: '#2563eb', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer', marginTop: 8,
   }
 
-  const innerStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '24px 16px 48px',
-    minHeight: '100%',
-  }
-
-  const cardStyle: React.CSSProperties = {
-    background: '#fff',
-    borderRadius: 16,
-    padding: '28px 24px',
-    width: '100%',
-    maxWidth: 520,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
-  }
-
-  const headerStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
-    textAlign: 'center',
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', boxSizing: 'border-box', height: 44,
-    padding: '0 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8,
-  }
+  // Shared tenant header (icon left, name centred)
+  const TenantHeader = tenantName ? (
+    <div style={{ ...maxW, display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+      {tenantIcon && (
+        <img src={tenantIcon} alt={tenantName} style={{
+          width: 78, height: 78, borderRadius: 14, background: '#fff',
+          padding: 2, boxShadow: '0 1px 6px rgba(0,0,0,0.10)', objectFit: 'contain', flexShrink: 0,
+        }} />
+      )}
+      <div style={{ flex: 1, textAlign: 'center' }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>{tenantName}</h2>
+        <p style={{ margin: 0, fontSize: 14, color: '#666' }}>{t('title')}</p>
+      </div>
+    </div>
+  ) : null
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (status === 'loading') {
-    return (
-      <div style={shellStyle}>
-        <div style={innerStyle}>
-          <div style={{ color: '#fff', marginTop: 60, fontSize: 16 }}>{t('loading')}</div>
-        </div>
-      </div>
-    )
+    return <div style={page}><div style={wrap}><div style={{ textAlign: 'center', color: '#fff', paddingTop: 60, fontSize: 16 }}>{t('loading')}</div></div></div>
   }
 
-  if (status === 'not_found') {
-    return (
-      <div style={shellStyle}><div style={innerStyle}>
-        <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('pageNotFound')}</p></div>
-      </div></div>
-    )
+  if (status === 'not_found' || status === 'error') {
+    return <div style={page}><div style={wrap}><div style={{ ...maxW, ...card, textAlign: 'center', padding: 48, color: '#666' }}>{t('pageNotFound')}</div></div></div>
   }
 
   if (status === 'inactive') {
-    return (
-      <div style={shellStyle}><div style={innerStyle}>
-        <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('pageNotActive')}</p></div>
-      </div></div>
-    )
+    return <div style={page}><div style={wrap}>{TenantHeader}<div style={{ ...maxW, ...card, textAlign: 'center', padding: 48, color: '#666' }}>{t('pageNotActive')}</div></div></div>
   }
 
   if (status === 'geo_blocked') {
-    return (
-      <div style={shellStyle}><div style={innerStyle}>
-        <div style={cardStyle}><p style={{ textAlign: 'center', color: '#666', margin: 0 }}>{t('geoBlocked')}</p></div>
-      </div></div>
-    )
+    return <div style={page}><div style={wrap}>{TenantHeader}<div style={{ ...maxW, ...card, textAlign: 'center', padding: 48, color: '#666' }}>{t('geoBlocked')}</div></div></div>
   }
 
   if (status === 'password') {
     return (
-      <div style={shellStyle}>
+      <div style={page}>
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-        <div style={innerStyle}>
-          <div style={cardStyle}>
-            <div style={headerStyle}>
-              {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-              {tenantName && <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{tenantName}</div>}
-            </div>
+        <div style={wrap}>
+          {TenantHeader}
+          <div style={{ ...maxW, ...card }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: 18, textAlign: 'center' }}>{t('passwordTitle')}</h3>
             <form onSubmit={handlePasswordSubmit} style={{ display: 'grid', gap: 14 }}>
-              <div style={{ fontWeight: 600, fontSize: 16, textAlign: 'center', color: '#1a1a2e' }}>{t('passwordTitle')}</div>
               <div>
-                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#333', marginBottom: 6 }}>{t('passwordLabel')}</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  autoFocus
-                  autoComplete="current-password"
-                  style={inputStyle}
-                />
+                <label style={lbl}>{t('passwordLabel')}</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  required autoFocus autoComplete="current-password" style={inp} />
               </div>
               {pwError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13, textAlign: 'center' }}>{pwError}</p>}
-              <button
-                type="submit"
-                disabled={pwChecking || !password}
-                style={{ height: 46, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
-              >
+              <button type="submit" disabled={pwChecking || !password} style={primaryBtn}>
                 {pwChecking ? t('passwordChecking') : t('passwordSubmit')}
               </button>
             </form>
@@ -459,18 +439,13 @@ export default function PublicOrderPage() {
 
   if (status === 'done') {
     return (
-      <div style={shellStyle}><div style={innerStyle}>
-        <div style={cardStyle}>
-          <div style={headerStyle}>
-            {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-            {tenantName && <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{tenantName}</div>}
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-            <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e', marginBottom: 8 }}>{t('successTitle')}</div>
-            <div style={{ color: '#555', fontSize: 15 }}>{t('successMsg')}</div>
-            {orderNo != null && <div style={{ marginTop: 12, color: '#999', fontSize: 13 }}>#{orderNo}</div>}
-          </div>
+      <div style={page}><div style={wrap}>
+        {TenantHeader}
+        <div style={{ ...maxW, ...card, textAlign: 'center', padding: 48 }}>
+          <div style={{ fontSize: 44, marginBottom: 16, color: '#2e7d32' }}>✓</div>
+          <h2 style={{ margin: '0 0 8px', color: '#2e7d32' }}>{t('successTitle')}</h2>
+          <p style={{ color: '#555', margin: 0 }}>{t('successMsg')}</p>
+          {orderNo != null && <p style={{ color: '#999', fontSize: 13, marginTop: 12 }}>#{orderNo}</p>}
         </div>
       </div></div>
     )
@@ -479,16 +454,11 @@ export default function PublicOrderPage() {
   // ── Step 1: Product selection ─────────────────────────────────────────────
   if (status === 'order') {
     return (
-      <div style={shellStyle}>
+      <div style={page}>
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-        <div style={innerStyle}>
-          <div style={cardStyle}>
-            <div style={headerStyle}>
-              {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-              {tenantName && <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{tenantName}</div>}
-              <div style={{ fontSize: 15, color: '#555' }}>{t('title')}</div>
-            </div>
-
+        <div style={wrap}>
+          {TenantHeader}
+          <div style={{ ...maxW, ...card }}>
             {products.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#666' }}>{t('noProducts')}</p>
             ) : (
@@ -511,23 +481,17 @@ export default function PublicOrderPage() {
                           <td style={{ padding: '10px 0', verticalAlign: 'middle' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               {p.has_image && (
-                                <img
-                                  src={imgUrl}
-                                  alt=""
-                                  onClick={() => setLightboxSrc(imgUrl)}
-                                  style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
-                                />
+                                <img src={imgUrl} alt="" onClick={() => setLightboxSrc(imgUrl)}
+                                  style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }} />
                               )}
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a2e' }}>{p.name}</div>
+                                <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
                                 {(p.label_image_data || p.label_text) && (
                                   p.label_image_data
                                     ? <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain', marginTop: 3 }} />
                                     : <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, marginTop: 3, textTransform: 'uppercase' }}>{p.label_text}</span>
                                 )}
-                                {maxQty != null && (
-                                  <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>
-                                )}
+                                {maxQty != null && <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>}
                               </div>
                             </div>
                           </td>
@@ -536,16 +500,9 @@ export default function PublicOrderPage() {
                           </td>
                           <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle' }}>
                             <input
-                              type="number"
-                              min="0"
-                              max={maxQty}
-                              step="1"
-                              value={qty}
-                              onChange={e => {
-                                const v = e.target.value
-                                if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v }))
-                              }}
-                              style={{ width: 60, height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }}
+                              type="number" min="0" max={maxQty} step="1" value={qty}
+                              onChange={e => { const v = e.target.value; if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v })) }}
+                              style={{ width: 60, height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e' }}
                             />
                           </td>
                         </tr>
@@ -556,21 +513,12 @@ export default function PublicOrderPage() {
 
                 {total > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid #eee' }}>
-                    <span style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>
-                      {t('total')}: {fmtMoney(total)}
-                    </span>
+                    <span style={{ fontWeight: 700, fontSize: 16 }}>{t('total')}: {fmtMoney(total)}</span>
                   </div>
                 )}
 
                 {submitError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{submitError}</p>}
-
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  style={{ height: 50, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  {t('next')}
-                </button>
+                <button type="button" onClick={handleNext} style={primaryBtn}>{t('next')}</button>
               </div>
             )}
           </div>
@@ -581,54 +529,39 @@ export default function PublicOrderPage() {
 
   // ── Step 2: Contact details + submit ──────────────────────────────────────
   return (
-    <div style={shellStyle}>
-      <div style={innerStyle}>
-        <div style={cardStyle}>
-          <div style={headerStyle}>
-            {tenantIcon && <img src={tenantIcon} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />}
-            {tenantName && <div style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{tenantName}</div>}
-          </div>
-
-          <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>{t('yourInfo')}</div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
+    <div style={page}>
+      <div style={wrap}>
+        {TenantHeader}
+        <div style={{ ...maxW, ...card }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: 18 }}>{t('yourInfo')}</h3>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('name')} *</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus style={inputStyle} />
+              <label style={lbl}>{t('name')} *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus style={inp} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('email')}</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+              <label style={lbl}>{t('email')} *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inp} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('phone')}</label>
-              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />
+              <label style={lbl}>{t('phone')} *</label>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inp} />
             </div>
+            <p style={{ margin: '-6px 0 0', fontSize: 12, color: '#888' }}>{t('emailOrPhoneHint')}</p>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 4 }}>{t('notes')}</label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={3}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 16, border: '1px solid #ddd', borderRadius: 8, resize: 'vertical', fontFamily: 'inherit' }}
-              />
+              <label style={lbl}>{t('notes')}</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+                style={{ ...inp, height: 'auto', padding: '10px 12px', resize: 'vertical', fontFamily: 'inherit' }} />
             </div>
 
             {submitError && <p style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{submitError}</p>}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => { setSubmitError(''); setStatus('order') }}
-                style={{ flex: 1, height: 50, background: '#f0f2f5', color: '#333', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 500, cursor: 'pointer' }}
-              >
+              <button type="button" onClick={() => { setSubmitError(''); setStatus('order') }} style={ghostBtn}>
                 {t('back')}
               </button>
-              <button
-                type="submit"
-                disabled={status === 'submitting'}
-                style={{ flex: 2, height: 50, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
-              >
+              <button type="submit" disabled={status === 'submitting'}
+                style={{ ...primaryBtn, marginTop: 0, flex: 1 }}>
                 {status === 'submitting' ? t('submitting') : hasPayment ? t('bookAndPay') : t('placeOrder')}
               </button>
             </div>

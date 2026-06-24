@@ -236,46 +236,31 @@ async function handlePost(event) {
       const email = String(body.email || '').trim()
       const phone = String(body.phone || '').trim()
       if (!name) return cors(400, { error: 'name required' })
+      if (!email && !phone) return cors(400, { error: 'email or phone required' })
 
       const tenantId = cfg.tenant_id
 
-      // Find or create customer by email (or create anonymous if no email)
+      // Match existing customer by email first, then phone; otherwise create new
       let customerId
+      let existing = []
+
       if (email) {
-        const existing = await sql`
-          SELECT id FROM customers
-          WHERE tenant_id = ${tenantId}::uuid
-            AND email = ${email}
-          LIMIT 1
-        `
-        if (existing.length) {
-          customerId = existing[0].id
-          // Update name/phone if provided and customer has placeholder name
-          const cur = await sql`SELECT name FROM customers WHERE id = ${customerId} LIMIT 1`
-          const isTemp = /^Customer #\d+$/.test(cur[0]?.name || '')
-          if (name && (isTemp || !cur[0]?.name)) {
-            await sql`UPDATE customers SET name = ${name} WHERE id = ${customerId}`.catch(() => {})
-          }
-          if (phone) {
-            await sql`UPDATE customers SET phone = ${phone} WHERE id = ${customerId} AND (phone IS NULL OR phone = '')`.catch(() => {})
-          }
-        } else {
-          const nextNo = await sql`SELECT COALESCE(MAX(customer_no), 0) + 1 AS n FROM customers WHERE tenant_id = ${tenantId}::uuid`
-          const customerNo = Number(nextNo[0].n) || 1
-          const [newCustomer] = await sql`
-            INSERT INTO customers (tenant_id, name, email, phone, customer_no)
-            VALUES (${tenantId}::uuid, ${name || `Customer #${customerNo}`}, ${email}, ${phone || null}, ${customerNo})
-            RETURNING id
-          `
-          customerId = newCustomer.id
-        }
+        existing = await sql`SELECT id, name, phone, email FROM customers WHERE tenant_id = ${tenantId}::uuid AND lower(email) = lower(${email}) LIMIT 1`
+      }
+      if (!existing.length && phone) {
+        existing = await sql`SELECT id, name, phone, email FROM customers WHERE tenant_id = ${tenantId}::uuid AND phone = ${phone} LIMIT 1`
+      }
+
+      if (existing.length) {
+        customerId = existing[0].id
+        // Fill in missing fields if provided
+        if (name && !existing[0].name) await sql`UPDATE customers SET name = ${name} WHERE id = ${customerId}`.catch(() => {})
+        if (email && !existing[0].email) await sql`UPDATE customers SET email = ${email} WHERE id = ${customerId}`.catch(() => {})
+        if (phone && !existing[0].phone) await sql`UPDATE customers SET phone = ${phone} WHERE id = ${customerId}`.catch(() => {})
       } else {
-        // No email — create anonymous customer
-        const nextNo = await sql`SELECT COALESCE(MAX(customer_no), 0) + 1 AS n FROM customers WHERE tenant_id = ${tenantId}::uuid`
-        const customerNo = Number(nextNo[0].n) || 1
         const [newCustomer] = await sql`
-          INSERT INTO customers (tenant_id, name, phone, customer_no)
-          VALUES (${tenantId}::uuid, ${name}, ${phone || null}, ${customerNo})
+          INSERT INTO customers (tenant_id, name, email, phone)
+          VALUES (${tenantId}::uuid, ${name}, ${email || null}, ${phone || null})
           RETURNING id
         `
         customerId = newCustomer.id

@@ -105,6 +105,7 @@ export default function TenantAdminOrderPageTab() {
   const [productsLoading, setProductsLoading] = useState(true)
   const [savingProduct, setSavingProduct] = useState<string | null>(null)
   const [uploadingProductImage, setUploadingProductImage] = useState<string | null>(null)
+  const [priceStrings, setPriceStrings] = useState<Record<string, string>>({})
 
   // Per-product row edits (keyed by product id)
   const [edits, setEdits] = useState<Record<string, Partial<OrderProduct>>>({})
@@ -119,6 +120,7 @@ export default function TenantAdminOrderPageTab() {
   const [newPassword, setNewPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [geoEnabled, setGeoEnabled] = useState(false)
+  const [sessionMinutesStr, setSessionMinutesStr] = useState('60')
 
   const siteOrigin = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   const publicUrl  = config.slug ? `${siteOrigin}/order/${config.slug}` : ''
@@ -140,6 +142,7 @@ export default function TenantAdminOrderPageTab() {
           geo_states: data.config.geo_states || [],
         })
         setGeoEnabled((data.config.geo_countries || []).length > 0)
+        setSessionMinutesStr(String(data.config.session_minutes || 60))
         setConfigLoaded(true)
       }
     } catch (e) { console.error(e) }
@@ -152,6 +155,7 @@ export default function TenantAdminOrderPageTab() {
       const data = await res.json()
       setProducts(data.products || [])
       const initial: Record<string, Partial<OrderProduct>> = {}
+      const initialPrices: Record<string, string> = {}
       for (const p of (data.products || [])) {
         initial[p.id] = {
           display_price: p.display_price,
@@ -161,8 +165,10 @@ export default function TenantAdminOrderPageTab() {
           label_image_data: p.label_image_data || '',
           sort_order:    p.sort_order ?? 0,
         }
+        initialPrices[p.id] = p.display_price != null ? Number(p.display_price).toFixed(2) : ''
       }
       setEdits(initial)
+      setPriceStrings(initialPrices)
     } catch (e) { console.error(e) } finally { setProductsLoading(false) }
   }
 
@@ -202,7 +208,7 @@ export default function TenantAdminOrderPageTab() {
         action: 'saveOrderPageConfig',
         slug:           config.slug,
         isActive:       config.is_active,
-        sessionMinutes: config.session_minutes,
+        sessionMinutes: Math.max(1, parseInt(sessionMinutesStr, 10) || 60),
         geoCountries:   geoEnabled ? config.geo_countries : [],
         geoStates:      geoEnabled && config.geo_countries.includes('US') ? config.geo_states : [],
       }
@@ -396,11 +402,21 @@ export default function TenantAdminOrderPageTab() {
                         <div>
                           <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={e.display_price != null ? e.display_price : ''}
-                            onChange={ev => patchEdit(product.id, { display_price: ev.target.value === '' ? null : parseAmount(ev.target.value) })}
+                            type="text"
+                            inputMode="decimal"
+                            value={priceStrings[product.id] ?? ''}
+                            onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
+                            onBlur={ev => {
+                              const raw = ev.target.value.trim()
+                              if (!raw) {
+                                patchEdit(product.id, { display_price: null })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
+                              } else {
+                                const n = parseAmount(raw)
+                                patchEdit(product.id, { display_price: n })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
+                              }
+                            }}
                             placeholder={fmtInput(product.product_price)}
                             style={{ marginTop: 4, maxWidth: 140 }}
                           />
@@ -572,8 +588,12 @@ export default function TenantAdminOrderPageTab() {
                     type="number"
                     min="1"
                     max="1440"
-                    value={config.session_minutes}
-                    onChange={e => setConfig(c => ({ ...c, session_minutes: Math.max(1, Number(e.target.value) || 60) }))}
+                    value={sessionMinutesStr}
+                    onChange={e => setSessionMinutesStr(e.target.value)}
+                    onBlur={e => {
+                      const n = Math.max(1, parseInt(e.target.value, 10) || 60)
+                      setSessionMinutesStr(String(n))
+                    }}
                     style={{ marginTop: 4, maxWidth: 100 }}
                   />
                   <p className="helper" style={{ marginTop: 4, fontSize: 12 }}>{t('tenantAdmin.orderPage.autoLogoutHelp')}</p>
