@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders, updateProduct } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import '../TenantAdmin.css'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
