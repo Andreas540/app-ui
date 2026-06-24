@@ -583,11 +583,6 @@ export default function TenantAdminOrderPageTab() {
                           onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
                           placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
                         />
-                        {product.inventory_qty != null && (
-                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                            {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
-                          </div>
-                        )}
                       </div>
 
                       {/* Visible checkbox — spans both grid rows, col 4 */}
