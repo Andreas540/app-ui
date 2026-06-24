@@ -566,129 +566,134 @@ export default function TenantAdminOrderPageTab() {
                       </div>
                     </div>
 
-                    {/* Price / Qty row */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
-                      <div>
-                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={priceStrings[product.id] ?? ''}
-                          onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
-                          onBlur={ev => {
-                            const raw = ev.target.value.trim()
-                            if (!raw) {
-                              patchEdit(product.id, { display_price: null })
-                              setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
-                            } else {
-                              const n = parseAmount(raw)
-                              patchEdit(product.id, { display_price: n })
-                              setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
-                            }
-                          }}
-                          placeholder={fmtInput(product.product_price)}
-                          style={{ marginTop: 4, width: 110, minWidth: 0 }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overrideQty')}</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={e.display_qty != null ? e.display_qty : ''}
-                          onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                          placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
-                          style={{ marginTop: 4, width: 90, minWidth: 0 }}
-                        />
-                        {product.inventory_qty != null && (
-                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                            {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    {/* Two-column body: left = Price+Qty, right = Label+controls */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
 
-                    {/* Label text + style + colors + badge image — all inline */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
-                      <div style={{ flex: 1, minWidth: 130 }}>
-                        <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelText')}</label>
-                        <input
-                          type="text"
-                          value={e.label_text || ''}
-                          onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
-                          placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
-                          style={{ marginTop: 4, width: '100%', minWidth: 0 }}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
-                          {(['plain', 'badge'] as const).map(style => (
-                            <button
-                              key={style}
-                              type="button"
-                              onClick={() => patchEdit(product.id, { label_text_style: style })}
-                              style={{
-                                padding: '0 10px', height: 30, fontSize: 12, border: 'none', cursor: 'pointer',
-                                background: (e.label_text_style || 'plain') === style ? 'var(--primary)' : 'var(--btn-bg)',
-                                color: (e.label_text_style || 'plain') === style ? '#fff' : 'var(--text)',
-                              }}
-                            >
-                              {style === 'plain' ? t('tenantAdmin.orderPage.labelStylePlain') : t('tenantAdmin.orderPage.labelStyleBadge')}
-                            </button>
-                          ))}
-                        </div>
-                        {(e.label_text_style || 'plain') === 'badge' && (
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {([
-                              { key: 'orange', bg: '#ff6b35', fg: '#fff' },
-                              { key: 'green',  bg: '#22a861', fg: '#fff' },
-                              { key: 'grey',   bg: '#888',    fg: '#fff' },
-                              { key: 'black',  bg: '#1a1a2e', fg: '#fff' },
-                            ] as const).map(({ key, bg, fg }) => (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => patchEdit(product.id, { label_text_color: key })}
-                                title={t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
-                                style={{
-                                  width: 26, height: 26, borderRadius: 6,
-                                  border: 'none',
-                                  background: bg, color: fg, cursor: 'pointer',
-                                  outline: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : 'none',
-                                  outlineOffset: 2,
-                                  boxShadow: key === 'black' ? '0 0 0 1px #777' : undefined,
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {e.label_image_data ? (
-                            <>
-                              <img src={e.label_image_data} alt="" style={{ height: 26, maxWidth: 70, objectFit: 'contain', borderRadius: 4 }} />
-                              <button
-                                onClick={() => { patchEdit(product.id, { label_image_data: '' }); if (imgInputRefs.current[product.id]) imgInputRefs.current[product.id]!.value = '' }}
-                                style={{ height: 26, padding: '0 8px', fontSize: 12 }}
-                              >✕</button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => imgInputRefs.current[product.id]?.click()}
-                              style={{ height: 30, padding: '0 10px', fontSize: 12 }}
-                            >
-                              {t('tenantAdmin.orderPage.labelBadge')}
-                            </button>
-                          )}
+                      {/* Left col: Price + Qty */}
+                      <div style={{ display: 'grid', gap: 10, minWidth: 200 }}>
+                        <div>
+                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
                           <input
-                            ref={el => { imgInputRefs.current[product.id] = el }}
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={ev => handleLabelImage(product.id, ev.target.files?.[0] || null)}
+                            type="text"
+                            inputMode="decimal"
+                            value={priceStrings[product.id] ?? ''}
+                            onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
+                            onBlur={ev => {
+                              const raw = ev.target.value.trim()
+                              if (!raw) {
+                                patchEdit(product.id, { display_price: null })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
+                              } else {
+                                const n = parseAmount(raw)
+                                patchEdit(product.id, { display_price: n })
+                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
+                              }
+                            }}
+                            placeholder={fmtInput(product.product_price)}
+                            style={{ marginTop: 4, width: '100%', minWidth: 0 }}
                           />
                         </div>
+                        <div>
+                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overrideQty')}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={e.display_qty != null ? e.display_qty : ''}
+                            onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
+                            placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
+                            style={{ marginTop: 4, width: '100%', minWidth: 0 }}
+                          />
+                          {product.inventory_qty != null && (
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                              {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Right col: Label text + controls */}
+                      <div style={{ flex: 1, minWidth: 220, display: 'grid', gap: 8 }}>
+                        <div>
+                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelText')}</label>
+                          <input
+                            type="text"
+                            value={e.label_text || ''}
+                            onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
+                            placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
+                            style={{ marginTop: 4, width: '100%', minWidth: 0 }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                          <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
+                            {(['plain', 'badge'] as const).map(style => (
+                              <button
+                                key={style}
+                                type="button"
+                                onClick={() => patchEdit(product.id, { label_text_style: style })}
+                                style={{
+                                  padding: '0 10px', height: 30, fontSize: 12, border: 'none', cursor: 'pointer',
+                                  background: (e.label_text_style || 'plain') === style ? 'var(--primary)' : 'var(--btn-bg)',
+                                  color: (e.label_text_style || 'plain') === style ? '#fff' : 'var(--text)',
+                                }}
+                              >
+                                {style === 'plain' ? t('tenantAdmin.orderPage.labelStylePlain') : t('tenantAdmin.orderPage.labelStyleBadge')}
+                              </button>
+                            ))}
+                          </div>
+                          {(e.label_text_style || 'plain') === 'badge' && (
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              {([
+                                { key: 'orange', bg: '#ff6b35', fg: '#fff' },
+                                { key: 'green',  bg: '#22a861', fg: '#fff' },
+                                { key: 'grey',   bg: '#888',    fg: '#fff' },
+                                { key: 'black',  bg: '#1a1a2e', fg: '#fff' },
+                              ] as const).map(({ key, bg, fg }) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => patchEdit(product.id, { label_text_color: key })}
+                                  title={t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
+                                  style={{
+                                    width: 26, height: 26, borderRadius: 6,
+                                    border: 'none',
+                                    background: bg, color: fg, cursor: 'pointer',
+                                    outline: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : 'none',
+                                    outlineOffset: 2,
+                                    boxShadow: key === 'black' ? '0 0 0 1px #777' : undefined,
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {e.label_image_data ? (
+                              <>
+                                <img src={e.label_image_data} alt="" style={{ height: 26, maxWidth: 70, objectFit: 'contain', borderRadius: 4 }} />
+                                <button
+                                  onClick={() => { patchEdit(product.id, { label_image_data: '' }); if (imgInputRefs.current[product.id]) imgInputRefs.current[product.id]!.value = '' }}
+                                  style={{ height: 26, padding: '0 8px', fontSize: 12 }}
+                                >✕</button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => imgInputRefs.current[product.id]?.click()}
+                                style={{ height: 30, padding: '0 10px', fontSize: 12 }}
+                              >
+                                {t('tenantAdmin.orderPage.labelBadge')}
+                              </button>
+                            )}
+                            <input
+                              ref={el => { imgInputRefs.current[product.id] = el }}
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={ev => handleLabelImage(product.id, ev.target.files?.[0] || null)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 )
