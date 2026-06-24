@@ -26,6 +26,7 @@ const T: Record<Lang, Record<string, string>> = {
     price:           'Price',
     qty:             'Qty',
     available:       'Available',
+    inStock:         'In Stock',
     yourInfo:        'Your information',
     name:            'Name',
     email:           'Email',
@@ -61,6 +62,7 @@ const T: Record<Lang, Record<string, string>> = {
     price:           'Precio',
     qty:             'Cant.',
     available:       'Disponible',
+    inStock:         'En stock',
     yourInfo:        'Tu información',
     name:            'Nombre',
     email:           'Correo electrónico',
@@ -96,6 +98,7 @@ const T: Record<Lang, Record<string, string>> = {
     price:           'Pris',
     qty:             'Antal',
     available:       'Tillgänglig',
+    inStock:         'I lager',
     yourInfo:        'Din information',
     name:            'Namn',
     email:           'E-post',
@@ -134,9 +137,12 @@ interface OrderProduct {
   price_amount: number
   available_qty: number | null
   label_text: string | null
+  label_text_style: 'plain' | 'badge'
+  label_text_color: 'orange' | 'green' | 'grey' | 'black'
   label_image_data: string | null
   has_image: boolean
   image_version: number | null
+  sort_order: number | null
 }
 
 type PageStatus =
@@ -198,7 +204,14 @@ export default function PublicOrderPage() {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [sessionMinutes] = useState(60)
-  const [hasPayment, setHasPayment]   = useState(false)
+  const [hasPayment, setHasPayment]         = useState(false)
+  const [showAvailable, setShowAvailable]   = useState(true)
+  const [showPrice, setShowPrice]           = useState(true)
+  const [showImage, setShowImage]           = useState(true)
+  const [showLabelText, setShowLabelText]   = useState(true)
+  const [showLabelBadge, setShowLabelBadge] = useState(true)
+  const [capQtyAtAvailable, setCapQtyAtAvailable] = useState(true)
+  const [availableWording, setAvailableWording] = useState<'available' | 'in_stock'>('available')
 
   // Password form
   const [password, setPassword]       = useState('')
@@ -262,6 +275,13 @@ export default function PublicOrderPage() {
 
       setProducts(data.products || [])
       setHasPayment(!!data.has_payment)
+      setShowAvailable(data.show_available !== false)
+      setShowPrice(data.show_price !== false)
+      setShowImage(data.show_image !== false)
+      setShowLabelText(data.show_label_text !== false)
+      setShowLabelBadge(data.show_label_badge !== false)
+      setCapQtyAtAvailable(data.cap_qty_at_available !== false)
+      setAvailableWording(data.available_wording === 'in_stock' ? 'in_stock' : 'available')
       setStatus('order')
     } catch {
       setStatus('error')
@@ -467,7 +487,7 @@ export default function PublicOrderPage() {
                   <thead>
                     <tr style={{ borderBottom: '2px solid #eee' }}>
                       <th style={{ textAlign: 'left', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('product')}</th>
-                      <th style={{ textAlign: 'right', padding: '6px 6px', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('price')}</th>
+                      {showPrice && <th style={{ textAlign: 'right', padding: '6px 6px', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('price')}</th>}
                       <th style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: '#888', fontWeight: 600 }}>{t('qty')}</th>
                     </tr>
                   </thead>
@@ -475,33 +495,50 @@ export default function PublicOrderPage() {
                     {products.map(p => {
                       const qty = qtys[p.id] || ''
                       const maxQty = p.available_qty ?? undefined
+                      const effectiveMax = capQtyAtAvailable && showAvailable ? maxQty : undefined
                       const imgUrl = `${BASE}/.netlify/functions/serve-product-image?id=${p.id}&v=${p.image_version || 0}`
+                      const labelBg = { orange: '#ff6b35', green: '#22a861', grey: '#888', black: '#1a1a2e' }[p.label_text_color || 'orange'] ?? '#ff6b35'
+                      const showLabelRow = (showLabelBadge && !!p.label_image_data) || (showLabelText && !!p.label_text)
                       return (
                         <tr key={p.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
                           <td style={{ padding: '10px 0', verticalAlign: 'middle' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              {p.has_image && (
+                              {showImage && p.has_image && (
                                 <img src={imgUrl} alt="" onClick={() => setLightboxSrc(imgUrl)}
                                   style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }} />
                               )}
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                                {(p.label_image_data || p.label_text) && (
+                                {showLabelRow && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>
-                                    {p.label_image_data && <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain' }} />}
-                                    {p.label_text && <span style={{ display: 'inline-block', background: '#ff6b35', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' }}>{p.label_text}</span>}
+                                    {showLabelBadge && p.label_image_data && (
+                                      <img src={p.label_image_data} alt="" style={{ height: 18, maxWidth: 60, objectFit: 'contain' }} />
+                                    )}
+                                    {showLabelText && p.label_text && (
+                                      p.label_text_style === 'badge' ? (
+                                        <span style={{ display: 'inline-block', background: labelBg, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase' as const }}>{p.label_text}</span>
+                                      ) : (
+                                        <span style={{ fontSize: 11, color: '#555' }}>{p.label_text}</span>
+                                      )
+                                    )}
                                   </div>
                                 )}
-                                {maxQty != null && <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{t('available')}: {maxQty}</div>}
+                                {showAvailable && maxQty != null && (
+                                  <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                                    {availableWording === 'in_stock' ? t('inStock') : `${t('available')}: ${maxQty}`}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '10px 6px', textAlign: 'right', fontSize: 14, color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                            {fmtMoney(p.price_amount)}
-                          </td>
+                          {showPrice && (
+                            <td style={{ padding: '10px 6px', textAlign: 'right', fontSize: 14, color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                              {fmtMoney(p.price_amount)}
+                            </td>
+                          )}
                           <td style={{ padding: '10px 0', textAlign: 'center', verticalAlign: 'middle', width: 72 }}>
                             <input
-                              type="number" min="0" max={maxQty} step="1" value={qty}
+                              type="number" min="0" max={effectiveMax} step="1" value={qty}
                               onChange={e => { const v = e.target.value; if (v === '' || Number(v) >= 0) setQtys(prev => ({ ...prev, [p.id]: v })) }}
                               style={{ width: '100%', height: 36, textAlign: 'center', border: '1px solid #ddd', borderRadius: 6, background: '#fff', color: '#1a1a2e', WebkitTextFillColor: '#1a1a2e' }}
                             />

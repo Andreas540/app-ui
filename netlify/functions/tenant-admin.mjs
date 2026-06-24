@@ -174,10 +174,22 @@ async function handleGet(event) {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`.catch(() => {})
-      const rows = await sql`SELECT slug, is_active, password_hash IS NOT NULL AS has_password, session_minutes, geo_countries, geo_states FROM order_page_config WHERE tenant_id = ${tenantId}::uuid LIMIT 1`
+      await Promise.all([
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS cap_qty_at_available BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS show_available BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS show_price BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS show_image BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS show_label_text BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS show_label_badge BOOLEAN NOT NULL DEFAULT true`.catch(() => {}),
+        sql`ALTER TABLE order_page_config ADD COLUMN IF NOT EXISTS available_wording TEXT NOT NULL DEFAULT 'available'`.catch(() => {}),
+      ])
+      const rows = await sql`
+        SELECT slug, is_active, password_hash IS NOT NULL AS has_password, session_minutes, geo_countries, geo_states,
+          cap_qty_at_available, show_available, show_price, show_image, show_label_text, show_label_badge, available_wording
+        FROM order_page_config WHERE tenant_id = ${tenantId}::uuid LIMIT 1`
       const tenantRow = await sql`SELECT name FROM tenants WHERE id = ${tenantId}::uuid LIMIT 1`
       const suggestedSlug = (tenantRow[0]?.name || '').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
-      if (!rows.length) return cors(200, { config: { slug: suggestedSlug, is_active: false, has_password: false, session_minutes: 60, geo_countries: [], geo_states: [] } })
+      if (!rows.length) return cors(200, { config: { slug: suggestedSlug, is_active: false, has_password: false, session_minutes: 60, geo_countries: [], geo_states: [], cap_qty_at_available: true, show_available: true, show_price: true, show_image: true, show_label_text: true, show_label_badge: true, available_wording: 'available' } })
       return cors(200, { config: rows[0] })
     }
 
@@ -190,6 +202,10 @@ async function handleGet(event) {
         label_text TEXT, label_image_data TEXT, sort_order INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (tenant_id, product_id)
       )`.catch(() => {})
+      await Promise.all([
+        sql`ALTER TABLE order_page_products ADD COLUMN IF NOT EXISTS label_text_style TEXT NOT NULL DEFAULT 'badge'`.catch(() => {}),
+        sql`ALTER TABLE order_page_products ADD COLUMN IF NOT EXISTS label_text_color TEXT NOT NULL DEFAULT 'orange'`.catch(() => {}),
+      ])
       const products = await sql`
         WITH
         wd AS (
@@ -206,6 +222,8 @@ async function handleGet(event) {
           (p.image_data IS NOT NULL AND p.image_data != '') AS has_image,
           EXTRACT(EPOCH FROM p.image_updated_at)::bigint AS image_version,
           op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order,
+          COALESCE(op.label_text_style, 'badge') AS label_text_style,
+          COALESCE(op.label_text_color, 'orange') AS label_text_color,
           CASE WHEN wd.product_id IS NOT NULL OR lp.product_id IS NOT NULL
             THEN GREATEST(0, COALESCE(wd.finished_from_p,0) + COALESCE(lp.produced_qty,0) - COALESCE(wd.outbound_qty,0))
             ELSE NULL
@@ -630,7 +648,8 @@ if (action === 'toggleUserStatus') {
     }
 
     if (action === 'saveOrderPageConfig') {
-      const { slug, isActive, password, clearPassword, sessionMinutes, geoCountries, geoStates } = body
+      const { slug, isActive, password, clearPassword, sessionMinutes, geoCountries, geoStates,
+        capQtyAtAvailable, showAvailable, showPrice, showImage, showLabelText, showLabelBadge, availableWording } = body
 
       await sql`CREATE TABLE IF NOT EXISTS order_page_config (
         tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
@@ -660,14 +679,18 @@ if (action === 'toggleUserStatus') {
       const geoArr = Array.isArray(geoCountries) ? geoCountries.filter(Boolean) : []
       const stateArr = Array.isArray(geoStates) ? geoStates.filter(Boolean) : []
       const sessMins = Number.isFinite(Number(sessionMinutes)) ? Number(sessionMinutes) : 60
+      const wording = ['available', 'in_stock'].includes(availableWording) ? availableWording : 'available'
 
       const existing = await sql`SELECT tenant_id FROM order_page_config WHERE tenant_id = ${tenantId}::uuid LIMIT 1`
       if (!existing.length) {
         await sql`
-          INSERT INTO order_page_config (tenant_id, slug, is_active, password_hash, session_minutes, geo_countries, geo_states)
+          INSERT INTO order_page_config (tenant_id, slug, is_active, password_hash, session_minutes, geo_countries, geo_states,
+            cap_qty_at_available, show_available, show_price, show_image, show_label_text, show_label_badge, available_wording)
           VALUES (${tenantId}::uuid, ${cleanSlug || null}, ${!!isActive},
             ${passwordHash !== undefined ? passwordHash : null},
-            ${sessMins}, ${geoArr.length ? geoArr : null}, ${stateArr.length ? stateArr : null})
+            ${sessMins}, ${geoArr.length ? geoArr : null}, ${stateArr.length ? stateArr : null},
+            ${capQtyAtAvailable !== false}, ${showAvailable !== false}, ${showPrice !== false},
+            ${showImage !== false}, ${showLabelText !== false}, ${showLabelBadge !== false}, ${wording})
         `
       } else {
         if (passwordHash !== undefined) {
@@ -675,7 +698,10 @@ if (action === 'toggleUserStatus') {
             UPDATE order_page_config SET slug = ${cleanSlug || null}, is_active = ${!!isActive},
               password_hash = ${passwordHash}, session_minutes = ${sessMins},
               geo_countries = ${geoArr.length ? geoArr : null}, geo_states = ${stateArr.length ? stateArr : null},
-              updated_at = now()
+              cap_qty_at_available = ${capQtyAtAvailable !== false}, show_available = ${showAvailable !== false},
+              show_price = ${showPrice !== false}, show_image = ${showImage !== false},
+              show_label_text = ${showLabelText !== false}, show_label_badge = ${showLabelBadge !== false},
+              available_wording = ${wording}, updated_at = now()
             WHERE tenant_id = ${tenantId}::uuid
           `
         } else {
@@ -683,7 +709,10 @@ if (action === 'toggleUserStatus') {
             UPDATE order_page_config SET slug = ${cleanSlug || null}, is_active = ${!!isActive},
               session_minutes = ${sessMins},
               geo_countries = ${geoArr.length ? geoArr : null}, geo_states = ${stateArr.length ? stateArr : null},
-              updated_at = now()
+              cap_qty_at_available = ${capQtyAtAvailable !== false}, show_available = ${showAvailable !== false},
+              show_price = ${showPrice !== false}, show_image = ${showImage !== false},
+              show_label_text = ${showLabelText !== false}, show_label_badge = ${showLabelBadge !== false},
+              available_wording = ${wording}, updated_at = now()
             WHERE tenant_id = ${tenantId}::uuid
           `
         }
@@ -692,7 +721,8 @@ if (action === 'toggleUserStatus') {
     }
 
     if (action === 'saveOrderPageProduct') {
-      const { productId, displayPrice, displayQty, isVisible, labelText, labelImageData, sortOrder } = body
+      const { productId, displayPrice, displayQty, isVisible, labelText, labelImageData, sortOrder,
+        labelTextStyle, labelTextColor } = body
       if (!productId) return cors(400, { error: 'productId required' })
 
       await sql`CREATE TABLE IF NOT EXISTS order_page_products (
@@ -706,18 +736,22 @@ if (action === 'toggleUserStatus') {
 
       const price = displayPrice != null && displayPrice !== '' ? Number(displayPrice) : null
       const qty   = displayQty  != null && displayQty  !== '' ? Number(displayQty)   : null
+      const textStyle = ['plain', 'badge'].includes(labelTextStyle) ? labelTextStyle : 'badge'
+      const textColor = ['orange', 'green', 'grey', 'black'].includes(labelTextColor) ? labelTextColor : 'orange'
 
       await sql`
-        INSERT INTO order_page_products (tenant_id, product_id, display_price, display_qty, is_visible, label_text, label_image_data, sort_order)
+        INSERT INTO order_page_products (tenant_id, product_id, display_price, display_qty, is_visible, label_text, label_image_data, sort_order, label_text_style, label_text_color)
         VALUES (${tenantId}::uuid, ${productId}::uuid, ${price}, ${qty}, ${isVisible !== false},
-          ${labelText || null}, ${labelImageData || null}, ${sortOrder ?? 0})
+          ${labelText || null}, ${labelImageData || null}, ${sortOrder ?? 0}, ${textStyle}, ${textColor})
         ON CONFLICT (tenant_id, product_id) DO UPDATE SET
           display_price    = EXCLUDED.display_price,
           display_qty      = EXCLUDED.display_qty,
           is_visible       = EXCLUDED.is_visible,
           label_text       = EXCLUDED.label_text,
           label_image_data = EXCLUDED.label_image_data,
-          sort_order       = EXCLUDED.sort_order
+          sort_order       = EXCLUDED.sort_order,
+          label_text_style = EXCLUDED.label_text_style,
+          label_text_color = EXCLUDED.label_text_color
       `
       return cors(200, { ok: true })
     }

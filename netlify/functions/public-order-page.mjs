@@ -90,7 +90,17 @@ async function loadConfig(sql, slug) {
     WHERE c.slug = ${slug}
     LIMIT 1
   `
-  return rows[0] ?? null
+  if (!rows[0]) return null
+  // Apply defaults for columns that may not exist yet (pre-migration)
+  const cfg = rows[0]
+  cfg.cap_qty_at_available = cfg.cap_qty_at_available !== false
+  cfg.show_available       = cfg.show_available       !== false
+  cfg.show_price           = cfg.show_price           !== false
+  cfg.show_image           = cfg.show_image           !== false
+  cfg.show_label_text      = cfg.show_label_text      !== false
+  cfg.show_label_badge     = cfg.show_label_badge     !== false
+  cfg.available_wording    = cfg.available_wording    || 'available'
+  return cfg
 }
 
 async function loadProducts(sql, tenantId) {
@@ -119,6 +129,8 @@ async function loadProducts(sql, tenantId) {
       )::integer                                           AS available_qty,
       COALESCE(op.is_visible, true)                       AS is_visible,
       op.label_text,
+      COALESCE(op.label_text_style, 'badge')              AS label_text_style,
+      COALESCE(op.label_text_color, 'orange')             AS label_text_color,
       op.label_image_data,
       (p.image_data IS NOT NULL AND p.image_data != '')   AS has_image,
       EXTRACT(EPOCH FROM p.image_updated_at)::bigint      AS image_version
@@ -156,10 +168,17 @@ async function handleGet(event) {
 
     const base = {
       ok: true,
-      tenant_name:     cfg.tenant_name,
-      tenant_icon:     cfg.app_icon_192 ?? null,
-      tenant_language: cfg.default_language ?? null,
-      tenant_currency: cfg.default_currency ?? null,
+      tenant_name:          cfg.tenant_name,
+      tenant_icon:          cfg.app_icon_192 ?? null,
+      tenant_language:      cfg.default_language ?? null,
+      tenant_currency:      cfg.default_currency ?? null,
+      cap_qty_at_available: cfg.cap_qty_at_available,
+      show_available:       cfg.show_available,
+      show_price:           cfg.show_price,
+      show_image:           cfg.show_image,
+      show_label_text:      cfg.show_label_text,
+      show_label_badge:     cfg.show_label_badge,
+      available_wording:    cfg.available_wording,
     }
 
     const requiresPassword = !!cfg.password_hash

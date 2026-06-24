@@ -75,6 +75,13 @@ interface OrderPageConfig {
   session_minutes: number
   geo_countries: string[]
   geo_states: string[]
+  cap_qty_at_available: boolean
+  show_available: boolean
+  show_price: boolean
+  show_image: boolean
+  show_label_text: boolean
+  show_label_badge: boolean
+  available_wording: 'available' | 'in_stock'
 }
 
 interface OrderProduct {
@@ -83,10 +90,13 @@ interface OrderProduct {
   product_price: number
   has_image: boolean
   image_version: number | null
+  inventory_qty: number | null
   display_price: number | null
   display_qty: number | null
   is_visible: boolean
   label_text: string | null
+  label_text_style: 'plain' | 'badge'
+  label_text_color: 'orange' | 'green' | 'grey' | 'black'
   label_image_data: string | null
   sort_order: number | null
 }
@@ -114,6 +124,8 @@ export default function TenantAdminOrderPageTab() {
   const [config, setConfig] = useState<OrderPageConfig>({
     slug: '', is_active: false, has_password: false,
     session_minutes: 60, geo_countries: [], geo_states: [],
+    cap_qty_at_available: true, show_available: true, show_price: true,
+    show_image: true, show_label_text: true, show_label_badge: true, available_wording: 'available',
   })
   const [configLoaded, setConfigLoaded] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
@@ -134,12 +146,19 @@ export default function TenantAdminOrderPageTab() {
       const data = await res.json()
       if (data.config) {
         setConfig({
-          slug: data.config.slug || '',
-          is_active: !!data.config.is_active,
-          has_password: !!data.config.has_password,
-          session_minutes: data.config.session_minutes || 60,
-          geo_countries: data.config.geo_countries || [],
-          geo_states: data.config.geo_states || [],
+          slug:                 data.config.slug || '',
+          is_active:            !!data.config.is_active,
+          has_password:         !!data.config.has_password,
+          session_minutes:      data.config.session_minutes || 60,
+          geo_countries:        data.config.geo_countries || [],
+          geo_states:           data.config.geo_states || [],
+          cap_qty_at_available: data.config.cap_qty_at_available !== false,
+          show_available:       data.config.show_available !== false,
+          show_price:           data.config.show_price !== false,
+          show_image:           data.config.show_image !== false,
+          show_label_text:      data.config.show_label_text !== false,
+          show_label_badge:     data.config.show_label_badge !== false,
+          available_wording:    data.config.available_wording === 'in_stock' ? 'in_stock' : 'available',
         })
         setGeoEnabled((data.config.geo_countries || []).length > 0)
         setSessionMinutesStr(String(data.config.session_minutes || 60))
@@ -158,12 +177,14 @@ export default function TenantAdminOrderPageTab() {
       const initialPrices: Record<string, string> = {}
       for (const p of (data.products || [])) {
         initial[p.id] = {
-          display_price: p.display_price,
-          display_qty:   p.display_qty,
-          is_visible:    p.is_visible !== false,
-          label_text:    p.label_text || '',
+          display_price:    p.display_price,
+          display_qty:      p.display_qty,
+          is_visible:       p.is_visible !== false,
+          label_text:       p.label_text || '',
           label_image_data: p.label_image_data || '',
-          sort_order:    p.sort_order ?? 0,
+          sort_order:       p.sort_order ?? 0,
+          label_text_style: p.label_text_style || 'plain',
+          label_text_color: p.label_text_color || 'orange',
         }
         initialPrices[p.id] = p.display_price != null ? Number(p.display_price).toFixed(2) : ''
       }
@@ -184,14 +205,16 @@ export default function TenantAdminOrderPageTab() {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          action: 'saveOrderPageProduct',
+          action:         'saveOrderPageProduct',
           productId:      product.id,
-          displayPrice:   e.display_price != null && e.display_price !== (null as any) ? e.display_price : null,
+          displayPrice:   e.display_price != null ? e.display_price : null,
           displayQty:     e.display_qty != null ? e.display_qty : null,
           isVisible:      e.is_visible !== false,
           labelText:      e.label_text || null,
           labelImageData: e.label_image_data || null,
           sortOrder:      e.sort_order ?? 0,
+          labelTextStyle: e.label_text_style || 'plain',
+          labelTextColor: e.label_text_color || 'orange',
         }),
       })
       const data = await res.json()
@@ -205,12 +228,19 @@ export default function TenantAdminOrderPageTab() {
     setSavingConfig(true)
     try {
       const body: any = {
-        action: 'saveOrderPageConfig',
-        slug:           config.slug,
-        isActive:       config.is_active,
-        sessionMinutes: Math.max(1, parseInt(sessionMinutesStr, 10) || 60),
-        geoCountries:   geoEnabled ? config.geo_countries : [],
-        geoStates:      geoEnabled && config.geo_countries.includes('US') ? config.geo_states : [],
+        action:              'saveOrderPageConfig',
+        slug:                config.slug,
+        isActive:            config.is_active,
+        sessionMinutes:      Math.max(1, parseInt(sessionMinutesStr, 10) || 60),
+        geoCountries:        geoEnabled ? config.geo_countries : [],
+        geoStates:           geoEnabled && config.geo_countries.includes('US') ? config.geo_states : [],
+        capQtyAtAvailable:   config.cap_qty_at_available,
+        showAvailable:       config.show_available,
+        showPrice:           config.show_price,
+        showImage:           config.show_image,
+        showLabelText:       config.show_label_text,
+        showLabelBadge:      config.show_label_badge,
+        availableWording:    config.available_wording,
       }
       if (newPassword) {
         body.password = newPassword
@@ -398,7 +428,7 @@ export default function TenantAdminOrderPageTab() {
 
                     {/* Override fields */}
                     <div style={{ display: 'grid', gap: 10 }}>
-                      <div className="row" style={{ gap: 12 }}>
+                      <div className="row" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                         <div>
                           <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
                           <input
@@ -423,28 +453,90 @@ export default function TenantAdminOrderPageTab() {
                         </div>
                         <div>
                           <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overrideQty')}</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={e.display_qty != null ? e.display_qty : ''}
-                            onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                            placeholder={t('tenantAdmin.orderPage.qtyPlaceholder')}
-                            style={{ marginTop: 4, maxWidth: 100 }}
-                          />
+                          <div style={{ marginTop: 4 }}>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={e.display_qty != null ? e.display_qty : ''}
+                              onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
+                              placeholder={t('tenantAdmin.orderPage.qtyPlaceholder')}
+                              style={{ maxWidth: 100 }}
+                            />
+                            {product.inventory_qty != null && (
+                              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>
+                                {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.position')}</label>
+                          <select
+                            value={e.sort_order ?? 0}
+                            onChange={ev => patchEdit(product.id, { sort_order: Number(ev.target.value) })}
+                            style={{ marginTop: 4, maxWidth: 80 }}
+                          >
+                            {products.map((_, idx) => (
+                              <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
                       {/* Label text */}
                       <div>
                         <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelText')}</label>
-                        <input
-                          type="text"
-                          value={e.label_text || ''}
-                          onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
-                          placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
-                          style={{ marginTop: 4, maxWidth: 180 }}
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            value={e.label_text || ''}
+                            onChange={ev => patchEdit(product.id, { label_text: ev.target.value })}
+                            placeholder={t('tenantAdmin.orderPage.labelTextPlaceholder')}
+                            style={{ maxWidth: 180 }}
+                          />
+                          {/* Style toggle */}
+                          <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
+                            {(['plain', 'badge'] as const).map(style => (
+                              <button
+                                key={style}
+                                type="button"
+                                onClick={() => patchEdit(product.id, { label_text_style: style })}
+                                style={{
+                                  padding: '0 10px', height: 32, fontSize: 12, border: 'none', cursor: 'pointer',
+                                  background: (e.label_text_style || 'plain') === style ? 'var(--primary)' : 'var(--btn-bg)',
+                                  color: (e.label_text_style || 'plain') === style ? '#fff' : 'var(--text)',
+                                }}
+                              >
+                                {style === 'plain' ? t('tenantAdmin.orderPage.labelStylePlain') : t('tenantAdmin.orderPage.labelStyleBadge')}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Color picker — only when badge style */}
+                          {(e.label_text_style || 'plain') === 'badge' && (
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              {([
+                                { key: 'orange', bg: '#ff6b35', fg: '#fff' },
+                                { key: 'green',  bg: '#22a861', fg: '#fff' },
+                                { key: 'grey',   bg: '#888',    fg: '#fff' },
+                                { key: 'black',  bg: '#1a1a2e', fg: '#fff' },
+                              ] as const).map(({ key, bg, fg }) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => patchEdit(product.id, { label_text_color: key })}
+                                  title={t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
+                                  style={{
+                                    width: 26, height: 26, borderRadius: 6, border: (e.label_text_color || 'orange') === key ? '2px solid var(--primary)' : '2px solid transparent',
+                                    background: bg, color: fg, cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                                    outline: (e.label_text_color || 'orange') === key ? '1px solid var(--primary)' : 'none',
+                                    outlineOffset: 1,
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Label badge (image) */}
@@ -667,6 +759,72 @@ export default function TenantAdminOrderPageTab() {
               </div>
             )}
           </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0 0 20px' }} />
+
+          {/* Visibility checkboxes */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('tenantAdmin.orderPage.visibilitySection')}</div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {([
+                { key: 'show_available', label: 'showAvailable' },
+                { key: 'show_price',     label: 'showPrice' },
+                { key: 'show_image',     label: 'showImage' },
+                { key: 'show_label_text',  label: 'showLabelText' },
+                { key: 'show_label_badge', label: 'showLabelBadge' },
+              ] as const).map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={config[key]}
+                    onChange={e => setConfig(c => ({ ...c, [key]: e.target.checked }))}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 14 }}>{t(`tenantAdmin.orderPage.${label}`)}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Cap qty */}
+            {config.show_available && (
+              <div style={{ marginTop: 12, marginLeft: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={config.cap_qty_at_available}
+                    onChange={e => setConfig(c => ({ ...c, cap_qty_at_available: e.target.checked }))}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 14 }}>{t('tenantAdmin.orderPage.capQtyAtAvailable')}</span>
+                </label>
+                <p className="helper" style={{ marginTop: 4, marginLeft: 26, fontSize: 12 }}>{t('tenantAdmin.orderPage.capQtyHelp')}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Available wording */}
+          {config.show_available && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('tenantAdmin.orderPage.availableWording')}</div>
+              <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                {(['available', 'in_stock'] as const).map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setConfig(c => ({ ...c, available_wording: opt }))}
+                    style={{
+                      padding: '0 16px', height: 36, fontSize: 13, border: 'none', cursor: 'pointer',
+                      background: config.available_wording === opt ? 'var(--primary)' : 'var(--btn-bg)',
+                      color: config.available_wording === opt ? '#fff' : 'var(--text)',
+                      fontWeight: config.available_wording === opt ? 600 : 400,
+                    }}
+                  >
+                    {opt === 'available' ? t('tenantAdmin.orderPage.wordingAvailable') : t('tenantAdmin.orderPage.wordingInStock')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Save */}
           <button
