@@ -277,7 +277,7 @@
 */
 .op-row1 {
   display: grid;
-  grid-template-columns: auto minmax(60px, calc(50% - 332px)) 52px 110px 90px 1fr auto;
+  grid-template-columns: auto minmax(60px, calc(50% - 338px)) 52px 110px 90px 1fr auto;
   grid-template-rows: auto auto;
   column-gap: 10px;
   row-gap: 2px;

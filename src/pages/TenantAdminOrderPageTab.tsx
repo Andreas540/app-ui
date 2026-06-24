@@ -478,7 +478,12 @@ export default function TenantAdminOrderPageTab() {
             <p style={{ color: 'var(--text-secondary)' }}>{t('tenantAdmin.orderPage.noProducts')}</p>
           ) : (
             <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                {publicUrl ? (
+                  <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                    <button type="button" style={{ minWidth: 140 }}>{t('tenantAdmin.orderPage.preview')}</button>
+                  </a>
+                ) : <span />}
                 <button onClick={saveAllProducts} disabled={savingAll || savingProduct !== null} style={{ minWidth: 140 }}>
                   {savingAll ? t('saving') : t('tenantAdmin.orderPage.saveAll')}
                 </button>
@@ -707,7 +712,12 @@ export default function TenantAdminOrderPageTab() {
                 )
                 })}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+                {publicUrl ? (
+                  <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                    <button type="button" style={{ minWidth: 140 }}>{t('tenantAdmin.orderPage.preview')}</button>
+                  </a>
+                ) : <span />}
                 <button onClick={saveAllProducts} disabled={savingAll || savingProduct !== null} style={{ minWidth: 140 }}>
                   {savingAll ? t('saving') : t('tenantAdmin.orderPage.saveAll')}
                 </button>
