@@ -497,9 +497,10 @@ export default function TenantAdminOrderPageTab() {
                     gap: 10,
                   }}>
 
-                    {/* Row 1: img | name+pos | price override | qty override | Visible */}
-                    <div className="op-card-row1">
-                      <div className="op-name-pos">
+                    {/* Row 1: [img+name+pos] [price override] [qty override] →auto→ [Visible] */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+                      {/* Name+pos cluster — shrinks, name truncates */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 1, minWidth: 0 }}>
                         <div style={{ position: 'relative', flexShrink: 0 }}>
                           {product.has_image ? (
                             <img
@@ -527,9 +528,9 @@ export default function TenantAdminOrderPageTab() {
                             onChange={ev => handleProductImageUpload(product.id, ev.target.files?.[0] || null)}
                           />
                         </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
                         </div>
                         <select
                           value={e.sort_order ?? 0}
@@ -542,6 +543,7 @@ export default function TenantAdminOrderPageTab() {
                           ))}
                         </select>
                       </div>
+                      {/* Override fields — CSS class handles mobile 50/50 */}
                       <div className="op-overrides">
                         <div>
                           <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
@@ -581,11 +583,13 @@ export default function TenantAdminOrderPageTab() {
                           )}
                         </div>
                       </div>
+                      {/* Visible — marginLeft:auto pushes it right on both desktop and mobile */}
                       <button
                         className="op-visible-btn"
                         onClick={() => patchEdit(product.id, { is_visible: !isVisible })}
                         style={{
-                          flexShrink: 0, height: 30, padding: '0 10px', fontSize: 12,
+                          marginLeft: 'auto', flexShrink: 0,
+                          height: 'var(--control-h)', padding: '0 10px', fontSize: 12,
                           background: isVisible ? 'var(--primary)' : 'var(--btn-bg)',
                           color: isVisible ? '#fff' : 'var(--text)',
                           border: isVisible ? 'none' : '1px solid var(--border)',
@@ -610,7 +614,7 @@ export default function TenantAdminOrderPageTab() {
                       </div>
                       <div>
                         <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelBackground')}</label>
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                           {([
                             { key: 'none',   bg: '#fff',    isNone: true  },
                             { key: 'orange', bg: '#ff6b35', isNone: false },
@@ -635,7 +639,7 @@ export default function TenantAdminOrderPageTab() {
                                 title={isNone ? t('tenantAdmin.orderPage.labelStylePlain') : t(`tenantAdmin.orderPage.labelColor${key.charAt(0).toUpperCase() + key.slice(1)}`)}
                                 style={{
                                   position: 'relative',
-                                  width: 26, height: 26, borderRadius: 6,
+                                  width: 24, height: 24, borderRadius: 5,
                                   border: 'none',
                                   background: isNone ? '#fff' : bg,
                                   cursor: 'pointer',

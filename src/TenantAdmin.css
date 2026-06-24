@@ -263,58 +263,26 @@
 }
 
 /* Order page product card responsive rows */
-.op-card-row1 {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-.op-card-row1 .op-name-pos {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  max-width: 320px;
-}
-.op-card-row1 .op-overrides {
+/* Override fields — desktop: inline after name; mobile: full-width 50/50 row */
+.op-overrides {
   display: flex;
   gap: 10px;
 }
-.op-card-row1 .op-overrides > div {
-  flex: 1;
-  min-width: 90px;
-}
-.op-card-row1 .op-overrides input {
-  margin-top: 4px;
-  width: 100%;
-  display: block;
-}
-.op-card-row1 .op-visible-btn {
-  margin-left: auto;
-  flex-shrink: 0;
-  align-self: flex-end;
-}
-/* label row 50/50, color icons vertically centered with input */
-.op-label-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.op-label-row > div {
-  flex: 1;
-  min-width: 0;
-}
-/* On mobile: override fields become a standalone 50/50 row */
+.op-overrides > div { min-width: 0; }
+.op-overrides input { margin-top: 4px; display: block; width: 110px; }
+.op-overrides input:last-of-type { width: 90px; }
+
 @media (max-width: 768px) {
-  .op-card-row1 .op-overrides {
-    width: 100%;
-    order: 10;
-  }
-  .op-card-row1 .op-visible-btn {
-    order: 5;
-  }
+  .op-overrides        { order: 10; width: 100%; }
+  .op-overrides > div  { flex: 1; }
+  .op-overrides input,
+  .op-overrides input:last-of-type { width: 100%; }
+  .op-visible-btn      { order: 5; }
 }
+
+/* Label row — 50/50, titles top-aligned */
+.op-label-row { display: flex; gap: 12px; align-items: flex-start; }
+.op-label-row > div  { flex: 1; min-width: 0; }
 
 /* Desktop enhancements */
 @media (min-width: 1024px) {
