@@ -99,7 +99,7 @@ async function loadProducts(sql, tenantId) {
       p.id,
       p.name,
       COALESCE(op.display_price, p.price_amount)::float8  AS price_amount,
-      COALESCE(op.display_qty, p.available_quantity)      AS available_qty,
+      op.display_qty                                       AS available_qty,
       COALESCE(op.is_visible, true)                       AS is_visible,
       op.label_text,
       op.label_image_data,

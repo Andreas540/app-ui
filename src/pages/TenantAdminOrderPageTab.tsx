@@ -81,7 +81,6 @@ interface OrderProduct {
   id: string
   name: string
   product_price: number
-  available_quantity: number | null
   has_image: boolean
   image_version: number | null
   display_price: number | null
@@ -329,7 +328,6 @@ export default function TenantAdminOrderPageTab() {
                           <div style={{ fontWeight: 600 }}>{product.name}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                             {t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}
-                            {product.available_quantity != null && ` · ${t('tenantAdmin.orderPage.availableQty')}: ${product.available_quantity}`}
                           </div>
                         </div>
                       </div>
@@ -372,7 +370,7 @@ export default function TenantAdminOrderPageTab() {
                             step="1"
                             value={e.display_qty != null ? e.display_qty : ''}
                             onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                            placeholder={product.available_quantity != null ? String(product.available_quantity) : t('tenantAdmin.orderPage.qtyPlaceholder')}
+                            placeholder={t('tenantAdmin.orderPage.qtyPlaceholder')}
                             style={{ marginTop: 4, maxWidth: 100 }}
                           />
                         </div>

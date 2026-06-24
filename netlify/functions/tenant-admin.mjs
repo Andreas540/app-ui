@@ -191,7 +191,7 @@ async function handleGet(event) {
         PRIMARY KEY (tenant_id, product_id)
       )`.catch(() => {})
       const products = await sql`
-        SELECT p.id, p.name, p.price_amount::float8 AS product_price, p.available_quantity,
+        SELECT p.id, p.name, p.price_amount::float8 AS product_price,
           (p.image_data IS NOT NULL AND p.image_data != '') AS has_image,
           EXTRACT(EPOCH FROM p.image_updated_at)::bigint AS image_version,
           op.display_price::float8, op.display_qty, op.is_visible, op.label_text, op.label_image_data, op.sort_order
