@@ -497,10 +497,11 @@ export default function TenantAdminOrderPageTab() {
                     gap: 10,
                   }}>
 
-                    {/* Row 1: [img+name+pos] [price override] [qty override] →auto→ [Visible] */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-                      {/* Name+pos cluster — shrinks, name truncates */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 1, minWidth: 0 }}>
+                    {/* Row 1: CSS grid — label headers thin row, inputs row, visible spans both */}
+                    <div className="op-row1">
+
+                      {/* Name+pos — grid row 2, col 1 */}
+                      <div className="op-r1-name">
                         <div style={{ position: 'relative', flexShrink: 0 }}>
                           {product.has_image ? (
                             <img
@@ -528,9 +529,9 @@ export default function TenantAdminOrderPageTab() {
                             onChange={ev => handleProductImageUpload(product.id, ev.target.files?.[0] || null)}
                           />
                         </div>
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, overflow: 'hidden', flex: 1 }}>
                           <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('tenantAdmin.orderPage.productPrice')}: {fmtInput(product.product_price)}</div>
                         </div>
                         <select
                           value={e.sort_order ?? 0}
@@ -543,61 +544,65 @@ export default function TenantAdminOrderPageTab() {
                           ))}
                         </select>
                       </div>
-                      {/* Override fields — CSS class handles mobile 50/50 */}
-                      <div className="op-overrides">
-                        <div>
-                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overridePrice')}</label>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={priceStrings[product.id] ?? ''}
-                            onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
-                            onBlur={ev => {
-                              const raw = ev.target.value.trim()
-                              if (!raw) {
-                                patchEdit(product.id, { display_price: null })
-                                setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
-                              } else {
-                                const n = parseAmount(raw)
-                                patchEdit(product.id, { display_price: n })
-                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
-                              }
-                            }}
-                            placeholder={fmtInput(product.product_price)}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.overrideQty')}</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={e.display_qty != null ? e.display_qty : ''}
-                            onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
-                            placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
-                          />
-                          {product.inventory_qty != null && (
-                            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                              {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
-                            </div>
-                          )}
-                        </div>
+
+                      {/* Price label — grid row 1, col 2 */}
+                      <label className="op-r1-plabel">{t('tenantAdmin.orderPage.overridePrice')}</label>
+
+                      {/* Qty label — grid row 1, col 3 */}
+                      <label className="op-r1-qlabel">{t('tenantAdmin.orderPage.overrideQty')}</label>
+
+                      {/* Price input — grid row 2, col 2 */}
+                      <div className="op-r1-price">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={priceStrings[product.id] ?? ''}
+                          onChange={ev => setPriceStrings(prev => ({ ...prev, [product.id]: ev.target.value }))}
+                          onBlur={ev => {
+                            const raw = ev.target.value.trim()
+                            if (!raw) {
+                              patchEdit(product.id, { display_price: null })
+                              setPriceStrings(prev => ({ ...prev, [product.id]: '' }))
+                            } else {
+                              const n = parseAmount(raw)
+                              patchEdit(product.id, { display_price: n })
+                              setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
+                            }
+                          }}
+                          placeholder={fmtInput(product.product_price)}
+                        />
                       </div>
-                      {/* Visible — marginLeft:auto pushes it right on both desktop and mobile */}
-                      <button
-                        className="op-visible-btn"
-                        onClick={() => patchEdit(product.id, { is_visible: !isVisible })}
-                        style={{
-                          marginLeft: 'auto', flexShrink: 0,
-                          height: 'var(--control-h)', padding: '0 10px', fontSize: 12,
-                          background: isVisible ? 'var(--primary)' : 'var(--btn-bg)',
-                          color: isVisible ? '#fff' : 'var(--text)',
-                          border: isVisible ? 'none' : '1px solid var(--border)',
-                          borderRadius: 6,
-                        }}
-                      >
-                        {isVisible ? t('tenantAdmin.orderPage.visible') : t('tenantAdmin.orderPage.hidden')}
-                      </button>
+
+                      {/* Qty input — grid row 2, col 3 */}
+                      <div className="op-r1-qty">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={e.display_qty != null ? e.display_qty : ''}
+                          onChange={ev => patchEdit(product.id, { display_qty: ev.target.value === '' ? null : Math.max(0, Math.floor(Number(ev.target.value))) })}
+                          placeholder={product.inventory_qty != null ? String(product.inventory_qty) : t('tenantAdmin.orderPage.qtyPlaceholder')}
+                        />
+                        {product.inventory_qty != null && (
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                            {t('tenantAdmin.orderPage.stockRef')}: {product.inventory_qty}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visible checkbox — spans both grid rows, col 4 */}
+                      <div className="op-r1-vis">
+                        <label style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {isVisible ? t('tenantAdmin.orderPage.visible') : t('tenantAdmin.orderPage.hidden')}
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={isVisible}
+                          onChange={ev => patchEdit(product.id, { is_visible: ev.target.checked })}
+                          style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                        />
+                      </div>
+
                     </div>
 
                     {/* Row 2: Label text (50%) | Label background colors (50%) */}
@@ -614,7 +619,7 @@ export default function TenantAdminOrderPageTab() {
                       </div>
                       <div>
                         <label style={{ fontSize: 12 }}>{t('tenantAdmin.orderPage.labelBackground')}</label>
-                        <div style={{ display: 'flex', gap: 4, marginTop: 9 }}>
+                        <div style={{ display: 'flex', gap: 4, marginTop: 12 }}>
                           {([
                             { key: 'none',   bg: '#fff',    isNone: true  },
                             { key: 'orange', bg: '#ff6b35', isNone: false },
