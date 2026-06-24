@@ -53,7 +53,7 @@ function hashPassword(tenantId, password) {
   return crypto.createHmac('sha256', SESSION_SECRET).update(`${tenantId}:${password}`).digest('hex')
 }
 
-// ── Geo check (IP-based, uses ipapi.co free tier) ─────────────────────────────
+// ── Geo check (IP-based, uses ip-api.com — 45 req/min free, no daily cap) ──────
 
 async function checkGeo(event, geoCountries, geoStates) {
   if (!geoCountries || geoCountries.length === 0) return { allowed: true }
@@ -64,16 +64,19 @@ async function checkGeo(event, geoCountries, geoStates) {
   ).trim()
   if (!ip || ip === '127.0.0.1' || ip === '::1') return { allowed: true } // localhost always allowed
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`)
+    // ip-api.com: free tier, 45 req/min, no daily cap, HTTP only
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,countryCode,region`)
     if (!res.ok) return { allowed: true } // fail open if geo API is down
     const geo = await res.json()
-    const country = (geo.country_code || '').toUpperCase()
+    if (geo.status !== 'success') return { allowed: true } // fail open on lookup failure
+    const country = (geo.countryCode || '').toUpperCase()
+    if (!country) return { allowed: true } // no data → fail open
     if (!geoCountries.map(c => c.toUpperCase()).includes(country)) {
       return { allowed: false, country }
     }
     // US state restriction
     if (country === 'US' && geoStates && geoStates.length > 0) {
-      const region = (geo.region_code || '').toUpperCase()
+      const region = (geo.region || '').toUpperCase()
       if (!geoStates.map(s => s.toUpperCase()).includes(region)) {
         return { allowed: false, country, region }
       }
