@@ -480,7 +480,11 @@
     "orderPriceUSD": "Beställningspris (USD)",
     "orderValueUSD": "Beställningsvärde (USD)",
     "toPartner1USD": "Till Partner 1 (USD)",
-    "toPartner2USD": "Till Partner 2 (USD)"
+    "toPartner2USD": "Till Partner 2 (USD)",
+    "customerOrderOnline": "Låt dina kunder beställa online",
+    "orderSiteLink": "Länk till din beställningssida:",
+    "missingOrderSlug": "Ange din URL först",
+    "manageOrderSite": "Hantera din beställningssida"
   },
   "warehouse": {
     "title": "Justera inventarie",

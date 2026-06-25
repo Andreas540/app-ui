@@ -480,7 +480,11 @@
     "orderPriceUSD": "Precio del pedido (USD)",
     "orderValueUSD": "Valor del pedido (USD)",
     "toPartner1USD": "Al Socio 1 (USD)",
-    "toPartner2USD": "Al Socio 2 (USD)"
+    "toPartner2USD": "Al Socio 2 (USD)",
+    "customerOrderOnline": "Deja que tus clientes ordenen en línea",
+    "orderSiteLink": "Enlace a tu sitio de pedidos:",
+    "missingOrderSlug": "Primero especifica tu URL aquí",
+    "manageOrderSite": "Gestiona tu sitio de pedidos"
   },
   "warehouse": {
     "title": "Ajustar Inventario",

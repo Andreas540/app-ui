@@ -180,6 +180,9 @@ export default function TenantAdmin() {
     if (s?.openTab === 'ui-settings') {
       setActiveTab('ui-settings')
     }
+    if (s?.openTab === 'order-page') {
+      setActiveTab('order-page')
+    }
   }, [])
 
   async function loadData() {

@@ -1,6 +1,6 @@
 // src/pages/NewOrder.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
@@ -61,12 +61,24 @@ export default function NewOrder() {
   const [partner1Mode, setPartner1Mode] = useState<'per-item' | 'percent' | 'fixed'>('per-item')
   const [partner2Mode, setPartner2Mode] = useState<'per-item' | 'percent' | 'fixed'>('per-item')
 
+  // Order site expander
+  const [orderSiteExpanded, setOrderSiteExpanded] = useState(false)
+  const [orderSlug, setOrderSlug] = useState<string | null>(null)
+
   // Cost overrides (order-level)
   const [showMoreFields, setShowMoreFields] = useState(false)
   const [productCostStr, setProductCostStr] = useState('')
   const [shippingCostStr, setShippingCostStr] = useState('')
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
+
+  useEffect(() => {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/api/tenant-admin?action=getOrderPageConfig`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => setOrderSlug(data.config?.slug || null))
+      .catch(() => {})
+  }, [])
 
   // Read URL parameters for pre-populating customer
   useEffect(() => {
@@ -290,6 +302,48 @@ export default function NewOrder() {
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
               {profitPercent.toFixed(1)}%
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Order site expander */}
+      <div style={{ marginBottom: 16, marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={() => setOrderSiteExpanded(v => !v)}
+          className="helper"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+        >
+          {t('orders.customerOrderOnline', 'Let your customers order online')}
+        </button>
+
+        {orderSiteExpanded && (
+          <div style={{ marginTop: 10, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, display: 'grid', gap: 6 }}>
+            {orderSlug ? (
+              <div>
+                {t('orders.orderSiteLink', 'Link to your order site:')}
+                {' '}
+                <a
+                  href={`${window.location.origin}/order/${orderSlug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  {`${window.location.origin}/order/${orderSlug}`}
+                </a>
+              </div>
+            ) : (
+              <div>
+                <Link to="/admin" state={{ openTab: 'order-page' }} style={{ color: 'var(--primary)' }}>
+                  {t('orders.missingOrderSlug', 'First specify your URL here')}
+                </Link>
+              </div>
+            )}
+            <div>
+              <Link to="/admin" state={{ openTab: 'order-page' }} style={{ color: 'var(--primary)' }}>
+                {t('orders.manageOrderSite', 'Manage your Order site')}
+              </Link>
             </div>
           </div>
         )}

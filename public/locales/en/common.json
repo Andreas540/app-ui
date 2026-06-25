@@ -480,7 +480,11 @@
     "orderPriceUSD": "Order price (USD)",
     "orderValueUSD": "Order value (USD)",
     "toPartner1USD": "To Partner 1 (USD)",
-    "toPartner2USD": "To Partner 2 (USD)"
+    "toPartner2USD": "To Partner 2 (USD)",
+    "customerOrderOnline": "Let your customers order online",
+    "orderSiteLink": "Link to your order site:",
+    "missingOrderSlug": "First specify your URL here",
+    "manageOrderSite": "Manage your Order site"
   },
   "warehouse": {
     "title": "Adjust Inventory",
