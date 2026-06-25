@@ -654,7 +654,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">{t('customerDetail.type')}</div>
-                <div>{(customer.customer_type === 'Direct' || customer.customer_type === 'BLV') ? directLabel : customer.customer_type}</div>
+                <div>{(customer.customer_type === 'Direct' || (customer.customer_type as string) === 'BLV') ? directLabel : customer.customer_type}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>

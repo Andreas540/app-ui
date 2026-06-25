@@ -605,7 +605,6 @@ export default function CustomerReportsPage() {
   const { t }  = useTranslation('reports')
   const { t: tc } = useTranslation()
   const { user } = useAuth()
-  const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
   // showInfoIcons kept for future info overlays — not used in ranking yet
   void getTenantConfig(user?.tenantId).ui.showInfoIconsReports
 
