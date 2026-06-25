@@ -966,7 +966,7 @@
     "teamMembers": "Teammedlemmar",
     "tabUsers": "Användare",
     "tabData": "Dataexporter",
-    "tabBooking": "Bokning",
+    "tabBooking": "Bokningar",
     "tabPaymentProviders": "Betalningsleverantörer",
     "tabCustomerOffers": "Kundbud",
     "tabUiSettings": "UI-inställningar",
@@ -978,6 +978,7 @@
     "orderPage": {
       "tabContent": "Beställningssidans innehåll",
       "tabSetup": "Beställningssidans inställningar",
+      "tabCustomerOrder": "Kundbeställningssida",
       "noProducts": "Inga produkter hittades. Lägg till produkter först.",
       "productPrice": "Baspris",
       "availableQty": "Tillgänglig",
@@ -1234,6 +1235,7 @@
     "booking": {
       "tabAvailability": "Tillgänglighet",
       "tabBookingPage": "Bokningssidans URL",
+      "tabCustomerBooking": "Kundbokningssida",
       "tabSms": "SMS",
       "tabSimplyBook": "Simply Book",
       "tabConnectSite": "Koppla hemsida",

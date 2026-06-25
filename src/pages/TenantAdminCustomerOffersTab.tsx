@@ -21,9 +21,9 @@ function dowLabel(dow: number, locale: string) {
   )
 }
 
-interface CustomerOption { id: string; name: string }
+export interface CustomerOption { id: string; name: string }
 
-function apiBase() {
+export function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 }
 
@@ -40,7 +40,7 @@ interface ProductOffer {
 }
 interface ProductEdit { available: boolean; price: string }
 
-function OrderFormTab({ customerId, customers }: { customerId: string; customers: CustomerOption[] }) {
+export function OrderFormTab({ customerId, customers }: { customerId: string; customers: CustomerOption[] }) {
   const { t } = useTranslation()
   const { fmtMoney } = useCurrency()
 
@@ -137,7 +137,7 @@ interface ServiceOffer {
 }
 interface ServiceEdit { available: boolean; price: string; duration: string }
 
-function BookingFormTab({ customerId, customers }: { customerId: string; customers: CustomerOption[] }) {
+export function BookingFormTab({ customerId, customers }: { customerId: string; customers: CustomerOption[] }) {
   const { t, i18n } = useTranslation()
   const { fmtMoney } = useCurrency()
 

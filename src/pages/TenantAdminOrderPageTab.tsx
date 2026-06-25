@@ -3,8 +3,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getAuthHeaders, updateProduct } from '../lib/api'
+import { fetchBootstrap, getAuthHeaders, updateProduct } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import { OrderFormTab } from './TenantAdminCustomerOffersTab'
+import type { CustomerOption } from './TenantAdminCustomerOffersTab'
 import '../TenantAdmin.css'
 
 function apiBase() {
@@ -180,14 +182,16 @@ interface OrderProduct {
   sort_order: number | null
 }
 
-type SubTab = 'content' | 'setup'
+type SubTab = 'content' | 'setup' | 'customer-order'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function TenantAdminOrderPageTab() {
+export default function TenantAdminOrderPageTab({ initialSubTab, initialCustomerId }: { initialSubTab?: SubTab; initialCustomerId?: string }) {
   const { t } = useTranslation()
   const { fmtInput, parseAmount } = useCurrency()
-  const [subTab, setSubTab] = useState<SubTab>('content')
+  const [subTab, setSubTab] = useState<SubTab>(initialSubTab ?? 'content')
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [customerId, setCustomerId] = useState(initialCustomerId ?? '')
 
   // ── Content tab state ─────────────────────────────────────────────────────
   const [products, setProducts] = useState<OrderProduct[]>([])
@@ -225,6 +229,16 @@ export default function TenantAdminOrderPageTab() {
   const [copiedUrl, setCopiedUrl] = useState(false)
 
   useEffect(() => { loadConfig(); loadProducts() }, [])
+
+  useEffect(() => {
+    fetchBootstrap()
+      .then(d => setCustomers(
+        (d.customers || [])
+          .map((c: any) => ({ id: c.id, name: c.name } as CustomerOption))
+          .sort((a: CustomerOption, b: CustomerOption) => a.name.localeCompare(b.name))
+      ))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!countryDropdownOpen) return
@@ -439,8 +453,9 @@ export default function TenantAdminOrderPageTab() {
   }
 
   const SUB_TABS: { id: SubTab; label: string }[] = [
-    { id: 'content', label: t('tenantAdmin.orderPage.tabContent') },
-    { id: 'setup',   label: t('tenantAdmin.orderPage.tabSetup') },
+    { id: 'content',        label: t('tenantAdmin.orderPage.tabContent') },
+    { id: 'setup',          label: t('tenantAdmin.orderPage.tabSetup') },
+    { id: 'customer-order', label: t('tenantAdmin.orderPage.tabCustomerOrder') },
   ]
 
   return (
@@ -468,6 +483,25 @@ export default function TenantAdminOrderPageTab() {
           ))}
         </div>
       </div>
+
+      {/* Customer selector — only for customer-order tab */}
+      {subTab === 'customer-order' && (
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
+            {t('customerOffers.selectCustomer')}
+          </label>
+          <select
+            value={customerId}
+            onChange={e => setCustomerId(e.target.value)}
+            style={{ maxWidth: 320 }}
+          >
+            <option value="">{t('customerOffers.selectCustomerPlaceholder')}</option>
+            {customers.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* ── Tab 1: Order page content ── */}
       {subTab === 'content' && (
@@ -1149,6 +1183,9 @@ export default function TenantAdminOrderPageTab() {
             {savingConfig ? t('saving') : t('save')}
           </button>
         </div>
+      )}
+      {subTab === 'customer-order' && (
+        <OrderFormTab customerId={customerId} customers={customers} />
       )}
     </div>
   )

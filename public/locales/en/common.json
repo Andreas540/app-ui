@@ -966,7 +966,7 @@
     "teamMembers": "Team Members",
     "tabUsers": "Users",
     "tabData": "Data Exports",
-    "tabBooking": "Booking",
+    "tabBooking": "Bookings",
     "tabPaymentProviders": "Payment Providers",
     "tabCustomerOffers": "Customer Offers",
     "tabUiSettings": "UI Settings",
@@ -978,6 +978,7 @@
     "orderPage": {
       "tabContent": "Order page content",
       "tabSetup": "Order page set up",
+      "tabCustomerOrder": "Customer order page",
       "noProducts": "No products found. Add products first.",
       "productPrice": "Base price",
       "availableQty": "Available",
@@ -1234,6 +1235,7 @@
     "booking": {
       "tabAvailability": "Availability",
       "tabBookingPage": "Booking page URL",
+      "tabCustomerBooking": "Customer booking page",
       "tabSms": "SMS",
       "tabSimplyBook": "Simply Book",
       "tabConnectSite": "Connect site",

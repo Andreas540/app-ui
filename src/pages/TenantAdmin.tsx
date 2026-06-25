@@ -8,7 +8,6 @@ import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
 import TenantAdminBookingTab from './TenantAdminBookingTab'
 import TenantAdminPaymentProvidersTab from './TenantAdminPaymentProvidersTab'
-import TenantAdminCustomerOffersTab from './TenantAdminCustomerOffersTab'
 import TenantAdminUISettingsTab from './TenantAdminUISettingsTab'
 import TenantAdminCashTab from './TenantAdminCashTab'
 import TenantAdminInventoryTab from './TenantAdminInventoryTab'
@@ -65,9 +64,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'customer-offers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import' | 'order-page'>('team')
-  const [offersCustomerId, setOffersCustomerId]       = useState<string | undefined>(undefined)
-  const [offersInitialSubTab, setOffersInitialSubTab] = useState<'order-form' | 'booking-form' | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import' | 'order-page'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -171,11 +168,6 @@ export default function TenantAdmin() {
     }
     if (s?.openBookingTab) {
       setActiveTab('booking')
-    }
-    if (s?.openTab === 'customer-offers') {
-      setActiveTab('customer-offers')
-      if (s?.customerId) setOffersCustomerId(s.customerId)
-      if (s?.customerOffersSubTab) setOffersInitialSubTab(s.customerOffersSubTab)
     }
     if (s?.openTab === 'ui-settings') {
       setActiveTab('ui-settings')
@@ -808,7 +800,6 @@ export default function TenantAdmin() {
           const tabs: { id: typeof activeTab; label: string }[] = [
             { id: 'booking',           label: t('tenantAdmin.tabBooking') },
             { id: 'cash',              label: t('tenantAdmin.tabCash') },
-            { id: 'customer-offers',   label: t('tenantAdmin.tabCustomerOffers') },
             { id: 'customer-settings', label: t('tenantAdmin.tabCustomerSettings') },
             { id: 'accounting',        label: t('tenantAdmin.tabData') },
             { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
@@ -1304,12 +1295,10 @@ export default function TenantAdmin() {
         })()}
 
         {/* ── Booking tab ── */}
-        {activeTab === 'booking' && <TenantAdminBookingTab initialSubTab={(location.state as any)?.openBookingSubTab} />}
+        {activeTab === 'booking' && <TenantAdminBookingTab initialSubTab={(location.state as any)?.openBookingSubTab} initialCustomerId={(location.state as any)?.customerId} />}
 
         {/* ── Payment Providers tab ── */}
         {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
-
-        {activeTab === 'customer-offers' && <TenantAdminCustomerOffersTab initialCustomerId={offersCustomerId} initialSubTab={offersInitialSubTab} />}
 
         {activeTab === 'ui-settings' && <TenantAdminUISettingsTab initialSection={(location.state as any)?.uiSection} />}
 
@@ -1338,7 +1327,7 @@ export default function TenantAdmin() {
         {activeTab === 'order-page' && (
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabOrderPage')}</h4>
-            <TenantAdminOrderPageTab />
+            <TenantAdminOrderPageTab initialSubTab={(location.state as any)?.openOrderSubTab} initialCustomerId={(location.state as any)?.customerId} />
           </>
         )}
 

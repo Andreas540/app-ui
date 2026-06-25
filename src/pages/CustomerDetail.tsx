@@ -579,7 +579,7 @@ export default function CustomerDetailPage() {
             {t('customers.shareBookingCustomizeText')}{' '}
             <button
               type="button"
-              onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id, customerOffersSubTab: 'booking-form' } })}
+              onClick={() => navigate('/admin', { state: { openBookingTab: true, openBookingSubTab: 'customer-booking', customerId: customer.id } })}
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
             >
               {t('customers.shareOrderCustomizeLink')}
@@ -621,7 +621,7 @@ export default function CustomerDetailPage() {
             {t('customers.shareOrderCustomizeText')}{' '}
             <button
               type="button"
-              onClick={() => navigate('/admin', { state: { openTab: 'customer-offers', customerId: customer.id } })}
+              onClick={() => navigate('/admin', { state: { openTab: 'order-page', openOrderSubTab: 'customer-order', customerId: customer.id } })}
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
             >
               {t('customers.shareOrderCustomizeLink')}

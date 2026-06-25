@@ -4,7 +4,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
+import { fetchBootstrap, getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
+import { BookingFormTab } from './TenantAdminCustomerOffersTab'
+import type { CustomerOption } from './TenantAdminCustomerOffersTab'
 import BookingSmsUsagePage from './BookingSmsUsagePage'
 import BookingRemindersPage from './BookingRemindersPage'
 import BookingIntegrationPage from './BookingIntegrationPage'
@@ -35,12 +37,14 @@ function dowLabel(dow: number, locale: string) {
   )
 }
 
-type BookingSubTab = 'availability' | 'booking-page' | 'widget' | 'sms' | 'simplybook' | 'connect-site'
+type BookingSubTab = 'availability' | 'booking-page' | 'customer-booking' | 'widget' | 'sms' | 'simplybook' | 'connect-site'
 type SmsView = 'usage' | 'reminders'
 
-export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab?: BookingSubTab }) {
+export default function TenantAdminBookingTab({ initialSubTab, initialCustomerId }: { initialSubTab?: BookingSubTab; initialCustomerId?: string }) {
   const { t, i18n } = useTranslation()
   const [subTab, setSubTab] = useState<BookingSubTab>(initialSubTab ?? 'availability')
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [customerId, setCustomerId] = useState(initialCustomerId ?? '')
   const [smsView, setSmsView] = useState<SmsView>('usage')
 
   // ── Booking settings ──────────────────────────────────────────────────────
@@ -54,6 +58,16 @@ export default function TenantAdminBookingTab({ initialSubTab }: { initialSubTab
   const [week, setWeek]                 = useState<WeekState>(defaultWeek())
   const [loadingAvail, setLoadingAvail] = useState(false)
   const [savingAvail, setSavingAvail]   = useState(false)
+
+  useEffect(() => {
+    fetchBootstrap()
+      .then(d => setCustomers(
+        (d.customers || [])
+          .map((c: any) => ({ id: c.id, name: c.name } as CustomerOption))
+          .sort((a: CustomerOption, b: CustomerOption) => a.name.localeCompare(b.name))
+      ))
+      .catch(() => {})
+  }, [])
 
   // Load booking config + services on mount
   useEffect(() => {
@@ -194,9 +208,10 @@ ${entries}
   }
 
   const SUB_TABS: { id: BookingSubTab; label: string }[] = [
-    { id: 'availability',  label: t('tenantAdmin.booking.tabAvailability') },
-    { id: 'booking-page',  label: t('tenantAdmin.booking.tabBookingPage') },
-    { id: 'widget',        label: t('tenantAdmin.booking.tabWidget') },
+    { id: 'availability',     label: t('tenantAdmin.booking.tabAvailability') },
+    { id: 'booking-page',     label: t('tenantAdmin.booking.tabBookingPage') },
+    { id: 'customer-booking', label: t('tenantAdmin.booking.tabCustomerBooking') },
+    { id: 'widget',           label: t('tenantAdmin.booking.tabWidget') },
     { id: 'sms',           label: t('tenantAdmin.booking.tabSms') },
     { id: 'simplybook',    label: t('tenantAdmin.booking.tabSimplyBook') },
     { id: 'connect-site',  label: t('tenantAdmin.booking.tabConnectSite') },
@@ -235,6 +250,29 @@ ${entries}
           ))}
         </div>
       </div>
+
+      {/* Customer selector — only for customer-booking tab */}
+      {subTab === 'customer-booking' && (
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
+            {t('customerOffers.selectCustomer')}
+          </label>
+          <select
+            value={customerId}
+            onChange={e => setCustomerId(e.target.value)}
+            style={{ maxWidth: 320 }}
+          >
+            <option value="">{t('customerOffers.selectCustomerPlaceholder')}</option>
+            {customers.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {subTab === 'customer-booking' && (
+        <BookingFormTab customerId={customerId} customers={customers} />
+      )}
 
       {/* ── Availability ── */}
       {subTab === 'availability' && (

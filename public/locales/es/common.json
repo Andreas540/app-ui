@@ -978,6 +978,7 @@
     "orderPage": {
       "tabContent": "Contenido de la página de pedidos",
       "tabSetup": "Configuración de la página de pedidos",
+      "tabCustomerOrder": "Página de pedidos del cliente",
       "noProducts": "No se encontraron productos. Agrega productos primero.",
       "productPrice": "Precio base",
       "availableQty": "Disponible",
@@ -1234,6 +1235,7 @@
     "booking": {
       "tabAvailability": "Disponibilidad",
       "tabBookingPage": "URL de página de reservas",
+      "tabCustomerBooking": "Página de reservas del cliente",
       "tabSms": "SMS",
       "tabSimplyBook": "Simply Book",
       "tabConnectSite": "Conectar sitio",
