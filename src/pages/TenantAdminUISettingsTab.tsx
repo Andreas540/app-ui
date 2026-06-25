@@ -27,7 +27,6 @@ type UiConfig = {
     customer?: string; customers?: string
     order?: string; orders?: string
     directLabel?: string
-    directCustomerGroup?: string
   }
   ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean }
   booking?: {
@@ -285,12 +284,6 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
             <input value={cl.directLabel ?? dl.directLabel}
               onChange={e => setLabel('directLabel', e.target.value)}
               placeholder={dl.directLabel} style={{ height: H, width: 220 }} />
-          </Row>
-          <Row label={t('tenantCustom.customerGroupLabel')} help={t('tenantCustom.customerGroupLabelHelp')}
-            customized={cl.directCustomerGroup !== undefined && cl.directCustomerGroup !== dl.directCustomerGroup}>
-            <input value={cl.directCustomerGroup ?? dl.directCustomerGroup}
-              onChange={e => setLabel('directCustomerGroup', e.target.value)}
-              placeholder={dl.directCustomerGroup} style={{ height: H, width: 220 }} />
           </Row>
         </>
       )}

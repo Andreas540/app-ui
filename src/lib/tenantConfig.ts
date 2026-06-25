@@ -15,8 +15,7 @@ export interface TenantConfig {
     customers: string       // plural
     order: string           // "Order" | "Job" | "Booking" etc
     orders: string          // plural
-    directLabel: string           // short label for filter buttons, e.g. "Direct" or "BLV"
-    directCustomerGroup: string   // full group label for dropdowns, e.g. "Direct customers"
+    directLabel: string           // display label for direct customers everywhere, e.g. "Direct" or "BLV"
   }
   ui: {
     showCostEffectiveness: boolean  // defined but not yet wired in UI
@@ -86,7 +85,6 @@ export const defaultConfig: TenantConfig = {
     order: 'Order',
     orders: 'Orders',
     directLabel: 'Direct',
-    directCustomerGroup: 'Direct customers',
   },
   ui: {
     showCostEffectiveness: true,

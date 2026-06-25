@@ -285,8 +285,8 @@ async function handlePost(event) {
         if (phone && !existing[0].phone) await sql`UPDATE customers SET phone = ${phone} WHERE id = ${customerId}`.catch(() => {})
       } else {
         const [newCustomer] = await sql`
-          INSERT INTO customers (tenant_id, name, email, phone)
-          VALUES (${tenantId}::uuid, ${name}, ${email || null}, ${phone || null})
+          INSERT INTO customers (tenant_id, name, email, phone, customer_type)
+          VALUES (${tenantId}::uuid, ${name}, ${email || null}, ${phone || null}, 'Direct')
           RETURNING id
         `
         customerId = newCustomer.id

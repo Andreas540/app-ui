@@ -7,8 +7,7 @@ import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
-
-const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function EditCustomer() {
   const { t, i18n } = useTranslation()
@@ -16,10 +15,7 @@ export default function EditCustomer() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { parseAmount } = useCurrency()
-
-  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
-  const directValue: CustomerType = isBLVTenant ? 'BLV' : 'Direct'
-  const directLabel  = isBLVTenant ? 'BLV' : 'Direct'
+  const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   const [loading, setLoading]       = useState(true)
   const [showAskCustomer, setShowAskCustomer] = useState(false)
@@ -62,7 +58,7 @@ export default function EditCustomer() {
 
   // form state
   const [name, setName] = useState('')
-  const [customerType, setCustomerType] = useState<CustomerType>(directValue)
+  const [customerType, setCustomerType] = useState<CustomerType>('Direct')
   const [shippingCost, setShippingCost] = useState<string>('')
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
@@ -86,9 +82,9 @@ export default function EditCustomer() {
         const c = d.customer
         setName(c.name || '')
         const loaded = c.customer_type as CustomerType
-setCustomerType(
-  (loaded === 'BLV' || loaded === 'Direct') ? directValue : (loaded || directValue)
-)
+        setCustomerType(
+          (loaded === 'BLV' || loaded === 'Direct') ? 'Direct' : (loaded || 'Direct')
+        )
         setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
@@ -226,7 +222,7 @@ setCustomerType(
         <div>
           <label>{t('customers.customerType')}</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
-            <option value={directValue}>{directLabel}</option>
+            <option value="Direct">{directLabel}</option>
             <option value="Partner">Partner</option>
           </select>
         </div>

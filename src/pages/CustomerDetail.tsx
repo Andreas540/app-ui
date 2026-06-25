@@ -50,7 +50,9 @@ export default function CustomerDetailPage() {
   const { t, i18n } = useTranslation()
   const { t: ti } = useTranslation('info')
   const { hasFeature, user } = useAuth()
-  const tenantUi = getTenantConfig(user?.tenantId).ui
+  const tenantConfig = getTenantConfig(user?.tenantId)
+  const tenantUi = tenantConfig.ui
+  const directLabel = tenantConfig.labels.directLabel
   const compactOrderRows = tenantUi.compactCustomerOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
   const platform = getPlatform()
@@ -652,7 +654,7 @@ export default function CustomerDetailPage() {
 
               <div style={{ marginTop: 10 }}>
                 <div className="helper">{t('customerDetail.type')}</div>
-                <div>{customer.customer_type}</div>
+                <div>{(customer.customer_type === 'Direct' || customer.customer_type === 'BLV') ? directLabel : customer.customer_type}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>

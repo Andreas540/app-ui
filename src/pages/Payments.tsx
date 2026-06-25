@@ -578,7 +578,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
               <select value={entityId} onChange={e=>setEntityId(e.target.value)} style={{ height: CONTROL_H }}>
                 {hasCustomerType ? (
                   <>
-                    <optgroup label={config.labels.directCustomerGroup}>
+                    <optgroup label={config.labels.directLabel}>
   {directCustomers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
 </optgroup>
                     <optgroup label={t('payments.customerViaPartner')}>

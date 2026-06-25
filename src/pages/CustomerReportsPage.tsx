@@ -168,6 +168,8 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
 }) {
   const { t, i18n } = useTranslation('reports')
   const { fmtMoney, fmtCompact } = useCurrency()
+  const { user } = useAuth()
+  const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   function fmtMonth(ym: string): string {
     const [y, m] = ym.split('-').map(Number)
@@ -312,7 +314,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{customer.customer_name}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-              {customer.customer_type && <span>{customer.customer_type}</span>}
+              {customer.customer_type && <span>{(customer.customer_type === 'Direct' || customer.customer_type === 'BLV') ? directLabel : customer.customer_type}</span>}
               {customer.customer_type && <span> · </span>}
               <span>
                 {(from || to)
@@ -489,6 +491,8 @@ function RankingCard({ customers, totals, from, to }: {
 }) {
   const { t }             = useTranslation('reports')
   const { fmtCompact }    = useCurrency()
+  const { user }          = useAuth()
+  const directLabel       = getTenantConfig(user?.tenantId).labels.directLabel
   const [sortMetric, setSortMetric] = useState<SortMetric>('revenue')
   const [selected,   setSelected]   = useState<CustomerRow | null>(null)
 
@@ -554,7 +558,7 @@ function RankingCard({ customers, totals, from, to }: {
                   <td style={{ padding: '8px 8px' }}>
                     <div style={{ fontWeight: 500 }}>{c.customer_name}</div>
                     {c.customer_type && (
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.customer_type}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{(c.customer_type === 'Direct' || c.customer_type === 'BLV') ? directLabel : c.customer_type}</div>
                     )}
                   </td>
                   <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>{getValue(c)}</td>
@@ -601,6 +605,7 @@ export default function CustomerReportsPage() {
   const { t }  = useTranslation('reports')
   const { t: tc } = useTranslation()
   const { user } = useAuth()
+  const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
   // showInfoIcons kept for future info overlays — not used in ranking yet
   void getTenantConfig(user?.tenantId).ui.showInfoIconsReports
 

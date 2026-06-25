@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, fetchCustomerDetail, getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
-
-const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -42,9 +41,7 @@ export default function MergeCustomer() {
   const nav = useNavigate()
   const { parseAmount } = useCurrency()
   const { user } = useAuth()
-  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
-  const directValue = isBLVTenant ? 'BLV' : 'Direct'
-  const directLabel = isBLVTenant ? 'BLV' : 'Direct'
+  const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   const [customers, setCustomers]   = useState<CustomerRow[]>([])
   const [loading, setLoading]       = useState(true)
@@ -244,7 +241,7 @@ export default function MergeCustomer() {
                 <div>
                   <label>{t('customers.customerType')}</label>
                   <select value={fields.customer_type} onChange={e => set('customer_type', e.target.value)}>
-                    <option value={directValue}>{directLabel}</option>
+                    <option value="Direct">{directLabel}</option>
                     <option value="Partner">Partner</option>
                   </select>
                 </div>

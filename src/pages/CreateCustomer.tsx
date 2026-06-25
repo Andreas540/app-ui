@@ -7,25 +7,18 @@ import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 
-// The one tenant that still uses the legacy 'BLV' customer_type label
-const BLV_TENANT_ID = 'c00e0058-3dec-4300-829d-cca7e3033ca6'
-
 export default function CreateCustomer() {
   const { t, i18n } = useTranslation()
   const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
   const { user } = useAuth()
   const { parseAmount } = useCurrency()
-  const tenantUi = getTenantConfig(user?.tenantId).ui
-
-  // For the BLV tenant the "direct" type is stored as 'BLV'; everyone else uses 'Direct'.
-  // Both values behave identically in all business logic — only the label/stored value differs.
-  const isBLVTenant = user?.tenantId === BLV_TENANT_ID
-  const directValue: CustomerType = isBLVTenant ? 'BLV' : 'Direct'
-  const directLabel   = isBLVTenant ? 'BLV' : 'Direct'
+  const tenantConfig = getTenantConfig(user?.tenantId)
+  const tenantUi = tenantConfig.ui
+  const directLabel = tenantConfig.labels.directLabel
 
   const [name, setName] = useState('')
-  const [ctype, setCtype] = useState<CustomerType>(directValue)
+  const [ctype, setCtype] = useState<CustomerType>('Direct')
 
   // Company name (DB column: company_name)
   const [companyName, setCompanyName] = useState('')
@@ -253,7 +246,7 @@ export default function CreateCustomer() {
         <div>
           <label>{t('customers.customerType')}</label>
           <select value={ctype} onChange={e=>setCtype(e.target.value as CustomerType)}>
-            <option value={directValue}>{directLabel}</option>
+            <option value="Direct">{directLabel}</option>
             <option value="Partner">Partner</option>
           </select>
         </div>
