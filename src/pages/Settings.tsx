@@ -35,9 +35,12 @@ export default function Settings() {
   const [changingPassword, setChangingPassword] = useState(false)
 
   // Shortcuts filtered to what the current user has access to
-  const availableShortcuts = ALL_SHORTCUTS.filter(s =>
-    user?.role === 'super_admin' || hasFeature(s.id)
-  )
+  const availableShortcuts = ALL_SHORTCUTS.filter(s => {
+    if (s.id === 'tenant-admin') return user?.role === 'tenant_admin' || user?.role === 'super_admin'
+    if (s.id === 'settings') return true  // always available to any logged-in user
+    if (s.id === 'contact')  return true  // always available
+    return user?.role === 'super_admin' || hasFeature(s.id)
+  })
   const unselectedShortcuts = availableShortcuts.filter(s => !selectedShortcuts.includes(s.id))
 
   // ── Tenant ────────────────────────────────────────────────────────────────

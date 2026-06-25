@@ -37,7 +37,9 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'bookings',            section: 'booking', labelKey: 'bookingList' },
   { id: 'booking-customers',   section: 'booking', labelKey: 'bookingClients' },
   { id: 'booking-payments',    section: 'booking', labelKey: 'bookingPayments' },
-  // Admin (contact has no feature gate — always accessible)
+  // Admin
+  { id: 'tenant-admin',     section: 'admin',   labelKey: 'accountAdmin' },
+  { id: 'settings',         section: 'admin',   labelKey: 'settings' },
   { id: 'contact',          section: 'admin',   labelKey: 'contact' },
 ]
 
