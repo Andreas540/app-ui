@@ -290,7 +290,7 @@ export default function Customers() {
               <Link key={c.id} to={`/customers/${c.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{c.name}</div>
-                  <div className="helper">{(c as any).customer_type ?? '—'}</div>
+                  <div className="helper">{(ct => (ct === 'Direct' || ct === 'BLV') ? directLabel : (ct ?? '—'))((c as any).customer_type)}</div>
                 </div>
                 <div style={{ textAlign: 'right', alignSelf: 'center' }}>
                   {fmtIntMoney(c.owed_to_me)}
