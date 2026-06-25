@@ -301,9 +301,20 @@ export default function Settings() {
                   ? t('settingsPage.allAdded')
                   : t('settingsPage.addShortcut')}
             </option>
-            {unselectedShortcuts.map(s => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
+            {NAV_SECTIONS.map(section => {
+              const items = NAV_ITEMS
+                .filter(nav => nav.section === section.id)
+                .map(nav => availableShortcuts.find(s => s.id === nav.id))
+                .filter((s): s is typeof availableShortcuts[0] => !!s && !selectedShortcuts.includes(s.id))
+              if (items.length === 0) return null
+              return (
+                <optgroup key={section.id} label={tNav(section.labelKey)}>
+                  {items.map(s => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </optgroup>
+              )
+            })}
           </select>
 
           {selectedShortcuts.map(id => {
