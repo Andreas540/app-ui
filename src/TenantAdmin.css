@@ -295,7 +295,7 @@
 .op-r1-qty        { grid-area: 2 / 5; }
 .op-r1-price input, .op-r1-qty input { width: 100%; display: block; }
 /* col 6 = 1fr spacer; col 7 = visible at far right */
-.op-r1-vis        { grid-area: 1 / 7 / 3 / 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.op-r1-vis        { grid-area: 1 / 7 / 3 / 8; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
 
 @media (max-width: 768px) {
   .op-row1 {
