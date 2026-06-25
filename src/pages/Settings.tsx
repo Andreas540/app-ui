@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { type FeatureId } from '../lib/features'
-import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS } from '../lib/shortcuts'
+import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS, FEATURE_NAV_KEY } from '../lib/shortcuts'
 import { useTheme } from '../lib/theme'
 import { NAV_ITEMS, NAV_SECTIONS } from '../lib/navItems'
 
@@ -313,7 +313,7 @@ export default function Settings() {
               return (
                 <optgroup key={section.id} label={tNav(section.labelKey)}>
                   {items.map(s => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
+                    <option key={s.id} value={s.id}>{tNav(FEATURE_NAV_KEY[s.id] ?? s.id)}</option>
                   ))}
                 </optgroup>
               )
@@ -327,7 +327,7 @@ export default function Settings() {
               <button
                 key={id}
                 onClick={() => removeShortcut(id)}
-                title={t('settingsPage.removeTitle', { label: s.label })}
+                title={t('settingsPage.removeTitle', { label: tNav(FEATURE_NAV_KEY[s.id] ?? s.id) })}
                 style={{
                   width: 40,
                   height: 40,
