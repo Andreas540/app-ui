@@ -37,6 +37,15 @@ async function handleGet(event) {
       return cors(200, { tenants })
     }
 
+    if (action === 'listBusinessTypes') {
+      const types = await sql`
+        SELECT id, label, config_defaults, is_active
+        FROM business_types
+        ORDER BY label ASC
+      `
+      return cors(200, { businessTypes: types })
+    }
+
     if (action === 'listUsers') {
   const users = await sql`
     SELECT 
@@ -188,9 +197,10 @@ async function handlePost(event) {
         return cors(400, { error: 'Tenant name is required' })
       }
 
-      // Validate business_type
-      const validTypes = ['general', 'physical_store']
-      const type = businessType && validTypes.includes(businessType) ? businessType : 'general'
+      // Validate business_type against DB registry
+      const validTypes = await sql`SELECT id FROM business_types WHERE is_active = true`
+      const validIds = validTypes.map(r => r.id)
+      const type = businessType && validIds.includes(businessType) ? businessType : 'general'
 
       // Generate slug from name
       const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -464,6 +474,55 @@ if (action === 'updateStripeCustomerId') {
       await sql`DELETE FROM app_users WHERE id = ${targetUserId}`
       await sql`DELETE FROM users WHERE id = ${targetUserId}`
 
+      return cors(200, { success: true })
+    }
+
+    if (action === 'createBusinessType') {
+      const { id, label } = body
+      if (!id || !label) return cors(400, { error: 'id and label are required' })
+      const safeId = id.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_')
+      await sql`
+        INSERT INTO business_types (id, label)
+        VALUES (${safeId}, ${label.trim()})
+      `
+      return cors(201, { businessType: { id: safeId, label: label.trim(), config_defaults: {}, is_active: true } })
+    }
+
+    if (action === 'updateBusinessType') {
+      const { id, label, configDefaults } = body
+      if (!id) return cors(400, { error: 'id is required' })
+      await sql`
+        UPDATE business_types
+        SET label           = COALESCE(${label ?? null}, label),
+            config_defaults = COALESCE(${configDefaults != null ? JSON.stringify(configDefaults) : null}::jsonb, config_defaults),
+            updated_at      = now()
+        WHERE id = ${id}
+      `
+      return cors(200, { success: true })
+    }
+
+    if (action === 'deactivateBusinessType') {
+      const { id } = body
+      if (!id) return cors(400, { error: 'id is required' })
+      if (id === 'general') return cors(400, { error: 'Cannot deactivate the general type' })
+      await sql`UPDATE business_types SET is_active = false, updated_at = now() WHERE id = ${id}`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'activateBusinessType') {
+      const { id } = body
+      if (!id) return cors(400, { error: 'id is required' })
+      await sql`UPDATE business_types SET is_active = true, updated_at = now() WHERE id = ${id}`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'updateTenantBusinessType') {
+      const { tenantId, businessType } = body
+      if (!tenantId) return cors(400, { error: 'tenantId is required' })
+      const validTypes = await sql`SELECT id FROM business_types WHERE is_active = true`
+      const validIds = validTypes.map(r => r.id)
+      if (!validIds.includes(businessType)) return cors(400, { error: 'Invalid business type' })
+      await sql`UPDATE tenants SET business_type = ${businessType} WHERE id = ${tenantId}`
       return cors(200, { success: true })
     }
 

@@ -219,7 +219,7 @@ async function handleLogin(event) {
 
     // Get user's memberships from tenant_memberships (NEW multi-tenant system)
     const memberships = await sql`
-      SELECT 
+      SELECT
         tm.tenant_id::text as tenant_id,
         tm.role,
         tm.features as user_features,
@@ -229,9 +229,11 @@ async function handleLogin(event) {
         t.default_language as tenant_default_language,
         t.default_currency as tenant_default_currency,
         t.default_timezone as tenant_default_timezone,
-        t.ui_config
+        t.ui_config,
+        bt.config_defaults as business_type_config
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
+      LEFT JOIN business_types bt ON bt.id = t.business_type
       WHERE tm.user_id = ${user.id}::uuid
       ORDER BY tm.created_at ASC
     `
@@ -277,6 +279,7 @@ async function handleLogin(event) {
         tenantId: primaryMembership.tenant_id,
         tenantName: primaryMembership.tenant_name,
         businessType: primaryMembership.business_type,
+        businessTypeConfig: primaryMembership.business_type_config || {},
         features: effectiveFeatures,
         preferred_language: user.preferred_language,
         preferred_locale: user.preferred_locale,

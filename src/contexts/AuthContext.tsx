@@ -12,6 +12,7 @@ interface User {
   tenantId: string | null
   tenantName: string | null
   businessType: string
+  businessTypeConfig: Record<string, unknown>
   features: FeatureId[]
   preferred_language?: string
   preferred_locale?: string

@@ -176,20 +176,23 @@ export async function resolveAuthz({ sql, event }) {
       console.log('🔵 SuperAdmin requesting tenant:', activeTenantId)
       
       const tenantRows = await sql`
-        SELECT id::text as tenant_id, name as tenant_name, business_type, features as tenant_features
-        FROM tenants
-        WHERE id = ${activeTenantId}::uuid
+        SELECT t.id::text as tenant_id, t.name as tenant_name, t.business_type,
+               t.features as tenant_features, bt.config_defaults as business_type_config
+        FROM tenants t
+        LEFT JOIN business_types bt ON bt.id = t.business_type
+        WHERE t.id = ${activeTenantId}::uuid
         LIMIT 1
       `
-      
+
       console.log('🔵 Tenant query result:', tenantRows.length, 'rows')
-      
+
       if (tenantRows.length > 0) {
         console.log('🟢 SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
         return {
           tenantId: tenantRows[0].tenant_id,
           role: 'super_admin',
           businessType: tenantRows[0].business_type,
+          businessTypeConfig: tenantRows[0].business_type_config || {},
           tenantFeatures: tenantRows[0].tenant_features || [],
           userFeatures: null,
           mode: 'super_admin_impersonating'
@@ -227,10 +230,12 @@ export async function resolveAuthz({ sql, event }) {
   // If active tenant specified, validate membership for it
   if (activeTenantId) {
     const rows = await sql`
-      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
+      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features,
+             t.business_type, t.features as tenant_features, bt.config_defaults as business_type_config
       from public.tenant_memberships tm
       join public.app_users u on u.id = tm.user_id
       join public.tenants t on t.id = tm.tenant_id
+      left join business_types bt on bt.id = t.business_type
       where tm.user_id = ${user.userId}::uuid
         and tm.tenant_id = ${activeTenantId}::uuid
         and u.is_disabled is not true
@@ -241,6 +246,7 @@ export async function resolveAuthz({ sql, event }) {
       tenantId: rows[0].tenant_id,
       role: rows[0].role,
       businessType: rows[0].business_type,
+      businessTypeConfig: rows[0].business_type_config || {},
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
       mode: 'membership'
@@ -250,10 +256,12 @@ export async function resolveAuthz({ sql, event }) {
   // If tenant explicitly requested (legacy x-tenant-id header), require membership for it
   if (requestedTenantId) {
     const rows = await sql`
-      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
+      select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features,
+             t.business_type, t.features as tenant_features, bt.config_defaults as business_type_config
       from public.tenant_memberships tm
       join public.app_users u on u.id = tm.user_id
       join public.tenants t on t.id = tm.tenant_id
+      left join business_types bt on bt.id = t.business_type
       where tm.user_id = ${user.userId}::uuid
         and tm.tenant_id = ${requestedTenantId}::uuid
         and u.is_disabled is not true
@@ -264,6 +272,7 @@ export async function resolveAuthz({ sql, event }) {
       tenantId: rows[0].tenant_id,
       role: rows[0].role,
       businessType: rows[0].business_type,
+      businessTypeConfig: rows[0].business_type_config || {},
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
       mode: 'membership'
@@ -272,10 +281,12 @@ export async function resolveAuthz({ sql, event }) {
 
   // Default tenant from memberships
   const rows = await sql`
-    select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features, t.business_type, t.features as tenant_features
+    select tm.tenant_id::text as tenant_id, tm.role, tm.features as user_features,
+           t.business_type, t.features as tenant_features, bt.config_defaults as business_type_config
     from public.tenant_memberships tm
     join public.app_users u on u.id = tm.user_id
     join public.tenants t on t.id = tm.tenant_id
+    left join business_types bt on bt.id = t.business_type
     where tm.user_id = ${user.userId}::uuid
       and u.is_disabled is not true
     order by tm.created_at asc
@@ -285,6 +296,7 @@ export async function resolveAuthz({ sql, event }) {
     tenantId: rows[0].tenant_id,
     role: rows[0].role,
     businessType: rows[0].business_type,
+    businessTypeConfig: rows[0].business_type_config || {},
     tenantFeatures: rows[0].tenant_features || [],
     userFeatures: rows[0].user_features,
     mode: 'membership'

@@ -146,17 +146,24 @@ export function getTenantConfig(tenantId: string | null | undefined): TenantConf
   // Code-level overrides (backwards compat — removed once fully migrated to DB)
   const codeOverrides = tenantOverrides[tenantId]
 
-  // DB overrides stored in userData after login (synchronous localStorage read)
+  // Business-type defaults (from business_types.config_defaults, delivered on auth payload)
+  let businessTypeOverrides: DeepPartial<TenantConfig> = {}
+  // Per-tenant UI overrides (from tenants.ui_config)
   let dbOverrides: DeepPartial<TenantConfig> = {}
   try {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+    if (userData.businessTypeConfig && typeof userData.businessTypeConfig === 'object') {
+      businessTypeOverrides = userData.businessTypeConfig
+    }
     if (userData.uiConfig && typeof userData.uiConfig === 'object') {
       dbOverrides = userData.uiConfig
     }
   } catch { /* ignore */ }
 
+  // Merge order: platform defaults → business-type defaults → per-tenant overrides
   let result = defaultConfig
   if (codeOverrides) result = deepMerge(result, codeOverrides)
+  if (Object.keys(businessTypeOverrides).length > 0) result = deepMerge(result, businessTypeOverrides)
   if (Object.keys(dbOverrides).length > 0) result = deepMerge(result, dbOverrides)
   return result
 }

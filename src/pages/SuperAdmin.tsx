@@ -20,6 +20,13 @@ interface Tenant {
   default_timezone?: string | null
 }
 
+interface BusinessType {
+  id: string
+  label: string
+  config_defaults: Record<string, unknown>
+  is_active: boolean
+}
+
 interface TenantIcon {
   id: string
   name: string
@@ -69,6 +76,21 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
+  // Business types
+  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
+  const [btActiveTab, setBtActiveTab] = useState<'list' | 'new'>('list')
+  const [newBtId, setNewBtId] = useState('')
+  const [newBtLabel, setNewBtLabel] = useState('')
+  const [creatingBt, setCreatingBt] = useState(false)
+  const [editingBtId, setEditingBtId] = useState<string | null>(null)
+  const [editingBtLabel, setEditingBtLabel] = useState('')
+  const [editingBtConfig, setEditingBtConfig] = useState('')
+  const [savingBt, setSavingBt] = useState(false)
+  const [btConfigError, setBtConfigError] = useState<string | null>(null)
+  const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
+  const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
+  const [savingTenantBt, setSavingTenantBt] = useState(false)
+
   // Create tenant form
   const [newTenantName, setNewTenantName] = useState('')
   const [newTenantBusinessType, setNewTenantBusinessType] = useState('general')
@@ -93,7 +115,7 @@ export default function SuperAdmin() {
   const [creatingUser, setCreatingUser] = useState(false)
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'tenants' | 'users' | 'webhooks'>('tenants')
+  const [activeTab, setActiveTab] = useState<'tenants' | 'users' | 'webhooks' | 'business-types'>('tenants')
 
   // Webhook events state
   const [webhookEvents, setWebhookEvents] = useState<WebhookEvent[]>([])
@@ -163,6 +185,13 @@ export default function SuperAdmin() {
       }
       const tenantsData = await tenantsRes.json()
       setTenants(tenantsData.tenants || [])
+
+      // Load business types
+      const btRes = await fetch(`${base}/api/super-admin?action=listBusinessTypes`, { headers })
+      if (btRes.ok) {
+        const btData = await btRes.json()
+        setBusinessTypes(btData.businessTypes || [])
+      }
 
       // Load users
       const usersRes = await fetch(`${base}/api/super-admin?action=listUsers`, { headers })
@@ -239,6 +268,69 @@ export default function SuperAdmin() {
     } finally {
       setCreatingTenant(false)
     }
+  }
+
+  async function handleCreateBusinessType() {
+    if (!newBtId.trim() || !newBtLabel.trim()) { alert('ID and Label are required'); return }
+    try {
+      setCreatingBt(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'createBusinessType', id: newBtId.trim(), label: newBtLabel.trim() })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      setNewBtId(''); setNewBtLabel(''); setBtActiveTab('list')
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setCreatingBt(false) }
+  }
+
+  async function handleSaveBusinessType() {
+    if (!editingBtId) return
+    let parsed: Record<string, unknown> | null = null
+    if (editingBtConfig.trim()) {
+      try { parsed = JSON.parse(editingBtConfig) } catch {
+        setBtConfigError('Invalid JSON'); return
+      }
+    }
+    setBtConfigError(null)
+    try {
+      setSavingBt(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateBusinessType', id: editingBtId, label: editingBtLabel, configDefaults: parsed })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      setEditingBtId(null)
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBt(false) }
+  }
+
+  async function handleToggleBusinessType(id: string, isActive: boolean) {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const action = isActive ? 'deactivateBusinessType' : 'activateBusinessType'
+    await fetch(`${base}/api/super-admin`, {
+      method: 'POST', headers: getAuthHeaders(),
+      body: JSON.stringify({ action, id })
+    })
+    await loadData()
+  }
+
+  async function handleSaveTenantBusinessType(tenantId: string) {
+    try {
+      setSavingTenantBt(true)
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateTenantBusinessType', tenantId, businessType: editingTenantBtValue })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      setEditingTenantBtId(null)
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingTenantBt(false) }
   }
 
   async function handleCreateUser() {
@@ -799,6 +891,13 @@ async function handleSaveStripeCustomerId() {
         >
           Webhooks
         </button>
+        <button
+          className={activeTab === 'business-types' ? 'primary' : ''}
+          onClick={() => setActiveTab('business-types')}
+          style={{ height: CONTROL_H, flex: 1 }}
+        >
+          Business Types
+        </button>
       </div>
 
       {/* Tenants Tab */}
@@ -825,8 +924,9 @@ async function handleSaveStripeCustomerId() {
                   onChange={(e) => setNewTenantBusinessType(e.target.value)}
                   style={{ height: CONTROL_H }}
                 >
-                  <option value="general">General</option>
-                  <option value="physical_store">Physical Store</option>
+                  {businessTypes.filter(bt => bt.is_active).map(bt => (
+                    <option key={bt.id} value={bt.id}>{bt.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -864,8 +964,36 @@ async function handleSaveStripeCustomerId() {
                   >
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{tenant.name}</div>
-                      <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
-                        Type: {tenant.business_type === 'physical_store' ? 'Physical Store' : 'General'}
+                      <div className="helper" style={{ fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {editingTenantBtId === tenant.id ? (
+                          <>
+                            <select
+                              value={editingTenantBtValue}
+                              onChange={e => setEditingTenantBtValue(e.target.value)}
+                              style={{ height: 28, fontSize: 12, padding: '0 8px' }}
+                            >
+                              {businessTypes.filter(bt => bt.is_active).map(bt => (
+                                <option key={bt.id} value={bt.id}>{bt.label}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => handleSaveTenantBusinessType(tenant.id)} disabled={savingTenantBt} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>
+                              {savingTenantBt ? '…' : 'Save'}
+                            </button>
+                            <button onClick={() => setEditingTenantBtId(null)} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            Type: {businessTypes.find(bt => bt.id === tenant.business_type)?.label ?? tenant.business_type}
+                            <button
+                              onClick={() => { setEditingTenantBtId(tenant.id); setEditingTenantBtValue(tenant.business_type) }}
+                              style={{ height: 20, padding: '0 8px', fontSize: 11, marginLeft: 4 }}
+                            >
+                              Edit
+                            </button>
+                          </>
+                        )}
                       </div>
                       <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
   Features: {tenant.features?.length || 0} enabled
@@ -1268,6 +1396,100 @@ async function handleSaveStripeCustomerId() {
                 </button>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* Business Types Tab */}
+      {activeTab === 'business-types' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ margin: 0 }}>Business Types</h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className={btActiveTab === 'list' ? 'primary' : ''} onClick={() => setBtActiveTab('list')} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>List</button>
+              <button className={btActiveTab === 'new' ? 'primary' : ''} onClick={() => setBtActiveTab('new')} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>+ New</button>
+            </div>
+          </div>
+
+          {btActiveTab === 'new' && (
+            <div style={{ padding: '12px 0 20px', borderBottom: '1px solid var(--line)', marginBottom: 16 }}>
+              <div className="row row-2col-mobile" style={{ marginBottom: 12 }}>
+                <div>
+                  <label>ID (snake_case, permanent)</label>
+                  <input value={newBtId} onChange={e => setNewBtId(e.target.value)} placeholder="e.g. fitness_studio" style={{ height: CONTROL_H }} />
+                </div>
+                <div>
+                  <label>Label (shown in UI)</label>
+                  <input value={newBtLabel} onChange={e => setNewBtLabel(e.target.value)} placeholder="e.g. Fitness Studio" style={{ height: CONTROL_H }} />
+                </div>
+              </div>
+              <button className="primary" onClick={handleCreateBusinessType} disabled={creatingBt || !newBtId.trim() || !newBtLabel.trim()} style={{ height: CONTROL_H }}>
+                {creatingBt ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          )}
+
+          {btActiveTab === 'list' && (
+            <div>
+              {businessTypes.length === 0 ? (
+                <p className="helper">No business types found. Run the SQL migration first.</p>
+              ) : businessTypes.map(bt => (
+                <div key={bt.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
+                  {editingBtId === bt.id ? (
+                    <div>
+                      <div className="row row-2col-mobile" style={{ marginBottom: 8 }}>
+                        <div>
+                          <label>Label</label>
+                          <input value={editingBtLabel} onChange={e => setEditingBtLabel(e.target.value)} style={{ height: 36 }} />
+                        </div>
+                        <div>
+                          <label>ID (read-only)</label>
+                          <input value={bt.id} readOnly style={{ height: 36, opacity: 0.5 }} />
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <label>config_defaults (JSON)</label>
+                        <textarea
+                          value={editingBtConfig}
+                          onChange={e => { setEditingBtConfig(e.target.value); setBtConfigError(null) }}
+                          rows={6}
+                          style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, resize: 'vertical', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+                          placeholder='{"labels":{"directLabel":"Direct"}}'
+                        />
+                        {btConfigError && <p style={{ color: 'var(--color-error)', fontSize: 12, margin: '4px 0 0' }}>{btConfigError}</p>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
+                        <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{bt.label} <span className="helper" style={{ fontWeight: 400 }}>({bt.id})</span></div>
+                        <div className="helper" style={{ marginTop: 2 }}>
+                          {bt.is_active ? <span style={{ color: 'var(--color-success)' }}>Active</span> : <span style={{ color: 'var(--color-error)' }}>Inactive</span>}
+                          {' · '}config_defaults: {Object.keys(bt.config_defaults).length === 0 ? 'empty' : JSON.stringify(bt.config_defaults).slice(0, 60) + '…'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button
+                          onClick={() => { setEditingBtId(bt.id); setEditingBtLabel(bt.label); setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '') }}
+                          style={{ height: 30, padding: '0 12px', fontSize: 12 }}
+                        >
+                          Edit
+                        </button>
+                        {bt.id !== 'general' && (
+                          <button onClick={() => handleToggleBusinessType(bt.id, bt.is_active)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>
+                            {bt.is_active ? 'Deactivate' : 'Activate'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

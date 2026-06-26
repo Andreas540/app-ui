@@ -1,0 +1,111 @@
+Business Type Foundation — Implementation Plan
+
+Context
+
+business_type already exists and works as a categorization key: it's on the tenant record, gets set onto the JWT auth payload (netlify/functions/utils/auth.mjs), and is typed loosely as businessType: string on the user object (src/contexts/AuthContext.tsx:14). The gap is that valid values are a hardcoded array in two places, there's no registry to attach per-type defaults to, and the only consumer (src/App.tsx:689,725,1010) branches directly on the string instead of reading from config.
+
+This round: turn business_type into a real registry with admin-manageable defaults, make it editable on existing tenants, and migrate the existing physical_store nav logic onto the existing module/feature access system (modules.ts / tenant_module_quotas), rather than a separate nav-specific config key.
+
+Decisions made for this round (flag if any should change before building)
+
+
+New table is named business_types — matches the existing field name, no renaming of business_type anywhere.
+config_defaults is JSONB with no enforced schema beyond what's documented below — extendable later without migrations.
+Business type becomes editable on an existing tenant.
+Module/feature defaults from business_types.config_defaults are applied only at tenant creation. Changing business_type on an existing tenant does not auto-overwrite already-configured module enablement — that may already be deliberately customized for that tenant. A "reset to business type defaults" SuperAdmin action is reasonable to add but is not an automatic side effect of changing the type.
+No hard delete on business_types — deactivate via is_active only, since tenants reference it.
+general and physical_store get seeded into the new table with the current behavior preserved exactly — this is a refactor, not a behavior change, until Part 3 explicitly changes how that behavior is expressed.
+Check for any other hardcoded TypeScript union type for business type values (beyond the loose string on AuthContext) that would block adding new values dynamically — relax if found.
+
+
+
+Part 1 — Business type registry
+
+1.1 Schema
+
+sqlCREATE TABLE business_types (
+  id               TEXT PRIMARY KEY,         -- e.g. 'general', 'physical_store'
+  label            TEXT NOT NULL,            -- shown in the SuperAdmin selector
+  config_defaults  JSONB NOT NULL DEFAULT '{}',
+  is_active        BOOLEAN NOT NULL DEFAULT true,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Seed existing values; config_defaults filled in during Part 3
+INSERT INTO business_types (id, label, config_defaults) VALUES
+  ('general', 'General', '{}'),
+  ('physical_store', 'Physical Store', '{}');
+
+ALTER TABLE tenants
+  ADD CONSTRAINT fk_tenant_business_type
+  FOREIGN KEY (business_type) REFERENCES business_types(id);
+
+1.2 Backend
+
+In netlify/functions/super-admin.mjs:
+
+
+Replace the hardcoded ['general', 'physical_store'] validation (~line 192) with a query against business_types WHERE is_active = true.
+Add: GET /business-types (list), POST /business-types (create), PATCH /business-types/:id (update label / config_defaults), PATCH /business-types/:id/deactivate.
+On the existing tenant-update path, allow business_type to be changed on an existing tenant.
+
+
+netlify/functions/utils/auth.mjs needs no change — it already selects business_type onto the JWT payload.
+
+1.3 SuperAdmin UI (src/pages/SuperAdmin.tsx)
+
+
+Replace the hardcoded two-option selector (~line 822) with options fetched from GET /business-types.
+Add a "Business Types" screen: list (id, label, active toggle), create form (id + label), edit view for config_defaults — a raw JSON textarea is fine for now; show the expected shape (Part 3) as placeholder text.
+On the tenant-edit screen, make business_type editable (not just set at creation), using the same dynamic options list.
+
+
+
+Part 2 — Config resolution
+
+Update getTenantConfig() (wherever it currently lives) to:
+
+
+Look up the tenant's business_type.
+Fetch the matching business_types.config_defaults.
+Merge it onto whatever getTenantConfig() already returns, with the business-type config layered on top of the platform default.
+
+
+For this round, the resolved object should include defaultEnabledModules (Part 3) — leave the shape open to add more keys later without migration.
+
+
+Part 3 — Default module/feature access per business type
+
+Investigate first: does nav rendering in src/App.tsx already derive from which modules are enabled (modules.ts / tenant_module_quotas), or is the businessType === 'physical_store' check (~lines 689, 725, 1010) a separate, independent switch from the module system? The original assessment describes physical_store's nav as "a stripped-down nav + a single DashboardStore route" — that's the same shape as "fewer modules enabled, one extra module enabled," which suggests this is likely already expressible through the existing module-gating system rather than needing a new config key.
+
+If nav already derives from enabled modules:
+
+
+Add a default module set to business_types.config_defaults, e.g. {"defaultEnabledModules": ["dashboard_store", "..."]}.
+Apply it when a tenant is created with that business type (seed tenant_module_quotas accordingly).
+Remove the now-redundant businessType === 'physical_store' checks in App.tsx in favor of letting nav render purely from module state.
+
+
+If nav is currently independent of module state:
+
+
+Make nav rendering derive from enabled modules — the one mechanism that already exists for "can this tenant see this" — rather than introducing a second, parallel one.
+Then apply business-type defaults the same way as above.
+
+
+If DashboardStore isn't currently wrapped as a module/feature at all (just a hardcoded route), formalize it as one, so it's toggled the same way as everything else rather than remaining a one-off exception.
+
+Acceptance check: a physical_store tenant and a general tenant should see exactly the same nav/access as before this change — this is a refactor onto the existing module system, not a behavior change.
+
+
+Sequencing
+
+Build in order: 1 → 2 → 3. The registry (1) has to exist before config resolution (2) means anything, and resolution has to exist before the module-defaults work (3) can read from it.
+
+Explicitly out of scope this round
+
+
+Theme foundation — not built this round.
+Tenant-level config overrides beyond what's in this plan — the merge order leaves room for this later without a schema rework.
+Hard delete of business types — deactivate only.

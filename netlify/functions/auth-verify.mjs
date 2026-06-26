@@ -62,18 +62,20 @@ async function handleVerify(event) {
       if (activeTenantId) {
         const tenantRows = await sql`
           SELECT
-            id::text as tenant_id,
-            name as tenant_name,
-            business_type,
-            features as tenant_features,
-            default_language as tenant_default_language,
-            default_locale as tenant_default_locale,
-            available_languages as tenant_available_languages,
-            default_currency as tenant_default_currency,
-            default_timezone as tenant_default_timezone,
-            ui_config
-          FROM tenants
-          WHERE id = ${activeTenantId}::uuid
+            t.id::text as tenant_id,
+            t.name as tenant_name,
+            t.business_type,
+            t.features as tenant_features,
+            t.default_language as tenant_default_language,
+            t.default_locale as tenant_default_locale,
+            t.available_languages as tenant_available_languages,
+            t.default_currency as tenant_default_currency,
+            t.default_timezone as tenant_default_timezone,
+            t.ui_config,
+            bt.config_defaults as business_type_config
+          FROM tenants t
+          LEFT JOIN business_types bt ON bt.id = t.business_type
+          WHERE t.id = ${activeTenantId}::uuid
           LIMIT 1
         `
         
@@ -119,6 +121,7 @@ async function handleVerify(event) {
             tenantId: tenant.tenant_id,
             tenantName: tenant.tenant_name,
             businessType: tenant.business_type,
+            businessTypeConfig: tenant.business_type_config || {},
             features: tenant.tenant_features || [],
             tenant_default_language: tenant.tenant_default_language,
             tenant_default_locale: tenant.tenant_default_locale,
@@ -189,9 +192,11 @@ async function handleVerify(event) {
           t.available_languages as tenant_available_languages,
           t.default_currency as tenant_default_currency,
           t.default_timezone as tenant_default_timezone,
-          t.ui_config
+          t.ui_config,
+          bt.config_defaults as business_type_config
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
+        LEFT JOIN business_types bt ON bt.id = t.business_type
         WHERE tm.user_id = ${decoded.userId}::uuid
           AND tm.tenant_id = ${activeTenantId}::uuid
         LIMIT 1
@@ -255,6 +260,7 @@ async function handleVerify(event) {
           tenantId: membership[0].tenant_id,
           tenantName: membership[0].tenant_name,
           businessType: membership[0].business_type,
+          businessTypeConfig: membership[0].business_type_config || {},
           features: effectiveFeatures,
           preferred_language: user.preferred_language,
           preferred_locale: user.preferred_locale,
@@ -292,9 +298,11 @@ async function handleVerify(event) {
         t.available_languages as tenant_available_languages,
         t.default_currency as tenant_default_currency,
         t.default_timezone as tenant_default_timezone,
-        t.ui_config
+        t.ui_config,
+        bt.config_defaults as business_type_config
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
+      LEFT JOIN business_types bt ON bt.id = t.business_type
       WHERE u.id = ${decoded.userId}
       LIMIT 1
     `
@@ -344,6 +352,7 @@ async function handleVerify(event) {
         tenantId: user.tenant_id,
         tenantName: user.tenant_name,
         businessType: user.business_type,
+        businessTypeConfig: user.business_type_config || {},
         features: effectiveFeatures,
         preferred_language: user.preferred_language,
         preferred_locale: user.preferred_locale,
