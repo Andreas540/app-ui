@@ -72,7 +72,7 @@ export default function EditProduct() {
 
   function parseCostInput(s: string) {
     const cleaned = s.replace(/[^\d.,-]/g, '')
-    return String(parseAmount(cleaned)) // normalize comma to dot
+    return cleaned.replace(',', '.')
   }
 
   async function save() {
