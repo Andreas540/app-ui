@@ -41,7 +41,7 @@ export default function Payments() {
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
 
   const activePaymentTypes = useMemo(
     () => isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES,
@@ -649,7 +649,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
               <label>{t('payments.amountUSD')}</label>
               <input
                 type="text"
-                placeholder="0.00"
+                placeholder={fmtInput(0)}
                 inputMode="decimal"
                 value={amountStr}
                 onChange={onAmountChange}
@@ -769,7 +769,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <label>{t('payments.amountUSD')}</label>
                   <input
                     type="text"
-                    placeholder="0.00"
+                    placeholder={fmtInput(0)}
                     inputMode="decimal"
                     value={partnerAmountStr}
                     onChange={onPartnerAmountChange}
@@ -862,7 +862,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <label>{t('payments.amountUSD')}</label>
                   <input
                     type="text"
-                    placeholder="0.00"
+                    placeholder={fmtInput(0)}
                     inputMode="decimal"
                     value={supplierAmountStr}
                     onChange={onSupplierAmountChange}

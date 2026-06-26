@@ -39,7 +39,7 @@ const EMPTY: CustomerFields = {
 export default function MergeCustomer() {
   const { t } = useTranslation()
   const nav = useNavigate()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const { user } = useAuth()
   const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
@@ -74,7 +74,7 @@ export default function MergeCustomer() {
     if (!idA) { setDataA(null); return }
     setLoadingA(true)
     fetchCustomerDetail(idA)
-      .then(res => setDataA(toFields(res.customer)))
+      .then(res => setDataA(toFields(res.customer, fmtInput)))
       .catch(console.error)
       .finally(() => setLoadingA(false))
   }, [idA])
@@ -84,7 +84,7 @@ export default function MergeCustomer() {
     if (!idB) { setDataB(null); return }
     setLoadingB(true)
     fetchCustomerDetail(idB)
-      .then(res => setDataB(toFields(res.customer)))
+      .then(res => setDataB(toFields(res.customer, fmtInput)))
       .catch(console.error)
       .finally(() => setLoadingB(false))
   }, [idB])
@@ -339,14 +339,14 @@ export default function MergeCustomer() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toFields(c: Record<string, any>): CustomerFields {
+function toFields(c: Record<string, any>, fmtInput?: (n: number) => string): CustomerFields {
   return {
     name:          c.name          || '',
     company_name:  c.company_name  || '',
     phone:         c.phone         || '',
     email:         c.email         || '',
     customer_type: c.customer_type || 'Direct',
-    shipping_cost: c.shipping_cost != null ? String(c.shipping_cost) : '',
+    shipping_cost: c.shipping_cost != null ? (fmtInput ? fmtInput(c.shipping_cost) : String(c.shipping_cost)) : '',
     address1:      c.address1      || '',
     address2:      c.address2      || '',
     city:          c.city          || '',

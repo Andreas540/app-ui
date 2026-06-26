@@ -14,7 +14,7 @@ export default function EditCustomer() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { user } = useAuth()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   const [loading, setLoading]       = useState(true)
@@ -85,7 +85,7 @@ export default function EditCustomer() {
         setCustomerType(
           (loaded === 'BLV' || loaded === 'Direct') ? 'Direct' : (loaded || 'Direct')
         )
-        setShippingCost(c.shipping_cost != null ? String(c.shipping_cost) : '')
+        setShippingCost(c.shipping_cost != null ? fmtInput(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
         setPhone(c.phone || '')
         setEmail(c.email || '')

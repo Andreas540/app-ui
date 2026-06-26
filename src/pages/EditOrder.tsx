@@ -16,7 +16,7 @@ function emptyLine(): Line {
 
 export default function EditOrder() {
   const { t } = useTranslation()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
   const [generatingLink, setGeneratingLink] = useState(false)
   const navigate = useNavigate()
@@ -83,24 +83,24 @@ export default function EditOrder() {
           : [{ product_id: order.product_id, qty: order.qty, unit_price: order.unit_price }]
         setLines(loadedItems.map((i: any) => ({
           product_id: i.product_id || '',
-          qtyStr:     String(i.qty ?? ''),
-          priceStr:   String(i.unit_price ?? ''),
+          qtyStr:     i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
+          priceStr:   i.unit_price != null ? fmtInput(i.unit_price) : '',
         })))
 
         // Cost overrides
-        if (order.product_cost != null) { setProductCostStr(String(order.product_cost)); setShowMoreFields(true) }
-        if (order.shipping_cost != null) { setShippingCostStr(String(order.shipping_cost)); setShowMoreFields(true) }
+        if (order.product_cost != null) { setProductCostStr(fmtInput(order.product_cost)); setShowMoreFields(true) }
+        if (order.shipping_cost != null) { setShippingCostStr(fmtInput(order.shipping_cost)); setShowMoreFields(true) }
 
         // Partner splits — stored as order totals; convert to per-unit for display
         if (orderData.partner_splits?.length > 0) {
           const totalQty = loadedItems.reduce((s: number, i: any) => s + Number(i.qty), 0) || 1
           const s1 = orderData.partner_splits[0]
           setPartner1Id(s1.partner_id)
-          setPartner1PerItemStr(String(s1.amount / totalQty))
+          setPartner1PerItemStr(fmtInput(s1.amount / totalQty))
           if (orderData.partner_splits.length > 1) {
             const s2 = orderData.partner_splits[1]
             setPartner2Id(s2.partner_id)
-            setPartner2PerItemStr(String(s2.amount / totalQty))
+            setPartner2PerItemStr(fmtInput(s2.amount / totalQty))
           }
         }
       } catch (e: any) {
@@ -202,7 +202,7 @@ export default function EditOrder() {
     const pa = prod?.price_amount
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
     let priceStr = lines[idx].priceStr
-    if (pa != null && pa > 0) priceStr = isRefund ? String(-Math.abs(pa)) : String(pa)
+    if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr } : l))
   }
 
@@ -418,7 +418,7 @@ export default function EditOrder() {
               <input
                 type="text"
                 inputMode="decimal"
-                placeholder={isRefund ? '-0.00' : '0.00'}
+                placeholder={isRefund ? '-' + fmtInput(0) : fmtInput(0)}
                 value={l.priceStr}
                 onChange={e => onLinePriceChange(idx, e)}
                 onKeyDown={e => onLinePriceKeyDown(idx, e)}
@@ -486,7 +486,7 @@ export default function EditOrder() {
             </div>
             <div>
               <label>{t('orders.perItem')}</label>
-              <input type="text" inputMode="decimal" placeholder="0.00" value={partner1PerItemStr} onChange={e => setPartner1PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={partner1PerItemStr} onChange={e => setPartner1PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
             <div>
               <label>{t('orders.toPartner1USD')}</label>
@@ -503,7 +503,7 @@ export default function EditOrder() {
             </div>
             <div>
               <label>{t('orders.perItem')}</label>
-              <input type="text" inputMode="decimal" placeholder="0.00" value={partner2PerItemStr} onChange={e => setPartner2PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={partner2PerItemStr} onChange={e => setPartner2PerItemStr(e.target.value)} style={{ height: CONTROL_H }} />
             </div>
             <div>
               <label>{t('orders.toPartner2USD')}</label>
@@ -524,11 +524,11 @@ export default function EditOrder() {
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
             <label>{t('orders.productCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder="0.00" value={productCostStr} onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr} onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
           <div>
             <label>{t('orders.shippingCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder="0.00" value={shippingCostStr} onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr} onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
         </div>
       )}

@@ -224,7 +224,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
       l.product_id ? l : {
         ...l,
         product_id: first.id,
-        priceStr: (first.price_amount && first.price_amount > 0) ? String(first.price_amount) : '',
+        priceStr: (first.price_amount && first.price_amount > 0) ? fmtInput(first.price_amount) : '',
       }
     ))
   }, [unregProductsLoaded])
@@ -284,7 +284,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
     setUnregLines(prev => [...prev, {
       ...emptyUnregLine(),
       product_id: first?.id ?? '',
-      priceStr: (first?.price_amount && first.price_amount > 0) ? String(first.price_amount) : '',
+      priceStr: (first?.price_amount && first.price_amount > 0) ? fmtInput(first.price_amount) : '',
     }])
   }
 
@@ -303,7 +303,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
     }
     const prod = unregProducts.find(p => p.id === product_id)
     const pa = prod?.price_amount
-    const priceStr = (pa != null && pa > 0) ? String(pa) : ''
+    const priceStr = (pa != null && pa > 0) ? fmtInput(pa) : ''
     setUnregLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr } : l))
   }
 
@@ -437,7 +437,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
     navigate('/invoices/preview', { state: invoiceData })
   }
 
-  const { fmtMoney, parseAmount } = useCurrency()
+  const { fmtMoney, parseAmount, fmtInput } = useCurrency()
 
   const excludedProductNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
   const filteredUnregProducts = unregProducts
@@ -588,11 +588,11 @@ const res = await fetch(`${base}/api/create-invoice`, {
                       </div>
                       <div>
                         <label>{t('products.servicePrice')}</label>
-                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                        <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
                       </div>
                       <div>
                         <label>{t('products.productCostUSD')}</label>
-                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                        <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
                       </div>
                     </div>
                   ) : (
@@ -607,11 +607,11 @@ const res = await fetch(`${base}/api/create-invoice`, {
                       </div>
                       <div>
                         <label>{t('products.servicePrice')}</label>
-                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                        <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={newProdPriceStr} onChange={e => setNewProdPriceStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
                       </div>
                       <div>
                         <label>{t('products.directServiceCost')}</label>
-                        <input type="text" inputMode="decimal" placeholder="0.00" value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
+                        <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={newProdCostStr} onChange={e => setNewProdCostStr(e.target.value.replace(/[^0-9.,]/g, ''))} />
                       </div>
                     </div>
                   )}
@@ -668,7 +668,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                         <div>
                           <label>{t('price')}</label>
                           <input
-                            type="text" inputMode="decimal" placeholder="0.00"
+                            type="text" inputMode="decimal" placeholder={fmtInput(0)}
                             value={line.priceStr}
                             onChange={e => updateUnregLine(idx, { priceStr: e.target.value.replace(/[^0-9.,-]/g, '') })}
                           />

@@ -40,7 +40,7 @@ interface NonRecurringCostSummary {
 const NewCost = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { parseAmount } = useCurrency();
+  const { parseAmount, fmtInput } = useCurrency();
   const formRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef<boolean>(false);
   
@@ -242,7 +242,7 @@ const NewCost = () => {
       
       // STEP 8: Set other form fields
       setCost(detail.cost || '');
-      setAmount(formatCurrency(detail.amount));
+      setAmount(fmtInput(detail.amount));
       
       if (costType === 'recurring' && detail.start_date) {
         const startDate = String(detail.start_date).split('T')[0];
@@ -368,42 +368,18 @@ const NewCost = () => {
     }
   };
 
-  // On focus: strip any commas (if any) to keep typing smooth
-  const handleAmountFocus = () => {
-    if (!amount) return;
-    setAmount(amount.replace(/,/g, ''));
-  };
+  const handleAmountFocus = () => { /* no-op: locale comma is the decimal separator, don't strip */ };
 
-  // On blur: pretty-format with thousands separators and normalize decimals to 2 places
+  // On blur: re-format to consistent 2-decimal locale format
   const handleAmountBlur = () => {
-    const a = amount.trim();
-    if (a === '') return;
-
-    // Normalize: remove commas, ensure dot decimal
-    let s = a.replace(/,/g, '');
-
-    // If ends with a dot (user typed "123."), finalize as "123.00"
-    if (s.endsWith('.')) s = s.slice(0, -1);
-
-    const [i0 = '', d0 = ''] = s.split('.');
-    const intPart = (i0 === '' ? '0' : i0).replace(/^0+(?=\d)/, ''); // keep single 0
-    let dec = d0;
-    if (dec.length === 0) dec = '00';
-    else if (dec.length === 1) dec = dec + '0';
-    else dec = dec.slice(0, 2);
-
-    const intWithSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    setAmount(`${intWithSep}.${dec}`);
+    if (!amount.trim()) return;
+    const n = parseAmount(amount);
+    if (Number.isFinite(n) && n > 0) setAmount(fmtInput(n));
   };
 
   // ---------- END AMOUNT INPUT ----------
 
-  const formatCurrency = (amount: number): string => {
-    return amount.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  };
+  const formatCurrency = (amount: number): string => fmtInput(amount);
 
   const validateForm = (): boolean => {
     if (!costCategory) {
@@ -713,7 +689,7 @@ const NewCost = () => {
               onChange={handleAmountChange}
               onFocus={handleAmountFocus}
               onBlur={handleAmountBlur}
-              placeholder="0.00"
+              placeholder={fmtInput(0)}
               disabled={loading}
               style={{ height: CONTROL_H }}
             />

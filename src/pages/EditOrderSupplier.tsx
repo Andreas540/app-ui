@@ -42,7 +42,7 @@ function toQtyIntString(v: any): string {
 export default function EditOrderSupplier() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
@@ -120,7 +120,7 @@ const pRes = await fetch(`${base}/api/product`, {
               id: item.id,
               product_id: item.product_id,
               qty: toQtyIntString(item.qty), // <-- normalize "5000.000" -> "5000"
-              cost: String(item.product_cost ?? '').replace(',', '.'), // normalize just in case
+              cost: item.product_cost != null ? fmtInput(item.product_cost, 3) : '',
               lastCost: null,
             }))
           )
@@ -194,8 +194,8 @@ const pRes = await fetch(`${base}/api/product`, {
     if (relevantLines.length === 0) return false
     return relevantLines.every((l) => {
       const qtyInt = /^[1-9]\d*$/.test(l.qty)
-      const dot = (l.cost ?? '').replace(',', '.')
-      const costOk = dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot)
+      const costNum = parseAmount(l.cost ?? '')
+      const costOk = (l.cost ?? '') !== '' && Number.isFinite(costNum) && costNum > 0
       return !!l.product_id && qtyInt && costOk
     })
   }, [supplierId, relevantLines])
@@ -207,8 +207,8 @@ const pRes = await fetch(`${base}/api/product`, {
     for (const l of relevantLines) {
       if (!l.product_id) return 'Pick product'
       if (!/^[1-9]\d*$/.test(l.qty || '')) return 'Qty must be integer ≥ 1'
-      const dot = (l.cost ?? '').replace(',', '.')
-      if (!(dot !== '' && /^-?\d+(\.\d{1,3})?$/.test(dot))) return 'Cost must be number (max 3 decimals)'
+      const costNum = parseAmount(l.cost ?? '')
+      if (!((l.cost ?? '') !== '' && Number.isFinite(costNum) && costNum > 0)) return 'Cost must be a valid number'
     }
     return ''
   }, [supplierId, relevantLines])
@@ -358,9 +358,8 @@ const pRes = await fetch(`${base}/api/product`, {
                 inputMode="decimal"
                 value={l.cost}
                 onChange={(e) => {
-                  const raw = e.target.value
-                  const dot = raw.replace(',', '.')
-                  if (dot === '' || /^-?\d+(\.\d{0,3})?$/.test(dot)) updateLine(idx, { cost: dot })
+                  const raw = e.target.value.replace(/[^\d.,]/g, '')
+                  updateLine(idx, { cost: raw })
                 }}
               />
             </div>

@@ -27,7 +27,7 @@ export default function NewOrder() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { parseAmount, fmtMoney } = useCurrency()
+  const { parseAmount, fmtMoney, fmtInput } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const allowMultipleRows = config.ui.multipleOrderRows
@@ -167,7 +167,7 @@ export default function NewOrder() {
     const pa = prod?.price_amount
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
     let priceStr = ''
-    if (pa != null && pa > 0) priceStr = isRefund ? String(-Math.abs(pa)) : String(pa)
+    if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr, historicalPrice: null } : l))
     fetchLastPrice(idx, product_id)
   }
@@ -444,7 +444,7 @@ export default function NewOrder() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.00"
+                  placeholder={fmtInput(0)}
                   value={l.priceStr}
                   onChange={e => {
                     const raw = e.target.value
@@ -596,12 +596,12 @@ export default function NewOrder() {
         <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
           <div>
             <label>{t('orders.productCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder="0.00" value={productCostStr}
+            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr}
               onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
           <div>
             <label>{t('orders.shippingCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder="0.00" value={shippingCostStr}
+            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr}
               onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
           </div>
         </div>

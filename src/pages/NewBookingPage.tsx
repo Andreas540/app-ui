@@ -74,7 +74,7 @@ export default function NewBookingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { locale, timezone } = useLocale()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const prefilledCustomerId = searchParams.get('customer_id') || ''
 
   const [services, setServices] = useState<ServiceOption[]>([])
@@ -175,7 +175,7 @@ export default function NewBookingPage() {
   // When service changes, pre-fill price
   useEffect(() => {
     const svc = services.find(s => s.id === selectedServiceId)
-    if (svc) setPriceStr(svc.price_amount != null ? String(svc.price_amount) : '')
+    if (svc) setPriceStr(svc.price_amount != null ? fmtInput(svc.price_amount) : '')
   }, [selectedServiceId, services])
 
   const selectedService = useMemo(
@@ -523,7 +523,7 @@ export default function NewBookingPage() {
               <input
                 type="text"
                 inputMode="decimal"
-                placeholder="0.00"
+                placeholder={fmtInput(0)}
                 value={priceStr}
                 onChange={e => setPriceStr(e.target.value)}
                 style={{ width: '100%' }}

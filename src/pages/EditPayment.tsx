@@ -28,7 +28,7 @@ export default function EditPayment() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtInput } = useCurrency()
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
@@ -90,7 +90,7 @@ export default function EditPayment() {
         }
         
         setPaymentType(payment.payment_type)
-        setAmountStr(String(payment.amount))
+        setAmountStr(fmtInput(payment.amount))
         setDate(payment.payment_date)
         setNotes(payment.notes || '')
         setOrderId(payment.order_id || '')
@@ -306,7 +306,7 @@ export default function EditPayment() {
           <label>{t('editPayment.amountUSD')}</label>
           <input
             type="text"
-            placeholder="0.00"
+            placeholder={fmtInput(0)}
             inputMode="decimal"
             value={amountStr}
             onChange={onAmountChange}

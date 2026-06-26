@@ -46,12 +46,10 @@ export default function NewProduct() {
   }, [products, category])
 
   function parseCostInput(s: string) {
-    const cleaned = s.replace(/[^\d.,]/g, '')
-    const normalized = cleaned.replace(',', '.')
-    return normalized
+    return s.replace(/[^\d.,]/g, '')
   }
 
-  const { fmtMoney, parseAmount } = useCurrency()
+  const { fmtMoney, fmtInput, parseAmount } = useCurrency()
 
   async function loadProducts() {
     try {
@@ -183,7 +181,7 @@ export default function NewProduct() {
           <input
             type="text"
             inputMode="decimal"
-            placeholder="0.00"
+            placeholder={fmtInput(0)}
             value={priceStr}
             onChange={e => setPriceStr(parseCostInput(e.target.value))}
           />
@@ -207,7 +205,7 @@ export default function NewProduct() {
             <input
               type="text"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder={fmtInput(0)}
               value={priceStr}
               onChange={e => setPriceStr(parseCostInput(e.target.value))}
             />
@@ -220,7 +218,7 @@ export default function NewProduct() {
         <input
           type="text"
           inputMode="decimal"
-          placeholder="0.00"
+          placeholder={fmtInput(0)}
           value={costStr}
           onChange={e => setCostStr(parseCostInput(e.target.value))}
         />
