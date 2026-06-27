@@ -1462,7 +1462,7 @@ async function handleSaveStripeCustomerId() {
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Page configurations</div>
                         {[
-                          { id: 'new-product', label: t('products'), file: 'NewProduct.tsx', route: '/products/new' },
+                          { id: 'new-product', label: t('products', { ns: 'navigation' }), file: 'NewProduct.tsx', route: '/products/new' },
                         ].map(page => (
                           <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 6 }}>
                             <div>
@@ -1527,7 +1527,7 @@ async function handleSaveStripeCustomerId() {
                   {businessTypes.find(bt => bt.id === btPageConfig.btId)?.label} · Page config
                 </div>
                 <div className="helper" style={{ marginTop: 2 }}>
-                  {btPageConfig.pageId === 'new-product' ? t('products') : btPageConfig.pageId}
+                  {btPageConfig.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : btPageConfig.pageId}
                 </div>
               </div>
               <button onClick={() => setBtPageConfig(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
