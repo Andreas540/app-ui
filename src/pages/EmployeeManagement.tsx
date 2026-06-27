@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
@@ -38,6 +39,7 @@ function safeString(value: any): string {
 
 export default function EmployeeManagement() {
   const { t } = useTranslation()
+  const { fmtMoney } = useCurrency()
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -503,7 +505,7 @@ export default function EmployeeManagement() {
                       )}
                       {formatSalary(emp.hour_salary) && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: '#22c55e', fontWeight: 400 }}>
-                          ${formatSalary(emp.hour_salary)}/hr
+                          {fmtMoney(Number(emp.hour_salary))}/hr
                         </span>
                       )}
                     </div>
