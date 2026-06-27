@@ -87,6 +87,7 @@ export default function SuperAdmin() {
   const [editingBtConfig, setEditingBtConfig] = useState('')
   const [savingBt, setSavingBt] = useState(false)
   const [btConfigError, setBtConfigError] = useState<string | null>(null)
+  const [btPageConfig, setBtPageConfig] = useState<{ btId: string; pageId: string } | null>(null)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -1458,6 +1459,25 @@ async function handleSaveStripeCustomerId() {
                         />
                         {btConfigError && <p style={{ color: 'var(--color-error)', fontSize: 12, margin: '4px 0 0' }}>{btConfigError}</p>}
                       </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Page configurations</div>
+                        {[
+                          { id: 'new-product', label: t('products'), file: 'NewProduct.tsx', route: '/products/new' },
+                        ].map(page => (
+                          <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 6 }}>
+                            <div>
+                              <span style={{ fontWeight: 500, fontSize: 13 }}>{page.label}</span>
+                            </div>
+                            <button
+                              onClick={() => setBtPageConfig({ btId: bt.id, pageId: page.id })}
+                              style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+                            >
+                              Configure
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
                         <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
@@ -1491,6 +1511,31 @@ async function handleSaveStripeCustomerId() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Business type page config overlay */}
+      {btPageConfig && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setBtPageConfig(null)}
+        >
+          <div className="card" style={{ maxWidth: 600, width: '100%', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>
+                  {businessTypes.find(bt => bt.id === btPageConfig.btId)?.label} · Page config
+                </div>
+                <div className="helper" style={{ marginTop: 2 }}>
+                  {btPageConfig.pageId === 'new-product' ? t('products') : btPageConfig.pageId}
+                </div>
+              </div>
+              <button onClick={() => setBtPageConfig(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
+            </div>
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
+              Page overlay config — coming soon
+            </div>
+          </div>
         </div>
       )}
 
