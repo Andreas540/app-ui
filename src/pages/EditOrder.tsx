@@ -16,7 +16,7 @@ function emptyLine(): Line {
 
 export default function EditOrder() {
   const { t } = useTranslation()
-  const { parseAmount, fmtInput } = useCurrency()
+  const { parseAmount, fmtInput, fmtMoney, fmtPct } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
   const [generatingLink, setGeneratingLink] = useState(false)
   const navigate = useNavigate()
@@ -353,10 +353,10 @@ export default function EditOrder() {
           <div style={{ textAlign: 'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
-              ${profit.toFixed(2)}
+              {fmtMoney(profit)}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-              {profitPercent.toFixed(1)}%
+              {fmtPct(profitPercent)}
             </div>
           </div>
         )}
@@ -445,7 +445,7 @@ export default function EditOrder() {
           <label>{t('orders.orderValueUSD')}</label>
           <input
             type="text"
-            value={Number.isFinite(orderValue) ? orderValue.toFixed(2) : ''}
+            value={Number.isFinite(orderValue) ? fmtInput(orderValue) : ''}
             placeholder="auto"
             readOnly
             style={{ height: CONTROL_H, opacity: 0.9 }}
@@ -490,7 +490,7 @@ export default function EditOrder() {
             </div>
             <div>
               <label>{t('orders.toPartner1USD')}</label>
-              <input type="text" value={partner1Total > 0 ? partner1Total.toFixed(2) : ''} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
+              <input type="text" value={partner1Total > 0 ? fmtInput(partner1Total) : ''} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
             </div>
           </div>
           <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 12 }}>
@@ -507,7 +507,7 @@ export default function EditOrder() {
             </div>
             <div>
               <label>{t('orders.toPartner2USD')}</label>
-              <input type="text" value={partner2Total > 0 ? partner2Total.toFixed(2) : ''} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
+              <input type="text" value={partner2Total > 0 ? fmtInput(partner2Total) : ''} placeholder="auto" readOnly style={{ height: CONTROL_H, opacity: 0.6 }} />
             </div>
           </div>
         </>
@@ -548,7 +548,7 @@ export default function EditOrder() {
             {generatingLink
               ? t('orders.generatingLink')
               : paidAmount > 0
-                ? `${t('orders.paymentLink')} (${(orderValue - paidAmount).toFixed(2)} remaining)`
+                ? `${t('orders.paymentLink')} (${fmtMoney(orderValue - paidAmount)} remaining)`
                 : t('orders.paymentLink')}
           </button>
         )}

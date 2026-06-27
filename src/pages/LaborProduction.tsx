@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { todayYMD, formatShortMonthDay, formatShortMonthDayYear, resolveLocale } from '../lib/time'
 import i18n from '../i18n/config'
 import { DateInput } from '../components/DateInput'
@@ -29,6 +30,7 @@ type LaborProductionRecord = {
 export default function LaborProduction() {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { fmtNumber } = useCurrency()
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -173,8 +175,8 @@ export default function LaborProduction() {
 
     return {
       totalQty,
-      avgQtyPerEmployee: avgQtyPerEmployee.toFixed(1),
-      avgHoursPerEmployee: avgHoursPerEmployee.toFixed(1)
+      avgQtyPerEmployee: avgQtyPerEmployee,
+      avgHoursPerEmployee: avgHoursPerEmployee
     }
   }, [noOfEmployees, totalHours, productEntries])
 
@@ -282,13 +284,13 @@ export default function LaborProduction() {
           <div style={{ display: 'none' }}>
             <span className="helper">{t('production.avgQtyPerEmployee')}</span>
             <span style={{ fontWeight: 600 }}>
-              {noOfEmployees ? stats.avgQtyPerEmployee : '—'}
+              {noOfEmployees ? fmtNumber(stats.avgQtyPerEmployee, 1) : '—'}
             </span>
           </div>
           <div style={{ display: 'none' }}>
             <span className="helper">{t('production.avgHoursPerEmployee')}</span>
             <span style={{ fontWeight: 600 }}>
-              {noOfEmployees ? stats.avgHoursPerEmployee : '—'}
+              {noOfEmployees ? fmtNumber(stats.avgHoursPerEmployee, 1) : '—'}
             </span>
           </div>
         </div>

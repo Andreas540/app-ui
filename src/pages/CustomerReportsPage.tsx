@@ -39,7 +39,6 @@ type Totals = { revenue: number; gross_profit: number }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -167,7 +166,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
   onClose: () => void
 }) {
   const { t, i18n } = useTranslation('reports')
-  const { fmtMoney, fmtCompact } = useCurrency()
+  const { fmtMoney, fmtCompact, fmtPct } = useCurrency()
   const { user } = useAuth()
   const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
@@ -262,7 +261,7 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
 
   const chartFmt = (label: React.ReactNode): React.ReactNode => {
     const v = Number(label)
-    if (chartMetric === 'profit_pct') return `${v.toFixed(1)}%`
+    if (chartMetric === 'profit_pct') return fmtPct(v)
     if (chartMetric === 'qty')        return String(Math.round(v))
     return fmtCompact(v)
   }
@@ -281,17 +280,17 @@ function CustomerDetailModal({ customer, totals, allCustomers, from, to, onClose
       label: t('customers.customer_ranking.col_revenue'),
       value: fmtMoney(customer.revenue),
       pct: totals.revenue > 0
-        ? `${(pctRevenue * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_revenue')}`
+        ? `${fmtPct(pctRevenue * 100)} ${t('customers.customer_ranking.detail.of_all_revenue')}`
         : '',
     },
     {
       label: t('customers.customer_ranking.col_profit'),
       value: fmtMoney(customer.gross_profit),
       pct: totals.gross_profit > 0
-        ? `${(pctProfit * 100).toFixed(1)}% ${t('customers.customer_ranking.detail.of_all_profit')}`
+        ? `${fmtPct(pctProfit * 100)} ${t('customers.customer_ranking.detail.of_all_profit')}`
         : '',
     },
-    { label: t('customers.customer_ranking.col_profit_pct'), value: fmtPct(customer.profit_pct), pct: '' },
+    { label: t('customers.customer_ranking.col_profit_pct'), value: fmtPct(customer.profit_pct * 100), pct: '' },
   ]
 
   return (
@@ -490,7 +489,7 @@ function RankingCard({ customers, totals, from, to }: {
   to: string
 }) {
   const { t }             = useTranslation('reports')
-  const { fmtCompact }    = useCurrency()
+  const { fmtCompact, fmtPct } = useCurrency()
   const { user }          = useAuth()
   const directLabel       = getTenantConfig(user?.tenantId).labels.directLabel
   const [sortMetric, setSortMetric] = useState<SortMetric>('revenue')
@@ -510,7 +509,7 @@ function RankingCard({ customers, totals, from, to }: {
   const getValue = (c: CustomerRow) =>
     sortMetric === 'revenue'    ? fmtCompact(c.revenue)      :
     sortMetric === 'profit'     ? fmtCompact(c.gross_profit) :
-                                  fmtPct(c.profit_pct)
+                                  fmtPct(c.profit_pct * 100)
 
   const th: React.CSSProperties = {
     padding: '7px 8px', textAlign: 'left', fontWeight: 600,

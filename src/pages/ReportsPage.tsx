@@ -21,7 +21,6 @@ import {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 // ── Month picker — single select, last 24 months ──────────────────────────────
 
@@ -119,7 +118,7 @@ function ChartSlide({
   needsScroll, canPrev, canNext, onPrev, onNext, showHint,
 }: ChartSlideProps) {
   const { t } = useTranslation('reports')
-  const { fmtCompact } = useCurrency()
+  const { fmtCompact, fmtPct } = useCurrency()
   const [showPct, setShowPct] = useState(false)
   const touchStartX = useRef<number | null>(null)
 
@@ -221,7 +220,7 @@ function ChartSlide({
               strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
               {showPct && (
                 <LabelList dataKey={lineKey} position="bottom" offset={8}
-                  formatter={(v: any) => fmtPct1(Number(v))} fill="#fff"
+                  formatter={(v: any) => fmtPct(Number(v) * 100)} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
             </Line>

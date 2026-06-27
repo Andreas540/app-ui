@@ -344,7 +344,7 @@ export default function TimeEntry() {
 
     return {
       totalHours: totalHoursNum,
-      totalEarnings: totalEarningsNum.toFixed(2),
+      totalEarnings: totalEarningsNum,
       approvedHours: approvedHoursNum,
       pendingHours: pendingHoursNum,
       daysWorked: timeEntries.length,
@@ -572,7 +572,7 @@ export default function TimeEntry() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="helper">{t('timeEntry.totalEarnings')}</span>
-              <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+              <span style={{ fontWeight: 600 }}>{stats.totalEarnings.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
             </div>
           </div>
         </div>
@@ -610,7 +610,7 @@ export default function TimeEntry() {
                     </div>
                     {toNumberOrNull(entry.salary) !== null && (
                       <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
-                        ${toNumberOrNull(entry.salary)!.toFixed(2)}
+                        {toNumberOrNull(entry.salary)!.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
                       </div>
                     )}
                     {entry.notes && (

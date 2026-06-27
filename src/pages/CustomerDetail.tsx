@@ -198,7 +198,7 @@ export default function CustomerDetailPage() {
     })
   }
 
-  const { fmtMoney, fmtIntMoney } = useCurrency()
+  const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -747,12 +747,12 @@ export default function CustomerDetailPage() {
 
               const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) => {
                 if (compactOrderRows) {
-                  return `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')}`
+                  return `${item.product_name ?? 'Service'} / ${fmtNumber(item.qty)}`
                 }
                 const suffix = isPartnerCustomer && (o as any).partner_amount != null && items.indexOf(item) === 0
                   ? ` / ${fmtIntMoney((o as any).partner_amount)}`
                   : ''
-                return `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString('en-US')} / ${fmtMoney(item.unit_price ?? 0)}${suffix}`
+                return `${item.product_name ?? 'Service'} / ${fmtNumber(item.qty)} / ${fmtMoney(item.unit_price ?? 0)}${suffix}`
               }
 
               const hasNotes = (o as any).notes && (o as any).notes.trim()

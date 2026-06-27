@@ -19,7 +19,6 @@ import {
 
 // --- Chart label helpers ---
 
-const fmtPct1 = (n: number) => `${(n * 100).toFixed(1)}%`
 
 // Fixed-but-responsive height: shorter on phones, taller on desktop
 const CHART_HEIGHT_CSS = 260
@@ -137,7 +136,7 @@ function ChartSlide({
   computePct,
   showPct,
 }: ChartSlideProps) {
-  const { fmtCompact } = useCurrency()
+  const { fmtCompact, fmtPct } = useCurrency()
   const enriched = useMemo(() => {
     if (!computePct) return data
     return (data || []).map((r: any) => ({
@@ -189,7 +188,7 @@ function ChartSlide({
               {!showPct && <LabelList dataKey={bar2Key} position="top" offset={8} formatter={(v: any) => fmtCompact(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-              {showPct && <LabelList dataKey={lineKey} position="bottom" offset={8} formatter={(v: any) => fmtPct1(Number(v))} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
+              {showPct && <LabelList dataKey={lineKey} position="bottom" offset={8} formatter={(v: any) => fmtPct(Number(v) * 100)} fill="#fff" style={{ fontSize: 11, fontWeight: 700 }} />}
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
@@ -258,7 +257,7 @@ function loadDashVisible(defaultCards: string[]): string[] {
 export default function Dashboard() {
   const { t } = useTranslation()
   const { t: tr } = useTranslation('reports')
-  const { fmtMoney, fmtIntMoney } = useCurrency()
+  const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
   const { user } = useAuth()
   const { timezone } = useLocale()
   const config = getTenantConfig(user?.tenantId)
@@ -894,7 +893,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                       Array.isArray(o.items) && o.items.length > 0 ? o.items : []
                     const itemLine = (item: { product_name: string | null; qty: number; unit_price: number }) =>
-                      `${item.product_name ?? 'Service'} / ${Number(item.qty).toLocaleString()} / ${fmtMoney(item.unit_price ?? 0)}`
+                      `${item.product_name ?? 'Service'} / ${fmtNumber(Number(item.qty))} / ${fmtMoney(item.unit_price ?? 0)}`
                     const hasNotes = o.notes && o.notes.trim()
                     const orderTotal = Number(o.total) || 0
                     const paidAmount = Number((o as any).paid_amount) || 0

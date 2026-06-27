@@ -356,7 +356,7 @@ const to = toLocalYMD(toDate)
 
   return {
     totalHours: totalHoursNum,
-    totalEarnings: totalEarningsNum.toFixed(2),
+    totalEarnings: totalEarningsNum,
     approvedHours: approvedHoursNum,
     pendingHours: pendingHoursNum,
     daysWorked: timeEntries.filter(e => e.end_time !== null).length,
@@ -538,7 +538,7 @@ const to = toLocalYMD(toDate)
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalEarnings}</span>
-    <span style={{ fontWeight: 600 }}>${stats.totalEarnings}</span>
+    <span style={{ fontWeight: 600 }}>{stats.totalEarnings.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
   </div>
 </div>
 </div>
@@ -574,7 +574,7 @@ const to = toLocalYMD(toDate)
 </div>
                       {salary !== null && (
                         <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
-                          ${salary.toFixed(2)}
+                          {salary.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
                         </div>
                       )}
                     </>

@@ -41,7 +41,7 @@ const pageStyle: React.CSSProperties = {
 const mutedStyle: React.CSSProperties = { color: '#6b7280', fontSize: 14 }
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
 }
 
 export default function OrderPaidPage() {

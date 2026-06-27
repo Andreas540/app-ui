@@ -56,6 +56,22 @@ export function useCurrency() {
     return parseFloat(normalized) || 0
   }
 
+  // Format a plain number with locale separators and grouping (no currency symbol)
+  function fmtNumber(n: number, decimals = 0): string {
+    return (Number(n) || 0).toLocaleString(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+  }
+
+  // Format a percentage — pass value already in percent scale (e.g. 52.3 → "52,3%")
+  function fmtPct(n: number, decimals = 1): string {
+    return (Number(n) || 0).toLocaleString(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }) + '%'
+  }
+
   function fmtCompact(n: number): string {
     if (Math.abs(n) >= 1000) {
       const parts = new Intl.NumberFormat(locale, {
@@ -72,5 +88,5 @@ export function useCurrency() {
     return fmtMoney(n, 0)
   }
 
-  return { fmtMoney, fmtIntMoney, fmtInput, fmtCompact, parseAmount }
+  return { fmtMoney, fmtIntMoney, fmtInput, fmtNumber, fmtPct, fmtCompact, parseAmount }
 }

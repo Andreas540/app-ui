@@ -114,7 +114,7 @@ export default function SupplierDetailPage() {
     })()
   }, [id])
 
-  const { fmtMoney, fmtIntMoney } = useCurrency()
+  const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -383,7 +383,7 @@ export default function SupplierDetailPage() {
                       <div></div>
                       <div></div>
                       <div className="helper" style={{ lineHeight: '1.4' }}>
-                        {item.product_name} / {Number(item.qty).toLocaleString('en-US')} / {fmtMoney(item.product_cost)}
+                        {item.product_name} / {fmtNumber(item.qty)} / {fmtMoney(item.product_cost)}
                       </div>
                       <div className="helper" style={{textAlign:'right'}}>
                         {fmtMoney(item.product_total)}

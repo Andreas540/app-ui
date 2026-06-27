@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 
 type Supplier = { id: string; name: string }
 type Product  = { id: string; name: string }
@@ -24,6 +25,7 @@ const todayYMD = () => {
 
 export default function NewOrderSupplier() {
   const { t } = useTranslation()
+  const { fmtInput } = useCurrency()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -267,7 +269,7 @@ export default function NewOrderSupplier() {
                   <label>{t('supplierOrders.costLastTime')}</label>
                   <input
                     type="text"
-                    value={l.lastCost == null ? '' : Number(l.lastCost).toFixed(3)}
+                    value={l.lastCost == null ? '' : fmtInput(l.lastCost, 3)}
                     readOnly
                     disabled
                   />

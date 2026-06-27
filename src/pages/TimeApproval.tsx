@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { formatLongDate, formatDate } from '../lib/time'
 
 type TimeEntry = {
@@ -49,6 +50,7 @@ function formatHoursMinutes(decimalHours: number): string {
 }
 export default function TimeApproval() {
   const { t } = useTranslation()
+  const { fmtMoney } = useCurrency()
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -295,9 +297,9 @@ const stats = useMemo(() => {
   
   return {
     totalHours: totalHours,
-    totalEarnings: totalEarnings.toFixed(2),
+    totalEarnings: totalEarnings,
     approvedHours: approvedHours,
-    approvedEarnings: approvedEarnings.toFixed(2),
+    approvedEarnings: approvedEarnings,
     pendingHours: pendingHours,
     pendingCount,
     totalCount: timeEntries.length
@@ -442,7 +444,7 @@ const stats = useMemo(() => {
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t('timeApproval.approvedEarnings')}</div>
     <div style={{ fontSize: 16, fontWeight: 600, color: '#22c55e' }}>
-      ${stats.approvedEarnings}
+      {fmtMoney(stats.approvedEarnings)}
     </div>
   </div>
   <div>
@@ -454,7 +456,7 @@ const stats = useMemo(() => {
   <div>
     <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.totalEarnings')}</div>
     <div style={{ fontSize: 16, fontWeight: 600 }}>
-      ${stats.totalEarnings}
+      {fmtMoney(stats.totalEarnings)}
     </div>
   </div>
 </div>
@@ -610,7 +612,7 @@ const stats = useMemo(() => {
 </div>
 {entry.salary !== null && (
   <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
-    ${entry.salary.toFixed(2)}
+    {fmtMoney(entry.salary)}
   </div>
 )}
 {entry.notes && (

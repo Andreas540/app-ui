@@ -365,7 +365,7 @@ const pRes = await fetch(`${base}/api/product`, {
             </div>
             <div>
               <label>{t('supplierOrders.costLastTime')}</label>
-              <input type="text" value={l.lastCost == null ? '' : Number(l.lastCost).toFixed(3)} readOnly disabled />
+              <input type="text" value={l.lastCost == null ? '' : fmtInput(l.lastCost, 3)} readOnly disabled />
             </div>
           </div>
 

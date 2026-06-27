@@ -27,7 +27,7 @@ export default function NewOrder() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { parseAmount, fmtMoney, fmtInput } = useCurrency()
+  const { parseAmount, fmtMoney, fmtInput, fmtPct } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const allowMultipleRows = config.ui.multipleOrderRows
@@ -298,10 +298,10 @@ export default function NewOrder() {
           <div style={{ textAlign: 'right', fontSize: 14 }}>
             <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
             <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
-              ${profit.toFixed(2)}
+              {fmtMoney(profit)}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-              {profitPercent.toFixed(1)}%
+              {fmtPct(profitPercent)}
             </div>
           </div>
         )}
@@ -470,7 +470,7 @@ export default function NewOrder() {
                 <label>{t('orders.priceLastTime')}</label>
                 <input
                   type="text"
-                  value={l.historicalPrice !== null ? (isRefund ? (-Math.abs(l.historicalPrice)).toFixed(2) : l.historicalPrice.toFixed(2)) : '—'}
+                  value={l.historicalPrice !== null ? (isRefund ? '-' + fmtInput(Math.abs(l.historicalPrice)) : fmtInput(l.historicalPrice)) : '—'}
                   readOnly
                   style={{ height: CONTROL_H, opacity: 0.6 }}
                 />

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
+import { useCurrency } from '../lib/useCurrency'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
@@ -36,6 +37,7 @@ interface TenantGeo {
 export default function TenantAdmin() {
   const { user, verifyAuth } = useAuth()
   const { t } = useTranslation()
+  const { fmtMoney } = useCurrency()
   const navigate = useNavigate()
   const location = useLocation()
   const [users, setUsers] = useState<TenantUser[]>([])
@@ -771,7 +773,7 @@ export default function TenantAdmin() {
   // Accounting preview derived values (computed at component level to avoid IIFE render issues)
   const accSorted  = sortedAccRows(accRows)
   const accPreview = accSorted.slice(0, 20)
-  const accMoney   = (n: number) => Number(n).toFixed(2)
+  const accMoney   = (n: number) => fmtMoney(Number(n))
   const accMonthLabel = `${accYear}-${accMonth}`
 
   return (
@@ -1452,7 +1454,7 @@ export default function TenantAdmin() {
                         <td style={{ padding: '8px 10px' }}>{r.invoice_no ?? '—'}</td>
                         <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{formatAccDate(r.invoice_date)}</td>
                         <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.due_date ? formatAccDate(r.due_date) : '—'}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? Number(r.total_amount).toFixed(2) : '—'}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.total_amount != null ? fmtMoney(Number(r.total_amount)) : '—'}</td>
                         <td style={{ padding: '4px 8px' }}>
                           <button
                             style={{ height: 28, padding: '0 12px', fontSize: 12 }}

@@ -41,7 +41,7 @@ export default function Payments() {
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
-  const { parseAmount, fmtInput } = useCurrency()
+  const { parseAmount, fmtInput, fmtMoney } = useCurrency()
 
   const activePaymentTypes = useMemo(
     () => isCOP ? PAYMENT_TYPES_COP : isSEK ? PAYMENT_TYPES_SEK : PAYMENT_TYPES,
@@ -620,7 +620,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   <option value="">{t('payments.chooseOrder')}</option>
                   {orders.map(o => (
                     <option key={o.id} value={o.id}>
-                      #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
+                      {`#${o.order_no} · ${o.product_name} · ${fmtMoney(Number(o.amount))} · Due: ${fmtMoney(Number(o.balance))}`}
                     </option>
                   ))}
                 </select>
@@ -750,7 +750,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                       <option value="">{t('payments.chooseOrder')}</option>
                       {partnerOrders.map(o => (
                         <option key={o.id} value={o.id}>
-                          #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
+                          {`#${o.order_no} · ${o.product_name} · ${fmtMoney(Number(o.amount))} · Due: ${fmtMoney(Number(o.balance))}`}
                         </option>
                       ))}
                     </select>
@@ -843,7 +843,7 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                       <option value="">{t('payments.chooseOrder')}</option>
                       {supplierOrders.map(o => (
                         <option key={o.id} value={o.id}>
-                          #{o.order_no} · {o.product_name} · ${Number(o.amount).toFixed(2)} · Due: ${Number(o.balance).toFixed(2)}
+                          {`#${o.order_no} · ${o.product_name} · ${fmtMoney(Number(o.amount))} · Due: ${fmtMoney(Number(o.balance))}`}
                         </option>
                       ))}
                     </select>

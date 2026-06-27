@@ -27,7 +27,7 @@ interface SalesStats {
 
 export default function DashboardStore() {
   const { t } = useTranslation()
-  const { fmtIntMoney } = useCurrency()
+  const { fmtIntMoney, fmtNumber } = useCurrency()
   const [showInventory, setShowInventory] = useState(false)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<Location[]>([])
@@ -305,10 +305,10 @@ const sortedInventory = [...inventory].sort((a, b) => {
                 >
                   <div>{item.item_name || '-'}</div>
                   <div className="helper">{item.variation_name || '-'}</div>
-                  <div style={{ textAlign: 'right' }}>{item.quantity?.toLocaleString('en-US') || 0}</div>
+                  <div style={{ textAlign: 'right' }}>{item.quantity != null ? fmtNumber(item.quantity) : 0}</div>
                   <div style={{ textAlign: 'right' }} className="helper">
   {item.days_of_inventory_remaining != null
-    ? t('storeDashboard.days', { n: Number(item.days_of_inventory_remaining).toFixed(2) })
+    ? t('storeDashboard.days', { n: fmtNumber(Number(item.days_of_inventory_remaining), 2) })
     : '-'
   }
 </div>

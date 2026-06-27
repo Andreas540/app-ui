@@ -40,7 +40,7 @@ interface NonRecurringCostSummary {
 const NewCost = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { parseAmount, fmtInput } = useCurrency();
+  const { parseAmount, fmtInput, fmtMoney } = useCurrency();
   const formRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef<boolean>(false);
   
@@ -379,7 +379,6 @@ const NewCost = () => {
 
   // ---------- END AMOUNT INPUT ----------
 
-  const formatCurrency = (amount: number): string => fmtInput(amount);
 
   const validateForm = (): boolean => {
     if (!costCategory) {
@@ -819,7 +818,7 @@ const NewCost = () => {
                             <div className="helper">{item.start_month || '—'}</div>
                             <div className="helper">{item.cost_type}</div>
                             <div className="helper" style={{ textAlign: 'right' }}>
-                              ${formatCurrency(item.total_amount)}
+                              {fmtMoney(item.total_amount)}
                             </div>
                           </div>
 
@@ -841,7 +840,7 @@ const NewCost = () => {
                                 {detail.cost || t('costs.noDescription')}
                               </div>
                               <div className="helper" style={{ textAlign: 'right' }}>
-                                ${formatCurrency(detail.amount)}
+                                {fmtMoney(detail.amount)}
                               </div>
                               <button
                                 onClick={() => handleEditCost(detail.id, 'recurring', {
@@ -912,7 +911,7 @@ const NewCost = () => {
                             <div className="helper">{item.month || '—'}</div>
                             <div className="helper">{item.cost_type}</div>
                             <div className="helper" style={{ textAlign: 'right' }}>
-                              ${formatCurrency(item.total_amount)}
+                              {fmtMoney(item.total_amount)}
                             </div>
                           </div>
 
@@ -934,7 +933,7 @@ const NewCost = () => {
                                 {detail.cost || t('costs.noDescription')}
                               </div>
                               <div className="helper" style={{ textAlign: 'right' }}>
-                                ${formatCurrency(detail.amount)}
+                                {fmtMoney(detail.amount)}
                               </div>
                               <button
                                 onClick={() => handleEditCost(detail.id, 'non-recurring', {

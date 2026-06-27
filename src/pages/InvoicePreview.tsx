@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
+import { useCurrency } from '../lib/useCurrency'
 
 type CompanyInfo = {
   autoInvoiceNumber: boolean
@@ -53,6 +54,7 @@ export default function InvoicePreview() {
   const { t } = useTranslation()
   const { state } = useLocation()
   const navigate = useNavigate()
+  const { fmtMoney } = useCurrency()
 
   // Strip internal routing flags before treating as invoice data
   const rawState = state as (InvoiceData & { _fromSaved?: boolean; _returnYear?: string; _returnMonth?: string }) | undefined
@@ -134,7 +136,6 @@ useEffect(() => {
 }, [invoiceData])
 
     const fmtDate = formatDate
-  const money = (n: number) => `$${Number(n).toFixed(2)}`
   const subtotal = useMemo(() => (invoiceData?.orders ?? []).reduce((t, o) => t + Number(o.amount), 0), [invoiceData])
   const total = subtotal
 
@@ -572,8 +573,8 @@ useEffect(() => {
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 140px', gap: 16, padding: '12px 0', fontSize: 14, borderBottom: '1px solid #eee' }}>
                       <div>{o.product}</div>
                       <div style={{ textAlign: 'right' }}>{o.quantity}</div>
-                      <div style={{ textAlign: 'right' }}>{money(o.unit_price)}</div>
-                      <div style={{ textAlign: 'right' }}>{money(o.amount)}</div>
+                      <div style={{ textAlign: 'right' }}>{fmtMoney(o.unit_price)}</div>
+                      <div style={{ textAlign: 'right' }}>{fmtMoney(o.amount)}</div>
                     </div>
                   ))}
                 </div>
@@ -587,9 +588,9 @@ useEffect(() => {
                     <div style={{ fontWeight: 'bold', fontSize: 18 }}>{t('total')}</div>
                   </div>
                   <div style={{ textAlign: 'right', minWidth: 140 }}>
-                    <div style={{ marginBottom: 12 }}>{money(subtotal)}</div>
+                    <div style={{ marginBottom: 12 }}>{fmtMoney(subtotal)}</div>
                     <div style={{ marginBottom: 12 }}>-</div>
-                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>{money(total)}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: 18 }}>{fmtMoney(total)}</div>
                   </div>
                 </div>
               </div>

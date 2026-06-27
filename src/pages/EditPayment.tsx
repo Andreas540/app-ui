@@ -28,7 +28,7 @@ export default function EditPayment() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { parseAmount, fmtInput } = useCurrency()
+  const { parseAmount, fmtInput, fmtMoney } = useCurrency()
   const { currency } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
@@ -338,7 +338,7 @@ export default function EditPayment() {
               <option value="">{t('payments.chooseOrder')}</option>
               {orders.map(o => (
                 <option key={o.id} value={o.id}>
-                  #{o.order_no} · {o.product_name} · {Number(o.amount).toFixed(2)}{Number(o.balance) > 0 ? ` · due: ${Number(o.balance).toFixed(2)}` : ''}
+                  {`#${o.order_no} · ${o.product_name} · ${fmtMoney(Number(o.amount))}${Number(o.balance) > 0 ? ` · due: ${fmtMoney(Number(o.balance))}` : ''}`}
                 </option>
               ))}
             </select>

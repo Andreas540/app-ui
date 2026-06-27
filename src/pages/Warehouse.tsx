@@ -18,7 +18,7 @@ type InventoryItem = {
 export default function Warehouse() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { parseAmount } = useCurrency()
+  const { parseAmount, fmtNumber } = useCurrency()
 
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -128,7 +128,6 @@ export default function Warehouse() {
     return Number.isInteger(qtyInt) && qtyInt < 0 && newInventoryQty < 0
   }, [qtyInt, newInventoryQty])
 
-  const intFmt = useMemo(() => new Intl.NumberFormat('en-US'), [])
 
   if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-normal"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
@@ -457,7 +456,7 @@ export default function Warehouse() {
                       fontWeight: item.pre_prod < 0 ? 600 : undefined,
                     }}
                   >
-                    {intFmt.format(Number(item.pre_prod))}
+                    {fmtNumber(Number(item.pre_prod))}
                   </div>
 
                   <div
@@ -468,7 +467,7 @@ export default function Warehouse() {
                       fontWeight: item.finished < 0 ? 600 : undefined,
                     }}
                   >
-                    {intFmt.format(Number(item.finished))}
+                    {fmtNumber(Number(item.finished))}
                   </div>
 
                   <div
@@ -484,7 +483,7 @@ export default function Warehouse() {
                             : 'var(--primary)',
                     }}
                   >
-                    {intFmt.format(Number(item.qty))}
+                    {fmtNumber(Number(item.qty))}
                   </div>
                 </div>
               ))}

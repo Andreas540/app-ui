@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders, listProducts, type ProductWithCost } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { BookingFormTab } from './TenantAdminCustomerOffersTab'
 import type { CustomerOption } from './TenantAdminCustomerOffersTab'
 import BookingSmsUsagePage from './BookingSmsUsagePage'
@@ -42,6 +43,7 @@ type SmsView = 'usage' | 'reminders'
 
 export default function TenantAdminBookingTab({ initialSubTab, initialCustomerId }: { initialSubTab?: BookingSubTab; initialCustomerId?: string }) {
   const { t, i18n } = useTranslation()
+  const { fmtMoney } = useCurrency()
   const [subTab, setSubTab] = useState<BookingSubTab>(initialSubTab ?? 'availability')
   const [customers, setCustomers] = useState<CustomerOption[]>([])
   const [customerId, setCustomerId] = useState(initialCustomerId ?? '')
@@ -296,7 +298,7 @@ ${entries}
                   )}
                   {selected?.price_amount != null && (
                     <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                      · {Number(selected.price_amount).toFixed(2)}
+                      · {fmtMoney(Number(selected.price_amount))}
                     </span>
                   )}
                 </div>
@@ -489,7 +491,7 @@ ${entries}
                     />
                     <span>{s.name}</span>
                     {s.price_amount != null && (
-                      <span style={{ color: 'var(--muted)', fontSize: 13 }}>· {Number(s.price_amount).toFixed(2)}</span>
+                      <span style={{ color: 'var(--muted)', fontSize: 13 }}>· {fmtMoney(Number(s.price_amount))}</span>
                     )}
                     {s.duration_minutes != null && (
                       <span style={{ color: 'var(--muted)', fontSize: 13 }}>· {s.duration_minutes} min</span>

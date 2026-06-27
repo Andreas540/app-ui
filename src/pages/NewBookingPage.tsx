@@ -74,7 +74,7 @@ export default function NewBookingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { locale, timezone } = useLocale()
-  const { parseAmount, fmtInput } = useCurrency()
+  const { parseAmount, fmtInput, fmtMoney } = useCurrency()
   const prefilledCustomerId = searchParams.get('customer_id') || ''
 
   const [services, setServices] = useState<ServiceOption[]>([])
@@ -489,10 +489,10 @@ export default function NewBookingPage() {
                     const bookingPrice = parseAmount(priceStr || '0')
                     const afterThis = amt - bookingPrice
                     const dateStr = new Date(String(p.payment_date).slice(0, 10) + 'T12:00:00').toLocaleDateString(locale)
-                    const afterStr = afterThis > 0 ? ` → $${afterThis.toFixed(2)} after booking` : ''
+                    const afterStr = afterThis > 0 ? ` → ${fmtMoney(afterThis)} after booking` : ''
                     return (
                       <option key={p.id} value={p.id}>
-                        Remaining: ${amt.toFixed(2)} · {dateStr}{p.notes ? ` · ${p.notes}` : ''}{afterStr}
+                        {`Remaining: ${fmtMoney(amt)} · ${dateStr}${p.notes ? ` · ${p.notes}` : ''}${afterStr}`}
                       </option>
                     )
                   })}
