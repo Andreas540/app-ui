@@ -181,7 +181,7 @@ function deepMerge<T>(base: T, override: DeepPartial<T>): T {
     const val = override[key]
     if (val !== undefined && val !== null) {
       if (typeof val === 'object' && !Array.isArray(val)) {
-        result[key] = deepMerge(base[key] as any, val as any)
+        result[key] = deepMerge((base as any)?.[key], val as any)
       } else {
         result[key] = val as any
       }
