@@ -56,6 +56,9 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
       ? Number(body.price_amount)
       : null
     const imageData = typeof body.image_data === 'string' ? body.image_data : null
+    const productCategory    = body.product_category    ? String(body.product_category)    : null
+    const productSubcategory = body.product_subcategory ? String(body.product_subcategory) : null
+    const sku                = body.sku                 ? String(body.sku).trim()          : null
 
     const sql = neon(DATABASE_URL);
 
@@ -66,9 +69,9 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null})
-      RETURNING id, name, cost, category, duration_minutes, price_amount,
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at, product_category, product_subcategory, sku)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null}, ${productCategory}, ${productSubcategory}, ${sku})
+      RETURNING id, name, cost, category, duration_minutes, price_amount, product_category, product_subcategory, sku,
                 (image_data IS NOT NULL AND image_data != '') AS has_image,
                 EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
     `;

@@ -31,6 +31,9 @@ export default function NewProduct() {
   const [priceStr, setPriceStr] = useState('')
 
   const [imageData, setImageData] = useState<string | null>(null)
+  const [productCategory, setProductCategory] = useState('')
+  const [productSubcategory, setProductSubcategory] = useState('')
+  const [sku, setSku] = useState('')
 
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
@@ -105,13 +108,16 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
       setDurationStr('')
       setPriceStr('')
       setImageData(null)
+      setProductCategory('')
+      setProductSubcategory('')
+      setSku('')
       await loadProducts()
       if (showHistorical) {
         await loadHistoricalCosts()
@@ -175,16 +181,58 @@ export default function NewProduct() {
         />
       </div>
 
+      <div className="row" style={{ marginTop: 12 }}>
+        <div>
+          <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
+          <select value={productCategory} onChange={e => setProductCategory(e.target.value)}>
+            <option value="">—</option>
+            <option value="category_1">Category 1</option>
+            <option value="category_2">Category 2</option>
+          </select>
+        </div>
+        <div>
+          <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
+          <select value={productSubcategory} onChange={e => setProductSubcategory(e.target.value)}>
+            <option value="">—</option>
+            <option value="subcategory_1">Subcategory 1</option>
+            <option value="subcategory_2">Subcategory 2</option>
+          </select>
+        </div>
+      </div>
+
       {category === 'product' && (
         <div style={{ marginTop: 12 }}>
-          <label>{t('products.servicePrice')}</label>
+          <label>Item ID / SKU</label>
           <input
             type="text"
-            inputMode="decimal"
-            placeholder={fmtInput(0)}
-            value={priceStr}
-            onChange={e => setPriceStr(parseCostInput(e.target.value))}
+            value={sku}
+            onChange={e => setSku(e.target.value)}
           />
+        </div>
+      )}
+
+      {category === 'product' && (
+        <div className="row" style={{ marginTop: 12 }}>
+          <div>
+            <label>{t('products.servicePrice')}</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder={fmtInput(0)}
+              value={priceStr}
+              onChange={e => setPriceStr(parseCostInput(e.target.value))}
+            />
+          </div>
+          <div>
+            <label>{t('products.productCostUSD')}</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder={fmtInput(0)}
+              value={costStr}
+              onChange={e => setCostStr(parseCostInput(e.target.value))}
+            />
+          </div>
         </div>
       )}
 
@@ -213,16 +261,18 @@ export default function NewProduct() {
         </div>
       )}
 
-      <div style={{ marginTop: 12 }}>
-        <label>{category === 'service' ? t('products.directServiceCost') : t('products.productCostUSD')}</label>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder={fmtInput(0)}
-          value={costStr}
-          onChange={e => setCostStr(parseCostInput(e.target.value))}
-        />
-      </div>
+      {category === 'service' && (
+        <div style={{ marginTop: 12 }}>
+          <label>{t('products.directServiceCost')}</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder={fmtInput(0)}
+            value={costStr}
+            onChange={e => setCostStr(parseCostInput(e.target.value))}
+          />
+        </div>
+      )}
 
       <ImagePicker
         label={category === 'service' ? t('products.serviceImage') : t('products.productImage')}
@@ -234,7 +284,7 @@ export default function NewProduct() {
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null) }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku('') }} disabled={saving}>
           {t('clear')}
         </button>
       </div>

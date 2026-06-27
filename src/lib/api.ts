@@ -353,7 +353,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
