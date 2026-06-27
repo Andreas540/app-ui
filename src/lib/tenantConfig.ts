@@ -67,6 +67,7 @@ export interface TenantConfig {
     [pageKey: string]: {
       hiddenFields?: string[]
       visibleFields?: string[]
+      fields?: Record<string, boolean>
     }
   }
 }

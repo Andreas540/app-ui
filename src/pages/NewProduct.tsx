@@ -6,6 +6,8 @@ import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } fro
 import { ImagePicker } from '../components/ImagePicker'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 interface HistoricalCost {
   product_id: string
@@ -53,6 +55,11 @@ export default function NewProduct() {
   }
 
   const { fmtMoney, fmtInput, parseAmount } = useCurrency()
+  const { user } = useAuth()
+  const pageFields = getTenantConfig(user?.tenantId).pages['new-product']?.fields ?? {}
+  const showCategory    = pageFields.product_category    !== false
+  const showSubcategory = pageFields.product_subcategory !== false
+  const showSku         = pageFields.sku                 !== false
 
   async function loadProducts() {
     try {
@@ -181,26 +188,32 @@ export default function NewProduct() {
         />
       </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
-        <div>
-          <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
-          <select value={productCategory} onChange={e => setProductCategory(e.target.value)}>
-            <option value="">—</option>
-            <option value="category_1">Category 1</option>
-            <option value="category_2">Category 2</option>
-          </select>
+      {(showCategory || showSubcategory) && (
+        <div className="row" style={{ marginTop: 12 }}>
+          {showCategory && (
+            <div>
+              <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
+              <select value={productCategory} onChange={e => setProductCategory(e.target.value)}>
+                <option value="">—</option>
+                <option value="category_1">Category 1</option>
+                <option value="category_2">Category 2</option>
+              </select>
+            </div>
+          )}
+          {showSubcategory && (
+            <div>
+              <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
+              <select value={productSubcategory} onChange={e => setProductSubcategory(e.target.value)}>
+                <option value="">—</option>
+                <option value="subcategory_1">Subcategory 1</option>
+                <option value="subcategory_2">Subcategory 2</option>
+              </select>
+            </div>
+          )}
         </div>
-        <div>
-          <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
-          <select value={productSubcategory} onChange={e => setProductSubcategory(e.target.value)}>
-            <option value="">—</option>
-            <option value="subcategory_1">Subcategory 1</option>
-            <option value="subcategory_2">Subcategory 2</option>
-          </select>
-        </div>
-      </div>
+      )}
 
-      {category === 'product' && (
+      {category === 'product' && showSku && (
         <div style={{ marginTop: 12 }}>
           <label>Item ID / SKU</label>
           <input
