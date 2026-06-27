@@ -88,6 +88,8 @@ export default function SuperAdmin() {
   const [savingBt, setSavingBt] = useState(false)
   const [btConfigError, setBtConfigError] = useState<string | null>(null)
   const [btPageConfig, setBtPageConfig] = useState<{ btId: string; pageId: string } | null>(null)
+  const [btFieldConfig, setBtFieldConfig] = useState<Record<string, boolean>>({})
+  const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -285,6 +287,35 @@ export default function SuperAdmin() {
       setNewBtId(''); setNewBtLabel(''); setBtActiveTab('list')
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setCreatingBt(false) }
+  }
+
+  async function handleSaveBtPageConfig() {
+    if (!btPageConfig) return
+    const bt = businessTypes.find(b => b.id === btPageConfig.btId)
+    if (!bt) return
+    setSavingBtPageConfig(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const existing = bt.config_defaults as any
+      const updated = {
+        ...existing,
+        pages: {
+          ...(existing.pages ?? {}),
+          [btPageConfig.pageId]: {
+            ...(existing.pages?.[btPageConfig.pageId] ?? {}),
+            fields: btFieldConfig,
+          }
+        }
+      }
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateBusinessType', id: bt.id, label: bt.label, configDefaults: updated })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      setBtPageConfig(null)
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtPageConfig(false) }
   }
 
   async function handleSaveBusinessType() {
@@ -1469,7 +1500,11 @@ async function handleSaveStripeCustomerId() {
                               <span style={{ fontWeight: 500, fontSize: 13 }}>{page.label}</span>
                             </div>
                             <button
-                              onClick={() => setBtPageConfig({ btId: bt.id, pageId: page.id })}
+                              onClick={() => {
+                                const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
+                                setBtFieldConfig({ product_category: true, product_subcategory: true, sku: true, ...existing })
+                                setBtPageConfig({ btId: bt.id, pageId: page.id })
+                              }}
                               style={{ height: 28, padding: '0 12px', fontSize: 12 }}
                             >
                               Configure
@@ -1532,8 +1567,88 @@ async function handleSaveStripeCustomerId() {
               </div>
               <button onClick={() => setBtPageConfig(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
             </div>
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-              Page overlay config — coming soon
+            {/* Preview */}
+            <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
+
+              {/* Non-configurable: title + toggle */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{t('products.newProductTitle')}</div>
+                <div style={{ height: 28, width: 90, background: 'var(--primary)', borderRadius: 4, opacity: 0.4 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 0, marginBottom: 12, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+                {['Product', 'Service'].map((l, i) => (
+                  <div key={l} style={{ padding: '5px 16px', fontSize: 13, background: i === 0 ? 'var(--primary)' : 'transparent', color: i === 0 ? '#fff' : 'inherit', opacity: 0.6 }}>{l}</div>
+                ))}
+              </div>
+
+              {/* Non-configurable: name */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.productName')}</div>
+                <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6 }} />
+              </div>
+
+              {/* Configurable: category + subcategory */}
+              {(() => {
+                const showCat = btFieldConfig.product_category !== false
+                const showSub = btFieldConfig.product_subcategory !== false
+                const toggle = (key: string, val: boolean) => setBtFieldConfig(prev => ({ ...prev, [key]: val }))
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product category</div>
+                      <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                      <button onClick={() => toggle('product_category', !showCat)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                        {showCat ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                    <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product subcategory</div>
+                      <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                      <button onClick={() => toggle('product_subcategory', !showSub)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                        {showSub ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Configurable: SKU */}
+              {(() => {
+                const showSku = btFieldConfig.sku !== false
+                return (
+                  <div style={{ position: 'relative', marginBottom: 12, opacity: showSku ? 1 : 0.35 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                    <button onClick={() => setBtFieldConfig(prev => ({ ...prev, sku: !showSku }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                      {showSku ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                )
+              })()}
+
+              {/* Non-configurable: price + cost */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
+                  <div key={label}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Non-configurable: image + buttons */}
+              <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.4, marginBottom: 12 }} />
+              <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
+                <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />
+                <div style={{ height: 36, width: 60, background: 'var(--border)', borderRadius: 6 }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="primary" onClick={handleSaveBtPageConfig} disabled={savingBtPageConfig} style={{ height: 34, padding: '0 16px', fontSize: 13 }}>
+                {savingBtPageConfig ? 'Saving…' : 'Save'}
+              </button>
+              <button onClick={() => setBtPageConfig(null)} style={{ height: 34, padding: '0 16px', fontSize: 13 }}>Cancel</button>
             </div>
           </div>
         </div>
