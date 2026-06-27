@@ -60,6 +60,13 @@ export default function NewProduct() {
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
+  const showProductTab  = pageFields.show_product_tab    !== false
+  const showServiceTab  = pageFields.show_service_tab    !== false
+
+  useEffect(() => {
+    if (category === 'product' && !showProductTab && showServiceTab) setCategory('service')
+    if (category === 'service' && !showServiceTab && showProductTab) setCategory('product')
+  }, [showProductTab, showServiceTab])
 
   async function loadProducts() {
     try {
@@ -158,25 +165,29 @@ export default function NewProduct() {
         </Link>
       </div>
 
-      <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-        {(['product', 'service'] as const).map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            style={{
-              padding: '6px 18px',
-              border: 'none',
-              borderRadius: 0,
-              background: category === cat ? 'var(--primary, #2563eb)' : 'transparent',
-              color: category === cat ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              fontWeight: category === cat ? 600 : 400,
-            }}
-          >
-            {cat === 'product' ? 'Product' : 'Service'}
-          </button>
-        ))}
-      </div>
+      {(showProductTab || showServiceTab) && (
+        <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+          {(['product', 'service'] as const)
+            .filter(cat => cat === 'product' ? showProductTab : showServiceTab)
+            .map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                style={{
+                  padding: '6px 18px',
+                  border: 'none',
+                  borderRadius: 0,
+                  background: category === cat ? 'var(--primary, #2563eb)' : 'transparent',
+                  color: category === cat ? '#fff' : 'inherit',
+                  cursor: 'pointer',
+                  fontWeight: category === cat ? 600 : 400,
+                }}
+              >
+                {cat === 'product' ? 'Product' : 'Service'}
+              </button>
+            ))}
+        </div>
+      )}
 
       <div style={{ marginTop: 12 }}>
         <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>

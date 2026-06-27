@@ -89,6 +89,7 @@ export default function SuperAdmin() {
   const [btConfigError, setBtConfigError] = useState<string | null>(null)
   const [btPageConfig, setBtPageConfig] = useState<{ btId: string; pageId: string } | null>(null)
   const [btFieldConfig, setBtFieldConfig] = useState<Record<string, boolean>>({})
+  const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
@@ -1502,7 +1503,9 @@ async function handleSaveStripeCustomerId() {
                             <button
                               onClick={() => {
                                 const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
-                                setBtFieldConfig({ product_category: true, product_subcategory: true, sku: true, ...existing })
+                                const merged = { product_category: true, product_subcategory: true, sku: true, show_product_tab: true, show_service_tab: true, ...existing }
+                                setBtFieldConfig(merged)
+                                setBtPreviewTab(merged.show_product_tab !== false ? 'product' : 'service')
                                 setBtPageConfig({ btId: bt.id, pageId: page.id })
                               }}
                               style={{ height: 28, padding: '0 12px', fontSize: 12 }}
@@ -1570,20 +1573,54 @@ async function handleSaveStripeCustomerId() {
             {/* Preview */}
             <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
 
-              {/* Non-configurable: title + toggle */}
+              {/* Non-configurable: title + edit button */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{t('products.newProductTitle')}</div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>
+                  {btPreviewTab === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}
+                </div>
                 <div style={{ height: 28, width: 90, background: 'var(--primary)', borderRadius: 4, opacity: 0.4 }} />
               </div>
-              <div style={{ display: 'flex', gap: 0, marginBottom: 12, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-                {['Product', 'Service'].map((l, i) => (
-                  <div key={l} style={{ padding: '5px 16px', fontSize: 13, background: i === 0 ? 'var(--primary)' : 'transparent', color: i === 0 ? '#fff' : 'inherit', opacity: 0.6 }}>{l}</div>
-                ))}
+
+              {/* Configurable: Product / Service tab toggle */}
+              <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
+                {(['product', 'service'] as const).map((tab, i) => {
+                  const configKey = tab === 'product' ? 'show_product_tab' : 'show_service_tab'
+                  const isVisible = btFieldConfig[configKey] !== false
+                  const isActive = btPreviewTab === tab
+                  return (
+                    <div key={tab} style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setBtPreviewTab(tab)}
+                        style={{
+                          padding: '6px 28px 6px 12px',
+                          border: `1px solid ${isVisible ? 'var(--color-success, #22c55e)' : 'var(--border)'}`,
+                          borderRight: i === 0 ? 'none' : undefined,
+                          borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
+                          background: isActive ? 'var(--primary)' : 'transparent',
+                          color: isActive ? '#fff' : 'inherit',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          opacity: isVisible ? 1 : 0.35,
+                        }}
+                      >
+                        {tab === 'product' ? 'Product' : 'Service'}
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setBtFieldConfig(prev => ({ ...prev, [configKey]: !isVisible })) }}
+                        style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 4px', fontSize: 9, borderRadius: 4 }}
+                      >
+                        {isVisible ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
 
               {/* Non-configurable: name */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.productName')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  {btPreviewTab === 'service' ? t('products.serviceName') : t('products.productName')}
+                </div>
                 <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6 }} />
               </div>
 
@@ -1592,17 +1629,19 @@ async function handleSaveStripeCustomerId() {
                 const showCat = btFieldConfig.product_category !== false
                 const showSub = btFieldConfig.product_subcategory !== false
                 const toggle = (key: string, val: boolean) => setBtFieldConfig(prev => ({ ...prev, [key]: val }))
+                const catLabel = btPreviewTab === 'service' ? 'Service category' : 'Product category'
+                const subLabel = btPreviewTab === 'service' ? 'Service subcategory' : 'Product subcategory'
                 return (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                     <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product category</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{catLabel}</div>
                       <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                       <button onClick={() => toggle('product_category', !showCat)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                         {showCat ? 'Hide' : 'Show'}
                       </button>
                     </div>
                     <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product subcategory</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{subLabel}</div>
                       <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                       <button onClick={() => toggle('product_subcategory', !showSub)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                         {showSub ? 'Hide' : 'Show'}
@@ -1612,8 +1651,8 @@ async function handleSaveStripeCustomerId() {
                 )
               })()}
 
-              {/* Configurable: SKU */}
-              {(() => {
+              {/* Configurable: SKU (product tab only) */}
+              {btPreviewTab === 'product' && (() => {
                 const showSku = btFieldConfig.sku !== false
                 return (
                   <div style={{ position: 'relative', marginBottom: 12, opacity: showSku ? 1 : 0.35 }}>
@@ -1626,15 +1665,32 @@ async function handleSaveStripeCustomerId() {
                 )
               })()}
 
-              {/* Non-configurable: price + cost */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
-                  <div key={label}>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+              {/* Non-configurable: price/cost fields (layout differs per tab) */}
+              {btPreviewTab === 'product' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
+                    <div key={label}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                      <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    {[t('products.duration'), t('products.servicePrice')].map(label => (
+                      <div key={label}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.directServiceCost')}</div>
                     <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
               {/* Non-configurable: image + buttons */}
               <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.4, marginBottom: 12 }} />
