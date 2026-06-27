@@ -4,6 +4,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { formatDate, formatShortMonthDay, formatShortMonthDayYear, formatDateTime } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
+import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useTheme } from '../lib/theme'
@@ -118,6 +119,7 @@ function shouldHideProduct(name: string) {
 export default function SupplyChainOverview() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
+  const { fmtNumber } = useCurrency()
   const { theme } = useTheme()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -505,12 +507,12 @@ export default function SupplyChainOverview() {
               ${data.not_delivered.map(item => `
                 <tr>
                   <td>${item.product}</td>
-                  <td class="qty-col">${intFmt.format(item.qty)}</td>
+                  <td class="qty-col">${fmtNumber(item.qty)}</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
                 <td>Total</td>
-                <td class="qty-col">${intFmt.format(data.not_delivered.reduce((sum, item) => sum + Number(item.qty), 0))}</td>
+                <td class="qty-col">${fmtNumber(data.not_delivered.reduce((sum, item) => sum + Number(item.qty), 0))}</td>
               </tr>
             </tbody>
           </table>
@@ -532,7 +534,6 @@ export default function SupplyChainOverview() {
     }
   }
 
-  const intFmt = new Intl.NumberFormat('en-US')
 
   if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-normal"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
@@ -779,7 +780,7 @@ export default function SupplyChainOverview() {
                           const { x, y, width, height, value } = props
                           if (!value || height <= 0) return null
 
-                          const formattedValue = intFmt.format(Number(value))
+                          const formattedValue = fmtNumber(Number(value))
                           const textX = x + width / 2
                           const textY = y + height - 20
 
@@ -849,7 +850,7 @@ export default function SupplyChainOverview() {
                     {deliveryWeekHeader}
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                    {t('supplyChain.totalQtyDelivered', { qty: intFmt.format(deliveryTotalQty) })}
+                    {t('supplyChain.totalQtyDelivered', { qty: fmtNumber(deliveryTotalQty) })}
                   </div>
                   {weeklyDeliveryData.length > 0 && (
                     <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -920,7 +921,7 @@ export default function SupplyChainOverview() {
                             const { x, y, width, value, height } = props
                             if (!value) return null
 
-                            const formattedValue = intFmt.format(Number(value))
+                            const formattedValue = fmtNumber(Number(value))
 
                             return (
                               <text
@@ -977,7 +978,7 @@ export default function SupplyChainOverview() {
                       <div className="helper" style={{ fontSize: 12 }}>{formatDate(item.date)}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
-                      <div style={{ textAlign: 'right', fontSize: 14 }}>{intFmt.format(Math.abs(item.qty))}</div>
+                      <div style={{ textAlign: 'right', fontSize: 14 }}>{fmtNumber(Math.abs(item.qty))}</div>
                     </div>
                   ))}
               </div>
@@ -1026,7 +1027,7 @@ export default function SupplyChainOverview() {
         {productionWeekHeader}
       </div>
       <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-        {t('supplyChain.totalQtyProduced', { qty: intFmt.format(productionTotalQty) })}
+        {t('supplyChain.totalQtyProduced', { qty: fmtNumber(productionTotalQty) })}
       </div>
       {weeklyProductionData.length > 0 && (
         <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -1097,7 +1098,7 @@ export default function SupplyChainOverview() {
                 const { x, y, width, value, height } = props
                 if (!value) return null
 
-                const formattedValue = intFmt.format(Number(value))
+                const formattedValue = fmtNumber(Number(value))
 
                 return (
                   <text
@@ -1188,7 +1189,7 @@ export default function SupplyChainOverview() {
                         }}
                       >
                         <div>{item.product}</div>
-                        <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                        <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
                       </div>
 
                       {isExpanded && orders.length > 0 && (
@@ -1208,7 +1209,7 @@ export default function SupplyChainOverview() {
                               <div className="helper" style={{ fontSize: 12 }}>{formatDate(o.order_date)}</div>
                               <div className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>#{o.order_no}</div>
                               <Link to={`/customers/${o.customer_id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', textDecoration: 'underline' }}>{o.customer}</Link>
-                              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{intFmt.format(Number(o.qty))}</div>
+                              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{fmtNumber(Number(o.qty))}</div>
                             </div>
                           ))}
                         </div>
@@ -1323,7 +1324,7 @@ export default function SupplyChainOverview() {
                   fontWeight: item.pre_prod < 0 ? 600 : undefined,
                 }}
               >
-                {intFmt.format(Number(item.pre_prod))}
+                {fmtNumber(Number(item.pre_prod))}
               </div>
 
               <div
@@ -1332,7 +1333,7 @@ export default function SupplyChainOverview() {
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {intFmt.format(Number(item.finished))}
+                {fmtNumber(Number(item.finished))}
               </div>
 
               <div
@@ -1343,7 +1344,7 @@ export default function SupplyChainOverview() {
                   fontWeight: item.qty < 0 ? 600 : undefined,
                 }}
               >
-                {intFmt.format(Number(item.qty))}
+                {fmtNumber(Number(item.qty))}
               </div>
             </div>
           ))}
@@ -1389,7 +1390,7 @@ export default function SupplyChainOverview() {
                     }}
                   >
                     <div>{item.product}</div>
-                    <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
                   </div>
                 ))}
               </div>
@@ -1507,7 +1508,7 @@ export default function SupplyChainOverview() {
                     >
                       <div style={{ wordBreak: 'break-word' }}>{item.product}</div>
                       <div>{dateBadge}</div>
-                      <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                      <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
                     </div>
                   )
                 })}

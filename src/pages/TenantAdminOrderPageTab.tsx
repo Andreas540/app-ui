@@ -308,7 +308,7 @@ export default function TenantAdminOrderPageTab({ initialSubTab, initialCustomer
           label_text_style: p.label_text_style || 'plain',
           label_text_color: p.label_text_color || 'orange',
         }
-        initialPrices[p.id] = p.display_price != null ? Number(p.display_price).toFixed(2) : ''
+        initialPrices[p.id] = p.display_price != null ? fmtInput(Number(p.display_price)) : ''
       }
       setEdits(initial)
       setPriceStrings(initialPrices)
@@ -610,7 +610,7 @@ export default function TenantAdminOrderPageTab({ initialSubTab, initialCustomer
                               } else {
                                 const n = parseAmount(raw)
                                 patchEdit(product.id, { display_price: n })
-                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? n.toFixed(2) : raw }))
+                                setPriceStrings(prev => ({ ...prev, [product.id]: n != null ? fmtInput(n) : raw }))
                               }
                             }}
                             placeholder={fmtInput(product.product_price)}
