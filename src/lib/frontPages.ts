@@ -6,6 +6,8 @@
 
 import type { ComponentType } from 'react'
 import FrontPagePlaceholder from '../pages/FrontPagePlaceholder'
+import FrontPageBiznizBlue from '../pages/FrontPageBiznizBlue'
+import FrontPageBiznizGreen from '../pages/FrontPageBiznizGreen'
 
 export interface FrontPageDef {
   key: string
@@ -14,8 +16,12 @@ export interface FrontPageDef {
 
 export const FRONT_PAGES: FrontPageDef[] = [
   { key: 'placeholder', label: 'Placeholder (demo)' },
+  { key: 'bizniz-blue', label: 'Bizniz Optimizer — Aged Paper Blue' },
+  { key: 'bizniz-green', label: 'Bizniz Optimizer — Aged Paper Green' },
 ]
 
 export const FRONT_PAGE_COMPONENTS: Record<string, ComponentType<{ onContinue: () => void }>> = {
   placeholder: FrontPagePlaceholder,
+  'bizniz-blue': FrontPageBiznizBlue,
+  'bizniz-green': FrontPageBiznizGreen,
 }
