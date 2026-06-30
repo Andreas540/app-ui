@@ -72,7 +72,9 @@ export interface TenantConfig {
   }
   theme: {
     defaultSkin: 'default' | 'vintage'
-    selectable: boolean
+    defaultMode: 'dark' | 'light'
+    selectableSkins: ('default' | 'vintage')[]
+    selectableModes: ('dark' | 'light')[]
   }
 }
 
@@ -140,7 +142,9 @@ export const defaultConfig: TenantConfig = {
   pages: {},
   theme: {
     defaultSkin: 'default',
-    selectable: true,
+    defaultMode: 'dark',
+    selectableSkins: ['default', 'vintage'],
+    selectableModes: ['dark', 'light'],
   },
 }
 

@@ -9,12 +9,13 @@
 //   vintage + dark   -> "vintage-dark"
 //   vintage + light  -> "vintage-light"
 // This keeps styles.css selectors simple (one [data-theme="..."] block per
-// combination) while letting business-type config later lock the skin
-// independently of the user's dark/light preference.
+// combination) while letting business-type config lock/restrict either axis
+// independently — see SuperAdmin's per-business-type Theme section, which
+// sets config_defaults.theme.{defaultSkin,defaultMode,selectableSkins,selectableModes}.
 //
 // Usage:
 //   import { useTheme } from '../lib/theme'
-//   const { mode, skin, setMode, setSkin, isDark } = useTheme()
+//   const { mode, skin, setMode, setSkin, isDark, modeSelectable, skinSelectable } = useTheme()
 
 import { useState } from 'react'
 import { getTenantConfig } from './tenantConfig'
@@ -24,36 +25,47 @@ export type Skin = 'default' | 'vintage'
 
 const MODE_KEY = 'app-theme'
 const SKIN_KEY = 'app-theme-skin'
-const DEFAULT_MODE: Mode = 'dark'
 
-export function getMode(): Mode {
-  try {
-    const saved = localStorage.getItem(MODE_KEY)
-    if (saved === 'light' || saved === 'dark') return saved
-  } catch {}
-  return DEFAULT_MODE
+interface ThemePolicy {
+  defaultSkin: Skin
+  defaultMode: Mode
+  selectableSkins: Skin[]
+  selectableModes: Mode[]
 }
 
-// Business types can lock tenants/users to a default skin (config_defaults.theme).
-// Reads the same userData blob that getTenantConfig() relies on for its
-// businessTypeConfig layer — see SuperAdmin's per-business-type Theme section.
-function getSkinPolicy(): { defaultSkin: Skin; selectable: boolean } {
+function getThemePolicy(): ThemePolicy {
   try {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}')
     return getTenantConfig(userData.tenantId).theme
   } catch {
-    return { defaultSkin: 'default', selectable: true }
+    return { defaultSkin: 'default', defaultMode: 'dark', selectableSkins: ['default', 'vintage'], selectableModes: ['dark', 'light'] }
   }
 }
 
+function resolveValue<T extends string>(stored: T | null, def: T, selectable: T[]): T {
+  if (selectable.length <= 1) return def
+  if (stored && selectable.includes(stored)) return stored
+  return def
+}
+
+export function getMode(): Mode {
+  const policy = getThemePolicy()
+  let stored: Mode | null = null
+  try {
+    const saved = localStorage.getItem(MODE_KEY)
+    if (saved === 'light' || saved === 'dark') stored = saved
+  } catch {}
+  return resolveValue(stored, policy.defaultMode, policy.selectableModes)
+}
+
 export function getSkin(): Skin {
-  const policy = getSkinPolicy()
-  if (!policy.selectable) return policy.defaultSkin
+  const policy = getThemePolicy()
+  let stored: Skin | null = null
   try {
     const saved = localStorage.getItem(SKIN_KEY)
-    if (saved === 'vintage' || saved === 'default') return saved
+    if (saved === 'vintage' || saved === 'default') stored = saved
   } catch {}
-  return policy.defaultSkin
+  return resolveValue(stored, policy.defaultSkin, policy.selectableSkins)
 }
 
 function combinedTheme(mode: Mode, skin: Skin): string {
@@ -62,9 +74,6 @@ function combinedTheme(mode: Mode, skin: Skin): string {
 
 export function applyTheme(mode: Mode, skin: Skin) {
   document.documentElement.setAttribute('data-theme', combinedTheme(mode, skin))
-  try {
-    localStorage.setItem(MODE_KEY, mode)
-  } catch {}
 }
 
 // Apply immediately when this module is first imported — no FOUC
@@ -73,10 +82,14 @@ applyTheme(getMode(), getSkin())
 export function useTheme() {
   const [mode, setModeState] = useState<Mode>(getMode)
   const [skin, setSkinState] = useState<Skin>(getSkin)
-  const skinSelectable = getSkinPolicy().selectable
+  const policy = getThemePolicy()
+  const modeSelectable = policy.selectableModes.length > 1
+  const skinSelectable = policy.selectableSkins.length > 1
 
   function setMode(m: Mode) {
+    if (!modeSelectable) return
     setModeState(m)
+    try { localStorage.setItem(MODE_KEY, m) } catch {}
     applyTheme(m, skin)
   }
 
@@ -87,5 +100,9 @@ export function useTheme() {
     applyTheme(mode, s)
   }
 
-  return { mode, skin, setMode, setSkin, isDark: mode === 'dark', skinSelectable }
+  return {
+    mode, skin, setMode, setSkin, isDark: mode === 'dark',
+    modeSelectable, skinSelectable,
+    selectableModes: policy.selectableModes, selectableSkins: policy.selectableSkins,
+  }
 }

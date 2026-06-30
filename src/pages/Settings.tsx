@@ -24,7 +24,7 @@ export default function Settings() {
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
-  const { mode, setMode, skin, setSkin, skinSelectable } = useTheme()
+  const { mode, setMode, skin, setSkin, modeSelectable, skinSelectable, selectableModes, selectableSkins } = useTheme()
 
   const [defaultTenantId, setDefaultTenantId]     = useState<string | null>(null)
   const [loadedDefaultTenantId, setLoadedDefaultTenantId] = useState<string | null>(null)
@@ -262,38 +262,48 @@ export default function Settings() {
       {/* Appearance */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setMode('dark')}
-            className={mode === 'dark' ? 'primary' : ''}
-            style={{ flex: 1 }}
-          >
-            Dark
-          </button>
-          <button
-            onClick={() => setMode('light')}
-            className={mode === 'light' ? 'primary' : ''}
-            style={{ flex: 1 }}
-          >
-            Light
-          </button>
-        </div>
+        {modeSelectable && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {selectableModes.includes('dark') && (
+              <button
+                onClick={() => setMode('dark')}
+                className={mode === 'dark' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Dark
+              </button>
+            )}
+            {selectableModes.includes('light') && (
+              <button
+                onClick={() => setMode('light')}
+                className={mode === 'light' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Light
+              </button>
+            )}
+          </div>
+        )}
         {skinSelectable && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button
-              onClick={() => setSkin('default')}
-              className={skin === 'default' ? 'primary' : ''}
-              style={{ flex: 1 }}
-            >
-              Default
-            </button>
-            <button
-              onClick={() => setSkin('vintage')}
-              className={skin === 'vintage' ? 'primary' : ''}
-              style={{ flex: 1 }}
-            >
-              Vintage
-            </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: modeSelectable ? 8 : 0 }}>
+            {selectableSkins.includes('default') && (
+              <button
+                onClick={() => setSkin('default')}
+                className={skin === 'default' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Default
+              </button>
+            )}
+            {selectableSkins.includes('vintage') && (
+              <button
+                onClick={() => setSkin('vintage')}
+                className={skin === 'vintage' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Vintage
+              </button>
+            )}
           </div>
         )}
       </div>

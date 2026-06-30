@@ -92,7 +92,9 @@ export default function SuperAdmin() {
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage'>('default')
-  const [btThemeSelectable, setBtThemeSelectable] = useState(true)
+  const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
+  const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage')[]>(['default', 'vintage'])
+  const [btThemeSelectableModes, setBtThemeSelectableModes] = useState<('dark' | 'light')[]>(['dark', 'light'])
   const [savingBtTheme, setSavingBtTheme] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
@@ -329,7 +331,12 @@ export default function SuperAdmin() {
       const existing = bt.config_defaults as any
       const updated = {
         ...existing,
-        theme: { defaultSkin: btThemeDefaultSkin, selectable: btThemeSelectable },
+        theme: {
+          defaultSkin: btThemeDefaultSkin,
+          defaultMode: btThemeDefaultMode,
+          selectableSkins: btThemeSelectableSkins,
+          selectableModes: btThemeSelectableModes,
+        },
       }
       const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
@@ -1557,18 +1564,64 @@ async function handleSaveStripeCustomerId() {
                             </div>
                           </div>
                           <div style={{ marginBottom: 10 }}>
-                            <label style={{ fontSize: 12 }}>Selectable (tenant/user can change skin)</label>
+                            <label style={{ fontSize: 12 }}>Default mode</label>
                             <div style={{ display: 'flex', gap: 0, marginTop: 4, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-                              {([true, false] as const).map(val => (
-                                <button key={String(val)} onClick={() => setBtThemeSelectable(val)} style={{
+                              {(['dark', 'light'] as const).map(m => (
+                                <button key={m} onClick={() => setBtThemeDefaultMode(m)} style={{
                                   padding: '5px 16px', border: 'none', borderRadius: 0, height: 28, fontSize: 12,
-                                  background: btThemeSelectable === val ? 'var(--primary, #2563eb)' : 'transparent',
-                                  color: btThemeSelectable === val ? '#fff' : 'inherit',
-                                  cursor: 'pointer', fontWeight: btThemeSelectable === val ? 600 : 400,
+                                  background: btThemeDefaultMode === m ? 'var(--primary, #2563eb)' : 'transparent',
+                                  color: btThemeDefaultMode === m ? '#fff' : 'inherit',
+                                  cursor: 'pointer', fontWeight: btThemeDefaultMode === m ? 600 : 400,
                                 }}>
-                                  {val ? 'Yes' : 'No'}
+                                  {m === 'dark' ? 'Dark' : 'Light'}
                                 </button>
                               ))}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: 10 }}>
+                            <label style={{ fontSize: 12 }}>Selectable skins (tenant/user can choose between these)</label>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                              {(['default', 'vintage'] as const).map(skin => {
+                                const active = btThemeSelectableSkins.includes(skin)
+                                return (
+                                  <button key={skin} onClick={() => {
+                                    setBtThemeSelectableSkins(prev => {
+                                      if (prev.includes(skin)) return prev.length === 1 ? prev : prev.filter(s => s !== skin)
+                                      return [...prev, skin]
+                                    })
+                                  }} style={{
+                                    padding: '5px 16px', height: 28, fontSize: 12, borderRadius: 6,
+                                    border: active ? '1px solid var(--color-success)' : '1px solid var(--border)',
+                                    background: active ? 'rgba(34,197,94,0.12)' : 'transparent',
+                                    color: 'inherit', cursor: 'pointer', fontWeight: active ? 600 : 400,
+                                  }}>
+                                    {active ? '✓ ' : ''}{skin === 'default' ? 'Default' : 'Vintage'}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: 10 }}>
+                            <label style={{ fontSize: 12 }}>Selectable modes (tenant/user can choose between these)</label>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                              {(['dark', 'light'] as const).map(m => {
+                                const active = btThemeSelectableModes.includes(m)
+                                return (
+                                  <button key={m} onClick={() => {
+                                    setBtThemeSelectableModes(prev => {
+                                      if (prev.includes(m)) return prev.length === 1 ? prev : prev.filter(x => x !== m)
+                                      return [...prev, m]
+                                    })
+                                  }} style={{
+                                    padding: '5px 16px', height: 28, fontSize: 12, borderRadius: 6,
+                                    border: active ? '1px solid var(--color-success)' : '1px solid var(--border)',
+                                    background: active ? 'rgba(34,197,94,0.12)' : 'transparent',
+                                    color: 'inherit', cursor: 'pointer', fontWeight: active ? 600 : 400,
+                                  }}>
+                                    {active ? '✓ ' : ''}{m === 'dark' ? 'Dark' : 'Light'}
+                                  </button>
+                                )
+                              })}
                             </div>
                           </div>
                           <button
@@ -1602,8 +1655,18 @@ async function handleSaveStripeCustomerId() {
                             setEditingBtLabel(bt.label)
                             setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '')
                             const themeDefaults = (bt.config_defaults as any)?.theme ?? {}
-                            setBtThemeDefaultSkin(themeDefaults.defaultSkin === 'vintage' ? 'vintage' : 'default')
-                            setBtThemeSelectable(themeDefaults.selectable !== false)
+                            const defaultSkin = themeDefaults.defaultSkin === 'vintage' ? 'vintage' : 'default'
+                            const defaultMode = themeDefaults.defaultMode === 'light' ? 'light' : 'dark'
+                            setBtThemeDefaultSkin(defaultSkin)
+                            setBtThemeDefaultMode(defaultMode)
+                            // Back-compat: older saves used a boolean `selectable` flag instead of arrays
+                            setBtThemeSelectableSkins(
+                              Array.isArray(themeDefaults.selectableSkins) ? themeDefaults.selectableSkins
+                                : themeDefaults.selectable === false ? [defaultSkin] : ['default', 'vintage']
+                            )
+                            setBtThemeSelectableModes(
+                              Array.isArray(themeDefaults.selectableModes) ? themeDefaults.selectableModes : ['dark', 'light']
+                            )
                           }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >
