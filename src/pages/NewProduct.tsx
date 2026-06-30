@@ -165,7 +165,7 @@ export default function NewProduct() {
         </Link>
       </div>
 
-      {(showProductTab || showServiceTab) && (
+      {(showProductTab && showServiceTab) && (
         <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
           {(['product', 'service'] as const)
             .filter(cat => cat === 'product' ? showProductTab : showServiceTab)
