@@ -323,6 +323,7 @@ export default function SuperAdmin() {
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       setBtPageConfig(null)
+      if (editingBtId === bt.id) setEditingBtConfig(JSON.stringify(updated, null, 2))
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtPageConfig(false) }
   }
@@ -347,6 +348,7 @@ export default function SuperAdmin() {
         body: JSON.stringify({ action: 'updateBusinessType', id: bt.id, label: bt.label, configDefaults: updated })
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      if (editingBtId === bt.id) setEditingBtConfig(JSON.stringify(updated, null, 2))
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtTheme(false) }
   }
@@ -363,6 +365,7 @@ export default function SuperAdmin() {
         body: JSON.stringify({ action: 'updateBusinessType', id: bt.id, label: bt.label, configDefaults: updated })
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      if (editingBtId === bt.id) setEditingBtConfig(JSON.stringify(updated, null, 2))
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtFrontPage(false) }
   }
