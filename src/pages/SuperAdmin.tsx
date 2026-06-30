@@ -7,6 +7,7 @@ import ManageUserModal from '../components/ManageUserModal'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
+import { FRONT_PAGES } from '../lib/frontPages'
 
 interface Tenant {
   id: string
@@ -96,6 +97,8 @@ export default function SuperAdmin() {
   const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage')[]>(['default', 'vintage'])
   const [btThemeSelectableModes, setBtThemeSelectableModes] = useState<('dark' | 'light')[]>(['dark', 'light'])
   const [savingBtTheme, setSavingBtTheme] = useState(false)
+  const [btFrontPageKey, setBtFrontPageKey] = useState<string>('')
+  const [savingBtFrontPage, setSavingBtFrontPage] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -346,6 +349,22 @@ export default function SuperAdmin() {
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtTheme(false) }
+  }
+
+  async function handleSaveBtFrontPage(bt: BusinessType) {
+    setSavingBtFrontPage(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const existing = bt.config_defaults as any
+      const updated = { ...existing, frontPageKey: btFrontPageKey || null }
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateBusinessType', id: bt.id, label: bt.label, configDefaults: updated })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtFrontPage(false) }
   }
 
   async function handleSaveBusinessType() {
@@ -1634,6 +1653,30 @@ async function handleSaveStripeCustomerId() {
                         </div>
                       </div>
 
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Front page</div>
+                        <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6 }}>
+                          <label style={{ fontSize: 12 }}>Shown once per login, before the dashboard. No selection = no front page.</label>
+                          <select
+                            value={btFrontPageKey}
+                            onChange={e => setBtFrontPageKey(e.target.value)}
+                            style={{ display: 'block', height: 32, marginTop: 6, marginBottom: 10, width: '100%', maxWidth: 280 }}
+                          >
+                            <option value="">None</option>
+                            {FRONT_PAGES.map(fp => (
+                              <option key={fp.key} value={fp.key}>{fp.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleSaveBtFrontPage(bt)}
+                            disabled={savingBtFrontPage}
+                            style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+                          >
+                            {savingBtFrontPage ? 'Saving…' : 'Save front page'}
+                          </button>
+                        </div>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
                         <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
@@ -1667,6 +1710,7 @@ async function handleSaveStripeCustomerId() {
                             setBtThemeSelectableModes(
                               Array.isArray(themeDefaults.selectableModes) ? themeDefaults.selectableModes : ['dark', 'light']
                             )
+                            setBtFrontPageKey((bt.config_defaults as any)?.frontPageKey ?? '')
                           }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >

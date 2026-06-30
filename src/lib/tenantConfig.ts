@@ -76,6 +76,7 @@ export interface TenantConfig {
     selectableSkins: ('default' | 'vintage')[]
     selectableModes: ('dark' | 'light')[]
   }
+  frontPageKey: string | null
 }
 
 export const defaultConfig: TenantConfig = {
@@ -146,6 +147,7 @@ export const defaultConfig: TenantConfig = {
     selectableSkins: ['default', 'vintage'],
     selectableModes: ['dark', 'light'],
   },
+  frontPageKey: null,
 }
 
 const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {

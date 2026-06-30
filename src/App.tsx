@@ -7,6 +7,8 @@ import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
 import { getAuthHeaders } from './lib/api'
+import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
+import { applyTheme, getMode, getSkin } from './lib/theme'
 
 import Dashboard from './pages/Dashboard'
 import NewOrder from './pages/NewOrder'
@@ -391,6 +393,22 @@ function MainApp() {
 
   const isLoggedIn = isAuthenticated || legacyUserLevel !== null
 
+  // Re-resolve and re-apply the theme whenever the logged-in identity changes.
+  // Login happens via SPA navigation (no page reload), so without this the
+  // DOM would keep showing whichever theme was resolved at the last full
+  // page load — e.g. a previous tenant's vintage skin bleeding into a new
+  // tenant's session. Logout/tenant-switch already force a full reload
+  // elsewhere, but this keeps every transition correct regardless.
+  useEffect(() => {
+    applyTheme(getMode(), getSkin())
+  }, [user?.tenantId, user?.id, isLoggedIn])
+
+  // Business-type front page — shown once per browser session right after
+  // login, before the dashboard. Cleared on logout so it reappears next login.
+  const [frontPageDismissed, setFrontPageDismissed] = useState(
+    () => sessionStorage.getItem('frontPageDismissed') === '1'
+  )
+
   // 🆕 Idle timeout - auto logout after 15 minutes of inactivity
   useIdleTimeout(
     90 * 60 * 1000, // 15 minutes
@@ -420,6 +438,7 @@ function MainApp() {
     localStorage.removeItem('userLevel')
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
+    sessionStorage.removeItem('frontPageDismissed')
 
     window.location.href = '/login'
   }
@@ -580,6 +599,15 @@ useEffect(() => {
 }, [location.pathname, user, hasFeature])
 
   if (!isLoggedIn) return <Login />
+
+  const frontPageKey = getTenantConfig(user?.tenantId).frontPageKey
+  const FrontPage = frontPageKey ? FRONT_PAGE_COMPONENTS[frontPageKey] : null
+  if (FrontPage && !frontPageDismissed) {
+    return <FrontPage onContinue={() => {
+      sessionStorage.setItem('frontPageDismissed', '1')
+      setFrontPageDismissed(true)
+    }} />
+  }
 
   const handleTenantSwitch = async () => {
     if (availableTenants.length <= 1) return

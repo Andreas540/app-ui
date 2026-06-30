@@ -13,6 +13,13 @@
 // independently — see SuperAdmin's per-business-type Theme section, which
 // sets config_defaults.theme.{defaultSkin,defaultMode,selectableSkins,selectableModes}.
 //
+// Stored preferences are scoped to the logged-in tenant (or user, for
+// tenant-less accounts like SuperAdmin) — see getScope(). Without this, one
+// browser switching between different tenants/business types would leak one
+// tenant's manually-chosen theme into another's session. Logged-out (no
+// userData) has no scope at all, so the login screen always shows the
+// platform default, ignoring any previously stored value.
+//
 // Usage:
 //   import { useTheme } from '../lib/theme'
 //   const { mode, skin, setMode, setSkin, isDark, modeSelectable, skinSelectable } = useTheme()
@@ -23,14 +30,27 @@ import { getTenantConfig } from './tenantConfig'
 export type Mode = 'dark' | 'light'
 export type Skin = 'default' | 'vintage'
 
-const MODE_KEY = 'app-theme'
-const SKIN_KEY = 'app-theme-skin'
+const MODE_KEY_PREFIX = 'app-theme:'
+const SKIN_KEY_PREFIX = 'app-theme-skin:'
 
 interface ThemePolicy {
   defaultSkin: Skin
   defaultMode: Mode
   selectableSkins: Skin[]
   selectableModes: Mode[]
+}
+
+function getScope(): string | null {
+  try {
+    const raw = localStorage.getItem('userData')
+    if (!raw) return null
+    const userData = JSON.parse(raw)
+    if (userData.tenantId) return `tenant:${userData.tenantId}`
+    if (userData.id) return `user:${userData.id}`
+    return null
+  } catch {
+    return null
+  }
 }
 
 function getThemePolicy(): ThemePolicy {
@@ -50,9 +70,11 @@ function resolveValue<T extends string>(stored: T | null, def: T, selectable: T[
 
 export function getMode(): Mode {
   const policy = getThemePolicy()
+  const scope = getScope()
+  if (!scope) return policy.defaultMode
   let stored: Mode | null = null
   try {
-    const saved = localStorage.getItem(MODE_KEY)
+    const saved = localStorage.getItem(MODE_KEY_PREFIX + scope)
     if (saved === 'light' || saved === 'dark') stored = saved
   } catch {}
   return resolveValue(stored, policy.defaultMode, policy.selectableModes)
@@ -60,9 +82,11 @@ export function getMode(): Mode {
 
 export function getSkin(): Skin {
   const policy = getThemePolicy()
+  const scope = getScope()
+  if (!scope) return policy.defaultSkin
   let stored: Skin | null = null
   try {
-    const saved = localStorage.getItem(SKIN_KEY)
+    const saved = localStorage.getItem(SKIN_KEY_PREFIX + scope)
     if (saved === 'vintage' || saved === 'default') stored = saved
   } catch {}
   return resolveValue(stored, policy.defaultSkin, policy.selectableSkins)
@@ -89,14 +113,16 @@ export function useTheme() {
   function setMode(m: Mode) {
     if (!modeSelectable) return
     setModeState(m)
-    try { localStorage.setItem(MODE_KEY, m) } catch {}
+    const scope = getScope()
+    if (scope) { try { localStorage.setItem(MODE_KEY_PREFIX + scope, m) } catch {} }
     applyTheme(m, skin)
   }
 
   function setSkin(s: Skin) {
     if (!skinSelectable) return
     setSkinState(s)
-    try { localStorage.setItem(SKIN_KEY, s) } catch {}
+    const scope = getScope()
+    if (scope) { try { localStorage.setItem(SKIN_KEY_PREFIX + scope, s) } catch {} }
     applyTheme(mode, s)
   }
 
