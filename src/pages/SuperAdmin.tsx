@@ -91,6 +91,9 @@ export default function SuperAdmin() {
   const [btFieldConfig, setBtFieldConfig] = useState<Record<string, boolean>>({})
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
+  const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage'>('default')
+  const [btThemeSelectable, setBtThemeSelectable] = useState(true)
+  const [savingBtTheme, setSavingBtTheme] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -317,6 +320,25 @@ export default function SuperAdmin() {
       setBtPageConfig(null)
       await loadData()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtPageConfig(false) }
+  }
+
+  async function handleSaveBtThemeConfig(bt: BusinessType) {
+    setSavingBtTheme(true)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const existing = bt.config_defaults as any
+      const updated = {
+        ...existing,
+        theme: { defaultSkin: btThemeDefaultSkin, selectable: btThemeSelectable },
+      }
+      const res = await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateBusinessType', id: bt.id, label: bt.label, configDefaults: updated })
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      await loadData()
+    } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingBtTheme(false) }
   }
 
   async function handleSaveBusinessType() {
@@ -1516,6 +1538,49 @@ async function handleSaveStripeCustomerId() {
                         ))}
                       </div>
 
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Theme</div>
+                        <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6 }}>
+                          <div style={{ marginBottom: 10 }}>
+                            <label style={{ fontSize: 12 }}>Default skin</label>
+                            <div style={{ display: 'flex', gap: 0, marginTop: 4, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+                              {(['default', 'vintage'] as const).map(skin => (
+                                <button key={skin} onClick={() => setBtThemeDefaultSkin(skin)} style={{
+                                  padding: '5px 16px', border: 'none', borderRadius: 0, height: 28, fontSize: 12,
+                                  background: btThemeDefaultSkin === skin ? 'var(--primary, #2563eb)' : 'transparent',
+                                  color: btThemeDefaultSkin === skin ? '#fff' : 'inherit',
+                                  cursor: 'pointer', fontWeight: btThemeDefaultSkin === skin ? 600 : 400,
+                                }}>
+                                  {skin === 'default' ? 'Default' : 'Vintage'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: 10 }}>
+                            <label style={{ fontSize: 12 }}>Selectable (tenant/user can change skin)</label>
+                            <div style={{ display: 'flex', gap: 0, marginTop: 4, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+                              {([true, false] as const).map(val => (
+                                <button key={String(val)} onClick={() => setBtThemeSelectable(val)} style={{
+                                  padding: '5px 16px', border: 'none', borderRadius: 0, height: 28, fontSize: 12,
+                                  background: btThemeSelectable === val ? 'var(--primary, #2563eb)' : 'transparent',
+                                  color: btThemeSelectable === val ? '#fff' : 'inherit',
+                                  cursor: 'pointer', fontWeight: btThemeSelectable === val ? 600 : 400,
+                                }}>
+                                  {val ? 'Yes' : 'No'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleSaveBtThemeConfig(bt)}
+                            disabled={savingBtTheme}
+                            style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+                          >
+                            {savingBtTheme ? 'Saving…' : 'Save theme'}
+                          </button>
+                        </div>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
                         <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
@@ -1532,7 +1597,14 @@ async function handleSaveStripeCustomerId() {
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         <button
-                          onClick={() => { setEditingBtId(bt.id); setEditingBtLabel(bt.label); setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '') }}
+                          onClick={() => {
+                            setEditingBtId(bt.id)
+                            setEditingBtLabel(bt.label)
+                            setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '')
+                            const themeDefaults = (bt.config_defaults as any)?.theme ?? {}
+                            setBtThemeDefaultSkin(themeDefaults.defaultSkin === 'vintage' ? 'vintage' : 'default')
+                            setBtThemeSelectable(themeDefaults.selectable !== false)
+                          }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >
                           Edit

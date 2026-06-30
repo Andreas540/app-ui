@@ -79,6 +79,92 @@ html[data-theme="light"] {
   --shadow-md:         0 4px 12px rgba(0,0,0,0.15);
 }
 
+/* ── Vintage dark (sepia) ──────────────────────────────── */
+html[data-theme="vintage-dark"] {
+  /* Shared brand/state colors — same in vintage-dark and vintage-light */
+  --brand-blue:        #3d6e74;
+  --brand-blue-hover:  #335c64;
+  --brand-blue-active: #2c5057;
+  --brand-contrast:    #fbf5e8;
+  --primary:           #3d6e74;
+  --accent:            #3d6e74;
+  --danger:            #9e4434;
+  --color-success:     #7d895a;
+  --color-warning:     #c79a4e;
+  --color-error:       #9e4434;
+  --color-info:        #5a838c;
+  --color-neutral:     #9c9081;
+  /* Layout */
+  --bg:            #1c1710;
+  --panel:         #2c251c;
+  --card:          #2c251c;
+  --line:          #38301f;
+  --border:        #473c2c;
+  --separator:     #5e4f38;
+  --text:          #ede2cb;
+  --text-secondary:#a8956f;
+  --muted:         #a8956f;
+  --input-bg:      #221c14;
+  --btn-bg:        #332b1f;
+  --nav-active:    #2a3530;
+  --shadow:        0 1px 0 rgba(0,0,0,0.3);
+  --invoiced-row-bg: rgba(90,131,140,0.12);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(125,137,90,0.18);
+  --color-warning-bg:  rgba(199,154,78,0.18);
+  --color-error-bg:    rgba(158,68,52,0.20);
+  --color-info-bg:     rgba(90,131,140,0.18);
+  --color-neutral-bg:  rgba(156,144,129,0.16);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(20,15,8,0.66);
+  --surface-subtle:    rgba(255,247,230,0.04);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
+}
+
+/* ── Vintage light (aged paper) ───────────────────────────── */
+html[data-theme="vintage-light"] {
+  /* Shared brand/state colors — same in vintage-dark and vintage-light */
+  --brand-blue:        #3d6e74;
+  --brand-blue-hover:  #335c64;
+  --brand-blue-active: #2c5057;
+  --brand-contrast:    #fbf5e8;
+  --primary:           #3d6e74;
+  --accent:            #3d6e74;
+  --danger:            #9e4434;
+  --color-success:     #7d895a;
+  --color-warning:     #c79a4e;
+  --color-error:       #9e4434;
+  --color-info:        #5a838c;
+  --color-neutral:     #9c9081;
+  /* Layout */
+  --bg:            #f3ead4;
+  --panel:         #faf3e2;
+  --card:          #faf3e2;
+  --line:          #e7dabd;
+  --border:        #d8c7a1;
+  --separator:     #c5b388;
+  --text:          #322a20;
+  --text-secondary:#8c7a55;
+  --muted:         #8c7a55;
+  --input-bg:      #fcf7e9;
+  --btn-bg:        #ece0c4;
+  --nav-active:    #d3e0da;
+  --shadow:        0 1px 3px rgba(0,0,0,0.08);
+  --invoiced-row-bg: rgba(61,110,116,0.10);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(125,137,90,0.16);
+  --color-warning-bg:  rgba(199,154,78,0.18);
+  --color-error-bg:    rgba(158,68,52,0.14);
+  --color-info-bg:     rgba(90,131,140,0.15);
+  --color-neutral-bg:  rgba(156,144,129,0.16);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(40,28,12,0.42);
+  --surface-subtle:    rgba(50,34,15,0.035);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.10);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.15);
+}
+
 /* ===================== Base Reset ===================== */
 * { box-sizing: border-box; }
 
@@ -487,8 +573,14 @@ button.primary:focus-visible,
 /* BizWiz logo: show correct variant based on active theme */
 .bizwiz-logo-dark  { display: block; }
 .bizwiz-logo-light { display: none;  }
-html[data-theme="light"] .bizwiz-logo-dark  { display: none;  }
-html[data-theme="light"] .bizwiz-logo-light { display: block; }
+html[data-theme="light"] .bizwiz-logo-dark,
+html[data-theme="vintage-light"] .bizwiz-logo-dark {
+  display: none;
+}
+html[data-theme="light"] .bizwiz-logo-light,
+html[data-theme="vintage-light"] .bizwiz-logo-light {
+  display: block;
+}
 
 /* TenantAdmin tab row: dropdown on mobile, buttons on desktop */
 .tenant-admin-tab-select  { display: none; width: 100%; }

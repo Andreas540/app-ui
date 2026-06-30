@@ -2,43 +2,90 @@
 // Theme management — reads/writes localStorage and keeps <html data-theme="..."> in sync.
 // Import this module early so the theme is applied before the first paint.
 //
+// Two independent axes: mode (dark/light) and skin (default/vintage).
+// They combine into a single data-theme attribute value:
+//   default + dark  -> "dark"
+//   default + light -> "light"
+//   vintage + dark   -> "vintage-dark"
+//   vintage + light  -> "vintage-light"
+// This keeps styles.css selectors simple (one [data-theme="..."] block per
+// combination) while letting business-type config later lock the skin
+// independently of the user's dark/light preference.
+//
 // Usage:
 //   import { useTheme } from '../lib/theme'
-//   const { theme, setTheme } = useTheme()
-//
-// To mark a page as "fully themed", just keep using CSS variables.
-// No special opt-in needed per page; the html attribute cascades everywhere.
+//   const { mode, skin, setMode, setSkin, isDark } = useTheme()
 
 import { useState } from 'react'
+import { getTenantConfig } from './tenantConfig'
 
-export type Theme = 'dark' | 'light'
+export type Mode = 'dark' | 'light'
+export type Skin = 'default' | 'vintage'
 
-const STORAGE_KEY = 'app-theme'
-const DEFAULT_THEME: Theme = 'dark'
+const MODE_KEY = 'app-theme'
+const SKIN_KEY = 'app-theme-skin'
+const DEFAULT_MODE: Mode = 'dark'
 
-export function getTheme(): Theme {
+export function getMode(): Mode {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(MODE_KEY)
     if (saved === 'light' || saved === 'dark') return saved
   } catch {}
-  return DEFAULT_THEME
+  return DEFAULT_MODE
 }
 
-export function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute('data-theme', theme)
-  try { localStorage.setItem(STORAGE_KEY, theme) } catch {}
+// Business types can lock tenants/users to a default skin (config_defaults.theme).
+// Reads the same userData blob that getTenantConfig() relies on for its
+// businessTypeConfig layer — see SuperAdmin's per-business-type Theme section.
+function getSkinPolicy(): { defaultSkin: Skin; selectable: boolean } {
+  try {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+    return getTenantConfig(userData.tenantId).theme
+  } catch {
+    return { defaultSkin: 'default', selectable: true }
+  }
+}
+
+export function getSkin(): Skin {
+  const policy = getSkinPolicy()
+  if (!policy.selectable) return policy.defaultSkin
+  try {
+    const saved = localStorage.getItem(SKIN_KEY)
+    if (saved === 'vintage' || saved === 'default') return saved
+  } catch {}
+  return policy.defaultSkin
+}
+
+function combinedTheme(mode: Mode, skin: Skin): string {
+  return skin === 'vintage' ? `vintage-${mode}` : mode
+}
+
+export function applyTheme(mode: Mode, skin: Skin) {
+  document.documentElement.setAttribute('data-theme', combinedTheme(mode, skin))
+  try {
+    localStorage.setItem(MODE_KEY, mode)
+  } catch {}
 }
 
 // Apply immediately when this module is first imported — no FOUC
-applyTheme(getTheme())
+applyTheme(getMode(), getSkin())
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(getTheme)
+  const [mode, setModeState] = useState<Mode>(getMode)
+  const [skin, setSkinState] = useState<Skin>(getSkin)
+  const skinSelectable = getSkinPolicy().selectable
 
-  function setTheme(t: Theme) {
-    setThemeState(t)
-    applyTheme(t)
+  function setMode(m: Mode) {
+    setModeState(m)
+    applyTheme(m, skin)
   }
 
-  return { theme, setTheme }
+  function setSkin(s: Skin) {
+    if (!skinSelectable) return
+    setSkinState(s)
+    try { localStorage.setItem(SKIN_KEY, s) } catch {}
+    applyTheme(mode, s)
+  }
+
+  return { mode, skin, setMode, setSkin, isDark: mode === 'dark', skinSelectable }
 }

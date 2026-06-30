@@ -70,6 +70,10 @@ export interface TenantConfig {
       fields?: Record<string, boolean>
     }
   }
+  theme: {
+    defaultSkin: 'default' | 'vintage'
+    selectable: boolean
+  }
 }
 
 export const defaultConfig: TenantConfig = {
@@ -133,7 +137,11 @@ export const defaultConfig: TenantConfig = {
     achAccountNumber: null,
     achAba: null,
   },
-  pages: {}
+  pages: {},
+  theme: {
+    defaultSkin: 'default',
+    selectable: true,
+  },
 }
 
 const tenantOverrides: Record<string, DeepPartial<TenantConfig>> = {

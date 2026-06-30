@@ -120,7 +120,7 @@ export default function SupplyChainOverview() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
   const { fmtNumber } = useCurrency()
-  const { theme } = useTheme()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
@@ -640,7 +640,7 @@ export default function SupplyChainOverview() {
               title={t('supplyChain.aiAnalyze')}
             >
               <img
-                src={theme === 'dark' ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
+                src={isDark ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
                 alt="BizWiz AI"
                 style={{ height: 36, width: 'auto' }}
               />

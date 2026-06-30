@@ -24,7 +24,7 @@ export default function Settings() {
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
-  const { theme, setTheme } = useTheme()
+  const { mode, setMode, skin, setSkin, skinSelectable } = useTheme()
 
   const [defaultTenantId, setDefaultTenantId]     = useState<string | null>(null)
   const [loadedDefaultTenantId, setLoadedDefaultTenantId] = useState<string | null>(null)
@@ -264,20 +264,38 @@ export default function Settings() {
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            onClick={() => setTheme('dark')}
-            className={theme === 'dark' ? 'primary' : ''}
+            onClick={() => setMode('dark')}
+            className={mode === 'dark' ? 'primary' : ''}
             style={{ flex: 1 }}
           >
             Dark
           </button>
           <button
-            onClick={() => setTheme('light')}
-            className={theme === 'light' ? 'primary' : ''}
+            onClick={() => setMode('light')}
+            className={mode === 'light' ? 'primary' : ''}
             style={{ flex: 1 }}
           >
             Light
           </button>
         </div>
+        {skinSelectable && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button
+              onClick={() => setSkin('default')}
+              className={skin === 'default' ? 'primary' : ''}
+              style={{ flex: 1 }}
+            >
+              Default
+            </button>
+            <button
+              onClick={() => setSkin('vintage')}
+              className={skin === 'vintage' ? 'primary' : ''}
+              style={{ flex: 1 }}
+            >
+              Vintage
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Quick access buttons */}
