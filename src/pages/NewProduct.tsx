@@ -155,6 +155,7 @@ export default function NewProduct() {
   }, {} as Record<string, HistoricalCost[]>)
 
   return (
+    <>
     <div className="card page-normal">
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
         <h3 style={{ margin:0 }}>{category === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}</h3>
@@ -313,10 +314,12 @@ export default function NewProduct() {
         </button>
       </div>
 
-      {/* ---- Product costs section ---- */}
-      <div style={{ marginTop: 20 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: 8 }}>
-          <h4 style={{ margin: 0 }}>{t('products.productCosts')}</h4>
+    </div>
+
+    {/* ---- Product costs card ---- */}
+    <div className="card page-normal" style={{ marginTop: 16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: 8 }}>
+          <h3 style={{ margin: 0 }}>{t('products.productCosts')}</h3>
           <button
             className="primary"
             onClick={() => setShowHistorical(!showHistorical)}
@@ -415,10 +418,11 @@ export default function NewProduct() {
             ))}
           </div>
         )}
-      </div>
     </div>
+    </>
   )
 }
+
 
 
 
