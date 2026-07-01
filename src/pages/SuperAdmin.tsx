@@ -372,20 +372,30 @@ export default function SuperAdmin() {
 
   async function handleSaveBusinessType() {
     if (!editingBtId) return
-    let parsed: Record<string, unknown> | null = null
+    let parsed: Record<string, unknown> = {}
     if (editingBtConfig.trim()) {
       try { parsed = JSON.parse(editingBtConfig) } catch {
         setBtConfigError('Invalid JSON'); return
       }
     }
     setBtConfigError(null)
+    const configDefaults = {
+      ...parsed,
+      theme: {
+        defaultSkin: btThemeDefaultSkin,
+        defaultMode: btThemeDefaultMode,
+        selectableSkins: btThemeSelectableSkins,
+        selectableModes: btThemeSelectableModes,
+      },
+      frontPageKey: btFrontPageKey || null,
+    }
     try {
       setSavingBt(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/super-admin`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'updateBusinessType', id: editingBtId, label: editingBtLabel, configDefaults: parsed })
+        body: JSON.stringify({ action: 'updateBusinessType', id: editingBtId, label: editingBtLabel, configDefaults })
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       setEditingBtId(null)
@@ -1663,7 +1673,7 @@ async function handleSaveStripeCustomerId() {
                           <select
                             value={btFrontPageKey}
                             onChange={e => setBtFrontPageKey(e.target.value)}
-                            style={{ display: 'block', height: 32, marginTop: 6, marginBottom: 10, width: '100%', maxWidth: 280 }}
+                            style={{ display: 'block', height: 32, fontSize: 13, marginTop: 6, marginBottom: 10, width: '100%', maxWidth: 280 }}
                           >
                             <option value="">None</option>
                             {FRONT_PAGES.map(fp => (
