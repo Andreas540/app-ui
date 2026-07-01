@@ -28,7 +28,16 @@ function buildLetters(accent: string): Letter[] {
 
 export default function BiznizCollectibles({ accent, onContinue }: { accent: string; onContinue: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const letters = buildLetters(accent)
+
+  function scheduleAutoContinue(rm: boolean) {
+    if (timerRef.current !== null) clearTimeout(timerRef.current)
+    // Last letter (index 11) ends at delay 2150ms + duration 640ms = 2790ms.
+    // In reduced-motion mode all durations/delays collapse to ~1ms.
+    const lastLetterEndMs = rm ? 1 : 2150 + 640
+    timerRef.current = setTimeout(onContinue, lastLetterEndMs + 2000)
+  }
 
   function animate() {
     const root = rootRef.current
@@ -68,6 +77,8 @@ export default function BiznizCollectibles({ accent, onContinue }: { accent: str
         { duration: ms(550), delay: dl(parseFloat(el.dataset.sd || '0') * 1000), easing: 'cubic-bezier(.2,1.55,.4,1)', fill: 'both' },
       )
     })
+
+    scheduleAutoContinue(rm)
   }
 
   function restart() {
@@ -90,6 +101,7 @@ export default function BiznizCollectibles({ accent, onContinue }: { accent: str
     return () => {
       window.removeEventListener('resize', fit)
       cancelAnimationFrame(raf)
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
