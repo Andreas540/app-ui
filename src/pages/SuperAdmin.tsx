@@ -1673,7 +1673,7 @@ async function handleSaveStripeCustomerId() {
                           <select
                             value={btFrontPageKey}
                             onChange={e => setBtFrontPageKey(e.target.value)}
-                            style={{ display: 'block', height: 32, fontSize: 13, marginTop: 6, marginBottom: 10, width: '100%', maxWidth: 280 }}
+                            style={{ display: 'block', fontSize: 13, padding: '5px 8px', marginTop: 6, marginBottom: 10, width: '100%', maxWidth: 280 }}
                           >
                             <option value="">None</option>
                             {FRONT_PAGES.map(fp => (
