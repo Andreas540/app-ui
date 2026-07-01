@@ -304,6 +304,15 @@ export default function Settings() {
                 Vintage
               </button>
             )}
+            {selectableSkins.includes('pool') && (
+              <button
+                onClick={() => setSkin('pool')}
+                className={skin === 'pool' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Aqua
+              </button>
+            )}
           </div>
         )}
       </div>

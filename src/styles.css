@@ -165,6 +165,84 @@ html[data-theme="vintage-light"] {
   --shadow-md:         0 4px 12px rgba(0,0,0,0.15);
 }
 
+/* ── Pool & Spa light (Clear Water) ───────────────────────── */
+html[data-theme="pool-light"] {
+  --brand-blue:        #0e9dc4;
+  --brand-blue-hover:  #0b87ab;
+  --brand-blue-active: #097291;
+  --brand-contrast:    #ffffff;
+  --primary:           #0e9dc4;
+  --accent:            #0e9dc4;
+  --danger:            #dd5a4e;
+  --color-success:     #1f9e8a;
+  --color-warning:     #e0a63c;
+  --color-error:       #dd5a4e;
+  --color-info:        #4f7fd4;
+  --color-neutral:     #8493a0;
+  --bg:            #e9f4f9;
+  --panel:         #ffffff;
+  --card:          #ffffff;
+  --line:          #d3e6ee;
+  --border:        #bcd7e2;
+  --separator:     #7fa8b8;
+  --text:          #0c2b39;
+  --text-secondary:#4d7382;
+  --muted:         #4d7382;
+  --input-bg:      #ffffff;
+  --btn-bg:        #dceaf0;
+  --nav-active:    #cbe6f0;
+  --shadow:        0 1px 3px rgba(0,0,0,0.08);
+  --invoiced-row-bg: rgba(14,157,196,0.10);
+  --color-success-bg:  rgba(31,158,138,0.14);
+  --color-warning-bg:  rgba(224,166,60,0.16);
+  --color-error-bg:    rgba(221,90,78,0.12);
+  --color-info-bg:     rgba(79,127,212,0.12);
+  --color-neutral-bg:  rgba(132,147,160,0.16);
+  --backdrop:          rgba(6,30,42,0.42);
+  --surface-subtle:    rgba(8,40,55,0.035);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.10);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ── Pool & Spa dark (Deep End) ────────────────────────────── */
+html[data-theme="pool-dark"] {
+  --brand-blue:        #0e9dc4;
+  --brand-blue-hover:  #0b87ab;
+  --brand-blue-active: #097291;
+  --brand-contrast:    #04222c;
+  --primary:           #0e9dc4;
+  --accent:            #0e9dc4;
+  --danger:            #dd5a4e;
+  --color-success:     #1f9e8a;
+  --color-warning:     #e0a63c;
+  --color-error:       #dd5a4e;
+  --color-info:        #4f7fd4;
+  --color-neutral:     #8493a0;
+  --bg:            #072430;
+  --panel:         #0e3241;
+  --card:          #0e3241;
+  --line:          #16404f;
+  --border:        #1f4d5d;
+  --separator:     #4a7686;
+  --text:          #e6f4fa;
+  --text-secondary:#9fc0cd;
+  --muted:         #9fc0cd;
+  --input-bg:      #0a2b38;
+  --btn-bg:        #143c4b;
+  --nav-active:    #124a5c;
+  --shadow:        0 1px 0 rgba(0,0,0,0.3);
+  --invoiced-row-bg: rgba(53,192,224,0.12);
+  --color-success-bg:  rgba(31,158,138,0.20);
+  --color-warning-bg:  rgba(224,166,60,0.18);
+  --color-error-bg:    rgba(221,90,78,0.20);
+  --color-info-bg:     rgba(79,127,212,0.20);
+  --color-neutral-bg:  rgba(132,147,160,0.16);
+  --backdrop:          rgba(2,14,20,0.66);
+  --surface-subtle:    rgba(210,245,255,0.05);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
+}
+
 /* ===================== Base Reset ===================== */
 * { box-sizing: border-box; }
 

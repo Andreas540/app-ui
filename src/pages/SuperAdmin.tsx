@@ -92,9 +92,9 @@ export default function SuperAdmin() {
   const [btFieldConfig, setBtFieldConfig] = useState<Record<string, boolean>>({})
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
-  const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage'>('default')
+  const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage' | 'pool'>('default')
   const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
-  const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage')[]>(['default', 'vintage'])
+  const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage' | 'pool')[]>(['default', 'vintage'])
   const [btThemeSelectableModes, setBtThemeSelectableModes] = useState<('dark' | 'light')[]>(['dark', 'light'])
   const [savingBtTheme, setSavingBtTheme] = useState(false)
   const [btFrontPageKey, setBtFrontPageKey] = useState<string>('')
@@ -1573,14 +1573,14 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ marginBottom: 10 }}>
                             <label style={{ fontSize: 12 }}>Default skin</label>
                             <div style={{ display: 'flex', gap: 0, marginTop: 4, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-                              {(['default', 'vintage'] as const).map(skin => (
+                              {(['default', 'vintage', 'pool'] as const).map(skin => (
                                 <button key={skin} onClick={() => setBtThemeDefaultSkin(skin)} style={{
                                   padding: '5px 16px', border: 'none', borderRadius: 0, height: 28, fontSize: 12,
                                   background: btThemeDefaultSkin === skin ? 'var(--primary, #2563eb)' : 'transparent',
                                   color: btThemeDefaultSkin === skin ? '#fff' : 'inherit',
                                   cursor: 'pointer', fontWeight: btThemeDefaultSkin === skin ? 600 : 400,
                                 }}>
-                                  {skin === 'default' ? 'Default' : 'Vintage'}
+                                  {skin === 'default' ? 'Default' : skin === 'vintage' ? 'Vintage' : 'Aqua'}
                                 </button>
                               ))}
                             </div>
@@ -1603,7 +1603,7 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ marginBottom: 10 }}>
                             <label style={{ fontSize: 12 }}>Selectable skins (tenant/user can choose between these)</label>
                             <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                              {(['default', 'vintage'] as const).map(skin => {
+                              {(['default', 'vintage', 'pool'] as const).map(skin => {
                                 const active = btThemeSelectableSkins.includes(skin)
                                 return (
                                   <button key={skin} onClick={() => {
@@ -1617,7 +1617,7 @@ async function handleSaveStripeCustomerId() {
                                     background: active ? 'rgba(34,197,94,0.12)' : 'transparent',
                                     color: 'inherit', cursor: 'pointer', fontWeight: active ? 600 : 400,
                                   }}>
-                                    {active ? '✓ ' : ''}{skin === 'default' ? 'Default' : 'Vintage'}
+                                    {active ? '✓ ' : ''}{skin === 'default' ? 'Default' : skin === 'vintage' ? 'Vintage' : 'Aqua'}
                                   </button>
                                 )
                               })}
@@ -1701,7 +1701,7 @@ async function handleSaveStripeCustomerId() {
                             setEditingBtLabel(bt.label)
                             setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '')
                             const themeDefaults = (bt.config_defaults as any)?.theme ?? {}
-                            const defaultSkin = themeDefaults.defaultSkin === 'vintage' ? 'vintage' : 'default'
+                            const defaultSkin = themeDefaults.defaultSkin === 'vintage' ? 'vintage' : themeDefaults.defaultSkin === 'pool' ? 'pool' : 'default'
                             const defaultMode = themeDefaults.defaultMode === 'light' ? 'light' : 'dark'
                             setBtThemeDefaultSkin(defaultSkin)
                             setBtThemeDefaultMode(defaultMode)
