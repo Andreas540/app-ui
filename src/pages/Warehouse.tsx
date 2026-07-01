@@ -25,6 +25,8 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  const [adjustOpen, setAdjustOpen] = useState(false)
+
   // Form fields
   const [productId, setProductId] = useState('')
   const [qtyStr, setQtyStr] = useState('')
@@ -137,8 +139,15 @@ export default function Warehouse() {
     <>
       {/* Adjust Warehouse Inventory Card */}
       <div className="card page-normal">
-        <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
+        <div
+          onClick={() => setAdjustOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{adjustOpen ? '▾' : '▸'}</span>
+          <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
+        </div>
 
+        {adjustOpen && <>
         {/* Row 1: Stage (M or P) - MOVED TO TOP */}
         <div style={{ marginTop: 12 }}>
           <label style={{ display: 'block', marginBottom: 8 }}>{t('warehouse.stage')}</label>
@@ -391,6 +400,7 @@ export default function Warehouse() {
             {t('cancel')}
           </button>
         </div>
+        </>}
       </div>
 
       {/* Current Inventory Card */}
