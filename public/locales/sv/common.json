@@ -510,6 +510,7 @@
     "noProducts": "Inga produkter tillgängliga."
   },
   "products": {
+    "addOrEdit": "Lägg till ny eller redigera befintlig",
     "newProductTitle": "Ny produkt",
     "newServiceTitle": "Ny tjänst",
     "editProductsButton": "Redigera produkt(er)",

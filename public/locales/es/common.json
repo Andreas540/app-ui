@@ -510,6 +510,7 @@
     "noProducts": "No hay productos disponibles."
   },
   "products": {
+    "addOrEdit": "Agregar nuevo o editar existente",
     "newProductTitle": "Nuevo Producto",
     "newServiceTitle": "Nuevo Servicio",
     "editProductsButton": "Editar Producto(s)",

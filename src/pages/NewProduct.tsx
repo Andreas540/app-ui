@@ -26,6 +26,8 @@ export default function NewProduct() {
     searchParams.get('type') === 'service' ? 'service' : 'product'
   )
 
+  const [formOpen, setFormOpen] = useState(false)
+
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
 
@@ -158,7 +160,13 @@ export default function NewProduct() {
     <>
     <div className="card page-normal">
       <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8 }}>
-        <h3 style={{ margin:0 }}>{category === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}</h3>
+        <div
+          onClick={() => setFormOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <span style={{ fontSize: 14, color: 'var(--muted)' }}>{formOpen ? '▾' : '▸'}</span>
+          <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
+        </div>
         <Link to={`/products/edit?type=${category}`}>
           <button className="primary" style={{ height: BTN_H }}>
             {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
@@ -166,6 +174,7 @@ export default function NewProduct() {
         </Link>
       </div>
 
+      {formOpen && <>
       {(showProductTab && showServiceTab) && (
         <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
           {(['product', 'service'] as const)
@@ -313,6 +322,7 @@ export default function NewProduct() {
           {t('clear')}
         </button>
       </div>
+      </>}
 
     </div>
 
