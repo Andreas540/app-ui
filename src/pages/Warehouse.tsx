@@ -144,7 +144,7 @@ export default function Warehouse() {
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
         >
           <span style={{ fontSize: 14, color: 'var(--muted)' }}>{adjustOpen ? '▾' : '▸'}</span>
-          <h3 style={{ margin: 0, fontSize: 16 }}>{t('warehouse.title')}</h3>
+          <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
         </div>
 
         {adjustOpen && <>
@@ -405,7 +405,7 @@ export default function Warehouse() {
 
       {/* Current Inventory Card */}
       <div className="card page-normal" style={{ marginTop: 16 }}>
-        <h3 style={{ margin: 0, marginBottom: 12, fontSize: 16 }}>{t('warehouse.currentInventory')}</h3>
+        <h3 style={{ margin: 0, marginBottom: 12 }}>{t('warehouse.currentInventory')}</h3>
         {inventory.length === 0 ? (
           <p className="helper">{t('warehouse.noInventoryData')}</p>
         ) : (
