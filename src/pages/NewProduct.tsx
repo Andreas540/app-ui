@@ -207,7 +207,7 @@ export default function NewProduct() {
           onClick={() => setFormOpen(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
         >
-          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▾' : '▸'}</span>
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
           <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
         </div>
         <Link to={`/products/edit?type=${category}`}>

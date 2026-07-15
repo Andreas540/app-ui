@@ -802,7 +802,7 @@ useEffect(() => {
                 }}
               >
                 <span>{label}</span>
-                <span style={{ fontSize: 'var(--expand-icon-size)', opacity: 0.6 }}>{collapsed[id] ? '▸' : '▾'}</span>
+                <span style={{ fontSize: 'var(--expand-icon-size)', opacity: 0.6 }}>{collapsed[id] ? '▶' : '▼'}</span>
               </button>
             )
 
