@@ -25,6 +25,7 @@ const TENANT_ID = authz.tenantId;
 
     const rows = await sql`
       SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id,
+             product_category, product_subcategory, sku, variant,
              (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
@@ -113,6 +114,15 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const newDurationMinutes = body.duration_minutes != null ? Math.max(1, parseInt(body.duration_minutes, 10) || 60) : undefined;
     const newPriceAmount    = body.price_amount === null ? null : body.price_amount != null ? Number(body.price_amount) : undefined;
 
+    const hasCategory    = 'product_category'    in body
+    const hasSubcategory = 'product_subcategory' in body
+    const hasSku         = 'sku'                 in body
+    const hasVariant     = 'variant'             in body
+    const newCategory    = body.product_category    ? String(body.product_category).trim()    : null
+    const newSubcategory = body.product_subcategory ? String(body.product_subcategory).trim() : null
+    const newSku         = body.sku     ? String(body.sku).trim()     : null
+    const newVariant     = body.variant ? String(body.variant).trim() : null
+
     // Strict boolean coercion for checkbox
     const rawApply = body.apply_to_history;
     const applyToHistory =
@@ -182,10 +192,15 @@ const TENANT_ID = authz.tenantId;
       cost             = CASE WHEN ${shouldUpdateProductCostNow && hasNewCost} THEN ${newCostNum} ELSE cost END,
       duration_minutes = CASE WHEN ${newDurationMinutes !== undefined} THEN ${newDurationMinutes ?? null} ELSE duration_minutes END,
       price_amount     = CASE WHEN ${newPriceAmount !== undefined} THEN ${newPriceAmount ?? null} ELSE price_amount END,
-      image_data         = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN ${newImageData ?? null} ELSE image_data END,
-      image_updated_at   = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN now() ELSE image_updated_at END
+      image_data          = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN ${newImageData ?? null} ELSE image_data END,
+      image_updated_at    = CASE WHEN ${hasImageChange && newImageData !== undefined} THEN now() ELSE image_updated_at END,
+      product_category    = CASE WHEN ${hasCategory}    THEN ${newCategory}    ELSE product_category    END,
+      product_subcategory = CASE WHEN ${hasSubcategory} THEN ${newSubcategory} ELSE product_subcategory END,
+      sku                 = CASE WHEN ${hasSku}         THEN ${newSku}         ELSE sku                 END,
+      variant             = CASE WHEN ${hasVariant}     THEN ${newVariant}     ELSE variant             END
   WHERE tenant_id = ${TENANT_ID} AND id = ${id}
   RETURNING id, name, cost, duration_minutes, price_amount,
+            product_category, product_subcategory, sku, variant,
             (image_data IS NOT NULL AND image_data != '') AS has_image,
             EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
 `;

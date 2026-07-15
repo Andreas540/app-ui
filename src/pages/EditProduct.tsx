@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { listProducts, updateProduct, type ProductWithCost } from '../lib/api'
+import { listProducts, updateProduct, listProductCategories, createProductCategory, type ProductWithCost } from '../lib/api'
 import { ImagePicker } from '../components/ImagePicker'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -32,6 +32,18 @@ export default function EditProduct() {
   const [imageDisplayUrl, setImageDisplayUrl] = useState<string | null>(null)
   const [imageChangeData, setImageChangeData] = useState<string | null | undefined>(undefined)
 
+  const [productCategory, setProductCategory] = useState('')
+  const [productSubcategory, setProductSubcategory] = useState('')
+  const [sku, setSku] = useState('')
+  const [variant, setVariant] = useState('')
+
+  const [categories, setCategories] = useState<string[]>([])
+  const [subcategories, setSubcategories] = useState<string[]>([])
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [addingSubcategory, setAddingSubcategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newSubcategoryName, setNewSubcategoryName] = useState('')
+
   useEffect(() => {
     (async () => {
       try {
@@ -53,6 +65,42 @@ export default function EditProduct() {
 
   const selected = useMemo(() => products.find(p => p.id === selectedId) || null, [products, selectedId])
 
+  useEffect(() => {
+    loadCategories()
+    loadSubcategories()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadCategories() {
+    try { setCategories(await listProductCategories('category')) } catch {}
+  }
+  async function loadSubcategories() {
+    try { setSubcategories(await listProductCategories('subcategory')) } catch {}
+  }
+
+  async function handleAddCategory() {
+    const nm = newCategoryName.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('category', nm)
+      setCategories(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setProductCategory(nm)
+      setAddingCategory(false)
+      setNewCategoryName('')
+    } catch (e: any) { alert(e?.message || 'Failed to save category') }
+  }
+
+  async function handleAddSubcategory() {
+    const nm = newSubcategoryName.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('subcategory', nm)
+      setSubcategories(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setProductSubcategory(nm)
+      setAddingSubcategory(false)
+      setNewSubcategoryName('')
+    } catch (e: any) { alert(e?.message || 'Failed to save subcategory') }
+  }
+
   // When product changes, prefill fields
   useEffect(() => {
     if (!selected) return
@@ -66,8 +114,14 @@ export default function EditProduct() {
     } else {
       setPriceStr(selected.price_amount == null ? '' : fmtInput(selected.price_amount))
     }
+    setProductCategory(selected.product_category ?? '')
+    setProductSubcategory(selected.product_subcategory ?? '')
+    setSku(selected.sku ?? '')
+    setVariant(selected.variant ?? '')
     setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
     setImageChangeData(undefined)
+    setAddingCategory(false)
+    setAddingSubcategory(false)
   }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseCostInput(s: string) {
@@ -102,6 +156,9 @@ export default function EditProduct() {
         duration_minutes: durationMinutes,
         price_amount: priceAmount,
         ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
+        product_category: productCategory || null,
+        product_subcategory: productSubcategory || null,
+        ...(type === 'product' ? { sku: sku || null, variant: variant || null } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -159,6 +216,60 @@ export default function EditProduct() {
           )}
         </div>
       </div>
+
+      <div className="row" style={{ marginTop: 12 }}>
+        <div>
+          <label>{type === 'service' ? 'Service category' : 'Product category'}</label>
+          {addingCategory ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="text" autoFocus placeholder="Category name" value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryName('') } }}
+                style={{ flex: 1, minWidth: 0 }} />
+              <button onClick={handleAddCategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+              <button onClick={() => { setAddingCategory(false); setNewCategoryName(''); setProductCategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+            </div>
+          ) : (
+            <select value={productCategory} onChange={e => { if (e.target.value === '__new__') { setAddingCategory(true); setProductCategory('') } else setProductCategory(e.target.value) }}>
+              <option value="">—</option>
+              <option value="__new__">＋ New category</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+        </div>
+        <div>
+          <label>{type === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
+          {addingSubcategory ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="text" autoFocus placeholder="Subcategory name" value={newSubcategoryName}
+                onChange={e => setNewSubcategoryName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddSubcategory(); if (e.key === 'Escape') { setAddingSubcategory(false); setNewSubcategoryName('') } }}
+                style={{ flex: 1, minWidth: 0 }} />
+              <button onClick={handleAddSubcategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+              <button onClick={() => { setAddingSubcategory(false); setNewSubcategoryName(''); setProductSubcategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+            </div>
+          ) : (
+            <select value={productSubcategory} onChange={e => { if (e.target.value === '__new__') { setAddingSubcategory(true); setProductSubcategory('') } else setProductSubcategory(e.target.value) }}>
+              <option value="">—</option>
+              <option value="__new__">＋ New subcategory</option>
+              {subcategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {type === 'product' && (
+        <div className="row" style={{ marginTop: 12 }}>
+          <div>
+            <label>Item ID / SKU</label>
+            <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
+          </div>
+          <div>
+            <label>Variant</label>
+            <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
+          </div>
+        </div>
+      )}
 
       {type === 'product' && (
         <div style={{ marginTop: 12 }}>
@@ -278,11 +389,17 @@ export default function EditProduct() {
               } else {
                 setPriceStr(selected.price_amount == null ? '' : fmtInput(selected.price_amount))
               }
+              setProductCategory(selected.product_category ?? '')
+              setProductSubcategory(selected.product_subcategory ?? '')
+              setSku(selected.sku ?? '')
+              setVariant(selected.variant ?? '')
               setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
             }
             setCostOption('next')
             setSpecificDate(todayYMD())
             setImageChangeData(undefined)
+            setAddingCategory(false)
+            setAddingSubcategory(false)
           }}
           disabled={saving}
         >
