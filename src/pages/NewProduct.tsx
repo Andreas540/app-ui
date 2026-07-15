@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { createProduct, listProducts, type ProductWithCost, getAuthHeaders } from '../lib/api'
+import { createProduct, listProducts, listProductCategories, createProductCategory, type ProductWithCost, getAuthHeaders } from '../lib/api'
 import { ImagePicker } from '../components/ImagePicker'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
@@ -39,6 +39,13 @@ export default function NewProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
+
+  const [categories, setCategories] = useState<string[]>([])
+  const [subcategories, setSubcategories] = useState<string[]>([])
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [addingSubcategory, setAddingSubcategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newSubcategoryName, setNewSubcategoryName] = useState('')
 
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
@@ -105,6 +112,8 @@ export default function NewProduct() {
 
   useEffect(() => {
     loadProducts()
+    loadCategories()
+    loadSubcategories()
   }, [])
 
   useEffect(() => {
@@ -112,6 +121,38 @@ export default function NewProduct() {
       loadHistoricalCosts()
     }
   }, [showHistorical])
+
+  async function loadCategories() {
+    try { setCategories(await listProductCategories('category')) } catch {}
+  }
+
+  async function loadSubcategories() {
+    try { setSubcategories(await listProductCategories('subcategory')) } catch {}
+  }
+
+  async function handleAddCategory() {
+    const nm = newCategoryName.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('category', nm)
+      setCategories(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setProductCategory(nm)
+      setAddingCategory(false)
+      setNewCategoryName('')
+    } catch (e: any) { alert(e?.message || 'Failed to save category') }
+  }
+
+  async function handleAddSubcategory() {
+    const nm = newSubcategoryName.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('subcategory', nm)
+      setSubcategories(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setProductSubcategory(nm)
+      setAddingSubcategory(false)
+      setNewSubcategoryName('')
+    } catch (e: any) { alert(e?.message || 'Failed to save subcategory') }
+  }
 
   async function save() {
     const nm = name.trim()
@@ -216,21 +257,59 @@ export default function NewProduct() {
           {showCategory && (
             <div>
               <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
-              <select value={productCategory} onChange={e => setProductCategory(e.target.value)}>
-                <option value="">—</option>
-                <option value="category_1">Category 1</option>
-                <option value="category_2">Category 2</option>
-              </select>
+              {addingCategory ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Category name"
+                    value={newCategoryName}
+                    onChange={e => setNewCategoryName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryName('') } }}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button onClick={handleAddCategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                  <button onClick={() => { setAddingCategory(false); setNewCategoryName(''); setProductCategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+                </div>
+              ) : (
+                <select value={productCategory} onChange={e => {
+                  if (e.target.value === '__new__') { setAddingCategory(true); setProductCategory('') }
+                  else setProductCategory(e.target.value)
+                }}>
+                  <option value="">—</option>
+                  <option value="__new__">＋ New category</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
           )}
           {showSubcategory && (
             <div>
               <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
-              <select value={productSubcategory} onChange={e => setProductSubcategory(e.target.value)}>
-                <option value="">—</option>
-                <option value="subcategory_1">Subcategory 1</option>
-                <option value="subcategory_2">Subcategory 2</option>
-              </select>
+              {addingSubcategory ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Subcategory name"
+                    value={newSubcategoryName}
+                    onChange={e => setNewSubcategoryName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddSubcategory(); if (e.key === 'Escape') { setAddingSubcategory(false); setNewSubcategoryName('') } }}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button onClick={handleAddSubcategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                  <button onClick={() => { setAddingSubcategory(false); setNewSubcategoryName(''); setProductSubcategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+                </div>
+              ) : (
+                <select value={productSubcategory} onChange={e => {
+                  if (e.target.value === '__new__') { setAddingSubcategory(true); setProductSubcategory('') }
+                  else setProductSubcategory(e.target.value)
+                }}>
+                  <option value="">—</option>
+                  <option value="__new__">＋ New subcategory</option>
+                  {subcategories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
           )}
         </div>

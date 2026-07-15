@@ -352,6 +352,23 @@ export async function updateCustomer(input: UpdateCustomerInput) {
   return (await res.json()) as { ok: true }
 }
 
+// --- Product categories ---
+export async function listProductCategories(type: 'category' | 'subcategory'): Promise<string[]> {
+  const res = await apiFetch(`${base}/api/product-categories?type=${type}`, { headers: getAuthHeaders() })
+  if (!res.ok) throw new Error('Failed to load product categories')
+  const j = await res.json()
+  return j.categories ?? []
+}
+
+export async function createProductCategory(type: 'category' | 'subcategory', name: string): Promise<void> {
+  const res = await apiFetch(`${base}/api/product-categories`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ type, name }),
+  })
+  if (!res.ok) throw new Error('Failed to save category')
+}
+
 // --- Products ---
 export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null }) {
   const res = await apiFetch(`${base}/api/product`, {
