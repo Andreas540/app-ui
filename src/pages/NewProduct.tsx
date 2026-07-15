@@ -38,6 +38,7 @@ export default function NewProduct() {
   const [productCategory, setProductCategory] = useState('')
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
+  const [variant, setVariant] = useState('')
 
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
@@ -62,6 +63,7 @@ export default function NewProduct() {
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
+  const showVariant     = pageFields.variant             !== false
   const showProductTab  = pageFields.show_product_tab    !== false
   const showServiceTab  = pageFields.show_service_tab    !== false
 
@@ -124,7 +126,7 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
@@ -234,14 +236,20 @@ export default function NewProduct() {
         </div>
       )}
 
-      {category === 'product' && showSku && (
-        <div style={{ marginTop: 12 }}>
-          <label>Item ID / SKU</label>
-          <input
-            type="text"
-            value={sku}
-            onChange={e => setSku(e.target.value)}
-          />
+      {category === 'product' && (showSku || showVariant) && (
+        <div className="row" style={{ marginTop: 12 }}>
+          {showSku && (
+            <div>
+              <label>Item ID / SKU</label>
+              <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
+            </div>
+          )}
+          {showVariant && (
+            <div>
+              <label>Variant</label>
+              <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
+            </div>
+          )}
         </div>
       )}
 
@@ -318,7 +326,7 @@ export default function NewProduct() {
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku('') }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku(''); setVariant('') }} disabled={saving}>
           {t('clear')}
         </button>
       </div>
