@@ -1560,7 +1560,8 @@ async function handleSaveStripeCustomerId() {
                         <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Page configurations</div>
                         {[
                           { id: 'new-product', label: t('products', { ns: 'navigation' }), file: 'NewProduct.tsx', route: '/products/new' },
-                          { id: 'edit-product', label: `${t('products.editProductTitle')} / Service`, file: 'EditProduct.tsx', route: '/products/edit' },
+                          { id: 'edit-product', label: t('products.editProductTitle'), file: 'EditProduct.tsx', route: '/products/edit?type=product' },
+                          { id: 'edit-service', label: 'Edit Service', file: 'EditProduct.tsx', route: '/products/edit?type=service' },
                         ].map(page => (
                           <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 6 }}>
                             <div>
@@ -1569,12 +1570,17 @@ async function handleSaveStripeCustomerId() {
                             <button
                               onClick={() => {
                                 const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
-                                const baseDefaults = page.id === 'new-product'
-                                  ? { product_category: true, product_subcategory: true, sku: true, variant: true, show_product_tab: true, show_service_tab: true }
-                                  : { product_category: true, product_subcategory: true, sku: true, variant: true }
+                                const baseDefaults =
+                                  page.id === 'new-product'
+                                    ? { product_category: true, product_subcategory: true, sku: true, variant: true, show_product_tab: true, show_service_tab: true }
+                                  : page.id === 'edit-service'
+                                    ? { product_category: true, product_subcategory: true }
+                                    : { product_category: true, product_subcategory: true, sku: true, variant: true }
                                 const merged = { ...baseDefaults, ...existing }
                                 setBtFieldConfig(merged)
                                 if (page.id === 'new-product') setBtPreviewTab(merged.show_product_tab !== false ? 'product' : 'service')
+                                else if (page.id === 'edit-product') setBtPreviewTab('product')
+                                else if (page.id === 'edit-service') setBtPreviewTab('service')
                                 setBtPageConfig({ btId: bt.id, pageId: page.id })
                               }}
                               style={{ height: 28, padding: '0 12px', fontSize: 12 }}
@@ -1765,7 +1771,7 @@ async function handleSaveStripeCustomerId() {
                   {businessTypes.find(bt => bt.id === btPageConfig.btId)?.label} · Page config
                 </div>
                 <div className="helper" style={{ marginTop: 2 }}>
-                  {btPageConfig.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : btPageConfig.pageId === 'edit-product' ? `${t('products.editProductTitle')} / Service` : btPageConfig.pageId}
+                  {btPageConfig.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : btPageConfig.pageId === 'edit-product' ? t('products.editProductTitle') : btPageConfig.pageId === 'edit-service' ? 'Edit Service' : btPageConfig.pageId}
                 </div>
               </div>
               <button onClick={() => setBtPageConfig(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
@@ -1773,71 +1779,32 @@ async function handleSaveStripeCustomerId() {
             {/* Preview */}
             <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
               {btPageConfig.pageId === 'edit-product' ? (
-                /* edit-product/service preview — one config covers both types */
+                /* edit-product preview — products only */
                 <>
-                  {/* Non-configurable: title */}
-                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
-                    {btPreviewTab === 'service' ? 'Edit Service' : t('products.editProductTitle')}
-                  </div>
-
-                  {/* Preview-only toggle — same config applies to both types */}
-                  <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
-                    {(['product', 'service'] as const).map((tab, i) => (
-                      <button
-                        key={tab}
-                        onClick={() => setBtPreviewTab(tab)}
-                        style={{
-                          padding: '6px 16px',
-                          border: '1px solid var(--border)',
-                          borderRight: i === 0 ? 'none' : undefined,
-                          borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
-                          background: btPreviewTab === tab ? 'var(--primary)' : 'transparent',
-                          color: btPreviewTab === tab ? '#fff' : 'inherit',
-                          fontSize: 13, cursor: 'pointer',
-                        }}
-                      >
-                        {tab === 'product' ? 'Product' : 'Service'}
-                      </button>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
-                    Same field settings apply to both product and service editing.
-                  </p>
-
-                  {/* Non-configurable: product selector */}
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('products.editProductTitle')}</div>
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                      Select {btPreviewTab === 'service' ? 'service' : 'product'}
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Select product</div>
                     <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                   </div>
-
-                  {/* Non-configurable: name */}
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                      {btPreviewTab === 'service' ? t('products.serviceName') : t('products.productName')}
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.productName')}</div>
                     <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                   </div>
-
-                  {/* Configurable: category + subcategory */}
                   {(() => {
                     const showCat = btFieldConfig.product_category    !== false
                     const showSub = btFieldConfig.product_subcategory !== false
                     const toggle = (key: string, val: boolean) => setBtFieldConfig(prev => ({ ...prev, [key]: val }))
-                    const catLabel = btPreviewTab === 'service' ? 'Service category' : 'Product category'
-                    const subLabel = btPreviewTab === 'service' ? 'Service subcategory' : 'Product subcategory'
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{catLabel}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product category</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                           <button onClick={() => toggle('product_category', !showCat)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showCat ? 'Hide' : 'Show'}
                           </button>
                         </div>
                         <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{subLabel}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Product subcategory</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                           <button onClick={() => toggle('product_subcategory', !showSub)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showSub ? 'Hide' : 'Show'}
@@ -1846,9 +1813,7 @@ async function handleSaveStripeCustomerId() {
                       </div>
                     )
                   })()}
-
-                  {/* Configurable: SKU + Variant (product only — matches actual page) */}
-                  {btPreviewTab === 'product' && (() => {
+                  {(() => {
                     const showSku     = btFieldConfig.sku     !== false
                     const showVariant = btFieldConfig.variant !== false
                     return (
@@ -1870,8 +1835,6 @@ async function handleSaveStripeCustomerId() {
                       </div>
                     )
                   })()}
-
-                  {/* Non-configurable: cost + save/reset */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                     {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
                       <div key={label}>
@@ -1879,6 +1842,58 @@ async function handleSaveStripeCustomerId() {
                         <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                       </div>
                     ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
+                    <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />
+                    <div style={{ height: 36, width: 60, background: 'var(--border)', borderRadius: 6 }} />
+                  </div>
+                </>
+              ) : btPageConfig.pageId === 'edit-service' ? (
+                /* edit-service preview — services only, no SKU/variant */
+                <>
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Edit Service</div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Select service</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.serviceName')}</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                  </div>
+                  {(() => {
+                    const showCat = btFieldConfig.product_category    !== false
+                    const showSub = btFieldConfig.product_subcategory !== false
+                    const toggle = (key: string, val: boolean) => setBtFieldConfig(prev => ({ ...prev, [key]: val }))
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Service category</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                          <button onClick={() => toggle('product_category', !showCat)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showCat ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Service subcategory</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                          <button onClick={() => toggle('product_subcategory', !showSub)} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showSub ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    {[t('products.duration'), t('products.servicePrice')].map(label => (
+                      <div key={label}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.directServiceCost')}</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                   </div>
                   <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
                     <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />

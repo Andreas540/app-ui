@@ -16,7 +16,8 @@ export default function EditProduct() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type') === 'service' ? 'service' : 'product'
-  const pageFields = getTenantConfig(user?.tenantId).pages['edit-product']?.fields ?? {}
+  const pageConfigKey = type === 'service' ? 'edit-service' : 'edit-product'
+  const pageFields = getTenantConfig(user?.tenantId).pages[pageConfigKey]?.fields ?? {}
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
