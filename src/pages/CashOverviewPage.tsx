@@ -363,7 +363,7 @@ export default function CashOverviewPage() {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', cursor: 'pointer' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted)', userSelect: 'none' }}>{isExpanded ? '▾' : '▸'}</span>
+                    <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)', userSelect: 'none' }}>{isExpanded ? '▾' : '▸'}</span>
                     <span style={{ fontWeight: 700, fontSize: 15 }}>{weekLabel}</span>
                   </div>
                   <span style={{ fontWeight: 700, color: weekNet >= 0 ? '#10b981' : '#ef4444' }}>
@@ -389,7 +389,7 @@ export default function CashOverviewPage() {
                             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', cursor: 'pointer', fontSize: 14 }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 11, color: 'var(--muted)', userSelect: 'none' }}>{isDayExp ? '▾' : '▸'}</span>
+                              <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)', userSelect: 'none' }}>{isDayExp ? '▾' : '▸'}</span>
                               <span>{dayName(ds)}</span>
                               <span style={{ color: 'var(--muted)', fontSize: 12 }}>{shortDate(ds)}</span>
                             </div>

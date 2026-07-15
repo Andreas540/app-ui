@@ -143,7 +143,7 @@ export default function Warehouse() {
           onClick={() => setAdjustOpen(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
         >
-          <span style={{ fontSize: 14, color: 'var(--muted)' }}>{adjustOpen ? '▾' : '▸'}</span>
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{adjustOpen ? '▾' : '▸'}</span>
           <h3 style={{ margin: 0 }}>{t('warehouse.title')}</h3>
         </div>
 

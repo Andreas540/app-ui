@@ -4,6 +4,7 @@
 :root {
   --topbar-h: 52px;
   --control-h: 44px;
+  --expand-icon-size: 10px;
   --brand-blue: #3b82f6;
   --brand-blue-hover: #2563eb;
   --brand-blue-active: #1d4ed8;
