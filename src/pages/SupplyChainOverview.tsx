@@ -541,8 +541,8 @@ export default function SupplyChainOverview() {
 
   const sectionHeaderStyle: React.CSSProperties = {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     cursor: 'pointer',
     padding: '12px 0',
     borderBottom: '1px solid var(--border)',
@@ -551,9 +551,9 @@ export default function SupplyChainOverview() {
   }
 
   const expandIconStyle: React.CSSProperties = {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 'var(--expand-icon-size)',
     userSelect: 'none',
+    flexShrink: 0,
   }
 
   const tableHeaderStyle: React.CSSProperties = {
@@ -620,35 +620,25 @@ export default function SupplyChainOverview() {
       {/* Section: Demand */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle}>
-          <span onClick={() => toggleSection('demand')} style={{ cursor: 'pointer', flex: 1 }}>
-            {t('supplyChain.demand')}
-          </span>
-          <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
-            <button
-              onClick={e => { e.stopPropagation(); runDemandAnalysis() }}
-              disabled={aiLoading}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: aiLoading ? 'default' : 'pointer',
-                padding: 0,
-                opacity: aiLoading ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                marginTop: 3,
-              }}
-              title={t('supplyChain.aiAnalyze')}
-            >
-              <img
-                src={isDark ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
-                alt="BizWiz AI"
-                style={{ height: 36, width: 'auto' }}
-              />
-            </button>
-            <span style={expandIconStyle} onClick={() => toggleSection('demand')}>
-              {expandedSections.demand ? '−' : '+'}
-            </span>
-          </div>
+          <span style={expandIconStyle} onClick={() => toggleSection('demand')}>{expandedSections.demand ? '▼' : '▶'}</span>
+          <span onClick={() => toggleSection('demand')} style={{ flex: 1 }}>{t('supplyChain.demand')}</span>
+          <button
+            onClick={e => { e.stopPropagation(); runDemandAnalysis() }}
+            disabled={aiLoading}
+            style={{
+              background: 'transparent', border: 'none',
+              cursor: aiLoading ? 'default' : 'pointer',
+              padding: 0, opacity: aiLoading ? 0.5 : 1,
+              display: 'flex', alignItems: 'center', marginLeft: 'auto',
+            }}
+            title={t('supplyChain.aiAnalyze')}
+          >
+            <img
+              src={isDark ? '/images/bizwiz_ai_dark.svg' : '/images/bizwiz_ai_light.svg'}
+              alt="BizWiz AI"
+              style={{ height: 36, width: 'auto' }}
+            />
+          </button>
         </div>
 
         {expandedSections.demand && (
@@ -812,8 +802,8 @@ export default function SupplyChainOverview() {
       {/* Section 1: Recently delivered */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('recentDeliveries')}>
+          <span style={expandIconStyle}>{expandedSections.recentDeliveries ? '▼' : '▶'}</span>
           <span>{t('supplyChain.recentlyDelivered')}</span>
-          <span style={expandIconStyle}>{expandedSections.recentDeliveries ? '−' : '+'}</span>
         </div>
 
         {expandedSections.recentDeliveries && (
@@ -990,8 +980,8 @@ export default function SupplyChainOverview() {
       {/* NEW SECTION: Production */}
 <div style={{ marginTop: 20 }}>
   <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
+    <span style={expandIconStyle}>{expandedSections.production ? '▼' : '▶'}</span>
     <span>{t('supplyChain.production')}</span>
-    <span style={expandIconStyle}>{expandedSections.production ? '−' : '+'}</span>
   </div>
 
   {expandedSections.production && (
@@ -1126,25 +1116,19 @@ export default function SupplyChainOverview() {
 
       {/* Section 2: Not delivered */}
       <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle}>
-          <span onClick={() => toggleSection('notDelivered')} style={{ cursor: 'pointer', flex: 1 }}>
-            {t('supplyChain.notDelivered')}
-          </span>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); printNotDelivered() }}
-              style={{
-                background: 'none', border: 'none', padding: 0,
-                cursor: 'pointer', color: 'var(--accent)',
-                textDecoration: 'underline', fontSize: 14, fontWeight: 500,
-              }}
-            >
-              {t('print')}
-            </button>
-            <span style={expandIconStyle} onClick={() => toggleSection('notDelivered')}>
-              {expandedSections.notDelivered ? '−' : '+'}
-            </span>
-          </div>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('notDelivered')}>
+          <span style={expandIconStyle}>{expandedSections.notDelivered ? '▼' : '▶'}</span>
+          <span style={{ flex: 1 }}>{t('supplyChain.notDelivered')}</span>
+          <button
+            onClick={e => { e.stopPropagation(); printNotDelivered() }}
+            style={{
+              background: 'none', border: 'none', padding: 0,
+              cursor: 'pointer', color: 'var(--accent)',
+              textDecoration: 'underline', fontSize: 14, fontWeight: 500,
+            }}
+          >
+            {t('print')}
+          </button>
         </div>
 
         {expandedSections.notDelivered && (
@@ -1225,26 +1209,22 @@ export default function SupplyChainOverview() {
 
       {/* Section 3: In the warehouse */}
 <div style={{ marginTop: 20 }}>
-  <div style={sectionHeaderStyle}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }} onClick={() => toggleSection('warehouse')}>
-      <span>{t('supplyChain.inWarehouse')}</span>
-      {showInfoIcons && (
-        <button
-          onClick={e => { e.stopPropagation(); setShowWarehouseInfo(v => !v) }}
-          style={{
-            width: 20, height: 20, padding: 0, flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderRadius: '50%', cursor: 'pointer',
-            background: 'var(--border, rgba(0,0,0,0.08))',
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
-          }}
-        >i</button>
-      )}
-    </div>
-    <span style={expandIconStyle} onClick={() => toggleSection('warehouse')}>
-      {expandedSections.warehouse ? '−' : '+'}
-    </span>
+  <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
+    <span style={expandIconStyle}>{expandedSections.warehouse ? '▼' : '▶'}</span>
+    <span>{t('supplyChain.inWarehouse')}</span>
+    {showInfoIcons && (
+      <button
+        onClick={e => { e.stopPropagation(); setShowWarehouseInfo(v => !v) }}
+        style={{
+          width: 20, height: 20, padding: 0, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: '50%', cursor: 'pointer',
+          background: 'var(--border, rgba(0,0,0,0.08))',
+          border: '1px solid var(--border)',
+          color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+        }}
+      >i</button>
+    )}
   </div>
 
   {showWarehouseInfo && (
@@ -1357,8 +1337,8 @@ export default function SupplyChainOverview() {
       {/* Section 4: In Customs */}
       <div style={{ marginTop: 20 }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('inCustoms')}>
+          <span style={expandIconStyle}>{expandedSections.inCustoms ? '▼' : '▶'}</span>
           <span>{t('supplyChain.inCustoms')}</span>
-          <span style={expandIconStyle}>{expandedSections.inCustoms ? '−' : '+'}</span>
         </div>
 
         {expandedSections.inCustoms && (
@@ -1401,26 +1381,22 @@ export default function SupplyChainOverview() {
 
       {/* Section 5: Ordered from suppliers */}
       <div style={{ marginTop: 20 }}>
-        <div style={sectionHeaderStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }} onClick={() => toggleSection('orderedFromSuppliers')}>
-            <span>{t('supplyChain.orderedFromSuppliers')}</span>
-            {showInfoIcons && (
-              <button
-                onClick={e => { e.stopPropagation(); setShowOrderedInfo(v => !v) }}
-                style={{
-                  width: 20, height: 20, padding: 0, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '50%', cursor: 'pointer',
-                  background: 'var(--border, rgba(0,0,0,0.08))',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
-                }}
-              >i</button>
-            )}
-          </div>
-          <span style={expandIconStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
-            {expandedSections.orderedFromSuppliers ? '−' : '+'}
-          </span>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
+          <span style={expandIconStyle}>{expandedSections.orderedFromSuppliers ? '▼' : '▶'}</span>
+          <span>{t('supplyChain.orderedFromSuppliers')}</span>
+          {showInfoIcons && (
+            <button
+              onClick={e => { e.stopPropagation(); setShowOrderedInfo(v => !v) }}
+              style={{
+                width: 20, height: 20, padding: 0, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '50%', cursor: 'pointer',
+                background: 'var(--border, rgba(0,0,0,0.08))',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+              }}
+            >i</button>
+          )}
         </div>
 
         {showOrderedInfo && (
