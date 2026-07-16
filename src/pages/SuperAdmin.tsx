@@ -1558,7 +1558,7 @@ async function handleSaveStripeCustomerId() {
                         <textarea
                           value={editingBtConfig}
                           onChange={e => { setEditingBtConfig(e.target.value); setBtConfigError(null) }}
-                          rows={6}
+                          rows={12}
                           style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, resize: 'vertical', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
                           placeholder='{"labels":{"directLabel":"Direct"}}'
                         />
