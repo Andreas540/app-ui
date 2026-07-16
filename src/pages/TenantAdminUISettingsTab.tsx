@@ -33,6 +33,9 @@ type UiConfig = {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
   }
+  pages?: {
+    [pageId: string]: { fields?: Record<string, boolean> }
+  }
 }
 
 function Badge({ customized }: { customized: boolean }) {
@@ -144,6 +147,13 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+
+  // Page field config overlay
+  const [pageOverlay, setPageOverlay] = useState<{ pageId: string } | null>(null)
+  const [pageFieldConfig, setPageFieldConfig] = useState<Record<string, boolean>>({})
+  const [pageFieldConfigService, setPageFieldConfigService] = useState<Record<string, boolean>>({})
+  const [pagePreviewTab, setPagePreviewTab] = useState<'product' | 'service'>('product')
+  const [savingPageConfig, setSavingPageConfig] = useState(false)
   const currency = (user as any)?.default_currency || 'USD'
 
   useEffect(() => { loadCfg() }, [])
@@ -205,6 +215,82 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
   }
   function setBookingText(key: 'serviceTypeLabel' | 'bookingProviderName', val: string) {
     setCfg(p => ({ ...p, booking: { ...p.booking, [key]: val || undefined } }))
+  }
+
+  function btDefaultsForPage(pageId: string): Record<string, boolean> {
+    const appDefaults: Record<string, boolean> = pageId === 'new-product'
+      ? { product_category: true, product_subcategory: true, sku: true, variant: true, show_product_tab: true, show_service_tab: true }
+      : pageId === 'edit-service'
+      ? { product_category: true, product_subcategory: true }
+      : { product_category: true, product_subcategory: true, sku: true, variant: true }
+    const btFields: Record<string, boolean> = (user as any)?.businessTypeConfig?.pages?.[pageId]?.fields ?? {}
+    return { ...appDefaults, ...btFields }
+  }
+
+  function isPageCustomized(pageId: string): boolean {
+    const tenantFields = cfg.pages?.[pageId]?.fields
+    if (!tenantFields || Object.keys(tenantFields).length === 0) return false
+    const bt = btDefaultsForPage(pageId)
+    return Object.entries(tenantFields).some(([k, v]) => (bt[k] ?? true) !== v)
+  }
+
+  function openPageConfig(pageId: string) {
+    const btEffective = btDefaultsForPage(pageId)
+    const tenantFields = cfg.pages?.[pageId]?.fields ?? {}
+    setPageFieldConfig({ ...btEffective, ...tenantFields })
+    if (pageId === 'edit-product') {
+      const btSvc = btDefaultsForPage('edit-service')
+      const tenantSvcFields = cfg.pages?.['edit-service']?.fields ?? {}
+      setPageFieldConfigService({ ...btSvc, ...tenantSvcFields })
+      setPagePreviewTab('product')
+    } else {
+      const effective = { ...btEffective, ...tenantFields }
+      setPagePreviewTab(effective.show_product_tab !== false ? 'product' : 'service')
+    }
+    setPageOverlay({ pageId })
+  }
+
+  async function handleSavePageConfig() {
+    if (!pageOverlay) return
+    setSavingPageConfig(true)
+    try {
+      const isEditProductService = pageOverlay.pageId === 'edit-product'
+      const updatedCfg: UiConfig = {
+        ...cfg,
+        pages: {
+          ...cfg.pages,
+          [pageOverlay.pageId]: { fields: pageFieldConfig },
+          ...(isEditProductService ? { 'edit-service': { fields: pageFieldConfigService } } : {}),
+        },
+      }
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'updateUiConfig', uiConfig: updatedCfg }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+      try {
+        const stored = JSON.parse(localStorage.getItem('userData') || '{}')
+        stored.uiConfig = updatedCfg
+        localStorage.setItem('userData', JSON.stringify(stored))
+      } catch { /* ignore */ }
+      setCfg(updatedCfg)
+      refreshConfig()
+      setPageOverlay(null)
+    } catch (e: any) {
+      alert(e?.message || 'Failed')
+    } finally {
+      setSavingPageConfig(false)
+    }
+  }
+
+  function resetPageConfig(pageId: string) {
+    if (pageId === 'edit-product') {
+      setPageFieldConfig(btDefaultsForPage('edit-product'))
+      setPageFieldConfigService(btDefaultsForPage('edit-service'))
+    } else {
+      setPageFieldConfig(btDefaultsForPage(pageId))
+    }
   }
 
   function resetSection() {
@@ -482,6 +568,298 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
         </button>
         {saveMsg && <span style={{ color: 'var(--success, #4caf50)', fontSize: 14 }}>{saveMsg}</span>}
       </div>
+
+      {/* Page configurations */}
+      <div style={{ marginTop: 36, borderTop: '1px solid var(--line)', paddingTop: 20 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Page configurations</div>
+        {([
+          { id: 'new-product', label: t('products', { ns: 'navigation' }) },
+          { id: 'edit-product', label: `${t('products.editProductTitle')} / Service` },
+        ] as const).map(page => (
+          <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
+            <div>
+              <span style={{ fontWeight: 500, fontSize: 14 }}>{page.label}</span>
+              <Badge customized={isPageCustomized(page.id) || (page.id === 'edit-product' && isPageCustomized('edit-service'))} />
+            </div>
+            <button onClick={() => openPageConfig(page.id)} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+              Configure
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Page config overlay */}
+      {pageOverlay && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setPageOverlay(null)}
+        >
+          <div className="card" style={{ maxWidth: 600, width: '100%', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Page config</div>
+                <div className="helper" style={{ marginTop: 2 }}>
+                  {pageOverlay.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : `${t('products.editProductTitle')} / Service`}
+                </div>
+              </div>
+              <button onClick={() => setPageOverlay(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
+            </div>
+
+            {/* Preview */}
+            <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--line)' }}>
+              {pageOverlay.pageId === 'new-product' ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>
+                      {pagePreviewTab === 'service' ? t('products.newServiceTitle') : t('products.newProductTitle')}
+                    </div>
+                    <div style={{ height: 28, width: 90, background: 'var(--primary)', borderRadius: 4, opacity: 0.4 }} />
+                  </div>
+
+                  {/* Configurable: Product / Service tab toggle */}
+                  <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
+                    {(['product', 'service'] as const).map((tab, i) => {
+                      const configKey = tab === 'product' ? 'show_product_tab' : 'show_service_tab'
+                      const isVisible = pageFieldConfig[configKey] !== false
+                      const isActive = pagePreviewTab === tab
+                      return (
+                        <div key={tab} style={{ position: 'relative' }}>
+                          <button onClick={() => setPagePreviewTab(tab)} style={{
+                            padding: '6px 28px 6px 12px',
+                            border: `1px solid ${isVisible ? 'var(--color-success, #22c55e)' : 'var(--line)'}`,
+                            borderRight: i === 0 ? 'none' : undefined,
+                            borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
+                            background: isActive ? 'var(--primary)' : 'transparent',
+                            color: isActive ? '#fff' : 'inherit',
+                            fontSize: 13, cursor: 'pointer', opacity: isVisible ? 1 : 0.35,
+                          }}>
+                            {tab === 'product' ? 'Product' : 'Service'}
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); setPageFieldConfig(prev => ({ ...prev, [configKey]: !isVisible })) }}
+                            style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 4px', fontSize: 9, borderRadius: 4 }}
+                          >
+                            {isVisible ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                      {pagePreviewTab === 'service' ? t('products.serviceName') : t('products.productName')}
+                    </div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6 }} />
+                  </div>
+
+                  {(() => {
+                    const showCat = pageFieldConfig.product_category !== false
+                    const showSub = pageFieldConfig.product_subcategory !== false
+                    const catLabel = pagePreviewTab === 'service' ? 'Service category' : 'Product category'
+                    const subLabel = pagePreviewTab === 'service' ? 'Service subcategory' : 'Product subcategory'
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{catLabel}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, product_category: !showCat }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showCat ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{subLabel}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, product_subcategory: !showSub }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showSub ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {pagePreviewTab === 'product' && (() => {
+                    const showSku = pageFieldConfig.sku !== false
+                    const showVariant = pageFieldConfig.variant !== false
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, sku: !showSku }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showSku ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {pagePreviewTab === 'product' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
+                        <div key={label}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        {[t('products.duration'), t('products.servicePrice')].map(label => (
+                          <div key={label}>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                            <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.directServiceCost')}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                    </>
+                  )}
+                  <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.4, marginBottom: 12 }} />
+                  <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
+                    <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />
+                    <div style={{ height: 36, width: 60, background: 'var(--line)', borderRadius: 6 }} />
+                  </div>
+                </>
+              ) : (
+                /* Edit Product / Service — toggle between independent configs */
+                <>
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+                    {pagePreviewTab === 'service' ? 'Edit Service' : t('products.editProductTitle')}
+                  </div>
+                  <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
+                    {(['product', 'service'] as const).map((tab, i) => (
+                      <button key={tab} onClick={() => setPagePreviewTab(tab)} style={{
+                        padding: '6px 16px',
+                        border: '1px solid var(--line)',
+                        borderRight: i === 0 ? 'none' : undefined,
+                        borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
+                        background: pagePreviewTab === tab ? 'var(--primary)' : 'transparent',
+                        color: pagePreviewTab === tab ? '#fff' : 'inherit',
+                        fontSize: 13, cursor: 'pointer',
+                      }}>
+                        {tab === 'product' ? 'Product' : 'Service'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Select {pagePreviewTab === 'service' ? 'service' : 'product'}</div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                      {pagePreviewTab === 'service' ? t('products.serviceName') : t('products.productName')}
+                    </div>
+                    <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                  </div>
+
+                  {(() => {
+                    const cfg2 = pagePreviewTab === 'service' ? pageFieldConfigService : pageFieldConfig
+                    const setCfg2 = pagePreviewTab === 'service' ? setPageFieldConfigService : setPageFieldConfig
+                    const showCat = cfg2.product_category !== false
+                    const showSub = cfg2.product_subcategory !== false
+                    const catLabel = pagePreviewTab === 'service' ? 'Service category' : 'Product category'
+                    const subLabel = pagePreviewTab === 'service' ? 'Service subcategory' : 'Product subcategory'
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ position: 'relative', opacity: showCat ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{catLabel}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showCat ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setCfg2(prev => ({ ...prev, product_category: !showCat }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showCat ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showSub ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{subLabel}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSub ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setCfg2(prev => ({ ...prev, product_subcategory: !showSub }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showSub ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {pagePreviewTab === 'product' && (() => {
+                    const showSku = pageFieldConfig.sku !== false
+                    const showVariant = pageFieldConfig.variant !== false
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, sku: !showSku }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showSku ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {pagePreviewTab === 'product' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
+                        <div key={label}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        {[t('products.duration'), t('products.servicePrice')].map(label => (
+                          <div key={label}>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
+                            <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.directServiceCost')}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                    </>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
+                    <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />
+                    <div style={{ height: 36, width: 60, background: 'var(--line)', borderRadius: 6 }} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="primary" onClick={handleSavePageConfig} disabled={savingPageConfig} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+                {savingPageConfig ? t('saving') : t('save')}
+              </button>
+              <button onClick={() => resetPageConfig(pageOverlay.pageId)} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+                Reset to BT default
+              </button>
+              <button onClick={() => setPageOverlay(null)} style={{ height: H, padding: '0 16px', fontSize: 13 }}>{t('cancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
