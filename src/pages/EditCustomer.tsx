@@ -83,7 +83,7 @@ export default function EditCustomer() {
         setName(c.name || '')
         const loaded = c.customer_type as CustomerType
         setCustomerType(
-          (loaded === 'BLV' || loaded === 'Direct') ? 'Direct' : (loaded || 'Direct')
+          (loaded === 'BLV' || loaded === 'Direct') ? directLabel : (loaded || directLabel)
         )
         setShippingCost(c.shipping_cost != null ? fmtInput(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
@@ -222,7 +222,7 @@ export default function EditCustomer() {
         <div>
           <label>{t('customers.customerType')}</label>
           <select value={customerType} onChange={e=>setCustomerType(e.target.value as CustomerType)}>
-            <option value="Direct">{directLabel}</option>
+            <option value={directLabel}>{directLabel}</option>
             <option value="Partner">Partner</option>
           </select>
         </div>

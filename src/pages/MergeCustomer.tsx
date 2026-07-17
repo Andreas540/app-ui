@@ -57,7 +57,7 @@ export default function MergeCustomer() {
   const [source, setSource] = useState<'A' | 'B' | null>(null)
 
   // Editable merged fields
-  const [fields, setFields] = useState<CustomerFields>(EMPTY)
+  const [fields, setFields] = useState<CustomerFields>({ ...EMPTY, customer_type: directLabel })
 
   const [saving, setSaving] = useState(false)
 
@@ -74,7 +74,7 @@ export default function MergeCustomer() {
     if (!idA) { setDataA(null); return }
     setLoadingA(true)
     fetchCustomerDetail(idA)
-      .then(res => setDataA(toFields(res.customer, fmtInput)))
+      .then(res => setDataA(toFields(res.customer, fmtInput, directLabel)))
       .catch(console.error)
       .finally(() => setLoadingA(false))
   }, [idA])
@@ -84,7 +84,7 @@ export default function MergeCustomer() {
     if (!idB) { setDataB(null); return }
     setLoadingB(true)
     fetchCustomerDetail(idB)
-      .then(res => setDataB(toFields(res.customer, fmtInput)))
+      .then(res => setDataB(toFields(res.customer, fmtInput, directLabel)))
       .catch(console.error)
       .finally(() => setLoadingB(false))
   }, [idB])
@@ -241,7 +241,7 @@ export default function MergeCustomer() {
                 <div>
                   <label>{t('customers.customerType')}</label>
                   <select value={fields.customer_type} onChange={e => set('customer_type', e.target.value)}>
-                    <option value="Direct">{directLabel}</option>
+                    <option value={directLabel}>{directLabel}</option>
                     <option value="Partner">Partner</option>
                   </select>
                 </div>
@@ -339,13 +339,15 @@ export default function MergeCustomer() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toFields(c: Record<string, any>, fmtInput?: (n: number) => string): CustomerFields {
+function toFields(c: Record<string, any>, fmtInput?: (n: number) => string, directLabel = 'Direct'): CustomerFields {
+  const storedType = c.customer_type
+  const normalizedType = (!storedType || storedType === 'BLV' || storedType === 'Direct') ? directLabel : storedType
   return {
     name:          c.name          || '',
     company_name:  c.company_name  || '',
     phone:         c.phone         || '',
     email:         c.email         || '',
-    customer_type: c.customer_type || 'Direct',
+    customer_type: normalizedType,
     shipping_cost: c.shipping_cost != null ? (fmtInput ? fmtInput(c.shipping_cost) : String(c.shipping_cost)) : '',
     address1:      c.address1      || '',
     address2:      c.address2      || '',

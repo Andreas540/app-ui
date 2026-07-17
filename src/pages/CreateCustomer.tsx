@@ -18,7 +18,7 @@ export default function CreateCustomer() {
   const directLabel = tenantConfig.labels.directLabel
 
   const [name, setName] = useState('')
-  const [ctype, setCtype] = useState<CustomerType>('Direct')
+  const [ctype, setCtype] = useState(directLabel)
 
   // Company name (DB column: company_name)
   const [companyName, setCompanyName] = useState('')
@@ -246,7 +246,7 @@ export default function CreateCustomer() {
         <div>
           <label>{t('customers.customerType')}</label>
           <select value={ctype} onChange={e=>setCtype(e.target.value as CustomerType)}>
-            <option value="Direct">{directLabel}</option>
+            <option value={directLabel}>{directLabel}</option>
             <option value="Partner">Partner</option>
           </select>
         </div>

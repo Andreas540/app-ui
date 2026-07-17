@@ -6,9 +6,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useCurrency } from '../lib/useCurrency'
 
-// Mirrors the backend helper — both 'BLV' and 'Direct' are direct customer types
+// Any non-Partner type is "direct" — tenants can customize the stored label
 function isDirectType(customerType: string | null | undefined) {
-  return customerType === 'BLV' || customerType === 'Direct'
+  return !!customerType && customerType !== 'Partner'
 }
 
 export default function Customers() {

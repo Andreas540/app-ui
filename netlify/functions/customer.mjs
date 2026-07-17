@@ -3,15 +3,13 @@
 import { resolveAuthz } from './utils/auth.mjs'
 
 // ---------------------------------------------------------------------------
-// Helper: both 'BLV' (legacy) and 'Direct' (all other tenants) are "direct"
-// customer types — same business logic, different stored label.
-// Use this helper everywhere you need to branch on direct vs partner behavior.
+// Helper: any customer_type that isn't 'Partner' is a "direct" customer.
+// Tenants can customize the stored label (e.g. 'BLV', 'Client', etc.)
+// so we branch on what it's NOT rather than what it IS.
 // ---------------------------------------------------------------------------
 export function isDirectType(customer_type) {
-  return customer_type === 'BLV' || customer_type === 'Direct'
+  return !!customer_type && customer_type !== 'Partner'
 }
-
-const VALID_CUSTOMER_TYPES = ['BLV', 'Direct', 'Partner']
 
 import { withErrorLogging } from './utils/with-error-logging.mjs'
 
@@ -145,8 +143,8 @@ async function updateCustomer(event) {
 
     if (!id)   return cors(400, { error: 'id is required' })
     if (!name || typeof name !== 'string') return cors(400, { error: 'name is required' })
-    if (customer_type && !VALID_CUSTOMER_TYPES.includes(customer_type)) {
-      return cors(400, { error: `invalid customer_type — must be one of: ${VALID_CUSTOMER_TYPES.join(', ')}` })
+    if (customer_type !== undefined && (!customer_type || typeof customer_type !== 'string')) {
+      return cors(400, { error: 'customer_type must be a non-empty string' })
     }
     const sc = (shipping_cost === null || shipping_cost === undefined)
       ? null
