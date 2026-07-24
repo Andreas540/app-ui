@@ -66,6 +66,15 @@ export async function handler(event) {
       ORDER BY name
     `;
 
+    // Ensure hidden-products table exists before querying it
+    await sql`
+      CREATE TABLE IF NOT EXISTS tenant_hidden_products (
+        tenant_id  UUID NOT NULL,
+        product_id UUID NOT NULL,
+        PRIMARY KEY (tenant_id, product_id)
+      )
+    `.catch(() => {})
+
     // Products (no unit_price here) — hidden products are excluded
     const products = await sql`
       SELECT id, name, category, price_amount::float8 AS price_amount

@@ -23,6 +23,14 @@ if (authz.error) return cors(403, { error: authz.error });
 
 const TENANT_ID = authz.tenantId;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS tenant_hidden_products (
+        tenant_id  UUID NOT NULL,
+        product_id UUID NOT NULL,
+        PRIMARY KEY (tenant_id, product_id)
+      )
+    `.catch(() => {})
+
     const rows = await sql`
       SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id,
              product_category, product_subcategory, sku, variant,
