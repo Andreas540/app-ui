@@ -142,6 +142,29 @@ async function handleGet(event) {
       return cors(200, { customers })
     }
 
+    if (action === 'getProductSettings') {
+      await sql`
+        CREATE TABLE IF NOT EXISTS tenant_hidden_products (
+          tenant_id  UUID NOT NULL,
+          product_id UUID NOT NULL,
+          PRIMARY KEY (tenant_id, product_id)
+        )
+      `.catch(() => {})
+      const products = await sql`
+        SELECT
+          p.id,
+          p.name,
+          p.category,
+          (thp.product_id IS NOT NULL) AS hidden
+        FROM products p
+        LEFT JOIN tenant_hidden_products thp
+          ON thp.product_id = p.id AND thp.tenant_id = ${tenantId}::uuid
+        WHERE p.tenant_id = ${tenantId}::uuid
+        ORDER BY p.category, p.name ASC
+      `
+      return cors(200, { products })
+    }
+
     if (action === 'getCustomerRecordCounts') {
       const customerId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('customer_id')
       if (!customerId) return cors(400, { error: 'customer_id required' })
@@ -632,29 +655,6 @@ if (action === 'toggleUserStatus') {
       // Deleting the customer row cascades to: customer_links, customer_messages, shipping_cost_history
       await sql`DELETE FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       return cors(200, { success: true })
-    }
-
-    if (action === 'getProductSettings') {
-      await sql`
-        CREATE TABLE IF NOT EXISTS tenant_hidden_products (
-          tenant_id  UUID NOT NULL,
-          product_id UUID NOT NULL,
-          PRIMARY KEY (tenant_id, product_id)
-        )
-      `.catch(() => {})
-      const products = await sql`
-        SELECT
-          p.id,
-          p.name,
-          p.category,
-          (thp.product_id IS NOT NULL) AS hidden
-        FROM products p
-        LEFT JOIN tenant_hidden_products thp
-          ON thp.product_id = p.id AND thp.tenant_id = ${tenantId}::uuid
-        WHERE p.tenant_id = ${tenantId}::uuid
-        ORDER BY p.category, p.name ASC
-      `
-      return cors(200, { products })
     }
 
     if (action === 'toggleHideProduct') {
