@@ -29,6 +29,10 @@ const TENANT_ID = authz.tenantId;
              (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_products thp
+          WHERE thp.tenant_id = ${TENANT_ID} AND thp.product_id = id
+        )
       ORDER BY category, name
     `;
     return cors(200, { products: rows });

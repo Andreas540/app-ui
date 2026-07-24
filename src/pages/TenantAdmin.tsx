@@ -13,6 +13,7 @@ import TenantAdminUISettingsTab from './TenantAdminUISettingsTab'
 import TenantAdminCashTab from './TenantAdminCashTab'
 import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
+import TenantAdminProductSettingsTab from './TenantAdminProductSettingsTab'
 import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
 
 interface TenantUser {
@@ -66,7 +67,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'data-import' | 'order-page'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'product-settings' | 'data-import' | 'order-page'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -804,6 +805,7 @@ export default function TenantAdmin() {
             { id: 'cash',              label: t('tenantAdmin.tabCash') },
             { id: 'customer-settings', label: t('tenantAdmin.tabCustomerSettings') },
             { id: 'accounting',        label: t('tenantAdmin.tabData') },
+            { id: 'product-settings',  label: t('tenantAdmin.tabProductSettings') },
             { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
             { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
             { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
@@ -1323,6 +1325,13 @@ export default function TenantAdmin() {
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabCustomerSettings')}</h4>
             <TenantAdminCustomerSettingsTab />
+          </>
+        )}
+
+        {activeTab === 'product-settings' && (
+          <>
+            <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabProductSettings')}</h4>
+            <TenantAdminProductSettingsTab />
           </>
         )}
 

@@ -634,6 +634,49 @@ if (action === 'toggleUserStatus') {
       return cors(200, { success: true })
     }
 
+    if (action === 'getProductSettings') {
+      await sql`
+        CREATE TABLE IF NOT EXISTS tenant_hidden_products (
+          tenant_id  UUID NOT NULL,
+          product_id UUID NOT NULL,
+          PRIMARY KEY (tenant_id, product_id)
+        )
+      `.catch(() => {})
+      const products = await sql`
+        SELECT
+          p.id,
+          p.name,
+          p.category,
+          (thp.product_id IS NOT NULL) AS hidden
+        FROM products p
+        LEFT JOIN tenant_hidden_products thp
+          ON thp.product_id = p.id AND thp.tenant_id = ${tenantId}::uuid
+        WHERE p.tenant_id = ${tenantId}::uuid
+        ORDER BY p.category, p.name ASC
+      `
+      return cors(200, { products })
+    }
+
+    if (action === 'toggleHideProduct') {
+      const { productId, hide } = body
+      if (!productId) return cors(400, { error: 'productId required' })
+      const owns = await sql`SELECT id FROM products WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!owns.length) return cors(404, { error: 'Product not found' })
+      await sql`
+        CREATE TABLE IF NOT EXISTS tenant_hidden_products (
+          tenant_id  UUID NOT NULL,
+          product_id UUID NOT NULL,
+          PRIMARY KEY (tenant_id, product_id)
+        )
+      `.catch(() => {})
+      if (hide) {
+        await sql`INSERT INTO tenant_hidden_products (tenant_id, product_id) VALUES (${tenantId}::uuid, ${productId}::uuid) ON CONFLICT DO NOTHING`
+      } else {
+        await sql`DELETE FROM tenant_hidden_products WHERE tenant_id = ${tenantId}::uuid AND product_id = ${productId}::uuid`
+      }
+      return cors(200, { success: true })
+    }
+
     if (action === 'setCashReporters') {
       const { userIds } = body
       if (!Array.isArray(userIds)) return cors(400, { error: 'userIds must be an array' })

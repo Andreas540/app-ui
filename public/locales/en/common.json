@@ -974,6 +974,16 @@
     "tabCash": "Cash Management",
     "tabInventory": "Inventory",
     "tabCustomerSettings": "Customer Settings",
+    "tabProductSettings": "Product / Service Settings",
+    "productSettings": {
+      "desc": "Hide a product or service to remove it from dropdown menus and listings. Hidden items still appear on all historical orders. You can unhide at any time.",
+      "search": "Search products / services...",
+      "noProducts": "No products or services found.",
+      "noMatch": "No items match your search.",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "hideConfirm": "Hide this product/service? It will be removed from all menus and listings. You can unhide it from Tenant Admin → Product / Service Settings."
+    },
     "tabDataImport": "Data Import",
     "tabOrderPage": "Order Page",
     "orderPage": {

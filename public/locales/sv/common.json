@@ -974,6 +974,16 @@
     "tabCash": "Kassahantering",
     "tabInventory": "Lager",
     "tabCustomerSettings": "Kundinställningar",
+    "tabProductSettings": "Produkt- / Tjänstinställningar",
+    "productSettings": {
+      "desc": "Dölj en produkt eller tjänst för att ta bort den från rullgardinsmenyer och listor. Dolda artiklar visas fortfarande på alla historiska beställningar. Du kan visa igen när som helst.",
+      "search": "Sök produkter / tjänster...",
+      "noProducts": "Inga produkter eller tjänster hittades.",
+      "noMatch": "Inga artiklar matchar din sökning.",
+      "hide": "Dölj",
+      "unhide": "Visa",
+      "hideConfirm": "Dölj denna produkt/tjänst? Den tas bort från alla menyer och listor. Du kan visa den igen via Admin → Produkt- / Tjänstinställningar."
+    },
     "tabDataImport": "Dataimport",
     "tabOrderPage": "Beställningssida",
     "orderPage": {

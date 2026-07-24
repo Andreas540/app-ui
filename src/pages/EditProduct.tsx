@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { listProducts, updateProduct, listProductCategories, createProductCategory, type ProductWithCost } from '../lib/api'
+import { listProducts, updateProduct, listProductCategories, createProductCategory, getAuthHeaders, type ProductWithCost } from '../lib/api'
 import { ImagePicker } from '../components/ImagePicker'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -52,6 +52,7 @@ export default function EditProduct() {
   const [addingSubcategory, setAddingSubcategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newSubcategoryName, setNewSubcategoryName] = useState('')
+  const [hiding, setHiding] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -135,6 +136,22 @@ export default function EditProduct() {
 
   function parseCostInput(s: string) {
     return s.replace(/[^\d.,]/g, '')
+  }
+
+  async function hideProduct() {
+    if (!selectedId) return
+    if (!window.confirm(t('tenantAdmin.productSettings.hideConfirm'))) return
+    setHiding(true)
+    try {
+      const res = await fetch(`${BASE}/.netlify/functions/tenant-admin`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'toggleHideProduct', productId: selectedId, hide: true }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+      navigate(`/products/new?type=${type}`)
+    } catch (e: any) { alert(e?.message || 'Failed to hide') }
+    finally { setHiding(false) }
   }
 
   async function save() {
@@ -426,6 +443,13 @@ export default function EditProduct() {
         </button>
         <button onClick={() => navigate(`/products/new?type=${type}`)} disabled={saving}>
           {t('cancel')}
+        </button>
+        <button
+          onClick={hideProduct}
+          disabled={saving || hiding || !selectedId}
+          style={{ marginLeft: 'auto', color: 'var(--color-error)', border: '1px solid var(--color-error)', background: 'transparent' }}
+        >
+          {hiding ? t('loading') : t('tenantAdmin.productSettings.hide')}
         </button>
       </div>
     </div>

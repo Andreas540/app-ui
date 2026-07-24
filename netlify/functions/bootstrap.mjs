@@ -66,11 +66,15 @@ export async function handler(event) {
       ORDER BY name
     `;
 
-    // Products (no unit_price here)
+    // Products (no unit_price here) — hidden products are excluded
     const products = await sql`
       SELECT id, name, category, price_amount::float8 AS price_amount
       FROM products
       WHERE tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_products thp
+          WHERE thp.tenant_id = ${TENANT_ID} AND thp.product_id = id
+        )
       ORDER BY name
     `;
 
