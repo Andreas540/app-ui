@@ -412,7 +412,7 @@ function MainApp() {
   )
 
   // Hard logout after idle: 90 min normally, 4h when PIN lock is active (PIN overlay handles security)
-  const hardLogoutMs = (pinLock?.enabled && pinLock.userHasPin) ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
+  const hardLogoutMs = pinLock?.enabled ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
   useIdleTimeout(
     hardLogoutMs,
     () => {
@@ -423,7 +423,7 @@ function MainApp() {
 
   // Soft lock: show PIN overlay after tenant-configured idle period
   useIdleLock({
-    enabled: !!(isAuthenticated && pinLock?.enabled && pinLock.userHasPin),
+    enabled: !!(isAuthenticated && pinLock?.enabled),
     idleLockMinutes: pinLock?.idleLockMinutes ?? 15,
     isLocked,
     onLock: lock,

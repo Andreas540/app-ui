@@ -1884,6 +1884,8 @@
   "pinLock": {
     "title": "Sessionen är låst",
     "subtitle": "Ange din {{length}}-siffriga PIN-kod för att fortsätta",
+    "setupTitle": "Ange din PIN-kod",
+    "setupSubtitle": "Din organisation kräver en {{length}}-siffrig PIN-kod. Ange en nu för att låsa upp sessionen.",
     "wrongPin": "Fel PIN-kod",
     "wrongPinAttempts": "Fel PIN-kod — {{n}} försök kvar",
     "verifying": "Verifierar…",

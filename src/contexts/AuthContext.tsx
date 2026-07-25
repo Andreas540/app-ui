@@ -44,6 +44,7 @@ interface AuthContextType {
   logout: () => void
   lock: () => void
   unlock: (newToken: string) => void
+  clearLock: () => void
   verifyAuth: () => Promise<boolean>
   refreshConfig: () => void
 }
@@ -182,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const lock = () => {
-    if (!pinLock?.enabled || !pinLock.userHasPin) return
+    if (!pinLock?.enabled) return
     sessionStorage.setItem('pinLockLocked', '1')
     setIsLocked(true)
     channelRef.current?.postMessage({ type: 'lock' })
@@ -194,6 +195,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('pinLockLocked')
     setIsLocked(false)
     channelRef.current?.postMessage({ type: 'unlock', token: newToken })
+  }
+
+  const clearLock = () => {
+    sessionStorage.removeItem('pinLockLocked')
+    setIsLocked(false)
+    channelRef.current?.postMessage({ type: 'unlock', token: localStorage.getItem('authToken') })
   }
 
   const verifyAuth = async () => {
@@ -227,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     lock,
     unlock,
+    clearLock,
     verifyAuth,
     refreshConfig,
   }

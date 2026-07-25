@@ -1884,6 +1884,8 @@
   "pinLock": {
     "title": "Sesión bloqueada",
     "subtitle": "Ingresa tu PIN de {{length}} dígitos para continuar",
+    "setupTitle": "Configura tu PIN",
+    "setupSubtitle": "Tu organización requiere un PIN de {{length}} dígitos. Configúralo ahora para desbloquear tu sesión.",
     "wrongPin": "PIN incorrecto",
     "wrongPinAttempts": "PIN incorrecto — {{n}} intentos restantes",
     "verifying": "Verificando…",

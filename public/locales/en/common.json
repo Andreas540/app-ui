@@ -1873,6 +1873,8 @@
   "pinLock": {
     "title": "Session Locked",
     "subtitle": "Enter your {{length}}-digit PIN to continue",
+    "setupTitle": "Set Your PIN",
+    "setupSubtitle": "Your organization requires a {{length}}-digit PIN. Set one now to unlock your session.",
     "wrongPin": "Incorrect PIN",
     "wrongPinAttempts": "Incorrect PIN — {{n}} attempts remaining",
     "verifying": "Verifying…",
