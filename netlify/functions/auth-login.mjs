@@ -1,7 +1,7 @@
 // netlify/functions/auth-login.mjs
 import { checkMaintenance } from './utils/maintenance.mjs'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { signToken } from './utils/jwt.mjs'
 import { logActivity } from './utils/activity-logger.mjs'
 
 const BLOCKED_EMAILS = new Set(['blvpcnd@gmail.com'])
@@ -20,13 +20,11 @@ async function handleLogin(event) {
   try {
     console.log('=== AUTH LOGIN START ===')
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, JWT_SECRET, SUPER_ADMIN_EMAILS } = process.env
+    const { DATABASE_URL, SUPER_ADMIN_EMAILS } = process.env
 
     console.log('DATABASE_URL exists:', !!DATABASE_URL)
-    console.log('JWT_SECRET exists:', !!JWT_SECRET)
 
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
 
     // Initialize SQL connection early for logging
     const sql = neon(DATABASE_URL)
@@ -75,7 +73,8 @@ async function handleLogin(event) {
         u.preferred_locale,
         u.preferred_currency,
         u.preferred_timezone,
-        u.default_tenant_id::text as default_tenant_id
+        u.default_tenant_id::text as default_tenant_id,
+        (u.pin_hash IS NOT NULL) AS user_has_pin
       FROM users u
       WHERE u.email = ${emailSearch}
       LIMIT 1
@@ -192,15 +191,7 @@ async function handleLogin(event) {
       console.log('User is SuperAdmin - no tenant required')
       
       // Generate JWT token (identity only)
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          email: user.email,
-          role: 'super_admin'
-        },
-        JWT_SECRET,
-        { expiresIn: '8h' }
-      )
+      const token = signToken({ userId: user.id, email: user.email, role: 'super_admin' })
 
       return cors(200, {
         token,
@@ -230,6 +221,9 @@ async function handleLogin(event) {
         t.default_currency as tenant_default_currency,
         t.default_timezone as tenant_default_timezone,
         t.ui_config,
+        COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
+        COALESCE(t.pin_length, 6)            AS pin_length,
+        COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
         bt.config_defaults as business_type_config
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
@@ -259,14 +253,7 @@ async function handleLogin(event) {
     console.log('Primary tenant:', primaryMembership.tenant_name)
 
     // Generate JWT token (identity only - tenant comes from DB memberships)
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email
-      },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    )
+    const token = signToken({ userId: user.id, email: user.email })
 
     // Return user info and token
     return cors(200, {
@@ -289,6 +276,12 @@ async function handleLogin(event) {
         tenant_default_currency: primaryMembership.tenant_default_currency,
         tenant_default_timezone: primaryMembership.tenant_default_timezone,
         uiConfig: primaryMembership.ui_config || {}
+      },
+      pinLock: {
+        enabled: !!primaryMembership.pin_lock_enabled,
+        pinLength: Number(primaryMembership.pin_length) || 6,
+        idleLockMinutes: Number(primaryMembership.idle_lock_minutes) || 15,
+        userHasPin: !!user.user_has_pin,
       },
       // Also return all memberships for multi-tenant switching
       memberships: memberships.map(m => ({

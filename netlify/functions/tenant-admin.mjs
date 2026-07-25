@@ -799,6 +799,24 @@ if (action === 'toggleUserStatus') {
       return cors(200, { ok: true })
     }
 
+    if (action === 'savePinLockSettings') {
+      const { pin_lock_enabled, pin_length, idle_lock_minutes } = body
+
+      if (typeof pin_lock_enabled !== 'boolean') return cors(400, { error: 'pin_lock_enabled must be boolean' })
+      if (![4, 6].includes(Number(pin_length))) return cors(400, { error: 'pin_length must be 4 or 6' })
+      const idleMinutes = Number(idle_lock_minutes)
+      if (!idleMinutes || idleMinutes < 5 || idleMinutes > 60) return cors(400, { error: 'idle_lock_minutes must be between 5 and 60' })
+
+      await sql`
+        UPDATE tenants
+        SET pin_lock_enabled  = ${pin_lock_enabled},
+            pin_length        = ${Number(pin_length)},
+            idle_lock_minutes = ${idleMinutes}
+        WHERE id = ${tenantId}::uuid
+      `
+      return cors(200, { ok: true })
+    }
+
     return cors(400, { error: 'Invalid action' })
   } catch (e) {
     console.error('handlePost error:', e)

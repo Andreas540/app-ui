@@ -1,6 +1,6 @@
 // netlify/functions/auth-verify.mjs
 import { checkMaintenance } from './utils/maintenance.mjs'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from './utils/jwt.mjs'
 import { logActivity } from './utils/activity-logger.mjs'
 
 export async function handler(event) {
@@ -16,10 +16,9 @@ export async function handler(event) {
 async function handleVerify(event) {
   try {
     const { neon } = await import('@neondatabase/serverless')
-    const { DATABASE_URL, JWT_SECRET, SUPER_ADMIN_EMAILS } = process.env
-    
+    const { DATABASE_URL, SUPER_ADMIN_EMAILS } = process.env
+
     if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-    if (!JWT_SECRET) return cors(500, { error: 'JWT_SECRET missing' })
 
     const body = JSON.parse(event.body || '{}')
     const { token } = body
@@ -31,7 +30,7 @@ async function handleVerify(event) {
     // Verify JWT token
     let decoded
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = verifyToken(token)
     } catch (err) {
       if (err.name === 'TokenExpiredError') {
         return cors(401, { error: 'Token expired' })
@@ -129,7 +128,8 @@ async function handleVerify(event) {
             tenant_default_currency: tenant.tenant_default_currency,
             tenant_default_timezone: tenant.tenant_default_timezone,
             uiConfig: tenant.ui_config || {},
-          }
+          },
+          pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
         })
       }
 
@@ -170,7 +170,8 @@ async function handleVerify(event) {
           tenantName: null,
           businessType: null,
           features: []
-        }
+        },
+        pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
       })
     }
 
@@ -193,6 +194,9 @@ async function handleVerify(event) {
           t.default_currency as tenant_default_currency,
           t.default_timezone as tenant_default_timezone,
           t.ui_config,
+          COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
+          COALESCE(t.pin_length, 6)            AS pin_length,
+          COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
           bt.config_defaults as business_type_config
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
@@ -217,7 +221,8 @@ async function handleVerify(event) {
           u.preferred_language,
           u.preferred_locale,
           u.preferred_currency,
-          u.preferred_timezone
+          u.preferred_timezone,
+          (u.pin_hash IS NOT NULL) AS user_has_pin
         FROM users u
         WHERE u.id = ${decoded.userId}
         LIMIT 1
@@ -272,13 +277,19 @@ async function handleVerify(event) {
           tenant_default_currency: membership[0].tenant_default_currency,
           tenant_default_timezone: membership[0].tenant_default_timezone,
           uiConfig: membership[0].ui_config || {},
-        }
+        },
+        pinLock: {
+          enabled: !!membership[0].pin_lock_enabled,
+          pinLength: Number(membership[0].pin_length) || 6,
+          idleLockMinutes: Number(membership[0].idle_lock_minutes) || 15,
+          userHasPin: !!user.user_has_pin,
+        },
       })
     }
 
     // No active tenant - get user's default tenant
     const users = await sql`
-      SELECT 
+      SELECT
         u.id,
         u.email,
         u.name,
@@ -290,6 +301,7 @@ async function handleVerify(event) {
         u.preferred_locale,
         u.preferred_currency,
         u.preferred_timezone,
+        (u.pin_hash IS NOT NULL) AS user_has_pin,
         t.name as tenant_name,
         t.business_type,
         t.features as tenant_features,
@@ -299,6 +311,9 @@ async function handleVerify(event) {
         t.default_currency as tenant_default_currency,
         t.default_timezone as tenant_default_timezone,
         t.ui_config,
+        COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
+        COALESCE(t.pin_length, 6)            AS pin_length,
+        COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
         bt.config_defaults as business_type_config
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -364,7 +379,13 @@ async function handleVerify(event) {
         tenant_default_currency: user.tenant_default_currency,
         tenant_default_timezone: user.tenant_default_timezone,
         uiConfig: user.ui_config || {},
-      }
+      },
+      pinLock: {
+        enabled: !!user.pin_lock_enabled,
+        pinLength: Number(user.pin_length) || 6,
+        idleLockMinutes: Number(user.idle_lock_minutes) || 15,
+        userHasPin: !!user.user_has_pin,
+      },
     })
 
   } catch (e) {
