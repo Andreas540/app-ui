@@ -28,7 +28,7 @@ type UiConfig = {
     order?: string; orders?: string
     directLabel?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailOwedBreakdown?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -311,7 +311,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'dashboard') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
     } else if (section === 'customer-detail') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; delete ui.customerDetailOwedBreakdown; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     }
@@ -461,6 +461,19 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
               ))}
             </div>
           </Row>
+          {(() => {
+            const multiOn = cu.multipleOrderRows ?? du.multipleOrderRows
+            return (
+              <Row label={t('tenantCustom.customerDetailOwedBreakdown')} help={t('tenantCustom.customerDetailOwedBreakdownHelp')}
+                customized={!multiOn && cu.customerDetailOwedBreakdown !== undefined && cu.customerDetailOwedBreakdown !== du.customerDetailOwedBreakdown}>
+                <div style={{ opacity: multiOn ? 0.4 : 1, pointerEvents: multiOn ? 'none' : undefined }}>
+                  <Toggle value={!multiOn && !!(cu.customerDetailOwedBreakdown ?? du.customerDetailOwedBreakdown)} onChange={v => setUi('customerDetailOwedBreakdown', v)} />
+                </div>
+                {multiOn && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{t('tenantCustom.customerDetailOwedBreakdownDisabled')}</div>}
+              </Row>
+            )
+          })()}
+
           <Row label={t('tenantCustom.customerOrderRows')}
             customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

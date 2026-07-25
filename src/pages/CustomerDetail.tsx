@@ -307,6 +307,29 @@ export default function CustomerDetailPage() {
     }
   }
 
+  // Breakdown of owed amount by delivery status.
+  // Payment covers delivered goods first; any remainder reduces not-delivered.
+  let deliveredOrdersTotal = 0
+  let notDeliveredOrdersTotal = 0
+  for (const o of orders) {
+    const status = (o as any).delivery_status || ((o as any).delivered ? 'delivered' : 'not_delivered')
+    const orderTotal = Number((o as any).total) || 0
+    const payment = paidByOrderId[(o as any).id] || 0
+
+    const deliveredRatio = status === 'delivered' ? 1
+      : status === 'not_delivered' ? 0
+      : Math.min(1, Math.max(0, (Number((o as any).delivered_quantity) || 0) / (Number((o as any).total_qty) || 1)))
+
+    const deliveredGross = orderTotal * deliveredRatio
+    const notDeliveredGross = orderTotal - deliveredGross
+
+    const deliveredPaid = Math.min(payment, deliveredGross)
+    const notDeliveredPaid = payment - deliveredPaid
+
+    deliveredOrdersTotal += Math.max(0, deliveredGross - deliveredPaid)
+    notDeliveredOrdersTotal += Math.max(0, notDeliveredGross - notDeliveredPaid)
+  }
+
   // Compact layout constants
   const DATE_COL = 55 // px (smaller; pulls middle text left)
   const LINE_GAP = 4  // tighter than default
@@ -697,9 +720,15 @@ export default function CustomerDetailPage() {
 
       {/* Total owed by customer */}
       <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 8px', alignItems: 'center' }}>
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('customerDetail.totalOwedByCustomer')}</div>
         <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18 }}>{fmtMoney((totals as any).owed_to_me)}</div>
+        {tenantConfig.ui.customerDetailOwedBreakdown && !tenantConfig.ui.multipleOrderRows && (<>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('customerDetail.thereofDelivered')}</div>
+          <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(deliveredOrdersTotal)}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('customerDetail.thereofNotDelivered')}</div>
+          <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(notDeliveredOrdersTotal)}</div>
+        </>)}
       </div>
       <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
