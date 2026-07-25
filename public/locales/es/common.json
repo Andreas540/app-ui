@@ -824,7 +824,23 @@
     "menuVisibility": "Mostrar/ocultar elementos del menú",
     "menuVisibilityToggle": "Seleccionar / deseleccionar elementos",
     "menuVisibilityHelper": "Elige qué elementos aparecen en tu menú. Solo se muestran los elementos a los que tienes acceso.",
-    "savingFailed": "Error al guardar configuración. Inténtalo de nuevo."
+    "savingFailed": "Error al guardar configuración. Inténtalo de nuevo.",
+    "pin": {
+      "title": "Bloqueo por PIN",
+      "notEnabled": "El bloqueo por PIN no está activado en tu organización.",
+      "setDesc": "Tu organización tiene el bloqueo por PIN activado. Establece un PIN para proteger tu sesión cuando te alejes.",
+      "changeDesc": "Actualiza tu PIN de sesión. Deberás ingresarlo tras periodos de inactividad.",
+      "accountPassword": "Contraseña de cuenta",
+      "newPin": "Nuevo PIN ({{length}} dígitos)",
+      "confirmPin": "Confirmar nuevo PIN",
+      "setButton": "Establecer PIN",
+      "changeButton": "Cambiar PIN",
+      "saved": "PIN guardado correctamente.",
+      "failed": "Error al guardar el PIN.",
+      "passwordRequired": "Ingresa tu contraseña de cuenta para continuar.",
+      "pinFormat": "El PIN debe tener exactamente {{length}} dígitos.",
+      "pinMismatch": "Los PINs no coinciden."
+    }
   },
   "messages": {
     "title": "Mensajes",
@@ -1124,6 +1140,18 @@
     },
     "createUserButton": "+ Crear Usuario",
     "noUsers": "Sin usuarios aún",
+    "pinLock": {
+      "title": "Bloqueo por PIN",
+      "desc": "Requiere que los usuarios ingresen un PIN tras un periodo de inactividad, en vez de cerrar sesión completamente.",
+      "enable": "Activar bloqueo por PIN para esta organización",
+      "pinLength": "Longitud del PIN",
+      "digits": "{{n}} dígitos",
+      "idleMinutes": "Bloquear tras inactividad",
+      "minuteOption": "{{n}} minutos",
+      "saved": "Configuración de bloqueo por PIN guardada.",
+      "saveFailed": "Error al guardar la configuración de bloqueo por PIN.",
+      "lengthChangeWarning": "Cambiar la longitud del PIN requerirá que todos los usuarios restablezcan sus PINs."
+    },
     "roleLabel": "Rol:",
     "accessAll": "Acceso: Todas las {{count}} funciones",
     "accessCount": "Acceso: {{count}} de {{total}} funciones",

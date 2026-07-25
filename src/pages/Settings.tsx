@@ -10,7 +10,7 @@ import { NAV_ITEMS, NAV_SECTIONS } from '../lib/navItems'
 export default function Settings() {
   const { t } = useTranslation()
   const { t: tNav } = useTranslation('navigation')
-  const { hasFeature, user } = useAuth()
+  const { hasFeature, user, pinLock, verifyAuth } = useAuth()
 
   const [tenantName, setTenantName]       = useState('')
   const [tenantLoading, setTenantLoading] = useState(true)
@@ -33,6 +33,12 @@ export default function Settings() {
   const [newPassword, setNewPassword]           = useState('')
   const [confirmPassword, setConfirmPassword]   = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
+
+  const [pinPassword, setPinPassword]   = useState('')
+  const [newPin, setNewPin]             = useState('')
+  const [confirmPin, setConfirmPin]     = useState('')
+  const [settingPin, setSettingPin]     = useState(false)
+  const [pinMessage, setPinMessage]     = useState<{ ok: boolean; text: string } | null>(null)
 
   // Shortcuts filtered to what the current user has access to
   const availableShortcuts = ALL_SHORTCUTS.filter(s => {
@@ -167,6 +173,36 @@ export default function Settings() {
       alert(err.message || 'Failed to change password')
     } finally {
       setChangingPassword(false)
+    }
+  }
+
+  // ── PIN Lock ───────────────────────────────────────────────────────────────
+
+  const handleSetPin = async () => {
+    const requiredLength = pinLock?.pinLength ?? 6
+    if (!pinPassword) { setPinMessage({ ok: false, text: t('settingsPage.pin.passwordRequired') }); return }
+    if (!/^\d+$/.test(newPin) || newPin.length !== requiredLength) {
+      setPinMessage({ ok: false, text: t('settingsPage.pin.pinFormat', { length: requiredLength }) }); return
+    }
+    if (newPin !== confirmPin) { setPinMessage({ ok: false, text: t('settingsPage.pin.pinMismatch') }); return }
+    setSettingPin(true)
+    setPinMessage(null)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/user-pin`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ password: pinPassword, new_pin: newPin }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setPinMessage({ ok: true, text: t('settingsPage.pin.saved') })
+      setPinPassword(''); setNewPin(''); setConfirmPin('')
+      await verifyAuth() // refresh userHasPin in context
+    } catch (err: any) {
+      setPinMessage({ ok: false, text: err.message || t('settingsPage.pin.failed') })
+    } finally {
+      setSettingPin(false)
     }
   }
 
@@ -471,6 +507,69 @@ export default function Settings() {
         >
           {changingPassword ? t('settingsPage.changingPassword') : t('settingsPage.changePasswordButton')}
         </button>
+      </div>
+
+      {/* ── PIN Lock ── */}
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--separator)' }}>
+        <h4 style={{ margin: '0 0 4px' }}>{t('settingsPage.pin.title')}</h4>
+
+        {!pinLock?.enabled ? (
+          <p className="helper" style={{ margin: '8px 0 0' }}>{t('settingsPage.pin.notEnabled')}</p>
+        ) : (
+          <>
+            <p className="helper" style={{ margin: '8px 0 16px' }}>
+              {pinLock.userHasPin ? t('settingsPage.pin.changeDesc') : t('settingsPage.pin.setDesc')}
+            </p>
+
+            <div style={{ marginTop: 12 }}>
+              <label>{t('settingsPage.pin.accountPassword')}</label>
+              <input
+                type="password"
+                value={pinPassword}
+                onChange={e => { setPinPassword(e.target.value); setPinMessage(null) }}
+                placeholder={t('settingsPage.currentPasswordPlaceholder')}
+                autoComplete="current-password"
+              />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <label>{t('settingsPage.pin.newPin', { length: pinLock.pinLength })}</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                value={newPin}
+                onChange={e => { setNewPin(e.target.value.replace(/\D/g, '').slice(0, pinLock.pinLength)); setPinMessage(null) }}
+                placeholder={'•'.repeat(pinLock.pinLength)}
+                autoComplete="one-time-code"
+              />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <label>{t('settingsPage.pin.confirmPin')}</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                value={confirmPin}
+                onChange={e => { setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, pinLock.pinLength)); setPinMessage(null) }}
+                placeholder={'•'.repeat(pinLock.pinLength)}
+                autoComplete="one-time-code"
+              />
+            </div>
+
+            {pinMessage && (
+              <p style={{ margin: '10px 0 0', fontSize: 13, color: pinMessage.ok ? 'var(--success, green)' : 'var(--danger, #e53e3e)' }}>
+                {pinMessage.text}
+              </p>
+            )}
+
+            <button
+              className="primary"
+              onClick={handleSetPin}
+              disabled={settingPin}
+              style={{ marginTop: 16, width: '100%' }}
+            >
+              {settingPin ? t('saving') : pinLock.userHasPin ? t('settingsPage.pin.changeButton') : t('settingsPage.pin.setButton')}
+            </button>
+          </>
+        )}
       </div>
 
     </div>

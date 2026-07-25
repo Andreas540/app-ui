@@ -36,7 +36,7 @@ interface TenantGeo {
 }
 
 export default function TenantAdmin() {
-  const { user, verifyAuth } = useAuth()
+  const { user, verifyAuth, pinLock } = useAuth()
   const { t } = useTranslation()
   const { fmtMoney } = useCurrency()
   const navigate = useNavigate()
@@ -147,6 +147,12 @@ export default function TenantAdmin() {
   const [editingGeoCurrency, setEditingGeoCurrency] = useState<string | null>(null)
   const [editingGeoTimezone, setEditingGeoTimezone] = useState<string | null>(null)
   const [savingGeo, setSavingGeo] = useState(false)
+
+  const [pinLockEnabled,   setPinLockEnabled]   = useState(() => pinLock?.enabled ?? false)
+  const [pinLengthSetting, setPinLengthSetting] = useState(() => pinLock?.pinLength ?? 6)
+  const [idleMinutes,      setIdleMinutes]      = useState(() => pinLock?.idleLockMinutes ?? 15)
+  const [savingPinLock,    setSavingPinLock]    = useState(false)
+  const [pinLockMsg,       setPinLockMsg]       = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     loadData()
@@ -283,6 +289,38 @@ export default function TenantAdmin() {
       alert(e?.message || 'Failed to save geo settings')
     } finally {
       setSavingGeo(false)
+    }
+  }
+
+  async function handleSavePinLock() {
+    setSavingPinLock(true)
+    setPinLockMsg(null)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const token = localStorage.getItem('authToken')
+      const activeTenantId = localStorage.getItem('activeTenantId')
+      const res = await fetch(`${base}/api/tenant-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+        },
+        body: JSON.stringify({
+          action: 'savePinLockSettings',
+          pin_lock_enabled: pinLockEnabled,
+          pin_length: pinLengthSetting,
+          idle_lock_minutes: idleMinutes,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setPinLockMsg({ ok: true, text: t('tenantAdmin.pinLock.saved') })
+      await verifyAuth()
+    } catch (err: any) {
+      setPinLockMsg({ ok: false, text: err.message || t('tenantAdmin.pinLock.saveFailed') })
+    } finally {
+      setSavingPinLock(false)
     }
   }
 
@@ -845,6 +883,66 @@ export default function TenantAdmin() {
 
         {/* ── Team Members tab ── */}
         {activeTab === 'team' && (<>
+
+          {/* PIN Lock settings */}
+          <div style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+            <h4 style={{ margin: '0 0 4px' }}>{t('tenantAdmin.pinLock.title')}</h4>
+            <p className="helper" style={{ margin: '0 0 16px' }}>{t('tenantAdmin.pinLock.desc')}</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <input
+                type="checkbox"
+                id="pinLockEnabled"
+                checked={pinLockEnabled}
+                onChange={e => { setPinLockEnabled(e.target.checked); setPinLockMsg(null) }}
+              />
+              <label htmlFor="pinLockEnabled" style={{ cursor: 'pointer', margin: 0 }}>
+                {t('tenantAdmin.pinLock.enable')}
+              </label>
+            </div>
+
+            {pinLockEnabled && (<>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label>{t('tenantAdmin.pinLock.pinLength')}</label>
+                  <select
+                    value={pinLengthSetting}
+                    onChange={e => { setPinLengthSetting(Number(e.target.value)); setPinLockMsg(null) }}
+                  >
+                    <option value={4}>{t('tenantAdmin.pinLock.digits', { n: 4 })}</option>
+                    <option value={6}>{t('tenantAdmin.pinLock.digits', { n: 6 })}</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label>{t('tenantAdmin.pinLock.idleMinutes')}</label>
+                  <select
+                    value={idleMinutes}
+                    onChange={e => { setIdleMinutes(Number(e.target.value)); setPinLockMsg(null) }}
+                  >
+                    {[5, 10, 15, 20, 30, 45, 60].map(m => (
+                      <option key={m} value={m}>{t('tenantAdmin.pinLock.minuteOption', { n: m })}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {pinLengthSetting !== (pinLock?.pinLength ?? 6) && pinLock?.pinLength != null && (
+                <p className="helper" style={{ margin: '0 0 10px', color: 'var(--warning, #d97706)' }}>
+                  {t('tenantAdmin.pinLock.lengthChangeWarning')}
+                </p>
+              )}
+            </>)}
+
+            {pinLockMsg && (
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: pinLockMsg.ok ? 'var(--success, green)' : 'var(--danger, #e53e3e)' }}>
+                {pinLockMsg.text}
+              </p>
+            )}
+
+            <button className="primary" onClick={handleSavePinLock} disabled={savingPinLock}>
+              {savingPinLock ? t('saving') : t('saveChanges')}
+            </button>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
             <button
               className="primary"

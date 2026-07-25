@@ -824,7 +824,23 @@
     "menuVisibility": "Show/Hide Menu Items",
     "menuVisibilityToggle": "Select / de-select items",
     "menuVisibilityHelper": "Choose which items appear in your menu. Only items you have access to are shown here.",
-    "savingFailed": "Failed to save settings. Please try again."
+    "savingFailed": "Failed to save settings. Please try again.",
+    "pin": {
+      "title": "PIN Lock",
+      "notEnabled": "PIN lock is not enabled for your organization.",
+      "setDesc": "Your organization has PIN lock enabled. Set a PIN to secure your session when you step away.",
+      "changeDesc": "Update your session PIN. You will need to enter this PIN after periods of inactivity.",
+      "accountPassword": "Account password",
+      "newPin": "New PIN ({{length}} digits)",
+      "confirmPin": "Confirm new PIN",
+      "setButton": "Set PIN",
+      "changeButton": "Change PIN",
+      "saved": "PIN saved successfully.",
+      "failed": "Failed to save PIN.",
+      "passwordRequired": "Enter your account password to continue.",
+      "pinFormat": "PIN must be exactly {{length}} digits.",
+      "pinMismatch": "PINs do not match."
+    }
   },
   "messages": {
     "title": "Messages",
@@ -1124,6 +1140,18 @@
     },
     "createUserButton": "+ Create User",
     "noUsers": "No users yet",
+    "pinLock": {
+      "title": "PIN Lock",
+      "desc": "Require users to enter a PIN after a period of inactivity, instead of logging out completely.",
+      "enable": "Enable PIN lock for this organization",
+      "pinLength": "PIN length",
+      "digits": "{{n}} digits",
+      "idleMinutes": "Lock after inactivity",
+      "minuteOption": "{{n}} minutes",
+      "saved": "PIN lock settings saved.",
+      "saveFailed": "Failed to save PIN lock settings.",
+      "lengthChangeWarning": "Changing the PIN length will require all users to reset their PINs."
+    },
     "roleLabel": "Role:",
     "accessAll": "Access: All {{count}} tenant features",
     "accessCount": "Access: {{count}} of {{total}} features",

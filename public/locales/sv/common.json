@@ -824,7 +824,23 @@
     "menuVisibility": "Visa/dölj menyalternativ",
     "menuVisibilityToggle": "Välj / avmarkera alternativ",
     "menuVisibilityHelper": "Välj vilka alternativ som visas i din meny. Endast alternativ du har tillgång till visas här.",
-    "savingFailed": "Misslyckades att spara inställningar. Försök igen."
+    "savingFailed": "Misslyckades att spara inställningar. Försök igen.",
+    "pin": {
+      "title": "PIN-lås",
+      "notEnabled": "PIN-lås är inte aktiverat för din organisation.",
+      "setDesc": "Din organisation har PIN-lås aktiverat. Ange en PIN-kod för att skydda din session när du går ifrån datorn.",
+      "changeDesc": "Uppdatera din sessions-PIN. Du behöver ange denna PIN-kod efter perioder av inaktivitet.",
+      "accountPassword": "Kontolösenord",
+      "newPin": "Ny PIN-kod ({{length}} siffror)",
+      "confirmPin": "Bekräfta ny PIN-kod",
+      "setButton": "Ange PIN",
+      "changeButton": "Ändra PIN",
+      "saved": "PIN-koden sparades.",
+      "failed": "Misslyckades att spara PIN-koden.",
+      "passwordRequired": "Ange ditt kontolösenord för att fortsätta.",
+      "pinFormat": "PIN-koden måste vara exakt {{length}} siffror.",
+      "pinMismatch": "PIN-koderna matchar inte."
+    }
   },
   "messages": {
     "title": "Meddelanden",
@@ -1124,6 +1140,18 @@
     },
     "createUserButton": "+ Skapa användare",
     "noUsers": "Inga användare ännu",
+    "pinLock": {
+      "title": "PIN-lås",
+      "desc": "Kräv att användare anger en PIN-kod efter inaktivitet, istället för att logga ut helt.",
+      "enable": "Aktivera PIN-lås för denna organisation",
+      "pinLength": "PIN-kodens längd",
+      "digits": "{{n}} siffror",
+      "idleMinutes": "Lås efter inaktivitet",
+      "minuteOption": "{{n}} minuter",
+      "saved": "PIN-låsinställningar sparade.",
+      "saveFailed": "Misslyckades att spara PIN-låsinställningar.",
+      "lengthChangeWarning": "Ändring av PIN-kodens längd kräver att alla användare återställer sina PIN-koder."
+    },
     "roleLabel": "Roll:",
     "accessAll": "Åtkomst: Alla {{count}} funktioner",
     "accessCount": "Åtkomst: {{count}} av {{total}} funktioner",
