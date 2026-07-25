@@ -1841,5 +1841,14 @@
     "conflictMergeDesc": "Keeps the most complete data from all matching rows",
     "conflictSeparate": "Keep as separate customers",
     "conflictSeparateDesc": "Imports each row as a distinct customer"
+  },
+  "pinLock": {
+    "title": "Session Locked",
+    "subtitle": "Enter your {{length}}-digit PIN to continue",
+    "wrongPin": "Incorrect PIN",
+    "wrongPinAttempts": "Incorrect PIN — {{n}} attempts remaining",
+    "verifying": "Verifying…",
+    "signOut": "Sign out instead",
+    "networkError": "Network error — please try again"
   }
 }

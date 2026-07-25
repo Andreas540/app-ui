@@ -1,6 +1,6 @@
 // netlify/functions/auth-verify.mjs
 import { checkMaintenance } from './utils/maintenance.mjs'
-import { verifyToken } from './utils/jwt.mjs'
+import { signToken, verifyToken } from './utils/jwt.mjs'
 import { logActivity } from './utils/activity-logger.mjs'
 
 export async function handler(event) {
@@ -111,6 +111,7 @@ async function handleVerify(event) {
 
         return cors(200, {
           valid: true,
+          token: signToken({ userId: user.id, email: user.email, role: 'super_admin' }),
           user: {
             id: user.id,
             email: user.email,
@@ -160,6 +161,7 @@ async function handleVerify(event) {
 
       return cors(200, {
         valid: true,
+        token: signToken({ userId: user.id, email: user.email, role: 'super_admin' }),
         user: {
           id: user.id,
           email: user.email,
@@ -256,6 +258,7 @@ async function handleVerify(event) {
 
       return cors(200, {
         valid: true,
+        token: signToken({ userId: user.id, email: user.email }),
         user: {
           id: user.id,
           email: user.email,
@@ -358,6 +361,7 @@ async function handleVerify(event) {
 
     return cors(200, {
       valid: true,
+      token: signToken({ userId: user.id, email: user.email }),
       user: {
         id: user.id,
         email: user.email,

@@ -61,6 +61,8 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
+import { useIdleLock } from './hooks/useIdleLock'
+import LockOverlay from './components/LockOverlay'
 import TenantSwitcher from './components/TenantSwitcher'
 import Contact from './pages/Contact'
 import Messages from './pages/Messages'
@@ -385,7 +387,7 @@ function MainApp() {
     try { return JSON.parse(localStorage.getItem('nav_collapsed') || '{}') } catch { return {} }
   })
 
-  const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth } = useAuth()
+  const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth, pinLock, isLocked, lock } = useAuth()
 
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
@@ -409,14 +411,23 @@ function MainApp() {
     () => sessionStorage.getItem('frontPageDismissed') === '1'
   )
 
-  // 🆕 Idle timeout - auto logout after 15 minutes of inactivity
+  // Hard logout after idle: 90 min normally, 4h when PIN lock is active (PIN overlay handles security)
+  const hardLogoutMs = (pinLock?.enabled && pinLock.userHasPin) ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
   useIdleTimeout(
-    90 * 60 * 1000, // 15 minutes
+    hardLogoutMs,
     () => {
       console.log('Auto-logout due to inactivity')
-      handleLogout(null) // idle timeout already logged by useIdleTimeout
+      handleLogout(null)
     }
   )
+
+  // Soft lock: show PIN overlay after tenant-configured idle period
+  useIdleLock({
+    enabled: !!(isAuthenticated && pinLock?.enabled && pinLock.userHasPin),
+    idleLockMinutes: pinLock?.idleLockMinutes ?? 15,
+    isLocked,
+    onLock: lock,
+  })
 
   const handleLogout = async (logAction: string | null = 'logout_active') => {
     if (logAction) {
@@ -451,11 +462,12 @@ function MainApp() {
   useEffect(() => {
     if (!isAuthenticated) return
     const id = setInterval(async () => {
+      if (isLocked) return // skip verify while PIN lock overlay is showing
       const valid = await verifyAuthRef.current()
       if (!valid) window.location.href = '/login'
     }, 5 * 60 * 1000) // every 5 minutes
     return () => clearInterval(id)
-  }, [isAuthenticated])
+  }, [isAuthenticated, isLocked])
 
   useEffect(() => {
     try {
@@ -647,8 +659,9 @@ useEffect(() => {
   const currentTenantName = currentTenant?.display_name || currentTenant?.name || user?.tenantName || 'My Biz'
 
   return (
-    <div className="app"> 
-    <MaintenanceGate />  {/* 👈 ADD HERE */}     
+    <div className="app">
+    <MaintenanceGate />  {/* 👈 ADD HERE */}
+      <LockOverlay />
       <header className="topbar">        
         <div className="brand">
           <button className="hamburger" aria-label="Toggle menu" onClick={() => setNavOpen(v => !v)}>

@@ -1852,5 +1852,14 @@
     "conflictMergeDesc": "Behåller den mest kompletta datan från alla matchande rader",
     "conflictSeparate": "Behåll som separata kunder",
     "conflictSeparateDesc": "Importerar varje rad som en separat kund"
+  },
+  "pinLock": {
+    "title": "Sessionen är låst",
+    "subtitle": "Ange din {{length}}-siffriga PIN-kod för att fortsätta",
+    "wrongPin": "Fel PIN-kod",
+    "wrongPinAttempts": "Fel PIN-kod — {{n}} försök kvar",
+    "verifying": "Verifierar…",
+    "signOut": "Logga ut istället",
+    "networkError": "Nätverksfel — försök igen"
   }
 }

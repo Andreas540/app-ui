@@ -1852,5 +1852,14 @@
     "conflictMergeDesc": "Conserva los datos más completos de todas las filas coincidentes",
     "conflictSeparate": "Mantener como clientes separados",
     "conflictSeparateDesc": "Importa cada fila como un cliente distinto"
+  },
+  "pinLock": {
+    "title": "Sesión bloqueada",
+    "subtitle": "Ingresa tu PIN de {{length}} dígitos para continuar",
+    "wrongPin": "PIN incorrecto",
+    "wrongPinAttempts": "PIN incorrecto — {{n}} intentos restantes",
+    "verifying": "Verificando…",
+    "signOut": "Cerrar sesión",
+    "networkError": "Error de red — inténtalo de nuevo"
   }
 }

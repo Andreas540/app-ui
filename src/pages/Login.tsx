@@ -50,7 +50,7 @@ export default function Login() {
       }
 
       // Use auth context to store token and user data
-      login(data.token, data.user)
+      login(data.token, data.user, data.pinLock ?? null)
 
       // Replace so /login doesn't stay in browser history — prevents blank screen on back navigation
       navigate('/', { replace: true })

@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { FeatureId } from '../lib/features'
 
@@ -25,22 +25,41 @@ interface User {
   tenant_default_timezone?: string | null
 }
 
+export interface PinLockConfig {
+  enabled: boolean
+  pinLength: number
+  idleLockMinutes: number
+  userHasPin: boolean
+}
+
 interface AuthContextType {
   user: User | null
   token: string | null
   isAuthenticated: boolean
   isSuperAdmin: boolean
+  pinLock: PinLockConfig | null
+  isLocked: boolean
   hasFeature: (featureId: FeatureId) => boolean
-  login: (token: string, userData: User) => void
+  login: (token: string, userData: User, pinLockConfig?: PinLockConfig | null) => void
   logout: () => void
+  lock: () => void
+  unlock: (newToken: string) => void
   verifyAuth: () => Promise<boolean>
   refreshConfig: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const LOCK_CHANNEL = 'pinLockChannel'
+
+function readStoredPinLock(): PinLockConfig | null {
+  try {
+    const s = localStorage.getItem('pinLockConfig')
+    return s ? JSON.parse(s) : null
+  } catch { return null }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Initialize synchronously from localStorage — eliminates the loading flash
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem('userData')
@@ -48,8 +67,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return null }
   })
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'))
+  const [pinLock, setPinLock] = useState<PinLockConfig | null>(readStoredPinLock)
+  const [isLocked, setIsLocked] = useState<boolean>(
+    () => sessionStorage.getItem('pinLockLocked') === '1'
+  )
 
-  // Verify token in the background on mount (doesn't block rendering)
+  const channelRef = useRef<BroadcastChannel | null>(null)
+
+  // BroadcastChannel: sync lock/unlock state across tabs
+  useEffect(() => {
+    if (!('BroadcastChannel' in window)) return
+    const ch = new BroadcastChannel(LOCK_CHANNEL)
+    channelRef.current = ch
+    ch.onmessage = (ev) => {
+      if (ev.data?.type === 'lock') {
+        sessionStorage.setItem('pinLockLocked', '1')
+        setIsLocked(true)
+      } else if (ev.data?.type === 'unlock') {
+        sessionStorage.removeItem('pinLockLocked')
+        setIsLocked(false)
+        if (ev.data.token) {
+          setToken(ev.data.token)
+          localStorage.setItem('authToken', ev.data.token)
+        }
+      }
+    }
+    return () => ch.close()
+  }, [])
+
+  // Verify token in the background on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken')
     if (storedToken) {
@@ -59,12 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      // Get active tenant if set
       const activeTenantId = localStorage.getItem('activeTenantId')
-      
       const response = await fetch('/.netlify/functions/auth-verify', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
         },
@@ -79,11 +123,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       if (data.valid && data.user) {
         setUser(data.user)
-        // Update stored user data with fresh features
         localStorage.setItem('userData', JSON.stringify(data.user))
+        // Sliding JWT refresh: store the new token returned by auth-verify
+        if (data.token) {
+          setToken(data.token)
+          localStorage.setItem('authToken', data.token)
+        }
+        if (data.pinLock) {
+          setPinLock(data.pinLock)
+          localStorage.setItem('pinLockConfig', JSON.stringify(data.pinLock))
+        }
         return true
       }
-      
+
       logout()
       return false
     } catch (err) {
@@ -93,28 +145,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const login = (newToken: string, userData: User) => {
-  setToken(newToken)
-  setUser(userData)
-  localStorage.setItem('authToken', newToken)
-  localStorage.setItem('userData', JSON.stringify(userData))
-  
-  // Always handle activeTenantId - set it OR clear it for SuperAdmin
-  if (userData.tenantId) {
-    localStorage.setItem('activeTenantId', userData.tenantId)
-  } else {
-    // SuperAdmin or users without tenant - REMOVE any old tenant ID
-    localStorage.removeItem('activeTenantId')
+  const login = (newToken: string, userData: User, pinLockConfig?: PinLockConfig | null) => {
+    setToken(newToken)
+    setUser(userData)
+    setIsLocked(false)
+    sessionStorage.removeItem('pinLockLocked')
+    localStorage.setItem('authToken', newToken)
+    localStorage.setItem('userData', JSON.stringify(userData))
+
+    if (pinLockConfig != null) {
+      setPinLock(pinLockConfig)
+      localStorage.setItem('pinLockConfig', JSON.stringify(pinLockConfig))
+    } else {
+      setPinLock(null)
+      localStorage.removeItem('pinLockConfig')
+    }
+
+    if (userData.tenantId) {
+      localStorage.setItem('activeTenantId', userData.tenantId)
+    } else {
+      localStorage.removeItem('activeTenantId')
+    }
   }
-}
 
   const logout = () => {
     setToken(null)
     setUser(null)
+    setPinLock(null)
+    setIsLocked(false)
+    sessionStorage.removeItem('pinLockLocked')
     localStorage.removeItem('authToken')
     localStorage.removeItem('userData')
-    localStorage.removeItem('userLevel') // Clear legacy userLevel too
-    localStorage.removeItem('activeTenantId')  // 🆕 ADD THIS
+    localStorage.removeItem('userLevel')
+    localStorage.removeItem('activeTenantId')
+    localStorage.removeItem('pinLockConfig')
+  }
+
+  const lock = () => {
+    if (!pinLock?.enabled || !pinLock.userHasPin) return
+    sessionStorage.setItem('pinLockLocked', '1')
+    setIsLocked(true)
+    channelRef.current?.postMessage({ type: 'lock' })
+  }
+
+  const unlock = (newToken: string) => {
+    setToken(newToken)
+    localStorage.setItem('authToken', newToken)
+    sessionStorage.removeItem('pinLockLocked')
+    setIsLocked(false)
+    channelRef.current?.postMessage({ type: 'unlock', token: newToken })
   }
 
   const verifyAuth = async () => {
@@ -131,11 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasFeature = (featureId: FeatureId): boolean => {
     if (!user) return false
-    // Super admins with tenant selected have access to all features
     if (user.role === 'super_admin' && user.tenantId) return true
-    // Super admins without tenant have no feature access (global mode)
     if (user.role === 'super_admin' && !user.tenantId) return false
-    // Regular users: check if feature is in user's enabled features
     return user.features?.includes(featureId) || false
   }
 
@@ -144,9 +220,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token,
     isAuthenticated: !!user && !!token,
     isSuperAdmin: user?.role === 'super_admin',
+    pinLock,
+    isLocked,
     hasFeature,
     login,
     logout,
+    lock,
+    unlock,
     verifyAuth,
     refreshConfig,
   }
@@ -162,10 +242,8 @@ export function useAuth() {
   return context
 }
 
-// Hook to get auth headers for API calls
 export function useAuthHeaders() {
   const { token } = useAuth()
-  
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
