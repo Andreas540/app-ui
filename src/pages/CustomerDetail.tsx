@@ -308,27 +308,25 @@ export default function CustomerDetailPage() {
   }
 
   // Breakdown of owed amount by delivery status.
-  // Payment covers delivered goods first; any remainder reduces not-delivered.
-  let deliveredOrdersTotal = 0
-  let notDeliveredOrdersTotal = 0
+  // Step 1: split each order's gross amount by delivery ratio.
+  // Step 2: apply total payments at aggregate level (delivered first).
+  // This avoids per-order payment allocation which breaks when payments lack order_id.
+  let deliveredGrossTotal = 0
+  let notDeliveredGrossTotal = 0
   for (const o of orders) {
     const status = (o as any).delivery_status || ((o as any).delivered ? 'delivered' : 'not_delivered')
     const orderTotal = Number((o as any).total) || 0
-    const payment = paidByOrderId[(o as any).id] || 0
-
     const deliveredRatio = status === 'delivered' ? 1
       : status === 'not_delivered' ? 0
       : Math.min(1, Math.max(0, (Number((o as any).delivered_quantity) || 0) / (Number((o as any).total_qty) || 1)))
-
-    const deliveredGross = orderTotal * deliveredRatio
-    const notDeliveredGross = orderTotal - deliveredGross
-
-    const deliveredPaid = Math.min(payment, deliveredGross)
-    const notDeliveredPaid = payment - deliveredPaid
-
-    deliveredOrdersTotal += Math.max(0, deliveredGross - deliveredPaid)
-    notDeliveredOrdersTotal += Math.max(0, notDeliveredGross - notDeliveredPaid)
+    deliveredGrossTotal += orderTotal * deliveredRatio
+    notDeliveredGrossTotal += orderTotal * (1 - deliveredRatio)
   }
+  const totalPayments = Number((totals as any).total_payments) || 0
+  const deliveredPaid = Math.min(totalPayments, deliveredGrossTotal)
+  const notDeliveredPaid = totalPayments - deliveredPaid
+  const deliveredOrdersTotal = Math.max(0, deliveredGrossTotal - deliveredPaid)
+  const notDeliveredOrdersTotal = Math.max(0, notDeliveredGrossTotal - notDeliveredPaid)
 
   // Compact layout constants
   const DATE_COL = 55 // px (smaller; pulls middle text left)
