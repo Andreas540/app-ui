@@ -16,7 +16,7 @@ export function useIdleLock({
   isLocked: boolean
   onLock: () => void
 }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const onLockRef = useRef(onLock)
   useEffect(() => { onLockRef.current = onLock })
 
