@@ -139,7 +139,7 @@ export default function LockOverlay() {
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--backdrop, rgba(0,0,0,0.75))', padding: 24,
+      background: 'var(--bg)', padding: 24,
     }}>
       <div className="card" style={{
         width: '100%', maxWidth: 360, padding: '32px 28px',
