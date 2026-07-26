@@ -149,7 +149,7 @@ ORDER BY oi.created_at ASC NULLS LAST
     const paidAmount = Number(paidRows[0]?.paid_amount || 0)
 
     return cors(200, {
-      order: { ...order, profit, profitPercent, paid_amount: paidAmount },
+      order: { ...order, profit, profitPercent, paid_amount: paidAmount, total: orderValue },
       items,
       bookings,
       partner_splits: partnerSplits

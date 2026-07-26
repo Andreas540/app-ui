@@ -208,7 +208,14 @@ export default function SupplyChainOverview() {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     const res = await fetch(`${base}/api/order-supplier?id=${orderId}`, { headers: getAuthHeaders() })
     const data = await res.json()
-    if (res.ok) setSupplierModalOrder({ ...data.order, items: data.items })
+    if (!res.ok) return
+    const items = (data.items ?? []).map((item: any) => ({
+      ...item,
+      product_total: Number(item.product_cost) * Number(item.qty),
+      shipping_total: Number(item.shipping_cost) * Number(item.qty),
+    }))
+    const total = items.reduce((sum: number, item: any) => sum + item.product_total + item.shipping_total, 0)
+    setSupplierModalOrder({ ...data.order, items, total, lines: items.length })
   }
 
   // Track expanded state for each section
