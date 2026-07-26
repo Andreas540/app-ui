@@ -1272,7 +1272,6 @@ export default function SupplyChainOverview() {
                 display: 'grid',
                 gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
                 gap: 6,
-                alignItems: 'end',
                 ...tableHeaderStyle,
                 fontSize: 12,
               }}

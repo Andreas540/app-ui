@@ -421,7 +421,6 @@ export default function Warehouse() {
                   display: 'grid',
                   gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
                   gap: 6,
-                  alignItems: 'end',
                   borderBottom: '1px solid var(--border)',
                   paddingBottom: 8,
                   fontWeight: 600,
