@@ -31,6 +31,12 @@ interface NotDelivered {
   qty: number
 }
 
+interface OrderRef {
+  order_id: string
+  order_no: number
+  qty: number
+}
+
 interface WarehouseInventory {
   product: string
   pre_prod: number
@@ -40,6 +46,8 @@ interface WarehouseInventory {
   on_order: number
   available_finished: number
   available_total: number
+  committed_orders: OrderRef[] | null
+  on_order_orders: OrderRef[] | null
 }
 
 interface InCustoms {
@@ -184,6 +192,13 @@ export default function SupplyChainOverview() {
   const [expandedNotDeliveredProduct, setExpandedNotDeliveredProduct] = useState<string | null>(null)
   const [showWarehouseInfo, setShowWarehouseInfo] = useState(false)
   const [showOrderedInfo, setShowOrderedInfo] = useState(false)
+  const [expandedWarehouseRows, setExpandedWarehouseRows] = useState<Set<string>>(new Set())
+
+  const toggleWarehouseRow = (product: string) => setExpandedWarehouseRows(prev => {
+    const next = new Set(prev)
+    next.has(product) ? next.delete(product) : next.add(product)
+    return next
+  })
 
   // Track expanded state for each section
   const [expandedSections, setExpandedSections] = useState({
@@ -1291,47 +1306,106 @@ export default function SupplyChainOverview() {
               .map((item, idx) => {
                 const availFin = Number(item.available_finished)
                 const availTot = Number(item.available_total)
+                const committedOrders = item.committed_orders ?? []
+                const onOrderOrders = item.on_order_orders ?? []
+                const hasOrders = committedOrders.length > 0 || onOrderOrders.length > 0
+                const isExpanded = expandedWarehouseRows.has(item.product)
                 return (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
-                      gap: 6,
-                      ...tableRowStyle,
-                      fontSize: 13,
-                      alignItems: 'start',
-                    }}
-                  >
-                    <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{item.product}</div>
+                  <div key={idx}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                        gap: 6,
+                        ...tableRowStyle,
+                        borderBottom: isExpanded ? 'none' : tableRowStyle.borderBottom,
+                        fontSize: 13,
+                        alignItems: 'start',
+                      }}
+                    >
+                      <div
+                        style={{ wordBreak: 'break-word', lineHeight: 1.3, display: 'flex', alignItems: 'flex-start', gap: 5, cursor: hasOrders ? 'pointer' : undefined }}
+                        onClick={hasOrders ? () => toggleWarehouseRow(item.product) : undefined}
+                      >
+                        {hasOrders && (
+                          <span style={{ fontSize: 'var(--expand-icon-size)', flexShrink: 0, marginTop: 2 }}>
+                            {isExpanded ? '▼' : '▶'}
+                          </span>
+                        )}
+                        <span>{item.product}</span>
+                      </div>
 
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
-                      {fmtNumber(Number(item.pre_prod))}
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
+                        {fmtNumber(Number(item.pre_prod))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
+                        {fmtNumber(Number(item.finished))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                        {fmtNumber(Number(item.qty))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                        {fmtNumber(Number(item.committed))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
+                        {fmtNumber(availFin)}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
+                        {fmtNumber(availTot)}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                        {fmtNumber(Number(item.on_order))}
+                      </div>
                     </div>
 
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
-                      {fmtNumber(Number(item.finished))}
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                      {fmtNumber(Number(item.qty))}
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                      {fmtNumber(Number(item.committed))}
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
-                      {fmtNumber(availFin)}
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                      {fmtNumber(availTot)}
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                      {fmtNumber(Number(item.on_order))}
-                    </div>
+                    {isExpanded && (
+                      <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12, paddingLeft: 16, paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {committedOrders.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                              {t('warehouse.committedOrdersHeader')}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 16px', fontSize: 13 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('warehouse.orderNoHeader')}</div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>{t('warehouse.qtyHeader')}</div>
+                              {committedOrders.map(o => (
+                                <div key={o.order_id} style={{ display: 'contents' }}>
+                                  <button onClick={() => navigate(`/orders/${o.order_id}/edit`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}>
+                                    #{o.order_no}
+                                  </button>
+                                  <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {onOrderOrders.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                              {t('warehouse.onOrderOrdersHeader')}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 16px', fontSize: 13 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('warehouse.orderNoHeader')}</div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>{t('warehouse.qtyHeader')}</div>
+                              {onOrderOrders.map(o => (
+                                <div key={o.order_id} style={{ display: 'contents' }}>
+                                  <button onClick={() => navigate(`/supplier-orders/${o.order_id}/edit`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}>
+                                    #{o.order_no}
+                                  </button>
+                                  <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               })}

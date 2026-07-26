@@ -53,7 +53,9 @@ async function getInventory(event) {
         FULL OUTER JOIN lp ON lp.product_id = wd.product_id
       ),
       committed AS (
-        SELECT oi.product_id, SUM(oi.qty) AS qty
+        SELECT oi.product_id,
+          SUM(oi.qty) AS qty,
+          json_agg(json_build_object('order_id', o.id, 'order_no', o.order_no, 'qty', oi.qty) ORDER BY o.order_no) AS orders
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.tenant_id = ${TENANT_ID}
@@ -62,7 +64,9 @@ async function getInventory(event) {
         GROUP BY oi.product_id
       ),
       on_order AS (
-        SELECT ois.product_id, SUM(ois.qty) AS qty
+        SELECT ois.product_id,
+          SUM(ois.qty) AS qty,
+          json_agg(json_build_object('order_id', os.id, 'order_no', os.order_no, 'qty', ois.qty) ORDER BY os.order_no) AS orders
         FROM order_items_suppliers ois
         JOIN orders_suppliers os ON os.id = ois.order_id
         WHERE os.tenant_id = ${TENANT_ID}
@@ -79,7 +83,9 @@ async function getInventory(event) {
         COALESCE(c.qty, 0)                                                                                         AS committed,
         COALESCE(oo.qty, 0)                                                                                        AS on_order,
         COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0) - COALESCE(c.qty, 0)           AS available_finished,
-        COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)   - COALESCE(c.qty, 0)           AS available_total
+        COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)   - COALESCE(c.qty, 0)           AS available_total,
+        c.orders                                                                                                    AS committed_orders,
+        oo.orders                                                                                                   AS on_order_orders
       FROM products p
       LEFT JOIN base    ON base.product_id = p.id
       LEFT JOIN committed c  ON c.product_id  = p.id
