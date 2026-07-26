@@ -404,7 +404,9 @@
     "newStatus": "Nuevo estado",
     "deliveredInFullStatus": "Entregado completo",
     "partiallyDeliveredWithRemaining": ", {{remaining}} restante.",
-    "deliveryDate": "Fecha de entrega"
+    "deliveryDate": "Fecha de entrega",
+    "orderedHeader": "Pedido",
+    "deliveredHeader": "Entregado"
   },
   "payments": {
     "fromCustomer": "De cliente",

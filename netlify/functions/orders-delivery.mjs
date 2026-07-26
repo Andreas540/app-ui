@@ -15,83 +15,98 @@ async function updateDeliveryStatus(event) {
 
     const body = JSON.parse(event.body || '{}');
     const { order_id, delivered_at } = body || {};
-    const deliveredQuantityRaw = body.delivered_quantity;
-    const deliveredFlag = body.delivered; // legacy support
 
     if (!order_id || typeof order_id !== 'string') {
       return cors(400, { error: 'order_id is required' });
     }
 
-    if (deliveredQuantityRaw === undefined && typeof deliveredFlag !== 'boolean') {
-      return cors(400, {
-        error: 'Either delivered_quantity (number) or delivered (boolean) is required',
-      });
-    }
-
     const sql = neon(DATABASE_URL);
 
-    // Ensure delivered_at column exists (safe to run repeatedly)
-    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at DATE`;
-
-    // Resolve tenant from JWT
     const authz = await resolveAuthz({ sql, event });
     if (authz.error) return cors(403, { error: authz.error });
     const TENANT_ID = authz.tenantId;
 
-    // Get total ordered quantity for this order
-    const totals = await sql`
-      SELECT COALESCE(SUM(oi.qty), 0) AS total_qty
-      FROM orders o
-      LEFT JOIN order_items oi ON oi.order_id = o.id
-      WHERE o.tenant_id = ${TENANT_ID}
-        AND o.id = ${order_id}
+    // Fetch all order items for this order (need id, product_id, qty)
+    const orderItems = await sql`
+      SELECT oi.id, oi.product_id, oi.qty
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE oi.order_id = ${order_id}
+        AND o.tenant_id = ${TENANT_ID}
     `;
 
-    if (totals.length === 0) {
-      return cors(404, { error: 'Order not found' });
+    if (orderItems.length === 0) {
+      return cors(404, { error: 'Order not found or has no items' });
     }
 
-    const totalQty = Number(totals[0].total_qty || 0);
+    // Build per-line delivered_qty values from whichever format the caller used.
+    //
+    // Format A (new, from DeliveryModal): { lines: [{ order_item_id, delivered_qty }] }
+    // Format B (boolean toggle, from Dashboard): { delivered: true/false }
+    // Format C (legacy quantity, kept for safety): { delivered_quantity: number }
+    let lineUpdates; // [{ id, delivered_qty }]
 
-    let newDeliveredQty;
-    let newDeliveredFlag;
-
-    if (deliveredQuantityRaw !== undefined && deliveredQuantityRaw !== null && deliveredQuantityRaw !== '') {
-      // Tri-state path: explicit delivered_quantity from UI
-      const n = Number(deliveredQuantityRaw);
-      if (!Number.isFinite(n)) {
-        return cors(400, { error: 'delivered_quantity must be a number' });
+    if (Array.isArray(body.lines) && body.lines.length > 0) {
+      // Format A — validate each line
+      const itemById = Object.fromEntries(orderItems.map(i => [i.id, i]));
+      lineUpdates = [];
+      for (const line of body.lines) {
+        const item = itemById[line.order_item_id];
+        if (!item) return cors(400, { error: `Unknown order_item_id: ${line.order_item_id}` });
+        const dqty = Number(line.delivered_qty);
+        if (!Number.isFinite(dqty)) return cors(400, { error: 'delivered_qty must be a number' });
+        lineUpdates.push({ id: item.id, delivered_qty: Math.max(0, Math.min(dqty, Number(item.qty))) });
       }
-      // Clamp between 0 and totalQty
-      newDeliveredQty = Math.max(0, Math.min(n, totalQty));
-      newDeliveredFlag = (newDeliveredQty === totalQty);
+    } else if (typeof body.delivered === 'boolean') {
+      // Format B — all lines fully delivered or all zero
+      lineUpdates = orderItems.map(item => ({
+        id: item.id,
+        delivered_qty: body.delivered ? Number(item.qty) : 0,
+      }));
+    } else if (body.delivered_quantity !== undefined && body.delivered_quantity !== null && body.delivered_quantity !== '') {
+      // Format C — legacy: single number applied to first (and typically only) line
+      const totalQty = orderItems.reduce((s, i) => s + Number(i.qty), 0);
+      const n = Math.max(0, Math.min(Number(body.delivered_quantity), totalQty));
+      if (!Number.isFinite(n)) return cors(400, { error: 'delivered_quantity must be a number' });
+      // Distribute proportionally across lines (for single-line orders this is exact)
+      let remaining = n;
+      lineUpdates = orderItems.map((item, idx) => {
+        if (idx === orderItems.length - 1) {
+          return { id: item.id, delivered_qty: remaining };
+        }
+        const share = Math.min(Number(item.qty), remaining);
+        remaining -= share;
+        return { id: item.id, delivered_qty: share };
+      });
     } else {
-      // Legacy path: boolean delivered flag
-      if (typeof deliveredFlag !== 'boolean') {
-        return cors(400, { error: 'delivered must be true or false' });
-      }
-      newDeliveredFlag = deliveredFlag;
-      newDeliveredQty = deliveredFlag ? totalQty : 0;
+      return cors(400, { error: 'Provide lines[], delivered (boolean), or delivered_quantity' });
     }
 
-    // delivered_at: use provided date if marking delivered, clear if undelivering
-    const newDeliveredAt = newDeliveredQty > 0
+    // Apply per-line updates — the DB trigger fires and adjusts warehouse_deliveries
+    for (const line of lineUpdates) {
+      await sql`
+        UPDATE order_items
+        SET delivered_qty = ${line.delivered_qty}
+        WHERE id = ${line.id}
+      `;
+    }
+
+    // Recompute order-level delivered / delivered_quantity for backward compat
+    const totalQty    = orderItems.reduce((s, i) => s + Number(i.qty), 0);
+    const totalDelivered = lineUpdates.reduce((s, l) => s + l.delivered_qty, 0);
+    const newDeliveredFlag = totalDelivered >= totalQty && totalQty > 0;
+    const newDeliveredAt = totalDelivered > 0
       ? (delivered_at || new Date().toISOString().slice(0, 10))
-      : null
+      : null;
 
     const result = await sql`
       UPDATE orders
-      SET delivered_quantity = ${newDeliveredQty},
-          delivered          = ${newDeliveredFlag},
+      SET delivered          = ${newDeliveredFlag},
+          delivered_quantity = ${totalDelivered},
           delivered_at       = ${newDeliveredAt}
       WHERE tenant_id = ${TENANT_ID}
         AND id = ${order_id}
-      RETURNING
-        id,
-        delivered,
-        delivered_quantity,
-        delivery_status,
-        delivered_at
+      RETURNING id, delivered, delivered_quantity, delivery_status, delivered_at
     `;
 
     if (result.length === 0) {
@@ -99,14 +114,13 @@ async function updateDeliveryStatus(event) {
     }
 
     const row = result[0];
-
     return cors(200, {
       ok: true,
-      order_id:          row.id,
-      delivered:         row.delivered,
+      order_id:           row.id,
+      delivered:          row.delivered,
       delivered_quantity: row.delivered_quantity,
-      delivery_status:   row.delivery_status,
-      delivered_at:      row.delivered_at,
+      delivery_status:    row.delivery_status,
+      delivered_at:       row.delivered_at,
     });
   } catch (e) {
     console.error(e);

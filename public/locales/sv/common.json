@@ -404,7 +404,9 @@
     "newStatus": "Ny status",
     "deliveredInFullStatus": "Fullt levererad",
     "partiallyDeliveredWithRemaining": ", {{remaining}} återstår.",
-    "deliveryDate": "Leveransdatum"
+    "deliveryDate": "Leveransdatum",
+    "orderedHeader": "Beställt",
+    "deliveredHeader": "Levererat"
   },
   "payments": {
     "fromCustomer": "Från kund",

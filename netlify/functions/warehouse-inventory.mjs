@@ -54,12 +54,13 @@ async function getInventory(event) {
       ),
       committed AS (
         SELECT oi.product_id,
-          SUM(GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0)) AS qty,
-          json_agg(json_build_object('order_id', o.id, 'order_no', o.order_no, 'qty', GREATEST(oi.qty - COALESCE(o.delivered_quantity, 0), 0)) ORDER BY o.order_no) AS orders
+          SUM(GREATEST(oi.qty - oi.delivered_qty, 0)) AS qty,
+          json_agg(json_build_object('order_id', o.id, 'order_no', o.order_no, 'qty', GREATEST(oi.qty - oi.delivered_qty, 0)) ORDER BY o.order_no) AS orders
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.tenant_id = ${TENANT_ID}
-          AND oi.qty > COALESCE(o.delivered_quantity, 0)
+          AND o.delivered = FALSE
+          AND oi.qty > oi.delivered_qty
           AND oi.product_id IS NOT NULL
         GROUP BY oi.product_id
       ),

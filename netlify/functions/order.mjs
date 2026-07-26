@@ -251,26 +251,39 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
         `
       }
     }
-    // 🔄 Keep delivered_quantity in sync with delivered flag
-if (typeof delivered === 'boolean') {
-  // Recompute total quantity from order_items
-  const totalRes = await sql`
-  SELECT COALESCE(SUM(oi.qty), 0) AS total_qty
-  FROM order_items oi
-  JOIN orders o ON o.id = oi.order_id
-  WHERE o.id = ${id}
-    AND o.tenant_id = ${TENANT_ID}
-  `
+    // Sync per-line delivered_qty and order-level delivered_quantity with the delivered flag.
+    // The DB trigger on order_items.delivered_qty handles warehouse_deliveries updates.
+    if (typeof delivered === 'boolean') {
+      // Always clear old 'D' rows first — product lineup may have changed during edit
+      await sql`
+        DELETE FROM warehouse_deliveries
+        WHERE order_id = ${id} AND supplier_manual_delivered = 'D'
+      `
 
-  const totalQty = Number(totalRes[0]?.total_qty || 0)
-  const newDeliveredQty = delivered ? totalQty : 0
+      if (delivered) {
+        // Mark every line as fully delivered — trigger re-creates 'D' rows
+        await sql`
+          UPDATE order_items SET delivered_qty = qty WHERE order_id = ${id}
+        `
+      } else {
+        // Mark every line as undelivered — trigger removes any 'D' rows
+        await sql`
+          UPDATE order_items SET delivered_qty = 0 WHERE order_id = ${id}
+        `
+      }
 
-  await sql`
-    UPDATE orders
-    SET delivered_quantity = ${newDeliveredQty}
-    WHERE tenant_id = ${TENANT_ID} AND id = ${id}
-  `
-}
+      const totalRes = await sql`
+        SELECT COALESCE(SUM(qty), 0) AS total_qty FROM order_items WHERE order_id = ${id}
+      `
+      const totalQty = Number(totalRes[0]?.total_qty || 0)
+      const newDeliveredQty = delivered ? totalQty : 0
+
+      await sql`
+        UPDATE orders
+        SET delivered_quantity = ${newDeliveredQty}
+        WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      `
+    }
 
     return cors(200, { ok: true })
 }

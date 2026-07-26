@@ -238,7 +238,11 @@ export default function CustomerDetailPage() {
     setDeliveryOrder(order)
   }
 
-  const handleDeliverySave = async (orderId: string, newDeliveredQuantity: number, deliveredAt?: string) => {
+  const handleDeliverySave = async (
+    orderId: string,
+    lines: { order_item_id: string; delivered_qty: number }[],
+    deliveredAt?: string,
+  ) => {
   try {
     setSavingDelivery(true)
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -247,7 +251,7 @@ export default function CustomerDetailPage() {
       headers: getAuthHeaders(),
       body: JSON.stringify({
         order_id: orderId,
-        delivered_quantity: newDeliveredQuantity,
+        lines,
         delivered_at: deliveredAt || null,
       }),
     })
@@ -262,17 +266,21 @@ export default function CustomerDetailPage() {
         if (!prev) return prev
         return {
           ...prev,
-          orders: prev.orders.map(order => 
-            order.id === orderId
-              ? {
-                  ...order,
-                  delivered: updated.delivered,
-                  delivered_quantity: updated.delivered_quantity,
-                  delivered_at: updated.delivered_at,
-                  delivery_status: updated.delivery_status,
-                }
-              : order
-          )
+          orders: prev.orders.map(order => {
+            if (order.id !== orderId) return order
+            const lineMap = Object.fromEntries(lines.map(l => [l.order_item_id, l.delivered_qty]))
+            const updatedItems = (order.items ?? []).map((item: any) =>
+              lineMap[item.id] !== undefined ? { ...item, delivered_qty: lineMap[item.id] } : item
+            )
+            return {
+              ...order,
+              items: updatedItems,
+              delivered: updated.delivered,
+              delivered_quantity: updated.delivered_quantity,
+              delivered_at: updated.delivered_at,
+              delivery_status: updated.delivery_status,
+            }
+          })
         }
       })
 
@@ -1089,22 +1097,27 @@ function DeliveryModal({
   order: any
   saving: boolean
   onClose: () => void
-  onSave: (orderId: string, newDeliveredQuantity: number, deliveredAt?: string) => void
+  onSave: (orderId: string, lines: { order_item_id: string; delivered_qty: number }[], deliveredAt?: string) => void
 }) {
   const { t } = useTranslation()
+  const items: any[] = order.items ?? []
+  const isMulti = items.length > 1
 
-  const totalQty = (order as any).total_qty ?? (order as any).qty ?? 0
-  const initialDelivered =
-    (order as any).delivered_quantity ??
-    ((order as any).delivered ? totalQty : 0)
+  // Per-item input state keyed by order_item_id
+  const [inputValues, setInputValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const item of items) {
+      const current = Number(item.delivered_qty ?? 0)
+      // Fallback: if line has no delivered_qty but order is fully delivered, show full qty
+      const fallback = (item.delivered_qty == null && order.delivered) ? Number(item.qty) : current
+      init[item.id] = String(fallback)
+    }
+    // Single-product fallback when items array is empty (legacy data)
+    if (items.length === 0) init['__legacy__'] = String(order.delivered_quantity ?? (order.delivered ? (order.total_qty ?? 0) : 0))
+    return init
+  })
 
-  // Keep the raw input as a string so the user can clear it
-  const [inputValue, setInputValue] = useState<string>(
-    String(initialDelivered)
-  )
-  const [deliveredAt, setDeliveredAt] = useState<string>(
-    (order as any).delivered_at ?? todayYMD()
-  )
+  const [deliveredAt, setDeliveredAt] = useState<string>(order.delivered_at ?? todayYMD())
   const hasInteracted = useRef(false)
 
   function touchDate() {
@@ -1114,16 +1127,29 @@ function DeliveryModal({
     }
   }
 
-  // Parse and clamp for display / status / save
-  const parsed = Number(inputValue)
-  const numeric = Number.isFinite(parsed) ? parsed : 0
-  const clampedValue = Math.max(0, Math.min(numeric, totalQty))
-  const remaining = totalQty - clampedValue
+  function clamp(val: string, max: number) {
+    const n = Number(val)
+    return Number.isFinite(n) ? Math.max(0, Math.min(n, max)) : 0
+  }
+
+  // Aggregate totals for status label
+  const totalOrdered = items.reduce((s, i) => s + Number(i.qty), 0) || Number(order.total_qty ?? 0)
+  const totalDelivered = items.length > 0
+    ? items.reduce((s, i) => s + clamp(inputValues[i.id] ?? '0', Number(i.qty)), 0)
+    : clamp(inputValues['__legacy__'] ?? '0', totalOrdered)
 
   let statusLabel = t('notDelivered')
-  if (clampedValue === 0) statusLabel = t('notDelivered')
-  else if (clampedValue === totalQty) statusLabel = t('customerDetail.deliveredInFullStatus')
-  else statusLabel = t('customerDetail.partiallyDelivered', { delivered: clampedValue, total: totalQty })
+  if (totalDelivered === 0) statusLabel = t('notDelivered')
+  else if (totalDelivered >= totalOrdered) statusLabel = t('customerDetail.deliveredInFullStatus')
+  else statusLabel = t('customerDetail.partiallyDelivered', { delivered: totalDelivered, total: totalOrdered })
+
+  function buildLines() {
+    if (items.length === 0) return [] // legacy — caller falls back to delivered_quantity
+    return items.map(item => ({
+      order_item_id: item.id,
+      delivered_qty: clamp(inputValues[item.id] ?? '0', Number(item.qty)),
+    }))
+  }
 
   return (
     <div
@@ -1140,88 +1166,117 @@ function DeliveryModal({
     >
       <div
         className="card"
-        style={{ maxWidth: 360, width: '90%', padding: 16 }}
+        style={{ maxWidth: 400, width: '90%', padding: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
         <h4 style={{ marginTop: 0, marginBottom: 8 }}>{t('customerDetail.updateDelivery')}</h4>
 
-        <div className="helper" style={{ marginBottom: 8 }}>
-          Order #{(order as any).order_no ?? order.id}
+        <div className="helper" style={{ marginBottom: 12 }}>
+          Order #{order.order_no ?? order.id}
         </div>
 
-        <div className="helper" style={{ marginBottom: 4 }}>
-          {t('customerDetail.orderedQty')}
-        </div>
-        <div style={{ marginBottom: 8 }}>{totalQty}</div>
-
-        <div className="helper" style={{ marginBottom: 4 }}>
-          {t('customerDetail.deliveredQty')}
-        </div>
-        <input
-          type="number"
-          min={0}
-          max={totalQty}
-          value={inputValue}
-          onChange={(e) => { touchDate(); setInputValue(e.target.value) }}
-          onFocus={(e) => {
-            touchDate()
-            if (e.target.value === '0') setInputValue('')
-          }}
-          style={{ width: '100%', marginBottom: 8 }}
-        />
-
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <button
-            type="button"
-            className="helper"
-            onClick={() => { touchDate(); setInputValue('0') }}
-            style={{ flex: 1 }}
-          >
-            {t('customerDetail.setToZero')}
-          </button>
-          <button
-            type="button"
-            className="helper"
-            onClick={() => { touchDate(); setInputValue(String(totalQty)) }}
-            style={{ flex: 1 }}
-          >
-            {t('customerDetail.fullDelivery')}
-          </button>
-        </div>
-
-        <div className="helper" style={{ marginBottom: 4 }}>
-          {t('customerDetail.newStatus')}
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          {statusLabel}{totalQty > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
-        </div>
-
-        {clampedValue > 0 && (
-          <>
-            <div className="helper" style={{ marginBottom: 4 }}>
-              {t('customerDetail.deliveryDate')}
+        {isMulti ? (
+          /* Multi-product: one row per line */
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 8px', alignItems: 'center', marginBottom: 4 }}>
+              <div />
+              <div className="helper" style={{ textAlign: 'right' }}>{t('customerDetail.orderedHeader')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('customerDetail.deliveredHeader')}</div>
             </div>
-            <DateInput
-              value={deliveredAt}
-              onChange={setDeliveredAt}
-              style={{ width: '100%', marginBottom: 12 }}
-            />
+            {items.map(item => {
+              const max = Number(item.qty)
+              const val = inputValues[item.id] ?? '0'
+              return (
+                <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 8px', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize: 14 }}>{item.product_name}</div>
+                  <div style={{ textAlign: 'right', fontSize: 14 }}>{max}</div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={max}
+                    value={val}
+                    onChange={(e) => { touchDate(); setInputValues(prev => ({ ...prev, [item.id]: e.target.value })) }}
+                    onFocus={(e) => { touchDate(); if (e.target.value === '0') setInputValues(prev => ({ ...prev, [item.id]: '' })) }}
+                    style={{ width: 64, textAlign: 'right' }}
+                  />
+                </div>
+              )
+            })}
+            <div style={{ display: 'flex', gap: 8, marginTop: 4, marginBottom: 8 }}>
+              <button type="button" className="helper" style={{ flex: 1 }}
+                onClick={() => { touchDate(); setInputValues(Object.fromEntries(items.map(i => [i.id, '0']))) }}>
+                {t('customerDetail.setToZero')}
+              </button>
+              <button type="button" className="helper" style={{ flex: 1 }}
+                onClick={() => { touchDate(); setInputValues(Object.fromEntries(items.map(i => [i.id, String(i.qty)]))) }}>
+                {t('customerDetail.fullDelivery')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Single product: same UX as before */
+          (() => {
+            const item = items[0]
+            const max = item ? Number(item.qty) : totalOrdered
+            const id = item?.id ?? '__legacy__'
+            const val = inputValues[id] ?? '0'
+            const clamped = clamp(val, max)
+            const remaining = max - clamped
+            return (
+              <>
+                <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.orderedQty')}</div>
+                <div style={{ marginBottom: 8 }}>{max}</div>
+                <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.deliveredQty')}</div>
+                <input
+                  type="number"
+                  min={0}
+                  max={max}
+                  value={val}
+                  onChange={(e) => { touchDate(); setInputValues(prev => ({ ...prev, [id]: e.target.value })) }}
+                  onFocus={(e) => { touchDate(); if (e.target.value === '0') setInputValues(prev => ({ ...prev, [id]: '' })) }}
+                  style={{ width: '100%', marginBottom: 8 }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <button type="button" className="helper" style={{ flex: 1 }}
+                    onClick={() => { touchDate(); setInputValues(prev => ({ ...prev, [id]: '0' })) }}>
+                    {t('customerDetail.setToZero')}
+                  </button>
+                  <button type="button" className="helper" style={{ flex: 1 }}
+                    onClick={() => { touchDate(); setInputValues(prev => ({ ...prev, [id]: String(max) })) }}>
+                    {t('customerDetail.fullDelivery')}
+                  </button>
+                </div>
+                <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.newStatus')}</div>
+                <div style={{ marginBottom: 12 }}>
+                  {statusLabel}{max > 0 && remaining !== 0 && t('customerDetail.partiallyDeliveredWithRemaining', { remaining })}
+                </div>
+              </>
+            )
+          })()
+        )}
+
+        {isMulti && (
+          <div style={{ marginBottom: 12 }}>
+            <span className="helper">{t('customerDetail.newStatus')}: </span>
+            {statusLabel}
+          </div>
+        )}
+
+        {totalDelivered > 0 && (
+          <>
+            <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.deliveryDate')}</div>
+            <DateInput value={deliveredAt} onChange={setDeliveredAt} style={{ width: '100%', marginBottom: 12 }} />
           </>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button
-            type="button"
-            className="helper"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <button type="button" className="helper" onClick={onClose} disabled={saving}>
             {t('cancel')}
           </button>
           <button
             type="button"
             className="primary"
-            onClick={() => onSave(order.id, clampedValue, clampedValue > 0 ? deliveredAt : undefined)}
+            onClick={() => onSave(order.id, buildLines(), totalDelivered > 0 ? deliveredAt : undefined)}
             disabled={saving}
           >
             {saving ? t('saving') : t('save')}

@@ -79,7 +79,7 @@ async function getCustomer(event) {
         COALESCE(SUM(oi.qty),0)::numeric(10,2) AS total_qty,
         COALESCE(
           json_agg(
-            json_build_object('product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price)
+            json_build_object('id', oi.id, 'product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price, 'delivered_qty', oi.delivered_qty)
             ORDER BY oi.id ASC
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'::json

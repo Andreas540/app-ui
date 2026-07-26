@@ -404,7 +404,9 @@
     "newStatus": "New status",
     "deliveredInFullStatus": "Delivered in full",
     "partiallyDeliveredWithRemaining": ", {{remaining}} remaining.",
-    "deliveryDate": "Delivery date"
+    "deliveryDate": "Delivery date",
+    "orderedHeader": "Ordered",
+    "deliveredHeader": "Delivered"
   },
   "payments": {
     "fromCustomer": "From customer",
