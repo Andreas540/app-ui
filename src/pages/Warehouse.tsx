@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
+import OrderDetailModal from '../components/OrderDetailModal'
+import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -35,12 +37,21 @@ export default function Warehouse() {
 
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
+  const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
     next.has(id) ? next.delete(id) : next.add(id)
     return next
   })
+
+  const openSupplierOrder = async (orderId: string) => {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(`${base}/api/order-supplier?id=${orderId}`, { headers: getAuthHeaders() })
+    const data = await res.json()
+    if (res.ok) setSupplierModalOrder({ ...data.order, items: data.items })
+  }
 
   // Form fields
   const [productId, setProductId] = useState('')
@@ -523,45 +534,37 @@ export default function Warehouse() {
                       </div>
 
                       {isExpanded && (
-                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12, paddingLeft: 16, paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          {committedOrders.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                                {t('warehouse.committedOrdersHeader')}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                          gap: 6,
+                          borderBottom: '1px solid var(--border)',
+                          paddingBottom: 8,
+                          paddingTop: 4,
+                          fontSize: 12,
+                        }}>
+                          <div /><div /><div /><div />
+                          <div>
+                            {committedOrders.map(o => (
+                              <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0 4px', marginBottom: 2 }}>
+                                <button onClick={() => setCustomerModalOrder({ id: o.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
+                                  #{o.order_no}
+                                </button>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
                               </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 16px', fontSize: 13 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('warehouse.orderNoHeader')}</div>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>{t('warehouse.qtyHeader')}</div>
-                                {committedOrders.map(o => (
-                                  <div key={o.order_id} style={{ display: 'contents' }}>
-                                    <button onClick={() => navigate(`/orders/${o.order_id}/edit`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}>
-                                      #{o.order_no}
-                                    </button>
-                                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</div>
-                                  </div>
-                                ))}
+                            ))}
+                          </div>
+                          <div /><div />
+                          <div>
+                            {onOrderOrders.map(o => (
+                              <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0 4px', marginBottom: 2 }}>
+                                <button onClick={() => openSupplierOrder(o.order_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
+                                  #{o.order_no}
+                                </button>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
                               </div>
-                            </div>
-                          )}
-                          {onOrderOrders.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                                {t('warehouse.onOrderOrdersHeader')}
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 16px', fontSize: 13 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('warehouse.orderNoHeader')}</div>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>{t('warehouse.qtyHeader')}</div>
-                                {onOrderOrders.map(o => (
-                                  <div key={o.order_id} style={{ display: 'contents' }}>
-                                    <button onClick={() => navigate(`/supplier-orders/${o.order_id}/edit`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}>
-                                      #{o.order_no}
-                                    </button>
-                                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -571,6 +574,18 @@ export default function Warehouse() {
           </div>
         )}
       </div>
+
+      <OrderDetailModal
+        isOpen={!!customerModalOrder}
+        onClose={() => setCustomerModalOrder(null)}
+        order={customerModalOrder}
+      />
+      <SupplierOrderDetailModal
+        isOpen={!!supplierModalOrder}
+        onClose={() => setSupplierModalOrder(null)}
+        order={supplierModalOrder}
+        supplierName={supplierModalOrder?.supplier_name ?? ''}
+      />
     </>
   )
 }
