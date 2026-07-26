@@ -35,7 +35,11 @@ interface WarehouseInventory {
   product: string
   pre_prod: number
   finished: number
-  qty: number // total
+  qty: number
+  committed: number
+  on_order: number
+  available_finished: number
+  available_total: number
 }
 
 interface InCustoms {
@@ -1260,74 +1264,78 @@ export default function SupplyChainOverview() {
       {data.warehouse_inventory.length === 0 ? (
         <p className="helper">{t('supplyChain.noInventoryData')}</p>
       ) : (
-        <div>
-          {/* Header: 4 columns 25/25/25/25 */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr',
-              gap: 8,
-              ...tableHeaderStyle,
-              fontSize: 12,
-            }}
-          >
-            <div>Product</div>
-            <div style={{ textAlign: 'right' }}>{t('supplyChain.preProdColumn')}</div>
-            <div style={{ textAlign: 'right' }}>{t('supplyChain.finishedColumn')}</div>
-            <div style={{ textAlign: 'right' }}>Total Qty</div>
-          </div>
-
-          {data.warehouse_inventory
-  .filter(item => !shouldHideProduct(item.product))
-  .map((item, idx) => (
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ minWidth: 580 }}>
+            {/* Header */}
             <div
-              key={idx}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr 1fr',
-                gap: 8,
-                ...tableRowStyle,
-                fontSize: 13,
-                alignItems: 'start',
+                gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                gap: 6,
+                ...tableHeaderStyle,
+                fontSize: 12,
               }}
             >
-              {/* Product wraps to 2 lines if needed */}
-              <div style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
-                {item.product}
-              </div>
-
-              <div
-                style={{
-                  textAlign: 'right',
-                  fontVariantNumeric: 'tabular-nums',
-                  color: item.pre_prod < 0 ? 'var(--color-error)' : undefined,
-                  fontWeight: item.pre_prod < 0 ? 600 : undefined,
-                }}
-              >
-                {fmtNumber(Number(item.pre_prod))}
-              </div>
-
-              <div
-                style={{
-                  textAlign: 'right',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {fmtNumber(Number(item.finished))}
-              </div>
-
-              <div
-                style={{
-                  textAlign: 'right',
-                  fontVariantNumeric: 'tabular-nums',
-                  color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : undefined,
-                  fontWeight: item.qty < 0 ? 600 : undefined,
-                }}
-              >
-                {fmtNumber(Number(item.qty))}
-              </div>
+              <div>{t('product')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
+              <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
+              <div style={{ textAlign: 'right' }} title={t('warehouse.committedTooltip')}>{t('warehouse.committedColumn')}</div>
+              <div style={{ textAlign: 'right' }} title={t('warehouse.availableFinishedTooltip')}>{t('warehouse.availableFinishedColumn')}</div>
+              <div style={{ textAlign: 'right' }} title={t('warehouse.availableTotalTooltip')}>{t('warehouse.availableTotalColumn')}</div>
+              <div style={{ textAlign: 'right' }} title={t('warehouse.onOrderTooltip')}>{t('warehouse.onOrderColumn')}</div>
             </div>
-          ))}
+
+            {data.warehouse_inventory
+              .filter(item => !shouldHideProduct(item.product))
+              .map((item, idx) => {
+                const availFin = Number(item.available_finished)
+                const availTot = Number(item.available_total)
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                      gap: 6,
+                      ...tableRowStyle,
+                      fontSize: 13,
+                      alignItems: 'start',
+                    }}
+                  >
+                    <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{item.product}</div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
+                      {fmtNumber(Number(item.pre_prod))}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
+                      {fmtNumber(Number(item.finished))}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                      {fmtNumber(Number(item.qty))}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                      {fmtNumber(Number(item.committed))}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
+                      {fmtNumber(availFin)}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
+                      {fmtNumber(availTot)}
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      {fmtNumber(Number(item.on_order))}
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
         </div>
       )}
     </div>

@@ -21,7 +21,8 @@ async function getInventory(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // Calculate detailed inventory - GROUP BY product_id and JOIN with products for current name
+    // Calculate detailed inventory with ATP (Available-to-Promise) columns.
+    // Anchor on products so zero-stock products with committed orders still appear.
     const inventory = await sql`
       WITH wd AS (
         SELECT
@@ -50,17 +51,42 @@ async function getInventory(event) {
           COALESCE(lp.produced_qty, 0) AS produced_qty
         FROM wd
         FULL OUTER JOIN lp ON lp.product_id = wd.product_id
+      ),
+      committed AS (
+        SELECT oi.product_id, SUM(oi.qty) AS qty
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE o.tenant_id = ${TENANT_ID}
+          AND o.delivered = FALSE
+          AND oi.product_id IS NOT NULL
+        GROUP BY oi.product_id
+      ),
+      on_order AS (
+        SELECT ois.product_id, SUM(ois.qty) AS qty
+        FROM order_items_suppliers ois
+        JOIN orders_suppliers os ON os.id = ois.order_id
+        WHERE os.tenant_id = ${TENANT_ID}
+          AND os.received = FALSE
+          AND ois.product_id IS NOT NULL
+        GROUP BY ois.product_id
       )
       SELECT
         p.name AS product,
-        base.product_id,
-        (base.pre_from_m - base.produced_qty) AS pre_prod,
-        (base.finished_from_p + base.produced_qty - base.outbound_qty) AS finished,
-        (base.pre_from_m + base.finished_from_p - base.outbound_qty) AS qty
-      FROM base
-      JOIN products p ON p.id = base.product_id
+        p.id AS product_id,
+        COALESCE(base.pre_from_m - base.produced_qty, 0)                                                          AS pre_prod,
+        COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0)                                 AS finished,
+        COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)                                   AS qty,
+        COALESCE(c.qty, 0)                                                                                         AS committed,
+        COALESCE(oo.qty, 0)                                                                                        AS on_order,
+        COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0) - COALESCE(c.qty, 0)           AS available_finished,
+        COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)   - COALESCE(c.qty, 0)           AS available_total
+      FROM products p
+      LEFT JOIN base    ON base.product_id = p.id
+      LEFT JOIN committed c  ON c.product_id  = p.id
+      LEFT JOIN on_order oo  ON oo.product_id = p.id
       WHERE p.tenant_id = ${TENANT_ID}
         AND (p.category IS NULL OR p.category != 'service')
+        AND (base.product_id IS NOT NULL OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
       ORDER BY p.name ASC
     `
 

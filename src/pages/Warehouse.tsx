@@ -13,6 +13,10 @@ type InventoryItem = {
   pre_prod: number
   finished: number
   qty: number
+  committed: number
+  on_order: number
+  available_finished: number
+  available_total: number
 }
 
 export default function Warehouse() {
@@ -409,94 +413,92 @@ export default function Warehouse() {
         {inventory.length === 0 ? (
           <p className="helper">{t('warehouse.noInventoryData')}</p>
         ) : (
-          <div>
-            {/* Header */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr 1fr',
-                gap: 8,
-                borderBottom: '1px solid var(--border)',
-                paddingBottom: 8,
-                fontWeight: 600,
-                fontSize: 13,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              <div>{t('product')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ minWidth: 580 }}>
+              {/* Header */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                  gap: 6,
+                  borderBottom: '1px solid var(--border)',
+                  paddingBottom: 8,
+                  fontWeight: 600,
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <div>{t('product')}</div>
+                <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
+                <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
+                <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
+                <div style={{ textAlign: 'right' }} title={t('warehouse.committedTooltip')}>{t('warehouse.committedColumn')}</div>
+                <div style={{ textAlign: 'right' }} title={t('warehouse.availableFinishedTooltip')}>{t('warehouse.availableFinishedColumn')}</div>
+                <div style={{ textAlign: 'right' }} title={t('warehouse.availableTotalTooltip')}>{t('warehouse.availableTotalColumn')}</div>
+                <div style={{ textAlign: 'right' }} title={t('warehouse.onOrderTooltip')}>{t('warehouse.onOrderColumn')}</div>
+              </div>
+
+              {/* Rows */}
+              {inventory
+                .filter((item) => {
+                  const name = item.product.trim().toLowerCase()
+                  return (
+                    !name.includes('refund') &&
+                    !name.includes('discount') &&
+                    !name.includes('other product') &&
+                    !name.includes('other service')
+                  )
+                })
+                .map((item) => {
+                  const availFin = Number(item.available_finished)
+                  const availTot = Number(item.available_total)
+                  return (
+                    <div
+                      key={item.product_id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                        gap: 6,
+                        borderBottom: '1px solid var(--border)',
+                        paddingTop: 10,
+                        paddingBottom: 10,
+                        fontSize: 13,
+                        alignItems: 'start',
+                      }}
+                    >
+                      <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{item.product}</div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
+                        {fmtNumber(Number(item.pre_prod))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
+                        {fmtNumber(Number(item.finished))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                        {fmtNumber(Number(item.qty))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                        {fmtNumber(Number(item.committed))}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
+                        {fmtNumber(availFin)}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
+                        {fmtNumber(availTot)}
+                      </div>
+
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                        {fmtNumber(Number(item.on_order))}
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
-
-            {/* Rows */}
-            {inventory
-              .filter((item) => {
-                const name = item.product.trim().toLowerCase()
-                return (
-                  !name.includes('refund') &&
-                  !name.includes('discount') &&
-                  !name.includes('other product') &&
-                  !name.includes('other service')
-                )
-              })
-              .map((item) => (
-                <div
-                  key={item.product_id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr 1fr',
-                    gap: 8,
-                    borderBottom: '1px solid #eee',
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    fontSize: 13,
-                    alignItems: 'start',
-                  }}
-                >
-                  <div style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
-                    {item.product}
-                  </div>
-
-                  <div
-                    style={{
-                      textAlign: 'right',
-                      fontVariantNumeric: 'tabular-nums',
-                      color: item.pre_prod < 0 ? 'var(--color-error)' : undefined,
-                      fontWeight: item.pre_prod < 0 ? 600 : undefined,
-                    }}
-                  >
-                    {fmtNumber(Number(item.pre_prod))}
-                  </div>
-
-                  <div
-                    style={{
-                      textAlign: 'right',
-                      fontVariantNumeric: 'tabular-nums',
-                      color: item.finished < 0 ? 'var(--color-error)' : undefined,
-                      fontWeight: item.finished < 0 ? 600 : undefined,
-                    }}
-                  >
-                    {fmtNumber(Number(item.finished))}
-                  </div>
-
-                  <div
-                    style={{
-                      textAlign: 'right',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontWeight: 600,
-                      color:
-                        item.qty < 0
-                          ? 'var(--color-error)'
-                          : item.qty === 0
-                            ? 'var(--text-secondary)'
-                            : 'var(--primary)',
-                    }}
-                  >
-                    {fmtNumber(Number(item.qty))}
-                  </div>
-                </div>
-              ))}
           </div>
         )}
       </div>
