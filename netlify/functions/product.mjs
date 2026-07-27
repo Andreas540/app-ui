@@ -298,9 +298,10 @@ async function deleteProduct(event) {
   if (!rows.length) return cors(404, { error: 'Not found' });
   if (rows[0].category !== 'material') return cors(400, { error: 'Only materials can be deleted' });
 
+  // Block only if material is in an ACTIVE recipe
   const [bomRef] = await sql`
     SELECT COUNT(*) AS cnt FROM bom_items bi
-    JOIN product_boms pb ON pb.id = bi.bom_id AND pb.tenant_id = ${TENANT_ID}
+    JOIN product_boms pb ON pb.id = bi.bom_id AND pb.tenant_id = ${TENANT_ID} AND pb.is_active = TRUE
     WHERE bi.input_product_id = ${id}
   `;
   if (Number(bomRef.cnt) > 0) return cors(409, { error: 'Material is used in one or more recipes. Remove it from all recipes first.' });
@@ -309,6 +310,16 @@ async function deleteProduct(event) {
     SELECT COUNT(*) AS cnt FROM order_items_suppliers WHERE product_id = ${id} LIMIT 1
   `;
   if (Number(soRef.cnt) > 0) return cors(409, { error: 'Material appears on supplier orders and cannot be deleted.' });
+
+  // Remove orphaned bom_items from deactivated/historical recipe versions
+  await sql`
+    DELETE FROM bom_items bi
+    USING product_boms pb
+    WHERE bi.bom_id = pb.id
+      AND pb.tenant_id = ${TENANT_ID}
+      AND pb.is_active = FALSE
+      AND bi.input_product_id = ${id}
+  `;
 
   try {
     await sql`DELETE FROM products WHERE id = ${id} AND tenant_id = ${TENANT_ID}`;
