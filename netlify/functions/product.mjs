@@ -54,7 +54,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const body = JSON.parse(event.body || '{}');
     const name = (body.name || '').trim();
     const costNum = Number(body.cost);
-    const category = body.category === 'service' ? 'service' : 'product';
+    const category = ['service', 'material'].includes(body.category) ? body.category : 'product';
 
     if (!name) return cors(400, { error: 'name is required' });
     if (!Number.isFinite(costNum) || costNum < 0) {

@@ -237,7 +237,9 @@
     "history": "Historial de producción",
     "byDay": "Por día",
     "byProduct": "Por producto",
-    "noHistory": "No se encontraron registros de producción."
+    "noHistory": "No se encontraron registros de producción.",
+    "consumptionPreview": "Consumo de materiales",
+    "consumptionRequired": "Requerido"
   },
   "reports": {
     "pageTitle": "Ventas y Beneficios"
@@ -523,7 +525,14 @@
     "alertSelectDate": "Seleccione una fecha",
     "saved": "¡Entrada de almacén guardada!",
     "saveFailed": "Error al guardar",
-    "noProducts": "No hay productos disponibles."
+    "noProducts": "No hay productos disponibles.",
+    "hasBom": "Tiene receta",
+    "materialsSection": "Materiales de entrada",
+    "onHandColumn": "En stock",
+    "receivedColumn": "Recibido",
+    "consumedColumn": "Consumido",
+    "usedInColumn": "Usado en",
+    "noMaterialsData": "Sin materiales registrados aún"
   },
   "products": {
     "addOrEdit": "Agregar nuevo o editar existente",
@@ -1005,6 +1014,7 @@
     "tabUiSettings": "Configuración UI",
     "tabCash": "Gestión de Caja",
     "tabInventory": "Inventario",
+    "tabRecipes": "Recetas",
     "tabCustomerSettings": "Configuración de Clientes",
     "tabProductSettings": "Configuración de Producto / Servicio",
     "productSettings": {
@@ -1129,6 +1139,26 @@
       "applyButton": "Aplicar",
       "appliedCount": "Aplicado a {{count}} clientes.",
       "noTargetSelected": "Selecciona al menos un cliente."
+    },
+    "recipes": {
+      "materialsHeader": "Materiales",
+      "newMaterial": "Nuevo material",
+      "materialName": "Nombre del material",
+      "saveMaterial": "Guardar material",
+      "noMaterials": "Sin materiales aún. Crea un material abajo.",
+      "recipesHeader": "Recetas (lista de materiales)",
+      "selectProduct": "Seleccionar producto o servicio",
+      "currentRecipe": "Receta actual",
+      "noRecipe": "Sin receta definida",
+      "material": "Material",
+      "qtyPerUnit": "Cant. por unidad producida",
+      "addRow": "Agregar material",
+      "saveRecipe": "Guardar receta",
+      "deleteRecipe": "Eliminar receta",
+      "confirmDeleteRecipe": "¿Eliminar receta para este producto?",
+      "recipeSaved": "Receta guardada",
+      "recipeDeleted": "Receta eliminada",
+      "version": "v{{version}}"
     },
     "inventory": {
       "title": "Inventario",

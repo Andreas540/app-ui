@@ -70,7 +70,7 @@ async function getSupplyChainOverview(event) {
         SUM(remaining_qty) as qty
       FROM order_remaining
       JOIN products p ON p.id = order_remaining.product_id
-      WHERE (p.category IS NULL OR p.category != 'service')
+      WHERE p.category NOT IN ('service', 'material')
         AND LOWER(p.name) NOT LIKE '%refund%'
         AND LOWER(p.name) NOT LIKE '%discount%'
         AND LOWER(p.name) NOT LIKE '%other product%'
@@ -96,7 +96,7 @@ async function getSupplyChainOverview(event) {
       LEFT JOIN customers c ON c.id = o.customer_id
       WHERE o.tenant_id = ${TENANT_ID}
         AND oi.qty > COALESCE(o.delivered_quantity, 0)
-        AND (p.category IS NULL OR p.category != 'service')
+        AND p.category NOT IN ('service', 'material')
         AND LOWER(p.name) NOT LIKE '%refund%'
         AND LOWER(p.name) NOT LIKE '%discount%'
         AND LOWER(p.name) NOT LIKE '%other product%'
@@ -173,7 +173,7 @@ const warehouse_inventory = await sql`
   LEFT JOIN committed c  ON c.product_id  = p.id
   LEFT JOIN on_order oo  ON oo.product_id = p.id
   WHERE p.tenant_id = ${TENANT_ID}
-    AND (p.category IS NULL OR p.category != 'service')
+    AND p.category NOT IN ('service', 'material')
     AND LOWER(p.name) NOT LIKE '%refund%'
     AND LOWER(p.name) NOT LIKE '%discount%'
     AND LOWER(p.name) NOT LIKE '%other product%'

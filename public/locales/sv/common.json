@@ -237,7 +237,9 @@
     "history": "Produktionshistorik",
     "byDay": "Per dag",
     "byProduct": "Per produkt",
-    "noHistory": "Inga produktionsposter hittades."
+    "noHistory": "Inga produktionsposter hittades.",
+    "consumptionPreview": "Materialförbrukning",
+    "consumptionRequired": "Behövs"
   },
   "reports": {
     "pageTitle": "Försäljning och vinst"
@@ -523,7 +525,14 @@
     "alertSelectDate": "Välj ett datum",
     "saved": "Lagerinlägg sparat!",
     "saveFailed": "Kunde inte spara",
-    "noProducts": "Inga produkter tillgängliga."
+    "noProducts": "Inga produkter tillgängliga.",
+    "hasBom": "Har recept",
+    "materialsSection": "Ingående material",
+    "onHandColumn": "I lager",
+    "receivedColumn": "Mottaget",
+    "consumedColumn": "Förbrukat",
+    "usedInColumn": "Används i",
+    "noMaterialsData": "Inga material registrerade ännu"
   },
   "products": {
     "addOrEdit": "Lägg till ny eller redigera befintlig",
@@ -1005,6 +1014,7 @@
     "tabUiSettings": "UI-inställningar",
     "tabCash": "Kassahantering",
     "tabInventory": "Lager",
+    "tabRecipes": "Recept",
     "tabCustomerSettings": "Kundinställningar",
     "tabProductSettings": "Produkt- / Tjänstinställningar",
     "productSettings": {
@@ -1129,6 +1139,26 @@
       "applyButton": "Tillämpa",
       "appliedCount": "Tillämpat på {{count}} kunder.",
       "noTargetSelected": "Välj minst en kund."
+    },
+    "recipes": {
+      "materialsHeader": "Material",
+      "newMaterial": "Nytt material",
+      "materialName": "Materialnamn",
+      "saveMaterial": "Spara material",
+      "noMaterials": "Inga material ännu. Skapa ett material nedan.",
+      "recipesHeader": "Recept (materialförteckning)",
+      "selectProduct": "Välj produkt eller tjänst",
+      "currentRecipe": "Aktuellt recept",
+      "noRecipe": "Inget recept definierat",
+      "material": "Material",
+      "qtyPerUnit": "Antal per producerad enhet",
+      "addRow": "Lägg till material",
+      "saveRecipe": "Spara recept",
+      "deleteRecipe": "Ta bort recept",
+      "confirmDeleteRecipe": "Ta bort recept för den här produkten?",
+      "recipeSaved": "Recept sparat",
+      "recipeDeleted": "Recept borttaget",
+      "version": "v{{version}}"
     },
     "inventory": {
       "title": "Lager",

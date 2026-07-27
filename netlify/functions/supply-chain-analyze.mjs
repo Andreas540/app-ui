@@ -82,7 +82,7 @@ export const handler = withErrorLogging('supply_chain_analyze', async (event) =>
         FROM base
         JOIN products p ON p.id = base.product_id
         WHERE p.tenant_id = ${TENANT_ID}
-          AND (p.category IS NULL OR p.category != 'service')
+          AND p.category NOT IN ('service', 'material')
         ORDER BY p.name
       `,
 

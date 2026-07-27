@@ -16,6 +16,9 @@ type ProductEntry = {
   qty_produced: string
 }
 
+type BomItem = { input_product_id: string; input_name: string; qty_per_unit: number }
+type BomMap = Record<string, BomItem[]> // product_id → items
+
 type LaborProductionRecord = {
   id: string
   date: string
@@ -45,6 +48,9 @@ export default function LaborProduction() {
   ])
   const [notes, setNotes] = useState('')
 
+  // BOM recipes keyed by product_id (fetched lazily on product selection)
+  const [bomMap, setBomMap] = useState<BomMap>({})
+
   // History
   type HistoryRecord = { date: string; product_name: string | null; qty_produced: number | null }
   const [historyFilter, setHistoryFilter] = useState<'day' | 'product'>('day')
@@ -58,7 +64,7 @@ export default function LaborProduction() {
         setLoading(true)
         setErr(null)
         const { products: bootProducts } = await fetchBootstrap()
-        setProducts((bootProducts ?? []).filter(p => p.category !== 'service'))
+        setProducts((bootProducts ?? []).filter(p => p.category !== 'service' && p.category !== 'material'))
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -154,10 +160,25 @@ export default function LaborProduction() {
     setProductEntries(productEntries.filter(p => p.tempId !== tempId))
   }
 
+  async function fetchBomIfNeeded(productId: string) {
+    if (!productId || bomMap[productId] !== undefined) return
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/product-bom?product_id=${productId}`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      const items: BomItem[] = data.bom?.items ?? []
+      setBomMap(prev => ({ ...prev, [productId]: items }))
+    } catch {
+      // silently skip — consumption preview is best-effort
+    }
+  }
+
   function updateProductEntry(tempId: string, field: 'product_id' | 'qty_produced', value: string) {
-    setProductEntries(productEntries.map(p => 
+    setProductEntries(productEntries.map(p =>
       p.tempId === tempId ? { ...p, [field]: value } : p
     ))
+    if (field === 'product_id' && value) fetchBomIfNeeded(value)
   }
 
   // Real-time stats calculations
@@ -365,58 +386,85 @@ export default function LaborProduction() {
 
       {/* Product entries */}
       <div style={{ marginTop: 16 }}>
-        {productEntries.map((entry, index) => (
-          <div 
-            key={entry.tempId} 
-            className="row row-2col-mobile" 
-            style={{ marginTop: index > 0 ? 8 : 0, alignItems: 'flex-end' }}
-          >
-            <div>
-              {index === 0 && <label>{t('product')}</label>}
-              <select
-                value={entry.product_id}
-                onChange={e => updateProductEntry(entry.tempId, 'product_id', e.target.value)}
-                style={{ height: CONTROL_H }}
-              >
-                <option value="">{t('production.selectProduct')}</option>
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                {index === 0 && <label>{t('production.quantity')}</label>}
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={entry.qty_produced}
-                  onChange={e => updateProductEntry(entry.tempId, 'qty_produced', e.target.value)}
-                  style={{ height: CONTROL_H }}
-                />
+        {productEntries.map((entry, index) => {
+          const bomItems = entry.product_id ? (bomMap[entry.product_id] ?? null) : null
+          const qty = Number(entry.qty_produced)
+          const hasPreview = bomItems && bomItems.length > 0 && Number.isFinite(qty) && qty > 0
+          return (
+            <div key={entry.tempId} style={{ marginTop: index > 0 ? 12 : 0 }}>
+              <div className="row row-2col-mobile" style={{ alignItems: 'flex-end' }}>
+                <div>
+                  {index === 0 && <label>{t('product')}</label>}
+                  <select
+                    value={entry.product_id}
+                    onChange={e => updateProductEntry(entry.tempId, 'product_id', e.target.value)}
+                    style={{ height: CONTROL_H }}
+                  >
+                    <option value="">{t('production.selectProduct')}</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    {index === 0 && <label>{t('production.quantity')}</label>}
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={entry.qty_produced}
+                      onChange={e => updateProductEntry(entry.tempId, 'qty_produced', e.target.value)}
+                      style={{ height: CONTROL_H }}
+                    />
+                  </div>
+                  {productEntries.length > 1 && (
+                    <button
+                      onClick={() => removeProductRow(entry.tempId)}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: 18,
+                        height: CONTROL_H,
+                        minWidth: CONTROL_H,
+                        background: 'transparent',
+                        border: '1px solid var(--border)',
+                        color: 'var(--color-error)'
+                      }}
+                      title={t('remove')}
+                    >
+                      −
+                    </button>
+                  )}
+                </div>
               </div>
-              {productEntries.length > 1 && (
-                <button
-                  onClick={() => removeProductRow(entry.tempId)}
-                  style={{
-                    padding: '4px 12px',
-                    fontSize: 18,
-                    height: CONTROL_H,
-                    minWidth: CONTROL_H,
-                    background: 'transparent',
-                    border: '1px solid var(--border)',
-                    color: 'var(--color-error)'
-                  }}
-                  title={t('remove')}
-                >
-                  −
-                </button>
+
+              {/* BOM consumption preview */}
+              {hasPreview && (
+                <div style={{
+                  marginTop: 6,
+                  marginLeft: 2,
+                  padding: '6px 10px',
+                  background: 'rgba(0,0,0,0.04)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}>
+                  <div style={{ color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>
+                    {t('production.consumptionPreview')}
+                  </div>
+                  {bomItems!.map(item => (
+                    <div key={item.input_product_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingBottom: 2 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{item.input_name}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-error)' }}>
+                        −{fmtNumber(qty * item.qty_per_unit)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Add product button - below the dropdowns */}
         <div style={{ marginTop: 8 }}>

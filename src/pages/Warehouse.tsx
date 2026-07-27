@@ -14,6 +14,7 @@ type OrderRef = { order_id: string; order_no: number; qty: number }
 type InventoryItem = {
   product: string
   product_id: string
+  has_bom: boolean
   pre_prod: number
   finished: number
   qty: number
@@ -25,6 +26,16 @@ type InventoryItem = {
   on_order_orders: OrderRef[] | null
 }
 
+type MaterialItem = {
+  product: string
+  product_id: string
+  on_hand: number
+  received: number
+  consumed: number
+  on_order: number
+  used_in: string[]
+}
+
 export default function Warehouse() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -32,10 +43,12 @@ export default function Warehouse() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [materials, setMaterials] = useState<MaterialItem[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
   const [adjustOpen, setAdjustOpen] = useState(false)
+  const [materialsOpen, setMaterialsOpen] = useState(false)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
@@ -83,9 +96,9 @@ export default function Warehouse() {
       setErr(null)
       const { products: bootProducts } = await fetchBootstrap()
 
-      // Filter out services, Refund/Discount, Other Products, and Other Services
+      // Filter out services, materials, Refund/Discount, Other Products, and Other Services
       const filtered = bootProducts.filter((p) => {
-        if (p.category === 'service') return false
+        if (p.category === 'service' || p.category === 'material') return false
         const name = p.name.trim().toLowerCase()
         return (
           !name.includes('refund') &&
@@ -115,6 +128,7 @@ export default function Warehouse() {
       if (res.ok) {
         const data = await res.json()
         setInventory(data.inventory || [])
+        setMaterials(data.materials || [])
       }
     } catch (e) {
       console.error('Failed to fetch inventory:', e)
@@ -509,6 +523,9 @@ export default function Warehouse() {
                             </span>
                           )}
                           <span>{item.product}</span>
+                          {item.has_bom && (
+                            <span title={t('warehouse.hasBom')} style={{ fontSize: 11, color: 'var(--primary)', flexShrink: 0, marginTop: 1 }}>⚙</span>
+                          )}
                         </div>
 
                         <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
@@ -581,6 +598,75 @@ export default function Warehouse() {
           </div>
         )}
       </div>
+
+      {/* Materials Section */}
+      {materials.length > 0 && (
+        <div className="card page-normal" style={{ marginTop: 16 }}>
+          <div
+            onClick={() => setMaterialsOpen(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{materialsOpen ? '▼' : '▶'}</span>
+            <h3 style={{ margin: 0 }}>{t('warehouse.materialsSection')}</h3>
+          </div>
+
+          {materialsOpen && (
+            <div style={{ marginTop: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ minWidth: 500 }}>
+                {/* Header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(100px, 2fr) repeat(4, minmax(70px, 1fr)) minmax(100px, 2fr)',
+                  gap: 6,
+                  borderBottom: '1px solid var(--border)',
+                  paddingBottom: 8,
+                  fontWeight: 600,
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                }}>
+                  <div>{t('product')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.onHandColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.receivedColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.consumedColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.onOrderColumn')}</div>
+                  <div>{t('warehouse.usedInColumn')}</div>
+                </div>
+
+                {/* Rows */}
+                {materials.map(mat => (
+                  <div key={mat.product_id} style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(100px, 2fr) repeat(4, minmax(70px, 1fr)) minmax(100px, 2fr)',
+                    gap: 6,
+                    borderBottom: '1px solid var(--border)',
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    fontSize: 13,
+                    alignItems: 'start',
+                  }}>
+                    <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{mat.product}</div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: mat.on_hand < 0 ? 'var(--color-error)' : mat.on_hand === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                      {fmtNumber(Number(mat.on_hand))}
+                    </div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                      {fmtNumber(Number(mat.received))}
+                    </div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(mat.consumed) < 0 ? 'var(--color-error)' : 'var(--text-secondary)' }}>
+                      {fmtNumber(Number(mat.consumed))}
+                    </div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: mat.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      {fmtNumber(Number(mat.on_order))}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      {(mat.used_in ?? []).join(', ') || '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <OrderDetailModal
         isOpen={!!customerModalOrder}

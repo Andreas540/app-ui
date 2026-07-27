@@ -15,6 +15,7 @@ import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
 import TenantAdminProductSettingsTab from './TenantAdminProductSettingsTab'
 import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
+import TenantAdminRecipesTab from './TenantAdminRecipesTab'
 
 interface TenantUser {
   id: string
@@ -67,7 +68,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'product-settings' | 'data-import' | 'order-page'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'recipes' | 'customer-settings' | 'product-settings' | 'data-import' | 'order-page'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -846,6 +847,7 @@ export default function TenantAdmin() {
             { id: 'product-settings',  label: t('tenantAdmin.tabProductSettings') },
             { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
             { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
+            { id: 'recipes',           label: t('tenantAdmin.tabRecipes') },
             { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
             { id: 'order-page',        label: t('tenantAdmin.tabOrderPage') },
             { id: 'payment-providers', label: t('tenantAdmin.tabPaymentProviders') },
@@ -1418,6 +1420,8 @@ export default function TenantAdmin() {
             <TenantAdminInventoryTab />
           </>
         )}
+
+        {activeTab === 'recipes' && <TenantAdminRecipesTab />}
 
         {activeTab === 'customer-settings' && (
           <>

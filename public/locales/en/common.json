@@ -237,7 +237,9 @@
     "history": "Production history",
     "byDay": "By day",
     "byProduct": "By product",
-    "noHistory": "No production records found."
+    "noHistory": "No production records found.",
+    "consumptionPreview": "Material consumption",
+    "consumptionRequired": "Required"
   },
   "reports": {
     "pageTitle": "Sales & Profit"
@@ -523,7 +525,14 @@
     "alertSelectDate": "Select a date",
     "saved": "Warehouse entry saved!",
     "saveFailed": "Save failed",
-    "noProducts": "No products available."
+    "noProducts": "No products available.",
+    "hasBom": "Has recipe",
+    "materialsSection": "Input Materials",
+    "onHandColumn": "On hand",
+    "receivedColumn": "Received",
+    "consumedColumn": "Consumed",
+    "usedInColumn": "Used in",
+    "noMaterialsData": "No materials registered yet"
   },
   "products": {
     "addOrEdit": "Add new or Edit existing",
@@ -1005,6 +1014,7 @@
     "tabUiSettings": "UI Settings",
     "tabCash": "Cash Management",
     "tabInventory": "Inventory",
+    "tabRecipes": "Recipes",
     "tabCustomerSettings": "Customer Settings",
     "tabProductSettings": "Product / Service Settings",
     "productSettings": {
@@ -1129,6 +1139,26 @@
       "applyButton": "Apply",
       "appliedCount": "Applied to {{count}} customers.",
       "noTargetSelected": "Select at least one customer."
+    },
+    "recipes": {
+      "materialsHeader": "Materials",
+      "newMaterial": "New material",
+      "materialName": "Material name",
+      "saveMaterial": "Save material",
+      "noMaterials": "No materials yet. Create a material below.",
+      "recipesHeader": "Recipes (Bill of Materials)",
+      "selectProduct": "Select product or service",
+      "currentRecipe": "Current recipe",
+      "noRecipe": "No recipe defined",
+      "material": "Material",
+      "qtyPerUnit": "Qty per unit produced",
+      "addRow": "Add material",
+      "saveRecipe": "Save recipe",
+      "deleteRecipe": "Remove recipe",
+      "confirmDeleteRecipe": "Remove recipe for this product?",
+      "recipeSaved": "Recipe saved",
+      "recipeDeleted": "Recipe removed",
+      "version": "v{{version}}"
     },
     "inventory": {
       "title": "Inventory",
