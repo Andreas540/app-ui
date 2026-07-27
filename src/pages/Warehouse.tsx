@@ -625,9 +625,9 @@ export default function Warehouse() {
                   color: 'var(--text-secondary)',
                 }}>
                   <div>{t('product')}</div>
-                  <div style={{ textAlign: 'right' }}>{t('warehouse.onHandColumn')}</div>
                   <div style={{ textAlign: 'right' }}>{t('warehouse.receivedColumn')}</div>
                   <div style={{ textAlign: 'right' }}>{t('warehouse.consumedColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.onHandColumn')}</div>
                   <div style={{ textAlign: 'right' }}>{t('warehouse.onOrderColumn')}</div>
                   <div>{t('warehouse.usedInColumn')}</div>
                 </div>
@@ -645,14 +645,14 @@ export default function Warehouse() {
                     alignItems: 'start',
                   }}>
                     <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{mat.product}</div>
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: mat.on_hand < 0 ? 'var(--color-error)' : mat.on_hand === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                      {fmtNumber(Number(mat.on_hand))}
-                    </div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
                       {fmtNumber(Number(mat.received))}
                     </div>
-                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(mat.consumed) < 0 ? 'var(--color-error)' : 'var(--text-secondary)' }}>
-                      {fmtNumber(Number(mat.consumed))}
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                      {fmtNumber(Math.abs(Number(mat.consumed)))}
+                    </div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: mat.on_hand < 0 ? 'var(--color-error)' : mat.on_hand === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                      {fmtNumber(Number(mat.on_hand))}
                     </div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: mat.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
                       {fmtNumber(Number(mat.on_order))}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import TenantAdminRecipesTab from './TenantAdminRecipesTab'
 
 interface ProductRow {
   id: string
@@ -13,6 +14,7 @@ function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netli
 
 export default function TenantAdminProductSettingsTab() {
   const { t } = useTranslation()
+  const [subTab, setSubTab] = useState<'products' | 'recipes'>('products')
 
   const [rows, setRows] = useState<ProductRow[]>([])
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
@@ -76,51 +78,92 @@ export default function TenantAdminProductSettingsTab() {
     })
   }
 
-  if (loading) return <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
+  const SUB_TABS: { id: typeof subTab; label: string }[] = [
+    { id: 'products', label: t('tenantAdmin.tabProductSettings') },
+    { id: 'recipes',  label: t('tenantAdmin.tabRecipes') },
+  ]
 
   return (
     <div>
-      <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-        {t('tenantAdmin.productSettings.desc')}
-      </p>
-
-      <input
-        type="search"
-        placeholder={t('tenantAdmin.productSettings.search')}
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={{ marginBottom: 16 }}
-      />
-
-      {rows.length === 0 ? (
-        <p style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.productSettings.noProducts')}</p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Products */}
-          {filteredProducts.length > 0 && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-              <div style={{ padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {t('product')}
-              </div>
-              {renderList(filteredProducts)}
-            </div>
-          )}
-
-          {/* Services */}
-          {filteredServices.length > 0 && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-              <div style={{ padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {t('service')}
-              </div>
-              {renderList(filteredServices)}
-            </div>
-          )}
-
-          {q && filteredProducts.length === 0 && filteredServices.length === 0 && (
-            <div style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.productSettings.noMatch')}</div>
-          )}
+      {/* Sub-tab bar */}
+      <div className="booking-subtab-bar" style={{ marginBottom: 24 }}>
+        <select
+          className="booking-subtab-select"
+          value={subTab}
+          onChange={e => setSubTab(e.target.value as typeof subTab)}
+        >
+          {SUB_TABS.map(tab => (
+            <option key={tab.id} value={tab.id}>{tab.label}</option>
+          ))}
+        </select>
+        <div className="booking-subtab-tabs" style={{ gap: 4, borderBottom: '1px solid var(--separator)' }}>
+          {SUB_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setSubTab(tab.id)}
+              style={{
+                background: 'none', border: 'none',
+                borderBottom: subTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                color: subTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: subTab === tab.id ? 600 : 400,
+                fontSize: 14, padding: '6px 14px 10px', cursor: 'pointer', marginBottom: -1,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* ── Products / Services sub-tab ── */}
+      {subTab === 'products' && (
+        <>
+          <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {t('tenantAdmin.productSettings.desc')}
+          </p>
+
+          <input
+            type="search"
+            placeholder={t('tenantAdmin.productSettings.search')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ marginBottom: 16 }}
+          />
+
+          {loading ? (
+            <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
+          ) : rows.length === 0 ? (
+            <p style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.productSettings.noProducts')}</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {filteredProducts.length > 0 && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('product')}
+                  </div>
+                  {renderList(filteredProducts)}
+                </div>
+              )}
+
+              {filteredServices.length > 0 && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('service')}
+                  </div>
+                  {renderList(filteredServices)}
+                </div>
+              )}
+
+              {q && filteredProducts.length === 0 && filteredServices.length === 0 && (
+                <div style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.productSettings.noMatch')}</div>
+              )}
+            </div>
+          )}
+        </>
       )}
+
+      {/* ── Recipes sub-tab ── */}
+      {subTab === 'recipes' && <TenantAdminRecipesTab />}
     </div>
   )
 }

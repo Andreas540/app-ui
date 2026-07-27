@@ -1143,6 +1143,7 @@
     "recipes": {
       "materialsHeader": "Materials",
       "newMaterial": "New material",
+      "newRecipe": "New recipe",
       "materialName": "Material name",
       "saveMaterial": "Save material",
       "noMaterials": "No materials yet. Create a material below.",

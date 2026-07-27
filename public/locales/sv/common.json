@@ -1143,6 +1143,7 @@
     "recipes": {
       "materialsHeader": "Material",
       "newMaterial": "Nytt material",
+      "newRecipe": "Nytt recept",
       "materialName": "Materialnamn",
       "saveMaterial": "Spara material",
       "noMaterials": "Inga material ännu. Skapa ett material nedan.",

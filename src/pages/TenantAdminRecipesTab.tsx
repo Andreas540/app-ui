@@ -264,21 +264,21 @@ export default function TenantAdminRecipesTab() {
                       </span>
                     </div>
                   ))}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <button onClick={startEdit} style={{ height: CONTROL_H }}>{t('edit')}</button>
+                    <button onClick={deleteBom} disabled={savingBom} style={{ height: CONTROL_H, color: 'var(--color-error)' }}>
+                      {t('tenantAdmin.recipes.deleteRecipe')}
+                    </button>
+                  </div>
                 </>
               ) : (
-                <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{t('tenantAdmin.recipes.noRecipe')}</p>
-              )}
-
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={startEdit} style={{ height: CONTROL_H }}>
-                  {bom ? t('edit') : t('tenantAdmin.recipes.saveRecipe')}
-                </button>
-                {bom && (
-                  <button onClick={deleteBom} disabled={savingBom} style={{ height: CONTROL_H, color: 'var(--color-error)' }}>
-                    {t('tenantAdmin.recipes.deleteRecipe')}
+                <>
+                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>{t('tenantAdmin.recipes.noRecipe')}</p>
+                  <button onClick={startEdit} style={{ height: CONTROL_H }}>
+                    {t('tenantAdmin.recipes.newRecipe')}
                   </button>
-                )}
-              </div>
+                </>
+              )}
             </div>
           )}
 
