@@ -478,6 +478,7 @@
     "productOrService": "Product / Service",
     "groupProducts": "Products",
     "groupServices": "Services",
+    "groupMaterials": "Input Materials",
     "orderUpdated": "Order updated!",
     "customerMissing": "Customer missing",
     "productMissing": "Product missing",

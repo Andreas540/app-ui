@@ -6,7 +6,7 @@ import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 
-type Product = { id: string; name: string }
+type Product = { id: string; name: string; category: string }
 
 type Line = {
   id: string
@@ -82,7 +82,7 @@ const pRes = await fetch(`${base}/api/product`, {
 })
         if (pRes.ok) {
           const data = await pRes.json()
-          setProducts((data.products || []).map((p: any) => ({ id: p.id, name: p.name })))
+          setProducts((data.products || []).map((p: any) => ({ id: p.id, name: p.name, category: p.category ?? 'product' })))
         } else {
           setProducts([])
         }
@@ -323,11 +323,24 @@ const pRes = await fetch(`${base}/api/product`, {
                 }}
               >
                 <option value="">{t('supplierOrders.selectPlaceholder')}</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                {(() => {
+                  const sellable = products.filter(p => p.category !== 'material')
+                  const mats = products.filter(p => p.category === 'material')
+                  return (
+                    <>
+                      {sellable.length > 0 && (
+                        <optgroup label={t('orders.groupProducts')}>
+                          {sellable.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </optgroup>
+                      )}
+                      {mats.length > 0 && (
+                        <optgroup label={t('orders.groupMaterials')}>
+                          {mats.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </optgroup>
+                      )}
+                    </>
+                  )
+                })()}
               </select>
             </div>
             <div>

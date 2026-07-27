@@ -42,6 +42,7 @@ export default function Warehouse() {
   const { parseAmount, fmtNumber } = useCurrency()
 
   const [products, setProducts] = useState<Product[]>([])
+  const [materialProducts, setMaterialProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [materials, setMaterials] = useState<MaterialItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,7 +78,7 @@ export default function Warehouse() {
   const [productId, setProductId] = useState('')
   const [qtyStr, setQtyStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
-  const [flag, setFlag] = useState<'M' | 'P'>('M')
+  const [flag, setFlag] = useState<'M' | 'P' | 'material'>('M')
   const [productCostStr, setProductCostStr] = useState('')
   const [laborCostStr, setLaborCostStr] = useState('')
   const [notes, setNotes] = useState('')
@@ -107,8 +108,10 @@ export default function Warehouse() {
           !name.includes('other service')
         )
       })
+      const matFiltered = bootProducts.filter(p => p.category === 'material')
 
       setProducts(filtered)
+      setMaterialProducts(matFiltered)
       if (filtered[0]) setProductId(filtered[0].id)
 
       await loadInventory()
@@ -135,11 +138,11 @@ export default function Warehouse() {
     }
   }
 
-  // Parse quantity (allow negative with minus sign)
+  // Parse quantity (allow negative with minus sign, allow decimals for materials)
   function parseQtyToNumber(s: string): number {
     if (!s || s.trim() === '' || s.trim() === '-') return NaN
     const cleaned = s.trim().replace(/,/g, '')
-    const num = parseInt(cleaned, 10)
+    const num = parseFloat(cleaned)
     return isNaN(num) ? NaN : num
   }
 
@@ -158,29 +161,35 @@ export default function Warehouse() {
   const productCost = useMemo(() => parseAmount(productCostStr), [productCostStr])
   const laborCost = useMemo(() => parseAmount(laborCostStr), [laborCostStr])
 
-  const selectedProduct = useMemo(() => products.find((p) => p.id === productId), [products, productId])
+  const selectedProduct = useMemo(() => {
+    const list = flag === 'material' ? materialProducts : products
+    return list.find((p) => p.id === productId)
+  }, [products, materialProducts, productId, flag])
 
   const currentInventoryItem = useMemo(() => {
     return inventory.find((i) => i.product_id === productId)
   }, [inventory, productId])
 
   const currentInventoryQty = useMemo(() => {
-    return currentInventoryItem ? currentInventoryItem.qty : 0
-  }, [currentInventoryItem])
+    if (flag === 'material') {
+      return Number(materials.find(m => m.product_id === productId)?.on_hand ?? 0)
+    }
+    return currentInventoryItem ? Number(currentInventoryItem.qty) : 0
+  }, [flag, materials, productId, currentInventoryItem])
 
   const newInventoryQty = useMemo(() => {
-    if (!Number.isInteger(qtyInt)) return currentInventoryQty
+    if (!Number.isFinite(qtyInt)) return currentInventoryQty
     return currentInventoryQty + qtyInt
   }, [currentInventoryQty, qtyInt])
 
   const willGoNegative = useMemo(() => {
-    return Number.isInteger(qtyInt) && qtyInt < 0 && newInventoryQty < 0
+    return Number.isFinite(qtyInt) && qtyInt < 0 && newInventoryQty < 0
   }, [qtyInt, newInventoryQty])
 
 
   if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-normal"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
-  if (!products.length) return <div className="card page-normal"><p>{t('warehouse.noProducts')}</p></div>
+  if (!products.length && !materialProducts.length) return <div className="card page-normal"><p>{t('warehouse.noProducts')}</p></div>
 
   return (
     <>
@@ -203,48 +212,31 @@ export default function Warehouse() {
             gap: 12, 
             flexWrap: 'wrap',
           }}>
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              cursor: 'pointer',
-              fontSize: 14,
-            }}>
-              <input
-                type="radio"
-                name="flag"
-                value="M"
-                checked={flag === 'M'}
-                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
-                style={{ 
-                  cursor: 'pointer',
-                  width: 16,
-                  height: 16,
-                }}
-              />
-              <span>{t('warehouse.preProduction')}</span>
-            </label>
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              cursor: 'pointer',
-              fontSize: 14,
-            }}>
-              <input
-                type="radio"
-                name="flag"
-                value="P"
-                checked={flag === 'P'}
-                onChange={(e) => setFlag(e.target.value as 'M' | 'P')}
-                style={{ 
-                  cursor: 'pointer',
-                  width: 16,
-                  height: 16,
-                }}
-              />
-              <span>{t('warehouse.finishedProducts')}</span>
-            </label>
+            {([
+              { value: 'M',        label: t('warehouse.preProduction') },
+              { value: 'P',        label: t('warehouse.finishedProducts') },
+              { value: 'material', label: t('warehouse.materialsSection') },
+            ] as const).map(opt => (
+              <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+                <input
+                  type="radio"
+                  name="flag"
+                  value={opt.value}
+                  checked={flag === opt.value}
+                  onChange={() => {
+                    setFlag(opt.value)
+                    // Reset product selection to first item in the new list
+                    if (opt.value === 'material') {
+                      setProductId(materialProducts[0]?.id ?? '')
+                    } else if (flag === 'material') {
+                      setProductId(products[0]?.id ?? '')
+                    }
+                  }}
+                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
           </div>
         </div>
 
@@ -256,7 +248,7 @@ export default function Warehouse() {
             onChange={(e) => setProductId(e.target.value)}
             style={{ height: CONTROL_H }}
           >
-            {products.map((p) => (
+            {(flag === 'material' ? materialProducts : products).map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
@@ -371,7 +363,7 @@ export default function Warehouse() {
               }
 
               const qty = parseQtyToNumber(qtyStr)
-              if (!Number.isInteger(qty) || qty === 0) {
+              if (!Number.isFinite(qty) || qty === 0) {
                 alert(t('warehouse.alertEnterQuantity'))
                 return
               }
@@ -396,7 +388,7 @@ export default function Warehouse() {
                     product_id: productId,
                     qty,
                     date,
-                    flag,
+                    flag: flag === 'material' ? 'M' : flag,
                     product_cost: productCostToSend,
                     labor_cost: laborCostToSend,
                     notes: notes.trim() || undefined,
