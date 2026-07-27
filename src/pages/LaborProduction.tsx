@@ -51,6 +51,9 @@ export default function LaborProduction() {
   // BOM recipes keyed by product_id (fetched lazily on product selection)
   const [bomMap, setBomMap] = useState<BomMap>({})
 
+  // Per-entry consumption overrides: { tempId → { input_product_id → qty string } }
+  const [consumptionOverrides, setConsumptionOverrides] = useState<Record<string, Record<string, string>>>({})
+
   // History
   type HistoryRecord = { date: string; product_name: string | null; qty_produced: number | null }
   const [historyFilter, setHistoryFilter] = useState<'day' | 'product'>('day')
@@ -142,6 +145,7 @@ export default function LaborProduction() {
       } else {
         setProductEntries(entries)
       }
+      setConsumptionOverrides({})
     } catch (e: any) {
       console.error('Load data error:', e)
     }
@@ -178,7 +182,18 @@ export default function LaborProduction() {
     setProductEntries(productEntries.map(p =>
       p.tempId === tempId ? { ...p, [field]: value } : p
     ))
-    if (field === 'product_id' && value) fetchBomIfNeeded(value)
+    if (field === 'product_id') {
+      // Clear overrides for this row when product changes
+      setConsumptionOverrides(prev => { const n = { ...prev }; delete n[tempId]; return n })
+      if (value) fetchBomIfNeeded(value)
+    }
+  }
+
+  function setConsumptionOverride(tempId: string, inputProductId: string, value: string) {
+    setConsumptionOverrides(prev => ({
+      ...prev,
+      [tempId]: { ...prev[tempId], [inputProductId]: value },
+    }))
   }
 
   // Real-time stats calculations
@@ -210,10 +225,21 @@ export default function LaborProduction() {
     // Build products array (filter out empty entries)
     const productsToSave = productEntries
       .filter(p => p.product_id && p.qty_produced)
-      .map(p => ({
-        product_id: p.product_id,
-        qty_produced: parseInt(p.qty_produced, 10)
-      }))
+      .map(p => {
+        const overrideMap = consumptionOverrides[p.tempId]
+        const consumption_overrides = overrideMap
+          ? Object.fromEntries(
+              Object.entries(overrideMap)
+                .filter(([, v]) => Number.isFinite(Number(v)))
+                .map(([k, v]) => [k, Number(v)])
+            )
+          : undefined
+        return {
+          product_id: p.product_id,
+          qty_produced: parseInt(p.qty_produced, 10),
+          ...(consumption_overrides && Object.keys(consumption_overrides).length > 0 ? { consumption_overrides } : {}),
+        }
+      })
 
     // Validate at least some data is provided
     if (!noOfEmployees && !totalHours && productsToSave.length === 0) {
@@ -256,6 +282,7 @@ export default function LaborProduction() {
     setTotalHours('')
     setProductEntries([{ tempId: crypto.randomUUID(), product_id: '', qty_produced: '' }])
     setNotes('')
+    setConsumptionOverrides({})
   }
 
   function handleCancel() {
@@ -439,7 +466,7 @@ export default function LaborProduction() {
                 </div>
               </div>
 
-              {/* BOM consumption preview */}
+              {/* BOM consumption — editable per-material override */}
               {hasPreview && (
                 <div style={{
                   marginTop: 6,
@@ -449,17 +476,37 @@ export default function LaborProduction() {
                   borderRadius: 6,
                   fontSize: 12,
                 }}>
-                  <div style={{ color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>
+                  <div style={{ color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>
                     {t('production.consumptionPreview')}
                   </div>
-                  {bomItems!.map(item => (
-                    <div key={item.input_product_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingBottom: 2 }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{item.input_name}</span>
-                      <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-error)' }}>
-                        −{fmtNumber(qty * item.qty_per_unit)}
-                      </span>
-                    </div>
-                  ))}
+                  {bomItems!.map(item => {
+                    const formula = qty * item.qty_per_unit
+                    const overrideVal = consumptionOverrides[entry.tempId]?.[item.input_product_id]
+                    const displayVal = overrideVal ?? String(Math.round(formula * 1000) / 1000)
+                    const isOverridden = overrideVal !== undefined && Math.abs(Number(overrideVal) - formula) > 0.0001
+                    return (
+                      <div key={item.input_product_id} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 4 }}>
+                        <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{item.input_name}</span>
+                        {isOverridden && (
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            req: {fmtNumber(formula)}
+                          </span>
+                        )}
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          value={displayVal}
+                          onChange={e => setConsumptionOverride(entry.tempId, item.input_product_id, e.target.value)}
+                          style={{
+                            width: 80, height: 28, fontSize: 12, textAlign: 'right',
+                            color: isOverridden ? 'var(--primary)' : 'var(--color-error)',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        />
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>

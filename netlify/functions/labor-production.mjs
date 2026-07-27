@@ -212,6 +212,11 @@ async function saveLaborProduction(event) {
 
         // BOM consumption: reverse previous 'C' rows for this production row,
         // then post fresh ones based on the current qty and active recipe.
+        // consumption_overrides: { [input_product_id]: consumed_qty } — user-supplied override
+        const consumptionOverrides = (typeof prod.consumption_overrides === 'object' && prod.consumption_overrides)
+          ? prod.consumption_overrides
+          : {}
+
         if (qty != null && qty > 0) {
           const bom = bomByProduct[product_id]
           if (bom) {
@@ -222,9 +227,12 @@ async function saveLaborProduction(event) {
                 AND supplier_manual_delivered = 'C'
                 AND tenant_id = ${TENANT_ID}
             `
-            // Post new 'C' rows — one per material in the recipe
+            // Post new 'C' rows — one per material; use override qty if provided
             for (const item of bom.items) {
-              const consumed = qty * Number(item.qty_per_unit)
+              const override = consumptionOverrides[item.input_product_id]
+              const consumed = (override != null && Number.isFinite(Number(override)))
+                ? Number(override)
+                : qty * Number(item.qty_per_unit)
               await sql`
                 INSERT INTO warehouse_deliveries (
                   tenant_id, date, supplier_manual_delivered, product, customer,
