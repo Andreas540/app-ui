@@ -11,7 +11,8 @@ import { DateInput } from '../components/DateInput'
 type Product = { id: string; name: string; category?: string }
 
 type ProductEntry = {
-  tempId: string // Temporary ID for React keys
+  tempId: string   // React key
+  id?: string      // DB row UUID (present for saved rows, undefined for new rows)
   product_id: string
   qty_produced: string
 }
@@ -130,13 +131,14 @@ export default function LaborProduction() {
       setTotalHours(firstRecord.total_hours != null ? String(firstRecord.total_hours) : '')
       setNotes(firstRecord.notes || '')
 
-      // Load product entries
+      // Load product entries (include DB id for stable update-by-id on re-save)
       const entries: ProductEntry[] = records
         .filter(r => r.product_id != null)
         .map(r => ({
           tempId: crypto.randomUUID(),
+          id: r.id,
           product_id: r.product_id!,
-          qty_produced: r.qty_produced != null ? String(r.qty_produced) : ''
+          qty_produced: r.qty_produced != null ? String(r.qty_produced) : '',
         }))
 
       if (entries.length === 0) {
@@ -144,6 +146,8 @@ export default function LaborProduction() {
         setProductEntries([{ tempId: crypto.randomUUID(), product_id: '', qty_produced: '' }])
       } else {
         setProductEntries(entries)
+        // Eagerly fetch BOMs so the consumption panel shows without re-selecting
+        entries.forEach(e => { if (e.product_id) fetchBomIfNeeded(e.product_id) })
       }
       setConsumptionOverrides({})
     } catch (e: any) {
@@ -235,6 +239,7 @@ export default function LaborProduction() {
             )
           : undefined
         return {
+          ...(p.id ? { id: p.id } : {}),
           product_id: p.product_id,
           qty_produced: parseInt(p.qty_produced, 10),
           ...(consumption_overrides && Object.keys(consumption_overrides).length > 0 ? { consumption_overrides } : {}),

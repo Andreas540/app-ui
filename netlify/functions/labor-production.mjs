@@ -175,13 +175,13 @@ async function saveLaborProduction(event) {
     ` : []
     const bomByProduct = Object.fromEntries(activeBoms.map(b => [b.product_id, b]))
 
-    // Strategy: upsert preserving row UUID (stable identity for BOM 'C' row reversal).
-    // ON CONFLICT on (tenant_id, date, product_id) updates qty/hours without changing the id.
-    // Products removed from the day are deleted explicitly at the end.
-    // The null-product case (hours-only day) is handled separately since NULL doesn't
-    // participate in conflict detection.
+    // Strategy: rows are identified by their UUID.
+    // If the client sends an existing id → UPDATE that row.
+    // If no id → INSERT a new row (new batch).
+    // After saving, delete any rows for this date not in the submitted set.
+    // The null-product case (hours-only day) is handled separately.
 
-    const upsertedProductIds = [] // track which non-null product_ids were written
+    const persistedRowIds = [] // UUIDs of rows written in this request
 
     if (products && products.length > 0) {
       for (const prod of products) {
@@ -192,23 +192,39 @@ async function saveLaborProduction(event) {
         const qty = qty_produced != null ? Number(qty_produced) : null
         if (qty != null && (!Number.isFinite(qty) || qty < 0)) continue // skip invalid quantities
 
-        const [lpRow] = await sql`
-          INSERT INTO labor_production (
-            tenant_id, date, no_of_employees, total_hours,
-            product_id, qty_produced, registered_by, notes
-          )
-          VALUES (
-            ${TENANT_ID}, ${date}, ${numEmployees}, ${numHours},
-            ${product_id}, ${qty}, ${userName}, ${notes || null}
-          )
-          ON CONFLICT (tenant_id, date, product_id) DO UPDATE SET
-            qty_produced    = EXCLUDED.qty_produced,
-            no_of_employees = EXCLUDED.no_of_employees,
-            total_hours     = EXCLUDED.total_hours,
-            notes           = EXCLUDED.notes
-          RETURNING id, bom_id
-        `
-        upsertedProductIds.push(product_id)
+        let lpRow
+        if (prod.id) {
+          // Update an existing batch row
+          const rows = await sql`
+            UPDATE labor_production
+            SET qty_produced    = ${qty},
+                no_of_employees = ${numEmployees},
+                total_hours     = ${numHours},
+                notes           = ${notes || null}
+            WHERE id = ${prod.id}
+              AND tenant_id = ${TENANT_ID}
+              AND date = ${date}
+            RETURNING id
+          `
+          lpRow = rows[0]
+        }
+        if (!lpRow) {
+          // Insert a new batch row (also fallback if UPDATE matched nothing)
+          const rows = await sql`
+            INSERT INTO labor_production (
+              tenant_id, date, no_of_employees, total_hours,
+              product_id, qty_produced, registered_by, notes
+            )
+            VALUES (
+              ${TENANT_ID}, ${date}, ${numEmployees}, ${numHours},
+              ${product_id}, ${qty}, ${userName}, ${notes || null}
+            )
+            RETURNING id
+          `
+          lpRow = rows[0]
+        }
+        if (!lpRow) continue
+        persistedRowIds.push(lpRow.id)
 
         // BOM consumption: reverse previous 'C' rows for this production row,
         // then post fresh ones based on the current qty and active recipe.
@@ -259,39 +275,23 @@ async function saveLaborProduction(event) {
         }
       }
 
-      // Delete product rows no longer in today's entry and any stale null-product row.
-      // Also reverse their 'C' consumption rows.
-      if (upsertedProductIds.length > 0) {
-        const removed = await sql`
-          DELETE FROM labor_production
-          WHERE tenant_id = ${TENANT_ID}
-            AND date = ${date}
-            AND (product_id IS NULL OR product_id != ALL(${upsertedProductIds}))
-          RETURNING id
+      // Delete rows for this date that weren't part of this save (removed batches + stale null rows).
+      // NOT (id = ANY([])) is TRUE for all rows when array is empty → deletes everything (correct).
+      const removed = await sql`
+        DELETE FROM labor_production
+        WHERE tenant_id = ${TENANT_ID}
+          AND date = ${date}
+          AND NOT (id = ANY(${persistedRowIds}))
+        RETURNING id
+      `
+      if (removed.length > 0) {
+        const removedIds = removed.map(r => r.id)
+        await sql`
+          DELETE FROM warehouse_deliveries
+          WHERE source_production_id = ANY(${removedIds})
+            AND supplier_manual_delivered = 'C'
+            AND tenant_id = ${TENANT_ID}
         `
-        if (removed.length > 0) {
-          const removedIds = removed.map(r => r.id)
-          await sql`
-            DELETE FROM warehouse_deliveries
-            WHERE source_production_id = ANY(${removedIds})
-              AND supplier_manual_delivered = 'C'
-              AND tenant_id = ${TENANT_ID}
-          `
-        }
-      } else {
-        // All submitted products were invalid — treat as if no products provided
-        const removed = await sql`
-          DELETE FROM labor_production WHERE tenant_id = ${TENANT_ID} AND date = ${date} RETURNING id
-        `
-        if (removed.length > 0) {
-          const removedIds = removed.map(r => r.id)
-          await sql`
-            DELETE FROM warehouse_deliveries
-            WHERE source_production_id = ANY(${removedIds})
-              AND supplier_manual_delivered = 'C'
-              AND tenant_id = ${TENANT_ID}
-          `
-        }
       }
 
     } else if (numEmployees != null || numHours != null) {
