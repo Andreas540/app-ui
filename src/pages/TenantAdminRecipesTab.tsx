@@ -35,6 +35,9 @@ export default function TenantAdminRecipesTab() {
   // ── Materials section ───────────────────────────────────────────────────────
   const [newMatName, setNewMatName] = useState('')
   const [savingMat, setSavingMat] = useState(false)
+  const [editingMatId, setEditingMatId] = useState<string | null>(null)
+  const [editingMatName, setEditingMatName] = useState('')
+  const [deletingMatId, setDeletingMatId] = useState<string | null>(null)
 
   // ── Recipes section ─────────────────────────────────────────────────────────
   const [selectedProductId, setSelectedProductId] = useState('')
@@ -82,6 +85,47 @@ export default function TenantAdminRecipesTab() {
       await loadProducts()
     } finally {
       setSavingMat(false)
+    }
+  }
+
+  async function renameMaterial(id: string) {
+    const name = editingMatName.trim()
+    if (!name) return
+    setSavingMat(true)
+    try {
+      const res = await fetch(`${apiBase()}/api/product`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ id, name }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || 'Save failed')
+        return
+      }
+      setEditingMatId(null)
+      await loadProducts()
+    } finally {
+      setSavingMat(false)
+    }
+  }
+
+  async function deleteMaterial(id: string) {
+    if (!window.confirm(t('tenantAdmin.recipes.confirmDeleteMaterial'))) return
+    setDeletingMatId(id)
+    try {
+      const res = await fetch(`${apiBase()}/api/product?id=${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || 'Delete failed')
+        return
+      }
+      await loadProducts()
+    } finally {
+      setDeletingMatId(null)
     }
   }
 
@@ -184,15 +228,57 @@ export default function TenantAdminRecipesTab() {
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 12 }}>{t('tenantAdmin.recipes.noMaterials')}</p>
           ) : (
             <div style={{ marginBottom: 12 }}>
-              {materials.map(m => (
-                <div key={m.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 14,
-                }}>
-                  <span style={{ fontSize: 11, color: 'var(--primary)' }}>⚙</span>
-                  <span>{m.name}</span>
-                </div>
-              ))}
+              {materials.map(m => {
+                const isEditing = editingMatId === m.id
+                const isDeleting = deletingMatId === m.id
+                return (
+                  <div key={m.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 14,
+                    minHeight: 40,
+                  }}>
+                    <span style={{ fontSize: 11, color: 'var(--primary)', flexShrink: 0 }}>⚙</span>
+                    {isEditing ? (
+                      <>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editingMatName}
+                          onChange={e => setEditingMatName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') renameMaterial(m.id)
+                            if (e.key === 'Escape') setEditingMatId(null)
+                          }}
+                          style={{ height: 32, flex: 1, maxWidth: 240 }}
+                        />
+                        <button onClick={() => renameMaterial(m.id)} disabled={savingMat} style={{ height: 32, padding: '0 10px' }}>
+                          {t('save')}
+                        </button>
+                        <button onClick={() => setEditingMatId(null)} style={{ height: 32, padding: '0 10px' }}>
+                          {t('cancel')}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ flex: 1 }}>{m.name}</span>
+                        <button
+                          onClick={() => { setEditingMatId(m.id); setEditingMatName(m.name) }}
+                          style={{ height: 32, padding: '0 10px', fontSize: 12 }}
+                        >
+                          {t('edit')}
+                        </button>
+                        <button
+                          onClick={() => deleteMaterial(m.id)}
+                          disabled={isDeleting}
+                          style={{ height: 32, padding: '0 10px', fontSize: 12, color: 'var(--color-error)' }}
+                        >
+                          {t('delete')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 

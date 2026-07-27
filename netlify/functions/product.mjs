@@ -6,8 +6,9 @@ import { withErrorLogging } from './utils/with-error-logging.mjs'
 export const handler = withErrorLogging('product', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {});
   if (event.httpMethod === 'GET')  return list(event);
-  if (event.httpMethod === 'POST') return create(event);
-  if (event.httpMethod === 'PUT')  return update(event);
+  if (event.httpMethod === 'POST')   return create(event);
+  if (event.httpMethod === 'PUT')    return update(event);
+  if (event.httpMethod === 'DELETE') return deleteProduct(event);
   return cors(405, { error: 'Method not allowed' });
 })
 
@@ -280,13 +281,50 @@ const TENANT_ID = authz.tenantId;
     });
 }
 
+async function deleteProduct(event) {
+  const { neon } = await import('@neondatabase/serverless');
+  const { DATABASE_URL } = process.env;
+  if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
+
+  const sql = neon(DATABASE_URL);
+  const authz = await resolveAuthz({ sql, event });
+  if (authz.error) return cors(403, { error: authz.error });
+  const TENANT_ID = authz.tenantId;
+
+  const id = event.queryStringParameters?.id;
+  if (!id) return cors(400, { error: 'id required' });
+
+  const rows = await sql`SELECT category FROM products WHERE id = ${id} AND tenant_id = ${TENANT_ID} LIMIT 1`;
+  if (!rows.length) return cors(404, { error: 'Not found' });
+  if (rows[0].category !== 'material') return cors(400, { error: 'Only materials can be deleted' });
+
+  const [bomRef] = await sql`
+    SELECT COUNT(*) AS cnt FROM bom_items bi
+    JOIN product_boms pb ON pb.id = bi.bom_id AND pb.tenant_id = ${TENANT_ID}
+    WHERE bi.input_product_id = ${id}
+  `;
+  if (Number(bomRef.cnt) > 0) return cors(409, { error: 'Material is used in one or more recipes. Remove it from all recipes first.' });
+
+  const [soRef] = await sql`
+    SELECT COUNT(*) AS cnt FROM order_items_suppliers WHERE product_id = ${id} LIMIT 1
+  `;
+  if (Number(soRef.cnt) > 0) return cors(409, { error: 'Material appears on supplier orders and cannot be deleted.' });
+
+  try {
+    await sql`DELETE FROM products WHERE id = ${id} AND tenant_id = ${TENANT_ID}`;
+    return cors(200, { ok: true });
+  } catch (e) {
+    return cors(409, { error: 'Cannot delete — material is referenced by existing records.' });
+  }
+}
+
 function cors(status, body) {
   return {
     statusCode: status,
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,POST,PUT,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'access-control-allow-headers': 'content-type,authorization,x-tenant-id',
     },
     body: JSON.stringify(body),

@@ -1144,6 +1144,7 @@
     "recipes": {
       "materialsHeader": "Material",
       "newMaterial": "Nytt material",
+      "confirmDeleteMaterial": "Ta bort det här materialet?",
       "newRecipe": "Nytt recept",
       "materialName": "Materialnamn",
       "saveMaterial": "Spara material",

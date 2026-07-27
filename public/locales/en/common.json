@@ -1144,6 +1144,7 @@
     "recipes": {
       "materialsHeader": "Materials",
       "newMaterial": "New material",
+      "confirmDeleteMaterial": "Delete this material?",
       "newRecipe": "New recipe",
       "materialName": "Material name",
       "saveMaterial": "Save material",
