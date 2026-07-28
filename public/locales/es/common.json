@@ -1018,6 +1018,7 @@
     "tabRecipes": "Recetas",
     "tabCustomerSettings": "Configuración de Clientes",
     "tabProductSettings": "Configuración de Producto / Servicio",
+    "tabHideProducts": "Ocultar Productos / Servicios",
     "productSettings": {
       "desc": "Oculta un producto o servicio para eliminarlo de los menús y listados. Los artículos ocultos seguirán apareciendo en todos los pedidos históricos. Puedes mostrarlo de nuevo en cualquier momento.",
       "search": "Buscar productos / servicios...",
@@ -1025,7 +1026,8 @@
       "noMatch": "Ningún artículo coincide con tu búsqueda.",
       "hide": "Ocultar",
       "unhide": "Mostrar",
-      "hideConfirm": "¿Ocultar este producto/servicio? Se eliminará de todos los menús y listados. Puedes mostrarlo desde Admin → Configuración de Producto / Servicio."
+      "hideConfirm": "¿Ocultar este producto/servicio? Se eliminará de todos los menús y listados. Puedes mostrarlo desde Admin → Configuración de Producto / Servicio.",
+      "materialsHeader": "Material de entrada"
     },
     "tabDataImport": "Importación de Datos",
     "tabOrderPage": "Página de Pedidos",

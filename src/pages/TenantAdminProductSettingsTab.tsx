@@ -6,7 +6,7 @@ import TenantAdminRecipesTab from './TenantAdminRecipesTab'
 interface ProductRow {
   id: string
   name: string
-  category: 'product' | 'service'
+  category: 'product' | 'service' | 'material'
   hidden: boolean
 }
 
@@ -35,12 +35,14 @@ export default function TenantAdminProductSettingsTab() {
       .finally(() => setLoading(false))
   }, [])
 
-  const products = useMemo(() => rows.filter(r => r.category !== 'service'), [rows])
+  const products = useMemo(() => rows.filter(r => r.category === 'product'), [rows])
   const services = useMemo(() => rows.filter(r => r.category === 'service'), [rows])
+  const materials = useMemo(() => rows.filter(r => r.category === 'material'), [rows])
 
   const q = search.trim().toLowerCase()
   const filteredProducts = useMemo(() => q ? products.filter(p => p.name.toLowerCase().includes(q)) : products, [products, q])
   const filteredServices = useMemo(() => q ? services.filter(s => s.name.toLowerCase().includes(q)) : services, [services, q])
+  const filteredMaterials = useMemo(() => q ? materials.filter(m => m.name.toLowerCase().includes(q)) : materials, [materials, q])
 
   async function toggleHide(id: string, hide: boolean) {
     setTogglingId(id)
@@ -79,7 +81,7 @@ export default function TenantAdminProductSettingsTab() {
   }
 
   const SUB_TABS: { id: typeof subTab; label: string }[] = [
-    { id: 'products', label: t('tenantAdmin.tabProductSettings') },
+    { id: 'products', label: t('tenantAdmin.tabHideProducts') },
     { id: 'recipes',  label: t('tenantAdmin.tabRecipes') },
   ]
 
@@ -154,7 +156,16 @@ export default function TenantAdminProductSettingsTab() {
                 </div>
               )}
 
-              {q && filteredProducts.length === 0 && filteredServices.length === 0 && (
+              {filteredMaterials.length > 0 && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('tenantAdmin.productSettings.materialsHeader')}
+                  </div>
+                  {renderList(filteredMaterials)}
+                </div>
+              )}
+
+              {q && filteredProducts.length === 0 && filteredServices.length === 0 && filteredMaterials.length === 0 && (
                 <div style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.productSettings.noMatch')}</div>
               )}
             </div>

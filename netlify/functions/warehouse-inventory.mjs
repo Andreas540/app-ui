@@ -105,12 +105,20 @@ async function getInventory(event) {
         c.orders                                                                                                        AS committed_orders,
         oo.orders                                                                                                       AS on_order_orders
       FROM products p
-      LEFT JOIN base       ON base.product_id = p.id
-      LEFT JOIN committed c ON c.product_id   = p.id
-      LEFT JOIN on_order oo ON oo.product_id  = p.id
+      LEFT JOIN base        ON base.product_id = p.id
+      LEFT JOIN committed c  ON c.product_id   = p.id
+      LEFT JOIN on_order oo  ON oo.product_id  = p.id
+      LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID}
         AND p.category NOT IN ('service', 'material')
         AND (base.product_id IS NOT NULL OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
+        AND (
+          thp.product_id IS NULL
+          OR CASE WHEN base.has_bom THEN base.pre_from_m ELSE base.pre_from_m - base.produced_qty END <> 0
+          OR base.finished_from_p + base.produced_qty - base.outbound_qty <> 0
+          OR COALESCE(c.qty, 0) <> 0
+          OR COALESCE(oo.qty, 0) <> 0
+        )
       ORDER BY p.name ASC
     `
 
@@ -154,8 +162,14 @@ async function getInventory(event) {
       LEFT JOIN mat_wd       ON mat_wd.product_id       = p.id
       LEFT JOIN mat_on_order ON mat_on_order.product_id = p.id
       LEFT JOIN mat_used_in mui ON mui.input_product_id = p.id
+      LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID}
         AND p.category = 'material'
+        AND (
+          thp.product_id IS NULL
+          OR COALESCE(mat_wd.received, 0) + COALESCE(mat_wd.consumed, 0) <> 0
+          OR COALESCE(mat_on_order.qty, 0) <> 0
+        )
       ORDER BY p.name ASC
     `
 

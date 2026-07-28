@@ -169,9 +169,10 @@ const warehouse_inventory = await sql`
     c.orders                                                                                                  AS committed_orders,
     oo.orders                                                                                                 AS on_order_orders
   FROM products p
-  LEFT JOIN base    ON base.product_id = p.id
-  LEFT JOIN committed c  ON c.product_id  = p.id
-  LEFT JOIN on_order oo  ON oo.product_id = p.id
+  LEFT JOIN base         ON base.product_id = p.id
+  LEFT JOIN committed c   ON c.product_id   = p.id
+  LEFT JOIN on_order oo   ON oo.product_id  = p.id
+  LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
   WHERE p.tenant_id = ${TENANT_ID}
     AND p.category NOT IN ('service', 'material')
     AND LOWER(p.name) NOT LIKE '%refund%'
@@ -179,6 +180,13 @@ const warehouse_inventory = await sql`
     AND LOWER(p.name) NOT LIKE '%other product%'
     AND LOWER(p.name) NOT LIKE '%other service%'
     AND (base.product_id IS NOT NULL OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
+    AND (
+      thp.product_id IS NULL
+      OR COALESCE(base.pre_from_m, 0) <> 0
+      OR COALESCE(base.finished_from_p, 0) + COALESCE(base.produced_qty, 0) - COALESCE(base.outbound_qty, 0) <> 0
+      OR COALESCE(c.qty, 0) <> 0
+      OR COALESCE(oo.qty, 0) <> 0
+    )
   ORDER BY p.name ASC
 `
     const production_data = await sql`
