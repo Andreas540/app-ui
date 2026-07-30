@@ -529,7 +529,6 @@ export default function Warehouse() {
                   const isUnitsExpanded = expandedUnits.has(item.product_id)
                   const hasUnits = item.unit_tracking !== 'none' && Number(item.unit_instock_count) > 0
                   const unitRows = unitCache[item.product_id]
-                  const hasExpandable = hasOrders || hasUnits
                   return (
                     <div key={item.product_id}>
                       <div
