@@ -533,7 +533,15 @@
     "receivedColumn": "Received",
     "consumedColumn": "Consumed",
     "usedInColumn": "Used in",
-    "noMaterialsData": "No materials registered yet"
+    "noMaterialsData": "No materials registered yet",
+    "namedUnitsCount": "{{count}} unit(s) in stock",
+    "unitSerialCol": "Serial",
+    "unitConditionCol": "Condition",
+    "unitStatusCol": "Status",
+    "statusInventory": "In stock",
+    "statusListed": "Reserved",
+    "statusSold": "Sold",
+    "loadingUnits": "Loading units..."
   },
   "products": {
     "addOrEdit": "Add new or Edit existing",

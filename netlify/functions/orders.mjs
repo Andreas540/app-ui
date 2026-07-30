@@ -288,7 +288,7 @@ if (BLANCO_CUSTOMER_IDS.includes(customer_id)) {
           )
           SELECT
             ${TENANT_ID},
-            (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date,
+            (CURRENT_TIMESTAMP AT TIME ZONE COALESCE(t.default_timezone, 'UTC'))::date,
             'D',
             p.name,
             c.name,
@@ -297,6 +297,7 @@ if (BLANCO_CUSTOMER_IDS.includes(customer_id)) {
             ${item.product_id}
           FROM products p
           JOIN customers c ON c.id = ${customer_id}
+          JOIN tenants  t ON t.id = ${TENANT_ID}
           WHERE p.id = ${item.product_id}
         `;
       }

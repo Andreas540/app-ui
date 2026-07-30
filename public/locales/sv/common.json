@@ -533,7 +533,15 @@
     "receivedColumn": "Mottaget",
     "consumedColumn": "Förbrukat",
     "usedInColumn": "Används i",
-    "noMaterialsData": "Inga material registrerade ännu"
+    "noMaterialsData": "Inga material registrerade ännu",
+    "namedUnitsCount": "{{count}} enhet(er) i lager",
+    "unitSerialCol": "Serienummer",
+    "unitConditionCol": "Skick",
+    "unitStatusCol": "Status",
+    "statusInventory": "I lager",
+    "statusListed": "Reserverad",
+    "statusSold": "Såld",
+    "loadingUnits": "Laddar enheter..."
   },
   "products": {
     "addOrEdit": "Lägg till ny eller redigera befintlig",

@@ -15,6 +15,8 @@ type InventoryItem = {
   product: string
   product_id: string
   has_bom: boolean
+  unit_tracking: 'none' | 'on_promote' | 'serialized_intake'
+  unit_instock_count: number
   pre_prod: number
   finished: number
   qty: number
@@ -24,6 +26,17 @@ type InventoryItem = {
   available_total: number
   committed_orders: OrderRef[] | null
   on_order_orders: OrderRef[] | null
+}
+
+type InventoryUnit = {
+  id: number
+  serial_number: string | null
+  condition: string | null
+  listing_status: 'Inventory' | 'Listed' | 'Sold'
+  notes: string | null
+  acquired_at: string | null
+  order_no: number | null
+  customer_name: string | null
 }
 
 type MaterialItem = {
@@ -51,6 +64,8 @@ export default function Warehouse() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [materialsOpen, setMaterialsOpen] = useState(false)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
+  const [unitCache, setUnitCache] = useState<Record<string, InventoryUnit[] | 'loading'>>({})
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
 
@@ -59,6 +74,26 @@ export default function Warehouse() {
     next.has(id) ? next.delete(id) : next.add(id)
     return next
   })
+
+  const toggleUnits = async (productId: string) => {
+    setExpandedUnits(prev => {
+      const next = new Set(prev)
+      next.has(productId) ? next.delete(productId) : next.add(productId)
+      return next
+    })
+    if (unitCache[productId]) return
+    setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
+    try {
+      const res = await fetch(
+        `/.netlify/functions/inventory-units?product_id=${productId}&status=Inventory&status=Listed`,
+        { headers: getAuthHeaders() }
+      )
+      const data = await res.json()
+      setUnitCache(prev => ({ ...prev, [productId]: data.units ?? [] }))
+    } catch {
+      setUnitCache(prev => ({ ...prev, [productId]: [] }))
+    }
+  }
 
   const openSupplierOrder = async (orderId: string) => {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -491,6 +526,10 @@ export default function Warehouse() {
                   const onOrderOrders = item.on_order_orders ?? []
                   const hasOrders = committedOrders.length > 0 || onOrderOrders.length > 0
                   const isExpanded = expandedRows.has(item.product_id)
+                  const isUnitsExpanded = expandedUnits.has(item.product_id)
+                  const hasUnits = item.unit_tracking !== 'none' && Number(item.unit_instock_count) > 0
+                  const unitRows = unitCache[item.product_id]
+                  const hasExpandable = hasOrders || hasUnits
                   return (
                     <div key={item.product_id}>
                       <div
@@ -498,7 +537,7 @@ export default function Warehouse() {
                           display: 'grid',
                           gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
                           gap: 6,
-                          borderBottom: isExpanded ? 'none' : '1px solid var(--border)',
+                          borderBottom: (isExpanded || isUnitsExpanded) ? 'none' : '1px solid var(--border)',
                           paddingTop: 10,
                           paddingBottom: 10,
                           fontSize: 13,
@@ -514,7 +553,18 @@ export default function Warehouse() {
                               {isExpanded ? '▼' : '▶'}
                             </span>
                           )}
-                          <span>{item.product}</span>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <span>{item.product}</span>
+                            {hasUnits && (
+                              <button
+                                onClick={e => { e.stopPropagation(); toggleUnits(item.product_id) }}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 3 }}
+                              >
+                                <span>{isUnitsExpanded ? '▼' : '▶'}</span>
+                                <span>{t('warehouse.namedUnitsCount', { count: Number(item.unit_instock_count) })}</span>
+                              </button>
+                            )}
+                          </span>
                           {item.has_bom && (
                             <span title={t('warehouse.hasBom')} style={{ fontSize: 11, color: 'var(--primary)', flexShrink: 0, marginTop: 1 }}>⚙</span>
                           )}
@@ -554,7 +604,7 @@ export default function Warehouse() {
                           display: 'grid',
                           gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
                           gap: 6,
-                          borderBottom: '1px solid var(--border)',
+                          borderBottom: isUnitsExpanded ? 'none' : '1px solid var(--border)',
                           paddingBottom: 8,
                           paddingTop: 4,
                           fontSize: 12,
@@ -581,6 +631,40 @@ export default function Warehouse() {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {isUnitsExpanded && (
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4 }}>
+                          {unitRows === 'loading' || !unitRows ? (
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
+                          ) : unitRows.length === 0 ? (
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>—</div>
+                          ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                              <div style={{ minWidth: 360, fontSize: 12 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16 }}>
+                                  <div>{t('warehouse.unitSerialCol')}</div>
+                                  <div>{t('warehouse.unitConditionCol')}</div>
+                                  <div>{t('warehouse.unitStatusCol')}</div>
+                                </div>
+                                {unitRows.map(u => (
+                                  <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, paddingTop: 4, paddingBottom: 4, paddingLeft: 16, borderTop: '1px solid var(--border)' }}>
+                                    <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
+                                    <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
+                                    <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
+                                      {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
+                                        : u.listing_status === 'Listed' ? t('warehouse.statusListed')
+                                        : t('warehouse.statusSold')}
+                                      {u.listing_status === 'Listed' && u.order_no && (
+                                        <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -20,45 +20,13 @@ async function getInventory(event) {
     if (authz.error) return cors(403, { error: authz.error })
     const TENANT_ID = authz.tenantId
 
-    // ── Sellable products (non-BOM and BOM) ────────────────────────────────
-    // BOM products: produced_qty does NOT decrement their own pre_prod —
-    // input consumption is posted as 'C' rows against the material products.
-    // Non-BOM products: crude 1:1 model unchanged (pre_prod -= produced_qty).
+    // ── Sellable products — via product_stock view ─────────────────────────
+    // on_hand is resolved centrally for all unit_tracking modes:
+    //   'none'              → ledger_qty (existing M/S/P/D logic)
+    //   'serialized_intake' → ledger_qty − count(Sold units)
+    //   'on_promote'        → ledger_qty ('D' row still posted; Sold units are metadata)
     const inventory = await sql`
-      WITH wd AS (
-        SELECT
-          product_id,
-          SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
-          SUM(CASE WHEN supplier_manual_delivered = 'P'         THEN qty ELSE 0 END) AS finished_from_p,
-          SUM(CASE WHEN supplier_manual_delivered = 'D'         THEN (-1 * qty) ELSE 0 END) AS outbound_qty
-        FROM warehouse_deliveries
-        WHERE tenant_id = ${TENANT_ID}
-        GROUP BY product_id
-      ),
-      lp AS (
-        SELECT product_id, SUM(qty_produced) AS produced_qty
-        FROM labor_production
-        WHERE tenant_id = ${TENANT_ID}
-        GROUP BY product_id
-      ),
-      bom_products AS (
-        SELECT DISTINCT product_id
-        FROM product_boms
-        WHERE tenant_id = ${TENANT_ID} AND is_active = TRUE
-      ),
-      base AS (
-        SELECT
-          COALESCE(wd.product_id, lp.product_id) AS product_id,
-          COALESCE(wd.pre_from_m, 0)      AS pre_from_m,
-          COALESCE(wd.finished_from_p, 0) AS finished_from_p,
-          COALESCE(wd.outbound_qty, 0)    AS outbound_qty,
-          COALESCE(lp.produced_qty, 0)    AS produced_qty,
-          (bp.product_id IS NOT NULL)     AS has_bom
-        FROM wd
-        FULL OUTER JOIN lp ON lp.product_id = wd.product_id
-        LEFT JOIN bom_products bp ON bp.product_id = COALESCE(wd.product_id, lp.product_id)
-      ),
-      committed AS (
+      WITH committed AS (
         SELECT oi.product_id,
           SUM(GREATEST(oi.qty - oi.delivered_qty, 0)) AS qty,
           json_agg(json_build_object('order_id', o.id, 'order_no', o.order_no, 'qty', GREATEST(oi.qty - oi.delivered_qty, 0)) ORDER BY o.order_no) AS orders
@@ -82,40 +50,31 @@ async function getInventory(event) {
         GROUP BY ois.product_id
       )
       SELECT
-        p.name        AS product,
-        p.id          AS product_id,
-        base.has_bom,
-        -- BOM products: produced_qty feeds finished only; crude model: also decrements pre_prod
-        CASE WHEN base.has_bom
-          THEN COALESCE(base.pre_from_m, 0)
-          ELSE COALESCE(base.pre_from_m - base.produced_qty, 0)
-        END                                                                                                            AS pre_prod,
-        COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0)                                     AS finished,
-        CASE WHEN base.has_bom
-          THEN COALESCE(base.pre_from_m + base.finished_from_p + base.produced_qty - base.outbound_qty, 0)
-          ELSE COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)
-        END                                                                                                            AS qty,
-        COALESCE(c.qty, 0)                                                                                             AS committed,
-        COALESCE(oo.qty, 0)                                                                                            AS on_order,
-        COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0) - COALESCE(c.qty, 0)               AS available_finished,
-        CASE WHEN base.has_bom
-          THEN COALESCE(base.pre_from_m + base.finished_from_p + base.produced_qty - base.outbound_qty, 0) - COALESCE(c.qty, 0)
-          ELSE COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0) - COALESCE(c.qty, 0)
-        END                                                                                                            AS available_total,
-        c.orders                                                                                                        AS committed_orders,
-        oo.orders                                                                                                       AS on_order_orders
+        p.name               AS product,
+        p.id                 AS product_id,
+        ps.has_bom,
+        ps.unit_tracking,
+        ps.unit_instock_count,
+        ps.pre_prod,
+        ps.finished,
+        ps.on_hand           AS qty,
+        COALESCE(c.qty, 0)  AS committed,
+        COALESCE(oo.qty, 0) AS on_order,
+        ps.finished - COALESCE(c.qty, 0) AS available_finished,
+        ps.on_hand  - COALESCE(c.qty, 0) AS available_total,
+        c.orders             AS committed_orders,
+        oo.orders            AS on_order_orders
       FROM products p
-      LEFT JOIN base        ON base.product_id = p.id
-      LEFT JOIN committed c  ON c.product_id   = p.id
-      LEFT JOIN on_order oo  ON oo.product_id  = p.id
+      JOIN product_stock ps   ON ps.product_id = p.id AND ps.tenant_id = ${TENANT_ID}
+      LEFT JOIN committed c   ON c.product_id  = p.id
+      LEFT JOIN on_order oo   ON oo.product_id = p.id
       LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID}
         AND p.category NOT IN ('service', 'material')
-        AND (base.product_id IS NOT NULL OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
+        AND (ps.ledger_qty <> 0 OR ps.unit_instock_count > 0 OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
         AND (
           thp.product_id IS NULL
-          OR CASE WHEN base.has_bom THEN base.pre_from_m ELSE base.pre_from_m - base.produced_qty END <> 0
-          OR base.finished_from_p + base.produced_qty - base.outbound_qty <> 0
+          OR ps.on_hand <> 0
           OR COALESCE(c.qty, 0) <> 0
           OR COALESCE(oo.qty, 0) <> 0
         )

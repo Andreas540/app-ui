@@ -104,37 +104,9 @@ async function getSupplyChainOverview(event) {
       ORDER BY p.name ASC, o.order_date ASC
     `
 
-    // 3. In the warehouse — ATP columns, same logic as warehouse-inventory.mjs
+    // 3. In the warehouse — via product_stock view (same source of truth as Warehouse page)
 const warehouse_inventory = await sql`
-  WITH wd AS (
-    SELECT
-      product_id,
-      SUM(CASE WHEN supplier_manual_delivered IN ('M', 'S') THEN qty ELSE 0 END) AS pre_from_m,
-      SUM(CASE WHEN supplier_manual_delivered = 'P' THEN qty ELSE 0 END) AS finished_from_p,
-      SUM(CASE WHEN supplier_manual_delivered = 'D' THEN (-1 * qty) ELSE 0 END) AS outbound_qty
-    FROM warehouse_deliveries
-    WHERE tenant_id = ${TENANT_ID}
-    GROUP BY product_id
-  ),
-  lp AS (
-    SELECT
-      product_id,
-      SUM(qty_produced) AS produced_qty
-    FROM labor_production
-    WHERE tenant_id = ${TENANT_ID}
-    GROUP BY product_id
-  ),
-  base AS (
-    SELECT
-      COALESCE(wd.product_id, lp.product_id) AS product_id,
-      COALESCE(wd.pre_from_m, 0) AS pre_from_m,
-      COALESCE(wd.finished_from_p, 0) AS finished_from_p,
-      COALESCE(wd.outbound_qty, 0) AS outbound_qty,
-      COALESCE(lp.produced_qty, 0) AS produced_qty
-    FROM wd
-    FULL OUTER JOIN lp ON lp.product_id = wd.product_id
-  ),
-  committed AS (
+  WITH committed AS (
     SELECT oi.product_id,
       SUM(GREATEST(oi.qty - oi.delivered_qty, 0)) AS qty,
       json_agg(json_build_object('order_id', o.id, 'order_no', o.order_no, 'qty', GREATEST(oi.qty - oi.delivered_qty, 0)) ORDER BY o.order_no) AS orders
@@ -159,19 +131,19 @@ const warehouse_inventory = await sql`
   )
   SELECT
     p.name AS product,
-    COALESCE(base.pre_from_m - base.produced_qty, 0)                                                        AS pre_prod,
-    COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0)                               AS finished,
-    COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)                                 AS qty,
-    COALESCE(c.qty, 0)                                                                                       AS committed,
-    COALESCE(oo.qty, 0)                                                                                      AS on_order,
-    COALESCE(base.finished_from_p + base.produced_qty - base.outbound_qty, 0) - COALESCE(c.qty, 0)         AS available_finished,
-    COALESCE(base.pre_from_m + base.finished_from_p - base.outbound_qty, 0)   - COALESCE(c.qty, 0)         AS available_total,
-    c.orders                                                                                                  AS committed_orders,
-    oo.orders                                                                                                 AS on_order_orders
+    ps.pre_prod,
+    ps.finished,
+    ps.on_hand                          AS qty,
+    COALESCE(c.qty, 0)                 AS committed,
+    COALESCE(oo.qty, 0)                AS on_order,
+    ps.finished - COALESCE(c.qty, 0)  AS available_finished,
+    ps.on_hand  - COALESCE(c.qty, 0)  AS available_total,
+    c.orders                            AS committed_orders,
+    oo.orders                           AS on_order_orders
   FROM products p
-  LEFT JOIN base         ON base.product_id = p.id
-  LEFT JOIN committed c   ON c.product_id   = p.id
-  LEFT JOIN on_order oo   ON oo.product_id  = p.id
+  JOIN product_stock ps   ON ps.product_id = p.id AND ps.tenant_id = ${TENANT_ID}
+  LEFT JOIN committed c   ON c.product_id  = p.id
+  LEFT JOIN on_order oo   ON oo.product_id = p.id
   LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
   WHERE p.tenant_id = ${TENANT_ID}
     AND p.category NOT IN ('service', 'material')
@@ -179,11 +151,10 @@ const warehouse_inventory = await sql`
     AND LOWER(p.name) NOT LIKE '%discount%'
     AND LOWER(p.name) NOT LIKE '%other product%'
     AND LOWER(p.name) NOT LIKE '%other service%'
-    AND (base.product_id IS NOT NULL OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
+    AND (ps.ledger_qty <> 0 OR ps.unit_instock_count > 0 OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
     AND (
       thp.product_id IS NULL
-      OR COALESCE(base.pre_from_m, 0) <> 0
-      OR COALESCE(base.finished_from_p, 0) + COALESCE(base.produced_qty, 0) - COALESCE(base.outbound_qty, 0) <> 0
+      OR ps.on_hand <> 0
       OR COALESCE(c.qty, 0) <> 0
       OR COALESCE(oo.qty, 0) <> 0
     )
