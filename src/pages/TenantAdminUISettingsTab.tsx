@@ -219,10 +219,10 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
   function btDefaultsForPage(pageId: string): Record<string, boolean> {
     const appDefaults: Record<string, boolean> = pageId === 'new-product'
-      ? { product_category: true, product_subcategory: true, sku: true, variant: true, show_product_tab: true, show_service_tab: true }
+      ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
       : pageId === 'edit-service'
       ? { product_category: true, product_subcategory: true }
-      : { product_category: true, product_subcategory: true, sku: true, variant: true }
+      : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
     const btFields: Record<string, boolean> = (user as any)?.businessTypeConfig?.pages?.[pageId]?.fields ?? {}
     return { ...appDefaults, ...btFields }
   }
@@ -714,6 +714,24 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                     )
                   })()}
 
+                  {pagePreviewTab === 'product' && (() => {
+                    const showUT = pageFieldConfig.unit_tracking !== false
+                    return (
+                      <div style={{ position: 'relative', opacity: showUT ? 1 : 0.35, marginBottom: 12, border: `1px solid ${showUT ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6, padding: '8px 10px 4px' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Unit tracking</div>
+                        {[40, 55, 65].map(w => (
+                          <div key={w} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '1px solid var(--line)', flexShrink: 0 }} />
+                            <div style={{ height: 8, background: 'var(--line)', borderRadius: 3, opacity: 0.5, width: `${w}%` }} />
+                          </div>
+                        ))}
+                        <button onClick={() => setPageFieldConfig(prev => ({ ...prev, unit_tracking: !showUT }))} style={{ position: 'absolute', top: 6, right: 6, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                          {showUT ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    )
+                  })()}
+
                   {pagePreviewTab === 'product' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                       {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
@@ -824,6 +842,24 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                             {showVariant ? 'Hide' : 'Show'}
                           </button>
                         </div>
+                      </div>
+                    )
+                  })()}
+
+                  {pagePreviewTab === 'product' && (() => {
+                    const showUT = pageFieldConfig.unit_tracking !== false
+                    return (
+                      <div style={{ position: 'relative', opacity: showUT ? 1 : 0.35, marginBottom: 12, border: `1px solid ${showUT ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6, padding: '8px 10px 4px' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Unit tracking</div>
+                        {[40, 55, 65].map(w => (
+                          <div key={w} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '1px solid var(--line)', flexShrink: 0 }} />
+                            <div style={{ height: 8, background: 'var(--line)', borderRadius: 3, opacity: 0.5, width: `${w}%` }} />
+                          </div>
+                        ))}
+                        <button onClick={() => setPageFieldConfig(prev => ({ ...prev, unit_tracking: !showUT }))} style={{ position: 'absolute', top: 6, right: 6, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                          {showUT ? 'Hide' : 'Show'}
+                        </button>
                       </div>
                     )
                   })()}

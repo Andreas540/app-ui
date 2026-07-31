@@ -370,7 +370,7 @@ export async function createProductCategory(type: 'category' | 'subcategory', na
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),

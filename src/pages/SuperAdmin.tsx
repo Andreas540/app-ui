@@ -1577,8 +1577,8 @@ async function handleSaveStripeCustomerId() {
                               onClick={() => {
                                 const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
                                 const baseDefaults = page.id === 'new-product'
-                                  ? { product_category: true, product_subcategory: true, sku: true, variant: true, show_product_tab: true, show_service_tab: true }
-                                  : { product_category: true, product_subcategory: true, sku: true, variant: true }
+                                  ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
+                                  : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
                                 const merged = { ...baseDefaults, ...existing }
                                 setBtFieldConfig(merged)
                                 if (page.id === 'edit-product') {
@@ -1873,6 +1873,25 @@ async function handleSaveStripeCustomerId() {
                     )
                   })()}
 
+                  {/* Configurable: Unit Tracking — product only */}
+                  {btPreviewTab === 'product' && (() => {
+                    const showUT = btFieldConfig.unit_tracking !== false
+                    return (
+                      <div style={{ position: 'relative', opacity: showUT ? 1 : 0.35, marginBottom: 12, border: `1px solid ${showUT ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6, padding: '8px 10px 4px' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Unit tracking</div>
+                        {[40, 55, 65].map(w => (
+                          <div key={w} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }} />
+                            <div style={{ height: 8, background: 'var(--border)', borderRadius: 3, opacity: 0.5, width: `${w}%` }} />
+                          </div>
+                        ))}
+                        <button onClick={() => setBtFieldConfig(prev => ({ ...prev, unit_tracking: !showUT }))} style={{ position: 'absolute', top: 6, right: 6, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                          {showUT ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    )
+                  })()}
+
                   {/* Non-configurable: cost fields */}
                   {btPreviewTab === 'product' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
@@ -2005,6 +2024,25 @@ async function handleSaveStripeCustomerId() {
                             {showVariant ? 'Hide' : 'Show'}
                           </button>
                         </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Configurable: Unit Tracking (product tab only) */}
+                  {btPreviewTab === 'product' && (() => {
+                    const showUT = btFieldConfig.unit_tracking !== false
+                    return (
+                      <div style={{ position: 'relative', opacity: showUT ? 1 : 0.35, marginBottom: 12, border: `1px solid ${showUT ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6, padding: '8px 10px 4px' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Unit tracking</div>
+                        {[40, 55, 65].map(w => (
+                          <div key={w} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <div style={{ width: 13, height: 13, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }} />
+                            <div style={{ height: 8, background: 'var(--border)', borderRadius: 3, opacity: 0.5, width: `${w}%` }} />
+                          </div>
+                        ))}
+                        <button onClick={() => setBtFieldConfig(prev => ({ ...prev, unit_tracking: !showUT }))} style={{ position: 'absolute', top: 6, right: 6, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                          {showUT ? 'Hide' : 'Show'}
+                        </button>
                       </div>
                     )
                   })()}

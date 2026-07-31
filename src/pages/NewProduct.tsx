@@ -39,6 +39,7 @@ export default function NewProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
+  const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
 
   const [categories, setCategories] = useState<string[]>([])
   const [subcategories, setSubcategories] = useState<string[]>([])
@@ -71,6 +72,7 @@ export default function NewProduct() {
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
   const showVariant     = pageFields.variant             !== false
+  const showUnitTracking = pageFields.unit_tracking      !== false
   const showProductTab  = pageFields.show_product_tab    !== false
   const showServiceTab  = pageFields.show_service_tab    !== false
 
@@ -167,7 +169,7 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
@@ -329,6 +331,27 @@ export default function NewProduct() {
               <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
             </div>
           )}
+        </div>
+      )}
+
+      {category === 'product' && showUnitTracking && (
+        <div style={{ marginTop: 12 }}>
+          <label>{t('products.unitTracking')}</label>
+          <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
+            {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
+              <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="unit_tracking_new" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
+                <span>
+                  <span style={{ display: 'block', fontWeight: 500 }}>
+                    {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
+                  </span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
+                    {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       )}
 

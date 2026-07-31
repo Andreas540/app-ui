@@ -22,6 +22,7 @@ export default function EditProduct() {
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
   const showVariant     = pageFields.variant             !== false
+  const showUnitTracking = pageFields.unit_tracking      !== false
   const preselectedId = searchParams.get('id') || ''
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loading, setLoading] = useState(true)
@@ -186,7 +187,7 @@ export default function EditProduct() {
         ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
         product_category: productCategory || null,
         product_subcategory: productSubcategory || null,
-        ...(type === 'product' ? { sku: sku || null, variant: variant || null, unit_tracking: unitTracking } : {}),
+        ...(type === 'product' ? { sku: sku || null, variant: variant || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -309,18 +310,18 @@ export default function EditProduct() {
         </div>
       )}
 
-      {type === 'product' && (
+      {type === 'product' && showUnitTracking && (
         <div style={{ marginTop: 12 }}>
           <label>{t('products.unitTracking')}</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
             {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
-              <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '8px 10px', borderRadius: 6, border: `1px solid ${unitTracking === mode ? 'var(--primary)' : 'var(--border)'}`, background: unitTracking === mode ? 'var(--primary-subtle, color-mix(in srgb, var(--primary) 8%, transparent))' : undefined }}>
-                <input type="radio" name="unit_tracking" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ marginTop: 2, flexShrink: 0 }} />
+              <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="unit_tracking" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
                 <span>
-                  <span style={{ fontWeight: 500, display: 'block' }}>
+                  <span style={{ display: 'block', fontWeight: 500 }}>
                     {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
                   </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
                     {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
                   </span>
                 </span>
