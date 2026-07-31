@@ -45,6 +45,7 @@ export default function EditProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
+  const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
 
   const [categories, setCategories] = useState<string[]>([])
   const [subcategories, setSubcategories] = useState<string[]>([])
@@ -128,6 +129,7 @@ export default function EditProduct() {
     setProductSubcategory(selected.product_subcategory ?? '')
     setSku(selected.sku ?? '')
     setVariant(selected.variant ?? '')
+    setUnitTracking(selected.unit_tracking ?? 'none')
     setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
     setImageChangeData(undefined)
     setAddingCategory(false)
@@ -184,7 +186,7 @@ export default function EditProduct() {
         ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
         product_category: productCategory || null,
         product_subcategory: productSubcategory || null,
-        ...(type === 'product' ? { sku: sku || null, variant: variant || null } : {}),
+        ...(type === 'product' ? { sku: sku || null, variant: variant || null, unit_tracking: unitTracking } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -304,6 +306,27 @@ export default function EditProduct() {
               <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
             </div>
           )}
+        </div>
+      )}
+
+      {type === 'product' && (
+        <div style={{ marginTop: 12 }}>
+          <label>{t('products.unitTracking')}</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+            {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
+              <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '8px 10px', borderRadius: 6, border: `1px solid ${unitTracking === mode ? 'var(--primary)' : 'var(--border)'}`, background: unitTracking === mode ? 'var(--primary-subtle, color-mix(in srgb, var(--primary) 8%, transparent))' : undefined }}>
+                <input type="radio" name="unit_tracking" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span>
+                  <span style={{ fontWeight: 500, display: 'block' }}>
+                    {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       )}
 

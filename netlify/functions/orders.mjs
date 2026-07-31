@@ -164,13 +164,18 @@ const TENANT_ID = authz.tenantId;
         return cors(400, { error: 'Each item needs product_id, qty > 0, and a numeric unit_price' });
       }
       const prodRows = await sql`
-        SELECT name FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID} LIMIT 1
+        SELECT name, unit_tracking FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID} LIMIT 1
       `;
       if (prodRows.length === 0) return cors(400, { error: `Invalid product_id: ${item.product_id}` });
       const isRefund = (prodRows[0].name || '').trim().toLowerCase() === 'refund/discount';
       if (isRefund && !(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
       if (!isRefund && !(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
-      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum });
+      // unit_id required for serialized_intake products
+      const unitId = item.unit_id ? Number(item.unit_id) : null
+      if (prodRows[0].unit_tracking === 'serialized_intake' && !unitId) {
+        return cors(400, { error: `Product "${prodRows[0].name}" requires a specific unit to be selected.` })
+      }
+      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum, unitId });
     }
 
     const totalQty = validatedItems.reduce((s, i) => s + i.qtyNum, 0);
@@ -212,13 +217,24 @@ const TENANT_ID = authz.tenantId;
 
     // Insert all line items
     for (const item of validatedItems) {
-      await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost)
+      const [oi] = await sql`
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id)
         VALUES (
           ${orderId}, ${item.product_id}, ${item.qtyNum}, ${item.unitPriceNum},
-          (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID})
+          (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID}),
+          ${item.unitId ?? null}
         )
+        RETURNING id
       `;
+      // Claim the unit: set it Listed with this order_item_id
+      if (item.unitId) {
+        await sql`
+          UPDATE inventory_units
+          SET listing_status = 'Listed', order_item_id = ${oi.id}, updated_at = now()
+          WHERE id = ${item.unitId} AND tenant_id = ${TENANT_ID}
+            AND listing_status = 'Inventory'
+        `
+      }
     }
 
 

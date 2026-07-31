@@ -66,6 +66,11 @@ export default function Warehouse() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
   const [unitCache, setUnitCache] = useState<Record<string, InventoryUnit[] | 'loading'>>({})
+  const [editingUnitId, setEditingUnitId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ serial_number: '', condition: '', notes: '' })
+  const [addingForProduct, setAddingForProduct] = useState<string | null>(null)
+  const [addForm, setAddForm] = useState({ serial_number: '', condition: '', notes: '', acquired_at: '' })
+  const [unitSaving, setUnitSaving] = useState(false)
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
 
@@ -85,7 +90,7 @@ export default function Warehouse() {
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
     try {
       const res = await fetch(
-        `/.netlify/functions/inventory-units?product_id=${productId}&status=Inventory&status=Listed`,
+        `/.netlify/functions/inventory-units?product_id=${productId}`,
         { headers: getAuthHeaders() }
       )
       const data = await res.json()
@@ -93,6 +98,64 @@ export default function Warehouse() {
     } catch {
       setUnitCache(prev => ({ ...prev, [productId]: [] }))
     }
+  }
+
+  const refreshUnits = async (productId: string) => {
+    setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
+    try {
+      const res = await fetch(`/.netlify/functions/inventory-units?product_id=${productId}`, { headers: getAuthHeaders() })
+      const data = await res.json()
+      setUnitCache(prev => ({ ...prev, [productId]: data.units ?? [] }))
+    } catch {
+      setUnitCache(prev => ({ ...prev, [productId]: [] }))
+    }
+    // Also refresh inventory totals so unit_instock_count badge stays accurate
+    const inv = await fetch('/.netlify/functions/warehouse-inventory', { headers: getAuthHeaders() })
+    const invData = await inv.json()
+    if (inv.ok) { setInventory(invData.inventory ?? []); setMaterials(invData.materials ?? []) }
+  }
+
+  const saveUnitEdit = async (productId: string) => {
+    if (editingUnitId == null) return
+    setUnitSaving(true)
+    try {
+      await fetch('/.netlify/functions/inventory-units', {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ id: editingUnitId, serial_number: editForm.serial_number || null, condition: editForm.condition || null, notes: editForm.notes || null }),
+      })
+      setEditingUnitId(null)
+      await refreshUnits(productId)
+    } finally { setUnitSaving(false) }
+  }
+
+  const saveUnitAdd = async (productId: string) => {
+    setUnitSaving(true)
+    try {
+      await fetch('/.netlify/functions/inventory-units', {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, serial_number: addForm.serial_number || null, condition: addForm.condition || null, notes: addForm.notes || null, acquired_at: addForm.acquired_at || null }),
+      })
+      setAddingForProduct(null)
+      setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' })
+      await refreshUnits(productId)
+    } finally { setUnitSaving(false) }
+  }
+
+  const delistUnit = async (unitId: number, productId: string) => {
+    await fetch('/.netlify/functions/inventory-units', {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+      body: JSON.stringify({ id: unitId, listing_status: 'Inventory', order_item_id: null }),
+    })
+    await refreshUnits(productId)
+  }
+
+  const demoteUnit = async (unitId: number, productId: string) => {
+    const res = await fetch(`/.netlify/functions/inventory-units?id=${unitId}`, { method: 'DELETE', headers: getAuthHeaders() })
+    if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Failed to remove unit'); return }
+    await refreshUnits(productId)
   }
 
   const openSupplierOrder = async (orderId: string) => {
@@ -637,30 +700,80 @@ export default function Warehouse() {
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4 }}>
                           {unitRows === 'loading' || !unitRows ? (
                             <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
-                          ) : unitRows.length === 0 ? (
-                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>—</div>
                           ) : (
                             <div style={{ overflowX: 'auto' }}>
-                              <div style={{ minWidth: 360, fontSize: 12 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16 }}>
+                              <div style={{ minWidth: 420, fontSize: 12 }}>
+                                {/* Header */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
                                   <div>{t('warehouse.unitSerialCol')}</div>
                                   <div>{t('warehouse.unitConditionCol')}</div>
                                   <div>{t('warehouse.unitStatusCol')}</div>
+                                  <div />
                                 </div>
+
+                                {/* Rows */}
                                 {unitRows.map(u => (
-                                  <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, paddingTop: 4, paddingBottom: 4, paddingLeft: 16, borderTop: '1px solid var(--border)' }}>
-                                    <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
-                                    <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
-                                    <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
-                                      {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
-                                        : u.listing_status === 'Listed' ? t('warehouse.statusListed')
-                                        : t('warehouse.statusSold')}
-                                      {u.listing_status === 'Listed' && u.order_no && (
-                                        <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
-                                      )}
-                                    </div>
+                                  <div key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
+                                    {editingUnitId === u.id ? (
+                                      /* Inline edit form */
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                          <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          <input placeholder={t('warehouse.conditionPlaceholder')} value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                        </div>
+                                        <input placeholder={t('warehouse.unitNotesPlaceholder')} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                          <button onClick={() => saveUnitEdit(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
+                                          <button onClick={() => setEditingUnitId(null)} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      /* Read row + action buttons */
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
+                                        <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
+                                        <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
+                                        <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
+                                          {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
+                                            : u.listing_status === 'Listed' ? t('warehouse.statusListed')
+                                            : t('warehouse.statusSold')}
+                                          {u.listing_status === 'Listed' && u.order_no && (
+                                            <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
+                                          )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                          {u.listing_status === 'Inventory' && (
+                                            <>
+                                              <button onClick={() => { setEditingUnitId(u.id); setEditForm({ serial_number: u.serial_number ?? '', condition: u.condition ?? '', notes: u.notes ?? '' }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editUnit')}</button>
+                                              <button onClick={() => demoteUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--color-error)' }}>{t('warehouse.demoteUnit')}</button>
+                                            </>
+                                          )}
+                                          {u.listing_status === 'Listed' && (
+                                            <button onClick={() => delistUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.delistUnit')}</button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
+
+                                {/* Add unit form / button */}
+                                {addingForProduct === item.product_id ? (
+                                  <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                      <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                      <input placeholder={t('warehouse.conditionPlaceholder')} value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                    </div>
+                                    <input placeholder={t('warehouse.unitNotesPlaceholder')} value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                      <button onClick={() => saveUnitAdd(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
+                                      <button onClick={() => { setAddingForProduct(null); setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' }) }} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ borderTop: unitRows.length > 0 ? '1px solid var(--border)' : undefined, paddingTop: 6, paddingLeft: 16 }}>
+                                    <button onClick={() => { setAddingForProduct(item.product_id); setEditingUnitId(null) }} style={{ fontSize: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)' }}>+ {t('warehouse.addUnit')}</button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

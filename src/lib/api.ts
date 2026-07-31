@@ -3,7 +3,7 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; price_amount?: number | null } // no unit_price anymore
+export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -387,7 +387,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
@@ -411,6 +411,7 @@ export async function updateProduct(input: {
   product_subcategory?: string | null
   sku?: string | null
   variant?: string | null
+  unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'
 }): Promise<{ product: ProductWithCost; applied_to_history?: boolean }> {
   const r = await apiFetch(`${base}/api/product`, {
     method: 'PUT',

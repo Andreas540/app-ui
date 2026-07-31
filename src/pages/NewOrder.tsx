@@ -11,12 +11,16 @@ import { getTenantConfig } from '../lib/tenantConfig'
 
 type PartnerRef = { id: string; name: string }
 
+type AvailableUnit = { id: number; serial_number: string | null; condition: string | null }
+
 type Line = {
   product_id: string
   qtyStr: string
   priceStr: string
   historicalPrice: number | null
   historicalProductCost: number | null
+  unit_id?: number | null
+  availableUnits?: AvailableUnit[] | 'loading'
 }
 
 function emptyLine(product_id = ''): Line {
@@ -168,8 +172,18 @@ export default function NewOrder() {
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
     let priceStr = ''
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
-    setLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr, historicalPrice: null } : l))
+    const needsUnit = prod?.unit_tracking === 'serialized_intake'
+    setLines(prev => prev.map((l, i) => i === idx
+      ? { ...l, product_id, priceStr, historicalPrice: null, unit_id: null, availableUnits: needsUnit ? 'loading' : undefined }
+      : l
+    ))
     fetchLastPrice(idx, product_id)
+    if (needsUnit && product_id) {
+      fetch(`/.netlify/functions/inventory-units?product_id=${product_id}&status=Inventory`, { headers: getAuthHeaders() })
+        .then(r => r.json())
+        .then(d => setLines(prev => prev.map((l, i) => i === idx ? { ...l, availableUnits: (d.units ?? []) as AvailableUnit[] } : l)))
+        .catch(() => setLines(prev => prev.map((l, i) => i === idx ? { ...l, availableUnits: [] } : l)))
+    }
   }
 
   function updateLine(idx: number, patch: Partial<Line>) {
@@ -437,6 +451,26 @@ export default function NewOrder() {
                 />
               </div>
             </div>
+            {/* Unit picker — serialized_intake products only */}
+            {l.availableUnits !== undefined && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('warehouse.unitSerialCol')} / {t('warehouse.unitConditionCol')}</label>
+                {l.availableUnits === 'loading' ? (
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '6px 0' }}>{t('warehouse.loadingUnits')}</div>
+                ) : l.availableUnits.length === 0 ? (
+                  <div style={{ fontSize: 13, color: 'var(--color-error)', padding: '6px 0' }}>{t('orders.noUnitsAvailable')}</div>
+                ) : (
+                  <select value={l.unit_id ?? ''} onChange={e => updateLine(idx, { unit_id: e.target.value ? Number(e.target.value) : null })} style={{ height: CONTROL_H }}>
+                    <option value="">{t('orders.selectUnit')}</option>
+                    {(l.availableUnits as AvailableUnit[]).map(u => (
+                      <option key={u.id} value={u.id}>
+                        {[u.serial_number, u.condition].filter(Boolean).join(' — ') || `#${u.id}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
             {/* Row 2: Price | Price last time */}
             <div className="row row-2col-mobile" style={{ marginTop: 8 }}>
               <div>
@@ -655,6 +689,7 @@ export default function NewOrder() {
                 product_id: l.product_id,
                 qty: lineQty(l),
                 unit_price: linePrice(l),
+                ...(l.unit_id ? { unit_id: l.unit_id } : {}),
               })),
             }
 
