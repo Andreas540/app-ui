@@ -133,7 +133,25 @@ async function getInventory(event) {
       ORDER BY p.name ASC
     `
 
-    return cors(200, { inventory, materials })
+    // Undelivered order items with a unit_identifier set — these appear as named pending units.
+    // Gracefully falls back to empty if migration 49 hasn't run yet.
+    let namedItems = []
+    try {
+      namedItems = await sql`
+        SELECT oi.id, oi.product_id, oi.unit_identifier,
+               o.order_no, o.order_date::text AS order_date,
+               c.name AS customer_name
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        JOIN customers c ON c.id = o.customer_id
+        WHERE o.tenant_id = ${TENANT_ID}
+          AND o.delivered = FALSE
+          AND oi.unit_identifier IS NOT NULL
+        ORDER BY o.order_date DESC, o.order_no DESC
+      `
+    } catch { /* column not yet migrated */ }
+
+    return cors(200, { inventory, materials, named_items: namedItems })
   } catch (e) {
     console.error('getInventory error:', e)
     return cors(500, { error: String(e?.message || e) })

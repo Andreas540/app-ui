@@ -494,8 +494,12 @@
     "orderSiteLink": "Link to your order site:",
     "missingOrderSlug": "First specify your URL here",
     "manageOrderSite": "Manage your Order site",
-    "coversProduct": "Covers product",
-    "coversProductNone": "— none —"
+    "coversProduct": "Connects to",
+    "coversProductNone": "— none —",
+    "coversThisOrder": "This order",
+    "coversPrevOrders": "Previous orders",
+    "unitIdentifier": "Unit ID (optional)",
+    "unitIdentifierPlaceholder": "e.g. serial number"
   },
   "warehouse": {
     "title": "Adjust Inventory",
@@ -575,7 +579,12 @@
     "removeCoverage": "Remove",
     "saveCoverage": "Save",
     "cancelCoverage": "Cancel",
-    "coverageLinkedOrder": "Order #{{order_no}}"
+    "coverageLinkedOrder": "Order #{{order_no}}",
+    "namedItemsPending": "{{count}} named unit(s) pending",
+    "namedItemsPendingHeader": "Named units on pending orders",
+    "namedItemsIdentifier": "Unit ID",
+    "namedItemsOrder": "Order",
+    "namedItemsCustomer": "Customer"
   },
   "customerLog": {
     "title": "Activity Log",

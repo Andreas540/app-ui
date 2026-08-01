@@ -494,8 +494,12 @@
     "orderSiteLink": "Enlace a tu sitio de pedidos:",
     "missingOrderSlug": "Primero especifica tu URL aquí",
     "manageOrderSite": "Gestiona tu sitio de pedidos",
-    "coversProduct": "Cubre producto",
-    "coversProductNone": "— ninguno —"
+    "coversProduct": "Conecta con",
+    "coversProductNone": "— ninguno —",
+    "coversThisOrder": "Este pedido",
+    "coversPrevOrders": "Pedidos anteriores",
+    "unitIdentifier": "ID de unidad (opcional)",
+    "unitIdentifierPlaceholder": "p.ej. número de serie"
   },
   "warehouse": {
     "title": "Ajustar Inventario",
@@ -575,7 +579,12 @@
     "removeCoverage": "Eliminar",
     "saveCoverage": "Guardar",
     "cancelCoverage": "Cancelar",
-    "coverageLinkedOrder": "Pedido #{{order_no}}"
+    "coverageLinkedOrder": "Pedido #{{order_no}}",
+    "namedItemsPending": "{{count}} unidad(es) nombrada(s) pendiente(s)",
+    "namedItemsPendingHeader": "Unidades nombradas en pedidos pendientes",
+    "namedItemsIdentifier": "ID de unidad",
+    "namedItemsOrder": "Pedido",
+    "namedItemsCustomer": "Cliente"
   },
   "customerLog": {
     "title": "Registro de actividad",

@@ -39,6 +39,15 @@ type InventoryUnit = {
   customer_name: string | null
 }
 
+type NamedItem = {
+  id: string
+  product_id: string
+  unit_identifier: string
+  order_no: number
+  order_date: string
+  customer_name: string
+}
+
 type MaterialItem = {
   product: string
   product_id: string
@@ -74,6 +83,8 @@ export default function Warehouse() {
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
   const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
+  const [namedItems, setNamedItems] = useState<NamedItem[]>([])
+  const [expandedNamedItems, setExpandedNamedItems] = useState<Set<string>>(new Set())
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
@@ -231,10 +242,19 @@ export default function Warehouse() {
         const data = await res.json()
         setInventory(data.inventory || [])
         setMaterials(data.materials || [])
+        setNamedItems(data.named_items || [])
       }
     } catch (e) {
       console.error('Failed to fetch inventory:', e)
     }
+  }
+
+  const toggleNamedItems = (productId: string) => {
+    setExpandedNamedItems(prev => {
+      const next = new Set(prev)
+      next.has(productId) ? next.delete(productId) : next.add(productId)
+      return next
+    })
   }
 
   // Parse quantity (allow negative with minus sign, allow decimals for materials)
@@ -593,6 +613,8 @@ export default function Warehouse() {
                   const isUnitsExpanded = expandedUnits.has(item.product_id)
                   const isUnitTracked = item.unit_tracking !== 'none'
                   const unitRows = unitCache[item.product_id]
+                  const namedForProduct = namedItems.filter(n => n.product_id === item.product_id)
+                  const isNamedItemsExpanded = expandedNamedItems.has(item.product_id)
                   return (
                     <div key={item.product_id}>
                       <div
@@ -625,6 +647,15 @@ export default function Warehouse() {
                               >
                                 <span>{isUnitsExpanded ? '▼' : '▶'}</span>
                                 <span>{t('warehouse.namedUnitsCount', { count: Number(item.unit_instock_count) })}</span>
+                              </button>
+                            )}
+                            {namedForProduct.length > 0 && (
+                              <button
+                                onClick={e => { e.stopPropagation(); toggleNamedItems(item.product_id) }}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 3 }}
+                              >
+                                <span>{isNamedItemsExpanded ? '▼' : '▶'}</span>
+                                <span>{t('warehouse.namedItemsPending', { count: namedForProduct.length })}</span>
                               </button>
                             )}
                           </span>
@@ -786,6 +817,24 @@ export default function Warehouse() {
                               </div>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {isNamedItemsExpanded && namedForProduct.length > 0 && (
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4, paddingLeft: 16, paddingRight: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>{t('warehouse.namedItemsPendingHeader')}</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(100px,1fr) minmax(80px,1fr) minmax(80px,1fr)', gap: 6, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, paddingBottom: 4 }}>
+                            <div>{t('warehouse.namedItemsIdentifier')}</div>
+                            <div>{t('warehouse.namedItemsOrder')}</div>
+                            <div>{t('warehouse.namedItemsCustomer')}</div>
+                          </div>
+                          {namedForProduct.map(ni => (
+                            <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(100px,1fr) minmax(80px,1fr) minmax(80px,1fr)', gap: 6, fontSize: 12, borderTop: '1px solid var(--border)', paddingTop: 4, paddingBottom: 4 }}>
+                              <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
+                              <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
+                              <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

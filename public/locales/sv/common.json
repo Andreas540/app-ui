@@ -494,8 +494,12 @@
     "orderSiteLink": "Länk till din beställningssida:",
     "missingOrderSlug": "Ange din URL först",
     "manageOrderSite": "Hantera din beställningssida",
-    "coversProduct": "Täcker produkt",
-    "coversProductNone": "— ingen —"
+    "coversProduct": "Kopplar till",
+    "coversProductNone": "— ingen —",
+    "coversThisOrder": "Denna order",
+    "coversPrevOrders": "Tidigare ordrar",
+    "unitIdentifier": "Enhets-ID (valfritt)",
+    "unitIdentifierPlaceholder": "t.ex. serienummer"
   },
   "warehouse": {
     "title": "Justera inventarie",
@@ -575,7 +579,12 @@
     "removeCoverage": "Ta bort",
     "saveCoverage": "Spara",
     "cancelCoverage": "Avbryt",
-    "coverageLinkedOrder": "Order #{{order_no}}"
+    "coverageLinkedOrder": "Order #{{order_no}}",
+    "namedItemsPending": "{{count}} namngiven(na) enhet(er) väntar",
+    "namedItemsPendingHeader": "Namngivna enheter på väntande ordrar",
+    "namedItemsIdentifier": "Enhets-ID",
+    "namedItemsOrder": "Order",
+    "namedItemsCustomer": "Kund"
   },
   "customerLog": {
     "title": "Aktivitetslogg",

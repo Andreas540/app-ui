@@ -22,12 +22,31 @@ async function getOrders(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    const customerId  = event.queryStringParameters?.customer_id  || null;
-    const partnerId   = event.queryStringParameters?.partner_id   || null;
-    const supplierId  = event.queryStringParameters?.supplier_id  || null;
+    const customerId   = event.queryStringParameters?.customer_id  || null;
+    const partnerId    = event.queryStringParameters?.partner_id   || null;
+    const supplierId   = event.queryStringParameters?.supplier_id  || null;
+    const includeItems = event.queryStringParameters?.include_items === 'true';
 
     if (!customerId && !partnerId && !supplierId) {
       return cors(400, { error: 'customer_id, partner_id, or supplier_id required' });
+    }
+
+    // Return flat order-item list for coverage dropdown in NewOrder
+    if (customerId && includeItems) {
+      const rows = await sql`
+        SELECT o.id AS order_id, o.order_no, o.order_date::text AS order_date,
+               oi.id AS order_item_id,
+               COALESCE(p.name, s.name) AS product_name,
+               p.product_kind
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+        LEFT JOIN services s ON s.id = oi.service_id
+        WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${customerId}
+          AND oi.product_id IS NOT NULL
+        ORDER BY o.order_date DESC, o.order_no DESC, oi.id
+      `;
+      return cors(200, { order_items: rows });
     }
 
     let orders;
@@ -175,7 +194,15 @@ const TENANT_ID = authz.tenantId;
       if (prodRows[0].unit_tracking === 'serialized_intake' && !unitId) {
         return cors(400, { error: `Product "${prodRows[0].name}" requires a specific unit to be selected.` })
       }
-      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum, unitId, covers_product_id: item.covers_product_id ?? null });
+      validatedItems.push({
+        product_id: item.product_id,
+        qtyNum,
+        unitPriceNum,
+        unitId,
+        covers_product_id: item.covers_product_id ?? null,
+        covers_order_item_id: item.covers_order_item_id ?? null,
+        unit_identifier: item.unit_identifier?.trim() || null,
+      });
     }
 
     const totalQty = validatedItems.reduce((s, i) => s + i.qtyNum, 0);
@@ -218,12 +245,14 @@ const TENANT_ID = authz.tenantId;
     // Insert all line items
     for (const item of validatedItems) {
       const [oi] = await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id, covers_product_id)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id, covers_product_id, covers_order_item_id, unit_identifier)
         VALUES (
           ${orderId}, ${item.product_id}, ${item.qtyNum}, ${item.unitPriceNum},
           (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID}),
           ${item.unitId ?? null},
-          ${item.covers_product_id ?? null}
+          ${item.covers_product_id ?? null},
+          ${item.covers_order_item_id ?? null},
+          ${item.unit_identifier ?? null}
         )
         RETURNING id
       `;

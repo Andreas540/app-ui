@@ -22,10 +22,21 @@ type Line = {
   unit_id?: number | null
   availableUnits?: AvailableUnit[] | 'loading'
   covers_product_id: string | null
+  covers_order_item_id: string | null
+  unit_identifier: string
+}
+
+type PrevOrderItem = {
+  order_id: string
+  order_no: number
+  order_date: string
+  order_item_id: string
+  product_name: string | null
+  product_kind: string | null
 }
 
 function emptyLine(product_id = ''): Line {
-  return { product_id, qtyStr: '', priceStr: '', historicalPrice: null, historicalProductCost: null, covers_product_id: null }
+  return { product_id, qtyStr: '', priceStr: '', historicalPrice: null, historicalProductCost: null, covers_product_id: null, covers_order_item_id: null, unit_identifier: '' }
 }
 
 export default function NewOrder() {
@@ -57,6 +68,9 @@ export default function NewOrder() {
 
   // Line items
   const [lines, setLines] = useState<Line[]>([emptyLine()])
+
+  // Previous order items for coverage dropdown (fetched when customer changes)
+  const [prevOrderItems, setPrevOrderItems] = useState<PrevOrderItem[]>([])
 
   // Partner splits
   const [partner1Id, setPartner1Id] = useState('')
@@ -165,6 +179,21 @@ export default function NewOrder() {
   useEffect(() => {
     lines.forEach((l, i) => { if (l.product_id) fetchLastPrice(i, l.product_id) })
   }, [entityId, orderDate, lines[0]?.product_id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch previous order items for coverage dropdown when customer changes
+  useEffect(() => {
+    if (!entityId) { setPrevOrderItems([]); return }
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/api/orders?customer_id=${entityId}&include_items=true`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPrevOrderItems(d.order_items ?? []) })
+      .catch(() => {})
+  }, [entityId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const prevCoverableItems = useMemo(
+    () => prevOrderItems.filter(it => it.product_kind !== 'coverage'),
+    [prevOrderItems]
+  )
 
   // Pre-fill price from product's price_amount when product on a line changes
   function onLineProductChange(idx: number, product_id: string) {
@@ -517,22 +546,55 @@ export default function NewOrder() {
               </div>
             </div>
 
-            {isCoverage && coveredLines.length > 0 && (
+            {isCoverage && (coveredLines.length > 0 || prevCoverableItems.length > 0) && (
               <div style={{ marginTop: 8 }}>
                 <label>{t('orders.coversProduct')}</label>
                 <select
-                  value={l.covers_product_id ?? ''}
-                  onChange={e => updateLine(idx, { covers_product_id: e.target.value || null })}
+                  value={l.covers_order_item_id ? `item:${l.covers_order_item_id}` : l.covers_product_id ? `prod:${l.covers_product_id}` : ''}
+                  onChange={e => {
+                    const v = e.target.value
+                    if (!v) {
+                      updateLine(idx, { covers_product_id: null, covers_order_item_id: null })
+                    } else if (v.startsWith('prod:')) {
+                      updateLine(idx, { covers_product_id: v.slice(5), covers_order_item_id: null })
+                    } else if (v.startsWith('item:')) {
+                      updateLine(idx, { covers_product_id: null, covers_order_item_id: v.slice(5) })
+                    }
+                  }}
                   style={{ height: CONTROL_H }}
                 >
                   <option value="">{t('orders.coversProductNone')}</option>
-                  {coveredLines.map((ol, oi) => {
-                    const op = products.find(p => p.id === ol.product_id)
-                    return <option key={oi} value={ol.product_id}>{op?.name ?? ol.product_id}</option>
-                  })}
+                  {coveredLines.length > 0 && (
+                    <optgroup label={t('orders.coversThisOrder')}>
+                      {coveredLines.map((ol, oi) => {
+                        const op = products.find(p => p.id === ol.product_id)
+                        return <option key={`prod-${oi}`} value={`prod:${ol.product_id}`}>{op?.name ?? ol.product_id}</option>
+                      })}
+                    </optgroup>
+                  )}
+                  {prevCoverableItems.length > 0 && (
+                    <optgroup label={t('orders.coversPrevOrders')}>
+                      {prevCoverableItems.map(it => (
+                        <option key={it.order_item_id} value={`item:${it.order_item_id}`}>
+                          {`#${it.order_no} (${it.order_date}) — ${it.product_name ?? it.order_item_id}`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             )}
+
+            <div style={{ marginTop: 8 }}>
+              <label>{t('orders.unitIdentifier')}</label>
+              <input
+                type="text"
+                placeholder={t('orders.unitIdentifierPlaceholder')}
+                value={l.unit_identifier}
+                onChange={e => updateLine(idx, { unit_identifier: e.target.value })}
+                style={{ height: CONTROL_H }}
+              />
+            </div>
 
             {/* Add / Remove links */}
             {allowMultipleRows && (
@@ -714,6 +776,8 @@ export default function NewOrder() {
                 unit_price: linePrice(l),
                 ...(l.unit_id ? { unit_id: l.unit_id } : {}),
                 covers_product_id: l.covers_product_id || null,
+                covers_order_item_id: l.covers_order_item_id || null,
+                unit_identifier: l.unit_identifier?.trim() || null,
               })),
             }
 
