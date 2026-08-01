@@ -114,23 +114,28 @@ export default function AddOnProductForm({
             <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerTypeLabel')}</label>
-            <select value={form.coverage_issuer_type} onChange={e => setForm(f => ({ ...f, coverage_issuer_type: e.target.value as IssuerType }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}>
-              {(['manufacturer', 'shop', 'third_party'] as const).map(v => (
-                <option key={v} value={v}>{v === 'manufacturer' ? t('coverage.issuerManufacturer') : v === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}</option>
-              ))}
-            </select>
+        <div style={{ borderTop: '1px solid var(--separator)', marginTop: 8, paddingTop: 16, display: 'grid', gap: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('coverage.extendedCoverageSection')}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerTypeLabel')}</label>
+              <select value={form.coverage_issuer_type} onChange={e => setForm(f => ({ ...f, coverage_issuer_type: e.target.value as IssuerType }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}>
+                {(['manufacturer', 'shop', 'third_party'] as const).map(v => (
+                  <option key={v} value={v}>{v === 'manufacturer' ? t('coverage.issuerManufacturer') : v === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerNameLabel')}</label>
+              <input value={form.coverage_issuer_name} onChange={e => setForm(f => ({ ...f, coverage_issuer_name: e.target.value }))} placeholder={t('coverage.issuerNamePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
+            </div>
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerNameLabel')}</label>
-            <input value={form.coverage_issuer_name} onChange={e => setForm(f => ({ ...f, coverage_issuer_name: e.target.value }))} placeholder={t('coverage.issuerNamePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
+            <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
-        </div>
-        <div>
-          <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
-          <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
         </div>
         {msg && <div style={{ fontSize: 12, color: msg.ok ? 'var(--color-success)' : 'var(--color-error)' }}>{msg.text}</div>}
         <div style={{ display: 'flex', gap: 8 }}>

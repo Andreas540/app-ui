@@ -580,8 +580,9 @@
   "coverage": {
     "title": "Skyddsprodukter (utökat skydd)",
     "description": "Hantera skyddsprodukter som kan säljas på order och kopplas till specifika enheter.",
-    "newProduct": "Ny skyddsprodukt",
-    "editProduct": "Redigera skyddsprodukt",
+    "newProduct": "Ny tilläggsprodukt",
+    "editProduct": "Redigera tilläggsprodukt",
+    "extendedCoverageSection": "Utökat skydd",
     "nameLabel": "Namn",
     "namePlaceholder": "t.ex. 2 års utökat skydd",
     "costLabel": "Kostnad",

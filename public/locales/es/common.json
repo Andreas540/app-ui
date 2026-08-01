@@ -580,8 +580,9 @@
   "coverage": {
     "title": "Productos de cobertura extendida",
     "description": "Gestiona productos de cobertura que pueden venderse en pedidos y vincularse a unidades específicas.",
-    "newProduct": "Nuevo producto de cobertura",
-    "editProduct": "Editar producto de cobertura",
+    "newProduct": "Nuevo producto adicional",
+    "editProduct": "Editar producto adicional",
+    "extendedCoverageSection": "Cobertura extendida",
     "nameLabel": "Nombre",
     "namePlaceholder": "ej. Cobertura extendida 2 años",
     "costLabel": "Costo",

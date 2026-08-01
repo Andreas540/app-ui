@@ -580,8 +580,9 @@
   "coverage": {
     "title": "Extended Coverage Products",
     "description": "Manage coverage products that can be sold on orders and bound to specific units.",
-    "newProduct": "New Coverage Product",
-    "editProduct": "Edit Coverage Product",
+    "newProduct": "New Add On Product",
+    "editProduct": "Edit Add On Product",
+    "extendedCoverageSection": "Extended Coverage",
     "nameLabel": "Name",
     "namePlaceholder": "e.g. 2-Year Extended Coverage",
     "costLabel": "Cost",
