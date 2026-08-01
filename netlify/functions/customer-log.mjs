@@ -71,7 +71,10 @@ async function addNote(event) {
   const { neon } = await import('@neondatabase/serverless')
   const { DATABASE_URL } = process.env
   if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
-  const body = JSON.parse(event.body || '{}')
+  const rawBody = event.isBase64Encoded
+    ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+    : (event.body || '{}')
+  const body = JSON.parse(rawBody)
   const sql = neon(DATABASE_URL)
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(403, { error: authz.error })
