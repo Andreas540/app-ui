@@ -42,6 +42,7 @@ export default function NewProduct() {
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
   const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
+  const [unitTrackingOpen, setUnitTrackingOpen] = useState(false)
 
   const [categories, setCategories] = useState<string[]>([])
   const [subcategories, setSubcategories] = useState<string[]>([])
@@ -359,22 +360,30 @@ export default function NewProduct() {
 
       {category === 'product' && showUnitTracking && (
         <div style={{ marginTop: 12 }}>
-          <label>{t('products.unitTracking')}</label>
-          <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
-            {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
-              <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                <input type="radio" name="unit_tracking_new" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
-                <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>
-                    {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
-                  </span>
-                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
-                    {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
-                  </span>
-                </span>
-              </label>
-            ))}
+          <div
+            onClick={() => setUnitTrackingOpen(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{unitTrackingOpen ? '▼' : '▶'}</span>
+            <label style={{ cursor: 'pointer', margin: 0 }}>{t('products.unitTracking')}</label>
           </div>
+          {unitTrackingOpen && (
+            <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
+              {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
+                <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                  <input type="radio" name="unit_tracking_new" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
+                  <span>
+                    <span style={{ display: 'block', fontWeight: 500 }}>
+                      {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
+                    </span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
+                      {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
