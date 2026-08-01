@@ -56,12 +56,6 @@ export default function TenantAdminCoverageTab() {
     }
   }
 
-  function startNew() {
-    setForm({ ...EMPTY_FORM })
-    setEditingId('new')
-    setMsg(null)
-  }
-
   function startEdit(p: CoverageProduct) {
     setForm(productToForm(p))
     setEditingId(p.id)
