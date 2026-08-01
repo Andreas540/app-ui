@@ -1,6 +1,6 @@
 // src/components/CustomerLogModal.tsx
 // Chronological activity log for a customer: orders, payments, and notes.
-// Notes can be added at the top or between any two records.
+// Notes carry a client-controlled sort_date so they stay where they were added.
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,20 +13,21 @@ import { formatDate } from '../lib/time'
 interface LogItem {
   id: string
   kind: 'order' | 'payment' | 'note'
-  date: string
+  date: string               // sort key: order_date / payment_date / sort_date
   // order
   order_no?: number
   delivered_at?: string | null
   total_amount?: number
   product_name?: string
-  notes?: string          // order notes field
+  notes?: string
   // payment
   amount?: number
   payment_type?: string
-  payment_notes?: string  // payments.notes column
+  payment_notes?: string
   // note
   note_text?: string
   created_by?: string
+  note_created_at?: string   // actual write time, for display
 }
 
 async function fetchLog(customerId: string): Promise<LogItem[]> {
@@ -38,16 +39,22 @@ async function fetchLog(customerId: string): Promise<LogItem[]> {
   return data.items as LogItem[]
 }
 
-async function postNote(customerId: string, noteText: string): Promise<LogItem> {
+async function postNote(customerId: string, noteText: string, sortDate?: Date): Promise<LogItem> {
   const res = await fetch('/.netlify/functions/customer-log', {
     method: 'POST',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ customer_id: customerId, note_text: noteText }),
+    body: JSON.stringify({
+      customer_id: customerId,
+      note_text:   noteText,
+      sort_date:   (sortDate ?? new Date()).toISOString(),
+    }),
   })
   if (!res.ok) throw new Error(await res.text())
   const data = await res.json()
   return data.item as LogItem
 }
+
+// ── NoteInput: full textarea at the top of the modal ──────────────────────────
 
 function NoteInput({ onSave }: { onSave: (text: string) => Promise<void> }) {
   const { t } = useTranslation()
@@ -89,7 +96,13 @@ function NoteInput({ onSave }: { onSave: (text: string) => Promise<void> }) {
   )
 }
 
-function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }) {
+// ── InlineNoteAdder: collapsed link between timeline records ──────────────────
+
+function InlineNoteAdder({ onSave, prevDate, nextDate }: {
+  onSave: (text: string, sortDate: Date) => Promise<void>
+  prevDate: Date   // date of item above (newer)
+  nextDate: Date   // date of item below (older), or 1 day earlier if last
+}) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -102,7 +115,9 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
     setSaving(true)
     setErr(null)
     try {
-      await onSave(trimmed)
+      // Place the note at the midpoint between surrounding records
+      const sortDate = new Date((prevDate.getTime() + nextDate.getTime()) / 2)
+      await onSave(trimmed, sortDate)
       setText('')
       setOpen(false)
     } catch (e: any) {
@@ -122,7 +137,7 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
           + {t('customerLog.addNoteHere')}
         </div>
       ) : (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', background: 'var(--surface-subtle)', marginBottom: 2 }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', background: 'var(--bg)', marginBottom: 2 }}>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
@@ -146,6 +161,10 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
   )
 }
 
+// ── LogItemCard ────────────────────────────────────────────────────────────────
+
+const NOTE_BG = 'var(--bg)'   // page background — subtly different from card/panel in all themes
+
 function LogItemCard({ item, onOrderClick, onPaymentClick }: {
   item: LogItem
   onOrderClick: (order: any) => void
@@ -155,9 +174,10 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
 
   if (item.kind === 'note') {
     return (
-      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--surface-subtle)' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: NOTE_BG }}>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
-          {t('customerLog.note')} · {formatDate(item.date)}{item.created_by ? ` · ${item.created_by}` : ''}
+          {t('customerLog.note')} · {formatDate(item.note_created_at ?? item.date)}
+          {item.created_by ? ` · ${item.created_by}` : ''}
         </div>
         <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{item.note_text}</div>
       </div>
@@ -215,6 +235,8 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
   return null
 }
 
+// ── CustomerLogModal ───────────────────────────────────────────────────────────
+
 export default function CustomerLogModal({
   isOpen,
   onClose,
@@ -246,11 +268,21 @@ export default function CustomerLogModal({
       .finally(() => setLoading(false))
   }, [isOpen, customerId])
 
-  async function handleSaveNote(noteText: string) {
-    const newItem = await postNote(customerId, noteText)
-    setItems(prev =>
-      [...prev, newItem].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    )
+  // Insert new note at the correct position without re-sorting the whole array.
+  // The note's `date` field IS sort_date (returned from backend), so we can
+  // binary-search the descending list for the right slot.
+  async function handleSaveNote(noteText: string, sortDate?: Date) {
+    const newItem = await postNote(customerId, noteText, sortDate)
+    setItems(prev => {
+      if (prev.length === 0) return [newItem]
+      const sortMs = new Date(newItem.date).getTime()
+      // Find first item older than the note → insert before it
+      const insertAt = prev.findIndex(it => new Date(it.date).getTime() < sortMs)
+      if (insertAt === -1) return [...prev, newItem]  // older than all → append
+      const next = [...prev]
+      next.splice(insertAt, 0, newItem)
+      return next
+    })
   }
 
   return (
@@ -259,7 +291,7 @@ export default function CustomerLogModal({
         <div style={{ display: 'grid', gap: 12 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('customerLog.addNote')}</div>
-            <NoteInput onSave={handleSaveNote} />
+            <NoteInput onSave={noteText => handleSaveNote(noteText)} />
           </div>
 
           <div style={{ borderTop: '1px solid var(--line)' }} />
@@ -272,18 +304,30 @@ export default function CustomerLogModal({
 
           {!loading && !err && items.length > 0 && (
             <div>
-              {items.map((item) => (
-                <div key={item.id}>
-                  <div style={{ marginBottom: 4 }}>
-                    <LogItemCard
-                      item={item}
-                      onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
-                      onPaymentClick={p => { setSelectedPayment(p); setShowPaymentModal(true) }}
+              {items.map((item, idx) => {
+                const prevDate = new Date(item.date)
+                const nextItem = items[idx + 1]
+                // If there's no next item, place any note 1 day earlier than the last record
+                const nextDate = nextItem
+                  ? new Date(nextItem.date)
+                  : new Date(prevDate.getTime() - 86_400_000)
+                return (
+                  <div key={item.id}>
+                    <div style={{ marginBottom: 4 }}>
+                      <LogItemCard
+                        item={item}
+                        onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
+                        onPaymentClick={p => { setSelectedPayment(p); setShowPaymentModal(true) }}
+                      />
+                    </div>
+                    <InlineNoteAdder
+                      onSave={(text, sortDate) => handleSaveNote(text, sortDate)}
+                      prevDate={prevDate}
+                      nextDate={nextDate}
                     />
                   </div>
-                  <InlineNoteAdder onSave={handleSaveNote} />
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

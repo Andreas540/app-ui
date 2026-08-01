@@ -49,11 +49,13 @@ async function getLog(event) {
       ORDER BY p.payment_date DESC, p.created_at DESC
     `,
     sql`
-      SELECT id, note_text, created_by, created_at AS date,
+      SELECT id, note_text, created_by,
+             sort_date AS date,
+             created_at AS note_created_at,
              'note' AS kind
       FROM customer_notes
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
-      ORDER BY created_at DESC
+      ORDER BY sort_date DESC
     `,
   ])
 
@@ -85,11 +87,15 @@ async function addNote(event) {
   if (!customer_id) return cors(400, { error: 'customer_id required' })
   if (!note_text)   return cors(400, { error: 'note_text required' })
   const created_by  = authz.email || null
+  const sort_date   = body.sort_date ? new Date(body.sort_date) : new Date()
 
   const [row] = await sql`
-    INSERT INTO customer_notes (tenant_id, customer_id, note_text, created_by)
-    VALUES (${TENANT_ID}, ${customer_id}, ${note_text}, ${created_by})
-    RETURNING id, note_text, created_by, created_at AS date, 'note' AS kind
+    INSERT INTO customer_notes (tenant_id, customer_id, note_text, created_by, sort_date)
+    VALUES (${TENANT_ID}, ${customer_id}, ${note_text}, ${created_by}, ${sort_date})
+    RETURNING id, note_text, created_by,
+              sort_date AS date,
+              created_at AS note_created_at,
+              'note' AS kind
   `
   return cors(201, { item: row })
 }
