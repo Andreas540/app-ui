@@ -42,6 +42,7 @@ type InventoryUnit = {
 type NamedItem = {
   id: string
   product_id: string
+  product_name: string
   unit_identifier: string
   order_no: number
   order_date: string
@@ -84,7 +85,6 @@ export default function Warehouse() {
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
   const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
   const [namedItems, setNamedItems] = useState<NamedItem[]>([])
-  const [expandedNamedItems, setExpandedNamedItems] = useState<Set<string>>(new Set())
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
@@ -247,14 +247,6 @@ export default function Warehouse() {
     } catch (e) {
       console.error('Failed to fetch inventory:', e)
     }
-  }
-
-  const toggleNamedItems = (productId: string) => {
-    setExpandedNamedItems(prev => {
-      const next = new Set(prev)
-      next.has(productId) ? next.delete(productId) : next.add(productId)
-      return next
-    })
   }
 
   // Parse quantity (allow negative with minus sign, allow decimals for materials)
@@ -613,8 +605,6 @@ export default function Warehouse() {
                   const isUnitsExpanded = expandedUnits.has(item.product_id)
                   const isUnitTracked = item.unit_tracking !== 'none'
                   const unitRows = unitCache[item.product_id]
-                  const namedForProduct = namedItems.filter(n => n.product_id === item.product_id)
-                  const isNamedItemsExpanded = expandedNamedItems.has(item.product_id)
                   return (
                     <div key={item.product_id}>
                       <div
@@ -647,15 +637,6 @@ export default function Warehouse() {
                               >
                                 <span>{isUnitsExpanded ? '▼' : '▶'}</span>
                                 <span>{t('warehouse.namedUnitsCount', { count: Number(item.unit_instock_count) })}</span>
-                              </button>
-                            )}
-                            {namedForProduct.length > 0 && (
-                              <button
-                                onClick={e => { e.stopPropagation(); toggleNamedItems(item.product_id) }}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 3 }}
-                              >
-                                <span>{isNamedItemsExpanded ? '▼' : '▶'}</span>
-                                <span>{t('warehouse.namedItemsPending', { count: namedForProduct.length })}</span>
                               </button>
                             )}
                           </span>
@@ -820,23 +801,6 @@ export default function Warehouse() {
                         </div>
                       )}
 
-                      {isNamedItemsExpanded && namedForProduct.length > 0 && (
-                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4, paddingLeft: 16, paddingRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>{t('warehouse.namedItemsPendingHeader')}</div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(100px,1fr) minmax(80px,1fr) minmax(80px,1fr)', gap: 6, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, paddingBottom: 4 }}>
-                            <div>{t('warehouse.namedItemsIdentifier')}</div>
-                            <div>{t('warehouse.namedItemsOrder')}</div>
-                            <div>{t('warehouse.namedItemsCustomer')}</div>
-                          </div>
-                          {namedForProduct.map(ni => (
-                            <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(100px,1fr) minmax(80px,1fr) minmax(80px,1fr)', gap: 6, fontSize: 12, borderTop: '1px solid var(--border)', paddingTop: 4, paddingBottom: 4 }}>
-                              <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
-                              <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
-                              <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   )
                 })}
@@ -844,6 +808,31 @@ export default function Warehouse() {
           </div>
         )}
       </div>
+
+      {/* Named units pending — shown regardless of product_stock tracking */}
+      {namedItems.length > 0 && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t('warehouse.namedItemsPendingHeader')}</div>
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ minWidth: 400, fontSize: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+                <div>{t('product')}</div>
+                <div>{t('warehouse.namedItemsIdentifier')}</div>
+                <div>{t('warehouse.namedItemsOrder')}</div>
+                <div>{t('warehouse.namedItemsCustomer')}</div>
+              </div>
+              {namedItems.map(ni => (
+                <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 6, paddingBottom: 6 }}>
+                  <div style={{ color: 'var(--text-secondary)' }}>{ni.product_name}</div>
+                  <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Materials Section */}
       {materials.length > 0 && (

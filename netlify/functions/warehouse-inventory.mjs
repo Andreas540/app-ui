@@ -138,16 +138,20 @@ async function getInventory(event) {
     let namedItems = []
     try {
       namedItems = await sql`
-        SELECT oi.id, oi.product_id, oi.unit_identifier,
+        SELECT oi.id, oi.product_id,
+               COALESCE(p.name, s.name, 'Unknown') AS product_name,
+               oi.unit_identifier,
                o.order_no, o.order_date::text AS order_date,
                c.name AS customer_name
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         JOIN customers c ON c.id = o.customer_id
+        LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+        LEFT JOIN services s ON s.id = oi.service_id
         WHERE o.tenant_id = ${TENANT_ID}
           AND o.delivered = FALSE
           AND oi.unit_identifier IS NOT NULL
-        ORDER BY o.order_date DESC, o.order_no DESC
+        ORDER BY p.name, s.name, o.order_date DESC, o.order_no DESC
       `
     } catch { /* column not yet migrated */ }
 
