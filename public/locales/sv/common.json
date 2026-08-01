@@ -588,6 +588,7 @@
     "order": "Order",
     "payment": "Betalning",
     "orderNoNumber": "Order",
+    "delivered": "Levererad",
     "empty": "Ingen aktivitet ännu"
   },
   "coverage": {

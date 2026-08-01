@@ -588,6 +588,7 @@
     "order": "Pedido",
     "payment": "Pago",
     "orderNoNumber": "Pedido",
+    "delivered": "Entregado",
     "empty": "Sin actividad todavía"
   },
   "coverage": {

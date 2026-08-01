@@ -588,6 +588,7 @@
     "order": "Order",
     "payment": "Payment",
     "orderNoNumber": "Order",
+    "delivered": "Delivered",
     "empty": "No activity yet"
   },
   "coverage": {

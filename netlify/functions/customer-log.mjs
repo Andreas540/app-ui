@@ -26,12 +26,15 @@ async function getLog(event) {
 
   const [orders, payments, notes] = await Promise.all([
     sql`
-      SELECT id, order_no, order_date AS date, status,
-             total_amount::float8 AS total_amount,
+      SELECT id, order_no, order_date AS date,
+             delivered_at,
+             COALESCE(SUM(oi.qty * oi.unit_price), 0)::float8 AS total_amount,
              'order' AS kind
-      FROM orders
-      WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
-      ORDER BY order_date DESC, order_no DESC
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${customer_id}
+      GROUP BY o.id, o.order_no, o.order_date, o.delivered_at
+      ORDER BY o.order_date DESC, o.order_no DESC
     `,
     sql`
       SELECT id, payment_date AS date, amount::float8 AS amount,

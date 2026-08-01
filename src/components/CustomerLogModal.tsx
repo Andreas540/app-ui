@@ -16,7 +16,7 @@ interface LogItem {
   date: string
   // order
   order_no?: number
-  status?: string
+  delivered_at?: string | null
   total_amount?: number
   // payment
   amount?: number
@@ -162,7 +162,7 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('customerLog.order')} · {formatDate(item.date)}</div>
           <div style={{ fontSize: 13, fontWeight: 500 }}>
             {item.order_no != null ? `#${item.order_no}` : t('customerLog.orderNoNumber')}
-            {item.status && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>{item.status}</span>}
+            {item.delivered_at && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>{t('customerLog.delivered')}</span>}
           </div>
         </div>
         {item.total_amount != null && (

@@ -546,6 +546,7 @@ export default function CustomerDetailPage() {
         {cfgShowLog && (
           <button
             type="button"
+            className="primary"
             onClick={() => setShowLogModal(true)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
           >
