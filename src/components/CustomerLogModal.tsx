@@ -38,6 +38,14 @@ async function fetchLog(customerId: string): Promise<LogItem[]> {
   return (await res.json()).items as LogItem[]
 }
 
+async function deleteNote(noteId: string): Promise<void> {
+  const res = await fetch(`/.netlify/functions/customer-log?id=${noteId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error(await res.text())
+}
+
 async function postNote(
   customerId: string,
   noteText: string,
@@ -149,17 +157,23 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
 
 // ── LogItemCard ────────────────────────────────────────────────────────────────
 
-function LogItemCard({ item, onOrderClick, onPaymentClick }: {
+function LogItemCard({ item, onOrderClick, onPaymentClick, onDeleteNote }: {
   item: LogItem
   onOrderClick: (order: any) => void
   onPaymentClick: (payment: any) => void
+  onDeleteNote: (id: string) => void
 }) {
   const { t } = useTranslation()
 
   if (item.kind === 'note') {
     return (
-      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--bg)' }}>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--bg)', position: 'relative' }}>
+        <button
+          onClick={() => onDeleteNote(item.id)}
+          title="Delete note"
+          style={{ position: 'absolute', top: 6, right: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--muted)', lineHeight: 1, padding: '0 2px' }}
+        >×</button>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, paddingRight: 20 }}>
           {t('customerLog.note')} · {formatDate(item.date)}
           {item.created_by ? ` · ${item.created_by}` : ''}
         </div>
@@ -296,6 +310,10 @@ export default function CustomerLogModal({
                         item={item}
                         onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
                         onPaymentClick={p => { setSelectedPayment(p); setShowPaymentModal(true) }}
+                        onDeleteNote={async id => {
+                          await deleteNote(id)
+                          setItems(prev => prev.filter(it => it.id !== id))
+                        }}
                       />
                     </div>
                     <InlineNoteAdder onSave={text => handleSaveNote(text, anchorId)} />

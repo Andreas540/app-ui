@@ -1,6 +1,7 @@
 // netlify/functions/customer-log.mjs
-// GET  ?customer_id=<uuid>  → chronological timeline (orders, payments, notes interleaved)
-// POST { customer_id, note_text, after_item_id? }  → insert a note
+// GET    ?customer_id=<uuid>  → chronological timeline (orders, payments, notes interleaved)
+// POST   { customer_id, note_text, after_item_id? }  → insert a note
+// DELETE ?id=<note_id>         → delete a note
 //
 // Notes anchor to a specific order or payment by ID (after_item_id).
 // NULL after_item_id = note belongs at the top of the list.
@@ -14,6 +15,7 @@ export const handler = withErrorLogging('customer-log', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return getLog(event)
   if (event.httpMethod === 'POST')   return addNote(event)
+  if (event.httpMethod === 'DELETE') return deleteNote(event)
   return cors(405, { error: 'Method not allowed' })
 })
 
@@ -127,6 +129,27 @@ async function addNote(event) {
               'note' AS kind
   `
   return cors(201, { item: row })
+}
+
+async function deleteNote(event) {
+  const { neon } = await import('@neondatabase/serverless')
+  const { DATABASE_URL } = process.env
+  if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+  const sql = neon(DATABASE_URL)
+  const authz = await resolveAuthz({ sql, event })
+  if (authz.error) return cors(403, { error: authz.error })
+  const TENANT_ID = authz.tenantId
+
+  const id = event.queryStringParameters?.id
+  if (!id) return cors(400, { error: 'id required' })
+
+  const result = await sql`
+    DELETE FROM customer_notes
+    WHERE id = ${id} AND tenant_id = ${TENANT_ID}
+    RETURNING id
+  `
+  if (result.length === 0) return cors(404, { error: 'Note not found' })
+  return cors(200, { ok: true })
 }
 
 function cors(status, body) {
