@@ -174,8 +174,10 @@ export default function NewOrder() {
     let priceStr = ''
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     const needsUnit = prod?.unit_tracking === 'serialized_intake'
+    const isCoverageProduct = prod?.product_kind === 'coverage'
     setLines(prev => prev.map((l, i) => i === idx
-      ? { ...l, product_id, priceStr, historicalPrice: null, unit_id: null, availableUnits: needsUnit ? 'loading' : undefined }
+      ? { ...l, product_id, priceStr, historicalPrice: null, unit_id: null, availableUnits: needsUnit ? 'loading' : undefined,
+          qtyStr: l.qtyStr || (isCoverageProduct ? '1' : '') }
       : l
     ))
     fetchLastPrice(idx, product_id)

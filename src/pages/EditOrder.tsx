@@ -202,9 +202,13 @@ export default function EditOrder() {
     const prod = products.find(p => p.id === product_id)
     const pa = prod?.price_amount
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
+    const isCoverageProduct = prod?.product_kind === 'coverage'
     let priceStr = lines[idx].priceStr
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
-    setLines(prev => prev.map((l, i) => i === idx ? { ...l, product_id, priceStr } : l))
+    setLines(prev => prev.map((l, i) => i === idx
+      ? { ...l, product_id, priceStr, qtyStr: l.qtyStr || (isCoverageProduct ? '1' : '') }
+      : l
+    ))
   }
 
   function onLinePriceChange(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
