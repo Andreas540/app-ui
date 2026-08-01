@@ -613,6 +613,7 @@
     "directServiceCost": "Costo Directo del Servicio",
     "saveProduct": "Guardar producto",
     "saveService": "Guardar servicio",
+    "addOnProduct": "Producto adicional",
     "unitTracking": "Seguimiento de unidades",
     "unitTrackingNone": "Ninguno",
     "unitTrackingOnPromote": "Al identificar",

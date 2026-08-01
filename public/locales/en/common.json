@@ -613,6 +613,7 @@
     "directServiceCost": "Direct Service Cost",
     "saveProduct": "Save product",
     "saveService": "Save service",
+    "addOnProduct": "Add On Product",
     "unitTracking": "Unit tracking",
     "unitTrackingNone": "None",
     "unitTrackingOnPromote": "On identify",

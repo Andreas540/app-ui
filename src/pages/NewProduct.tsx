@@ -260,7 +260,7 @@ export default function NewProduct() {
             fontWeight: category === 'coverage' ? 600 : 400,
           }}
         >
-          {t('tenantAdmin.tabCoverage')}
+          {t('products.addOnProduct')}
         </button>
       </div>
 
