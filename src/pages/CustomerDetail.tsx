@@ -547,7 +547,7 @@ export default function CustomerDetailPage() {
           <button
             type="button"
             onClick={() => setShowLogModal(true)}
-            style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
           >
             {t('customerLog.button')}
           </button>

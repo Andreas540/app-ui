@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import Modal from './Modal'
 import OrderDetailModal from './OrderDetailModal'
 import PaymentDetailModal from './PaymentDetailModal'
 import { formatDate } from '../lib/time'
@@ -13,15 +14,15 @@ interface LogItem {
   id: string
   kind: 'order' | 'payment' | 'note'
   date: string
-  // order fields
-  order_number?: string
+  // order
+  order_no?: number
   status?: string
   total_amount?: number
-  // payment fields
+  // payment
   amount?: number
   payment_type?: string
   payment_notes?: string
-  // note fields
+  // note
   note_text?: string
   created_by?: string
 }
@@ -70,7 +71,7 @@ function NoteInput({ onSave }: { onSave: (text: string) => Promise<void> }) {
         onChange={e => setText(e.target.value)}
         placeholder={t('customerLog.notePlaceholder')}
         rows={3}
-        style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', resize: 'vertical', fontFamily: 'inherit' }}
+        style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', resize: 'vertical', fontFamily: 'inherit', background: 'var(--bg)', color: 'var(--text)' }}
       />
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button className="primary" onClick={handleSave} disabled={saving || !text.trim()} style={{ height: 30, padding: '0 14px', fontSize: 12 }}>
@@ -101,23 +102,23 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
   }
 
   return (
-    <div style={{ marginBottom: 2 }}>
+    <div style={{ padding: '2px 0' }}>
       {!open ? (
         <div
           onClick={() => setOpen(true)}
-          style={{ fontSize: 11, color: 'var(--muted)', cursor: 'pointer', padding: '4px 0', textAlign: 'center', opacity: 0.6 }}
+          style={{ fontSize: 11, color: 'var(--muted)', cursor: 'pointer', padding: '2px 0', textAlign: 'center', opacity: 0.5 }}
         >
           + {t('customerLog.addNoteHere')}
         </div>
       ) : (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', background: 'var(--surface-alt, var(--surface))', marginBottom: 6 }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', background: 'var(--surface-subtle)', marginBottom: 2 }}>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder={t('customerLog.notePlaceholder')}
             rows={2}
             autoFocus
-            style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--border)', resize: 'none', fontFamily: 'inherit' }}
+            style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--border)', resize: 'none', fontFamily: 'inherit', background: 'var(--bg)', color: 'var(--text)' }}
           />
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 6 }}>
             <button onClick={() => { setOpen(false); setText('') }} style={{ height: 26, padding: '0 10px', fontSize: 11 }}>
@@ -142,7 +143,7 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
 
   if (item.kind === 'note') {
     return (
-      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--surface-alt, var(--surface))' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--surface-subtle)' }}>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
           {t('customerLog.note')} · {formatDate(item.date)}{item.created_by ? ` · ${item.created_by}` : ''}
         </div>
@@ -160,7 +161,7 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
         <div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('customerLog.order')} · {formatDate(item.date)}</div>
           <div style={{ fontSize: 13, fontWeight: 500 }}>
-            {item.order_number ? `#${item.order_number}` : t('customerLog.orderNoNumber')}
+            {item.order_no != null ? `#${item.order_no}` : t('customerLog.orderNoNumber')}
             {item.status && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>{item.status}</span>}
           </div>
         </div>
@@ -227,71 +228,39 @@ export default function CustomerLogModal({
 
   async function handleSaveNote(noteText: string) {
     const newItem = await postNote(customerId, noteText)
-    setItems(prev => {
-      const merged = [...prev, newItem].sort((a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      )
-      return merged
-    })
+    setItems(prev =>
+      [...prev, newItem].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    )
   }
-
-  function handleOrderClick(order: any) {
-    setSelectedOrder(order)
-    setShowOrderModal(true)
-  }
-
-  function handlePaymentClick(payment: any) {
-    setSelectedPayment(payment)
-    setShowPaymentModal(true)
-  }
-
-  if (!isOpen) return null
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000 }}
-      />
-      {/* Modal */}
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        zIndex: 1001, width: 'min(520px, 95vw)', maxHeight: '85vh',
-        background: 'var(--surface)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        {/* Header */}
-        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{t('customerLog.title')}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{customerName}</div>
-          </div>
-          <button onClick={onClose} style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', lineHeight: 1, padding: '0 4px' }}>✕</button>
-        </div>
-
-        {/* Scrollable body */}
-        <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
+      <Modal isOpen={isOpen} onClose={onClose} title={`${t('customerLog.title')} — ${customerName}`}>
+        <div style={{ display: 'grid', gap: 12 }}>
           {/* Top note input */}
-          <div style={{ marginBottom: 16 }}>
+          <div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('customerLog.addNote')}</div>
             <NoteInput onSave={handleSaveNote} />
           </div>
 
-          <div style={{ borderTop: '1px solid var(--border)', marginBottom: 12 }} />
+          <div style={{ borderTop: '1px solid var(--line)' }} />
 
-          {loading && <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '20px 0' }}>{t('loading')}</div>}
-          {err && <div style={{ fontSize: 13, color: 'var(--color-error)', padding: '12px 0' }}>{err}</div>}
+          {loading && <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>{t('loading')}</div>}
+          {err && <div style={{ fontSize: 13, color: 'var(--color-error)' }}>{err}</div>}
           {!loading && !err && items.length === 0 && (
-            <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '20px 0' }}>{t('customerLog.empty')}</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>{t('customerLog.empty')}</div>
           )}
 
           {!loading && !err && items.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <div>
               {items.map((item) => (
                 <div key={item.id}>
-                  <div style={{ marginBottom: 6 }}>
-                    <LogItemCard item={item} onOrderClick={handleOrderClick} onPaymentClick={handlePaymentClick} />
+                  <div style={{ marginBottom: 4 }}>
+                    <LogItemCard
+                      item={item}
+                      onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
+                      onPaymentClick={p => { setSelectedPayment(p); setShowPaymentModal(true) }}
+                    />
                   </div>
                   <InlineNoteAdder onSave={handleSaveNote} />
                 </div>
@@ -299,7 +268,7 @@ export default function CustomerLogModal({
             </div>
           )}
         </div>
-      </div>
+      </Modal>
 
       <OrderDetailModal
         isOpen={showOrderModal}

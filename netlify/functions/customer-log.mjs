@@ -26,12 +26,12 @@ async function getLog(event) {
 
   const [orders, payments, notes] = await Promise.all([
     sql`
-      SELECT id, order_number, order_date AS date, status,
+      SELECT id, order_no, order_date AS date, status,
              total_amount::float8 AS total_amount,
              'order' AS kind
       FROM orders
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
-      ORDER BY order_date DESC, created_at DESC
+      ORDER BY order_date DESC, order_no DESC
     `,
     sql`
       SELECT id, payment_date AS date, amount::float8 AS amount,
