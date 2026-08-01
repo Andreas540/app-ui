@@ -28,6 +28,7 @@ export default function NewProduct() {
   )
 
   const [formOpen, setFormOpen] = useState(false)
+  const [listOpen, setListOpen] = useState(false)
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -461,18 +462,28 @@ export default function NewProduct() {
 
     {/* ---- Product costs card ---- */}
     <div className="card page-normal" style={{ marginTop: 16 }}>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: 8 }}>
-          <h3 style={{ margin: 0 }}>{t('products.productCosts')}</h3>
-          <button
-            className="primary"
-            onClick={() => setShowHistorical(!showHistorical)}
-            style={{ height: BTN_H, minWidth: 140 }}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: listOpen ? 8 : 0 }}>
+          <div
+            onClick={() => setListOpen(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
           >
-            {showHistorical ? t('products.currentCosts') : t('products.historicalCosts')}
-          </button>
+            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
+            <h3 style={{ margin: 0 }}>
+              {category === 'service' ? t('products.allServices') : category === 'coverage' ? t('products.allAddOnProducts') : t('products.allProducts')}
+            </h3>
+          </div>
+          {listOpen && (
+            <button
+              className="primary"
+              onClick={() => setShowHistorical(!showHistorical)}
+              style={{ height: BTN_H, minWidth: 140 }}
+            >
+              {showHistorical ? t('products.currentCosts') : t('products.historicalCosts')}
+            </button>
+          )}
         </div>
 
-        {!showHistorical ? (
+        {listOpen && !showHistorical ? (
           // Current costs view - using filtered products
           <div
             role="list"
@@ -511,7 +522,7 @@ export default function NewProduct() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : listOpen ? (
           // Historical costs view - showing all products (no filter)
           <div
             role="list"
@@ -560,7 +571,7 @@ export default function NewProduct() {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
     </div>
     </>
   )
