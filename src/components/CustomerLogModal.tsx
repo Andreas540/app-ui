@@ -18,10 +18,12 @@ interface LogItem {
   order_no?: number
   delivered_at?: string | null
   total_amount?: number
+  product_name?: string
+  notes?: string          // order notes field
   // payment
   amount?: number
   payment_type?: string
-  payment_notes?: string
+  payment_notes?: string  // payments.notes column
   // note
   note_text?: string
   created_by?: string
@@ -51,14 +53,18 @@ function NoteInput({ onSave }: { onSave: (text: string) => Promise<void> }) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
 
   async function handleSave() {
     const trimmed = text.trim()
     if (!trimmed) return
     setSaving(true)
+    setErr(null)
     try {
       await onSave(trimmed)
       setText('')
+    } catch (e: any) {
+      setErr(e.message ?? 'Error saving note')
     } finally {
       setSaving(false)
     }
@@ -73,6 +79,7 @@ function NoteInput({ onSave }: { onSave: (text: string) => Promise<void> }) {
         rows={3}
         style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', resize: 'vertical', fontFamily: 'inherit', background: 'var(--bg)', color: 'var(--text)' }}
       />
+      {err && <div style={{ fontSize: 12, color: 'var(--color-error)' }}>{err}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button className="primary" onClick={handleSave} disabled={saving || !text.trim()} style={{ height: 30, padding: '0 14px', fontSize: 12 }}>
           {saving ? t('saving') : t('customerLog.saveNote')}
@@ -87,15 +94,19 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
 
   async function handleSave() {
     const trimmed = text.trim()
     if (!trimmed) return
     setSaving(true)
+    setErr(null)
     try {
       await onSave(trimmed)
       setText('')
       setOpen(false)
+    } catch (e: any) {
+      setErr(e.message ?? 'Error saving note')
     } finally {
       setSaving(false)
     }
@@ -120,8 +131,9 @@ function InlineNoteAdder({ onSave }: { onSave: (text: string) => Promise<void> }
             autoFocus
             style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--border)', resize: 'none', fontFamily: 'inherit', background: 'var(--bg)', color: 'var(--text)' }}
           />
+          {err && <div style={{ fontSize: 11, color: 'var(--color-error)', marginTop: 4 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 6 }}>
-            <button onClick={() => { setOpen(false); setText('') }} style={{ height: 26, padding: '0 10px', fontSize: 11 }}>
+            <button onClick={() => { setOpen(false); setText(''); setErr(null) }} style={{ height: 26, padding: '0 10px', fontSize: 11 }}>
               {t('cancel')}
             </button>
             <button className="primary" onClick={handleSave} disabled={saving || !text.trim()} style={{ height: 26, padding: '0 10px', fontSize: 11 }}>
@@ -156,18 +168,24 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
     return (
       <div
         onClick={() => onOrderClick(item)}
-        style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+        style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}
       >
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('customerLog.order')} · {formatDate(item.date)}</div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>
-            {item.order_no != null ? `#${item.order_no}` : t('customerLog.orderNoNumber')}
-            {item.delivered_at && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>{t('customerLog.delivered')}</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+              {t('customerLog.order')} · {formatDate(item.date)}
+              {item.delivered_at && <span style={{ marginLeft: 6 }}>· {t('customerLog.delivered')}</span>}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>
+              {item.order_no != null ? `#${item.order_no}` : t('customerLog.orderNoNumber')}
+              {item.product_name && <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--muted)' }}>{item.product_name}</span>}
+            </div>
+            {item.notes && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, whiteSpace: 'pre-wrap' }}>{item.notes}</div>}
           </div>
+          {item.total_amount != null && (
+            <div style={{ fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{item.total_amount.toFixed(2)}</div>
+          )}
         </div>
-        {item.total_amount != null && (
-          <div style={{ fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{item.total_amount.toFixed(2)}</div>
-        )}
       </div>
     )
   }
@@ -176,18 +194,20 @@ function LogItemCard({ item, onOrderClick, onPaymentClick }: {
     return (
       <div
         onClick={() => onPaymentClick(item)}
-        style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+        style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}
       >
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>{t('customerLog.payment')} · {formatDate(item.date)}</div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>
-            {item.payment_type && <span style={{ marginRight: 6 }}>{item.payment_type}</span>}
-            {item.payment_notes && <span style={{ fontSize: 11, color: 'var(--muted)' }}>{item.payment_notes}</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+              {t('customerLog.payment')} · {formatDate(item.date)}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{item.payment_type ?? ''}</div>
+            {item.payment_notes && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, whiteSpace: 'pre-wrap' }}>{item.payment_notes}</div>}
           </div>
+          {item.amount != null && (
+            <div style={{ fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{item.amount.toFixed(2)}</div>
+          )}
         </div>
-        {item.amount != null && (
-          <div style={{ fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{item.amount.toFixed(2)}</div>
-        )}
       </div>
     )
   }
@@ -237,7 +257,6 @@ export default function CustomerLogModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={`${t('customerLog.title')} — ${customerName}`}>
         <div style={{ display: 'grid', gap: 12 }}>
-          {/* Top note input */}
           <div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('customerLog.addNote')}</div>
             <NoteInput onSave={handleSaveNote} />

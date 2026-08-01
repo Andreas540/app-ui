@@ -28,21 +28,25 @@ async function getLog(event) {
     sql`
       SELECT o.id, o.order_no, o.order_date AS date,
              o.delivered_at,
+             MAX(o.notes) AS notes,
              COALESCE(SUM(oi.qty * oi.unit_price), 0)::float8 AS total_amount,
+             COALESCE(MAX(p.name), MAX(s.name)) AS product_name,
              'order' AS kind
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+      LEFT JOIN services s ON s.id = oi.service_id
       WHERE o.tenant_id = ${TENANT_ID} AND o.customer_id = ${customer_id}
       GROUP BY o.id, o.order_no, o.order_date, o.delivered_at
       ORDER BY o.order_date DESC, o.order_no DESC
     `,
     sql`
-      SELECT id, payment_date AS date, amount::float8 AS amount,
-             payment_type, notes AS payment_notes,
+      SELECT p.id, p.payment_date AS date, p.amount::float8 AS amount,
+             p.payment_type, p.notes AS payment_notes,
              'payment' AS kind
-      FROM payments
-      WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
-      ORDER BY payment_date DESC, created_at DESC
+      FROM payments p
+      WHERE p.tenant_id = ${TENANT_ID} AND p.customer_id = ${customer_id}
+      ORDER BY p.payment_date DESC, p.created_at DESC
     `,
     sql`
       SELECT id, note_text, created_by, created_at AS date,
