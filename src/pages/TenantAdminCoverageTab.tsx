@@ -39,7 +39,7 @@ export default function TenantAdminCoverageTab() {
   const { t } = useTranslation()
   const [products, setProducts] = useState<CoverageProduct[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | 'new' | null>(null)
+  const [editingId, setEditingId] = useState<string | 'new' | null>('new')
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
@@ -91,12 +91,14 @@ export default function TenantAdminCoverageTab() {
       if (editingId === 'new') {
         const res = await createCoverageProduct(payload)
         setProducts(prev => [...prev, res.coverage_product].sort((a, b) => a.name.localeCompare(b.name)))
+        setForm({ ...EMPTY_FORM })
+        setEditingId('new')
       } else {
         const res = await updateCoverageProduct({ id: editingId!, ...payload })
         setProducts(prev => prev.map(p => p.id === editingId ? res.coverage_product : p))
+        setEditingId(null)
       }
       setMsg({ text: t('coverage.saved'), ok: true })
-      setEditingId(null)
     } catch (e: any) {
       setMsg({ text: e.message ?? t('coverage.saveError'), ok: false })
     } finally {
@@ -158,7 +160,7 @@ export default function TenantAdminCoverageTab() {
             </div>
           ))}
 
-          {/* New product form */}
+          {/* New product form — always open, no cancel */}
           {editingId === 'new' && (
             <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '14px 14px 10px', marginBottom: 10 }}>
               <CoverageForm
@@ -167,22 +169,18 @@ export default function TenantAdminCoverageTab() {
                 saving={saving} msg={msg}
                 t={t} H={H} issuerLabel={issuerLabel}
                 title={t('coverage.newProduct')}
+                hideCancel
               />
             </div>
           )}
 
-          {editingId !== 'new' && (
-            <button onClick={startNew} style={{ fontSize: 13, padding: '0 16px', height: H }}>
-              + {t('coverage.newProduct')}
-            </button>
-          )}
         </>
       )}
     </div>
   )
 }
 
-function CoverageForm({ form, setForm, onSave, onCancel, saving, msg, t, H, issuerLabel, title }: {
+function CoverageForm({ form, setForm, onSave, onCancel, saving, msg, t, H, issuerLabel, title, hideCancel }: {
   form: typeof EMPTY_FORM
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>
   onSave: () => void
@@ -193,6 +191,7 @@ function CoverageForm({ form, setForm, onSave, onCancel, saving, msg, t, H, issu
   H: number
   issuerLabel: (type: 'manufacturer' | 'shop' | 'third_party') => string
   title: string
+  hideCancel?: boolean
 }) {
   return (
     <div>
@@ -280,9 +279,11 @@ function CoverageForm({ form, setForm, onSave, onCancel, saving, msg, t, H, issu
           <button className="primary" onClick={onSave} disabled={saving} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
             {saving ? t('saving') : t('coverage.save')}
           </button>
-          <button onClick={onCancel} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
-            {t('coverage.cancel')}
-          </button>
+          {!hideCancel && (
+            <button onClick={onCancel} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+              {t('coverage.cancel')}
+            </button>
+          )}
         </div>
       </div>
     </div>
