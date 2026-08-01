@@ -34,6 +34,7 @@ export default function NewProduct() {
   const [loadingList, setLoadingList] = useState(false)
   const [coverageProducts, setCoverageProducts] = useState<CoverageProduct[]>([])
   const [loadingCoverage, setLoadingCoverage] = useState(false)
+  const [editingCoverage, setEditingCoverage] = useState<CoverageProduct | null>(null)
 
   const [durationStr, setDurationStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
@@ -279,7 +280,13 @@ export default function NewProduct() {
         </button>
       </div>
 
-      {category === 'coverage' && <AddOnProductForm onProductsChange={loadCoverageProducts} />}
+      {category === 'coverage' && (
+        <AddOnProductForm
+          editProduct={editingCoverage}
+          onSaved={() => { loadCoverageProducts(); setEditingCoverage(null) }}
+          onCancelEdit={() => setEditingCoverage(null)}
+        />
+      )}
 
       {category !== 'coverage' && <><div style={{ marginTop: 12 }}>
         <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
@@ -515,16 +522,26 @@ export default function NewProduct() {
             <div style={{ marginTop: 8 }}>
               {coverageProducts.map(p => (
                 <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
-                    {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
-                    {p.coverage_issuer_type && <span>{p.coverage_issuer_type === 'manufacturer' ? t('coverage.issuerManufacturer') : p.coverage_issuer_type === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
-                    {p.coverage_ref && (
-                      p.coverage_ref.startsWith('http')
-                        ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
-                        : <span>{p.coverage_ref}</span>
-                    )}
-                    {p.price_amount != null && <span>{fmtMoney(p.price_amount)}</span>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                        {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
+                        {p.coverage_issuer_type && <span>{p.coverage_issuer_type === 'manufacturer' ? t('coverage.issuerManufacturer') : p.coverage_issuer_type === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
+                        {p.coverage_ref && (
+                          p.coverage_ref.startsWith('http')
+                            ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
+                            : <span>{p.coverage_ref}</span>
+                        )}
+                        {p.price_amount != null && <span>{fmtMoney(p.price_amount)}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setEditingCoverage(p); setFormOpen(true) }}
+                      style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
+                    >
+                      {t('edit')}
+                    </button>
                   </div>
                 </div>
               ))}

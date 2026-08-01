@@ -1,11 +1,10 @@
 // src/pages/AddOnProductForm.tsx
-// Create and edit Add On Products (product_kind='coverage').
+// Create and edit Add On Products (product_kind='coverage'). List lives in the lower card.
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type CoverageProduct,
-  listCoverageProducts,
   createCoverageProduct,
   updateCoverageProduct,
 } from '../lib/api'
@@ -34,38 +33,29 @@ function productToForm(p: CoverageProduct) {
   }
 }
 
-export default function AddOnProductForm({ onProductsChange }: { onProductsChange?: () => void }) {
+export default function AddOnProductForm({
+  editProduct,
+  onSaved,
+  onCancelEdit,
+}: {
+  editProduct?: CoverageProduct | null
+  onSaved?: () => void
+  onCancelEdit?: () => void
+}) {
   const { t } = useTranslation()
-  const [products, setProducts] = useState<CoverageProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | 'new'>('new')
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await listCoverageProducts()
-      setProducts(data.coverage_products.slice().sort((a, b) => a.name.localeCompare(b.name)))
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (editProduct) {
+      setForm(productToForm(editProduct))
+      setMsg(null)
+    } else {
+      setForm({ ...EMPTY_FORM })
+      setMsg(null)
     }
-  }
-
-  function startEdit(p: CoverageProduct) {
-    setForm(productToForm(p))
-    setEditingId(p.id)
-    setMsg(null)
-  }
-
-  function cancelEdit() {
-    setForm({ ...EMPTY_FORM })
-    setEditingId('new')
-    setMsg(null)
-  }
+  }, [editProduct])
 
   async function save() {
     setSaving(true)
@@ -82,18 +72,14 @@ export default function AddOnProductForm({ onProductsChange }: { onProductsChang
       }
       if (!payload.name) { setMsg({ text: 'Name is required', ok: false }); setSaving(false); return }
 
-      if (editingId === 'new') {
-        const res = await createCoverageProduct(payload)
-        setProducts(prev => [...prev, res.coverage_product].sort((a, b) => a.name.localeCompare(b.name)))
-        setForm({ ...EMPTY_FORM })
+      if (editProduct) {
+        await updateCoverageProduct({ id: editProduct.id, ...payload })
       } else {
-        const res = await updateCoverageProduct({ id: editingId, ...payload })
-        setProducts(prev => prev.map(p => p.id === editingId ? res.coverage_product : p))
-        setForm({ ...EMPTY_FORM })
-        setEditingId('new')
+        await createCoverageProduct(payload)
       }
+      setForm({ ...EMPTY_FORM })
       setMsg({ text: t('coverage.saved'), ok: true })
-      onProductsChange?.()
+      onSaved?.()
     } catch (e: any) {
       setMsg({ text: e.message ?? t('coverage.saveError'), ok: false })
     } finally {
@@ -101,64 +87,14 @@ export default function AddOnProductForm({ onProductsChange }: { onProductsChang
     }
   }
 
-  const issuerLabel = (type: IssuerType | null) =>
-    type === 'manufacturer' ? t('coverage.issuerManufacturer')
-      : type === 'shop' ? t('coverage.issuerShop')
-      : type === 'third_party' ? t('coverage.issuerThirdParty') : '—'
-
   const H = 36
+  const isEditing = !!editProduct
 
   return (
-    <div style={{ marginTop: 16 }}>
-      {/* Create / edit form */}
-      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '14px 14px 10px', marginBottom: 16 }}>
-        <CoverageFormFields form={form} setForm={setForm} onSave={save} onCancel={cancelEdit} saving={saving} msg={msg} t={t} H={H} issuerLabel={issuerLabel} title={editingId === 'new' ? t('coverage.newProduct') : t('coverage.editProduct')} showCancel={editingId !== 'new'} />
+    <div style={{ marginTop: 16, border: '1px solid var(--border)', borderRadius: 8, padding: '14px 14px 10px' }}>
+      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>
+        {isEditing ? t('coverage.editProduct') : t('coverage.newProduct')}
       </div>
-
-      {/* Existing products list — below form */}
-      {loading ? (
-        <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
-      ) : products.map(p => (
-        <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
-                {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
-                {p.coverage_issuer_type && <span>{issuerLabel(p.coverage_issuer_type)}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
-                {p.coverage_ref && (
-                  p.coverage_ref.startsWith('http')
-                    ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
-                    : <span>{p.coverage_ref}</span>
-                )}
-              </div>
-            </div>
-            <button onClick={() => startEdit(p)} style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}>
-              {t('edit')}
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function CoverageFormFields({ form, setForm, onSave, onCancel, saving, msg, t, H, issuerLabel, title, showCancel }: {
-  form: typeof EMPTY_FORM
-  setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>
-  onSave: () => void
-  onCancel: () => void
-  saving: boolean
-  msg: { text: string; ok: boolean } | null
-  t: (k: string) => string
-  H: number
-  issuerLabel: (type: IssuerType | null) => string
-  title: string
-  showCancel: boolean
-}) {
-  return (
-    <div>
-      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>{title}</div>
       <div style={{ display: 'grid', gap: 10 }}>
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.nameLabel')}</label>
@@ -182,7 +118,9 @@ function CoverageFormFields({ form, setForm, onSave, onCancel, saving, msg, t, H
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerTypeLabel')}</label>
             <select value={form.coverage_issuer_type} onChange={e => setForm(f => ({ ...f, coverage_issuer_type: e.target.value as IssuerType }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}>
-              {(['manufacturer', 'shop', 'third_party'] as const).map(v => <option key={v} value={v}>{issuerLabel(v)}</option>)}
+              {(['manufacturer', 'shop', 'third_party'] as const).map(v => (
+                <option key={v} value={v}>{v === 'manufacturer' ? t('coverage.issuerManufacturer') : v === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -196,11 +134,11 @@ function CoverageFormFields({ form, setForm, onSave, onCancel, saving, msg, t, H
         </div>
         {msg && <div style={{ fontSize: 12, color: msg.ok ? 'var(--color-success)' : 'var(--color-error)' }}>{msg.text}</div>}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="primary" onClick={onSave} disabled={saving} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+          <button className="primary" onClick={save} disabled={saving} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
             {saving ? t('saving') : t('coverage.save')}
           </button>
-          {showCancel && (
-            <button onClick={onCancel} style={{ height: H, padding: '0 16px', fontSize: 13 }}>{t('coverage.cancel')}</button>
+          {isEditing && (
+            <button onClick={onCancelEdit} style={{ height: H, padding: '0 16px', fontSize: 13 }}>{t('coverage.cancel')}</button>
           )}
         </div>
       </div>
