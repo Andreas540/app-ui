@@ -87,7 +87,7 @@ export default function Warehouse() {
       next.has(productId) ? next.delete(productId) : next.add(productId)
       return next
     })
-    if (unitCache[productId]) return
+    if (unitCache[productId] && unitCache[productId] !== 'loading' && (unitCache[productId] as InventoryUnit[]).length > 0) return
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
     try {
       const res = await fetch(

@@ -61,7 +61,9 @@ LIMIT 1
         oi.qty,
         oi.unit_price,
         oi.cost as historical_product_cost,
-        p.name AS product_name
+        oi.covers_product_id,
+        p.name AS product_name,
+        p.product_kind
       FROM order_items oi
 JOIN orders o ON o.id = oi.order_id
 LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
@@ -229,13 +231,14 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     for (const item of itemList) {
       await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id)
         VALUES (
           ${id},
           ${item.product_id},
           ${item.qty},
           ${item.unit_price},
-          ${typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost) ? item_product_cost : null}
+          ${typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost) ? item_product_cost : null},
+          ${item.covers_product_id ?? null}
         )
       `
     }

@@ -8,10 +8,10 @@ import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
 
 type PartnerRef = { id: string; name: string }
-type Line = { product_id: string; qtyStr: string; priceStr: string }
+type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null }
 
 function emptyLine(): Line {
-  return { product_id: '', qtyStr: '', priceStr: '' }
+  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null }
 }
 
 export default function EditOrder() {
@@ -82,9 +82,10 @@ export default function EditOrder() {
           ? orderData.items
           : [{ product_id: order.product_id, qty: order.qty, unit_price: order.unit_price }]
         setLines(loadedItems.map((i: any) => ({
-          product_id: i.product_id || '',
-          qtyStr:     i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
-          priceStr:   i.unit_price != null ? fmtInput(i.unit_price) : '',
+          product_id:        i.product_id || '',
+          qtyStr:            i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
+          priceStr:          i.unit_price != null ? fmtInput(i.unit_price) : '',
+          covers_product_id: i.covers_product_id ?? null,
         })))
 
         // Cost overrides
@@ -191,7 +192,7 @@ export default function EditOrder() {
   const firstLineIsRefund = (products.find(p => p.id === lines[0]?.product_id)?.name || '').trim().toLowerCase() === 'refund/discount'
 
   // ── Line helpers ────────────────────────────────────────────────────────────
-  function updateLine(idx: number, field: keyof Line, value: string) {
+  function updateLine(idx: number, field: keyof Line, value: string | null) {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, [field]: value } : l))
   }
   function addLine() { setLines(prev => [...prev, emptyLine()]) }
@@ -275,9 +276,10 @@ export default function EditOrder() {
           id: orderId,
           customer_id: person.id,
           items: lines.map(l => ({
-            product_id: l.product_id,
-            qty:        parseAmount(l.qtyStr),
-            unit_price: parsePriceToNumber(l.priceStr),
+            product_id:        l.product_id,
+            qty:               parseAmount(l.qtyStr),
+            unit_price:        parsePriceToNumber(l.priceStr),
+            covers_product_id: l.covers_product_id || null,
           })),
           date:           orderDate,
           delivered,
@@ -376,8 +378,10 @@ export default function EditOrder() {
 
       {/* Line items */}
       {lines.map((l, idx) => {
-        const prod     = products.find(p => p.id === l.product_id)
-        const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
+        const prod         = products.find(p => p.id === l.product_id)
+        const isRefund     = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
+        const isCoverage   = prod?.product_kind === 'coverage'
+        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'coverage')
         return (
           <div key={idx}>
             <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
@@ -425,6 +429,22 @@ export default function EditOrder() {
                 style={{ height: CONTROL_H }}
               />
             </div>
+            {isCoverage && coveredLines.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('orders.coversProduct')}</label>
+                <select
+                  value={l.covers_product_id ?? ''}
+                  onChange={e => updateLine(idx, 'covers_product_id', e.target.value || null)}
+                  style={{ height: CONTROL_H }}
+                >
+                  <option value="">{t('orders.coversProductNone')}</option>
+                  {coveredLines.map((ol, oi) => {
+                    const op = products.find(p => p.id === ol.product_id)
+                    return <option key={oi} value={ol.product_id}>{op?.name ?? ol.product_id}</option>
+                  })}
+                </select>
+              </div>
+            )}
           </div>
         )
       })}

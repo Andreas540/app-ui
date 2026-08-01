@@ -175,7 +175,7 @@ const TENANT_ID = authz.tenantId;
       if (prodRows[0].unit_tracking === 'serialized_intake' && !unitId) {
         return cors(400, { error: `Product "${prodRows[0].name}" requires a specific unit to be selected.` })
       }
-      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum, unitId });
+      validatedItems.push({ product_id: item.product_id, qtyNum, unitPriceNum, unitId, covers_product_id: item.covers_product_id ?? null });
     }
 
     const totalQty = validatedItems.reduce((s, i) => s + i.qtyNum, 0);
@@ -218,11 +218,12 @@ const TENANT_ID = authz.tenantId;
     // Insert all line items
     for (const item of validatedItems) {
       const [oi] = await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id, covers_product_id)
         VALUES (
           ${orderId}, ${item.product_id}, ${item.qtyNum}, ${item.unitPriceNum},
           (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID}),
-          ${item.unitId ?? null}
+          ${item.unitId ?? null},
+          ${item.covers_product_id ?? null}
         )
         RETURNING id
       `;

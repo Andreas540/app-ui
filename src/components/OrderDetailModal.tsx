@@ -219,13 +219,25 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
-            {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 6 }}>
-                <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
-                <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
-                <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
-              </div>
-            ))}
+            {items.map((item: any, idx: number) => {
+              const coveredName = item.product_kind === 'coverage' && item.covers_product_id
+                ? items.find((i: any) => i.product_id === item.covers_product_id)?.product_name ?? null
+                : null
+              return (
+                <div key={idx} style={{ paddingTop: 6 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px' }}>
+                    <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
+                    <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
+                  </div>
+                  {coveredName && (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
+                      {t('orders.coversProduct')}: {coveredName}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         ) : (order.product_name || order.qty || order.unit_price) ? (
           <div>

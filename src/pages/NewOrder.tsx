@@ -21,10 +21,11 @@ type Line = {
   historicalProductCost: number | null
   unit_id?: number | null
   availableUnits?: AvailableUnit[] | 'loading'
+  covers_product_id: string | null
 }
 
 function emptyLine(product_id = ''): Line {
-  return { product_id, qtyStr: '', priceStr: '', historicalPrice: null, historicalProductCost: null }
+  return { product_id, qtyStr: '', priceStr: '', historicalPrice: null, historicalProductCost: null, covers_product_id: null }
 }
 
 export default function NewOrder() {
@@ -406,6 +407,9 @@ export default function NewOrder() {
       {lines.map((l, idx) => {
         const isRefund = lineIsRefund(l)
         const isMinusOnly = isRefund && l.priceStr.trim() === '-'
+        const prod         = products.find(p => p.id === l.product_id)
+        const isCoverage   = prod?.product_kind === 'coverage'
+        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'coverage')
         return (
           <div key={idx} style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--line)', marginTop: idx === 0 ? 12 : 16, paddingTop: idx === 0 ? 0 : 12 }}>
             {/* Row 1: Product | Qty */}
@@ -510,6 +514,23 @@ export default function NewOrder() {
                 />
               </div>
             </div>
+
+            {isCoverage && coveredLines.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('orders.coversProduct')}</label>
+                <select
+                  value={l.covers_product_id ?? ''}
+                  onChange={e => updateLine(idx, { covers_product_id: e.target.value || null })}
+                  style={{ height: CONTROL_H }}
+                >
+                  <option value="">{t('orders.coversProductNone')}</option>
+                  {coveredLines.map((ol, oi) => {
+                    const op = products.find(p => p.id === ol.product_id)
+                    return <option key={oi} value={ol.product_id}>{op?.name ?? ol.product_id}</option>
+                  })}
+                </select>
+              </div>
+            )}
 
             {/* Add / Remove links */}
             {allowMultipleRows && (
@@ -690,6 +711,7 @@ export default function NewOrder() {
                 qty: lineQty(l),
                 unit_price: linePrice(l),
                 ...(l.unit_id ? { unit_id: l.unit_id } : {}),
+                covers_product_id: l.covers_product_id || null,
               })),
             }
 

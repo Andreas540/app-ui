@@ -493,7 +493,9 @@
     "customerOrderOnline": "Låt dina kunder beställa online",
     "orderSiteLink": "Länk till din beställningssida:",
     "missingOrderSlug": "Ange din URL först",
-    "manageOrderSite": "Hantera din beställningssida"
+    "manageOrderSite": "Hantera din beställningssida",
+    "coversProduct": "Täcker produkt",
+    "coversProductNone": "— ingen —"
   },
   "warehouse": {
     "title": "Justera inventarie",

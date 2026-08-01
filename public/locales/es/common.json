@@ -493,7 +493,9 @@
     "customerOrderOnline": "Deja que tus clientes ordenen en línea",
     "orderSiteLink": "Enlace a tu sitio de pedidos:",
     "missingOrderSlug": "Primero especifica tu URL aquí",
-    "manageOrderSite": "Gestiona tu sitio de pedidos"
+    "manageOrderSite": "Gestiona tu sitio de pedidos",
+    "coversProduct": "Cubre producto",
+    "coversProductNone": "— ninguno —"
   },
   "warehouse": {
     "title": "Ajustar Inventario",
