@@ -1,6 +1,11 @@
 // netlify/functions/customer-log.mjs
-// GET  ?customer_id=<uuid>  → merged chronological timeline (orders, payments, notes)
-// POST { customer_id, note_text }  → insert a note
+// GET  ?customer_id=<uuid>  → chronological timeline (orders, payments, notes interleaved)
+// POST { customer_id, note_text, after_item_id? }  → insert a note
+//
+// Notes anchor to a specific order or payment by ID (after_item_id).
+// NULL after_item_id = note belongs at the top of the list.
+// Multiple notes after the same anchor are ordered by created_at ASC
+// (oldest closest to the anchor record).
 
 import { resolveAuthz }     from './utils/auth.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
@@ -30,7 +35,7 @@ async function getLog(event) {
              o.delivered_at,
              MAX(o.notes) AS notes,
              COALESCE(SUM(oi.qty * oi.unit_price), 0)::float8 AS total_amount,
-             COALESCE(MAX(p.name), MAX(s.name)) AS product_name,
+             NULLIF(STRING_AGG(DISTINCT COALESCE(p.name, s.name), ', '), '') AS product_name,
              'order' AS kind
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -50,51 +55,75 @@ async function getLog(event) {
     `,
     sql`
       SELECT id, note_text, created_by,
-             sort_date AS date,
-             created_at AS note_created_at,
+             created_at AS date,
+             after_item_id,
              'note' AS kind
       FROM customer_notes
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
-      ORDER BY sort_date DESC
+      ORDER BY created_at ASC
     `,
   ])
 
-  // Merge and sort by date descending
-  const all = [...orders, ...payments, ...notes].sort((a, b) => {
-    const da = new Date(a.date).getTime()
-    const db = new Date(b.date).getTime()
-    return db - da
+  // Merge orders + payments by date DESC (stable: order_no / created_at as tiebreaker)
+  const base = [...orders, ...payments].sort((a, b) => {
+    const diff = new Date(b.date).getTime() - new Date(a.date).getTime()
+    if (diff !== 0) return diff
+    // payments have no secondary key here; orders use order_no already sorted
+    return 0
   })
 
-  return cors(200, { items: all })
+  // Index anchored notes by after_item_id
+  const anchored = {}
+  for (const n of notes) {
+    if (n.after_item_id) {
+      if (!anchored[n.after_item_id]) anchored[n.after_item_id] = []
+      anchored[n.after_item_id].push(n) // already sorted created_at ASC from query
+    }
+  }
+
+  // Top notes (no anchor) — newest first
+  const topNotes = notes
+    .filter(n => !n.after_item_id)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  // Build final list: top notes → then each base item followed by its anchored notes
+  const items = [...topNotes]
+  for (const item of base) {
+    items.push(item)
+    if (anchored[item.id]) items.push(...anchored[item.id])
+  }
+
+  return cors(200, { items })
 }
 
 async function addNote(event) {
   const { neon } = await import('@neondatabase/serverless')
   const { DATABASE_URL } = process.env
   if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+
   const rawBody = event.isBase64Encoded
     ? Buffer.from(event.body || '', 'base64').toString('utf-8')
     : (event.body || '{}')
   const body = JSON.parse(rawBody)
+
   const sql = neon(DATABASE_URL)
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(403, { error: authz.error })
   const TENANT_ID = authz.tenantId
 
-  const customer_id = body.customer_id
-  const note_text   = (body.note_text || '').trim()
+  const customer_id   = body.customer_id
+  const note_text     = (body.note_text || '').trim()
+  const after_item_id = body.after_item_id ?? null
   if (!customer_id) return cors(400, { error: 'customer_id required' })
   if (!note_text)   return cors(400, { error: 'note_text required' })
-  const created_by  = authz.email || null
-  const sort_date   = body.sort_date ? new Date(body.sort_date) : new Date()
+  const created_by = authz.email || null
 
   const [row] = await sql`
-    INSERT INTO customer_notes (tenant_id, customer_id, note_text, created_by, sort_date)
-    VALUES (${TENANT_ID}, ${customer_id}, ${note_text}, ${created_by}, ${sort_date})
+    INSERT INTO customer_notes (tenant_id, customer_id, note_text, created_by, after_item_id)
+    VALUES (${TENANT_ID}, ${customer_id}, ${note_text}, ${created_by}, ${after_item_id})
     RETURNING id, note_text, created_by,
-              sort_date AS date,
-              created_at AS note_created_at,
+              created_at AS date,
+              after_item_id,
               'note' AS kind
   `
   return cors(201, { item: row })
