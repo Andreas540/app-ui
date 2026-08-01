@@ -591,7 +591,7 @@ export default function Warehouse() {
                   const hasOrders = committedOrders.length > 0 || onOrderOrders.length > 0
                   const isExpanded = expandedRows.has(item.product_id)
                   const isUnitsExpanded = expandedUnits.has(item.product_id)
-                  const hasUnits = item.unit_tracking !== 'none' && Number(item.unit_instock_count) > 0
+                  const isUnitTracked = item.unit_tracking !== 'none'
                   const unitRows = unitCache[item.product_id]
                   return (
                     <div key={item.product_id}>
@@ -618,7 +618,7 @@ export default function Warehouse() {
                           )}
                           <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             <span>{item.product}</span>
-                            {hasUnits && (
+                            {isUnitTracked && (
                               <button
                                 onClick={e => { e.stopPropagation(); toggleUnits(item.product_id) }}
                                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 3 }}
