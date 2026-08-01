@@ -26,8 +26,8 @@ async function getLog(event) {
 
   const [orders, payments, notes] = await Promise.all([
     sql`
-      SELECT id, order_no, order_date AS date,
-             delivered_at,
+      SELECT o.id, o.order_no, o.order_date AS date,
+             o.delivered_at,
              COALESCE(SUM(oi.qty * oi.unit_price), 0)::float8 AS total_amount,
              'order' AS kind
       FROM orders o
