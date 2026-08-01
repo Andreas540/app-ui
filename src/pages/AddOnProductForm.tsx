@@ -1,11 +1,13 @@
 // src/pages/AddOnProductForm.tsx
-// Create coverage products (product_kind='coverage'). Existing products shown in the lower table.
+// Create and edit Add On Products (product_kind='coverage').
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type CoverageProduct,
+  listCoverageProducts,
   createCoverageProduct,
+  updateCoverageProduct,
 } from '../lib/api'
 
 type IssuerType = 'manufacturer' | 'shop' | 'third_party'
@@ -20,11 +22,50 @@ const EMPTY_FORM = {
   coverage_ref: '',
 }
 
-export default function AddOnProductForm({ onCreated }: { onCreated?: (p: CoverageProduct) => void }) {
+function productToForm(p: CoverageProduct) {
+  return {
+    name: p.name,
+    cost: p.cost != null ? String(p.cost) : '',
+    price_amount: p.price_amount != null ? String(p.price_amount) : '',
+    coverage_duration_days: p.coverage_duration_days != null ? String(p.coverage_duration_days) : '',
+    coverage_issuer_type: (p.coverage_issuer_type ?? 'shop') as IssuerType,
+    coverage_issuer_name: p.coverage_issuer_name ?? '',
+    coverage_ref: p.coverage_ref ?? '',
+  }
+}
+
+export default function AddOnProductForm({ onProductsChange }: { onProductsChange?: () => void }) {
   const { t } = useTranslation()
+  const [products, setProducts] = useState<CoverageProduct[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | 'new'>('new')
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await listCoverageProducts()
+      setProducts(data.coverage_products.slice().sort((a, b) => a.name.localeCompare(b.name)))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function startEdit(p: CoverageProduct) {
+    setForm(productToForm(p))
+    setEditingId(p.id)
+    setMsg(null)
+  }
+
+  function cancelEdit() {
+    setForm({ ...EMPTY_FORM })
+    setEditingId('new')
+    setMsg(null)
+  }
 
   async function save() {
     setSaving(true)
@@ -40,10 +81,19 @@ export default function AddOnProductForm({ onCreated }: { onCreated?: (p: Covera
         coverage_ref: form.coverage_ref.trim() || null,
       }
       if (!payload.name) { setMsg({ text: 'Name is required', ok: false }); setSaving(false); return }
-      const res = await createCoverageProduct(payload)
-      setForm({ ...EMPTY_FORM })
+
+      if (editingId === 'new') {
+        const res = await createCoverageProduct(payload)
+        setProducts(prev => [...prev, res.coverage_product].sort((a, b) => a.name.localeCompare(b.name)))
+        setForm({ ...EMPTY_FORM })
+      } else {
+        const res = await updateCoverageProduct({ id: editingId, ...payload })
+        setProducts(prev => prev.map(p => p.id === editingId ? res.coverage_product : p))
+        setForm({ ...EMPTY_FORM })
+        setEditingId('new')
+      }
       setMsg({ text: t('coverage.saved'), ok: true })
-      onCreated?.(res.coverage_product)
+      onProductsChange?.()
     } catch (e: any) {
       setMsg({ text: e.message ?? t('coverage.saveError'), ok: false })
     } finally {
@@ -51,98 +101,107 @@ export default function AddOnProductForm({ onCreated }: { onCreated?: (p: Covera
     }
   }
 
-  const issuerLabel = (type: IssuerType) =>
+  const issuerLabel = (type: IssuerType | null) =>
     type === 'manufacturer' ? t('coverage.issuerManufacturer')
       : type === 'shop' ? t('coverage.issuerShop')
-      : t('coverage.issuerThirdParty')
+      : type === 'third_party' ? t('coverage.issuerThirdParty') : '—'
 
   const H = 36
 
   return (
     <div style={{ marginTop: 16 }}>
+      {/* Create / edit form */}
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '14px 14px 10px', marginBottom: 16 }}>
+        <CoverageFormFields form={form} setForm={setForm} onSave={save} onCancel={cancelEdit} saving={saving} msg={msg} t={t} H={H} issuerLabel={issuerLabel} title={editingId === 'new' ? t('coverage.newProduct') : t('coverage.editProduct')} showCancel={editingId !== 'new'} />
+      </div>
+
+      {/* Existing products list — below form */}
+      {loading ? (
+        <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
+      ) : products.map(p => (
+        <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
+                {p.coverage_issuer_type && <span>{issuerLabel(p.coverage_issuer_type)}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
+                {p.coverage_ref && (
+                  p.coverage_ref.startsWith('http')
+                    ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
+                    : <span>{p.coverage_ref}</span>
+                )}
+              </div>
+            </div>
+            <button onClick={() => startEdit(p)} style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}>
+              {t('edit')}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CoverageFormFields({ form, setForm, onSave, onCancel, saving, msg, t, H, issuerLabel, title, showCancel }: {
+  form: typeof EMPTY_FORM
+  setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>
+  onSave: () => void
+  onCancel: () => void
+  saving: boolean
+  msg: { text: string; ok: boolean } | null
+  t: (k: string) => string
+  H: number
+  issuerLabel: (type: IssuerType | null) => string
+  title: string
+  showCancel: boolean
+}) {
+  return (
+    <div>
+      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>{title}</div>
       <div style={{ display: 'grid', gap: 10 }}>
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.nameLabel')}</label>
-          <input
-            value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder={t('coverage.namePlaceholder')}
-            style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-          />
+          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('coverage.namePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.costLabel')}</label>
-            <input
-              type="number" min="0" step="0.01"
-              value={form.cost}
-              onChange={e => setForm(f => ({ ...f, cost: e.target.value }))}
-              style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-            />
+            <input type="number" min="0" step="0.01" value={form.cost} onChange={e => setForm(f => ({ ...f, cost: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.priceLabel')}</label>
-            <input
-              type="number" min="0" step="0.01"
-              value={form.price_amount}
-              onChange={e => setForm(f => ({ ...f, price_amount: e.target.value }))}
-              style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-            />
+            <input type="number" min="0" step="0.01" value={form.price_amount} onChange={e => setForm(f => ({ ...f, price_amount: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
-            <input
-              type="number" min="1"
-              value={form.coverage_duration_days}
-              onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))}
-              style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-            />
+            <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerTypeLabel')}</label>
-            <select
-              value={form.coverage_issuer_type}
-              onChange={e => setForm(f => ({ ...f, coverage_issuer_type: e.target.value as IssuerType }))}
-              style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-            >
-              {(['manufacturer', 'shop', 'third_party'] as const).map(v => (
-                <option key={v} value={v}>{issuerLabel(v)}</option>
-              ))}
+            <select value={form.coverage_issuer_type} onChange={e => setForm(f => ({ ...f, coverage_issuer_type: e.target.value as IssuerType }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}>
+              {(['manufacturer', 'shop', 'third_party'] as const).map(v => <option key={v} value={v}>{issuerLabel(v)}</option>)}
             </select>
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerNameLabel')}</label>
-            <input
-              value={form.coverage_issuer_name}
-              onChange={e => setForm(f => ({ ...f, coverage_issuer_name: e.target.value }))}
-              placeholder={t('coverage.issuerNamePlaceholder')}
-              style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-            />
+            <input value={form.coverage_issuer_name} onChange={e => setForm(f => ({ ...f, coverage_issuer_name: e.target.value }))} placeholder={t('coverage.issuerNamePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
         </div>
-
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
-          <input
-            value={form.coverage_ref}
-            onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))}
-            placeholder={t('coverage.coverageRefPlaceholder')}
-            style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }}
-          />
+          <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
         </div>
-
-        {msg && (
-          <div style={{ fontSize: 12, color: msg.ok ? 'var(--color-success)' : 'var(--color-error)' }}>{msg.text}</div>
-        )}
-
-        <div>
-          <button className="primary" onClick={save} disabled={saving} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
+        {msg && <div style={{ fontSize: 12, color: msg.ok ? 'var(--color-success)' : 'var(--color-error)' }}>{msg.text}</div>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="primary" onClick={onSave} disabled={saving} style={{ height: H, padding: '0 16px', fontSize: 13 }}>
             {saving ? t('saving') : t('coverage.save')}
           </button>
+          {showCancel && (
+            <button onClick={onCancel} style={{ height: H, padding: '0 16px', fontSize: 13 }}>{t('coverage.cancel')}</button>
+          )}
         </div>
       </div>
     </div>

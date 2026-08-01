@@ -77,7 +77,7 @@ export async function handler(event) {
 
     // Products (no unit_price here) — hidden products are excluded
     const products = await sql`
-      SELECT id, name, category, product_kind, price_amount::float8 AS price_amount, unit_tracking
+      SELECT id, name, category, product_kind, price_amount::float8 AS price_amount, unit_tracking, duration_minutes
       FROM products
       WHERE tenant_id = ${TENANT_ID}
         AND NOT EXISTS (

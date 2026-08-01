@@ -86,6 +86,16 @@ export default function NewProduct() {
     if (category === 'service' && !showServiceTab && showProductTab) setCategory('product')
   }, [showProductTab, showServiceTab])
 
+  async function loadCoverageProducts() {
+    try {
+      setLoadingCoverage(true)
+      const { coverage_products } = await listCoverageProducts()
+      setCoverageProducts(coverage_products.slice().sort((a, b) => a.name.localeCompare(b.name)))
+    } finally {
+      setLoadingCoverage(false)
+    }
+  }
+
   async function loadProducts() {
     try {
       setLoadingList(true)
@@ -97,17 +107,7 @@ export default function NewProduct() {
     }
   }
 
-  async function loadCoverageProducts() {
-    try {
-      setLoadingCoverage(true)
-      const { coverage_products } = await listCoverageProducts()
-      setCoverageProducts(coverage_products.slice().sort((a, b) => a.name.localeCompare(b.name)))
-    } finally {
-      setLoadingCoverage(false)
-    }
-  }
-
-    async function loadHistoricalCosts() {
+  async function loadHistoricalCosts() {
     try {
       setLoadingHistorical(true)
 
@@ -279,9 +279,7 @@ export default function NewProduct() {
         </button>
       </div>
 
-      {category === 'coverage' && (
-        <AddOnProductForm onCreated={p => setCoverageProducts(prev => [...prev, p].sort((a, b) => a.name.localeCompare(b.name)))} />
-      )}
+      {category === 'coverage' && <AddOnProductForm onProductsChange={loadCoverageProducts} />}
 
       {category !== 'coverage' && <><div style={{ marginTop: 12 }}>
         <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
@@ -507,54 +505,32 @@ export default function NewProduct() {
           )}
         </div>
 
-        {/* ── Coverage tab: full Add On Product table ── */}
-        {listOpen && category === 'coverage' && (() => {
-          const COL = { fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)' }
-          const CELL = { fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }
-          const issuerLabel = (type: string | null) =>
-            type === 'manufacturer' ? t('coverage.issuerManufacturer')
-              : type === 'shop' ? t('coverage.issuerShop')
-              : type === 'third_party' ? t('coverage.issuerThirdParty') : '—'
-          return loadingCoverage ? (
+        {/* ── Add On Products list ── */}
+        {listOpen && category === 'coverage' && (
+          loadingCoverage ? (
             <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>{t('loading')}</div>
           ) : coverageProducts.length === 0 ? (
             <div style={{ opacity: 0.7, fontSize: 14, marginTop: 8 }}>{t('coverage.noProducts')}</div>
           ) : (
-            <div style={{ overflowX: 'auto', marginTop: 4 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...COL, textAlign: 'left' }}>{t('coverage.nameLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'right' }}>{t('coverage.durationLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'left' }}>{t('coverage.issuerTypeLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'left' }}>{t('coverage.issuerNameLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'left' }}>{t('coverage.coverageRefLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'right' }}>{t('coverage.priceLabel')}</th>
-                    <th style={{ ...COL, textAlign: 'right' }}>{t('coverage.costLabel')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {coverageProducts.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ ...CELL }}>{p.name}</td>
-                      <td style={{ ...CELL, textAlign: 'right' }}>{p.coverage_duration_days != null ? `${p.coverage_duration_days}d` : '—'}</td>
-                      <td style={{ ...CELL }}>{issuerLabel(p.coverage_issuer_type)}</td>
-                      <td style={{ ...CELL }}>{p.coverage_issuer_name ?? '—'}</td>
-                      <td style={{ ...CELL }}>{p.coverage_ref
-                        ? p.coverage_ref.startsWith('http')
-                          ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
-                          : p.coverage_ref
-                        : '—'}
-                      </td>
-                      <td style={{ ...CELL, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
-                      <td style={{ ...CELL, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.cost != null ? fmtMoney(p.cost, 3) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ marginTop: 8 }}>
+              {coverageProducts.map(p => (
+                <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                    {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
+                    {p.coverage_issuer_type && <span>{p.coverage_issuer_type === 'manufacturer' ? t('coverage.issuerManufacturer') : p.coverage_issuer_type === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
+                    {p.coverage_ref && (
+                      p.coverage_ref.startsWith('http')
+                        ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
+                        : <span>{p.coverage_ref}</span>
+                    )}
+                    {p.price_amount != null && <span>{fmtMoney(p.price_amount)}</span>}
+                  </div>
+                </div>
+              ))}
             </div>
           )
-        })()}
+        )}
 
         {/* ── Products / Services: current costs ── */}
         {listOpen && category !== 'coverage' && !showHistorical && (
@@ -567,10 +543,11 @@ export default function NewProduct() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                    {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.productCostUSD')}</th>
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
+                    {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
+                    {category === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.duration')}</th>}
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{category === 'service' ? t('products.directServiceCost') : t('products.productCostUSD')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -578,14 +555,19 @@ export default function NewProduct() {
                     <tr key={p.id}>
                       <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{p.name}</td>
                       {category === 'product' && (
-                        <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
                           {p.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
                             : p.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
                             : t('products.unitTrackingNone')}
                         </td>
                       )}
-                      <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
-                      <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(p.cost ?? 0, 3)}</td>
+                      {category === 'service' && (
+                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {p.duration_minutes != null ? `${p.duration_minutes} min` : '—'}
+                        </td>
+                      )}
+                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
+                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(p.cost ?? 0, 3)}</td>
                     </tr>
                   ))}
                 </tbody>
