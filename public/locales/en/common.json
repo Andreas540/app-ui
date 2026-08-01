@@ -577,6 +577,19 @@
     "cancelCoverage": "Cancel",
     "coverageLinkedOrder": "Order #{{order_no}}"
   },
+  "customerLog": {
+    "title": "Activity Log",
+    "button": "Log",
+    "addNote": "Add note",
+    "addNoteHere": "Add note here",
+    "notePlaceholder": "Write a note...",
+    "saveNote": "Save note",
+    "note": "Note",
+    "order": "Order",
+    "payment": "Payment",
+    "orderNoNumber": "Order",
+    "empty": "No activity yet"
+  },
   "coverage": {
     "title": "Extended Coverage Products",
     "description": "Manage coverage products that can be sold on orders and bound to specific units.",
@@ -1538,6 +1551,7 @@
     "customerDetailShareBooking": "Share booking page with customer (requires Booking module)",
     "customerDetailShareOrder": "Share order page with customer",
     "customerDetailConversation": "Message button (conversation)",
+    "customerDetailLog": "Log (activity log)",
     "customerDetailOwedBreakdown": "Show owed breakdown by delivery",
     "customerDetailOwedBreakdownHelp": "Shows 'Thereof delivered' and 'Thereof not delivered' under the total owed amount on the customer detail page.",
     "customerDetailOwedBreakdownDisabled": "Requires Multiple product rows (New Order) to be Off.",

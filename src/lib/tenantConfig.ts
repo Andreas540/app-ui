@@ -37,6 +37,7 @@ export interface TenantConfig {
     customerDetailShowShareBooking: boolean
     customerDetailShowShareOrder: boolean
     customerDetailShowConversation: boolean
+    customerDetailShowLog: boolean
     customerDetailOwedBreakdown: boolean
   }
   booking: {
@@ -115,6 +116,7 @@ export const defaultConfig: TenantConfig = {
     customerDetailShowShareBooking: false,
     customerDetailShowShareOrder: false,
     customerDetailShowConversation: true,
+    customerDetailShowLog: false,
     customerDetailOwedBreakdown: false,
   },
   booking: {

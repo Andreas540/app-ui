@@ -7,6 +7,7 @@ import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import CustomerLogModal from '../components/CustomerLogModal'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useCurrency } from '../lib/useCurrency'
@@ -63,6 +64,7 @@ export default function CustomerDetailPage() {
   const cfgShowShareBooking  = tenantUi.customerDetailShowShareBooking && hasFeature('new-booking')
   const cfgShowShareOrder      = tenantUi.customerDetailShowShareOrder
   const cfgShowConversation    = tenantUi.customerDetailShowConversation
+  const cfgShowLog             = tenantUi.customerDetailShowLog
   // --- Hooks (fixed, stable order) ---
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -95,6 +97,7 @@ export default function CustomerDetailPage() {
   const [bookingLink,           setBookingLink]           = useState<string | null>(null)
   const [bookingLinkCopied,     setBookingLinkCopied]     = useState(false)
   const [bookingLinkError,      setBookingLinkError]      = useState<string | null>(null)
+  const [showLogModal,          setShowLogModal]          = useState(false)
 
 
   useEffect(() => {
@@ -539,7 +542,16 @@ export default function CustomerDetailPage() {
             </button>
           </Link>
         )}
-        {/* Non-default buttons — New Booking first, then share buttons together (alphabetical) */}
+        {/* Non-default buttons — Log, New Booking, then share buttons together (alphabetical) */}
+        {cfgShowLog && (
+          <button
+            type="button"
+            onClick={() => setShowLogModal(true)}
+            style={{ width: 100, height: 28, fontSize: 12, padding: '0 10px', borderRadius: 6, whiteSpace: 'nowrap' }}
+          >
+            {t('customerLog.button')}
+          </button>
+        )}
         {cfgShowNewBooking && (
           <Link
             to={`/bookings/new?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`}
@@ -1069,12 +1081,21 @@ export default function CustomerDetailPage() {
         order={selectedOrder}
       />
 
-      <PaymentDetailModal 
+      <PaymentDetailModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         payment={selectedPayment}
         isPartnerPayment={false}
       />
+
+      {data && (
+        <CustomerLogModal
+          isOpen={showLogModal}
+          onClose={() => setShowLogModal(false)}
+          customerId={data.customer.id}
+          customerName={data.customer.name}
+        />
+      )}
 
       {/* DELIVERY MODAL (tri-state) */}
       {deliveryOrder && (

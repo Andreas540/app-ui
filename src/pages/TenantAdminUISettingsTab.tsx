@@ -28,7 +28,7 @@ type UiConfig = {
     order?: string; orders?: string
     directLabel?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailOwedBreakdown?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailShowLog?: boolean; customerDetailOwedBreakdown?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -311,7 +311,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'dashboard') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.showOwedToSuppliers; delete ui.dashboardCards; return { ...p, ui } })
     } else if (section === 'customer-detail') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; delete ui.customerDetailOwedBreakdown; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; delete ui.customerDetailShowLog; delete ui.customerDetailOwedBreakdown; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     }
@@ -437,7 +437,8 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
               cu.customerDetailShowNewBooking !== undefined ||
               cu.customerDetailShowShareBooking !== undefined ||
               cu.customerDetailShowShareOrder !== undefined ||
-              cu.customerDetailShowConversation !== undefined
+              cu.customerDetailShowConversation !== undefined ||
+              cu.customerDetailShowLog !== undefined
             }>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {([
@@ -450,6 +451,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                 ] : []),
                 { key: 'customerDetailShowShareOrder',    label: t('tenantCustom.customerDetailShareOrder') },
                 { key: 'customerDetailShowConversation',  label: t('tenantCustom.customerDetailConversation') },
+                { key: 'customerDetailShowLog',           label: t('tenantCustom.customerDetailLog') },
               ] as { key: keyof typeof cu; label: string }[]).map(({ key, label }) => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="checkbox"

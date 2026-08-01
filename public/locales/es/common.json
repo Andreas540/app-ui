@@ -577,6 +577,19 @@
     "cancelCoverage": "Cancelar",
     "coverageLinkedOrder": "Pedido #{{order_no}}"
   },
+  "customerLog": {
+    "title": "Registro de actividad",
+    "button": "Registro",
+    "addNote": "Añadir nota",
+    "addNoteHere": "Añadir nota aquí",
+    "notePlaceholder": "Escribe una nota...",
+    "saveNote": "Guardar nota",
+    "note": "Nota",
+    "order": "Pedido",
+    "payment": "Pago",
+    "orderNoNumber": "Pedido",
+    "empty": "Sin actividad todavía"
+  },
   "coverage": {
     "title": "Productos de cobertura extendida",
     "description": "Gestiona productos de cobertura que pueden venderse en pedidos y vincularse a unidades específicas.",
@@ -1538,6 +1551,7 @@
     "customerDetailShareBooking": "Compartir página de reservas con el cliente (requiere módulo de reservas)",
     "customerDetailShareOrder": "Compartir página de pedido con el cliente",
     "customerDetailConversation": "Botón de mensaje (conversación)",
+    "customerDetailLog": "Registro (registro de actividad)",
     "customerDetailOwedBreakdown": "Mostrar desglose de deuda por entrega",
     "customerDetailOwedBreakdownHelp": "Muestra 'Del cual entregado' y 'Del cual no entregado' bajo el total adeudado en la página de detalle del cliente.",
     "customerDetailOwedBreakdownDisabled": "Requiere que Múltiples filas de producto (Nuevo pedido) esté desactivado.",
