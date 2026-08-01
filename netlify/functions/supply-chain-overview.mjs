@@ -71,6 +71,7 @@ async function getSupplyChainOverview(event) {
       FROM order_remaining
       JOIN products p ON p.id = order_remaining.product_id
       WHERE p.category NOT IN ('service', 'material')
+        AND (p.product_kind IS NULL OR p.product_kind = 'standard')
         AND LOWER(p.name) NOT LIKE '%refund%'
         AND LOWER(p.name) NOT LIKE '%discount%'
         AND LOWER(p.name) NOT LIKE '%other product%'
@@ -97,6 +98,7 @@ async function getSupplyChainOverview(event) {
       WHERE o.tenant_id = ${TENANT_ID}
         AND oi.qty > COALESCE(o.delivered_quantity, 0)
         AND p.category NOT IN ('service', 'material')
+        AND (p.product_kind IS NULL OR p.product_kind = 'standard')
         AND LOWER(p.name) NOT LIKE '%refund%'
         AND LOWER(p.name) NOT LIKE '%discount%'
         AND LOWER(p.name) NOT LIKE '%other product%'
@@ -147,6 +149,7 @@ const warehouse_inventory = await sql`
   LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
   WHERE p.tenant_id = ${TENANT_ID}
     AND p.category NOT IN ('service', 'material')
+    AND (p.product_kind IS NULL OR p.product_kind = 'standard')
     AND LOWER(p.name) NOT LIKE '%refund%'
     AND LOWER(p.name) NOT LIKE '%discount%'
     AND LOWER(p.name) NOT LIKE '%other product%'

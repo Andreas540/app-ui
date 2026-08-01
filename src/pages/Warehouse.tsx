@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchBootstrap, type Product, getAuthHeaders } from '../lib/api'
+import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage } from '../lib/api'
 import OrderDetailModal from '../components/OrderDetailModal'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 import { useCurrency } from '../lib/useCurrency'
@@ -73,6 +73,7 @@ export default function Warehouse() {
   const [unitSaving, setUnitSaving] = useState(false)
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
+  const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
@@ -753,6 +754,14 @@ export default function Warehouse() {
                                         </div>
                                       </div>
                                     )}
+                                    <CoveragePanel
+                                      unitId={u.id}
+                                      productId={item.product_id}
+                                      isExpanded={expandedCoverageUnit === u.id}
+                                      onToggle={() => setExpandedCoverageUnit(prev => prev === u.id ? null : u.id)}
+                                      t={t}
+                                      isEditingThisUnit={editingUnitId === u.id}
+                                    />
                                   </div>
                                 ))}
 
@@ -867,6 +876,268 @@ export default function Warehouse() {
         order={supplierModalOrder}
         supplierName={supplierModalOrder?.supplier_name ?? ''}
       />
+    </>
+  )
+}
+
+// ─── helpers ───────────────────────────────────────────────────────────────
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+// ─── CoveragePanel ──────────────────────────────────────────────────────────
+
+type CoveragePanelProps = {
+  unitId: number
+  productId: string
+  isExpanded: boolean
+  onToggle: () => void
+  t: (key: string, opts?: Record<string, unknown>) => string
+  isEditingThisUnit: boolean
+}
+
+function CoveragePanel({ unitId, isExpanded, onToggle, t, isEditingThisUnit }: CoveragePanelProps) {
+  const [coverages, setCoverages] = useState<UnitCoverage[] | 'loading' | null>(null)
+  const [bindingMode, setBindingMode] = useState(false)
+  const [adHocMode, setAdHocMode] = useState(false)
+  const [bindLines, setBindLines] = useState<CoverageOrderLine[]>([])
+  const [bindLoading, setBindLoading] = useState(false)
+  const [suggestedStart, setSuggestedStart] = useState<string | null>(null)
+  const [tenantWide, setTenantWide] = useState(false)
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null)
+  const [adHocForm, setAdHocForm] = useState({ name: '', issuer_type: 'shop' as 'manufacturer' | 'shop' | 'third_party', issuer_name: '', coverage_ref: '', start_date: '', end_date: '' })
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', start_date: '', end_date: '' })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (isExpanded && coverages === null) loadCoverages()
+    if (!isExpanded) { setBindingMode(false); setAdHocMode(false); setEditingId(null) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExpanded])
+
+  async function loadCoverages() {
+    setCoverages('loading')
+    try { setCoverages((await listUnitCoverage(unitId)).coverages) }
+    catch { setCoverages([]) }
+  }
+
+  async function refresh() {
+    setCoverages('loading')
+    try { setCoverages((await listUnitCoverage(unitId)).coverages) }
+    catch { setCoverages([]) }
+  }
+
+  async function openBindPicker(wide = false) {
+    setBindingMode(true); setAdHocMode(false); setBindLoading(true)
+    setTenantWide(wide); setSelectedLineId(null)
+    try {
+      const data = await getAvailableCoverageLines(unitId, wide)
+      setBindLines(data.lines)
+      setSuggestedStart(data.unit_delivered_at)
+    } finally { setBindLoading(false) }
+  }
+
+  async function confirmBind() {
+    if (!selectedLineId) return
+    const line = bindLines.find(l => l.order_item_id === selectedLineId)
+    if (!line) return
+    setSaving(true)
+    try {
+      const start = suggestedStart ?? new Date().toISOString().slice(0, 10)
+      const end = line.coverage_duration_days ? addDays(start, line.coverage_duration_days) : start
+      await createUnitCoverage({
+        unit_id: unitId, order_item_id: line.order_item_id,
+        coverage_product_id: line.coverage_product_id,
+        name: line.name,
+        issuer_type: (line.coverage_issuer_type as 'manufacturer' | 'shop' | 'third_party') ?? 'shop',
+        issuer_name: line.coverage_issuer_name ?? null,
+        coverage_ref: line.coverage_ref ?? null,
+        start_date: start, end_date: end,
+      })
+      setBindingMode(false); setSelectedLineId(null)
+      await refresh()
+    } finally { setSaving(false) }
+  }
+
+  async function confirmAdHoc() {
+    if (!adHocForm.name || !adHocForm.start_date || !adHocForm.end_date) return
+    setSaving(true)
+    try {
+      await createUnitCoverage({
+        unit_id: unitId, order_item_id: null, coverage_product_id: null,
+        name: adHocForm.name, issuer_type: adHocForm.issuer_type,
+        issuer_name: adHocForm.issuer_name || null,
+        coverage_ref: adHocForm.coverage_ref || null,
+        start_date: adHocForm.start_date, end_date: adHocForm.end_date,
+      })
+      setAdHocMode(false)
+      setAdHocForm({ name: '', issuer_type: 'shop', issuer_name: '', coverage_ref: '', start_date: '', end_date: '' })
+      await refresh()
+    } finally { setSaving(false) }
+  }
+
+  async function saveEdit() {
+    if (editingId == null) return
+    setSaving(true)
+    try {
+      await updateUnitCoverage({ id: editingId, name: editForm.name, start_date: editForm.start_date, end_date: editForm.end_date })
+      setEditingId(null)
+      await refresh()
+    } finally { setSaving(false) }
+  }
+
+  async function remove(id: number) {
+    await deleteUnitCoverage(id)
+    await refresh()
+  }
+
+  if (isEditingThisUnit) return null
+
+  const cvrList = Array.isArray(coverages) ? coverages : []
+
+  return (
+    <>
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4, paddingBottom: 4, paddingLeft: 16 }}>
+        <button
+          onClick={onToggle}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 3 }}
+        >
+          <span>{isExpanded ? '▼' : '▶'}</span>
+          <span>{t('warehouse.coverageSection')}{cvrList.length > 0 ? ` (${cvrList.length})` : ''}</span>
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div style={{ paddingLeft: 16, paddingRight: 8, paddingBottom: 10 }}>
+          {coverages === 'loading' ? (
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('warehouse.loadingCoverage')}</div>
+          ) : (
+            <>
+              {cvrList.length === 0 && !bindingMode && !adHocMode && (
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{t('warehouse.noCoverage')}</div>
+              )}
+
+              {cvrList.map(c => (
+                <div key={c.id} style={{ fontSize: 11, marginBottom: 6, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+                  {editingId === c.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px' }} />
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <input type="date" value={editForm.start_date} onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px', flex: 1 }} />
+                        <span style={{ color: 'var(--text-secondary)' }}>→</span>
+                        <input type="date" value={editForm.end_date} onChange={e => setEditForm(f => ({ ...f, end_date: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px', flex: 1 }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={saveEdit} disabled={saving} style={{ fontSize: 11, padding: '2px 7px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveCoverage')}</button>
+                        <button onClick={() => setEditingId(null)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelCoverage')}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{c.name}</span>
+                        <span style={{ marginLeft: 6, fontWeight: 600, color: c.is_active ? 'var(--color-success, #22c55e)' : 'var(--color-error)' }}>
+                          {c.is_active ? t('warehouse.coverageActive') : t('warehouse.coverageExpired')}
+                        </span>
+                        <div style={{ color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {c.start_date} → {c.end_date}
+                          {c.order_no && <span style={{ marginLeft: 6 }}>#{c.order_no}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => { setEditingId(c.id); setEditForm({ name: c.name, start_date: c.start_date, end_date: c.end_date }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editCoverage')}</button>
+                        <button onClick={() => remove(c.id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--color-error)' }}>{t('warehouse.removeCoverage')}</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {bindingMode && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {t('warehouse.bindCoverageLine')}
+                    <label style={{ fontWeight: 400, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <input type="checkbox" checked={tenantWide} onChange={e => openBindPicker(e.target.checked)} style={{ width: 12, height: 12 }} />
+                      {t('warehouse.coverageShowAllLines')}
+                    </label>
+                  </div>
+                  {bindLoading ? (
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('loading')}</div>
+                  ) : bindLines.length === 0 ? (
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{t('warehouse.coverageNoLines')}</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 6 }}>
+                      {bindLines.map(line => {
+                        const remaining = line.qty - line.bound_count
+                        return (
+                          <label key={line.order_item_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, cursor: remaining <= 0 ? 'default' : 'pointer', fontSize: 11, opacity: remaining <= 0 ? 0.45 : 1 }}>
+                            <input
+                              type="radio" name={`bind-${unitId}`}
+                              value={line.order_item_id}
+                              checked={selectedLineId === line.order_item_id}
+                              disabled={remaining <= 0}
+                              onChange={() => setSelectedLineId(line.order_item_id)}
+                              style={{ marginTop: 2, flexShrink: 0 }}
+                            />
+                            <span>
+                              <span style={{ fontWeight: 600 }}>{line.name}</span>
+                              {line.is_customer_match && <span style={{ marginLeft: 4, color: 'var(--primary)' }}>★</span>}
+                              <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{line.order_no}</span>
+                              {line.coverage_duration_days && <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>{line.coverage_duration_days}d</span>}
+                              <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>{t('warehouse.coverageBoundCount', { count: line.bound_count })}/{line.qty}</span>
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button onClick={confirmBind} disabled={!selectedLineId || saving} style={{ fontSize: 11, padding: '2px 7px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveCoverage')}</button>
+                    <button onClick={() => { setBindingMode(false); setSelectedLineId(null) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelCoverage')}</button>
+                  </div>
+                </div>
+              )}
+
+              {adHocMode && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{t('warehouse.addAdHocCoverage')}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
+                    <input placeholder={t('warehouse.coverageNamePlaceholder')} value={adHocForm.name} onChange={e => setAdHocForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px', gridColumn: '1 / -1' }} />
+                    <select value={adHocForm.issuer_type} onChange={e => setAdHocForm(f => ({ ...f, issuer_type: e.target.value as 'manufacturer' | 'shop' | 'third_party' }))} style={{ fontSize: 11, height: 26, padding: '2px 6px' }}>
+                      <option value="manufacturer">{t('coverage.issuerManufacturer')}</option>
+                      <option value="shop">{t('coverage.issuerShop')}</option>
+                      <option value="third_party">{t('coverage.issuerThirdParty')}</option>
+                    </select>
+                    <input placeholder={t('coverage.issuerNamePlaceholder')} value={adHocForm.issuer_name} onChange={e => setAdHocForm(f => ({ ...f, issuer_name: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px' }} />
+                    <input type="date" value={adHocForm.start_date} onChange={e => setAdHocForm(f => ({ ...f, start_date: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px' }} />
+                    <input type="date" value={adHocForm.end_date} onChange={e => setAdHocForm(f => ({ ...f, end_date: e.target.value }))} style={{ fontSize: 11, height: 26, padding: '2px 6px' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button onClick={confirmAdHoc} disabled={saving} style={{ fontSize: 11, padding: '2px 7px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveCoverage')}</button>
+                    <button onClick={() => setAdHocMode(false)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelCoverage')}</button>
+                  </div>
+                </div>
+              )}
+
+              {!bindingMode && !adHocMode && editingId === null && (
+                <div style={{ display: 'flex', gap: 6, marginTop: cvrList.length > 0 ? 6 : 0 }}>
+                  <button onClick={() => openBindPicker(false)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>
+                    + {t('warehouse.bindCoverageLine')}
+                  </button>
+                  <button onClick={() => { setAdHocMode(true); setBindingMode(false) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>
+                    + {t('warehouse.addAdHocCoverage')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </>
   )
 }

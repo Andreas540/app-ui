@@ -71,6 +71,7 @@ async function getInventory(event) {
       LEFT JOIN tenant_hidden_products thp ON thp.product_id = p.id AND thp.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID}
         AND p.category NOT IN ('service', 'material')
+        AND (p.product_kind IS NULL OR p.product_kind = 'standard')
         AND (ps.ledger_qty <> 0 OR ps.unit_instock_count > 0 OR c.product_id IS NOT NULL OR oo.product_id IS NOT NULL)
         AND (
           thp.product_id IS NULL

@@ -3,7 +3,51 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
+export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
+
+export type CoverageProduct = {
+  id: string
+  name: string
+  cost: number | null
+  price_amount: number | null
+  coverage_duration_days: number | null
+  coverage_ref: string | null
+  coverage_issuer_type: 'manufacturer' | 'shop' | 'third_party' | null
+  coverage_issuer_name: string | null
+}
+
+export type UnitCoverage = {
+  id: number
+  order_item_id: string | null
+  coverage_product_id: string | null
+  name: string
+  issuer_type: 'manufacturer' | 'shop' | 'third_party'
+  issuer_name: string | null
+  coverage_ref: string | null
+  start_date: string
+  end_date: string
+  is_active: boolean
+  order_no: number | null
+  customer_name: string | null
+}
+
+export type CoverageOrderLine = {
+  order_item_id: string
+  order_id: string
+  order_no: number
+  order_date: string
+  customer_id: string | null
+  customer_name: string | null
+  coverage_product_id: string
+  name: string
+  coverage_duration_days: number | null
+  coverage_ref: string | null
+  coverage_issuer_type: string | null
+  coverage_issuer_name: string | null
+  qty: number
+  bound_count: number
+  is_customer_match: boolean
+}
 
 // Call your deployed site in dev; same-origin in prod
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -387,7 +431,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
@@ -536,4 +580,84 @@ export async function deleteCost(costId: number | string, costType: 'recurring' 
     throw new Error(error.error || 'Failed to delete cost')
   }
   return response.json()
+}
+
+// ── Coverage products ──────────────────────────────────────────────────────────
+
+export async function listCoverageProducts(): Promise<{ coverage_products: CoverageProduct[] }> {
+  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, { headers: getAuthHeaders() })
+  if (!r.ok) throw new Error(`Failed to load coverage products (${r.status})`)
+  return r.json()
+}
+
+export async function createCoverageProduct(input: Omit<CoverageProduct, 'id'>): Promise<{ coverage_product: CoverageProduct }> {
+  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, {
+    method: 'POST', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Failed to create') }
+  return r.json()
+}
+
+export async function updateCoverageProduct(input: Partial<CoverageProduct> & { id: string }): Promise<{ coverage_product: CoverageProduct }> {
+  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, {
+    method: 'PUT', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Failed to update') }
+  return r.json()
+}
+
+// ── Unit coverage attachments ──────────────────────────────────────────────────
+
+export async function listUnitCoverage(unitId: number): Promise<{ coverages: UnitCoverage[] }> {
+  const r = await apiFetch(`${base}/.netlify/functions/unit-coverage?unit_id=${unitId}`, { headers: getAuthHeaders() })
+  if (!r.ok) throw new Error(`Failed to load coverage (${r.status})`)
+  return r.json()
+}
+
+export async function getAvailableCoverageLines(unitId: number, tenantWide = false): Promise<{
+  unit_delivered_at: string | null
+  customer_id: string | null
+  lines: CoverageOrderLine[]
+}> {
+  const url = `${base}/.netlify/functions/unit-coverage?available_for_unit=${unitId}${tenantWide ? '&tenant_wide=1' : ''}`
+  const r = await apiFetch(url, { headers: getAuthHeaders() })
+  if (!r.ok) throw new Error(`Failed to load coverage lines (${r.status})`)
+  return r.json()
+}
+
+export async function createUnitCoverage(input: {
+  unit_id: number
+  order_item_id?: string | null
+  coverage_product_id?: string | null
+  name: string
+  issuer_type: string
+  issuer_name?: string | null
+  coverage_ref?: string | null
+  start_date: string
+  end_date: string
+}): Promise<{ coverage: UnitCoverage }> {
+  const r = await apiFetch(`${base}/.netlify/functions/unit-coverage`, {
+    method: 'POST', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Failed to create') }
+  return r.json()
+}
+
+export async function updateUnitCoverage(input: { id: number; name?: string; start_date?: string; end_date?: string }): Promise<{ coverage: UnitCoverage }> {
+  const r = await apiFetch(`${base}/.netlify/functions/unit-coverage`, {
+    method: 'PUT', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Failed to update') }
+  return r.json()
+}
+
+export async function deleteUnitCoverage(id: number): Promise<void> {
+  const r = await apiFetch(`${base}/.netlify/functions/unit-coverage?id=${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(),
+  })
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Failed to delete') }
 }

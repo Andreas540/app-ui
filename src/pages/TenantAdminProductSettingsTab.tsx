@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import TenantAdminRecipesTab from './TenantAdminRecipesTab'
+import TenantAdminCoverageTab from './TenantAdminCoverageTab'
 
 interface ProductRow {
   id: string
@@ -14,7 +15,7 @@ function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netli
 
 export default function TenantAdminProductSettingsTab() {
   const { t } = useTranslation()
-  const [subTab, setSubTab] = useState<'products' | 'recipes'>('products')
+  const [subTab, setSubTab] = useState<'products' | 'recipes' | 'coverage'>('products')
 
   const [rows, setRows] = useState<ProductRow[]>([])
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
@@ -83,6 +84,7 @@ export default function TenantAdminProductSettingsTab() {
   const SUB_TABS: { id: typeof subTab; label: string }[] = [
     { id: 'products', label: t('tenantAdmin.tabHideProducts') },
     { id: 'recipes',  label: t('tenantAdmin.tabRecipes') },
+    { id: 'coverage', label: t('tenantAdmin.tabCoverage') },
   ]
 
   return (
@@ -175,6 +177,9 @@ export default function TenantAdminProductSettingsTab() {
 
       {/* ── Recipes sub-tab ── */}
       {subTab === 'recipes' && <TenantAdminRecipesTab />}
+
+      {/* ── Coverage sub-tab ── */}
+      {subTab === 'coverage' && <TenantAdminCoverageTab />}
     </div>
   )
 }

@@ -38,6 +38,7 @@ const TENANT_ID = authz.tenantId;
              (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
+        AND (product_kind IS NULL OR product_kind = 'standard')
         AND NOT EXISTS (
           SELECT 1 FROM tenant_hidden_products thp
           WHERE thp.tenant_id = ${TENANT_ID} AND thp.product_id = id
