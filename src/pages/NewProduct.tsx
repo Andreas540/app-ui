@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, listProductCategories, createProductCategory, type ProductWithCost, getAuthHeaders } from '../lib/api'
+import TenantAdminCoverageTab from './TenantAdminCoverageTab'
 import { ImagePicker } from '../components/ImagePicker'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
@@ -22,7 +23,7 @@ export default function NewProduct() {
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
   const [saving, setSaving] = useState(false)
-  const [category, setCategory] = useState<'product' | 'service'>(
+  const [category, setCategory] = useState<'product' | 'service' | 'coverage'>(
     searchParams.get('type') === 'service' ? 'service' : 'product'
   )
 
@@ -169,6 +170,7 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
+      if (category === 'coverage') return
       await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
@@ -212,39 +214,59 @@ export default function NewProduct() {
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
           <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
         </div>
-        <Link to={`/products/edit?type=${category}`}>
-          <button className="primary" style={{ height: BTN_H }}>
-            {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
-          </button>
-        </Link>
+        {category !== 'coverage' && (
+          <Link to={`/products/edit?type=${category}`}>
+            <button className="primary" style={{ height: BTN_H }}>
+              {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
+            </button>
+          </Link>
+        )}
       </div>
 
       {formOpen && <>
-      {(showProductTab && showServiceTab) && (
-        <div style={{ display: 'flex', gap: 0, marginTop: 12, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-          {(['product', 'service'] as const)
-            .filter(cat => cat === 'product' ? showProductTab : showServiceTab)
-            .map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                style={{
-                  padding: '6px 18px',
-                  border: 'none',
-                  borderRadius: 0,
-                  background: category === cat ? 'var(--primary, #2563eb)' : 'transparent',
-                  color: category === cat ? '#fff' : 'inherit',
-                  cursor: 'pointer',
-                  fontWeight: category === cat ? 600 : 400,
-                }}
-              >
-                {cat === 'product' ? 'Product' : 'Service'}
-              </button>
-            ))}
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
+        {(showProductTab && showServiceTab) && (
+          <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden' }}>
+            {(['product', 'service'] as const)
+              .filter(cat => cat === 'product' ? showProductTab : showServiceTab)
+              .map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  style={{
+                    padding: '6px 18px',
+                    border: 'none',
+                    borderRadius: 0,
+                    background: category === cat ? 'var(--primary, #2563eb)' : 'transparent',
+                    color: category === cat ? '#fff' : 'inherit',
+                    cursor: 'pointer',
+                    fontWeight: category === cat ? 600 : 400,
+                  }}
+                >
+                  {cat === 'product' ? 'Product' : 'Service'}
+                </button>
+              ))}
+          </div>
+        )}
+        <button
+          onClick={() => setCategory('coverage')}
+          style={{
+            padding: '6px 18px',
+            border: '1px solid var(--border, #e6e6e6)',
+            borderRadius: 6,
+            background: category === 'coverage' ? 'var(--primary, #2563eb)' : 'transparent',
+            color: category === 'coverage' ? '#fff' : 'inherit',
+            cursor: 'pointer',
+            fontWeight: category === 'coverage' ? 600 : 400,
+          }}
+        >
+          {t('tenantAdmin.tabCoverage')}
+        </button>
+      </div>
 
-      <div style={{ marginTop: 12 }}>
+      {category === 'coverage' && <TenantAdminCoverageTab />}
+
+      {category !== 'coverage' && <><div style={{ marginTop: 12 }}>
         <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
         <input
           type="text"
@@ -432,6 +454,7 @@ export default function NewProduct() {
           {t('clear')}
         </button>
       </div>
+      </>}
       </>}
 
     </div>
