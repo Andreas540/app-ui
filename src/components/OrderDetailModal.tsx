@@ -235,6 +235,11 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                       {t('orders.coversProduct')}: {coveredName}
                     </div>
                   )}
+                  {item.unit_identifier && (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
+                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{item.unit_identifier}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}

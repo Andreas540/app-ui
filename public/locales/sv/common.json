@@ -499,8 +499,8 @@
     "coversProductNone": "— ingen —",
     "coversThisOrder": "Denna order",
     "coversPrevOrders": "Tidigare ordrar",
-    "unitIdentifier": "Enhets-ID (valfritt)",
-    "unitIdentifierPlaceholder": "t.ex. serienummer"
+    "unitIdentifier": "Enhets-ID",
+    "unitIdentifierPlaceholder": "t.ex. serienummer (valfritt)"
   },
   "warehouse": {
     "title": "Justera inventarie",

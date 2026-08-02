@@ -499,8 +499,8 @@
     "coversProductNone": "— none —",
     "coversThisOrder": "This order",
     "coversPrevOrders": "Previous orders",
-    "unitIdentifier": "Unit ID (optional)",
-    "unitIdentifierPlaceholder": "e.g. serial number"
+    "unitIdentifier": "Unit ID",
+    "unitIdentifierPlaceholder": "e.g. serial number (optional)"
   },
   "warehouse": {
     "title": "Adjust Inventory",

@@ -499,8 +499,8 @@
     "coversProductNone": "— ninguno —",
     "coversThisOrder": "Este pedido",
     "coversPrevOrders": "Pedidos anteriores",
-    "unitIdentifier": "ID de unidad (opcional)",
-    "unitIdentifierPlaceholder": "p.ej. número de serie"
+    "unitIdentifier": "ID de unidad",
+    "unitIdentifierPlaceholder": "p.ej. número de serie (opcional)"
   },
   "warehouse": {
     "title": "Ajustar Inventario",
