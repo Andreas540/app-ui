@@ -44,7 +44,7 @@ async function listUnits(event) {
     LEFT JOIN customers    c  ON c.id  = o.customer_id
     WHERE iu.tenant_id  = ${TENANT_ID}
       AND iu.product_id = ${productId}
-      AND (${status ?? null} IS NULL OR iu.listing_status = ${status ?? null})
+      AND (${status ?? null}::text IS NULL OR iu.listing_status = ${status ?? null})
     ORDER BY iu.listing_status, iu.created_at DESC
   `
   return cors(200, { units })
