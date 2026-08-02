@@ -66,13 +66,18 @@ LIMIT 1
         oi.covers_order_item_id,
         oi.unit_identifier,
         p.name AS product_name,
-        p.product_kind
+        p.product_kind,
+        -- Resolve cross-order coverage: name + unit_id of the referenced order item
+        coi_p.name AS covered_product_name,
+        coi.unit_identifier AS covered_unit_identifier
       FROM order_items oi
-JOIN orders o ON o.id = oi.order_id
-LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
-WHERE oi.order_id = ${id}
-  AND o.tenant_id = ${TENANT_ID}
-ORDER BY oi.created_at ASC NULLS LAST
+      JOIN orders o ON o.id = oi.order_id
+      LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+      LEFT JOIN order_items coi ON coi.id = oi.covers_order_item_id
+      LEFT JOIN products coi_p ON coi_p.id = coi.product_id AND coi_p.tenant_id = o.tenant_id
+      WHERE oi.order_id = ${id}
+        AND o.tenant_id = ${TENANT_ID}
+      ORDER BY oi.created_at ASC NULLS LAST
     `
 
     if (items.length > 0) {

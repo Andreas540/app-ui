@@ -220,8 +220,17 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {items.map((item: any, idx: number) => {
-              const coveredName = item.product_kind === 'coverage' && item.covers_product_id
-                ? items.find((i: any) => i.product_id === item.covers_product_id)?.product_name ?? null
+              // Same-order connection via covers_product_id
+              const sameOrderCoveredItem = item.covers_product_id
+                ? items.find((i: any) => i.product_id === item.covers_product_id)
+                : null
+              // Resolved covered product name: same-order first, then cross-order from backend
+              const coveredName = item.product_kind === 'coverage'
+                ? (sameOrderCoveredItem?.product_name ?? item.covered_product_name ?? null)
+                : null
+              // Resolved covered unit_id: same-order item's unit_id, or cross-order from backend
+              const coveredUnitId = item.product_kind === 'coverage'
+                ? (sameOrderCoveredItem?.unit_identifier ?? item.covered_unit_identifier ?? null)
                 : null
               return (
                 <div key={idx} style={{ paddingTop: 6 }}>
@@ -230,14 +239,19 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                     <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                     <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
                   </div>
+                  {item.unit_identifier && (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
+                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{item.unit_identifier}</span>
+                    </div>
+                  )}
                   {coveredName && (
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
                       {t('orders.coversProduct')}: {coveredName}
                     </div>
                   )}
-                  {item.unit_identifier && (
+                  {coveredUnitId && (
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
-                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{item.unit_identifier}</span>
+                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{coveredUnitId}</span>
                     </div>
                   )}
                 </div>
