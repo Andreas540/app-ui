@@ -37,7 +37,7 @@ async function getLog(event) {
              o.delivered_at,
              MAX(o.notes) AS notes,
              COALESCE(SUM(oi.qty * oi.unit_price), 0)::float8 AS total_amount,
-             NULLIF(STRING_AGG(DISTINCT COALESCE(p.name, s.name), ', '), '') AS product_name,
+             NULLIF(STRING_AGG(COALESCE(p.name, s.name), ', ' ORDER BY oi.created_at ASC NULLS LAST), '') AS product_name,
              'order' AS kind
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
