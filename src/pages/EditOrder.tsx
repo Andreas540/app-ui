@@ -191,6 +191,15 @@ export default function EditOrder() {
 
   const firstLineIsRefund = (products.find(p => p.id === lines[0]?.product_id)?.name || '').trim().toLowerCase() === 'refund/discount'
 
+  const { productGroup, serviceGroup, addOnGroup } = useMemo(() => {
+    const sorted = [...products].sort((a, b) => a.name.localeCompare(b.name))
+    return {
+      addOnGroup:   sorted.filter(p => p.product_kind === 'coverage'),
+      productGroup: sorted.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage'),
+      serviceGroup: sorted.filter(p => p.category === 'service' && p.product_kind !== 'coverage'),
+    }
+  }, [products])
+
   // ── Line helpers ────────────────────────────────────────────────────────────
   function updateLine(idx: number, field: keyof Line, value: string | null) {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, [field]: value } : l))
@@ -396,7 +405,21 @@ export default function EditOrder() {
                   onChange={e => onLineProductChange(idx, e.target.value)}
                   style={{ height: CONTROL_H }}
                 >
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {productGroup.length > 0 && (
+                    <optgroup label={t('orders.groupProducts')}>
+                      {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </optgroup>
+                  )}
+                  {serviceGroup.length > 0 && (
+                    <optgroup label={t('orders.groupServices')}>
+                      {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </optgroup>
+                  )}
+                  {addOnGroup.length > 0 && (
+                    <optgroup label={t('orders.groupAddOns')}>
+                      {addOnGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </optgroup>
+                  )}
                 </select>
               </div>
               <div>

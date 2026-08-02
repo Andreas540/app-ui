@@ -480,6 +480,7 @@
     "productOrService": "Product / Service",
     "groupProducts": "Products",
     "groupServices": "Services",
+    "groupAddOns": "Add-Ons",
     "groupMaterials": "Input Materials",
     "orderUpdated": "Order updated!",
     "customerMissing": "Customer missing",

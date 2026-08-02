@@ -245,14 +245,15 @@ export default function NewOrder() {
   }
 
   // Filter and group products
-  const { filteredProducts, productGroup, serviceGroup } = useMemo(() => {
+  const { filteredProducts, productGroup, serviceGroup, addOnGroup } = useMemo(() => {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     const filtered = products
       .filter(p => !excludedNames.includes(p.name.toLowerCase()))
       .sort((a, b) => a.name.localeCompare(b.name))
-    const productGroup = filtered.filter(p => (p.category ?? 'product') === 'product')
-    const serviceGroup = filtered.filter(p => p.category === 'service')
-    return { filteredProducts: filtered, productGroup, serviceGroup }
+    const addOnGroup   = filtered.filter(p => p.product_kind === 'coverage')
+    const productGroup = filtered.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage')
+    const serviceGroup = filtered.filter(p => p.category === 'service' && p.product_kind !== 'coverage')
+    return { filteredProducts: filtered, productGroup, serviceGroup, addOnGroup }
   }, [products])
 
   const suggestions = useMemo(() => {
@@ -467,6 +468,11 @@ export default function NewOrder() {
                           {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </optgroup>
                       )}
+                      {addOnGroup.length > 0 && (
+                        <optgroup label={t('orders.groupAddOns')}>
+                          {addOnGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </optgroup>
+                      )}
                     </>
                   )}
                 </select>
@@ -585,16 +591,18 @@ export default function NewOrder() {
               </div>
             )}
 
-            <div style={{ marginTop: 8 }}>
-              <label>{t('orders.unitIdentifier')}</label>
-              <input
-                type="text"
-                placeholder={t('orders.unitIdentifierPlaceholder')}
-                value={l.unit_identifier}
-                onChange={e => updateLine(idx, { unit_identifier: e.target.value })}
-                style={{ height: CONTROL_H }}
-              />
-            </div>
+            {!isCoverage && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('orders.unitIdentifier')}</label>
+                <input
+                  type="text"
+                  placeholder={t('orders.unitIdentifierPlaceholder')}
+                  value={l.unit_identifier}
+                  onChange={e => updateLine(idx, { unit_identifier: e.target.value })}
+                  style={{ height: CONTROL_H }}
+                />
+              </div>
+            )}
 
             {/* Add / Remove links */}
             {allowMultipleRows && (
