@@ -57,11 +57,14 @@ LIMIT 1
     // Get order items
     const items = await sql`
       SELECT
+        oi.id AS order_item_id,
         oi.product_id,
         oi.qty,
         oi.unit_price,
         oi.cost as historical_product_cost,
         oi.covers_product_id,
+        oi.covers_order_item_id,
+        oi.unit_identifier,
         p.name AS product_name,
         p.product_kind
       FROM order_items oi
@@ -231,14 +234,16 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     for (const item of itemList) {
       await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id, covers_order_item_id, unit_identifier)
         VALUES (
           ${id},
           ${item.product_id},
           ${item.qty},
           ${item.unit_price},
           ${typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost) ? item_product_cost : null},
-          ${item.covers_product_id ?? null}
+          ${item.covers_product_id ?? null},
+          ${item.covers_order_item_id ?? null},
+          ${item.unit_identifier?.trim() || null}
         )
       `
     }
