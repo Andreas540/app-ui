@@ -8,10 +8,10 @@ import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
 
 type PartnerRef = { id: string; name: string }
-type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null }
+type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string }
 
 function emptyLine(): Line {
-  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null }
+  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null, unit_identifier: '' }
 }
 
 export default function EditOrder() {
@@ -86,6 +86,7 @@ export default function EditOrder() {
           qtyStr:            i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
           priceStr:          i.unit_price != null ? fmtInput(i.unit_price) : '',
           covers_product_id: i.covers_product_id ?? null,
+          unit_identifier:   i.unit_identifier ?? '',
         })))
 
         // Cost overrides
@@ -293,6 +294,7 @@ export default function EditOrder() {
             qty:               parseAmount(l.qtyStr),
             unit_price:        parsePriceToNumber(l.priceStr),
             covers_product_id: l.covers_product_id || null,
+            unit_identifier:   l.unit_identifier?.trim() || null,
           })),
           date:           orderDate,
           delivered,
@@ -470,6 +472,18 @@ export default function EditOrder() {
                     return <option key={oi} value={ol.product_id}>{op?.name ?? ol.product_id}</option>
                   })}
                 </select>
+              </div>
+            )}
+            {!isCoverage && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('orders.unitIdentifier')}</label>
+                <input
+                  type="text"
+                  placeholder={t('orders.unitIdentifierPlaceholder')}
+                  value={l.unit_identifier}
+                  onChange={e => updateLine(idx, 'unit_identifier', e.target.value)}
+                  style={{ height: CONTROL_H }}
+                />
               </div>
             )}
           </div>
