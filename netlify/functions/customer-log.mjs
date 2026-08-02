@@ -48,10 +48,13 @@ async function getLog(event) {
       ORDER BY o.order_date DESC, o.order_no DESC
     `,
     sql`
-      SELECT p.id, p.payment_date AS date, p.amount::float8 AS amount,
-             p.payment_type, p.notes AS payment_notes,
+      SELECT p.id, p.payment_date AS date, p.payment_date,
+             p.amount::float8 AS amount,
+             p.payment_type, p.notes, p.notes AS payment_notes,
+             p.order_id, o.order_no,
              'payment' AS kind
       FROM payments p
+      LEFT JOIN orders o ON o.id = p.order_id AND o.tenant_id = ${TENANT_ID}
       WHERE p.tenant_id = ${TENANT_ID} AND p.customer_id = ${customer_id}
       ORDER BY p.payment_date DESC, p.created_at DESC
     `,

@@ -24,6 +24,8 @@ interface LogItem {
   amount?: number
   payment_type?: string
   payment_notes?: string
+  payment_date?: string
+  order_id?: string
   // note
   note_text?: string
   created_by?: string
@@ -214,6 +216,7 @@ function LogItemCard({ item, onOrderClick, onPaymentClick, onDeleteNote }: {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
               {t('customerLog.payment')} · {formatDate(item.date)}
+              {item.order_no != null && <span style={{ marginLeft: 6 }}>· {t('order')} #{item.order_no}</span>}
             </div>
             <div style={{ fontSize: 13, fontWeight: 500 }}>{item.payment_type ?? ''}</div>
             {item.payment_notes && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, whiteSpace: 'pre-wrap' }}>{item.payment_notes}</div>}
@@ -309,7 +312,11 @@ export default function CustomerLogModal({
                       <LogItemCard
                         item={item}
                         onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
-                        onPaymentClick={p => { setSelectedPayment(p); setShowPaymentModal(true) }}
+                        onPaymentClick={p => {
+                          // PaymentDetailModal reads payment_date and notes; log item uses date and payment_notes
+                          setSelectedPayment({ ...p, payment_date: p.date, notes: p.payment_notes })
+                          setShowPaymentModal(true)
+                        }}
                         onDeleteNote={async id => {
                           await deleteNote(id)
                           setItems(prev => prev.filter(it => it.id !== id))
