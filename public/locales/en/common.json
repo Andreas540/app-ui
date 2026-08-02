@@ -543,6 +543,7 @@
     "usedInColumn": "Used in",
     "noMaterialsData": "No materials registered yet",
     "namedUnitsCount": "{{count}} unit(s) in stock",
+    "uniqueUnitsCount": "{{count}} unique unit(s)",
     "unitSerialCol": "Serial",
     "unitConditionCol": "Condition",
     "unitStatusCol": "Status",
@@ -580,8 +581,6 @@
     "saveCoverage": "Save",
     "cancelCoverage": "Cancel",
     "coverageLinkedOrder": "Order #{{order_no}}",
-    "namedItemsPending": "{{count}} named unit(s) pending",
-    "namedItemsPendingHeader": "Named units on pending orders",
     "namedItemsIdentifier": "Unit ID",
     "namedItemsOrder": "Order",
     "namedItemsCustomer": "Customer"

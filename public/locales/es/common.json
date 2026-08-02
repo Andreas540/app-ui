@@ -543,6 +543,7 @@
     "usedInColumn": "Usado en",
     "noMaterialsData": "Sin materiales registrados aún",
     "namedUnitsCount": "{{count}} unidad(es) en stock",
+    "uniqueUnitsCount": "{{count}} unidad(es) única(s)",
     "unitSerialCol": "Número de serie",
     "unitConditionCol": "Estado",
     "unitStatusCol": "Estado de listado",
@@ -580,8 +581,6 @@
     "saveCoverage": "Guardar",
     "cancelCoverage": "Cancelar",
     "coverageLinkedOrder": "Pedido #{{order_no}}",
-    "namedItemsPending": "{{count}} unidad(es) nombrada(s) pendiente(s)",
-    "namedItemsPendingHeader": "Unidades nombradas en pedidos pendientes",
     "namedItemsIdentifier": "ID de unidad",
     "namedItemsOrder": "Pedido",
     "namedItemsCustomer": "Cliente"

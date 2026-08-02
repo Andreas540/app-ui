@@ -98,6 +98,9 @@ export default function Warehouse() {
       next.has(productId) ? next.delete(productId) : next.add(productId)
       return next
     })
+    // Only fetch L1 inventory units for products with unit tracking enabled
+    const invItem = inventory.find(i => i.product_id === productId)
+    if (!invItem || invItem.unit_tracking === 'none') return
     if (unitCache[productId] && unitCache[productId] !== 'loading' && (unitCache[productId] as InventoryUnit[]).length > 0) return
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
     try {
@@ -605,6 +608,9 @@ export default function Warehouse() {
                   const isUnitsExpanded = expandedUnits.has(item.product_id)
                   const isUnitTracked = item.unit_tracking !== 'none'
                   const unitRows = unitCache[item.product_id]
+                  const namedForProduct = namedItems.filter(n => n.product_id === item.product_id)
+                  const hasUniqueUnits = isUnitTracked || namedForProduct.length > 0
+                  const uniqueUnitCount = Number(item.unit_instock_count) + namedForProduct.length
                   return (
                     <div key={item.product_id}>
                       <div
@@ -630,13 +636,13 @@ export default function Warehouse() {
                           )}
                           <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             <span>{item.product}</span>
-                            {isUnitTracked && (
+                            {hasUniqueUnits && (
                               <button
                                 onClick={e => { e.stopPropagation(); toggleUnits(item.product_id) }}
                                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 3 }}
                               >
                                 <span>{isUnitsExpanded ? '▼' : '▶'}</span>
-                                <span>{t('warehouse.namedUnitsCount', { count: Number(item.unit_instock_count) })}</span>
+                                <span>{t('warehouse.uniqueUnitsCount', { count: uniqueUnitCount })}</span>
                               </button>
                             )}
                           </span>
@@ -711,92 +717,109 @@ export default function Warehouse() {
 
                       {isUnitsExpanded && (
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4 }}>
-                          {unitRows === 'loading' || !unitRows ? (
-                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
-                          ) : (
-                            <div style={{ overflowX: 'auto' }}>
-                              <div style={{ minWidth: 420, fontSize: 12 }}>
-                                {/* Header */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
-                                  <div>{t('warehouse.unitSerialCol')}</div>
-                                  <div>{t('warehouse.unitConditionCol')}</div>
-                                  <div>{t('warehouse.unitStatusCol')}</div>
-                                  <div />
-                                </div>
 
-                                {/* Rows */}
-                                {unitRows.map(u => (
-                                  <div key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
-                                    {editingUnitId === u.id ? (
-                                      /* Inline edit form */
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                                          <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                          <input placeholder={t('warehouse.conditionPlaceholder')} value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                        </div>
-                                        <input placeholder={t('warehouse.unitNotesPlaceholder')} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                          <button onClick={() => saveUnitEdit(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
-                                          <button onClick={() => setEditingUnitId(null)} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      /* Read row + action buttons */
-                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
-                                        <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
-                                        <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
-                                        <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
-                                          {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
-                                            : u.listing_status === 'Listed' ? t('warehouse.statusListed')
-                                            : t('warehouse.statusSold')}
-                                          {u.listing_status === 'Listed' && u.order_no && (
-                                            <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
-                                          )}
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                          {u.listing_status === 'Inventory' && (
-                                            <>
-                                              <button onClick={() => { setEditingUnitId(u.id); setEditForm({ serial_number: u.serial_number ?? '', condition: u.condition ?? '', notes: u.notes ?? '' }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editUnit')}</button>
-                                              <button onClick={() => demoteUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--color-error)' }}>{t('warehouse.demoteUnit')}</button>
-                                            </>
-                                          )}
-                                          {u.listing_status === 'Listed' && (
-                                            <button onClick={() => delistUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.delistUnit')}</button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <CoveragePanel
-                                      unitId={u.id}
-                                      productId={item.product_id}
-                                      isExpanded={expandedCoverageUnit === u.id}
-                                      onToggle={() => setExpandedCoverageUnit(prev => prev === u.id ? null : u.id)}
-                                      t={t}
-                                      isEditingThisUnit={editingUnitId === u.id}
-                                    />
+                          {/* Named pending units (from order_items.unit_identifier) */}
+                          {namedForProduct.length > 0 && (
+                            <div style={{ overflowX: 'auto', borderBottom: isUnitTracked ? '1px solid var(--border)' : undefined, marginBottom: isUnitTracked ? 8 : 0 }}>
+                              <div style={{ minWidth: 380, fontSize: 12 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
+                                  <div>{t('warehouse.namedItemsIdentifier')}</div>
+                                  <div>{t('warehouse.namedItemsOrder')}</div>
+                                  <div>{t('warehouse.namedItemsCustomer')}</div>
+                                </div>
+                                {namedForProduct.map(ni => (
+                                  <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 5, paddingBottom: 5, paddingLeft: 16, paddingRight: 8 }}>
+                                    <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
+                                    <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
+                                    <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
                                   </div>
                                 ))}
-
-                                {/* Add unit form / button */}
-                                {addingForProduct === item.product_id ? (
-                                  <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                                      <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                      <input placeholder={t('warehouse.conditionPlaceholder')} value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                    </div>
-                                    <input placeholder={t('warehouse.unitNotesPlaceholder')} value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                      <button onClick={() => saveUnitAdd(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
-                                      <button onClick={() => { setAddingForProduct(null); setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' }) }} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div style={{ borderTop: unitRows.length > 0 ? '1px solid var(--border)' : undefined, paddingTop: 6, paddingLeft: 16 }}>
-                                    <button onClick={() => { setAddingForProduct(item.product_id); setEditingUnitId(null) }} style={{ fontSize: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)' }}>+ {t('warehouse.addUnit')}</button>
-                                  </div>
-                                )}
                               </div>
                             </div>
+                          )}
+
+                          {/* L1 inventory units (serialized_intake / on_promote products) */}
+                          {isUnitTracked && (
+                            unitRows === 'loading' || !unitRows ? (
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
+                            ) : (
+                              <div style={{ overflowX: 'auto' }}>
+                                <div style={{ minWidth: 420, fontSize: 12 }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
+                                    <div>{t('warehouse.unitSerialCol')}</div>
+                                    <div>{t('warehouse.unitConditionCol')}</div>
+                                    <div>{t('warehouse.unitStatusCol')}</div>
+                                    <div />
+                                  </div>
+                                  {unitRows.map(u => (
+                                    <div key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
+                                      {editingUnitId === u.id ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
+                                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                            <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                            <input placeholder={t('warehouse.conditionPlaceholder')} value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          </div>
+                                          <input placeholder={t('warehouse.unitNotesPlaceholder')} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          <div style={{ display: 'flex', gap: 6 }}>
+                                            <button onClick={() => saveUnitEdit(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
+                                            <button onClick={() => setEditingUnitId(null)} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
+                                          <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
+                                          <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
+                                          <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
+                                            {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
+                                              : u.listing_status === 'Listed' ? t('warehouse.statusListed')
+                                              : t('warehouse.statusSold')}
+                                            {u.listing_status === 'Listed' && u.order_no && (
+                                              <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
+                                            )}
+                                          </div>
+                                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                            {u.listing_status === 'Inventory' && (
+                                              <>
+                                                <button onClick={() => { setEditingUnitId(u.id); setEditForm({ serial_number: u.serial_number ?? '', condition: u.condition ?? '', notes: u.notes ?? '' }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editUnit')}</button>
+                                                <button onClick={() => demoteUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--color-error)' }}>{t('warehouse.demoteUnit')}</button>
+                                              </>
+                                            )}
+                                            {u.listing_status === 'Listed' && (
+                                              <button onClick={() => delistUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.delistUnit')}</button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <CoveragePanel
+                                        unitId={u.id}
+                                        productId={item.product_id}
+                                        isExpanded={expandedCoverageUnit === u.id}
+                                        onToggle={() => setExpandedCoverageUnit(prev => prev === u.id ? null : u.id)}
+                                        t={t}
+                                        isEditingThisUnit={editingUnitId === u.id}
+                                      />
+                                    </div>
+                                  ))}
+                                  {addingForProduct === item.product_id ? (
+                                    <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                        <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                        <input placeholder={t('warehouse.conditionPlaceholder')} value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                      </div>
+                                      <input placeholder={t('warehouse.unitNotesPlaceholder')} value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                      <div style={{ display: 'flex', gap: 6 }}>
+                                        <button onClick={() => saveUnitAdd(item.product_id)} disabled={unitSaving} style={{ fontSize: 12, padding: '3px 10px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.saveUnit')}</button>
+                                        <button onClick={() => { setAddingForProduct(null); setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' }) }} style={{ fontSize: 12, padding: '3px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.cancelUnit')}</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div style={{ borderTop: unitRows.length > 0 ? '1px solid var(--border)' : undefined, paddingTop: 6, paddingLeft: 16 }}>
+                                      <button onClick={() => { setAddingForProduct(item.product_id); setEditingUnitId(null) }} style={{ fontSize: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)' }}>+ {t('warehouse.addUnit')}</button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
                           )}
                         </div>
                       )}
@@ -808,31 +831,6 @@ export default function Warehouse() {
           </div>
         )}
       </div>
-
-      {/* Named units pending — shown regardless of product_stock tracking */}
-      {namedItems.length > 0 && (
-        <div className="card" style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t('warehouse.namedItemsPendingHeader')}</div>
-          <div style={{ overflowX: 'auto' }}>
-            <div style={{ minWidth: 400, fontSize: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
-                <div>{t('product')}</div>
-                <div>{t('warehouse.namedItemsIdentifier')}</div>
-                <div>{t('warehouse.namedItemsOrder')}</div>
-                <div>{t('warehouse.namedItemsCustomer')}</div>
-              </div>
-              {namedItems.map(ni => (
-                <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 6, paddingBottom: 6 }}>
-                  <div style={{ color: 'var(--text-secondary)' }}>{ni.product_name}</div>
-                  <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
-                  <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
-                  <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Materials Section */}
       {materials.length > 0 && (

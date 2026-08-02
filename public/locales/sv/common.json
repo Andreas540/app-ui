@@ -543,6 +543,7 @@
     "usedInColumn": "Används i",
     "noMaterialsData": "Inga material registrerade ännu",
     "namedUnitsCount": "{{count}} enhet(er) i lager",
+    "uniqueUnitsCount": "{{count}} unik(a) enhet(er)",
     "unitSerialCol": "Serienummer",
     "unitConditionCol": "Skick",
     "unitStatusCol": "Status",
@@ -580,8 +581,6 @@
     "saveCoverage": "Spara",
     "cancelCoverage": "Avbryt",
     "coverageLinkedOrder": "Order #{{order_no}}",
-    "namedItemsPending": "{{count}} namngiven(na) enhet(er) väntar",
-    "namedItemsPendingHeader": "Namngivna enheter på väntande ordrar",
     "namedItemsIdentifier": "Enhets-ID",
     "namedItemsOrder": "Order",
     "namedItemsCustomer": "Kund"
