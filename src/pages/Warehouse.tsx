@@ -92,6 +92,16 @@ export default function Warehouse() {
     return next
   })
 
+  const fetchUnits = async (productId: string): Promise<InventoryUnit[]> => {
+    const res = await fetch(
+      `/.netlify/functions/inventory-units?product_id=${productId}`,
+      { headers: getAuthHeaders() }
+    )
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error ?? `Failed to load units (${res.status})`)
+    return data.units ?? []
+  }
+
   const toggleUnits = async (productId: string) => {
     setExpandedUnits(prev => {
       const next = new Set(prev)
@@ -104,12 +114,8 @@ export default function Warehouse() {
     if (unitCache[productId] && unitCache[productId] !== 'loading' && (unitCache[productId] as InventoryUnit[]).length > 0) return
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
     try {
-      const res = await fetch(
-        `/.netlify/functions/inventory-units?product_id=${productId}`,
-        { headers: getAuthHeaders() }
-      )
-      const data = await res.json()
-      setUnitCache(prev => ({ ...prev, [productId]: data.units ?? [] }))
+      const units = await fetchUnits(productId)
+      setUnitCache(prev => ({ ...prev, [productId]: units }))
     } catch {
       setUnitCache(prev => ({ ...prev, [productId]: [] }))
     }
@@ -118,27 +124,28 @@ export default function Warehouse() {
   const refreshUnits = async (productId: string) => {
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
     try {
-      const res = await fetch(`/.netlify/functions/inventory-units?product_id=${productId}`, { headers: getAuthHeaders() })
-      const data = await res.json()
-      setUnitCache(prev => ({ ...prev, [productId]: data.units ?? [] }))
+      setUnitCache(prev => ({ ...prev, [productId]: [] })) // clear while loading
+      const units = await fetchUnits(productId)
+      setUnitCache(prev => ({ ...prev, [productId]: units }))
     } catch {
       setUnitCache(prev => ({ ...prev, [productId]: [] }))
     }
     // Also refresh inventory totals so unit_instock_count badge stays accurate
     const inv = await fetch('/.netlify/functions/warehouse-inventory', { headers: getAuthHeaders() })
     const invData = await inv.json()
-    if (inv.ok) { setInventory(invData.inventory ?? []); setMaterials(invData.materials ?? []) }
+    if (inv.ok) { setInventory(invData.inventory ?? []); setMaterials(invData.materials ?? []); setNamedItems(invData.named_items ?? []) }
   }
 
   const saveUnitEdit = async (productId: string) => {
     if (editingUnitId == null) return
     setUnitSaving(true)
     try {
-      await fetch('/.netlify/functions/inventory-units', {
+      const res = await fetch('/.netlify/functions/inventory-units', {
         method: 'PUT',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
         body: JSON.stringify({ id: editingUnitId, serial_number: editForm.serial_number || null, condition: editForm.condition || null, notes: editForm.notes || null }),
       })
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Save failed'); return }
       setEditingUnitId(null)
       await refreshUnits(productId)
     } finally { setUnitSaving(false) }
@@ -147,11 +154,12 @@ export default function Warehouse() {
   const saveUnitAdd = async (productId: string) => {
     setUnitSaving(true)
     try {
-      await fetch('/.netlify/functions/inventory-units', {
+      const res = await fetch('/.netlify/functions/inventory-units', {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
         body: JSON.stringify({ product_id: productId, serial_number: addForm.serial_number || null, condition: addForm.condition || null, notes: addForm.notes || null, acquired_at: addForm.acquired_at || null }),
       })
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Save failed'); return }
       setAddingForProduct(null)
       setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' })
       await refreshUnits(productId)
