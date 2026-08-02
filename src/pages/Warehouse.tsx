@@ -35,6 +35,7 @@ type InventoryUnit = {
   listing_status: 'Inventory' | 'Listed' | 'Sold'
   notes: string | null
   acquired_at: string | null
+  order_id: string | null
   order_no: number | null
   customer_name: string | null
 }
@@ -44,6 +45,7 @@ type NamedItem = {
   product_id: string
   product_name: string
   unit_identifier: string
+  order_id: string
   order_no: number
   order_date: string
   customer_name: string
@@ -85,6 +87,7 @@ export default function Warehouse() {
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
   const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
   const [namedItems, setNamedItems] = useState<NamedItem[]>([])
+  const [unitFetchError, setUnitFetchError] = useState<Record<string, string>>({})
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
@@ -113,22 +116,25 @@ export default function Warehouse() {
     if (!invItem || invItem.unit_tracking === 'none') return
     if (unitCache[productId] && unitCache[productId] !== 'loading' && (unitCache[productId] as InventoryUnit[]).length > 0) return
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
+    setUnitFetchError(prev => { const n = { ...prev }; delete n[productId]; return n })
     try {
       const units = await fetchUnits(productId)
       setUnitCache(prev => ({ ...prev, [productId]: units }))
-    } catch {
+    } catch (e) {
       setUnitCache(prev => ({ ...prev, [productId]: [] }))
+      setUnitFetchError(prev => ({ ...prev, [productId]: String(e) }))
     }
   }
 
   const refreshUnits = async (productId: string) => {
     setUnitCache(prev => ({ ...prev, [productId]: 'loading' }))
+    setUnitFetchError(prev => { const n = { ...prev }; delete n[productId]; return n })
     try {
-      setUnitCache(prev => ({ ...prev, [productId]: [] })) // clear while loading
       const units = await fetchUnits(productId)
       setUnitCache(prev => ({ ...prev, [productId]: units }))
-    } catch {
+    } catch (e) {
       setUnitCache(prev => ({ ...prev, [productId]: [] }))
+      setUnitFetchError(prev => ({ ...prev, [productId]: String(e) }))
     }
     // Also refresh inventory totals so unit_instock_count badge stays accurate
     const inv = await fetch('/.netlify/functions/warehouse-inventory', { headers: getAuthHeaders() })
@@ -738,7 +744,10 @@ export default function Warehouse() {
                                 {namedForProduct.map(ni => (
                                   <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 5, paddingBottom: 5, paddingLeft: 16, paddingRight: 8 }}>
                                     <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
-                                    <div style={{ color: 'var(--text-secondary)' }}>#{ni.order_no} · {ni.order_date}</div>
+                                    <div>
+                                      <button onClick={() => setCustomerModalOrder({ id: ni.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
+                                      <span style={{ color: 'var(--text-secondary)' }}> · {ni.order_date}</span>
+                                    </div>
                                     <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
                                   </div>
                                 ))}
@@ -747,6 +756,9 @@ export default function Warehouse() {
                           )}
 
                           {/* L1 inventory units (serialized_intake / on_promote products) */}
+                          {isUnitTracked && unitFetchError[item.product_id] && (
+                            <div style={{ fontSize: 12, color: 'var(--color-error)', paddingLeft: 16, paddingBottom: 6 }}>{unitFetchError[item.product_id]}</div>
+                          )}
                           {isUnitTracked && (
                             unitRows === 'loading' || !unitRows ? (
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
@@ -781,8 +793,8 @@ export default function Warehouse() {
                                             {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
                                               : u.listing_status === 'Listed' ? t('warehouse.statusListed')
                                               : t('warehouse.statusSold')}
-                                            {u.listing_status === 'Listed' && u.order_no && (
-                                              <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>#{u.order_no}</span>
+                                            {(u.listing_status === 'Listed' || u.listing_status === 'Sold') && u.order_no && u.order_id && (
+                                              <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12, marginLeft: 4 }}>#{u.order_no}</button>
                                             )}
                                           </div>
                                           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>

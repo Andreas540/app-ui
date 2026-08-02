@@ -37,7 +37,7 @@ async function listUnits(event) {
       iu.listing_status, iu.order_item_id, iu.acquired_at,
       iu.notes, iu.created_at, iu.updated_at,
       -- Order info when claimed/sold
-      o.order_no, c.name AS customer_name
+      o.id AS order_id, o.order_no, c.name AS customer_name
     FROM inventory_units iu
     LEFT JOIN order_items oi ON oi.id = iu.order_item_id
     LEFT JOIN orders       o  ON o.id  = oi.order_id

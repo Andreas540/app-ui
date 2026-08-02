@@ -141,7 +141,7 @@ async function getInventory(event) {
         SELECT oi.id, oi.product_id,
                COALESCE(p.name, s.name, 'Unknown') AS product_name,
                oi.unit_identifier,
-               o.order_no, o.order_date::text AS order_date,
+               o.id AS order_id, o.order_no, o.order_date::text AS order_date,
                c.name AS customer_name
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
