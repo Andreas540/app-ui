@@ -148,6 +148,7 @@ export default function CustomerDetailPage() {
           if (pollData.status === 'approved') {
             setTerminalState('approved')
             setTerminalMsg(`${t('orders.terminalApproved')} · ${pollData.card_type || ''} ···${pollData.last_four || ''}`)
+            fetchCustomerDetail(id!).then(setData).catch(() => {})
           } else {
             setTerminalState('declined')
             setTerminalMsg(pollData.message || t('orders.terminalDeclined'))
