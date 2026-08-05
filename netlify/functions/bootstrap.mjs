@@ -103,14 +103,24 @@ export async function handler(event) {
       ORDER BY name
     `;
 
+    // Check if this tenant has AMP configured with a PAX device serial
+    const terminalRows = await sql`
+      SELECT 1 FROM tenant_payment_providers
+      WHERE tenant_id = ${TENANT_ID}::uuid AND provider = 'amp' AND enabled = true
+        AND publishable_key IS NOT NULL AND secret_key IS NOT NULL AND device_serial IS NOT NULL
+      LIMIT 1
+    `.catch(() => [])
+    const ampHasTerminal = terminalRows.length > 0
+
     console.log('🟢 Bootstrap loaded:', {
       customers: customers.length,
       products: products.length,
       partners: partners.length,
-      suppliers: suppliers.length
+      suppliers: suppliers.length,
+      ampHasTerminal
     })
 
-    return cors(200, { customers, products, partners, suppliers });
+    return cors(200, { customers, products, partners, suppliers, ampHasTerminal });
   } catch (e) {
     console.error('🔴 Bootstrap error:', e);    
     return cors(500, { error: String(e?.message || e) });

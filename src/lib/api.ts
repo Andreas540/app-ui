@@ -120,6 +120,7 @@ export async function fetchBootstrap() {
     products: Product[]
     partners?: Array<{ id: string; name: string }>
     suppliers?: Array<{ id: string; name: string }>
+    ampHasTerminal?: boolean
   }
 }
 

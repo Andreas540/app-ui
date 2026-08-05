@@ -466,6 +466,13 @@
     "paymentLink": "Enlace de pago",
     "paymentLinkTitle": "Genera un enlace de pago de Stripe para compartir con el cliente",
     "generatingLink": "Generando…",
+    "chargeTerminal": "Cobrar en terminal",
+    "terminalConnecting": "Conectando con terminal…",
+    "terminalWaiting": "Esperando tarjeta…",
+    "terminalApproved": "Aprobado",
+    "terminalDeclined": "Rechazado",
+    "terminalTimeout": "Sin respuesta del terminal. Inténtalo de nuevo.",
+    "terminalError": "No se pudo contactar el terminal",
     "paymentLinkCopied": "¡Enlace de pago copiado al portapapeles!",
     "alertSelectCustomer": "Seleccione un cliente primero",
     "alertPickProduct": "Seleccione un producto",
@@ -1842,6 +1849,8 @@
     "callbackSecretStored": "(generado — almacenado de forma segura)",
     "callbackUrl": "URL de callback (informativa)",
     "callbackUrlHelper": "Se incluye automáticamente en cada solicitud de pago enviada a AMP. No se requiere ninguna acción por tu parte.",
+    "deviceSerial": "Número de serie del terminal PAX (SN)",
+    "deviceSerialHelper": "El número de serie impreso en tu terminal PAX. Requerido para pagos con tarjeta en persona.",
     "moreProvidersComingSoon": "Más proveedores de pago próximamente."
   },
   "bookingPage": {

@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
-import { fetchCustomerDetail, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
+import { fetchCustomerDetail, fetchBootstrap, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
 import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -98,15 +98,85 @@ export default function CustomerDetailPage() {
   const [bookingLinkCopied,     setBookingLinkCopied]     = useState(false)
   const [bookingLinkError,      setBookingLinkError]      = useState<string | null>(null)
   const [showLogModal,          setShowLogModal]          = useState(false)
+  const [ampHasTerminal,        setAmpHasTerminal]        = useState(false)
+  // terminal charge: per-order state so multiple orders don't collide
+  type TerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
+  const [terminalOrderId,   setTerminalOrderId]   = useState<string | null>(null)
+  const [terminalState,     setTerminalState]     = useState<TerminalState>('idle')
+  const [terminalMsg,       setTerminalMsg]       = useState('')
+  const terminalReceiptId = useRef<string | null>(null)
+  const terminalPollRef   = useRef<ReturnType<typeof setInterval> | null>(null)
+  const terminalTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  function stopTerminalPolling() {
+    if (terminalPollRef.current) { clearInterval(terminalPollRef.current); terminalPollRef.current = null }
+    if (terminalTimeout.current) { clearTimeout(terminalTimeout.current);  terminalTimeout.current = null }
+  }
+
+  async function chargeTerminal(orderId: string) {
+    if (terminalState !== 'idle') return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    try {
+      setTerminalOrderId(orderId)
+      setTerminalState('initiating')
+      setTerminalMsg('')
+      const initRes = await fetch(`${base}/api/amp-terminal-initiate`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const initData = await initRes.json()
+      if (!initRes.ok) throw new Error(initData.error || 'Failed to reach terminal')
+      terminalReceiptId.current = initData.receipt_id
+      setTerminalState('waiting')
+
+      terminalTimeout.current = setTimeout(() => {
+        stopTerminalPolling()
+        setTerminalState('timeout')
+      }, 60_000)
+
+      terminalPollRef.current = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`${base}/api/amp-terminal-poll`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ receipt_id: terminalReceiptId.current, order_id: orderId }),
+          })
+          const pollData = await pollRes.json()
+          if (pollData.status === 'pending') return
+          stopTerminalPolling()
+          if (pollData.status === 'approved') {
+            setTerminalState('approved')
+            setTerminalMsg(`${t('orders.terminalApproved')} · ${pollData.card_type || ''} ···${pollData.last_four || ''}`)
+          } else {
+            setTerminalState('declined')
+            setTerminalMsg(pollData.message || t('orders.terminalDeclined'))
+          }
+        } catch { /* network hiccup — keep polling */ }
+      }, 3_000)
+    } catch (e: any) {
+      stopTerminalPolling()
+      setTerminalState('idle')
+      setTerminalOrderId(null)
+      alert(e?.message || t('orders.terminalError'))
+    }
+  }
+
+  function dismissTerminal() {
+    stopTerminalPolling()
+    setTerminalState('idle')
+    setTerminalOrderId(null)
+    setTerminalMsg('')
+  }
 
   useEffect(() => {
     (async () => {
       try {
         if (!id) { setErr('Missing id'); setLoading(false); return }
         setLoading(true); setErr(null)
-        const d = await fetchCustomerDetail(id)
+        const [d, boot] = await Promise.all([fetchCustomerDetail(id), fetchBootstrap()])
         setData(d)
+        setAmpHasTerminal(boot.ampHasTerminal ?? false)
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -502,6 +572,32 @@ export default function CustomerDetailPage() {
         </div>
       )}
 
+      {terminalState !== 'idle' && (
+        <div style={{
+          marginTop: 12, padding: '12px 14px', borderRadius: 8, fontSize: 13,
+          border: `1px solid ${terminalState === 'approved' ? 'var(--color-success, #10b981)' : terminalState === 'declined' || terminalState === 'timeout' ? 'var(--color-error)' : 'var(--line)'}`,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          {(terminalState === 'initiating' || terminalState === 'waiting') && (
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {terminalState === 'initiating' ? t('orders.terminalConnecting') : t('orders.terminalWaiting')}
+            </span>
+          )}
+          {terminalState === 'approved' && (
+            <span style={{ color: 'var(--color-success, #10b981)', fontWeight: 600 }}>✓ {terminalMsg}</span>
+          )}
+          {terminalState === 'declined' && (
+            <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>{t('orders.terminalDeclined')}: {terminalMsg}</span>
+          )}
+          {terminalState === 'timeout' && (
+            <span style={{ color: 'var(--color-error)' }}>{t('orders.terminalTimeout')}</span>
+          )}
+          <button onClick={dismissTerminal} style={{ height: 30, padding: '0 12px', fontSize: 12, marginLeft: 'auto' }}>
+            {terminalState === 'waiting' || terminalState === 'initiating' ? t('cancel') : t('close')}
+          </button>
+        </div>
+      )}
+
       {/* Unified action row — wraps to 3 per row on mobile (3×100px + 2×8px gap = 316px) */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {/* Default buttons — alphabetical: Message, New Invoice, New Order, New Payment */}
@@ -883,16 +979,26 @@ export default function CustomerDetailPage() {
                                 const balance = Math.max(0, orderTotal - paid)
                                 const amount = balance > 0 ? balance : orderTotal
                                 navigate(`/payments?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}&order_id=${o.id}&amount=${amount}&return_to=customer&return_id=${customer.id}`)
-                              }},
+                              }, show: true },
                               { label: generatingPaymentLink ? t('customers.generating') : t('customers.createPaymentLink'), action: () => {
                                 setPaymentMenuOrderId(null)
                                 generatePaymentLink(o.id)
-                              }},
-                            ].map(item => (
+                              }, show: true },
+                              ...(ampHasTerminal && orderTotal > paid ? [{
+                                label: terminalState !== 'idle' && terminalOrderId === o.id
+                                  ? t('orders.terminalWaiting')
+                                  : t('orders.chargeTerminal'),
+                                action: () => {
+                                  setPaymentMenuOrderId(null)
+                                  chargeTerminal(o.id)
+                                },
+                                show: true,
+                              }] : []),
+                            ].filter(item => item.show).map(item => (
                               <button
                                 key={item.label}
                                 onClick={(e) => { e.stopPropagation(); item.action() }}
-                                disabled={generatingPaymentLink}
+                                disabled={generatingPaymentLink || (terminalState !== 'idle' && terminalOrderId === o.id)}
                                 style={{
                                   display: 'block', width: '100%',
                                   padding: '9px 14px', background: 'transparent',

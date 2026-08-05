@@ -27,7 +27,7 @@ export async function handler(event) {
       : (event.body || '{}')
     const body = JSON.parse(rawBody)
 
-    const { provider = 'stripe', publishable_key, secret_key, webhook_secret, enabled } = body
+    const { provider = 'stripe', publishable_key, secret_key, webhook_secret, device_serial, enabled } = body
 
     const validProviders = ['stripe', 'amp']
     if (!validProviders.includes(provider)) {
@@ -42,6 +42,7 @@ export async function handler(event) {
         publishable_key text,
         secret_key      text,
         webhook_secret  text,
+        device_serial   text,
         enabled         boolean     NOT NULL DEFAULT false,
         created_at      timestamptz NOT NULL DEFAULT now(),
         updated_at      timestamptz NOT NULL DEFAULT now(),
@@ -51,13 +52,14 @@ export async function handler(event) {
 
     // Insert or update — only overwrite fields that were actually supplied (non-empty string)
     await sql`
-      INSERT INTO tenant_payment_providers (tenant_id, provider, publishable_key, secret_key, webhook_secret, enabled, updated_at)
+      INSERT INTO tenant_payment_providers (tenant_id, provider, publishable_key, secret_key, webhook_secret, device_serial, enabled, updated_at)
       VALUES (
         ${authz.tenantId},
         ${provider},
         ${publishable_key || null},
         ${secret_key     || null},
         ${webhook_secret || null},
+        ${device_serial  || null},
         ${enabled ?? false},
         now()
       )
@@ -65,6 +67,7 @@ export async function handler(event) {
         publishable_key = CASE WHEN ${publishable_key || ''} <> '' THEN EXCLUDED.publishable_key ELSE tenant_payment_providers.publishable_key END,
         secret_key      = CASE WHEN ${secret_key     || ''} <> '' THEN EXCLUDED.secret_key      ELSE tenant_payment_providers.secret_key      END,
         webhook_secret  = CASE WHEN ${webhook_secret || ''} <> '' THEN EXCLUDED.webhook_secret  ELSE tenant_payment_providers.webhook_secret  END,
+        device_serial   = CASE WHEN ${device_serial  || ''} <> '' THEN EXCLUDED.device_serial   ELSE tenant_payment_providers.device_serial   END,
         enabled         = EXCLUDED.enabled,
         updated_at      = now()
     `

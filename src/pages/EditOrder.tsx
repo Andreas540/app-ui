@@ -1,5 +1,5 @@
 // src/pages/EditOrder.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
@@ -19,6 +19,13 @@ export default function EditOrder() {
   const { parseAmount, fmtInput, fmtMoney, fmtPct } = useCurrency()
   const { orderId } = useParams<{ orderId: string }>()
   const [generatingLink, setGeneratingLink] = useState(false)
+  const [ampHasTerminal, setAmpHasTerminal] = useState(false)
+  type TerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
+  const [terminalState, setTerminalState]   = useState<TerminalState>('idle')
+  const [terminalMsg, setTerminalMsg]       = useState('')
+  const terminalReceiptId = useRef<string | null>(null)
+  const terminalPollRef   = useRef<ReturnType<typeof setInterval> | null>(null)
+  const terminalTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
 
   const [people, setPeople]     = useState<Person[]>([])
@@ -56,10 +63,11 @@ export default function EditOrder() {
     (async () => {
       try {
         setLoading(true); setErr(null)
-        const { customers, products: prods, partners: bootPartners } = await fetchBootstrap()
+        const { customers, products: prods, partners: bootPartners, ampHasTerminal: hasTerminal } = await fetchBootstrap()
         setPeople(customers)
         setProducts(prods)
         setPartners(bootPartners ?? [])
+        setAmpHasTerminal(hasTerminal ?? false)
 
         const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
         const res = await fetch(`${base}/api/order?id=${orderId}`, { headers: getAuthHeaders() })
@@ -355,6 +363,69 @@ export default function EditOrder() {
     }
   }
 
+  function stopTerminalPolling() {
+    if (terminalPollRef.current)  { clearInterval(terminalPollRef.current);  terminalPollRef.current = null }
+    if (terminalTimeout.current)  { clearTimeout(terminalTimeout.current);   terminalTimeout.current = null }
+  }
+
+  async function chargeTerminal() {
+    if (!orderId || terminalState !== 'idle') return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    try {
+      setTerminalState('initiating')
+      setTerminalMsg('')
+      const initRes = await fetch(`${base}/api/amp-terminal-initiate`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const initData = await initRes.json()
+      if (!initRes.ok) throw new Error(initData.error || 'Failed to reach terminal')
+      terminalReceiptId.current = initData.receipt_id
+      setTerminalState('waiting')
+
+      // 60-second hard timeout
+      terminalTimeout.current = setTimeout(() => {
+        stopTerminalPolling()
+        setTerminalState('timeout')
+      }, 60_000)
+
+      // Poll every 3 seconds
+      terminalPollRef.current = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`${base}/api/amp-terminal-poll`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ receipt_id: terminalReceiptId.current, order_id: orderId }),
+          })
+          const pollData = await pollRes.json()
+          if (pollData.status === 'pending') return
+          stopTerminalPolling()
+          if (pollData.status === 'approved') {
+            setTerminalState('approved')
+            setTerminalMsg(`${t('orders.terminalApproved')} · ${pollData.card_type || ''} ···${pollData.last_four || ''}`)
+            setPaidAmount(prev => prev + (pollData.amount || 0))
+          } else {
+            setTerminalState('declined')
+            setTerminalMsg(pollData.message || t('orders.terminalDeclined'))
+          }
+        } catch {
+          // network hiccup — keep polling
+        }
+      }, 3_000)
+    } catch (e: any) {
+      stopTerminalPolling()
+      setTerminalState('idle')
+      alert(e?.message || t('orders.terminalError'))
+    }
+  }
+
+  function cancelTerminal() {
+    stopTerminalPolling()
+    setTerminalState('idle')
+    setTerminalMsg('')
+  }
+
   const CONTROL_H = 44
 
   return (
@@ -613,6 +684,13 @@ export default function EditOrder() {
                 : t('orders.paymentLink')}
           </button>
         )}
+        {ampHasTerminal && Number.isFinite(orderValue) && orderValue > paidAmount && terminalState === 'idle' && (
+          <button onClick={chargeTerminal} style={{ height: CONTROL_H }}>
+            {paidAmount > 0
+              ? `${t('orders.chargeTerminal')} (${fmtMoney(orderValue - paidAmount)} remaining)`
+              : t('orders.chargeTerminal')}
+          </button>
+        )}
         <button
           onClick={deleteOrder}
           style={{ height: CONTROL_H, marginLeft: 'auto', backgroundColor: 'var(--color-error)', color: 'white', border: 'none' }}
@@ -620,6 +698,41 @@ export default function EditOrder() {
           {t('delete')}
         </button>
       </div>
+
+      {/* Terminal charge status */}
+      {terminalState !== 'idle' && (
+        <div style={{
+          marginTop: 12, padding: '12px 14px',
+          border: `1px solid ${terminalState === 'approved' ? 'var(--color-success, #10b981)' : terminalState === 'declined' || terminalState === 'timeout' ? 'var(--color-error)' : 'var(--border)'}`,
+          borderRadius: 8, fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'
+        }}>
+          {(terminalState === 'initiating' || terminalState === 'waiting') && (
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {terminalState === 'initiating' ? t('orders.terminalConnecting') : t('orders.terminalWaiting')}
+            </span>
+          )}
+          {terminalState === 'approved' && (
+            <span style={{ color: 'var(--color-success, #10b981)', fontWeight: 600 }}>✓ {terminalMsg}</span>
+          )}
+          {terminalState === 'declined' && (
+            <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>{t('orders.terminalDeclined')}: {terminalMsg}</span>
+          )}
+          {terminalState === 'timeout' && (
+            <span style={{ color: 'var(--color-error)' }}>{t('orders.terminalTimeout')}</span>
+          )}
+          {(terminalState === 'waiting' || terminalState === 'initiating') && (
+            <button onClick={cancelTerminal} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>
+              {t('cancel')}
+            </button>
+          )}
+          {(terminalState === 'approved' || terminalState === 'declined' || terminalState === 'timeout') && (
+            <button onClick={cancelTerminal} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>
+              {t('close')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

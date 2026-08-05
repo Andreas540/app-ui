@@ -29,6 +29,7 @@ export async function handler(event) {
         publishable_key text,
         secret_key      text,
         webhook_secret  text,
+        device_serial   text,
         enabled         boolean     NOT NULL DEFAULT false,
         created_at      timestamptz NOT NULL DEFAULT now(),
         updated_at      timestamptz NOT NULL DEFAULT now(),
@@ -40,6 +41,7 @@ export async function handler(event) {
       SELECT
         provider,
         publishable_key,
+        device_serial,
         (secret_key     IS NOT NULL AND secret_key     <> '') AS secret_key_set,
         (webhook_secret IS NOT NULL AND webhook_secret <> '') AS webhook_secret_set,
         enabled

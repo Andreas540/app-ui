@@ -9,6 +9,7 @@ type Provider = 'stripe' | 'amp'
 interface ProviderRow {
   provider: string
   publishable_key: string | null
+  device_serial: string | null
   secret_key_set: boolean
   webhook_secret_set: boolean
   enabled: boolean
@@ -33,6 +34,7 @@ export default function TenantAdminPaymentProvidersTab() {
   const [publishableKey, setPublishableKey] = useState('')
   const [secretKey,      setSecretKey]      = useState('')
   const [webhookSecret,  setWebhookSecret]  = useState('')
+  const [deviceSerial,   setDeviceSerial]   = useState('')
   const [enabled,        setEnabled]        = useState(false)
 
   useEffect(() => { load() }, [])
@@ -42,6 +44,7 @@ export default function TenantAdminPaymentProvidersTab() {
     const row = storedRows.find(r => r.provider === selectedProvider)
     setPublishableKey(row?.publishable_key || '')
     setSecretKey('')
+    setDeviceSerial(row?.device_serial || '')
     // AMP: auto-generate a callback secret if one isn't stored yet
     setWebhookSecret(
       selectedProvider === 'amp' && !row?.webhook_secret_set
@@ -89,6 +92,7 @@ export default function TenantAdminPaymentProvidersTab() {
           publishable_key: publishableKey.trim(),
           secret_key:      secretKey.trim(),
           webhook_secret:  webhookSecret.trim(),
+          device_serial:   deviceSerial.trim(),
           enabled,
         }),
       })
@@ -241,6 +245,24 @@ export default function TenantAdminPaymentProvidersTab() {
             />
           )}
         </div>
+
+        {/* PAX device serial — AMP only */}
+        {selectedProvider === 'amp' && (
+          <div>
+            <label className="label">{t('paymentProviders.deviceSerial')}</label>
+            <p className="helper" style={{ marginBottom: 4 }}>
+              {t('paymentProviders.deviceSerialHelper')}
+            </p>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g. 1350029286"
+              value={deviceSerial}
+              onChange={e => setDeviceSerial(e.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: 13, maxWidth: 280 }}
+            />
+          </div>
+        )}
 
         {/* Webhook / Callback URL (read-only, informational) */}
         <div>

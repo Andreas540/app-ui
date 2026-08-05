@@ -466,6 +466,13 @@
     "paymentLink": "Betalningslänk",
     "paymentLinkTitle": "Generera en Stripe-betalningslänk att dela med kunden",
     "generatingLink": "Genererar…",
+    "chargeTerminal": "Debitera terminal",
+    "terminalConnecting": "Ansluter till terminal…",
+    "terminalWaiting": "Väntar på kort…",
+    "terminalApproved": "Godkänd",
+    "terminalDeclined": "Nekad",
+    "terminalTimeout": "Inget svar från terminalen. Försök igen.",
+    "terminalError": "Kunde inte nå terminalen",
     "paymentLinkCopied": "Betalningslänk kopierad till urklipp!",
     "alertSelectCustomer": "Välj en kund först",
     "alertPickProduct": "Välj en produkt",
@@ -1842,6 +1849,8 @@
     "callbackSecretStored": "(genererad — sparad säkert)",
     "callbackUrl": "Callback-URL (information)",
     "callbackUrlHelper": "Inkluderas automatiskt i varje betalningsbegäran som skickas till AMP. Ingen åtgärd krävs från din sida.",
+    "deviceSerial": "PAX-enhetens serienummer (SN)",
+    "deviceSerialHelper": "Serienumret som finns på din PAX-terminal. Krävs för kortbetalningar i butik.",
     "moreProvidersComingSoon": "Fler betalningsleverantörer tillkommer snart."
   },
   "bookingPage": {
