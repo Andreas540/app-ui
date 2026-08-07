@@ -127,7 +127,14 @@ async function getCustomer(event) {
     `.catch(() => [])
     const hasPaymentProvider = providerRows.length > 0
 
-    return cors(200, { customer, totals: totals[0], orders, payments, hasPaymentProvider })
+    const tokens = await sql`
+      SELECT id, card_type, last_four, exp_date, created_at
+      FROM customer_payment_tokens
+      WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
+      ORDER BY created_at DESC
+    `.catch(() => [])
+
+    return cors(200, { customer, totals: totals[0], orders, payments, hasPaymentProvider, tokens })
 }
 
 async function updateCustomer(event) {

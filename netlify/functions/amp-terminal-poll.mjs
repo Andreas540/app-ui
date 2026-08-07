@@ -84,6 +84,7 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
     card_type:      result.CardType || null,
     last_four:      result.AccountNum ? String(result.AccountNum).slice(-4) : null,
     token:          result.Token || null,
+    exp_date:       result.ExpDate || null,
     response_msg:   result.ResponseMsg || null,
   }
 
@@ -129,9 +130,9 @@ async function recordPayment(sql, tenantId, orderId, cb) {
       )
     `.catch(() => {})
     await sql`
-      INSERT INTO customer_payment_tokens (tenant_id, customer_id, token, card_type, last_four)
-      VALUES (${tenantId}::uuid, ${customer_id}, ${cb.token}, ${cb.card_type}, ${cb.last_four})
-      ON CONFLICT (tenant_id, token) DO NOTHING
+      INSERT INTO customer_payment_tokens (tenant_id, customer_id, token, card_type, last_four, exp_date)
+      VALUES (${tenantId}::uuid, ${customer_id}, ${cb.token}, ${cb.card_type}, ${cb.last_four}, ${cb.exp_date})
+      ON CONFLICT (tenant_id, token) DO UPDATE SET exp_date = COALESCE(EXCLUDED.exp_date, customer_payment_tokens.exp_date)
     `.catch(() => {})
   }
 

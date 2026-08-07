@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
+import { fetchBootstrap, type Person, type Product, type CardToken, getAuthHeaders } from '../lib/api'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
@@ -20,9 +20,13 @@ export default function EditOrder() {
   const { orderId } = useParams<{ orderId: string }>()
   const [generatingLink, setGeneratingLink] = useState(false)
   const [ampHasTerminal, setAmpHasTerminal] = useState(false)
+  const [customerTokens, setCustomerTokens] = useState<CardToken[]>([])
   type TerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
   const [terminalState, setTerminalState]   = useState<TerminalState>('idle')
   const [terminalMsg, setTerminalMsg]       = useState('')
+  type CofState = 'idle' | 'charging' | 'approved' | 'declined'
+  const [cofState, setCofState] = useState<CofState>('idle')
+  const [cofMsg, setCofMsg]     = useState('')
   const terminalReceiptId = useRef<string | null>(null)
   const terminalPollRef   = useRef<ReturnType<typeof setInterval> | null>(null)
   const terminalTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -79,6 +83,8 @@ export default function EditOrder() {
         setOrderNo(order.order_no)
         setCustomerId(order.customer_id)
         setCustomerName(order.customer_name)
+        fetch(`${base}/api/customer-tokens?customer_id=${order.customer_id}`, { headers: getAuthHeaders() })
+          .then(r => r.ok ? r.json() : null).then(d => { if (d?.tokens) setCustomerTokens(d.tokens) }).catch(() => {})
         setOrderDate(order.order_date)
         setDelivered(order.delivered)
         setDeliveredAt(order.delivered_at || todayYMD())
@@ -426,6 +432,34 @@ export default function EditOrder() {
     setTerminalMsg('')
   }
 
+  async function chargeCardOnFile() {
+    if (!orderId || cofState !== 'idle' || !customerTokens.length) return
+    const token = customerTokens[0]
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    try {
+      setCofState('charging')
+      setCofMsg('')
+      const res = await fetch(`${base}/api/amp-card-on-file`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId, token_id: token.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || t('orders.cofError'))
+      if (data.status === 'approved') {
+        setCofState('approved')
+        setCofMsg(`${t('orders.terminalApproved')} · ${data.card_type || ''} ···${data.last_four || ''}`)
+        setPaidAmount(prev => prev + (data.amount || 0))
+      } else {
+        setCofState('declined')
+        setCofMsg(data.message || t('orders.terminalDeclined'))
+      }
+    } catch (e: any) {
+      setCofState('idle')
+      alert(e?.message || t('orders.cofError'))
+    }
+  }
+
   const CONTROL_H = 44
 
   return (
@@ -691,6 +725,12 @@ export default function EditOrder() {
               : t('orders.chargeTerminal')}
           </button>
         )}
+        {customerTokens.length > 0 && Number.isFinite(orderValue) && orderValue > paidAmount && cofState === 'idle' && (
+          <button onClick={chargeCardOnFile} style={{ height: CONTROL_H }}>
+            {`${t('orders.chargeCardOnFile')} · ${customerTokens[0].card_type || ''} ···${customerTokens[0].last_four || ''}`}
+            {paidAmount > 0 ? ` (${fmtMoney(orderValue - paidAmount)} remaining)` : ''}
+          </button>
+        )}
         <button
           onClick={deleteOrder}
           style={{ height: CONTROL_H, marginLeft: 'auto', backgroundColor: 'var(--color-error)', color: 'white', border: 'none' }}
@@ -698,6 +738,25 @@ export default function EditOrder() {
           {t('delete')}
         </button>
       </div>
+
+      {/* Card-on-file charge status */}
+      {cofState !== 'idle' && (
+        <div style={{
+          marginTop: 12, padding: '12px 14px',
+          border: `1px solid ${cofState === 'approved' ? 'var(--color-success, #10b981)' : cofState === 'declined' ? 'var(--color-error)' : 'var(--border)'}`,
+          borderRadius: 8, fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'
+        }}>
+          {cofState === 'charging' && <span style={{ color: 'var(--text-secondary)' }}>{t('orders.cofCharging')}</span>}
+          {cofState === 'approved' && <span style={{ color: 'var(--color-success, #10b981)', fontWeight: 600 }}>✓ {cofMsg}</span>}
+          {cofState === 'declined' && <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>{t('orders.terminalDeclined')}: {cofMsg}</span>}
+          {(cofState === 'approved' || cofState === 'declined') && (
+            <button onClick={() => { setCofState('idle'); setCofMsg('') }} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>
+              {t('close')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Terminal charge status */}
       {terminalState !== 'idle' && (

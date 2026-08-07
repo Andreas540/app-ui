@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
-import { fetchCustomerDetail, fetchBootstrap, type CustomerDetail, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
+import { fetchCustomerDetail, fetchBootstrap, type CustomerDetail, type CardToken, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
 import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -107,6 +107,10 @@ export default function CustomerDetailPage() {
   const terminalReceiptId = useRef<string | null>(null)
   const terminalPollRef   = useRef<ReturnType<typeof setInterval> | null>(null)
   const terminalTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  type CofState = 'idle' | 'charging' | 'approved' | 'declined'
+  const [cofOrderId, setCofOrderId] = useState<string | null>(null)
+  const [cofState,   setCofState]   = useState<CofState>('idle')
+  const [cofMsg,     setCofMsg]     = useState('')
 
   function stopTerminalPolling() {
     if (terminalPollRef.current) { clearInterval(terminalPollRef.current); terminalPollRef.current = null }
@@ -168,6 +172,35 @@ export default function CustomerDetailPage() {
     setTerminalState('idle')
     setTerminalOrderId(null)
     setTerminalMsg('')
+  }
+
+  async function chargeCardOnFile(orderId: string, token: CardToken) {
+    if (cofState !== 'idle') return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    try {
+      setCofOrderId(orderId)
+      setCofState('charging')
+      setCofMsg('')
+      const res = await fetch(`${base}/api/amp-card-on-file`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId, token_id: token.id }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || t('orders.cofError'))
+      if (result.status === 'approved') {
+        setCofState('approved')
+        setCofMsg(`${t('orders.terminalApproved')} · ${result.card_type || ''} ···${result.last_four || ''}`)
+        fetchCustomerDetail(id!).then(setData).catch(() => {})
+      } else {
+        setCofState('declined')
+        setCofMsg(result.message || t('orders.terminalDeclined'))
+      }
+    } catch (e: any) {
+      setCofState('idle')
+      setCofOrderId(null)
+      alert(e?.message || t('orders.cofError'))
+    }
   }
 
   useEffect(() => {
@@ -371,7 +404,7 @@ export default function CustomerDetailPage() {
   if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
   if (!data) return null
 
-  const { customer, totals, orders, payments, hasPaymentProvider } = data
+  const { customer, totals, orders, payments, hasPaymentProvider, tokens: customerTokens = [] } = data
   const addrLine1 = [customer.address1, customer.address2].filter(Boolean).join(', ')
   const addrLine2 = [customer.city, customer.state, customer.postal_code].filter(Boolean).join(' ')
   const isPartnerCustomer = customer.customer_type === 'Partner'
@@ -570,6 +603,22 @@ export default function CustomerDetailPage() {
               {t('close')}
             </button>
           </div>
+        </div>
+      )}
+
+      {cofState !== 'idle' && (
+        <div style={{
+          marginTop: 12, padding: '12px 14px', borderRadius: 8, fontSize: 13,
+          border: `1px solid ${cofState === 'approved' ? 'var(--color-success, #10b981)' : cofState === 'declined' ? 'var(--color-error)' : 'var(--line)'}`,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          {cofState === 'charging' && <span style={{ color: 'var(--text-secondary)' }}>{t('orders.cofCharging')}</span>}
+          {cofState === 'approved' && <span style={{ color: 'var(--color-success, #10b981)', fontWeight: 600 }}>✓ {cofMsg}</span>}
+          {cofState === 'declined' && <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>{t('orders.terminalDeclined')}: {cofMsg}</span>}
+          <button onClick={() => { setCofState('idle'); setCofOrderId(null); setCofMsg('') }}
+            style={{ height: 30, padding: '0 12px', fontSize: 12, marginLeft: 'auto' }}>
+            {cofState === 'charging' ? t('cancel') : t('close')}
+          </button>
         </div>
       )}
 
@@ -992,6 +1041,16 @@ export default function CustomerDetailPage() {
                                 action: () => {
                                   setPaymentMenuOrderId(null)
                                   chargeTerminal(o.id)
+                                },
+                                show: true,
+                              }] : []),
+                              ...(customerTokens.length > 0 && orderTotal > paid ? [{
+                                label: cofState !== 'idle' && cofOrderId === o.id
+                                  ? t('orders.cofCharging')
+                                  : `${t('orders.chargeCardOnFile')} · ${customerTokens[0].card_type || ''} ···${customerTokens[0].last_four || ''}`,
+                                action: () => {
+                                  setPaymentMenuOrderId(null)
+                                  chargeCardOnFile(o.id, customerTokens[0])
                                 },
                                 show: true,
                               }] : []),

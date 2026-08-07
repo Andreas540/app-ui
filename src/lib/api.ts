@@ -347,6 +347,8 @@ export type PaymentSummary = {
   amount: number
 }
 
+export type CardToken = { id: string; card_type: string | null; last_four: string | null; exp_date: string | null; created_at: string }
+
 export type CustomerDetail = {
   customer: {
     id: string
@@ -368,6 +370,7 @@ export type CustomerDetail = {
   orders: OrderSummary[]
   payments: PaymentSummary[]
   hasPaymentProvider: boolean
+  tokens?: CardToken[]
 }
 
 export async function fetchCustomerDetail(id: string) {
