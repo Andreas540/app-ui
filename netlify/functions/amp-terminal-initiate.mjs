@@ -64,19 +64,22 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
   const amount = Math.round((total_amount - paid_amount) * 100) / 100
   if (amount <= 0) return cors(400, { error: 'Order is already fully paid' })
 
-  // receipt_id ties push → pull; include order_id suffix so poll can verify ownership
-  const receiptId = `ORD-${order_no}-${Date.now()}`
+  const receiptId = `${order_no}${Date.now().toString(36).slice(-6)}`
+  const appBase = process.env.URL || 'https://data-entry-beta.netlify.app'
+  const responseUrl = `${appBase}/api/amp-terminal-callback?tenant_id=${TENANT_ID}&receipt_id=${receiptId}`
 
   const pushRes = await fetch(EPS_PUSH_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey },
     body: JSON.stringify({
       account,
-      device:    device_serial,
-      amount:    String(amount),
-      ticketId:  String(order_no),
-      transType: 'creditsale',
+      device:      device_serial,
+      amount:      String(amount),
+      ticketId:    String(order_no),
+      transType:   'creditsale',
       receiptId,
+      responseUrl,
+      responseurl: responseUrl,
     }),
   })
 

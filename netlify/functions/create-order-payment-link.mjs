@@ -133,6 +133,7 @@ export async function handler(event) {
       body: JSON.stringify({
         account,
         userid:      account,
+        userId:      account,
         method:      'creditsale',
         amount,
         ticketid:    `ORD-${order.order_no}`,
