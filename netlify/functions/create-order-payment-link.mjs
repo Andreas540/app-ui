@@ -132,7 +132,7 @@ export async function handler(event) {
       headers: { 'Content-Type': 'application/json', apikey },
       body: JSON.stringify({
         account,
-        userId:      account,
+        userid:      account,
         method:      'creditsale',
         amount,
         ticketid:    `ORD-${order.order_no}`,
