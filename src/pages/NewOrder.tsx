@@ -121,7 +121,12 @@ export default function NewOrder() {
         const firstProduct = prods
           .filter(p => (p.category ?? 'product') === 'product')
           .sort((a, b) => a.name.localeCompare(b.name))[0]
-        if (firstProduct) setLines([emptyLine(firstProduct.id)])
+        if (firstProduct) {
+          const line = emptyLine(firstProduct.id)
+          const pa = firstProduct.price_amount
+          if (pa != null && pa > 0) line.priceStr = fmtInput(pa)
+          setLines([line])
+        }
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
