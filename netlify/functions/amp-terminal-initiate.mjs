@@ -78,8 +78,8 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
       ticketId:    String(order_no),
       transType:   'creditsale',
       receiptId,
-      responseUrl,
-      responseurl: responseUrl,
+      userid:      account,
+      posttourl:   responseUrl,
     }),
   })
 
