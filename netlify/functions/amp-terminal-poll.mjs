@@ -52,17 +52,23 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
 
   console.log(`EPS pullResponse receipt=${receipt_id}:`, JSON.stringify(result))
 
-  const msg = result.ResponseMsg || ''
+  const responseMsg  = String(result.ResponseMsg || '').toUpperCase()
+  const responseCode = String(result.ResponseCode || '')
 
-  // No final result yet — terminal still waiting for card
-  if (!result || result.TransactionResult === undefined || msg === 'PENDING' || msg === 'No record was found') {
+  // Still processing
+  if (!result || responseCode === '1000100' || responseMsg === 'PENDING' || responseMsg === 'NO RECORD WAS FOUND' || result.TransactionResult === undefined) {
     return cors(200, { status: 'pending' })
+  }
+
+  // Explicit terminal failure statuses
+  if (['DECLINED', 'CANCELLED', 'ABORTED', 'TIMEOUT'].includes(responseMsg)) {
+    return cors(200, { status: 'declined', message: result.ResponseMsg })
   }
 
   const tr = result.TransactionResult
   const approved = tr === true || tr === 1 || (typeof tr === 'string' && tr.toLowerCase() === 'true')
   if (!approved) {
-    return cors(200, { status: 'declined', message: msg || 'Card declined' })
+    return cors(200, { status: 'pending' })
   }
 
   const cb = {
