@@ -9,7 +9,7 @@
 import { resolveAuthz } from './utils/auth.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
 
-const EPS_PULL_URL = 'https://postransactions.com/connect/pullresponse'
+const EPS_PULL_URL = 'https://postransactions.com/connect/pullresponse.php'
 
 export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
