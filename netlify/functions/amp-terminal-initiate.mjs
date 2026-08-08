@@ -65,8 +65,6 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
   if (amount <= 0) return cors(400, { error: 'Order is already fully paid' })
 
   const receiptId = `${order_no}${Date.now().toString(36).slice(-6)}`
-  const appBase = process.env.URL || 'https://data-entry-beta.netlify.app'
-  const responseUrl = `${appBase}/api/amp-terminal-callback?tenant_id=${TENANT_ID}&receipt_id=${receiptId}`
 
   const pushRes = await fetch(EPS_PUSH_URL, {
     method: 'POST',
@@ -79,7 +77,6 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
       transType:   'creditsale',
       receiptId,
       userid:      account,
-      posttourl:   responseUrl,
     }),
   })
 
