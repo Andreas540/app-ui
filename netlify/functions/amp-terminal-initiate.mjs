@@ -64,7 +64,7 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
   const amount = Math.round((total_amount - paid_amount) * 100) / 100
   if (amount <= 0) return cors(400, { error: 'Order is already fully paid' })
 
-  const receiptId = `${order_no}${Date.now().toString(36).slice(-6)}`
+  const receiptId = Date.now().toString()
 
   const pushRes = await fetch(EPS_PUSH_URL, {
     method: 'POST',
