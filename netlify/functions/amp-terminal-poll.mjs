@@ -9,7 +9,7 @@
 import { resolveAuthz } from './utils/auth.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
 
-const EPS_PULL_URL = 'https://postransactions.com/connect/pushresponse.php'
+const EPS_PULL_URL = 'https://postransactions.com/connect/pullresponse'
 
 export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -69,7 +69,7 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
     transaction_id: result.TransactionID || '',
     auth_code:      result.AuthCode || '',
     card_type:      result.CardType || null,
-    last_four:      result.AccountNum ? String(result.AccountNum).slice(-4) : null,
+    last_four:      result.AccountNum ? String(result.AccountNum) : null,
     token:          result.Token || null,
     exp_date:       result.ExpDate || null,
     response_msg:   result.ResponseMsg || null,
