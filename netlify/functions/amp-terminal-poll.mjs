@@ -31,29 +31,8 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
   const { receipt_id, order_id } = JSON.parse(rawBody)
   if (!receipt_id || !order_id) return cors(400, { error: 'receipt_id and order_id required' })
 
-  // ── 1. Check terminal_callbacks (populated if EPS posts to our callback URL) ─
-  const cbRows = await sql`
-    SELECT approved, amount, transaction_id, auth_code, card_type, last_four, token, response_msg
-    FROM terminal_callbacks
-    WHERE receipt_id = ${receipt_id} AND tenant_id = ${TENANT_ID}::uuid
-    LIMIT 1
-  `.catch(() => [])
-
-  if (cbRows.length) {
-    const cb = cbRows[0]
-    if (!cb.approved) {
-      const isCancelled = cb.response_msg === 'CANCELLED'
-      return cors(200, { status: 'declined', message: isCancelled ? 'Payment cancelled on terminal' : (cb.response_msg || 'Card declined') })
-    }
-    // Callback says approved but may lack full financial data — only use it if amount is present
-    if (Number(cb.amount) > 0 && cb.transaction_id) {
-      await recordPayment(sql, TENANT_ID, order_id, cb)
-      return cors(200, { status: 'approved', transaction_id: cb.transaction_id, auth_code: cb.auth_code, card_type: cb.card_type, last_four: cb.last_four, amount: Number(cb.amount) })
-    }
-    // Fall through to EPS direct poll for full transaction data
-  }
-
-  // ── 2. Poll EPS directly ──────────────────────────────────────────────────────
+  // Poll EPS directly — terminal_callbacks only carries queue pickup notifications (status=CANCELLED)
+  // not the actual transaction result, so we always rely on pushresponse.php for the outcome.
   const ampRows = await sql`
     SELECT publishable_key AS account, secret_key AS apikey, device_serial
     FROM tenant_payment_providers
