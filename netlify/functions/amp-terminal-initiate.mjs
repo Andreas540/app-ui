@@ -24,10 +24,15 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
   if (authz.error) return cors(403, { error: authz.error })
   const TENANT_ID = authz.tenantId
 
-  const rawBody = event.isBase64Encoded
-    ? Buffer.from(event.body || '', 'base64').toString('utf-8')
-    : (event.body || '{}')
-  const { order_id } = JSON.parse(rawBody)
+  let order_id
+  try {
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+      : (event.body || '{}')
+    ;({ order_id } = JSON.parse(rawBody))
+  } catch {
+    return cors(400, { error: 'Invalid JSON request' })
+  }
   if (!order_id) return cors(400, { error: 'order_id required' })
 
   // Load AMP credentials + device serial
@@ -38,9 +43,7 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
       AND publishable_key IS NOT NULL AND secret_key IS NOT NULL AND device_serial IS NOT NULL
     LIMIT 1
   `
-  if (!ampRows.length) {
-    return cors(400, { error: 'AMP not configured or PAX device serial missing' })
-  }
+  if (!ampRows.length) return cors(400, { error: 'AMP not configured or PAX device serial missing' })
   const { account, apikey, device_serial } = ampRows[0]
 
   // Fetch order — remaining unpaid amount
@@ -65,28 +68,50 @@ export const handler = withErrorLogging('amp-terminal-initiate', async (event) =
   if (amount <= 0) return cors(400, { error: 'Order is already fully paid' })
 
   const receiptId = Date.now().toString()
+  const appBase = process.env.URL || 'https://app.biznizoptimizer.com'
+  const posttourl = `${appBase}/api/amp-terminal-callback?tenant_id=${encodeURIComponent(TENANT_ID)}&receipt_id=${encodeURIComponent(receiptId)}`
 
-  const pushRes = await fetch(EPS_PUSH_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey },
-    body: JSON.stringify({
-      account,
-      device:      device_serial,
-      amount:      String(amount),
-      ticketId:    String(order_no),
-      transType:   'creditsale',
-      receiptId,
-      userid:      account,
-    }),
-  })
+  const epsRequest = {
+    account:     String(account),
+    amount:      amount.toFixed(2),
+    device:      String(device_serial),
+    ticketId:    String(order_no),
+    transType:   'creditsale',
+    receiptId,
+    userId:      String(account),
+    extraField1: 'AMP',
+    posttourl,
+  }
 
-  const pushData = await pushRes.json()
-  if (!pushData.success) {
+  console.log('Sending EPS payment request:', JSON.stringify(epsRequest))
+
+  let pushRes
+  try {
+    pushRes = await fetch(EPS_PUSH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey },
+      body: JSON.stringify(epsRequest),
+    })
+  } catch (err) {
+    console.error('Unable to connect to EPS pushrequest:', err)
+    return cors(502, { error: 'Unable to connect to EPS payment service' })
+  }
+
+  let pushData
+  try {
+    pushData = JSON.parse(await pushRes.text())
+  } catch {
+    return cors(502, { error: 'Invalid response received from EPS' })
+  }
+
+  console.log('EPS pushrequest response:', { httpStatus: pushRes.status, response: pushData })
+
+  if (!pushRes.ok || pushData.success !== true) {
     console.error('EPS pushrequest failed:', pushData)
     return cors(502, { error: pushData.message || 'Failed to send request to terminal' })
   }
 
-  return cors(200, { receipt_id: receiptId, record_id: pushData.RecordId })
+  return cors(200, { receipt_id: receiptId, record_id: pushData.RecordId, eps_receipt_id: pushData.ReceiptId, amount: amount.toFixed(2) })
 })
 
 function cors(status, body) {
