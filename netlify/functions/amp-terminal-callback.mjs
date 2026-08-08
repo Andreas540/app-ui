@@ -46,14 +46,16 @@ export const handler = withErrorLogging('amp-terminal-callback', async (event) =
     )
   `
 
-  const approved       = result.TransactionResult === 'true' || result.TransactionResult === true
+  const status         = result.status || result.Status || ''
+  const tr             = result.TransactionResult
+  const approved       = status === 'APPROVED' || tr === true || tr === 1 || (typeof tr === 'string' && tr.toLowerCase() === 'true')
   const amount         = Number(result.ApprovedAmount) || 0
   const transaction_id = result.TransactionID || ''
   const auth_code      = result.AuthCode || ''
   const card_type      = result.CardType || null
   const last_four      = result.AccountNum ? String(result.AccountNum).slice(-4) : null
   const token          = result.Token || null
-  const response_msg   = result.ResponseMsg || null
+  const response_msg   = status || result.ResponseMsg || null
   const exp_date       = result.ExpDate || null
 
   await sql`

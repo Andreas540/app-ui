@@ -41,9 +41,16 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
 
   if (cbRows.length) {
     const cb = cbRows[0]
-    if (!cb.approved) return cors(200, { status: 'declined', message: cb.response_msg || 'Card declined' })
-    await recordPayment(sql, TENANT_ID, order_id, cb)
-    return cors(200, { status: 'approved', transaction_id: cb.transaction_id, auth_code: cb.auth_code, card_type: cb.card_type, last_four: cb.last_four, amount: Number(cb.amount) })
+    if (!cb.approved) {
+      const isCancelled = cb.response_msg === 'CANCELLED'
+      return cors(200, { status: 'declined', message: isCancelled ? 'Payment cancelled on terminal' : (cb.response_msg || 'Card declined') })
+    }
+    // Callback says approved but may lack full financial data — only use it if amount is present
+    if (Number(cb.amount) > 0 && cb.transaction_id) {
+      await recordPayment(sql, TENANT_ID, order_id, cb)
+      return cors(200, { status: 'approved', transaction_id: cb.transaction_id, auth_code: cb.auth_code, card_type: cb.card_type, last_four: cb.last_four, amount: Number(cb.amount) })
+    }
+    // Fall through to EPS direct poll for full transaction data
   }
 
   // ── 2. Poll EPS directly ──────────────────────────────────────────────────────
@@ -71,7 +78,8 @@ export const handler = withErrorLogging('amp-terminal-poll', async (event) => {
     return cors(200, { status: 'pending' })
   }
 
-  const approved = result.TransactionResult === true || result.TransactionResult === 'true'
+  const tr = result.TransactionResult
+  const approved = tr === true || tr === 1 || (typeof tr === 'string' && tr.toLowerCase() === 'true') || tr === 'Approved'
   if (!approved) {
     return cors(200, { status: 'declined', message: result.ResponseMsg || 'Card declined' })
   }
