@@ -422,7 +422,7 @@ export default function NewProduct() {
             />
           </div>
           <div>
-            <label>{t('products.productCostUSD')}</label>
+            <label>{labelProductCost}</label>
             <input
               type="text"
               inputMode="decimal"
