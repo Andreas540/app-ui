@@ -95,6 +95,7 @@ export default function SuperAdmin() {
   const [btFieldConfigService, setBtFieldConfigService] = useState<Record<string, boolean>>({})
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
+  const [btLabelProductCost, setBtLabelProductCost] = useState('')
   const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage' | 'pool'>('default')
   const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
   const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage' | 'pool')[]>(['default', 'vintage'])
@@ -390,6 +391,8 @@ export default function SuperAdmin() {
       }
     }
     setBtConfigError(null)
+    const labels: Record<string, string> = {}
+    if (btLabelProductCost.trim()) labels.productCostPerUnit = btLabelProductCost.trim()
     const configDefaults = {
       ...parsed,
       theme: {
@@ -399,6 +402,7 @@ export default function SuperAdmin() {
         selectableModes: btThemeSelectableModes,
       },
       frontPageKey: btFrontPageKey || null,
+      ...(Object.keys(labels).length ? { labels } : {}),
     }
     try {
       setSavingBt(true)
@@ -1599,6 +1603,20 @@ async function handleSaveStripeCustomerId() {
                       </div>
 
                       <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Label overrides</div>
+                        <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6 }}>
+                          <label style={{ fontSize: 12 }}>Product cost per unit label</label>
+                          <input
+                            value={btLabelProductCost}
+                            onChange={e => setBtLabelProductCost(e.target.value)}
+                            placeholder="New production cost per unit"
+                            style={{ height: 32, fontSize: 13, marginTop: 4 }}
+                          />
+                          <p className="helper" style={{ marginTop: 4 }}>Leave empty to use the default. Example: "Purchase price per unit" for Retail.</p>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 8 }}>
                         <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Theme</div>
                         <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6 }}>
                           <div style={{ marginBottom: 10 }}>
@@ -1745,6 +1763,7 @@ async function handleSaveStripeCustomerId() {
                               Array.isArray(themeDefaults.selectableModes) ? themeDefaults.selectableModes : ['dark', 'light']
                             )
                             setBtFrontPageKey((bt.config_defaults as any)?.frontPageKey ?? '')
+                            setBtLabelProductCost((bt.config_defaults as any)?.labels?.productCostPerUnit ?? '')
                           }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >

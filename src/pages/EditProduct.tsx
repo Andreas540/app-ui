@@ -18,6 +18,8 @@ export default function EditProduct() {
   const type = searchParams.get('type') === 'service' ? 'service' : 'product'
   const pageConfigKey = type === 'service' ? 'edit-service' : 'edit-product'
   const pageFields = getTenantConfig(user?.tenantId).pages[pageConfigKey]?.fields ?? {}
+  const btLabels = (user as any)?.businessTypeConfig?.labels ?? {}
+  const labelProductCost: string = btLabels.productCostPerUnit || t('products.newProductCostUSD')
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
@@ -370,7 +372,7 @@ export default function EditProduct() {
       )}
 
       <div style={{ marginTop: 12 }}>
-        <label>{t('products.newProductCostUSD')}</label>
+        <label>{labelProductCost}</label>
         <input
           type="text"
           inputMode="decimal"
