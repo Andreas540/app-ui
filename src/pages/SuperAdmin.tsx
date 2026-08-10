@@ -96,7 +96,6 @@ export default function SuperAdmin() {
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [btLabelProductCost, setBtLabelProductCost] = useState('')
-  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null)
   const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage' | 'pool'>('default')
   const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
   const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage' | 'pool')[]>(['default', 'vintage'])
@@ -1911,25 +1910,13 @@ async function handleSaveStripeCustomerId() {
                         <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                       </div>
                       <div>
-                        {editingLabelKey === 'productCostPerUnit' ? (
-                          <input
-                            autoFocus
-                            value={btLabelProductCost}
-                            onChange={e => setBtLabelProductCost(e.target.value)}
-                            onBlur={() => setEditingLabelKey(null)}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
-                            placeholder={t('products.newProductCostUSD')}
-                            style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 6px', width: '100%' }}
-                          />
-                        ) : (
-                          <div
-                            onClick={() => setEditingLabelKey('productCostPerUnit')}
-                            title="Click to edit label"
-                            style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, cursor: 'text', borderBottom: '1px dashed var(--border)', display: 'inline-block', maxWidth: '100%' }}
-                          >
-                            {btLabelProductCost || t('products.newProductCostUSD')}
-                          </div>
-                        )}
+                        <input
+                          value={btLabelProductCost}
+                          onChange={e => setBtLabelProductCost(e.target.value)}
+                          placeholder={t('products.newProductCostUSD')}
+                          title="Edit label"
+                          style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 4px', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px dashed var(--border)', color: 'var(--text-secondary)', outline: 'none' }}
+                        />
                         <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                       </div>
                     </div>
@@ -2086,25 +2073,13 @@ async function handleSaveStripeCustomerId() {
                         <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                       </div>
                       <div>
-                        {editingLabelKey === 'productCostPerUnit-new' ? (
-                          <input
-                            autoFocus
-                            value={btLabelProductCost}
-                            onChange={e => setBtLabelProductCost(e.target.value)}
-                            onBlur={() => setEditingLabelKey(null)}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
-                            placeholder={t('products.newProductCostUSD')}
-                            style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 6px', width: '100%' }}
-                          />
-                        ) : (
-                          <div
-                            onClick={() => setEditingLabelKey('productCostPerUnit-new')}
-                            title="Click to edit label"
-                            style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, cursor: 'text', borderBottom: '1px dashed var(--border)', display: 'inline-block', maxWidth: '100%' }}
-                          >
-                            {btLabelProductCost || t('products.newProductCostUSD')}
-                          </div>
-                        )}
+                        <input
+                          value={btLabelProductCost}
+                          onChange={e => setBtLabelProductCost(e.target.value)}
+                          placeholder={t('products.newProductCostUSD')}
+                          title="Edit label"
+                          style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 4px', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px dashed var(--border)', color: 'var(--text-secondary)', outline: 'none' }}
+                        />
                         <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
                       </div>
                     </div>
@@ -2140,24 +2115,14 @@ async function handleSaveStripeCustomerId() {
                           <th style={{ fontSize: 11, fontWeight: 600, padding: '3px 0 3px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
                             {btPreviewTab === 'service' ? (
                               <span style={{ color: 'var(--text-secondary)' }}>{t('products.directServiceCost')}</span>
-                            ) : editingLabelKey === 'productCostPerUnit-table' ? (
+                            ) : (
                               <input
-                                autoFocus
                                 value={btLabelProductCost}
                                 onChange={e => setBtLabelProductCost(e.target.value)}
-                                onBlur={() => setEditingLabelKey(null)}
-                                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
                                 placeholder={t('products.productCostUSD')}
-                                style={{ height: 18, fontSize: 11, padding: '0 4px', width: '100%', textAlign: 'right' }}
+                                title="Edit label"
+                                style={{ height: 18, fontSize: 11, padding: '0 4px', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', borderBottom: '1px dashed var(--border)', color: 'var(--text-secondary)', outline: 'none' }}
                               />
-                            ) : (
-                              <span
-                                onClick={() => setEditingLabelKey('productCostPerUnit-table')}
-                                title="Click to edit label"
-                                style={{ color: 'var(--text-secondary)', cursor: 'text', borderBottom: '1px dashed var(--border)' }}
-                              >
-                                {btLabelProductCost || t('products.productCostUSD')}
-                              </span>
                             )}
                           </th>
                         </tr>
