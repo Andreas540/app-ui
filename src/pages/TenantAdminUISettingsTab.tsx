@@ -759,6 +759,37 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                       </div>
                     </>
                   )}
+                  {/* All products / services table */}
+                  <div style={{ marginTop: 16, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                      {pagePreviewTab === 'service' ? 'All services' : 'All products'}
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 0', borderBottom: '1px solid var(--line)', textAlign: 'left' }}>{t('name')}</th>
+                          {pagePreviewTab === 'product' && <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 8px', borderBottom: '1px solid var(--line)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
+                          {pagePreviewTab === 'service' && <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 8px', borderBottom: '1px solid var(--line)', textAlign: 'right' }}>{t('products.duration')}</th>}
+                          <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 0 3px 8px', borderBottom: '1px solid var(--line)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
+                          <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 0 3px 8px', borderBottom: '1px solid var(--line)', textAlign: 'right' }}>
+                            {pagePreviewTab === 'service' ? t('products.directServiceCost') : ((user as any)?.businessTypeConfig?.labels?.productCostPerUnit || t('products.productCostUSD'))}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[70, 55, 45].map(w => (
+                          <tr key={w}>
+                            <td style={{ padding: '4px 0', borderBottom: '1px solid var(--line)' }}><div style={{ height: 8, width: `${w}%`, background: 'var(--line)', borderRadius: 3 }} /></td>
+                            {pagePreviewTab === 'product' && <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)' }}><div style={{ height: 8, width: 28, background: 'var(--line)', borderRadius: 3 }} /></td>}
+                            {pagePreviewTab === 'service' && <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)' }}><div style={{ height: 8, width: 28, background: 'var(--line)', borderRadius: 3, marginLeft: 'auto' }} /></td>}
+                            <td style={{ padding: '4px 0 4px 8px', borderBottom: '1px solid var(--line)' }}><div style={{ height: 8, width: 32, background: 'var(--line)', borderRadius: 3, marginLeft: 'auto' }} /></td>
+                            <td style={{ padding: '4px 0 4px 8px', borderBottom: '1px solid var(--line)' }}><div style={{ height: 8, width: 32, background: 'var(--line)', borderRadius: 3, marginLeft: 'auto' }} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
                   <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--line)', borderRadius: 6, opacity: 0.4, marginBottom: 12 }} />
                   <div style={{ display: 'flex', gap: 8, opacity: 0.4 }}>
                     <div style={{ height: 36, width: 80, background: 'var(--primary)', borderRadius: 6 }} />

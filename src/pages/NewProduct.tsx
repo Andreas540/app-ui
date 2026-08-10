@@ -74,6 +74,8 @@ export default function NewProduct() {
   const { fmtMoney, fmtInput, parseAmount } = useCurrency()
   const { user } = useAuth()
   const pageFields = getTenantConfig(user?.tenantId).pages['new-product']?.fields ?? {}
+  const btLabels = (user as any)?.businessTypeConfig?.labels ?? {}
+  const labelProductCost: string = btLabels.productCostPerUnit || t('products.productCostUSD')
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
@@ -564,7 +566,7 @@ export default function NewProduct() {
                     {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
                     {category === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.duration')}</th>}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{category === 'service' ? t('products.directServiceCost') : t('products.productCostUSD')}</th>
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{category === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
                   </tr>
                 </thead>
                 <tbody>

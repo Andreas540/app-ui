@@ -2081,12 +2081,32 @@ async function handleSaveStripeCustomerId() {
                   {/* Non-configurable: price/cost fields (layout differs per tab) */}
                   {btPreviewTab === 'product' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                      {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
-                        <div key={label}>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
-                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
-                        </div>
-                      ))}
+                      <div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.servicePrice')}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                      <div>
+                        {editingLabelKey === 'productCostPerUnit-new' ? (
+                          <input
+                            autoFocus
+                            value={btLabelProductCost}
+                            onChange={e => setBtLabelProductCost(e.target.value)}
+                            onBlur={() => setEditingLabelKey(null)}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
+                            placeholder={t('products.newProductCostUSD')}
+                            style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 6px', width: '100%' }}
+                          />
+                        ) : (
+                          <div
+                            onClick={() => setEditingLabelKey('productCostPerUnit-new')}
+                            title="Click to edit label"
+                            style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, cursor: 'text', borderBottom: '1px dashed var(--border)', display: 'inline-block', maxWidth: '100%' }}
+                          >
+                            {btLabelProductCost || t('products.newProductCostUSD')}
+                          </div>
+                        )}
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -2104,6 +2124,57 @@ async function handleSaveStripeCustomerId() {
                       </div>
                     </>
                   )}
+
+                  {/* All products / services table */}
+                  <div style={{ marginTop: 16, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                      {btPreviewTab === 'service' ? 'All services' : 'All products'}
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
+                          {btPreviewTab === 'product' && <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
+                          {btPreviewTab === 'service' && <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.duration')}</th>}
+                          <th style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, padding: '3px 0 3px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
+                          <th style={{ fontSize: 11, fontWeight: 600, padding: '3px 0 3px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
+                            {btPreviewTab === 'service' ? (
+                              <span style={{ color: 'var(--text-secondary)' }}>{t('products.directServiceCost')}</span>
+                            ) : editingLabelKey === 'productCostPerUnit-table' ? (
+                              <input
+                                autoFocus
+                                value={btLabelProductCost}
+                                onChange={e => setBtLabelProductCost(e.target.value)}
+                                onBlur={() => setEditingLabelKey(null)}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
+                                placeholder={t('products.productCostUSD')}
+                                style={{ height: 18, fontSize: 11, padding: '0 4px', width: '100%', textAlign: 'right' }}
+                              />
+                            ) : (
+                              <span
+                                onClick={() => setEditingLabelKey('productCostPerUnit-table')}
+                                title="Click to edit label"
+                                style={{ color: 'var(--text-secondary)', cursor: 'text', borderBottom: '1px dashed var(--border)' }}
+                              >
+                                {btLabelProductCost || t('products.productCostUSD')}
+                              </span>
+                            )}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[70, 55, 45].map(w => (
+                          <tr key={w}>
+                            <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}><div style={{ height: 8, width: `${w}%`, background: 'var(--border)', borderRadius: 3 }} /></td>
+                            {btPreviewTab === 'product' && <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)' }}><div style={{ height: 8, width: 28, background: 'var(--border)', borderRadius: 3 }} /></td>}
+                            {btPreviewTab === 'service' && <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)' }}><div style={{ height: 8, width: 28, background: 'var(--border)', borderRadius: 3, marginLeft: 'auto' }} /></td>}
+                            <td style={{ padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)' }}><div style={{ height: 8, width: 32, background: 'var(--border)', borderRadius: 3, marginLeft: 'auto' }} /></td>
+                            <td style={{ padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)' }}><div style={{ height: 8, width: 32, background: 'var(--border)', borderRadius: 3, marginLeft: 'auto' }} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
                   {/* Non-configurable: image + buttons */}
                   <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.4, marginBottom: 12 }} />
