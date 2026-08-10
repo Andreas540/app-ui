@@ -96,6 +96,7 @@ export default function SuperAdmin() {
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [btLabelProductCost, setBtLabelProductCost] = useState('')
+  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null)
   const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage' | 'pool'>('default')
   const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
   const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage' | 'pool')[]>(['default', 'vintage'])
@@ -311,8 +312,12 @@ export default function SuperAdmin() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const existing = bt.config_defaults as any
       const isEditProductService = btPageConfig.pageId === 'edit-product'
+      const updatedLabels = { ...(existing.labels ?? {}) }
+      if (btLabelProductCost.trim()) updatedLabels.productCostPerUnit = btLabelProductCost.trim()
+      else delete updatedLabels.productCostPerUnit
       const updated = {
         ...existing,
+        ...(Object.keys(updatedLabels).length ? { labels: updatedLabels } : { labels: undefined }),
         pages: {
           ...(existing.pages ?? {}),
           [btPageConfig.pageId]: {
@@ -1592,6 +1597,7 @@ async function handleSaveStripeCustomerId() {
                                 } else {
                                   setBtPreviewTab(merged.show_product_tab !== false ? 'product' : 'service')
                                 }
+                                setBtLabelProductCost((bt.config_defaults as any)?.labels?.productCostPerUnit ?? '')
                                 setBtPageConfig({ btId: bt.id, pageId: page.id })
                               }}
                               style={{ height: 28, padding: '0 12px', fontSize: 12 }}
@@ -1600,20 +1606,6 @@ async function handleSaveStripeCustomerId() {
                             </button>
                           </div>
                         ))}
-                      </div>
-
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Label overrides</div>
-                        <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6 }}>
-                          <label style={{ fontSize: 12 }}>Product cost per unit label</label>
-                          <input
-                            value={btLabelProductCost}
-                            onChange={e => setBtLabelProductCost(e.target.value)}
-                            placeholder="New production cost per unit"
-                            style={{ height: 32, fontSize: 13, marginTop: 4 }}
-                          />
-                          <p className="helper" style={{ marginTop: 4 }}>Leave empty to use the default. Example: "Purchase price per unit" for Retail.</p>
-                        </div>
                       </div>
 
                       <div style={{ marginBottom: 8 }}>
@@ -1914,12 +1906,32 @@ async function handleSaveStripeCustomerId() {
                   {/* Non-configurable: cost fields */}
                   {btPreviewTab === 'product' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                      {[t('products.servicePrice'), t('products.productCostUSD')].map(label => (
-                        <div key={label}>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
-                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
-                        </div>
-                      ))}
+                      <div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('products.servicePrice')}</div>
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
+                      <div>
+                        {editingLabelKey === 'productCostPerUnit' ? (
+                          <input
+                            autoFocus
+                            value={btLabelProductCost}
+                            onChange={e => setBtLabelProductCost(e.target.value)}
+                            onBlur={() => setEditingLabelKey(null)}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingLabelKey(null) }}
+                            placeholder={t('products.newProductCostUSD')}
+                            style={{ height: 22, fontSize: 12, marginBottom: 4, padding: '0 6px', width: '100%' }}
+                          />
+                        ) : (
+                          <div
+                            onClick={() => setEditingLabelKey('productCostPerUnit')}
+                            title="Click to edit label"
+                            style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, cursor: 'text', borderBottom: '1px dashed var(--border)', display: 'inline-block', maxWidth: '100%' }}
+                          >
+                            {btLabelProductCost || t('products.newProductCostUSD')}
+                          </div>
+                        )}
+                        <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: '1px solid var(--border)', borderRadius: 6, opacity: 0.5 }} />
+                      </div>
                     </div>
                   ) : (
                     <>
