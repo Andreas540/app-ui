@@ -607,7 +607,14 @@ export default function NewProduct() {
                         </td>
                       )}
                       <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
-                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(p.cost ?? 0, 3)}</td>
+                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {p.cost_method && p.cost_method !== 'manual' && (
+                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>
+                            {p.cost_method === 'last_purchase' ? 'last' : p.cost_method.replace('avg_', 'avg ')}
+                          </span>
+                        )}
+                        {fmtMoney(p.cost ?? 0, 3)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
