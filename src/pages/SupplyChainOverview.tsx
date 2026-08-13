@@ -138,6 +138,10 @@ export default function SupplyChainOverview() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
+  const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
+  const inventoryGrid = isRetail
+    ? 'minmax(100px, 2fr) repeat(4, minmax(62px, 1fr))'
+    : 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))'
   const [data, setData] = useState<SupplyChainData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -1303,20 +1307,31 @@ export default function SupplyChainOverview() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                gridTemplateColumns: inventoryGrid,
                 gap: 6,
                 ...tableHeaderStyle,
                 fontSize: 12,
               }}
             >
               <div>{t('product')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
-              <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
-              <div style={{ textAlign: 'right' }} title={t('warehouse.committedTooltip')}>{t('warehouse.committedColumn')}</div>
-              <div style={{ textAlign: 'right' }} title={t('warehouse.availableFinishedTooltip')}>{t('warehouse.availableFinishedColumn')}</div>
-              <div style={{ textAlign: 'right' }} title={t('warehouse.availableTotalTooltip')}>{t('warehouse.availableTotalColumn')}</div>
-              <div style={{ textAlign: 'right' }} title={t('warehouse.onOrderTooltip')}>{t('warehouse.onOrderColumn')}</div>
+              {isRetail ? (
+                <>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.inStockColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.committedTooltip')}>{t('warehouse.committedColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.availableTotalTooltip')}>{t('warehouse.availableColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.onOrderTooltip')}>{t('warehouse.onOrderColumn')}</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.preProdColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.finishedColumn')}</div>
+                  <div style={{ textAlign: 'right' }}>{t('warehouse.totalQtyColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.committedTooltip')}>{t('warehouse.committedColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.availableFinishedTooltip')}>{t('warehouse.availableFinishedColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.availableTotalTooltip')}>{t('warehouse.availableTotalColumn')}</div>
+                  <div style={{ textAlign: 'right' }} title={t('warehouse.onOrderTooltip')}>{t('warehouse.onOrderColumn')}</div>
+                </>
+              )}
             </div>
 
             {data.warehouse_inventory
@@ -1333,7 +1348,7 @@ export default function SupplyChainOverview() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                        gridTemplateColumns: inventoryGrid,
                         gap: 6,
                         ...tableRowStyle,
                         borderBottom: isExpanded ? 'none' : tableRowStyle.borderBottom,
@@ -1353,46 +1368,59 @@ export default function SupplyChainOverview() {
                         <span>{item.product}</span>
                       </div>
 
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
-                        {fmtNumber(Number(item.pre_prod))}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
-                        {fmtNumber(Number(item.finished))}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                        {fmtNumber(Number(item.qty))}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                        {fmtNumber(Number(item.committed))}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
-                        {fmtNumber(availFin)}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                        {fmtNumber(availTot)}
-                      </div>
-
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                        {fmtNumber(Number(item.on_order))}
-                      </div>
+                      {isRetail ? (
+                        <>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                            {fmtNumber(Number(item.qty))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                            {fmtNumber(Number(item.committed))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
+                            {fmtNumber(availTot)}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                            {fmtNumber(Number(item.on_order))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
+                            {fmtNumber(Number(item.pre_prod))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
+                            {fmtNumber(Number(item.finished))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
+                            {fmtNumber(Number(item.qty))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                            {fmtNumber(Number(item.committed))}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
+                            {fmtNumber(availFin)}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
+                            {fmtNumber(availTot)}
+                          </div>
+                          <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                            {fmtNumber(Number(item.on_order))}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {isExpanded && (
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))',
+                        gridTemplateColumns: inventoryGrid,
                         gap: 6,
                         borderBottom: '1px solid var(--border)',
                         paddingBottom: 8,
                         paddingTop: 4,
                         fontSize: 12,
                       }}>
-                        <div /><div /><div /><div />
+                        {isRetail ? <div /> : <><div /><div /><div /><div /></>}
                         <div>
                           {committedOrders.map(o => (
                             <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0 4px', marginBottom: 2 }}>
@@ -1403,7 +1431,7 @@ export default function SupplyChainOverview() {
                             </div>
                           ))}
                         </div>
-                        <div /><div />
+                        {isRetail ? <div /> : <><div /><div /></>}
                         <div>
                           {onOrderOrders.map(o => (
                             <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0 4px', marginBottom: 2 }}>
