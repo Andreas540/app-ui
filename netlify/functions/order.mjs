@@ -61,7 +61,7 @@ LIMIT 1
         oi.product_id,
         oi.qty,
         oi.unit_price,
-        oi.cost as historical_product_cost,
+        COALESCE(oi.product_cost, oi.cost) as historical_product_cost,
         oi.covers_product_id,
         oi.covers_order_item_id,
         oi.unit_identifier,
