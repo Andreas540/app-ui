@@ -8,10 +8,10 @@ import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
 
 type PartnerRef = { id: string; name: string }
-type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string }
+type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string; historicalProductCost: number | null }
 
 function emptyLine(): Line {
-  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null, unit_identifier: '' }
+  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null, unit_identifier: '', historicalProductCost: null }
 }
 
 export default function EditOrder() {
@@ -59,7 +59,6 @@ export default function EditOrder() {
   const [showMoreFields, setShowMoreFields]     = useState(false)
   const [productCostStr, setProductCostStr]     = useState('')
   const [shippingCostStr, setShippingCostStr]   = useState('')
-  const [historicalProductCost, setHistoricalProductCost] = useState<number | null>(null)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
   // ── Load bootstrap + order ──────────────────────────────────────────────────
@@ -96,11 +95,12 @@ export default function EditOrder() {
           ? orderData.items
           : [{ product_id: order.product_id, qty: order.qty, unit_price: order.unit_price }]
         setLines(loadedItems.map((i: any) => ({
-          product_id:        i.product_id || '',
-          qtyStr:            i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
-          priceStr:          i.unit_price != null ? fmtInput(i.unit_price) : '',
-          covers_product_id: i.covers_product_id ?? null,
-          unit_identifier:   i.unit_identifier ?? '',
+          product_id:           i.product_id || '',
+          qtyStr:               i.qty != null ? (Number(i.qty) % 1 === 0 ? String(Math.round(Number(i.qty))) : fmtInput(i.qty)) : '',
+          priceStr:             i.unit_price != null ? fmtInput(i.unit_price) : '',
+          covers_product_id:    i.covers_product_id ?? null,
+          unit_identifier:      i.unit_identifier ?? '',
+          historicalProductCost: i.historical_product_cost != null ? Number(i.historical_product_cost) : null,
         })))
 
         // Cost overrides
@@ -127,26 +127,26 @@ export default function EditOrder() {
     })()
   }, [orderId])
 
-  // ── Historical costs (first product) ───────────────────────────────────────
+  // ── Historical costs — per line + shipping ─────────────────────────────────
+  function fetchLineCost(lineIdx: number, product_id: string, date: string, cid: string) {
+    if (!product_id || !cid || !date) return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const dateOnly = date.split('T')[0]
+    fetch(`${base}/api/historical-costs?product_id=${product_id}&customer_id=${cid}&order_date=${dateOnly}`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return
+        setLines(prev => prev.map((l, i) => i === lineIdx ? { ...l, historicalProductCost: d.product_cost } : l))
+        if (lineIdx === 0 && d.shipping_cost !== undefined) setHistoricalShippingCost(d.shipping_cost)
+      })
+      .catch(() => {})
+  }
+
+  // Re-fetch all lines when order date or customer changes
   useEffect(() => {
-    const pid = lines[0]?.product_id
-    if (!pid || !customerId || !orderDate) return
-    ;(async () => {
-      try {
-        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-        const dateOnly = orderDate.split('T')[0]
-        const res = await fetch(
-          `${base}/api/historical-costs?product_id=${pid}&customer_id=${customerId}&order_date=${dateOnly}`,
-          { headers: getAuthHeaders() }
-        )
-        if (res.ok) {
-          const d = await res.json()
-          setHistoricalProductCost(d.product_cost)
-          setHistoricalShippingCost(d.shipping_cost)
-        }
-      } catch { /* silent */ }
-    })()
-  }, [lines[0]?.product_id, customerId, orderDate]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!customerId || !orderDate) return
+    lines.forEach((l, i) => { if (l.product_id) fetchLineCost(i, l.product_id, orderDate, customerId) })
+  }, [customerId, orderDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ──────────────────────────────────────────────────────────
   const person = useMemo(() => people.find(p => p.id === customerId), [people, customerId])
@@ -184,11 +184,6 @@ export default function EditOrder() {
     [partner2PerItem, totalQty]
   )
 
-  const effectiveProductCost = useMemo(() => {
-    const ov = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
-    return (ov !== null && Number.isFinite(ov)) ? ov : (historicalProductCost ?? 0)
-  }, [productCostStr, historicalProductCost]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const effectiveShippingCost = useMemo(() => {
     const ov = shippingCostStr.trim() ? parsePriceToNumber(shippingCostStr) : null
     return (ov !== null && Number.isFinite(ov)) ? ov : (historicalShippingCost ?? 0)
@@ -196,8 +191,12 @@ export default function EditOrder() {
 
   const profit = useMemo(() => {
     if (!Number.isFinite(orderValue) || orderValue <= 0) return 0
-    return orderValue - (partner1Total + partner2Total) - effectiveProductCost * totalQty - effectiveShippingCost * totalQty
-  }, [orderValue, partner1Total, partner2Total, effectiveProductCost, effectiveShippingCost, totalQty])
+    const productCostOverride = productCostStr.trim() ? parsePriceToNumber(productCostStr) : null
+    const totalProductCost = productCostOverride !== null && Number.isFinite(productCostOverride)
+      ? productCostOverride * totalQty
+      : lines.reduce((s, l) => s + (parseAmount(l.qtyStr || '0') || 0) * (l.historicalProductCost ?? 0), 0)
+    return orderValue - (partner1Total + partner2Total) - totalProductCost - effectiveShippingCost * totalQty
+  }, [orderValue, partner1Total, partner2Total, productCostStr, lines, effectiveShippingCost, totalQty]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const profitPercent = useMemo(() =>
     (Number.isFinite(orderValue) && orderValue > 0) ? (profit / orderValue) * 100 : 0,
@@ -230,9 +229,10 @@ export default function EditOrder() {
     let priceStr = lines[idx].priceStr
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     setLines(prev => prev.map((l, i) => i === idx
-      ? { ...l, product_id, priceStr, qtyStr: l.qtyStr || (isCoverageProduct ? '1' : '') }
+      ? { ...l, product_id, priceStr, qtyStr: l.qtyStr || (isCoverageProduct ? '1' : ''), historicalProductCost: null }
       : l
     ))
+    fetchLineCost(idx, product_id, orderDate, customerId)
   }
 
   function onLinePriceChange(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
@@ -317,7 +317,6 @@ export default function EditOrder() {
           product_cost:   productCostToSend,
           shipping_cost:  shippingCostToSend,
           partner_splits: splits.length ? splits : undefined,
-          item_product_cost: Number.isFinite(effectiveProductCost) ? effectiveProductCost : undefined,
         }),
       })
       if (!res.ok) throw new Error('Failed to update order')
@@ -512,6 +511,7 @@ export default function EditOrder() {
                   onChange={e => onLineProductChange(idx, e.target.value)}
                   style={{ height: CONTROL_H }}
                 >
+                  {!l.product_id && <option value="">{t('orders.selectProduct')}</option>}
                   {productGroup.length > 0 && (
                     <optgroup label={t('orders.groupProducts')}>
                       {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

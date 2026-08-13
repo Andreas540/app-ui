@@ -485,6 +485,7 @@
     "alertEnterPositivePrice": "Ange ett enhetspris > 0",
     "orderSaved": "Sparad! Beställning #{{number}}",
     "noProductsYet": "Inga produkter ännu — skapa en produkt först",
+    "selectProduct": "Välj produkt...",
     "selectUnit": "Välj en enhet...",
     "noUnitsAvailable": "Inga enheter i lager — lägg till enheter i Lager",
     "productOrService": "Produkt / Tjänst",

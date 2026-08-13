@@ -485,6 +485,7 @@
     "alertEnterPositivePrice": "Ingrese un precio unitario > 0",
     "orderSaved": "¡Guardado! Pedido #{{number}}",
     "noProductsYet": "Sin productos — crea un producto primero",
+    "selectProduct": "Seleccionar producto...",
     "selectUnit": "Seleccionar una unidad...",
     "noUnitsAvailable": "Sin unidades en stock — añade unidades en Almacén",
     "productOrService": "Producto / Servicio",

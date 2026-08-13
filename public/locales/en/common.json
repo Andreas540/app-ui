@@ -485,6 +485,7 @@
     "alertEnterPositivePrice": "Enter a unit price > 0",
     "orderSaved": "Saved! Order #{{number}}",
     "noProductsYet": "No products yet — create a product first",
+    "selectProduct": "Select product...",
     "selectUnit": "Select a unit...",
     "noUnitsAvailable": "No units in stock — add units in Warehouse",
     "productOrService": "Product / Service",

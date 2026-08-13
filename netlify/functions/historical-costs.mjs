@@ -31,14 +31,20 @@ async function getHistoricalCosts(event) {
     // This ensures we catch any changes made "today" in EST
     const orderDateEndOfDayEST = `${order_date}T23:59:59-05:00`; // End of day EST
 
-    // Get product cost from history
+    // Get product cost: history as of order date, fall back to current products.cost
     const productCost = await sql`
-      SELECT cost
-      FROM product_cost_history
-      WHERE product_id = ${product_id}
-        AND effective_from <= ${orderDateEndOfDayEST}::timestamptz
-      ORDER BY effective_from DESC
-      LIMIT 1
+      SELECT
+        COALESCE(
+          (SELECT ph.cost
+           FROM product_cost_history ph
+           WHERE ph.tenant_id = ${TENANT_ID}
+             AND ph.product_id = ${product_id}::uuid
+             AND ph.effective_from <= ${orderDateEndOfDayEST}::timestamptz
+           ORDER BY ph.effective_from DESC
+           LIMIT 1),
+          (SELECT p.cost FROM products p
+           WHERE p.id = ${product_id}::uuid AND p.tenant_id = ${TENANT_ID})
+        ) AS cost
     `;
 
     // Get shipping cost from history
@@ -53,7 +59,7 @@ async function getHistoricalCosts(event) {
     `;
 
     return cors(200, {
-      product_cost: productCost.length ? Number(productCost[0].cost) : null,
+      product_cost: productCost[0]?.cost != null ? Number(productCost[0].cost) : null,
       shipping_cost: shippingCost.length ? Number(shippingCost[0].shipping_cost) : null
     });
   } catch (e) {
