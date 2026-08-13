@@ -54,14 +54,22 @@ LIMIT 1
     if (orders.length === 0) return cors(404, { error: 'Order not found' })
     const order = orders[0]
 
-    // Get order items
+    // Get order items — cost looked up dynamically from product_cost_history as of order date
     const items = await sql`
       SELECT
         oi.id AS order_item_id,
         oi.product_id,
         oi.qty,
         oi.unit_price,
-        COALESCE(oi.product_cost, oi.cost) as historical_product_cost,
+        (
+          SELECT ph.cost
+          FROM product_cost_history ph
+          WHERE ph.tenant_id = ${TENANT_ID}
+            AND ph.product_id = oi.product_id
+            AND ph.effective_from < ((o.order_date + 1)::timestamp AT TIME ZONE COALESCE(t.default_timezone, 'UTC'))
+          ORDER BY ph.effective_from DESC
+          LIMIT 1
+        ) AS historical_product_cost,
         oi.covers_product_id,
         oi.covers_order_item_id,
         oi.unit_identifier,
@@ -72,6 +80,7 @@ LIMIT 1
         coi.unit_identifier AS covered_unit_identifier
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
+      JOIN tenants t ON t.id = o.tenant_id
       LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
       LEFT JOIN order_items coi ON coi.id = oi.covers_order_item_id
       LEFT JOIN products coi_p ON coi_p.id = coi.product_id AND coi_p.tenant_id = o.tenant_id
