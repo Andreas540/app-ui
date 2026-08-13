@@ -34,7 +34,7 @@ const TENANT_ID = authz.tenantId;
 
     const rows = await sql`
       SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id,
-             product_category, product_subcategory, sku, variant, unit_tracking,
+             product_category, product_subcategory, sku, variant, unit_tracking, cost_method,
              (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
@@ -77,6 +77,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const variant            = body.variant             ? String(body.variant).trim()       : null
     const validModes         = ['none', 'on_promote', 'serialized_intake']
     const unitTracking       = validModes.includes(body.unit_tracking) ? body.unit_tracking : 'none'
+    const validCostMethods   = ['manual', 'avg_3m', 'avg_6m', 'avg_12m', 'last_purchase']
+    const costMethod         = validCostMethods.includes(body.cost_method) ? body.cost_method : 'manual'
 
     const sql = neon(DATABASE_URL);
 
@@ -87,9 +89,9 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at, product_category, product_subcategory, sku, variant, unit_tracking)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null}, ${productCategory}, ${productSubcategory}, ${sku}, ${variant}, ${unitTracking})
-      RETURNING id, name, cost, category, duration_minutes, price_amount, product_category, product_subcategory, sku, variant, unit_tracking,
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at, product_category, product_subcategory, sku, variant, unit_tracking, cost_method)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null}, ${productCategory}, ${productSubcategory}, ${sku}, ${variant}, ${unitTracking}, ${costMethod})
+      RETURNING id, name, cost, category, duration_minutes, price_amount, product_category, product_subcategory, sku, variant, unit_tracking, cost_method,
                 (image_data IS NOT NULL AND image_data != '') AS has_image,
                 EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
     `;
@@ -109,11 +111,11 @@ const TENANT_ID = authz.tenantId;
       `
     }
 
-    // Seed history at "now"
+    // Seed initial cost history entry (manual source — avg entries added later by supplier orders)
     await sql`
-  INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from)
-  VALUES (${TENANT_ID}, ${product.id}, ${costNum}, now())
-`;
+      INSERT INTO product_cost_history (tenant_id, product_id, cost, effective_from, source)
+      VALUES (${TENANT_ID}, ${product.id}, ${costNum}, now(), 'manual')
+    `;
 
     return cors(201, { product });
 }

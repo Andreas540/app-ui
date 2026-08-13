@@ -2,6 +2,7 @@
 import { neon }             from '@neondatabase/serverless'
 import { resolveAuthz }     from './utils/auth.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
+import { calcSupplierAvgCost, writeAvgCostHistory } from './utils/calc-supplier-avg-cost.mjs'
 
 const json = (code, obj) => ({
   statusCode: code,
@@ -163,6 +164,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
       }
 
+      await updateAvgCostForProducts(sql, tenantId, cleaned.map(l => l.product_id))
       return json(200, { order_id: orderId })
     }
 
@@ -205,6 +207,13 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           and id = ${id}
       `
 
+      // Capture old product IDs before deletion so we can recalculate their avg cost too
+      const oldLines = await sql`
+        SELECT DISTINCT product_id FROM order_items_suppliers
+        WHERE tenant_id = ${tenantId} AND order_id = ${id}
+      `
+      const oldProductIds = oldLines.map(r => r.product_id)
+
       // Delete existing order items
       await sql`
         delete from order_items_suppliers
@@ -232,6 +241,8 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
       }
 
+      const allProductIds = [...new Set([...oldProductIds, ...cleaned.map(l => l.product_id)])]
+      await updateAvgCostForProducts(sql, tenantId, allProductIds, order_date)
       return json(200, { ok: true })
     }
 
@@ -241,6 +252,14 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       const { id } = body
 
       if (!id) return json(400, { error: 'Missing order id' })
+
+      // Capture order_date and product IDs before deletion for retroactive recalculation
+      const [orderHeader, deletedLines] = await Promise.all([
+        sql`SELECT order_date FROM orders_suppliers WHERE tenant_id = ${tenantId} AND id = ${id} LIMIT 1`,
+        sql`SELECT DISTINCT product_id FROM order_items_suppliers WHERE tenant_id = ${tenantId} AND order_id = ${id}`,
+      ])
+      const affectedOrderDate = orderHeader[0]?.order_date
+      const deletedProductIds = deletedLines.map(r => r.product_id)
 
       // Delete order items first (foreign key constraint)
       await sql`
@@ -256,8 +275,67 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           and id = ${id}
       `
 
+      await updateAvgCostForProducts(sql, tenantId, deletedProductIds, affectedOrderDate)
       return json(200, { ok: true })
     }
 
     return json(405, { error: 'Method Not Allowed' })
 })
+
+// Recalculate and write avg cost history for products using a supplier avg method.
+//
+// retroactiveOrderDate: date string of the supplier order that was edited/deleted.
+//   When set, stale avg-cost history entries that could have included that order
+//   are deleted and replaced with a corrected entry written from the earliest
+//   affected date — so historical profit figures are corrected automatically
+//   via the existing DB trigger.
+//   When null (new order), writes from today only (history untouched).
+async function updateAvgCostForProducts(sql, tenantId, productIds, retroactiveOrderDate = null) {
+  if (!productIds.length) return
+  const today = new Date().toISOString().slice(0, 10)
+
+  const products = await sql`
+    SELECT id, cost_method FROM products
+    WHERE tenant_id = ${tenantId}::uuid
+      AND id = ANY(${productIds}::uuid[])
+      AND cost_method != 'manual'
+  `
+
+  for (const p of products) {
+    let effectiveFrom = today
+
+    if (retroactiveOrderDate) {
+      // Find the earliest avg-cost history entry that could have included the
+      // changed order in its calculation window. Conservative lookback = 12 months
+      // (the maximum window). Entries from that date onward are stale.
+      const earliest = await sql`
+        SELECT MIN(effective_from)::date AS earliest_date
+        FROM product_cost_history
+        WHERE tenant_id = ${tenantId}::uuid
+          AND product_id = ${p.id}::uuid
+          AND source = 'supplier_avg'
+          AND effective_from >= (${retroactiveOrderDate}::date - INTERVAL '12 months')
+      `
+      const earliestDate = earliest[0]?.earliest_date
+      if (earliestDate) {
+        // Remove all stale avg entries from that date forward. The new corrected
+        // entry written below becomes the single source of truth for that range,
+        // and the DB trigger propagates it to order_items.product_cost.
+        await sql`
+          DELETE FROM product_cost_history
+          WHERE tenant_id = ${tenantId}::uuid
+            AND product_id = ${p.id}::uuid
+            AND source = 'supplier_avg'
+            AND effective_from >= ${earliestDate}
+        `
+        effectiveFrom = new Date(earliestDate).toISOString().slice(0, 10)
+      }
+    }
+
+    const cost = await calcSupplierAvgCost(sql, tenantId, p.id, p.cost_method)
+    if (cost !== null) {
+      await writeAvgCostHistory(sql, tenantId, p.id, cost, effectiveFrom)
+      console.log(`Avg cost updated: product=${p.id} method=${p.cost_method} cost=${cost} effective_from=${effectiveFrom}${retroactiveOrderDate ? ' (retroactive)' : ''}`)
+    }
+  }
+}

@@ -103,6 +103,7 @@ export default function SuperAdmin() {
   const [savingBtTheme, setSavingBtTheme] = useState(false)
   const [btFrontPageKey, setBtFrontPageKey] = useState<string>('')
   const [savingBtFrontPage, setSavingBtFrontPage] = useState(false)
+  const [btAllowSupplierAvgCost, setBtAllowSupplierAvgCost] = useState(false)
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -407,6 +408,7 @@ export default function SuperAdmin() {
       },
       frontPageKey: btFrontPageKey || null,
       ...(Object.keys(labels).length ? { labels } : {}),
+      allow_supplier_avg_cost: btAllowSupplierAvgCost,
     }
     try {
       setSavingBt(true)
@@ -1720,6 +1722,21 @@ async function handleSaveStripeCustomerId() {
                         </div>
                       </div>
 
+                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Product costing</div>
+                      <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 16 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                          <input
+                            type="checkbox"
+                            checked={btAllowSupplierAvgCost}
+                            onChange={e => setBtAllowSupplierAvgCost(e.target.checked)}
+                          />
+                          Allow supplier average cost method
+                        </label>
+                        <div className="helper" style={{ marginTop: 4 }}>
+                          When enabled, products can use a rolling average from supplier order history instead of a manually set cost.
+                        </div>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
                         <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
@@ -1755,6 +1772,7 @@ async function handleSaveStripeCustomerId() {
                             )
                             setBtFrontPageKey((bt.config_defaults as any)?.frontPageKey ?? '')
                             setBtLabelProductCost((bt.config_defaults as any)?.labels?.productCostPerUnit ?? '')
+                            setBtAllowSupplierAvgCost(!!(bt.config_defaults as any)?.allow_supplier_avg_cost)
                           }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >

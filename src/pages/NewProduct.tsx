@@ -15,6 +15,7 @@ interface HistoricalCost {
   product_name: string
   cost: number
   effective_from: string
+  source?: string
 }
 
 export default function NewProduct() {
@@ -22,6 +23,7 @@ export default function NewProduct() {
   const [searchParams] = useSearchParams()
   const [name, setName] = useState('')
   const [costStr, setCostStr] = useState('')  // decimal string
+  const [costMethod, setCostMethod] = useState<'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase'>('manual')
   const [saving, setSaving] = useState(false)
   const [category, setCategory] = useState<'product' | 'service' | 'coverage'>(
     searchParams.get('type') === 'service' ? 'service' : 'product'
@@ -76,6 +78,7 @@ export default function NewProduct() {
   const pageFields = getTenantConfig(user?.tenantId).pages['new-product']?.fields ?? {}
   const btLabels = (user as any)?.businessTypeConfig?.labels ?? {}
   const labelProductCost: string = btLabels.productCostPerUnit || t('products.productCostUSD')
+  const allowSupplierAvgCost = !!(user as any)?.businessTypeConfig?.allow_supplier_avg_cost
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
@@ -179,7 +182,7 @@ export default function NewProduct() {
     const nm = name.trim()
     const costNum = parseAmount(costStr || '')
     if (!nm) { alert(t('products.alertEnterName')); return }
-    if (!Number.isFinite(costNum) || costNum < 0) { alert(t('products.alertEnterValidCost')); return }
+    if (costMethod === 'manual' && (!Number.isFinite(costNum) || costNum < 0)) { alert(t('products.alertEnterValidCost')); return }
 
     const durationMinutes = category === 'service' && durationStr
       ? Math.max(1, parseInt(durationStr, 10) || 60)
@@ -189,7 +192,7 @@ export default function NewProduct() {
     try {
       setSaving(true)
       if (category === 'coverage') return
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}) })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
@@ -423,13 +426,31 @@ export default function NewProduct() {
           </div>
           <div>
             <label>{labelProductCost}</label>
+            {allowSupplierAvgCost && (
+              <select
+                value={costMethod}
+                onChange={e => setCostMethod(e.target.value as typeof costMethod)}
+                style={{ display: 'block', fontSize: 12, marginBottom: 6, padding: '4px 6px', width: '100%' }}
+              >
+                <option value="manual">Manual</option>
+                <option value="avg_3m">Avg — last 3 months</option>
+                <option value="avg_6m">Avg — last 6 months</option>
+                <option value="avg_12m">Avg — last 12 months</option>
+                <option value="last_purchase">Last purchase price</option>
+              </select>
+            )}
             <input
               type="text"
               inputMode="decimal"
-              placeholder={fmtInput(0)}
+              placeholder={costMethod !== 'manual' ? 'Initial estimate (optional)' : fmtInput(0)}
               value={costStr}
               onChange={e => setCostStr(parseCostInput(e.target.value))}
             />
+            {costMethod !== 'manual' && (
+              <div className="helper" style={{ marginTop: 4 }}>
+                Will update automatically from supplier orders
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -610,7 +631,11 @@ export default function NewProduct() {
                   .map((item, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px 1fr auto', alignItems: 'center', padding: '4px 0 4px 16px', gap: 12, fontSize: 14, opacity: 0.9 }}>
                       <div className="helper">{formatDate(item.effective_from)}</div>
-                      <div />
+                      <div>
+                        {item.source === 'supplier_avg' && (
+                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600 }}>avg</span>
+                        )}
+                      </div>
                       <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(item.cost, 3)}</div>
                     </div>
                   ))}

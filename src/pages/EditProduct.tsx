@@ -20,6 +20,7 @@ export default function EditProduct() {
   const pageFields = getTenantConfig(user?.tenantId).pages[pageConfigKey]?.fields ?? {}
   const btLabels = (user as any)?.businessTypeConfig?.labels ?? {}
   const labelProductCost: string = btLabels.productCostPerUnit || t('products.newProductCostUSD')
+  const allowSupplierAvgCost = !!(user as any)?.businessTypeConfig?.allow_supplier_avg_cost
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
@@ -36,6 +37,10 @@ export default function EditProduct() {
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [saving, setSaving] = useState(false)
+  const [costMethod, setCostMethod] = useState<'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase'>('manual')
+  const [methodTiming, setMethodTiming] = useState<'next' | 'history' | 'specific'>('next')
+  const [methodTimingDate, setMethodTimingDate] = useState<string>(todayYMD())
+  const [savingMethod, setSavingMethod] = useState(false)
 
   const [durationStr, setDurationStr] = useState('')
   const [priceStr, setPriceStr] = useState('')
@@ -133,6 +138,9 @@ export default function EditProduct() {
     setSku(selected.sku ?? '')
     setVariant(selected.variant ?? '')
     setUnitTracking(selected.unit_tracking ?? 'none')
+    setCostMethod(selected.cost_method ?? 'manual')
+    setMethodTiming('next')
+    setMethodTimingDate(todayYMD())
     setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
     setImageChangeData(undefined)
     setAddingCategory(false)
@@ -206,6 +214,26 @@ export default function EditProduct() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function saveMethod() {
+    if (!selected) return
+    if (methodTiming === 'specific' && !methodTimingDate) { alert(t('products.alertSelectDate')); return }
+    try {
+      setSavingMethod(true)
+      const timing = methodTiming === 'history' ? 'beginning' : methodTiming === 'specific' ? 'date' : 'next'
+      const res = await fetch(`${BASE}/api/product-avg-cost`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: selected.id, cost_method: costMethod, timing, from_date: timing === 'date' ? methodTimingDate : undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      alert(data.message || `Cost method updated${data.cost != null ? ` — current avg: ${data.cost}` : ''}`)
+      const { products: updated } = await (await fetch(`${BASE}/api/product`, { headers: getAuthHeaders() })).json()
+      setProducts(updated)
+    } catch (e: any) { alert(e?.message || 'Failed') }
+    finally { setSavingMethod(false) }
   }
 
   if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
@@ -429,6 +457,48 @@ export default function EditProduct() {
           )}
         </div>
       </div>
+
+      {allowSupplierAvgCost && (
+        <div style={{ marginTop: 20, padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Cost method</div>
+          <select
+            value={costMethod}
+            onChange={e => setCostMethod(e.target.value as typeof costMethod)}
+            style={{ display: 'block', marginBottom: 12, padding: '5px 8px', fontSize: 13, width: '100%', maxWidth: 260 }}
+          >
+            <option value="manual">Manual</option>
+            <option value="avg_3m">Avg — last 3 months</option>
+            <option value="avg_6m">Avg — last 6 months</option>
+            <option value="avg_12m">Avg — last 12 months</option>
+            <option value="last_purchase">Last purchase price</option>
+          </select>
+
+          <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+            {([['history', t('products.applyCostToHistory')], ['next', t('products.applyCostFromNextOrder')], ['specific', t('products.applyCostFromSpecificDate')]] as const).map(([val, label]) => (
+              <div key={val}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input type="radio" name="methodTiming" checked={methodTiming === val} onChange={() => setMethodTiming(val)} style={{ width: 18, height: 18 }} />
+                  <span style={{ fontSize: 14 }}>{label}</span>
+                </label>
+                {val === 'specific' && methodTiming === 'specific' && (
+                  <div style={{ marginTop: 8, marginLeft: 28 }}>
+                    <DateInput value={methodTimingDate} onChange={v => setMethodTimingDate(v)} style={{ width: '100%', maxWidth: 200 }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button onClick={saveMethod} disabled={savingMethod} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>
+            {savingMethod ? t('saving') : 'Save cost method'}
+          </button>
+          {costMethod !== 'manual' && (
+            <div className="helper" style={{ marginTop: 8 }}>
+              Avg cost updates automatically each time a supplier order is saved for this product.
+            </div>
+          )}
+        </div>
+      )}
 
       <ImagePicker
         label={type === 'service' ? t('products.serviceImage') : t('products.productImage')}

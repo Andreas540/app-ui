@@ -27,6 +27,7 @@ async function getProductCostHistory(event) {
         pch.product_id,
         p.name as product_name,
         pch.cost,
+        pch.source,
         (pch.effective_from AT TIME ZONE 'America/New_York')::timestamp as effective_from
       FROM public.product_cost_history pch
       JOIN public.products p

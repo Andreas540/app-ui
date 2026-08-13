@@ -418,7 +418,7 @@ export async function createProductCategory(type: 'category' | 'subcategory', na
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -435,7 +435,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
