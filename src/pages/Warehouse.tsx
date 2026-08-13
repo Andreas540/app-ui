@@ -65,7 +65,7 @@ type MaterialItem = {
 export default function Warehouse() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { parseAmount, fmtNumber } = useCurrency()
+  const { parseAmount, fmtQty } = useCurrency()
   const { user } = useAuth()
   const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
   const inventoryGrid = isRetail
@@ -680,38 +680,38 @@ export default function Warehouse() {
 
                         {isRetail ? <>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                            {fmtNumber(Number(item.qty))}
+                            {fmtQty(Number(item.qty))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.committed))}
+                            {fmtQty(Number(item.committed))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availTot)}
+                            {fmtQty(availTot)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.on_order))}
+                            {fmtQty(Number(item.on_order))}
                           </div>
                         </> : <>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
-                            {fmtNumber(Number(item.pre_prod))}
+                            {fmtQty(Number(item.pre_prod))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
-                            {fmtNumber(Number(item.finished))}
+                            {fmtQty(Number(item.finished))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                            {fmtNumber(Number(item.qty))}
+                            {fmtQty(Number(item.qty))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.committed))}
+                            {fmtQty(Number(item.committed))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availFin)}
+                            {fmtQty(availFin)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availTot)}
+                            {fmtQty(availTot)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.on_order))}
+                            {fmtQty(Number(item.on_order))}
                           </div>
                         </>}
                       </div>
@@ -733,7 +733,7 @@ export default function Warehouse() {
                                 <button onClick={() => setCustomerModalOrder({ id: o.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
                                   #{o.order_no}
                                 </button>
-                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQty(o.qty)}</span>
                               </div>
                             ))}
                           </div>
@@ -744,7 +744,7 @@ export default function Warehouse() {
                                 <button onClick={() => openSupplierOrder(o.order_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
                                   #{o.order_no}
                                 </button>
-                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQty(o.qty)}</span>
                               </div>
                             ))}
                           </div>
@@ -921,16 +921,16 @@ export default function Warehouse() {
                   }}>
                     <div style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{mat.product}</div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                      {fmtNumber(Number(mat.received))}
+                      {fmtQty(Number(mat.received))}
                     </div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                      {fmtNumber(Math.abs(Number(mat.consumed)))}
+                      {fmtQty(Math.abs(Number(mat.consumed)))}
                     </div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: mat.on_hand < 0 ? 'var(--color-error)' : mat.on_hand === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                      {fmtNumber(Number(mat.on_hand))}
+                      {fmtQty(Number(mat.on_hand))}
                     </div>
                     <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: mat.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                      {fmtNumber(Number(mat.on_order))}
+                      {fmtQty(Number(mat.on_order))}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       {(mat.used_in ?? []).join(', ') || '—'}

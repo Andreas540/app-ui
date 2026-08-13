@@ -64,6 +64,15 @@ export function useCurrency() {
     })
   }
 
+  // Format a physical quantity — shows up to 2 decimal places, strips trailing zeros
+  // Use for all inventory / order qty displays (stored as NUMERIC(10,2) in DB)
+  function fmtQty(n: number): string {
+    return (Number(n) || 0).toLocaleString(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+  }
+
   // Format a percentage — pass value already in percent scale (e.g. 52.3 → "52,3%")
   function fmtPct(n: number, decimals = 1): string {
     return (Number(n) || 0).toLocaleString(locale, {
@@ -88,5 +97,5 @@ export function useCurrency() {
     return fmtMoney(n, 0)
   }
 
-  return { fmtMoney, fmtIntMoney, fmtInput, fmtNumber, fmtPct, fmtCompact, parseAmount }
+  return { fmtMoney, fmtIntMoney, fmtInput, fmtNumber, fmtQty, fmtPct, fmtCompact, parseAmount }
 }

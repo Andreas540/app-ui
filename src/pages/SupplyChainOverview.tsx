@@ -133,7 +133,7 @@ function shouldHideProduct(name: string) {
 export default function SupplyChainOverview() {
   const { t } = useTranslation()
   const { t: ti } = useTranslation('info')
-  const { fmtNumber } = useCurrency()
+  const { fmtQty } = useCurrency()
   const { isDark } = useTheme()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -548,12 +548,12 @@ export default function SupplyChainOverview() {
               ${data.not_delivered.map(item => `
                 <tr>
                   <td>${item.product}</td>
-                  <td class="qty-col">${fmtNumber(item.qty)}</td>
+                  <td class="qty-col">${fmtQty(item.qty)}</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
                 <td>Total</td>
-                <td class="qty-col">${fmtNumber(data.not_delivered.reduce((sum, item) => sum + Number(item.qty), 0))}</td>
+                <td class="qty-col">${fmtQty(data.not_delivered.reduce((sum, item) => sum + Number(item.qty), 0))}</td>
               </tr>
             </tbody>
           </table>
@@ -811,7 +811,7 @@ export default function SupplyChainOverview() {
                           const { x, y, width, height, value } = props
                           if (!value || height <= 0) return null
 
-                          const formattedValue = fmtNumber(Number(value))
+                          const formattedValue = fmtQty(Number(value))
                           const textX = x + width / 2
                           const textY = y + height - 20
 
@@ -881,7 +881,7 @@ export default function SupplyChainOverview() {
                     {deliveryWeekHeader}
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                    {t('supplyChain.totalQtyDelivered', { qty: fmtNumber(deliveryTotalQty) })}
+                    {t('supplyChain.totalQtyDelivered', { qty: fmtQty(deliveryTotalQty) })}
                   </div>
                   {weeklyDeliveryData.length > 0 && (
                     <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -952,7 +952,7 @@ export default function SupplyChainOverview() {
                             const { x, y, width, value, height } = props
                             if (!value) return null
 
-                            const formattedValue = fmtNumber(Number(value))
+                            const formattedValue = fmtQty(Number(value))
 
                             return (
                               <text
@@ -1009,7 +1009,7 @@ export default function SupplyChainOverview() {
                       <div className="helper" style={{ fontSize: 12 }}>{formatDate(item.date)}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.customer}</div>
                       <div style={{ fontSize: 14, wordBreak: 'break-word' }}>{item.product}</div>
-                      <div style={{ textAlign: 'right', fontSize: 14 }}>{fmtNumber(Math.abs(item.qty))}</div>
+                      <div style={{ textAlign: 'right', fontSize: 14 }}>{fmtQty(Math.abs(item.qty))}</div>
                     </div>
                   ))}
               </div>
@@ -1058,7 +1058,7 @@ export default function SupplyChainOverview() {
         {productionWeekHeader}
       </div>
       <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-        {t('supplyChain.totalQtyProduced', { qty: fmtNumber(productionTotalQty) })}
+        {t('supplyChain.totalQtyProduced', { qty: fmtQty(productionTotalQty) })}
       </div>
       {weeklyProductionData.length > 0 && (
         <div className="helper" style={{ fontSize: 11, marginTop: 2, opacity: 0.7 }}>
@@ -1129,7 +1129,7 @@ export default function SupplyChainOverview() {
                 const { x, y, width, value, height } = props
                 if (!value) return null
 
-                const formattedValue = fmtNumber(Number(value))
+                const formattedValue = fmtQty(Number(value))
 
                 return (
                   <text
@@ -1214,7 +1214,7 @@ export default function SupplyChainOverview() {
                         }}
                       >
                         <div>{item.product}</div>
-                        <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
+                        <div style={{ textAlign: 'right' }}>{fmtQty(item.qty)}</div>
                       </div>
 
                       {isExpanded && orders.length > 0 && (
@@ -1234,7 +1234,7 @@ export default function SupplyChainOverview() {
                               <div className="helper" style={{ fontSize: 12 }}>{formatDate(o.order_date)}</div>
                               <div className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>#{o.order_no}</div>
                               <Link to={`/customers/${o.customer_id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', textDecoration: 'underline' }}>{o.customer}</Link>
-                              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{fmtNumber(Number(o.qty))}</div>
+                              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: rowColor }}>{fmtQty(Number(o.qty))}</div>
                             </div>
                           ))}
                         </div>
@@ -1371,40 +1371,40 @@ export default function SupplyChainOverview() {
                       {isRetail ? (
                         <>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                            {fmtNumber(Number(item.qty))}
+                            {fmtQty(Number(item.qty))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.committed))}
+                            {fmtQty(Number(item.committed))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availTot)}
+                            {fmtQty(availTot)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.on_order))}
+                            {fmtQty(Number(item.on_order))}
                           </div>
                         </>
                       ) : (
                         <>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.pre_prod < 0 ? 'var(--color-error)' : undefined, fontWeight: item.pre_prod < 0 ? 600 : undefined }}>
-                            {fmtNumber(Number(item.pre_prod))}
+                            {fmtQty(Number(item.pre_prod))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.finished < 0 ? 'var(--color-error)' : undefined, fontWeight: item.finished < 0 ? 600 : undefined }}>
-                            {fmtNumber(Number(item.finished))}
+                            {fmtQty(Number(item.finished))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.qty < 0 ? 'var(--color-error)' : item.qty === 0 ? 'var(--text-secondary)' : 'var(--primary)' }}>
-                            {fmtNumber(Number(item.qty))}
+                            {fmtQty(Number(item.qty))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.committed))}
+                            {fmtQty(Number(item.committed))}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availFin < 0 ? 600 : undefined, color: availFin < 0 ? 'var(--color-error)' : availFin === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availFin)}
+                            {fmtQty(availFin)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: availTot < 0 ? 600 : undefined, color: availTot < 0 ? 'var(--color-error)' : availTot === 0 ? 'var(--text-secondary)' : undefined }}>
-                            {fmtNumber(availTot)}
+                            {fmtQty(availTot)}
                           </div>
                           <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: item.on_order > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                            {fmtNumber(Number(item.on_order))}
+                            {fmtQty(Number(item.on_order))}
                           </div>
                         </>
                       )}
@@ -1427,7 +1427,7 @@ export default function SupplyChainOverview() {
                               <button onClick={() => setCustomerModalOrder({ id: o.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
                                 #{o.order_no}
                               </button>
-                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQty(o.qty)}</span>
                             </div>
                           ))}
                         </div>
@@ -1438,7 +1438,7 @@ export default function SupplyChainOverview() {
                               <button onClick={() => openSupplierOrder(o.order_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
                                 #{o.order_no}
                               </button>
-                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtNumber(o.qty)}</span>
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQty(o.qty)}</span>
                             </div>
                           ))}
                         </div>
@@ -1490,7 +1490,7 @@ export default function SupplyChainOverview() {
                     }}
                   >
                     <div>{item.product}</div>
-                    <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtQty(item.qty)}</div>
                   </div>
                 ))}
               </div>
@@ -1604,7 +1604,7 @@ export default function SupplyChainOverview() {
                     >
                       <div style={{ wordBreak: 'break-word' }}>{item.product}</div>
                       <div>{dateBadge}</div>
-                      <div style={{ textAlign: 'right' }}>{fmtNumber(item.qty)}</div>
+                      <div style={{ textAlign: 'right' }}>{fmtQty(item.qty)}</div>
                     </div>
                   )
                 })}
