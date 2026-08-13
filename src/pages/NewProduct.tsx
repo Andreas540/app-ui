@@ -636,14 +636,16 @@ export default function NewProduct() {
                 {groupedHistorical[productName]
                   .sort((a, b) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime())
                   .map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px 1fr auto', alignItems: 'center', padding: '4px 0 4px 16px', gap: 12, fontSize: 14, opacity: 0.9 }}>
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px auto', alignItems: 'center', padding: '4px 0 4px 16px', gap: 12, fontSize: 14, opacity: 0.9 }}>
                       <div className="helper">{formatDate(item.effective_from)}</div>
-                      <div>
-                        {item.source === 'supplier_avg' && (
-                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600 }}>avg</span>
-                        )}
+                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {item.source === 'supplier_avg' && (() => {
+                          const method = products.find(p => p.id === item.product_id)?.cost_method
+                          const label = method === 'last_purchase' ? 'last' : method?.replace('avg_', 'avg ') ?? 'avg'
+                          return <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>{label}</span>
+                        })()}
+                        {fmtMoney(item.cost, 3)}
                       </div>
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(item.cost, 3)}</div>
                     </div>
                   ))}
               </div>
