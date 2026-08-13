@@ -64,4 +64,9 @@ export async function writeAvgCostHistory(sql, tenantId, productId, cost, effect
       'supplier_avg'
     )
   `
+  // Keep products.cost in sync so the product list shows the current avg cost
+  await sql`
+    UPDATE products SET cost = ${cost}
+    WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid
+  `
 }
