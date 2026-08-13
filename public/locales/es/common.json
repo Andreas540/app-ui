@@ -534,6 +534,8 @@
     "availableTotalColumn": "Disp. (total)",
     "availableTotalTooltip": "Total menos comprometido",
     "onOrderColumn": "Pedido",
+    "inStockColumn": "En stock",
+    "availableColumn": "Disponible",
     "onOrderTooltip": "En pedidos a proveedores pendientes de recibir",
     "committedOrdersHeader": "Pedidos de clientes (comprometidos)",
     "onOrderOrdersHeader": "Pedidos a proveedores (en curso)",

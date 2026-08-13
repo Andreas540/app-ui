@@ -104,6 +104,7 @@ export default function SuperAdmin() {
   const [btFrontPageKey, setBtFrontPageKey] = useState<string>('')
   const [savingBtFrontPage, setSavingBtFrontPage] = useState(false)
   const [btAllowSupplierAvgCost, setBtAllowSupplierAvgCost] = useState(false)
+  const [btInventoryMode, setBtInventoryMode] = useState<'manufacturing' | 'retail'>('manufacturing')
   const [editingTenantBtId, setEditingTenantBtId] = useState<string | null>(null)
   const [editingTenantBtValue, setEditingTenantBtValue] = useState('')
   const [savingTenantBt, setSavingTenantBt] = useState(false)
@@ -409,6 +410,7 @@ export default function SuperAdmin() {
       frontPageKey: btFrontPageKey || null,
       ...(Object.keys(labels).length ? { labels } : {}),
       allow_supplier_avg_cost: btAllowSupplierAvgCost,
+      inventory_mode: btInventoryMode,
     }
     try {
       setSavingBt(true)
@@ -1737,6 +1739,33 @@ async function handleSaveStripeCustomerId() {
                         </div>
                       </div>
 
+                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Inventory</div>
+                      <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 16 }}>
+                        <div style={{ fontSize: 13, marginBottom: 8 }}>Inventory mode</div>
+                        <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+                          {(['manufacturing', 'retail'] as const).map(mode => (
+                            <button
+                              key={mode}
+                              onClick={() => setBtInventoryMode(mode)}
+                              style={{
+                                padding: '4px 14px',
+                                fontSize: 13,
+                                border: 'none',
+                                borderRight: mode === 'manufacturing' ? '1px solid var(--border)' : 'none',
+                                background: btInventoryMode === mode ? 'var(--primary)' : 'transparent',
+                                color: btInventoryMode === mode ? '#fff' : undefined,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {mode === 'manufacturing' ? 'Manufacturing' : 'Retail'}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="helper" style={{ marginTop: 6 }}>
+                          Manufacturing shows Pre-prod, Finished, and Total columns. Retail collapses these into a single In Stock column.
+                        </div>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="primary" onClick={handleSaveBusinessType} disabled={savingBt} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>{savingBt ? 'Saving…' : 'Save'}</button>
                         <button onClick={() => { setEditingBtId(null); setBtConfigError(null) }} style={{ height: 32, padding: '0 14px', fontSize: 13 }}>Cancel</button>
@@ -1773,6 +1802,7 @@ async function handleSaveStripeCustomerId() {
                             setBtFrontPageKey((bt.config_defaults as any)?.frontPageKey ?? '')
                             setBtLabelProductCost((bt.config_defaults as any)?.labels?.productCostPerUnit ?? '')
                             setBtAllowSupplierAvgCost(!!(bt.config_defaults as any)?.allow_supplier_avg_cost)
+                            setBtInventoryMode((bt.config_defaults as any)?.inventory_mode === 'retail' ? 'retail' : 'manufacturing')
                           }}
                           style={{ height: 30, padding: '0 12px', fontSize: 12 }}
                         >

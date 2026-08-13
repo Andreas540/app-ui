@@ -534,6 +534,8 @@
     "availableTotalColumn": "Avail. (total)",
     "availableTotalTooltip": "Total stock minus committed",
     "onOrderColumn": "On order",
+    "inStockColumn": "In Stock",
+    "availableColumn": "Available",
     "onOrderTooltip": "On supplier orders not yet received",
     "committedOrdersHeader": "Customer orders (committed)",
     "onOrderOrdersHeader": "Supplier orders (on order)",

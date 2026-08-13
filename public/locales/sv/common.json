@@ -534,6 +534,8 @@
     "availableTotalColumn": "Tillg. (totalt)",
     "availableTotalTooltip": "Totalt lager minus reserverat",
     "onOrderColumn": "Beställt",
+    "inStockColumn": "I lager",
+    "availableColumn": "Tillgängligt",
     "onOrderTooltip": "På leverantörsorder som ännu inte mottagits",
     "committedOrdersHeader": "Kundorder (reserverade)",
     "onOrderOrdersHeader": "Leverantörsorder (beställda)",
