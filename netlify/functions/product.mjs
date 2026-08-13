@@ -262,7 +262,7 @@ const TENANT_ID = authz.tenantId;
           ${TENANT_ID},
           ${id},
           ${newCostNum},
-          (('1970-01-01'::date)::timestamp AT TIME ZONE 'America/New_York')
+          (('1970-01-01'::date)::timestamp AT TIME ZONE ${tenantTz})
         )
       `
     } else if (costChanged) {
@@ -275,7 +275,7 @@ const TENANT_ID = authz.tenantId;
             ${TENANT_ID},
             ${id},
             ${newCostNum},
-            ((${effectiveDate}::date)::timestamp AT TIME ZONE 'America/New_York')
+            ((${effectiveDate}::date)::timestamp AT TIME ZONE ${tenantTz})
           )
         `
       } else {
