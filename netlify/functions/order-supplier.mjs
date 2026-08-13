@@ -292,7 +292,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
 //   When null (new order), writes from today only (history untouched).
 async function updateAvgCostForProducts(sql, tenantId, productIds, retroactiveOrderDate = null) {
   if (!productIds.length) return
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date().toISOString() // full timestamp so avg entry sorts after same-day manual entries
 
   const products = await sql`
     SELECT id, cost_method FROM products

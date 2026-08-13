@@ -171,11 +171,13 @@ if (authz.error) return cors(403, { error: authz.error });
 
 const TENANT_ID = authz.tenantId;
 
-    // Get current record
+    // Get current record and tenant timezone together
     const current = await sql`
-      SELECT cost, category, external_service_id
-      FROM products
-      WHERE tenant_id = ${TENANT_ID} AND id = ${id}
+      SELECT p.cost, p.category, p.external_service_id,
+             COALESCE(t.default_timezone, 'UTC') AS tz
+      FROM products p
+      JOIN tenants t ON t.id = p.tenant_id
+      WHERE p.tenant_id = ${TENANT_ID} AND p.id = ${id}
       LIMIT 1
     `;
     if (current.length === 0) return cors(404, { error: 'Product not found' });
@@ -184,6 +186,7 @@ const TENANT_ID = authz.tenantId;
     const isService = current[0].category === 'service';
     const isSyncedService = isService && !!current[0].external_service_id;
     const effectiveName = isSyncedService ? undefined : name;
+    const tenantTz = current[0].tz;
 
     const currentCost = Number(current[0].cost);
     const costChanged = newCostNum !== undefined && newCostNum !== currentCost;

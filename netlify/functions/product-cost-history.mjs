@@ -21,18 +21,18 @@ async function getProductCostHistory(event) {
 
     const TENANT_ID = authz.tenantId;
 
-    // Get all historical costs with product names, converted to America/New_York time
     const history = await sql`
-      SELECT 
+      SELECT
         pch.product_id,
         p.name as product_name,
         pch.cost,
         pch.source,
-        (pch.effective_from AT TIME ZONE 'America/New_York')::timestamp as effective_from
+        (pch.effective_from AT TIME ZONE COALESCE(t.default_timezone, 'UTC'))::timestamp as effective_from
       FROM public.product_cost_history pch
       JOIN public.products p
         ON p.id = pch.product_id
        AND p.tenant_id = pch.tenant_id
+      JOIN public.tenants t ON t.id = pch.tenant_id
       WHERE pch.tenant_id = ${TENANT_ID}
       ORDER BY p.name ASC, pch.effective_from DESC
     `;

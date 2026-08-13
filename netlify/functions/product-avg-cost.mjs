@@ -75,7 +75,7 @@ export const handler = withErrorLogging('product_avg_cost', async (event) => {
   } else if (timing === 'date') {
     effectiveFrom = from_date
   } else {
-    effectiveFrom = new Date().toISOString().slice(0, 10)
+    effectiveFrom = new Date().toISOString() // full timestamp so avg entry sorts after same-day manual entries
   }
 
   await writeAvgCostHistory(sql, tenantId, product_id, cost, effectiveFrom)
