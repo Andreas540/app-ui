@@ -372,6 +372,45 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
       }
 
+      // Auto-set/clear status date fields based on whether aggregate quantities
+      // now match the full ordered qty for all items.
+      const orderAgg = await sql`
+        SELECT
+          SUM(ois.qty)          AS agg_qty,
+          SUM(ois.qty_received)   AS agg_received,
+          SUM(ois.qty_in_customs) AS agg_in_customs,
+          SUM(ois.qty_shipped)    AS agg_shipped
+        FROM order_items_suppliers ois
+        WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
+      `
+      const agg = orderAgg[0]
+      const totalQty      = Number(agg.agg_qty)       || 0
+      const totalReceived = Number(agg.agg_received)   || 0
+      const totalCustoms  = Number(agg.agg_in_customs) || 0
+      const totalShipped  = Number(agg.agg_shipped)    || 0
+      const today = `(CURRENT_TIMESTAMP AT TIME ZONE '${tz}')::date`
+
+      const fullyReceived  = totalQty > 0 && totalReceived >= totalQty
+      const fullyInCustoms = totalQty > 0 && totalCustoms  >= totalQty && totalReceived === 0
+      const fullyShipped   = totalQty > 0 && totalShipped  >= totalQty && totalReceived === 0 && totalCustoms === 0
+
+      await sql`
+        UPDATE orders_suppliers SET
+          received        = ${fullyReceived},
+          received_date   = CASE WHEN ${fullyReceived}  AND received_date IS NULL THEN (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date
+                                 WHEN ${!fullyReceived} THEN NULL
+                                 ELSE received_date END,
+          in_customs      = ${fullyInCustoms},
+          in_customs_date = CASE WHEN ${fullyInCustoms}  AND in_customs_date IS NULL THEN (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date
+                                 WHEN ${!fullyInCustoms} THEN NULL
+                                 ELSE in_customs_date END,
+          delivered       = ${fullyShipped},
+          delivery_date   = CASE WHEN ${fullyShipped}  AND delivery_date IS NULL THEN (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date
+                                 WHEN ${!fullyShipped} THEN NULL
+                                 ELSE delivery_date END
+        WHERE id = ${order_id} AND tenant_id = ${tenantId}
+      `
+
       return json(200, { ok: true })
     }
 
