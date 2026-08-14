@@ -592,7 +592,7 @@ export default function NewProduct() {
             ) : filteredProducts.length === 0 ? (
               <div style={{ opacity: 0.7, fontSize: 14 }}>{t('products.noProducts')}</div>
             ) : (
-              <table style={{ width: showImages ? undefined : '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table style={{ width: '100%', minWidth: showImages ? 440 : undefined, borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr>
                     {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
