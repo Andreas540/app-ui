@@ -4,20 +4,24 @@ import Modal from './Modal'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 
-interface StageItem {
+interface RowDraft {
   id: string
   product_name: string
   qty: number
-  qty_shipped: number
-  qty_in_customs: number
-  qty_received: number
+  shippedStr: string
+  customsStr: string
+  receivedStr: string
 }
 
 interface SupplierOrderStagesModalProps {
   isOpen: boolean
   onClose: () => void
-  order: any          // full order object including items[]
-  onSaved: () => void // callback to reload parent data
+  order: any
+  onSaved: () => void
+}
+
+function toStr(n: number): string {
+  return n > 0 ? String(n) : ''
 }
 
 export default function SupplierOrderStagesModal({
@@ -25,7 +29,7 @@ export default function SupplierOrderStagesModal({
 }: SupplierOrderStagesModalProps) {
   const { t } = useTranslation()
   const { fmtQty } = useCurrency()
-  const [rows, setRows] = useState<StageItem[]>([])
+  const [rows, setRows] = useState<RowDraft[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,26 +37,26 @@ export default function SupplierOrderStagesModal({
     if (!isOpen || !order) return
     setError(null)
     setRows((order.items || []).map((item: any) => ({
-      id:              item.id,
-      product_name:    item.product_name,
-      qty:             Number(item.qty) || 0,
-      qty_shipped:     Number(item.qty_shipped)    || 0,
-      qty_in_customs:  Number(item.qty_in_customs) || 0,
-      qty_received:    Number(item.qty_received)   || 0,
+      id:           item.id,
+      product_name: item.product_name,
+      qty:          Number(item.qty) || 0,
+      shippedStr:   toStr(Number(item.qty_shipped)    || 0),
+      customsStr:   toStr(Number(item.qty_in_customs) || 0),
+      receivedStr:  toStr(Number(item.qty_received)   || 0),
     })))
   }, [isOpen, order])
 
-  function update(idx: number, field: keyof StageItem, raw: string) {
-    const val = Math.max(0, Number(raw) || 0)
+  function update(idx: number, field: 'shippedStr' | 'customsStr' | 'receivedStr', val: string) {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
     setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
   }
 
-  function pendingFor(r: StageItem) {
-    return Math.max(0, r.qty - r.qty_shipped - r.qty_in_customs - r.qty_received)
+  function pendingFor(r: RowDraft) {
+    return Math.max(0, r.qty - (Number(r.shippedStr) || 0) - (Number(r.customsStr) || 0) - (Number(r.receivedStr) || 0))
   }
 
-  function rowError(r: StageItem) {
-    return r.qty_shipped + r.qty_in_customs + r.qty_received > r.qty
+  function rowError(r: RowDraft) {
+    return (Number(r.shippedStr) || 0) + (Number(r.customsStr) || 0) + (Number(r.receivedStr) || 0) > r.qty
   }
 
   const hasErrors = rows.some(rowError)
@@ -70,9 +74,9 @@ export default function SupplierOrderStagesModal({
           order_id: order.id,
           items: rows.map(r => ({
             id:             r.id,
-            qty_shipped:    r.qty_shipped,
-            qty_in_customs: r.qty_in_customs,
-            qty_received:   r.qty_received,
+            qty_shipped:    Number(r.shippedStr)  || 0,
+            qty_in_customs: Number(r.customsStr)  || 0,
+            qty_received:   Number(r.receivedStr) || 0,
           })),
         }),
       })
@@ -91,7 +95,7 @@ export default function SupplierOrderStagesModal({
 
   const inputStyle: React.CSSProperties = {
     width: 64, textAlign: 'right', padding: '3px 6px',
-    border: '1px solid var(--border)', borderRadius: 4, fontSize: 13,
+    border: '1px solid var(--border)', borderRadius: 4,
   }
   const thStyle: React.CSSProperties = {
     fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
@@ -124,6 +128,7 @@ export default function SupplierOrderStagesModal({
           <tbody>
             {rows.map((r, idx) => {
               const err = rowError(r)
+              const errBorder = err ? 'var(--error, #dc2626)' : undefined
               return (
                 <tr key={r.id} style={{ background: err ? 'var(--error-bg, #fef2f2)' : undefined }}>
                   <td style={{ ...tdStyle, paddingLeft: 0, fontWeight: 500 }}>{r.product_name}</td>
@@ -133,26 +138,26 @@ export default function SupplierOrderStagesModal({
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <input
-                      type="number" min={0} max={r.qty} step="any"
-                      value={r.qty_shipped}
-                      onChange={e => update(idx, 'qty_shipped', e.target.value)}
-                      style={{ ...inputStyle, borderColor: err ? 'var(--error, #dc2626)' : undefined }}
+                      type="number" inputMode="decimal" min={0} max={r.qty} step="any"
+                      value={r.shippedStr}
+                      onChange={e => update(idx, 'shippedStr', e.target.value)}
+                      style={{ ...inputStyle, borderColor: errBorder }}
                     />
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <input
-                      type="number" min={0} max={r.qty} step="any"
-                      value={r.qty_in_customs}
-                      onChange={e => update(idx, 'qty_in_customs', e.target.value)}
-                      style={{ ...inputStyle, borderColor: err ? 'var(--error, #dc2626)' : undefined }}
+                      type="number" inputMode="decimal" min={0} max={r.qty} step="any"
+                      value={r.customsStr}
+                      onChange={e => update(idx, 'customsStr', e.target.value)}
+                      style={{ ...inputStyle, borderColor: errBorder }}
                     />
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <input
-                      type="number" min={0} max={r.qty} step="any"
-                      value={r.qty_received}
-                      onChange={e => update(idx, 'qty_received', e.target.value)}
-                      style={{ ...inputStyle, borderColor: err ? 'var(--error, #dc2626)' : undefined }}
+                      type="number" inputMode="decimal" min={0} max={r.qty} step="any"
+                      value={r.receivedStr}
+                      onChange={e => update(idx, 'receivedStr', e.target.value)}
+                      style={{ ...inputStyle, borderColor: errBorder }}
                     />
                   </td>
                 </tr>

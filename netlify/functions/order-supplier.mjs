@@ -284,7 +284,10 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
 
     // -------- PATCH: update per-item stage quantities ----------
     if (method === 'PATCH') {
-      const body = JSON.parse(event.body || '{}')
+      const rawBody = event.isBase64Encoded
+        ? Buffer.from(event.body || '', 'base64').toString('utf-8')
+        : (event.body || '{}')
+      const body = JSON.parse(rawBody)
       const { order_id, items } = body
       if (!order_id || !Array.isArray(items)) return json(400, { error: 'Missing order_id or items' })
 
