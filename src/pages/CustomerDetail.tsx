@@ -1242,10 +1242,11 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
-            <OrderDetailModal 
+            <OrderDetailModal
         isOpen={showOrderModal}
         onClose={() => setShowOrderModal(false)}
         order={selectedOrder}
+        customerName={data?.customer?.name}
       />
 
       <PaymentDetailModal

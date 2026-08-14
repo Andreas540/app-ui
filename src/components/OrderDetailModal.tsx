@@ -11,6 +11,7 @@ interface OrderDetailModalProps {
   isOpen: boolean
   onClose: () => void
   order: any
+  customerName?: string
 }
 
 interface PartnerSplit {
@@ -26,7 +27,7 @@ function coverageDaysLeft(orderDateStr: string, durationDays: number, timezone: 
   return Math.round((expiryMs - todayMs) / 86400000)
 }
 
-export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
+export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName }: OrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { timezone } = useLocale()
@@ -197,8 +198,15 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         {/* Separator: delivery/profit → order date */}
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }} />
 
-        {/* First Row: Order Date, Total Amount, Order Lines */}
+        {/* Customer | Order Date | Total */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div>
+            {(customerName || order.customer_name) && <>
+              <div className="helper" style={fieldStyle}>{t('customer')}</div>
+              <div style={{ fontWeight: 600 }}>{customerName || order.customer_name}</div>
+            </>}
+          </div>
+
           <div>
             <div className="helper" style={fieldStyle}>{t('orderModal.orderDate')}</div>
             <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
@@ -208,13 +216,6 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
             <div className="helper" style={fieldStyle}>{t('orderModal.totalAmount')}</div>
             <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
           </div>
-
-          {order.lines && (
-            <div style={{ textAlign: 'right' }}>
-              <div className="helper" style={fieldStyle}>{t('orderModal.orderLines')}</div>
-              <div style={{ fontWeight: 600 }}>{order.lines} {t('orderModal.items')}</div>
-            </div>
-          )}
         </div>
 
         {/* Separator line */}

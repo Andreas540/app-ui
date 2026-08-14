@@ -32,12 +32,11 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
   const fieldStyle = { marginBottom: 4 }
 
-  // Relevant dates to show (only those with a value)
+  // Secondary dates shown below the top grid (received_date moves into col 2 of the grid)
   const dates = [
     order.est_delivery_date && { label: t('supplierOrderModal.estDeliveryDate'), value: order.est_delivery_date },
     order.delivery_date     && { label: t('supplierOrderModal.deliveryDate'),    value: order.delivery_date },
     order.in_customs_date   && { label: t('supplierOrderModal.inCustomsDate'),   value: order.in_customs_date },
-    order.received_date     && { label: t('supplierOrderModal.receivedDate'),    value: order.received_date },
   ].filter(Boolean) as { label: string; value: string }[]
 
   return (
@@ -61,6 +60,12 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
           <div>
             <div className="helper" style={fieldStyle}>{t('supplierOrderModal.orderDate')}</div>
             <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
+            {order.received_date && (
+              <div style={{ marginTop: 8 }}>
+                <div className="helper" style={fieldStyle}>{t('supplierOrderModal.receivedDate')}</div>
+                <div style={{ fontWeight: 600 }}>{formatDate(order.received_date)}</div>
+              </div>
+            )}
           </div>
           <div style={{ textAlign: 'right' }}>
             <div className="helper" style={fieldStyle}>{t('supplierOrderModal.totalAmount')}</div>
@@ -85,26 +90,24 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
         {/* Products */}
         {order.items && order.items.length > 0 && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', marginBottom: 4 }}>
               <div className="helper">{t('product')}</div>
               <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
-              <div className="helper" style={{ textAlign: 'right', minWidth: 70 }}>{t('orderModal.unitPrice')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {order.items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 8 }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{item.product_name}</div>
-                </div>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 8 }}>
+                <div style={{ fontWeight: 600 }}>{item.product_name}</div>
                 <div style={{ textAlign: 'right', paddingTop: 2 }}>{fmtNumber(item.qty)}</div>
-                <div style={{ textAlign: 'right', paddingTop: 2, minWidth: 70 }}>{fmtMoney(item.product_cost)}</div>
+                <div style={{ textAlign: 'right', paddingTop: 2 }}>{fmtMoney(item.product_cost)}</div>
               </div>
             ))}
 
             {totalShippingCost > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 8, marginTop: 8, borderTop: '1px solid var(--line)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 8, marginTop: 8, borderTop: '1px solid var(--line)' }}>
                 <div style={{ fontWeight: 600 }}>{t('supplierOrderModal.shippingCost')}</div>
                 <div />
-                <div style={{ textAlign: 'right', minWidth: 70 }}>{fmtMoney(totalShippingCost)}</div>
+                <div style={{ textAlign: 'right' }}>{fmtMoney(totalShippingCost)}</div>
               </div>
             )}
           </div>
