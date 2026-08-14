@@ -134,8 +134,10 @@ export default function SupplierDetailPage() {
     if (qty === 0) return 'pending'
     if (received >= qty) return 'received'
     if (customs + shipped + received === 0) return 'pending'
-    if (customs === qty && shipped === 0 && received === 0) return 'in_customs'
-    if (shipped === qty && customs === 0 && received === 0) return 'shipped'
+    // All qty in transit (nothing pending, nothing received yet) → show most advanced stage
+    if (received === 0 && customs + shipped >= qty) {
+      return customs > 0 ? 'in_customs' : 'shipped'
+    }
     return 'partial'
   }
 
