@@ -298,6 +298,15 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       const tzRow = await sql`SELECT COALESCE(default_timezone, 'UTC') AS tz FROM tenants WHERE id = ${tenantId} LIMIT 1`
       const tz = tzRow[0]?.tz || 'UTC'
 
+      // Snapshot qty_received totals BEFORE updates (needed for delta calculation)
+      const beforeTotals = await sql`
+        SELECT ois.product_id, p.name AS product_name, SUM(ois.qty_received) AS total_received
+        FROM order_items_suppliers ois
+        JOIN products p ON p.id = ois.product_id
+        WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
+        GROUP BY ois.product_id, p.name
+      `
+
       // Update each item's stage quantities
       for (const item of items) {
         const itemId = item.id
@@ -328,30 +337,37 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
       }
 
-      // Rebuild warehouse_deliveries 'S' records for this order (delete-and-reinsert per product)
-      await sql`
-        DELETE FROM warehouse_deliveries
-        WHERE order_id = ${order_id} AND supplier_manual_delivered = 'S'
-      `
-      const productTotals = await sql`
+      // Append delta 'S' records to the warehouse ledger.
+      // warehouse_deliveries.order_id has a FK to customer orders, not supplier orders,
+      // so we can't tag records by supplier order. Instead we record the delta between
+      // the old and new qty_received totals per product — the ledger stays correct.
+      const afterTotals = await sql`
         SELECT ois.product_id, p.name AS product_name, SUM(ois.qty_received) AS total_received
         FROM order_items_suppliers ois
         JOIN products p ON p.id = ois.product_id
         WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
         GROUP BY ois.product_id, p.name
-        HAVING SUM(ois.qty_received) > 0
       `
-      for (const row of productTotals) {
+      const beforeMap = Object.fromEntries(
+        beforeTotals.map(r => [r.product_id, { total: Number(r.total_received), name: r.product_name }])
+      )
+      const afterMap = Object.fromEntries(
+        afterTotals.map(r => [r.product_id, { total: Number(r.total_received), name: r.product_name }])
+      )
+      const allProductIds = new Set([...Object.keys(beforeMap), ...Object.keys(afterMap)])
+      for (const productId of allProductIds) {
+        const delta = (afterMap[productId]?.total || 0) - (beforeMap[productId]?.total || 0)
+        if (delta === 0) continue
+        const productName = (afterMap[productId] || beforeMap[productId]).name
         await sql`
-          INSERT INTO warehouse_deliveries (tenant_id, date, supplier_manual_delivered, product, qty, order_id, product_id)
+          INSERT INTO warehouse_deliveries (tenant_id, date, supplier_manual_delivered, product, qty, product_id)
           VALUES (
             ${tenantId},
             (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date,
             'S',
-            ${row.product_name},
-            ${Number(row.total_received)},
-            ${order_id},
-            ${row.product_id}
+            ${productName},
+            ${delta},
+            ${productId}
           )
         `
       }
