@@ -667,6 +667,8 @@
     "allProducts": "Alla produkter",
     "allServices": "Alla tjänster",
     "allAddOnProducts": "Alla tilläggsprodukter",
+    "showImages": "Visa produktbilder",
+    "hideImages": "Dölj produktbilder",
     "currentCosts": "Aktuella kostnader",
     "historicalCosts": "Historiska kostnader",
     "created": "Produkt skapad!",

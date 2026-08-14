@@ -59,6 +59,8 @@ export default function NewProduct() {
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
+  const [showImages, setShowImages] = useState(false)
+  const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
   // Filter out specific products and apply category filter
   const filteredProducts = useMemo(() => {
@@ -514,7 +516,7 @@ export default function NewProduct() {
 
     {/* ---- Product costs card ---- */}
     <div className="card page-normal" style={{ marginTop: 16 }}>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: listOpen ? 8 : 0 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: listOpen ? 4 : 0 }}>
           <div
             onClick={() => setListOpen(v => !v)}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
@@ -534,6 +536,16 @@ export default function NewProduct() {
             </button>
           )}
         </div>
+        {listOpen && category !== 'coverage' && !showHistorical && (
+          <div style={{ marginBottom: 6 }}>
+            <button
+              onClick={() => setShowImages(v => !v)}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {showImages ? t('products.hideImages') : t('products.showImages')}
+            </button>
+          </div>
+        )}
 
         {/* ── Add On Products list ── */}
         {listOpen && category === 'coverage' && (
@@ -580,34 +592,43 @@ export default function NewProduct() {
             ) : filteredProducts.length === 0 ? (
               <div style={{ opacity: 0.7, fontSize: 14 }}>{t('products.noProducts')}</div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table style={{ width: showImages ? undefined : '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr>
+                    {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                    {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('products.unitTracking')}</th>}
-                    {category === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.duration')}</th>}
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{t('products.servicePrice')}</th>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{category === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
+                    {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
+                    {category === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{category === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProducts.map(p => (
                     <tr key={p.id}>
+                      {showImages && (
+                        <td style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
+                          {p.has_image
+                            ? <img src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                            : <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--border)' }} />
+                          }
+                        </td>
+                      )}
                       <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{p.name}</td>
                       {category === 'product' && (
-                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                           {p.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
                             : p.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
                             : t('products.unitTrackingNone')}
                         </td>
                       )}
                       {category === 'service' && (
-                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                           {p.duration_minutes != null ? `${p.duration_minutes} min` : '—'}
                         </td>
                       )}
-                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
-                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
+                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                         {p.cost_method && p.cost_method !== 'manual' && (
                           <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>
                             {p.cost_method === 'last_purchase' ? 'last' : p.cost_method.replace('avg_', 'avg ')}

@@ -667,6 +667,8 @@
     "allProducts": "Todos los productos",
     "allServices": "Todos los servicios",
     "allAddOnProducts": "Todos los productos adicionales",
+    "showImages": "Mostrar imágenes de productos",
+    "hideImages": "Ocultar imágenes de productos",
     "currentCosts": "Costos actuales",
     "historicalCosts": "Costos históricos",
     "created": "¡Producto creado!",
