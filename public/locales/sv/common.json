@@ -632,7 +632,7 @@
     "issuerNamePlaceholder": "t.ex. AppleCare, SquareTrade",
     "coverageRefLabel": "Skyddsreferens",
     "coverageRefPlaceholder": "Dokumentnamn, URL eller referenstext",
-    "noProducts": "Inga skyddsprodukter ännu. Skapa en för att börja sälja utökat skydd.",
+    "noProducts": "Inga tilläggsprodukter ännu.",
     "saved": "Sparat.",
     "saveError": "Kunde inte spara.",
     "cancel": "Avbryt",

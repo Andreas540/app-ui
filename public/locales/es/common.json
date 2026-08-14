@@ -632,7 +632,7 @@
     "issuerNamePlaceholder": "ej. AppleCare, SquareTrade",
     "coverageRefLabel": "Referencia de cobertura",
     "coverageRefPlaceholder": "Nombre del documento, URL o texto de referencia",
-    "noProducts": "Aún no hay productos de cobertura. Cree uno para empezar a vender cobertura extendida.",
+    "noProducts": "Aún no hay productos adicionales.",
     "saved": "Guardado.",
     "saveError": "Error al guardar.",
     "cancel": "Cancelar",
