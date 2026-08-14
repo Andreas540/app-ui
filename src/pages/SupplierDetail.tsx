@@ -139,18 +139,21 @@ export default function SupplierDetailPage() {
     return 'pending'                          // ○ grey
   }
 
-  function itemStageIcon(item: OrderItem) {
+  function itemStageIcon(item: OrderItem, onClick?: (e: React.MouseEvent) => void) {
     const ds = deriveItemStatus(item)
     let symbol = '', color = '#d1d5db'
-    if (ds === 'received')    { symbol = '✓'; color = '#10b981' }
+    if (ds === 'received')        { symbol = '✓'; color = '#10b981' }
     else if (ds === 'partial')    { symbol = '◐'; color = '#f59e0b' }
     else if (ds === 'in_customs') { symbol = '◑'; color = '#f97316' }
     else if (ds === 'shipped')    { symbol = '►'; color = '#3b82f6' }
+    const inner = ds === 'pending'
+      ? <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+      : <span style={{ fontSize: 12, lineHeight: 1, color }}>{symbol}</span>
     return (
       <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {ds === 'pending'
-          ? <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${color}` }} />
-          : <span style={{ fontSize: 12, lineHeight: 1, color }}>{symbol}</span>
+        {onClick
+          ? <button onClick={onClick} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>{inner}</button>
+          : inner
         }
       </div>
     )
@@ -433,7 +436,7 @@ export default function SupplierDetailPage() {
                       }}
                     >
                       <div></div>
-                      {itemStageIcon(item)}
+                      {itemStageIcon(item, (e) => { e.stopPropagation(); setStagesOrder(o) })}
                       <div className="helper" style={{ lineHeight: '1.4' }}>
                         {item.product_name} / {fmtNumber(item.qty)} / {fmtMoney(item.product_cost)}
                       </div>
