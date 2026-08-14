@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
-import { resolveLocale } from '../lib/time'
-import i18n from '../i18n/config'
+import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
 
 interface SupplierOrderDetailModalProps {
@@ -14,175 +13,98 @@ interface SupplierOrderDetailModalProps {
 
 export default function SupplierOrderDetailModal({ isOpen, onClose, order, supplierName }: SupplierOrderDetailModalProps) {
   const { t } = useTranslation()
-  const { fmtMoney, fmtIntMoney } = useCurrency()
+  const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
   if (!order) return null
 
-  const formatDate = (dateStr: string) => {
-  if (!dateStr) return 'N/A'
-
-  try {
-    // Handle both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:MM:SS.SSSZ' formats
-    const dateOnly = dateStr.split('T')[0]  // Get just the date part
-    const [year, month, day] = dateOnly.split('-').map(Number)
-
-    // Validate the parsed values
-    if (!year || !month || !day) return 'N/A'
-
-    const date = new Date(year, month - 1, day)
-
-    // Check if date is valid
-    if (isNaN(date.getTime())) return 'N/A'
-
-    return date.toLocaleDateString(resolveLocale(i18n.language || 'en'), {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  } catch (e) {
-    return 'N/A'
-  }
-}
-
-  // Determine status from derived_status (qty-based) with fallback to boolean flags
   const ds = order.derived_status
     || (order.received ? 'received' : order.in_customs ? 'in_customs' : order.delivered ? 'shipped' : 'pending')
 
   const statusMap: Record<string, { text: string; color: string; icon: string }> = {
-    received:   { text: t('received'),                   color: '#22c55e', icon: '✓' },
-    in_customs: { text: t('inCustoms'),                  color: '#f97316', icon: '◑' },
-    shipped:    { text: t('shipped'),                    color: '#3b82f6', icon: '►' },
-    partial:    { text: t('suppliers.statusPartial'),    color: '#f59e0b', icon: '◐' },
-    pending:    { text: t('pending'),                    color: '#d1d5db', icon: '○' },
+    received:   { text: t('received'),                color: '#10b981', icon: '✓' },
+    in_customs: { text: t('inCustoms'),               color: '#f97316', icon: '◑' },
+    shipped:    { text: t('shipped'),                 color: '#3b82f6', icon: '►' },
+    partial:    { text: t('suppliers.statusPartial'), color: '#f59e0b', icon: '◐' },
+    pending:    { text: t('pending'),                 color: '#d1d5db', icon: '○' },
   }
   const { text: statusText, color: statusColor, icon: statusIcon } = statusMap[ds] ?? statusMap.pending
-  const statusBgColor = `${statusColor}20`
 
-  const totalShippingCost = order.items?.reduce((sum: number, item: any) =>
-    sum + Number(item.shipping_total || 0), 0) || 0
+  const totalShippingCost = order.items?.reduce((s: number, i: any) => s + Number(i.shipping_total || 0), 0) || 0
+
+  const fieldStyle = { marginBottom: 4 }
+
+  // Relevant dates to show (only those with a value)
+  const dates = [
+    order.est_delivery_date && { label: t('supplierOrderModal.estDeliveryDate'), value: order.est_delivery_date },
+    order.delivery_date     && { label: t('supplierOrderModal.deliveryDate'),    value: order.delivery_date },
+    order.in_customs_date   && { label: t('supplierOrderModal.inCustomsDate'),   value: order.in_customs_date },
+    order.received_date     && { label: t('supplierOrderModal.receivedDate'),    value: order.received_date },
+  ].filter(Boolean) as { label: string; value: string }[]
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Order #${order.order_no}`}>
       <div style={{ display: 'grid', gap: 16 }}>
 
-        {/* Order Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: 12,
-          backgroundColor: statusBgColor,
-          borderRadius: 8,
-          border: `1px solid ${statusColor}`
-        }}>
-          <span style={{
-            fontSize: 18,
-            color: statusColor
-          }}>
-            {statusIcon}
-          </span>
-          <span style={{ fontWeight: 600 }}>
-            {statusText}
-          </span>
+        {/* Status row — inline, no box */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: statusColor }}>
+          <span>{statusIcon}</span>
+          <span>{statusText}</span>
         </div>
 
-        {/* Order Details Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ borderTop: '1px solid var(--line)' }} />
 
-          {/* Left Column */}
+        {/* Supplier | Order Date | Total */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div>
-            <div style={{ marginBottom: 12 }}>
-              <div className="helper">{t('supplier')}</div>
-              <div style={{ fontWeight: 600 }}>{supplierName}</div>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <div className="helper">{t('supplierOrderModal.orderDate')}</div>
-              <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
-            </div>
-
-            {order.est_delivery_date && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">{t('supplierOrderModal.estDeliveryDate')}</div>
-                <div style={{ fontWeight: 600 }}>{formatDate(order.est_delivery_date)}</div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 12 }}>
-              <div className="helper">{t('supplierOrderModal.totalAmount')}</div>
-              <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
-            </div>
+            <div className="helper" style={fieldStyle}>{t('supplier')}</div>
+            <div style={{ fontWeight: 600 }}>{supplierName}</div>
           </div>
-
-          {/* Right Column */}
           <div>
-            {order.delivery_date && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">{t('supplierOrderModal.deliveryDate')}</div>
-                <div style={{ fontWeight: 600 }}>{formatDate(order.delivery_date)}</div>
-              </div>
-            )}
-
-            {order.in_customs_date && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">{t('supplierOrderModal.inCustomsDate')}</div>
-                <div style={{ fontWeight: 600 }}>{formatDate(order.in_customs_date)}</div>
-              </div>
-            )}
-
-            {order.received_date && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">{t('supplierOrderModal.receivedDate')}</div>
-                <div style={{ fontWeight: 600 }}>{formatDate(order.received_date)}</div>
-              </div>
-            )}
-
-            {order.lines && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="helper">{t('supplierOrderModal.orderLines')}</div>
-                <div style={{ fontWeight: 600 }}>{order.lines} {t('supplierOrderModal.items')}</div>
-              </div>
-            )}
+            <div className="helper" style={fieldStyle}>{t('supplierOrderModal.orderDate')}</div>
+            <div style={{ fontWeight: 600 }}>{formatDate(order.order_date)}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div className="helper" style={fieldStyle}>{t('supplierOrderModal.totalAmount')}</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{fmtIntMoney(order.total)}</div>
           </div>
         </div>
 
-        {/* Products List */}
+        {/* Dates row — only rendered if there are dates */}
+        {dates.length > 0 && (
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            {dates.map(d => (
+              <div key={d.label}>
+                <div className="helper" style={fieldStyle}>{d.label}</div>
+                <div style={{ fontWeight: 600 }}>{formatDate(d.value)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ borderTop: '1px solid var(--line)' }} />
+
+        {/* Products */}
         {order.items && order.items.length > 0 && (
-          <div style={{
-            marginTop: 8,
-            paddingTop: 16,
-            borderTop: '1px solid var(--line)'
-          }}>
-            <div className="helper" style={{ marginBottom: 8 }}>{t('supplierOrderModal.products')}</div>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 4 }}>
+              <div className="helper">{t('product')}</div>
+              <div className="helper" style={{ textAlign: 'right' }}>{t('quantity')}</div>
+              <div className="helper" style={{ textAlign: 'right', minWidth: 70 }}>{t('orderModal.unitPrice')}</div>
+            </div>
             {order.items.map((item: any, idx: number) => (
-              <div key={idx} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '8px 0',
-                borderBottom: idx < order.items.length - 1 ? '1px solid #f0f0f0' : 'none'
-              }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 8 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{item.product_name}</div>
-                  <div className="helper">
-                    {Number(item.qty).toLocaleString()} × {fmtMoney(item.product_cost)}
-                  </div>
                 </div>
-                <div style={{ fontWeight: 600, textAlign: 'right' }}>
-                  {fmtMoney(item.product_total)}
-                </div>
+                <div style={{ textAlign: 'right', paddingTop: 2 }}>{fmtNumber(item.qty)}</div>
+                <div style={{ textAlign: 'right', paddingTop: 2, minWidth: 70 }}>{fmtMoney(item.product_cost)}</div>
               </div>
             ))}
 
             {totalShippingCost > 0 && (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '8px 0',
-                marginTop: 8,
-                borderTop: '1px solid var(--line)'
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', paddingTop: 8, marginTop: 8, borderTop: '1px solid var(--line)' }}>
                 <div style={{ fontWeight: 600 }}>{t('supplierOrderModal.shippingCost')}</div>
-                <div style={{ fontWeight: 600 }}>{fmtMoney(totalShippingCost)}</div>
+                <div />
+                <div style={{ textAlign: 'right', minWidth: 70 }}>{fmtMoney(totalShippingCost)}</div>
               </div>
             )}
           </div>
@@ -190,36 +112,23 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
         {/* Notes */}
         {order.notes && (
-          <div style={{
-            marginTop: 8,
-            paddingTop: 16,
-            borderTop: '1px solid var(--line)'
-          }}>
-            <div className="helper">{t('notes')}</div>
-            <div>{order.notes}</div>
-          </div>
+          <>
+            <div style={{ borderTop: '1px solid var(--line)' }} />
+            <div>
+              <div className="helper">{t('notes')}</div>
+              <div>{order.notes}</div>
+            </div>
+          </>
         )}
 
-        {/* Action Buttons */}
-        <div style={{
-          display: 'flex',
-          gap: 8,
-          marginTop: 16,
-          paddingTop: 16,
-          borderTop: '1px solid var(--line)'
-        }}>
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
           <Link to={`/supplier-orders/${order.id}/edit`} style={{ flex: 1 }}>
-            <button
-              className="primary"
-              style={{ width: '100%' }}
-            >
+            <button className="primary" style={{ width: '100%' }}>
               {t('supplierOrderModal.editOrder')}
             </button>
           </Link>
-          <button
-            onClick={onClose}
-            style={{ flex: 1 }}
-          >
+          <button onClick={onClose} style={{ flex: 1 }}>
             {t('close')}
           </button>
         </div>
