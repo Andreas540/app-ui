@@ -210,12 +210,25 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           and id = ${id}
       `
 
-      // Capture old product IDs before deletion so we can recalculate their avg cost too
-      const oldLines = await sql`
-        SELECT DISTINCT product_id FROM order_items_suppliers
+      // Snapshot stage quantities per product before delete so they survive the reinsert
+      const stageSnapshot = await sql`
+        SELECT product_id,
+          LEAST(qty_shipped,    qty) AS shipped,
+          LEAST(qty_in_customs, qty) AS customs,
+          LEAST(qty_received,   qty) AS received
+        FROM order_items_suppliers
         WHERE tenant_id = ${tenantId} AND order_id = ${id}
       `
-      const oldProductIds = oldLines.map(r => r.product_id)
+      const stageMap = Object.fromEntries(
+        stageSnapshot.map(r => [String(r.product_id), {
+          shipped:  Number(r.shipped),
+          customs:  Number(r.customs),
+          received: Number(r.received),
+        }])
+      )
+
+      // Capture old product IDs before deletion so we can recalculate their avg cost too
+      const oldProductIds = stageSnapshot.map(r => r.product_id)
 
       // Delete existing order items
       await sql`
@@ -242,6 +255,28 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
             ${tenantId}, ${id}, ${line.product_id}, ${line.qty}, ${line.product_cost}, ${line.shipping_cost}
           )
         `
+      }
+
+      // Restore stage quantities.
+      // If an order-level boolean flag is set, sync all items to full qty for that stage.
+      // Otherwise restore the per-product snapshot (capped at new qty in case qty changed).
+      if (!!received) {
+        await sql`UPDATE order_items_suppliers SET qty_received=qty, qty_shipped=0, qty_in_customs=0 WHERE order_id=${id} AND tenant_id=${tenantId}`
+      } else if (!!in_customs) {
+        await sql`UPDATE order_items_suppliers SET qty_in_customs=qty, qty_shipped=0, qty_received=0 WHERE order_id=${id} AND tenant_id=${tenantId}`
+      } else if (!!delivered) {
+        await sql`UPDATE order_items_suppliers SET qty_shipped=qty, qty_in_customs=0, qty_received=0 WHERE order_id=${id} AND tenant_id=${tenantId}`
+      } else {
+        for (const [productId, snap] of Object.entries(stageMap)) {
+          if (snap.shipped === 0 && snap.customs === 0 && snap.received === 0) continue
+          await sql`
+            UPDATE order_items_suppliers
+            SET qty_shipped    = LEAST(${snap.shipped},  qty),
+                qty_in_customs = LEAST(${snap.customs},  qty),
+                qty_received   = LEAST(${snap.received}, qty)
+            WHERE order_id = ${id} AND tenant_id = ${tenantId} AND product_id = ${productId}
+          `
+        }
       }
 
       const allProductIds = [...new Set([...oldProductIds, ...cleaned.map(l => l.product_id)])]
