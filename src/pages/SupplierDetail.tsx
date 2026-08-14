@@ -132,13 +132,11 @@ export default function SupplierDetailPage() {
     const customs  = Number(item.qty_in_customs) || 0
     const shipped  = Number(item.qty_shipped)    || 0
     if (qty === 0) return 'pending'
-    if (received >= qty) return 'received'
-    if (customs + shipped + received === 0) return 'pending'
-    // All qty in transit (nothing pending, nothing received yet) → show most advanced stage
-    if (received === 0 && customs + shipped >= qty) {
-      return customs > 0 ? 'in_customs' : 'shipped'
-    }
-    return 'partial'
+    if (received >= qty) return 'received'   // ✓ green — fully received
+    if (received > 0)    return 'partial'    // ◐ amber — partially received
+    if (customs  > 0)    return 'in_customs' // ◑ orange — most advanced stage present
+    if (shipped  > 0)    return 'shipped'    // ► blue
+    return 'pending'                          // ○ grey
   }
 
   function itemStageIcon(item: OrderItem) {
