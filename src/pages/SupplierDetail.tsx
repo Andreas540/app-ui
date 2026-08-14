@@ -125,6 +125,37 @@ export default function SupplierDetailPage() {
   }, [id])
 
   const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
+
+  function deriveItemStatus(item: OrderItem): 'pending' | 'shipped' | 'in_customs' | 'received' | 'partial' {
+    const qty      = Number(item.qty)            || 0
+    const received = Number(item.qty_received)   || 0
+    const customs  = Number(item.qty_in_customs) || 0
+    const shipped  = Number(item.qty_shipped)    || 0
+    if (qty === 0) return 'pending'
+    if (received >= qty) return 'received'
+    if (customs + shipped + received === 0) return 'pending'
+    if (customs === qty && shipped === 0 && received === 0) return 'in_customs'
+    if (shipped === qty && customs === 0 && received === 0) return 'shipped'
+    return 'partial'
+  }
+
+  function itemStageIcon(item: OrderItem) {
+    const ds = deriveItemStatus(item)
+    let symbol = '', color = '#d1d5db'
+    if (ds === 'received')    { symbol = '✓'; color = '#10b981' }
+    else if (ds === 'partial')    { symbol = '◐'; color = '#f59e0b' }
+    else if (ds === 'in_customs') { symbol = '◑'; color = '#f97316' }
+    else if (ds === 'shipped')    { symbol = '►'; color = '#3b82f6' }
+    return (
+      <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {ds === 'pending'
+          ? <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+          : <span style={{ fontSize: 12, lineHeight: 1, color }}>{symbol}</span>
+        }
+      </div>
+    )
+  }
+
   function phoneHref(p?: string) {
     const s = (p || '').replace(/[^\d+]/g, '')
     return s ? `tel:${s}` : undefined
@@ -402,7 +433,7 @@ export default function SupplierDetailPage() {
                       }}
                     >
                       <div></div>
-                      <div></div>
+                      {itemStageIcon(item)}
                       <div className="helper" style={{ lineHeight: '1.4' }}>
                         {item.product_name} / {fmtNumber(item.qty)} / {fmtMoney(item.product_cost)}
                       </div>

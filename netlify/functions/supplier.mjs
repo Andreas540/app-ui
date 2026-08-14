@@ -117,7 +117,8 @@ async function getSupplier(event) {
       itemsByOrder[item.order_id].push(item)
     }
 
-    // Derive order status from aggregated per-item quantities
+    // Derive order status from aggregated per-item quantities.
+    // Only pure single-stage states (all qty in exactly one stage) get their own label.
     function deriveOrderStatus(o) {
       const tq = Number(o.agg_qty)
       const tr = Number(o.agg_received)
@@ -125,10 +126,9 @@ async function getSupplier(event) {
       const ts = Number(o.agg_shipped)
       if (tq === 0) return 'pending'
       if (tr >= tq) return 'received'
-      const remaining = tq - tr
-      if (tc === 0 && ts === 0) return 'pending'
-      if (ts === 0 && tc === remaining) return 'in_customs'
-      if (tc === 0 && ts === remaining) return 'shipped'
+      if (tc + ts + tr === 0) return 'pending'
+      if (tc === tq && ts === 0 && tr === 0) return 'in_customs'
+      if (ts === tq && tc === 0 && tr === 0) return 'shipped'
       return 'partial'
     }
 
