@@ -511,7 +511,10 @@
     "coversThisOrder": "Denna order",
     "coversPrevOrders": "Tidigare ordrar",
     "unitIdentifier": "Enhets-ID",
-    "unitIdentifierPlaceholder": "t.ex. serienummer (valfritt)"
+    "unitIdentifierPlaceholder": "t.ex. serienummer (valfritt)",
+    "coverageDaysLeft": "Dagar kvar: {{days}}",
+    "coverageExpiresToday": "Löper ut idag",
+    "coverageExpired": "Gick ut för {{days}} dagar sedan"
   },
   "warehouse": {
     "title": "Justera inventarie",

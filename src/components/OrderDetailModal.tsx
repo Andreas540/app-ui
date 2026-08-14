@@ -5,6 +5,7 @@ import Modal from './Modal'
 import { formatDate } from '../lib/time'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import { useLocale } from '../contexts/LocaleContext'
 
 interface OrderDetailModalProps {
   isOpen: boolean
@@ -18,9 +19,17 @@ interface PartnerSplit {
   amount: number
 }
 
+function coverageDaysLeft(orderDateStr: string, durationDays: number, timezone: string): number {
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
+  const todayMs = Date.parse(todayStr)
+  const expiryMs = Date.parse(orderDateStr) + durationDays * 86400000
+  return Math.round((expiryMs - todayMs) / 86400000)
+}
+
 export default function OrderDetailModal({ isOpen, onClose, order: initialOrder }: OrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
+  const { timezone } = useLocale()
   const [order, setOrder] = useState(initialOrder)
   const [partnerSplits, setPartnerSplits] = useState<PartnerSplit[]>([])
   const [loadingPartners, setLoadingPartners] = useState(false)
@@ -254,6 +263,20 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                       {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{coveredUnitId}</span>
                     </div>
                   )}
+                  {item.product_kind === 'coverage' && item.coverage_duration_days != null && order.order_date && (() => {
+                    const days = coverageDaysLeft(order.order_date, item.coverage_duration_days, timezone)
+                    const expired = days < 0
+                    const color = expired ? 'var(--error, #dc2626)' : days <= 30 ? 'var(--warning, #d97706)' : 'var(--text-secondary)'
+                    return (
+                      <div style={{ fontSize: 12, color, paddingLeft: 2, fontWeight: 500 }}>
+                        {expired
+                          ? t('orders.coverageExpired', { days: Math.abs(days) })
+                          : days === 0
+                            ? t('orders.coverageExpiresToday')
+                            : t('orders.coverageDaysLeft', { days })}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}

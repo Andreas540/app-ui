@@ -511,7 +511,10 @@
     "coversThisOrder": "This order",
     "coversPrevOrders": "Previous orders",
     "unitIdentifier": "Unit ID",
-    "unitIdentifierPlaceholder": "e.g. serial number (optional)"
+    "unitIdentifierPlaceholder": "e.g. serial number (optional)",
+    "coverageDaysLeft": "Days left: {{days}}",
+    "coverageExpiresToday": "Expires today",
+    "coverageExpired": "Expired {{days}} days ago"
   },
   "warehouse": {
     "title": "Adjust Inventory",

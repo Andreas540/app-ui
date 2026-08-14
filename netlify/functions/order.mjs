@@ -75,6 +75,7 @@ LIMIT 1
         oi.unit_identifier,
         p.name AS product_name,
         p.product_kind,
+        p.coverage_duration_days,
         -- Resolve cross-order coverage: name + unit_id of the referenced order item
         coi_p.name AS covered_product_name,
         coi.unit_identifier AS covered_unit_identifier

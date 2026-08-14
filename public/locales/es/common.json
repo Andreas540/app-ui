@@ -511,7 +511,10 @@
     "coversThisOrder": "Este pedido",
     "coversPrevOrders": "Pedidos anteriores",
     "unitIdentifier": "ID de unidad",
-    "unitIdentifierPlaceholder": "p.ej. número de serie (opcional)"
+    "unitIdentifierPlaceholder": "p.ej. número de serie (opcional)",
+    "coverageDaysLeft": "Días restantes: {{days}}",
+    "coverageExpiresToday": "Vence hoy",
+    "coverageExpired": "Venció hace {{days}} días"
   },
   "warehouse": {
     "title": "Ajustar Inventario",
