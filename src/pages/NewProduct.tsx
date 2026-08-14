@@ -31,6 +31,7 @@ export default function NewProduct() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
+  const [listCategory, setListCategory] = useState<'product' | 'service' | 'coverage'>('product')
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -67,9 +68,9 @@ export default function NewProduct() {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     return products.filter(p =>
       !excludedNames.includes(p.name.toLowerCase()) &&
-      (p.category ?? 'product') === category
+      (p.category ?? 'product') === listCategory
     )
-  }, [products, category])
+  }, [products, listCategory])
 
   function parseCostInput(s: string) {
     return s.replace(/[^\d.,]/g, '')
@@ -522,11 +523,9 @@ export default function NewProduct() {
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
           >
             <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
-            <h3 style={{ margin: 0 }}>
-              {category === 'service' ? t('products.allServices') : category === 'coverage' ? t('products.allAddOnProducts') : t('products.allProducts')}
-            </h3>
+            <h3 style={{ margin: 0 }}>{t('products.productCosts')}</h3>
           </div>
-          {listOpen && category !== 'coverage' && (
+          {listOpen && listCategory !== 'coverage' && (
             <button
               className="primary"
               onClick={() => setShowHistorical(!showHistorical)}
@@ -536,7 +535,28 @@ export default function NewProduct() {
             </button>
           )}
         </div>
-        {listOpen && category !== 'coverage' && !showHistorical && (
+        {listOpen && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8, borderBottom: '1px solid var(--separator, var(--border))' }}>
+            {([
+              { key: 'product', label: t('products.allProducts') },
+              { key: 'service', label: t('products.allServices') },
+              { key: 'coverage', label: t('products.allAddOnProducts') },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setListCategory(key)}
+                style={{
+                  background: 'none', border: 'none', fontSize: 14,
+                  padding: '6px 14px 10px', marginBottom: -1, cursor: 'pointer',
+                  borderBottom: listCategory === key ? '2px solid var(--primary)' : '2px solid transparent',
+                  color: listCategory === key ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontWeight: listCategory === key ? 600 : 400,
+                }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
+        {listOpen && listCategory !== 'coverage' && !showHistorical && (
           <div style={{ marginBottom: 6 }}>
             <button
               onClick={() => setShowImages(v => !v)}
@@ -548,7 +568,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Add On Products list ── */}
-        {listOpen && category === 'coverage' && (
+        {listOpen && listCategory === 'coverage' && (
           loadingCoverage ? (
             <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>{t('loading')}</div>
           ) : coverageProducts.length === 0 ? (
@@ -585,7 +605,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Products / Services: current costs ── */}
-        {listOpen && category !== 'coverage' && !showHistorical && (
+        {listOpen && listCategory !== 'coverage' && !showHistorical && (
           <div style={{ overflowX: 'auto', marginTop: 4 }}>
             {loadingList ? (
               <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
@@ -597,10 +617,10 @@ export default function NewProduct() {
                   <tr>
                     {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                    {category === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
-                    {category === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
+                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
+                    {listCategory === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{category === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
+                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{listCategory === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -615,14 +635,14 @@ export default function NewProduct() {
                         </td>
                       )}
                       <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{p.name}</td>
-                      {category === 'product' && (
+                      {listCategory === 'product' && (
                         <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                           {p.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
                             : p.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
                             : t('products.unitTrackingNone')}
                         </td>
                       )}
-                      {category === 'service' && (
+                      {listCategory === 'service' && (
                         <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                           {p.duration_minutes != null ? `${p.duration_minutes} min` : '—'}
                         </td>
@@ -645,7 +665,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Products / Services: historical costs ── */}
-        {listOpen && category !== 'coverage' && showHistorical && (
+        {listOpen && listCategory !== 'coverage' && showHistorical && (
           <div role="list" aria-busy={loadingHistorical} style={{ display: 'grid', gap: 12, marginTop: 4 }}>
             {loadingHistorical && <div>{t('loading')}</div>}
             {!loadingHistorical && historicalCosts.length === 0 && (
