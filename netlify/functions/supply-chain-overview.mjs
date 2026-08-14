@@ -122,12 +122,12 @@ const warehouse_inventory = await sql`
   ),
   on_order AS (
     SELECT ois.product_id,
-      SUM(ois.qty) AS qty,
-      json_agg(json_build_object('order_id', os.id, 'order_no', os.order_no, 'qty', ois.qty) ORDER BY os.order_no) AS orders
+      SUM(ois.qty - COALESCE(ois.qty_received, 0)) AS qty,
+      json_agg(json_build_object('order_id', os.id, 'order_no', os.order_no, 'qty', ois.qty - COALESCE(ois.qty_received, 0)) ORDER BY os.order_no) AS orders
     FROM order_items_suppliers ois
     JOIN orders_suppliers os ON os.id = ois.order_id
     WHERE os.tenant_id = ${TENANT_ID}
-      AND os.received = FALSE
+      AND ois.qty > COALESCE(ois.qty_received, 0)
       AND ois.product_id IS NOT NULL
     GROUP BY ois.product_id
   )
@@ -175,37 +175,47 @@ const warehouse_inventory = await sql`
       ORDER BY lp.date DESC
     `
 
-    // 4. In customs — exclude orders that have since been received
+    // 4. In customs — items with qty_in_customs > 0
     const in_customs = await sql`
       SELECT
         p.name as product,
-        SUM(ois.qty) as qty
-      FROM orders_suppliers os
-      JOIN order_items_suppliers ois ON ois.order_id = os.id
+        SUM(ois.qty_in_customs) as qty
+      FROM order_items_suppliers ois
+      JOIN orders_suppliers os ON os.id = ois.order_id
       JOIN products p ON p.id = ois.product_id
       WHERE os.tenant_id = ${TENANT_ID}
-        AND os.in_customs = TRUE
-        AND os.received = FALSE
+        AND ois.qty_in_customs > 0
       GROUP BY p.name
       ORDER BY p.name ASC
     `
 
-    // 5. Ordered from suppliers — only orders not yet in customs and not received.
-    //    Shipped (delivered=TRUE) orders remain here until they reach customs.
+    // 4b. In transit (shipped but not yet in customs) — items with qty_shipped > 0
+    const in_transit = await sql`
+      SELECT
+        p.name as product,
+        SUM(ois.qty_shipped) as qty
+      FROM order_items_suppliers ois
+      JOIN orders_suppliers os ON os.id = ois.order_id
+      JOIN products p ON p.id = ois.product_id
+      WHERE os.tenant_id = ${TENANT_ID}
+        AND ois.qty_shipped > 0
+      GROUP BY p.name
+      ORDER BY p.name ASC
+    `
+
+    // 5. Ordered from suppliers — pending qty (not shipped, in customs, or received)
     const ordered_from_suppliers = await sql`
       SELECT
         p.name as product,
         os.est_delivery_date,
-        os.delivery_date,
-        os.delivered,
-        SUM(ois.qty) as qty
+        SUM(ois.qty - COALESCE(ois.qty_shipped,0) - COALESCE(ois.qty_in_customs,0) - COALESCE(ois.qty_received,0)) as qty
       FROM orders_suppliers os
       JOIN order_items_suppliers ois ON ois.order_id = os.id
       JOIN products p ON p.id = ois.product_id
       WHERE os.tenant_id = ${TENANT_ID}
-        AND os.in_customs = FALSE
-        AND os.received = FALSE
-      GROUP BY p.name, os.est_delivery_date, os.delivery_date, os.delivered
+        AND (ois.qty - COALESCE(ois.qty_shipped,0) - COALESCE(ois.qty_in_customs,0) - COALESCE(ois.qty_received,0)) > 0
+      GROUP BY p.name, os.est_delivery_date
+      HAVING SUM(ois.qty - COALESCE(ois.qty_shipped,0) - COALESCE(ois.qty_in_customs,0) - COALESCE(ois.qty_received,0)) > 0
       ORDER BY p.name ASC
     `
 
@@ -216,6 +226,7 @@ const warehouse_inventory = await sql`
       warehouse_inventory,
       production_data,
       in_customs,
+      in_transit,
       ordered_from_suppliers,
     })
   } catch (e) {

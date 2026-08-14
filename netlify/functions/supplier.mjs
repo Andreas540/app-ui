@@ -55,7 +55,7 @@ async function getSupplier(event) {
       FROM o, p
     `
 
-    // Get orders with their items grouped
+    // Get orders with aggregated stage quantities for derived status
     const orders = await sql`
       SELECT
         os.id,
@@ -70,7 +70,11 @@ async function getSupplier(event) {
         os.in_customs_date,
         os.est_delivery_date,
         COALESCE(SUM(ois.qty * ois.product_cost + ois.qty * ois.shipping_cost),0)::numeric(12,2) AS total,
-        COUNT(ois.id) AS lines
+        COUNT(ois.id) AS lines,
+        COALESCE(SUM(ois.qty), 0)            AS agg_qty,
+        COALESCE(SUM(ois.qty_shipped), 0)    AS agg_shipped,
+        COALESCE(SUM(ois.qty_in_customs), 0) AS agg_in_customs,
+        COALESCE(SUM(ois.qty_received), 0)   AS agg_received
       FROM orders_suppliers os
       LEFT JOIN order_items_suppliers ois ON ois.order_id = os.id
       WHERE os.tenant_id = ${TENANT_ID}
@@ -80,15 +84,19 @@ async function getSupplier(event) {
       LIMIT 100
     `
 
-    // Get order items for each order
+    // Get order items for each order — include IDs and per-item stage quantities
     const orderIds = orders.map(o => o.id)
     let orderItems = []
     if (orderIds.length > 0) {
       orderItems = await sql`
         SELECT
+          ois.id,
           ois.order_id,
           p.name AS product_name,
           ois.qty,
+          ois.qty_shipped,
+          ois.qty_in_customs,
+          ois.qty_received,
           ois.product_cost,
           ois.shipping_cost,
           (ois.qty * ois.product_cost)::numeric(12,2) AS product_total,
@@ -109,9 +117,25 @@ async function getSupplier(event) {
       itemsByOrder[item.order_id].push(item)
     }
 
-    // Attach items to orders
+    // Derive order status from aggregated per-item quantities
+    function deriveOrderStatus(o) {
+      const tq = Number(o.agg_qty)
+      const tr = Number(o.agg_received)
+      const tc = Number(o.agg_in_customs)
+      const ts = Number(o.agg_shipped)
+      if (tq === 0) return 'pending'
+      if (tr >= tq) return 'received'
+      const remaining = tq - tr
+      if (tc === 0 && ts === 0) return 'pending'
+      if (ts === 0 && tc === remaining) return 'in_customs'
+      if (tc === 0 && ts === remaining) return 'shipped'
+      return 'partial'
+    }
+
+    // Attach items + derived_status to orders
     const ordersWithItems = orders.map(o => ({
       ...o,
+      derived_status: deriveOrderStatus(o),
       items: itemsByOrder[o.id] || []
     }))
 

@@ -57,6 +57,11 @@ interface InCustoms {
   qty: number
 }
 
+interface InTransit {
+  product: string
+  qty: number
+}
+
 interface NotDeliveredOrder {
   product: string
   order_id: string
@@ -93,6 +98,7 @@ interface SupplyChainData {
   warehouse_inventory: WarehouseInventory[]
   production_data?: ProductionData[]
   in_customs: InCustoms[]
+  in_transit: InTransit[]
   ordered_from_suppliers: OrderedFromSuppliers[]
 }
 
@@ -230,6 +236,7 @@ export default function SupplyChainOverview() {
     notDelivered: false,
     warehouse: false,
     inCustoms: false,
+    inTransit: false,
     orderedFromSuppliers: false,
   })
 
@@ -1489,6 +1496,35 @@ export default function SupplyChainOverview() {
                       ...tableRowStyle,
                     }}
                   >
+                    <div>{item.product}</div>
+                    <div style={{ textAlign: 'right' }}>{fmtQty(item.qty)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Section 4b: In Transit */}
+      <div style={{ marginTop: 20 }}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('inTransit')}>
+          <span style={expandIconStyle}>{expandedSections.inTransit ? '▼' : '▶'}</span>
+          <span>{t('supplyChain.inTransit')}</span>
+        </div>
+
+        {expandedSections.inTransit && (
+          <div style={{ marginTop: 12 }}>
+            {(data.in_transit ?? []).length === 0 ? (
+              <p className="helper">{t('supplyChain.noOrdersInTransit')}</p>
+            ) : (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12, ...tableHeaderStyle }}>
+                  <div>Product</div>
+                  <div style={{ textAlign: 'right' }}>Quantity</div>
+                </div>
+                {(data.in_transit ?? []).map((item, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12, ...tableRowStyle }}>
                     <div>{item.product}</div>
                     <div style={{ textAlign: 'right' }}>{fmtQty(item.qty)}</div>
                   </div>

@@ -40,12 +40,12 @@ async function getInventory(event) {
       ),
       on_order AS (
         SELECT ois.product_id,
-          SUM(ois.qty) AS qty,
-          json_agg(json_build_object('order_id', os.id, 'order_no', os.order_no, 'qty', ois.qty) ORDER BY os.order_no) AS orders
+          SUM(ois.qty - COALESCE(ois.qty_received, 0)) AS qty,
+          json_agg(json_build_object('order_id', os.id, 'order_no', os.order_no, 'qty', ois.qty - COALESCE(ois.qty_received, 0)) ORDER BY os.order_no) AS orders
         FROM order_items_suppliers ois
         JOIN orders_suppliers os ON os.id = ois.order_id
         WHERE os.tenant_id = ${TENANT_ID}
-          AND os.received = FALSE
+          AND ois.qty > COALESCE(ois.qty_received, 0)
           AND ois.product_id IS NOT NULL
         GROUP BY ois.product_id
       )
@@ -96,10 +96,11 @@ async function getInventory(event) {
         GROUP BY product_id
       ),
       mat_on_order AS (
-        SELECT ois.product_id, SUM(ois.qty) AS qty
+        SELECT ois.product_id, SUM(ois.qty - COALESCE(ois.qty_received, 0)) AS qty
         FROM order_items_suppliers ois
         JOIN orders_suppliers os ON os.id = ois.order_id
-        WHERE os.tenant_id = ${TENANT_ID} AND os.received = FALSE
+        WHERE os.tenant_id = ${TENANT_ID}
+          AND ois.qty > COALESCE(ois.qty_received, 0)
         GROUP BY ois.product_id
       ),
       mat_used_in AS (

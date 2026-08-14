@@ -7,6 +7,7 @@ import { formatDate } from '../lib/time'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
+import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import { useCurrency } from '../lib/useCurrency'
 
@@ -22,9 +23,13 @@ interface Supplier {
 }
 
 interface OrderItem {
+  id: string
   order_id: string
   product_name: string
   qty: number
+  qty_shipped: number
+  qty_in_customs: number
+  qty_received: number
   product_cost: number
   shipping_cost: number
   product_total: number
@@ -46,6 +51,7 @@ interface Order {
   in_customs: boolean
   in_customs_date?: string
   est_delivery_date?: string
+  derived_status?: 'received' | 'in_customs' | 'shipped' | 'partial' | 'pending'
 }
 
 interface Payment {
@@ -96,22 +102,26 @@ export default function SupplierDetailPage() {
   const [showAllPayments, setShowAllPayments] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [stagesOrder, setStagesOrder] = useState<Order | null>(null)
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
+  const loadData = async () => {
+    try {
+      if (!id) { setErr('Missing id'); setLoading(false); return }
+      setErr(null)
+      const d = await fetchSupplierDetail(id)
+      setData(d)
+    } catch (e: any) {
+      setErr(e?.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      try {
-        if (!id) { setErr('Missing id'); setLoading(false); return }
-        setLoading(true); setErr(null)
-        const d = await fetchSupplierDetail(id)
-        setData(d)
-      } catch (e: any) {
-        setErr(e?.message || String(e))
-      } finally {
-        setLoading(false)
-      }
-    })()
+    setLoading(true)
+    loadData()
   }, [id])
 
   const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
@@ -268,51 +278,62 @@ export default function SupplierDetailPage() {
             {shownOrders.map(o => {
               const hasNotes = o.notes && o.notes.trim()
               const totalShippingCost = o.items.reduce((sum, item) => sum + Number(item.shipping_total || 0), 0)
+              const ds = o.derived_status || 'pending'
 
-              // Determine status badge
+              // Stage icon — same pattern as CustomerDetail delivery icon
+              const stageIcon = (() => {
+                let symbol = '', color = '#d1d5db', title = t('suppliers.stagePending')
+                if (ds === 'received')   { symbol = '✓'; color = '#10b981'; title = t('suppliers.stageReceived') }
+                else if (ds === 'partial')   { symbol = '◐'; color = '#f59e0b'; title = t('suppliers.statusPartial') }
+                else if (ds === 'in_customs') { symbol = '◑'; color = '#f97316'; title = t('suppliers.stageInCustoms') }
+                else if (ds === 'shipped')    { symbol = '►'; color = '#3b82f6'; title = t('suppliers.stageShipped') }
+                return (
+                  <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'start' }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setStagesOrder(o) }}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                      title={title}
+                    >
+                      {ds === 'pending'
+                        ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
+                            <span style={{ display: 'inline-block', width: 11, height: 11, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+                          </span>
+                        : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
+                      }
+                    </button>
+                  </div>
+                )
+              })()
+
+              // Status badge driven by derived_status
               let statusBadge = null
-              if (o.received && o.received_date) {
+              if (ds === 'received') {
                 statusBadge = (
-                  <span style={{
-                    backgroundColor: '#22c55e',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {t('suppliers.receivedLabel')} {formatDate(o.received_date)}
+                  <span style={{ backgroundColor: '#22c55e', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('suppliers.receivedLabel')}{o.received_date ? ` ${formatDate(o.received_date)}` : ''}
                   </span>
                 )
-              } else if (o.in_customs && o.in_customs_date) {
+              } else if (ds === 'partial') {
                 statusBadge = (
-                  <span style={{
-                    backgroundColor: '#f97316',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {t('suppliers.inCustomsLabel')} {formatDate(o.in_customs_date)}
+                  <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('suppliers.statusPartial')}
                   </span>
                 )
-              } else if (o.delivered && o.delivery_date) {
+              } else if (ds === 'in_customs') {
                 statusBadge = (
-                  <span style={{
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {t('shipped')}: {formatDate(o.delivery_date)}
+                  <span style={{ backgroundColor: '#f97316', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('suppliers.inCustomsLabel')}{o.in_customs_date ? ` ${formatDate(o.in_customs_date)}` : ''}
+                  </span>
+                )
+              } else if (ds === 'shipped') {
+                statusBadge = (
+                  <span style={{ backgroundColor: '#3b82f6', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('shipped')}{o.delivery_date ? `: ${formatDate(o.delivery_date)}` : ''}
                   </span>
                 )
               } else if (o.est_delivery_date) {
                 statusBadge = (
-                  <span className="helper" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                  <span className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
                     {t('suppliers.estDelivery')} {formatDate(o.est_delivery_date)}
                   </span>
                 )
@@ -329,7 +350,7 @@ export default function SupplierDetailPage() {
                     cursor: 'pointer'
                   }}
                 >
-                  {/* First row: Date + Order number + Status + Total */}
+                  {/* First row: Date + Stage icon + Order number + Status + Total */}
                   <div
                     style={{
                       display:'grid',
@@ -342,8 +363,8 @@ export default function SupplierDetailPage() {
                     {/* DATE (MM/DD/YY) */}
                     <div className="helper">{formatDate(o.order_date)}</div>
 
-                    {/* EMPTY COLUMN for alignment */}
-                    <div></div>
+                    {/* STAGE ICON */}
+                    {stageIcon}
 
                     {/* ORDER NUMBER + STATUS */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, lineHeight: '1.4' }}>
@@ -546,12 +567,20 @@ export default function SupplierDetailPage() {
         )}
       </div>
 
-      {/* Order Modal */}
+      {/* Order Detail Modal */}
       <SupplierOrderDetailModal
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         order={selectedOrder}
         supplierName={supplier.name}
+      />
+
+      {/* Stage Quantities Modal */}
+      <SupplierOrderStagesModal
+        isOpen={!!stagesOrder}
+        onClose={() => setStagesOrder(null)}
+        order={stagesOrder}
+        onSaved={() => { setStagesOrder(null); loadData() }}
       />
 
       {/* Payment Modal */}

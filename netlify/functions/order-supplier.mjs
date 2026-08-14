@@ -67,13 +67,16 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         
         const order = orderRows[0]
         
-        // Get order items
+        // Get order items with stage quantities
         const items = await sql`
           select
             ois.id,
             ois.product_id,
             p.name as product_name,
             ois.qty,
+            ois.qty_shipped,
+            ois.qty_in_customs,
+            ois.qty_received,
             ois.product_cost,
             ois.shipping_cost
           from order_items_suppliers ois
@@ -276,6 +279,83 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       `
 
       await updateAvgCostForProducts(sql, tenantId, deletedProductIds, affectedOrderDate)
+      return json(200, { ok: true })
+    }
+
+    // -------- PATCH: update per-item stage quantities ----------
+    if (method === 'PATCH') {
+      const body = JSON.parse(event.body || '{}')
+      const { order_id, items } = body
+      if (!order_id || !Array.isArray(items)) return json(400, { error: 'Missing order_id or items' })
+
+      // Verify order belongs to this tenant
+      const orderCheck = await sql`
+        SELECT id FROM orders_suppliers WHERE id = ${order_id} AND tenant_id = ${tenantId} LIMIT 1
+      `
+      if (orderCheck.length === 0) return json(404, { error: 'Order not found' })
+
+      // Get tenant timezone once
+      const tzRow = await sql`SELECT COALESCE(default_timezone, 'UTC') AS tz FROM tenants WHERE id = ${tenantId} LIMIT 1`
+      const tz = tzRow[0]?.tz || 'UTC'
+
+      // Update each item's stage quantities
+      for (const item of items) {
+        const itemId = item.id
+        const newShipped    = Math.max(0, Number(item.qty_shipped)    || 0)
+        const newInCustoms  = Math.max(0, Number(item.qty_in_customs) || 0)
+        const newReceived   = Math.max(0, Number(item.qty_received)   || 0)
+
+        const current = await sql`
+          SELECT ois.qty, ois.product_id, p.name AS product_name
+          FROM order_items_suppliers ois
+          JOIN products p ON p.id = ois.product_id
+          WHERE ois.id = ${itemId} AND ois.tenant_id = ${tenantId} AND ois.order_id = ${order_id}
+          LIMIT 1
+        `
+        if (current.length === 0) continue
+        const { qty: totalQty } = current[0]
+
+        if (newShipped + newInCustoms + newReceived > Number(totalQty)) {
+          return json(400, { error: `Stage quantities exceed ordered qty for item ${itemId}` })
+        }
+
+        await sql`
+          UPDATE order_items_suppliers
+          SET qty_shipped    = ${newShipped},
+              qty_in_customs = ${newInCustoms},
+              qty_received   = ${newReceived}
+          WHERE id = ${itemId} AND tenant_id = ${tenantId} AND order_id = ${order_id}
+        `
+      }
+
+      // Rebuild warehouse_deliveries 'S' records for this order (delete-and-reinsert per product)
+      await sql`
+        DELETE FROM warehouse_deliveries
+        WHERE order_id = ${order_id} AND supplier_manual_delivered = 'S'
+      `
+      const productTotals = await sql`
+        SELECT ois.product_id, p.name AS product_name, SUM(ois.qty_received) AS total_received
+        FROM order_items_suppliers ois
+        JOIN products p ON p.id = ois.product_id
+        WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
+        GROUP BY ois.product_id, p.name
+        HAVING SUM(ois.qty_received) > 0
+      `
+      for (const row of productTotals) {
+        await sql`
+          INSERT INTO warehouse_deliveries (tenant_id, date, supplier_manual_delivered, product, qty, order_id, product_id)
+          VALUES (
+            ${tenantId},
+            (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date,
+            'S',
+            ${row.product_name},
+            ${Number(row.total_received)},
+            ${order_id},
+            ${row.product_id}
+          )
+        `
+      }
+
       return json(200, { ok: true })
     }
 
