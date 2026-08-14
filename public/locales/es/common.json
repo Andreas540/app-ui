@@ -512,9 +512,9 @@
     "coversPrevOrders": "Pedidos anteriores",
     "unitIdentifier": "ID de unidad",
     "unitIdentifierPlaceholder": "p.ej. número de serie (opcional)",
-    "coverageDaysLeft": "Días restantes: {{days}}",
-    "coverageExpiresToday": "Vence hoy",
-    "coverageExpired": "Venció hace {{days}} días"
+    "coverageDaysLeft": "Días restantes: {{days}} (basado en fecha de pedido)",
+    "coverageExpiresToday": "Vence hoy (basado en fecha de pedido)",
+    "coverageExpired": "Venció hace {{days}} días (basado en fecha de pedido)"
   },
   "warehouse": {
     "title": "Ajustar Inventario",
