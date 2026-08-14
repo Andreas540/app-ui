@@ -44,28 +44,19 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
   }
 }
 
-  // Determine status for display
-  let statusText = t('pending')
-  let statusColor = '#d1d5db'
-  let statusBgColor = '#f3f4f620'
-  let statusIcon = '○'
+  // Determine status from derived_status (qty-based) with fallback to boolean flags
+  const ds = order.derived_status
+    || (order.received ? 'received' : order.in_customs ? 'in_customs' : order.delivered ? 'shipped' : 'pending')
 
-  if (order.received) {
-    statusText = t('received')
-    statusColor = '#22c55e'
-    statusBgColor = '#22c55e20'
-    statusIcon = '✓'
-  } else if (order.in_customs) {
-    statusText = t('inCustoms')
-    statusColor = '#f97316'
-    statusBgColor = '#f9731620'
-    statusIcon = '✈'
-  } else if (order.delivered) {
-    statusText = t('delivered')
-    statusColor = '#3b82f6'
-    statusBgColor = '#3b82f620'
-    statusIcon = '✓'
+  const statusMap: Record<string, { text: string; color: string; icon: string }> = {
+    received:   { text: t('received'),                   color: '#22c55e', icon: '✓' },
+    in_customs: { text: t('inCustoms'),                  color: '#f97316', icon: '◑' },
+    shipped:    { text: t('shipped'),                    color: '#3b82f6', icon: '►' },
+    partial:    { text: t('suppliers.statusPartial'),    color: '#f59e0b', icon: '◐' },
+    pending:    { text: t('pending'),                    color: '#d1d5db', icon: '○' },
   }
+  const { text: statusText, color: statusColor, icon: statusIcon } = statusMap[ds] ?? statusMap.pending
+  const statusBgColor = `${statusColor}20`
 
   const totalShippingCost = order.items?.reduce((sum: number, item: any) =>
     sum + Number(item.shipping_total || 0), 0) || 0
