@@ -86,7 +86,14 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           order by ois.created_at asc
         `
         
-        return json(200, { order, items })
+        const events = await sql`
+          SELECT id, stage, product_name, qty_delta, event_date, created_at
+          FROM order_supplier_stage_events
+          WHERE supplier_order_id = ${id} AND tenant_id = ${tenantId}
+          ORDER BY event_date DESC, created_at DESC
+        `
+
+        return json(200, { order, items, events })
       }
 
       // Last-cost lookup
@@ -336,14 +343,23 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       const tzRow = await sql`SELECT COALESCE(default_timezone, 'UTC') AS tz FROM tenants WHERE id = ${tenantId} LIMIT 1`
       const tz = tzRow[0]?.tz || 'UTC'
 
-      // Snapshot qty_received totals BEFORE updates (needed for delta calculation)
-      const beforeTotals = await sql`
-        SELECT ois.product_id, p.name AS product_name, SUM(ois.qty_received) AS total_received
+      // Snapshot all 3 stages per item BEFORE updates
+      const beforeSnap = await sql`
+        SELECT ois.id, ois.product_id, p.name AS product_name,
+          ois.qty_shipped, ois.qty_in_customs, ois.qty_received
         FROM order_items_suppliers ois
         JOIN products p ON p.id = ois.product_id
         WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
-        GROUP BY ois.product_id, p.name
       `
+      const beforeByItem = Object.fromEntries(
+        beforeSnap.map(r => [String(r.id), {
+          product_id:   String(r.product_id),
+          product_name: r.product_name,
+          shipped:  Number(r.qty_shipped),
+          customs:  Number(r.qty_in_customs),
+          received: Number(r.qty_received),
+        }])
+      )
 
       // Update each item's stage quantities
       for (const item of items) {
@@ -353,10 +369,8 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         const newReceived   = Math.max(0, Number(item.qty_received)   || 0)
 
         const current = await sql`
-          SELECT ois.qty, ois.product_id, p.name AS product_name
-          FROM order_items_suppliers ois
-          JOIN products p ON p.id = ois.product_id
-          WHERE ois.id = ${itemId} AND ois.tenant_id = ${tenantId} AND ois.order_id = ${order_id}
+          SELECT qty FROM order_items_suppliers
+          WHERE id = ${itemId} AND tenant_id = ${tenantId} AND order_id = ${order_id}
           LIMIT 1
         `
         if (current.length === 0) continue
@@ -375,37 +389,75 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
       }
 
-      // Append delta 'S' records to the warehouse ledger.
-      // warehouse_deliveries.order_id has a FK to customer orders, not supplier orders,
-      // so we can't tag records by supplier order. Instead we record the delta between
-      // the old and new qty_received totals per product — the ledger stays correct.
-      const afterTotals = await sql`
-        SELECT ois.product_id, p.name AS product_name, SUM(ois.qty_received) AS total_received
+      // Snapshot all 3 stages per item AFTER updates
+      const afterSnap = await sql`
+        SELECT ois.id, ois.product_id, p.name AS product_name,
+          ois.qty_shipped, ois.qty_in_customs, ois.qty_received
         FROM order_items_suppliers ois
         JOIN products p ON p.id = ois.product_id
         WHERE ois.order_id = ${order_id} AND ois.tenant_id = ${tenantId}
-        GROUP BY ois.product_id, p.name
       `
-      const beforeMap = Object.fromEntries(
-        beforeTotals.map(r => [r.product_id, { total: Number(r.total_received), name: r.product_name }])
-      )
-      const afterMap = Object.fromEntries(
-        afterTotals.map(r => [r.product_id, { total: Number(r.total_received), name: r.product_name }])
-      )
-      const allProductIds = new Set([...Object.keys(beforeMap), ...Object.keys(afterMap)])
+
+      // Write a stage event for every per-item, per-stage delta
+      for (const row of afterSnap) {
+        const itemId = String(row.id)
+        const before = beforeByItem[itemId] || { shipped: 0, customs: 0, received: 0 }
+        const productId = String(row.product_id)
+        const productName = row.product_name
+
+        for (const [stage, beforeVal, afterVal] of [
+          ['shipped',    before.shipped,  Number(row.qty_shipped)],
+          ['in_customs', before.customs,  Number(row.qty_in_customs)],
+          ['received',   before.received, Number(row.qty_received)],
+        ]) {
+          const delta = afterVal - beforeVal
+          if (delta === 0) continue
+          await sql`
+            INSERT INTO order_supplier_stage_events
+              (tenant_id, supplier_order_id, product_id, product_name, stage, qty_delta, event_date)
+            VALUES (
+              ${tenantId},
+              ${order_id},
+              ${productId},
+              ${productName},
+              ${stage},
+              ${delta},
+              (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date
+            )
+          `
+        }
+      }
+
+      // Write warehouse_deliveries 'S' records for received-stage deltas, aggregated by product.
+      // order_supplier_id now properly links back to the supplier order.
+      const allProductIds = new Set([
+        ...beforeSnap.map(r => String(r.product_id)),
+        ...afterSnap.map(r => String(r.product_id)),
+      ])
       for (const productId of allProductIds) {
-        const delta = (afterMap[productId]?.total || 0) - (beforeMap[productId]?.total || 0)
+        const beforeTotal = beforeSnap
+          .filter(r => String(r.product_id) === productId)
+          .reduce((s, r) => s + Number(r.qty_received), 0)
+        const afterTotal = afterSnap
+          .filter(r => String(r.product_id) === productId)
+          .reduce((s, r) => s + Number(r.qty_received), 0)
+        const delta = afterTotal - beforeTotal
         if (delta === 0) continue
-        const productName = (afterMap[productId] || beforeMap[productId]).name
+        const productName = (
+          afterSnap.find(r => String(r.product_id) === productId) ||
+          beforeSnap.find(r => String(r.product_id) === productId)
+        )?.product_name
         await sql`
-          INSERT INTO warehouse_deliveries (tenant_id, date, supplier_manual_delivered, product, qty, product_id)
+          INSERT INTO warehouse_deliveries
+            (tenant_id, date, supplier_manual_delivered, product, qty, product_id, order_supplier_id)
           VALUES (
             ${tenantId},
             (CURRENT_TIMESTAMP AT TIME ZONE ${tz})::date,
             'S',
             ${productName},
             ${delta},
-            ${productId}
+            ${productId},
+            ${order_id}
           )
         `
       }

@@ -732,6 +732,7 @@
     "stageReceived": "Recibido",
     "stagesExceedsQty": "Las cantidades de etapa superan la cantidad pedida en uno o más artículos.",
     "stagesSaveFailed": "No se pudieron guardar las etapas de entrega.",
+    "stageHistory": "Historial de etapas",
     "createTitle": "Crear Nuevo Proveedor",
     "supplierName": "Nombre del Proveedor",
     "supplierNameRequired": "Nombre del Proveedor *",

@@ -732,6 +732,7 @@
     "stageReceived": "Received",
     "stagesExceedsQty": "Stage quantities exceed the ordered quantity for one or more items.",
     "stagesSaveFailed": "Failed to save stage quantities.",
+    "stageHistory": "Stage history",
     "createTitle": "Create New Supplier",
     "supplierName": "Supplier Name",
     "supplierNameRequired": "Supplier Name *",

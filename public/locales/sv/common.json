@@ -732,6 +732,7 @@
     "stageReceived": "Mottaget",
     "stagesExceedsQty": "Stegets antal överstiger beställt antal för en eller flera rader.",
     "stagesSaveFailed": "Det gick inte att spara leveransstegen.",
+    "stageHistory": "Steghistorik",
     "createTitle": "Skapa ny leverantör",
     "supplierName": "Leverantörsnamn",
     "supplierNameRequired": "Leverantörsnamn *",
