@@ -591,7 +591,7 @@ export default function EditOrder() {
                 <input
                   type="text"
                   readOnly
-                  value={[l.unit_serial, l.unit_condition].filter(Boolean).join(' — ')}
+                  value={l.unit_serial ?? ''}
                   style={{ height: CONTROL_H, opacity: 0.6 }}
                 />
               </div>
