@@ -8,10 +8,10 @@ import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
 
 type PartnerRef = { id: string; name: string }
-type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string; historicalProductCost: number | null }
+type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string; historicalProductCost: number | null; unit_id: number | null; unit_serial: string | null; unit_condition: string | null }
 
 function emptyLine(): Line {
-  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null, unit_identifier: '', historicalProductCost: null }
+  return { product_id: '', qtyStr: '', priceStr: '', covers_product_id: null, unit_identifier: '', historicalProductCost: null, unit_id: null, unit_serial: null, unit_condition: null }
 }
 
 export default function EditOrder() {
@@ -101,6 +101,9 @@ export default function EditOrder() {
           covers_product_id:    i.covers_product_id ?? null,
           unit_identifier:      i.unit_identifier ?? '',
           historicalProductCost: i.historical_product_cost != null ? Number(i.historical_product_cost) : null,
+          unit_id:              i.unit_id ?? null,
+          unit_serial:          i.unit_serial ?? null,
+          unit_condition:       i.unit_condition ?? null,
         })))
 
         // Cost overrides
@@ -308,7 +311,8 @@ export default function EditOrder() {
             qty:               parseAmount(l.qtyStr),
             unit_price:        parsePriceToNumber(l.priceStr),
             covers_product_id: l.covers_product_id || null,
-            unit_identifier:   l.unit_identifier?.trim() || null,
+            unit_identifier:   l.unit_id ? null : (l.unit_identifier?.trim() || null),
+            unit_id:           l.unit_id ?? null,
           })),
           date:           orderDate,
           delivered,
@@ -500,6 +504,7 @@ export default function EditOrder() {
         const prod         = products.find(p => p.id === l.product_id)
         const isRefund     = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
         const isCoverage   = prod?.product_kind === 'coverage'
+        const hasUnit      = !!l.unit_id
         const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'coverage')
         return (
           <div key={idx}>
@@ -536,8 +541,9 @@ export default function EditOrder() {
                   inputMode="numeric"
                   placeholder="0"
                   value={l.qtyStr}
-                  onChange={e => updateLine(idx, 'qtyStr', parseQty(e.target.value))}
-                  style={{ height: CONTROL_H }}
+                  readOnly={hasUnit}
+                  onChange={e => { if (hasUnit) return; updateLine(idx, 'qtyStr', parseQty(e.target.value)) }}
+                  style={{ height: CONTROL_H, opacity: hasUnit ? 0.6 : undefined }}
                 />
               </div>
             </div>
@@ -579,7 +585,18 @@ export default function EditOrder() {
                 </select>
               </div>
             )}
-            {!isCoverage && (
+            {!isCoverage && hasUnit && (
+              <div style={{ marginTop: 8 }}>
+                <label>{t('orders.unitIdentifier')}</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={[l.unit_serial, l.unit_condition].filter(Boolean).join(' — ')}
+                  style={{ height: CONTROL_H, opacity: 0.6 }}
+                />
+              </div>
+            )}
+            {!isCoverage && !hasUnit && (
               <div style={{ marginTop: 8 }}>
                 <label>{t('orders.unitIdentifier')}</label>
                 <input
