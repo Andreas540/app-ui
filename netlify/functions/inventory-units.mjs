@@ -36,12 +36,19 @@ async function listUnits(event) {
       iu.id, iu.product_id, iu.serial_number, iu.condition,
       iu.listing_status, iu.order_item_id, iu.acquired_at,
       iu.notes, iu.created_at, iu.updated_at,
-      -- Order info when claimed/sold
-      o.id AS order_id, o.order_no, c.name AS customer_name
+      -- Prefer warehouse-claim path (order_item_id); fall back to customer-order reservation (unit_id)
+      COALESCE(o1.id, o2.id)::text AS order_id,
+      COALESCE(o1.order_no, o2.order_no) AS order_no,
+      COALESCE(c1.name, c2.name) AS customer_name
     FROM inventory_units iu
-    LEFT JOIN order_items oi ON oi.id = iu.order_item_id
-    LEFT JOIN orders       o  ON o.id  = oi.order_id
-    LEFT JOIN customers    c  ON c.id  = o.customer_id
+    LEFT JOIN order_items oi1 ON oi1.id = iu.order_item_id
+    LEFT JOIN orders      o1  ON o1.id  = oi1.order_id
+    LEFT JOIN customers   c1  ON c1.id  = o1.customer_id
+    LEFT JOIN order_items oi2 ON oi2.unit_id = iu.id
+    LEFT JOIN orders      o2  ON o2.id = oi2.order_id
+                              AND o2.delivered = FALSE
+                              AND o2.tenant_id = ${TENANT_ID}
+    LEFT JOIN customers   c2  ON c2.id = o2.customer_id
     WHERE iu.tenant_id  = ${TENANT_ID}
       AND iu.product_id = ${productId}
       AND (${status ?? null}::text IS NULL OR iu.listing_status = ${status ?? null})

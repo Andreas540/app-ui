@@ -753,47 +753,41 @@ export default function Warehouse() {
 
                       {isUnitsExpanded && (
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, paddingTop: 4 }}>
-
-                          {/* Named pending units (from order_items.unit_identifier) */}
-                          {namedForProduct.length > 0 && (
-                            <div style={{ overflowX: 'auto', borderBottom: isUnitTracked ? '1px solid var(--border)' : undefined, marginBottom: isUnitTracked ? 8 : 0 }}>
-                              <div style={{ minWidth: 380, fontSize: 12 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
-                                  <div>{t('warehouse.namedItemsIdentifier')}</div>
-                                  <div>{t('warehouse.namedItemsOrder')}</div>
-                                  <div>{t('warehouse.namedItemsCustomer')}</div>
-                                </div>
-                                {namedForProduct.map(ni => (
-                                  <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 5, paddingBottom: 5, paddingLeft: 16, paddingRight: 8 }}>
-                                    <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
-                                    <div>
-                                      <button onClick={() => setCustomerModalOrder({ id: ni.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
-                                      <span style={{ color: 'var(--text-secondary)' }}> · {ni.order_date}</span>
-                                    </div>
-                                    <div style={{ color: 'var(--text-secondary)' }}>{ni.customer_name}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* L1 inventory units (serialized_intake / on_promote products) */}
                           {isUnitTracked && unitFetchError[item.product_id] && (
                             <div style={{ fontSize: 12, color: 'var(--color-error)', paddingLeft: 16, paddingBottom: 6 }}>{unitFetchError[item.product_id]}</div>
                           )}
-                          {isUnitTracked && (
-                            unitRows === 'loading' || !unitRows ? (
-                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
-                            ) : (
-                              <div style={{ overflowX: 'auto' }}>
-                                <div style={{ minWidth: 420, fontSize: 12 }}>
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
-                                    <div>{t('warehouse.unitSerialCol')}</div>
-                                    <div>{t('warehouse.unitConditionCol')}</div>
-                                    <div>{t('warehouse.unitStatusCol')}</div>
+                          {isUnitTracked && (unitRows === 'loading' || !unitRows) ? (
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 16 }}>{t('warehouse.loadingUnits')}</div>
+                          ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                              <div style={{ minWidth: 420, fontSize: 12 }}>
+                                {/* Unified header */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
+                                  <div>{t('warehouse.unitSerialCol')}</div>
+                                  <div>{t('warehouse.unitConditionCol')}</div>
+                                  <div>{t('warehouse.unitStatusCol')}</div>
+                                  <div />
+                                </div>
+
+                                {/* Named item rows (order_items.unit_identifier, no inventory record) */}
+                                {namedForProduct.map(ni => (
+                                  <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
+                                    <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
+                                    <div style={{ color: 'var(--text-secondary)' }}>—</div>
+                                    <div style={{ color: 'var(--color-warning, #e6a817)' }}>
+                                      {t('warehouse.statusOnOrder')}
+                                      {' · '}
+                                      <button onClick={() => setCustomerModalOrder({ id: ni.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
+                                      <span style={{ color: 'var(--text-secondary)' }}> · {ni.customer_name}</span>
+                                    </div>
                                     <div />
                                   </div>
-                                  {unitRows.map(u => (
+                                ))}
+
+                                {/* Inventory unit rows */}
+                                {isUnitTracked && Array.isArray(unitRows) && unitRows.map(u => {
+                                  const isReserved = u.order_id != null
+                                  return (
                                     <div key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
                                       {editingUnitId === u.id ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
@@ -811,12 +805,21 @@ export default function Warehouse() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
                                           <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
                                           <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
-                                          <div style={{ color: u.listing_status === 'Listed' ? 'var(--color-warning, #e6a817)' : undefined }}>
-                                            {u.listing_status === 'Inventory' ? t('warehouse.statusInventory')
-                                              : u.listing_status === 'Listed' ? t('warehouse.statusListed')
-                                              : t('warehouse.statusSold')}
-                                            {(u.listing_status === 'Listed' || u.listing_status === 'Sold') && u.order_no && u.order_id && (
-                                              <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12, marginLeft: 4 }}>#{u.order_no}</button>
+                                          <div style={{ color: u.listing_status === 'Sold' ? undefined : isReserved ? 'var(--color-warning, #e6a817)' : undefined }}>
+                                            {u.listing_status === 'Sold' ? (
+                                              <>
+                                                {t('warehouse.statusSold')}
+                                                {u.order_id && <> · <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button></>}
+                                              </>
+                                            ) : isReserved ? (
+                                              <>
+                                                {t('warehouse.statusListed')}
+                                                {' · '}
+                                                <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button>
+                                                {u.customer_name && <span style={{ color: 'var(--text-secondary)' }}> · {u.customer_name}</span>}
+                                              </>
+                                            ) : (
+                                              t('warehouse.statusInventory')
                                             )}
                                           </div>
                                           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -841,8 +844,12 @@ export default function Warehouse() {
                                         isEditingThisUnit={editingUnitId === u.id}
                                       />
                                     </div>
-                                  ))}
-                                  {addingForProduct === item.product_id ? (
+                                  )
+                                })}
+
+                                {/* Add unit */}
+                                {isUnitTracked && Array.isArray(unitRows) && (
+                                  addingForProduct === item.product_id ? (
                                     <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                         <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
@@ -855,13 +862,13 @@ export default function Warehouse() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <div style={{ borderTop: unitRows.length > 0 ? '1px solid var(--border)' : undefined, paddingTop: 6, paddingLeft: 16 }}>
+                                    <div style={{ borderTop: (unitRows.length > 0 || namedForProduct.length > 0) ? '1px solid var(--border)' : undefined, paddingTop: 6, paddingLeft: 16 }}>
                                       <button onClick={() => { setAddingForProduct(item.product_id); setEditingUnitId(null) }} style={{ fontSize: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)' }}>+ {t('warehouse.addUnit')}</button>
                                     </div>
-                                  )}
-                                </div>
+                                  )
+                                )}
                               </div>
-                            )
+                            </div>
                           )}
                         </div>
                       )}
