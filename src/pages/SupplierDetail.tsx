@@ -614,7 +614,7 @@ export default function SupplierDetailPage() {
         isOpen={!!stagesOrder}
         onClose={() => setStagesOrder(null)}
         order={stagesOrder}
-        onSaved={() => { setStagesOrder(null); loadData() }}
+        onSaved={() => loadData()}
       />
 
       {/* Payment Modal */}
