@@ -178,15 +178,6 @@ export default function Warehouse() {
     } finally { setUnitSaving(false) }
   }
 
-  const delistUnit = async (unitId: number, productId: string) => {
-    await fetch('/.netlify/functions/inventory-units', {
-      method: 'PUT',
-      headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
-      body: JSON.stringify({ id: unitId, listing_status: 'Inventory', order_item_id: null }),
-    })
-    await refreshUnits(productId)
-  }
-
   const demoteUnit = async (unitId: number, productId: string) => {
     const res = await fetch(`/.netlify/functions/inventory-units?id=${unitId}`, { method: 'DELETE', headers: getAuthHeaders() })
     if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Failed to remove unit'); return }
@@ -823,14 +814,14 @@ export default function Warehouse() {
                                             )}
                                           </div>
                                           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                            {u.listing_status === 'Inventory' && !isReserved && (
+                                              <button onClick={() => navigate(`/orders/new?product_id=${item.product_id}&unit_id=${u.id}`)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--primary)' }}>{t('newOrder')}</button>
+                                            )}
                                             {u.listing_status === 'Inventory' && (
                                               <>
                                                 <button onClick={() => { setEditingUnitId(u.id); setEditForm({ serial_number: u.serial_number ?? '', condition: u.condition ?? '', notes: u.notes ?? '' }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editUnit')}</button>
                                                 <button onClick={() => demoteUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--color-error)' }}>{t('warehouse.demoteUnit')}</button>
                                               </>
-                                            )}
-                                            {u.listing_status === 'Listed' && (
-                                              <button onClick={() => delistUnit(u.id, item.product_id)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.delistUnit')}</button>
                                             )}
                                           </div>
                                         </div>

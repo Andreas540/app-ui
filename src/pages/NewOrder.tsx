@@ -118,14 +118,32 @@ export default function NewOrder() {
         setPeople(customers)
         setProducts(prods)
         setPartners(bootPartners ?? [])
-        const firstProduct = prods
-          .filter(p => (p.category ?? 'product') === 'product')
-          .sort((a, b) => a.name.localeCompare(b.name))[0]
-        if (firstProduct) {
-          const line = emptyLine(firstProduct.id)
-          const pa = firstProduct.price_amount
+        const params = new URLSearchParams(location.search)
+        const paramProductId = params.get('product_id')
+        const paramUnitId = params.get('unit_id') ? Number(params.get('unit_id')) : null
+
+        const targetProduct = paramProductId
+          ? prods.find(p => p.id === paramProductId)
+          : prods.filter(p => (p.category ?? 'product') === 'product').sort((a, b) => a.name.localeCompare(b.name))[0]
+
+        if (targetProduct) {
+          const line = emptyLine(targetProduct.id)
+          const pa = targetProduct.price_amount
           if (pa != null && pa > 0) line.priceStr = fmtInput(pa)
-          setLines([line])
+
+          if (paramUnitId && targetProduct.unit_tracking !== 'none') {
+            line.availableUnits = 'loading'
+            setLines([line])
+            const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+            fetch(`${base}/api/inventory-units?product_id=${targetProduct.id}&status=Inventory`, { headers: getAuthHeaders() })
+              .then(r => r.json())
+              .then(d => setLines(prev => prev.map((l, i) => i === 0
+                ? { ...l, availableUnits: d.units ?? [], unit_id: paramUnitId, qtyStr: '1' }
+                : l)))
+              .catch(() => setLines(prev => prev.map((l, i) => i === 0 ? { ...l, availableUnits: [] } : l)))
+          } else {
+            setLines([line])
+          }
         }
       } catch (e: any) {
         setErr(e?.message || String(e))
