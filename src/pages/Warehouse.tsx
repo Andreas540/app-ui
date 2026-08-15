@@ -1,4 +1,5 @@
 // src/pages/Warehouse.tsx
+const CONDITION_OPTIONS = ['New', 'Like New', 'Good', 'Used', 'Fair', 'Poor']
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -784,7 +785,7 @@ export default function Warehouse() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
                                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                             <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                            <input placeholder={t('warehouse.conditionPlaceholder')} value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                            <select value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}><option value="">—</option>{CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}</select>
                                           </div>
                                           <input placeholder={t('warehouse.unitNotesPlaceholder')} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                           <div style={{ display: 'flex', gap: 6 }}>
@@ -846,7 +847,7 @@ export default function Warehouse() {
                                     <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                         <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                        <input placeholder={t('warehouse.conditionPlaceholder')} value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                        <select value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}><option value="">—</option>{CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}</select>
                                       </div>
                                       <input placeholder={t('warehouse.unitNotesPlaceholder')} value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                       <div style={{ display: 'flex', gap: 6 }}>

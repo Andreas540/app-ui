@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+
+const CONDITION_OPTIONS = ['New', 'Like New', 'Good', 'Used', 'Fair', 'Poor']
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { getAuthHeaders } from '../lib/api'
@@ -339,13 +341,15 @@ export default function SupplierOrderStagesModal({
                         onChange={e => updateSlot(i, 'serial', e.target.value)}
                         style={{ flex: 2, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
                       />
-                      <input
-                        placeholder={t('suppliers.unitRegCondition')}
+                      <select
                         value={slot.condition}
                         disabled={slot.skipped || registeringSaving}
                         onChange={e => updateSlot(i, 'condition', e.target.value)}
                         style={{ flex: 1, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
-                      />
+                      >
+                        <option value="">{t('suppliers.unitRegCondition')}</option>
+                        {CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                       <button
                         onClick={() => updateSlot(i, 'skipped', !slot.skipped)}
                         disabled={registeringSaving}
