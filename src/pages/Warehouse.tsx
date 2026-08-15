@@ -89,7 +89,7 @@ export default function Warehouse() {
   const [addingForProduct, setAddingForProduct] = useState<string | null>(null)
   const [addForm, setAddForm] = useState({ serial_number: '', condition: '', notes: '', acquired_at: '' })
   const [unitSaving, setUnitSaving] = useState(false)
-  const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string } | null>(null)
+  const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string; order_no?: string | number | null } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
   const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
   const [namedItems, setNamedItems] = useState<NamedItem[]>([])
@@ -749,7 +749,7 @@ export default function Warehouse() {
                           <div>
                             {committedOrders.map(o => (
                               <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0 4px', marginBottom: 2 }}>
-                                <button onClick={() => setCustomerModalOrder({ id: o.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
+                                <button onClick={() => setCustomerModalOrder({ id: o.order_id, order_no: o.order_no })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>
                                   #{o.order_no}
                                 </button>
                                 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQty(o.qty)}</span>
@@ -796,7 +796,7 @@ export default function Warehouse() {
                                     <div style={{ color: 'var(--color-warning, #e6a817)' }}>
                                       {t('warehouse.statusListed')}
                                       {' · '}
-                                      <button onClick={() => setCustomerModalOrder({ id: ni.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
+                                      <button onClick={() => setCustomerModalOrder({ id: ni.order_id, order_no: ni.order_no })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
                                       <span style={{ color: 'var(--text-secondary)' }}> · {ni.customer_name}</span>
                                     </div>
                                     <div />
@@ -845,13 +845,13 @@ export default function Warehouse() {
                                             {u.listing_status === 'Sold' ? (
                                               <>
                                                 {t('warehouse.statusSold')}
-                                                {u.order_id && <> · <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button></>}
+                                                {u.order_id && <> · <button onClick={() => setCustomerModalOrder({ id: u.order_id!, order_no: u.order_no })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button></>}
                                               </>
                                             ) : isReserved ? (
                                               <>
                                                 {t('warehouse.statusListed')}
                                                 {' · '}
-                                                <button onClick={() => setCustomerModalOrder({ id: u.order_id! })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button>
+                                                <button onClick={() => setCustomerModalOrder({ id: u.order_id!, order_no: u.order_no })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{u.order_no}</button>
                                                 {u.customer_name && <span style={{ color: 'var(--text-secondary)' }}> · {u.customer_name}</span>}
                                               </>
                                             ) : (
