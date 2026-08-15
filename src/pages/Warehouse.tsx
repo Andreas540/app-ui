@@ -762,7 +762,7 @@ export default function Warehouse() {
                             <div style={{ overflowX: 'auto' }}>
                               <div style={{ minWidth: 420, fontSize: 12 }}>
                                 {/* Unified header */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: 4, paddingLeft: 16, paddingRight: 8 }}>
                                   <div>{t('warehouse.unitSerialCol')}</div>
                                   <div>{t('warehouse.unitConditionCol')}</div>
                                   <div>{t('warehouse.unitStatusCol')}</div>
@@ -771,11 +771,11 @@ export default function Warehouse() {
 
                                 {/* Named item rows (order_items.unit_identifier, no inventory record) */}
                                 {namedForProduct.map(ni => (
-                                  <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
+                                  <div key={ni.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
                                     <div style={{ fontWeight: 500 }}>{ni.unit_identifier}</div>
                                     <div style={{ color: 'var(--text-secondary)' }}>—</div>
                                     <div style={{ color: 'var(--color-warning, #e6a817)' }}>
-                                      {t('warehouse.statusOnOrder')}
+                                      {t('warehouse.statusListed')}
                                       {' · '}
                                       <button onClick={() => setCustomerModalOrder({ id: ni.order_id })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 12 }}>#{ni.order_no}</button>
                                       <span style={{ color: 'var(--text-secondary)' }}> · {ni.customer_name}</span>
@@ -802,7 +802,7 @@ export default function Warehouse() {
                                           </div>
                                         </div>
                                       ) : (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
                                           <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
                                           <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
                                           <div style={{ color: u.listing_status === 'Sold' ? undefined : isReserved ? 'var(--color-warning, #e6a817)' : undefined }}>
