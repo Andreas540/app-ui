@@ -813,15 +813,15 @@ export default function Warehouse() {
                                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                             <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                             {editCondAdding ? (
-                                            <div style={{ display: 'flex', gap: 4, minWidth: 0 }}>
-                                              <input autoFocus value={editCondNew} onChange={e => setEditCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionEdit(); if (e.key === 'Escape') { setEditCondAdding(false); setEditCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                              <button onClick={handleAddConditionEdit} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>+</button>
-                                              <button onClick={() => { setEditCondAdding(false); setEditCondNew('') }} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>✕</button>
+                                            <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+                                              <input autoFocus placeholder="Condition name" value={editCondNew} onChange={e => setEditCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionEdit(); if (e.key === 'Escape') { setEditCondAdding(false); setEditCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                              <button onClick={handleAddConditionEdit} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>Add</button>
+                                              <button onClick={() => { setEditCondAdding(false); setEditCondNew('') }} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>✕</button>
                                             </div>
                                           ) : (
                                             <select value={editForm.condition} onChange={e => { if (e.target.value === '__new__') { setEditCondAdding(true); setEditCondNew('') } else setEditForm(f => ({ ...f, condition: e.target.value })) }} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}>
                                               <option value="">—</option>
-                                              <option value="__new__">＋ New</option>
+                                              <option value="__new__">＋ New condition</option>
                                               {conditions.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                           )}
@@ -887,15 +887,15 @@ export default function Warehouse() {
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                         <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                         {addCondAdding ? (
-                                        <div style={{ display: 'flex', gap: 4, minWidth: 0 }}>
-                                          <input autoFocus value={addCondNew} onChange={e => setAddCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionAdd(); if (e.key === 'Escape') { setAddCondAdding(false); setAddCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                          <button onClick={handleAddConditionAdd} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>+</button>
-                                          <button onClick={() => { setAddCondAdding(false); setAddCondNew('') }} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>✕</button>
+                                        <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+                                          <input autoFocus placeholder="Condition name" value={addCondNew} onChange={e => setAddCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionAdd(); if (e.key === 'Escape') { setAddCondAdding(false); setAddCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          <button onClick={handleAddConditionAdd} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>Add</button>
+                                          <button onClick={() => { setAddCondAdding(false); setAddCondNew('') }} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>✕</button>
                                         </div>
                                       ) : (
                                         <select value={addForm.condition} onChange={e => { if (e.target.value === '__new__') { setAddCondAdding(true); setAddCondNew('') } else setAddForm(f => ({ ...f, condition: e.target.value })) }} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}>
                                           <option value="">—</option>
-                                          <option value="__new__">＋ New</option>
+                                          <option value="__new__">＋ New condition</option>
                                           {conditions.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                       )}

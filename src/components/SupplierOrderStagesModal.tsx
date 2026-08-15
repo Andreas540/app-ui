@@ -359,17 +359,17 @@ export default function SupplierOrderStagesModal({
                         style={{ flex: 2, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
                       />
                       {addingConditionIdx === i ? (
-                        <div style={{ flex: 1, display: 'flex', gap: 4, minWidth: 0 }}>
+                        <div style={{ flex: 1, display: 'flex', gap: 6, minWidth: 0 }}>
                           <input
                             autoFocus
+                            placeholder="Condition name"
                             value={newConditionName}
                             onChange={e => setNewConditionName(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') handleAddCondition(i); if (e.key === 'Escape') { setAddingConditionIdx(null); setNewConditionName('') } }}
-                            placeholder={t('suppliers.unitRegCondition')}
-                            style={{ flex: 1, minWidth: 0, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
+                            style={{ flex: 1, minWidth: 0 }}
                           />
-                          <button onClick={() => handleAddCondition(i)} style={{ padding: '4px 8px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none', flexShrink: 0 }}>+</button>
-                          <button onClick={() => { setAddingConditionIdx(null); setNewConditionName('') }} style={{ padding: '4px 8px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none', flexShrink: 0 }}>✕</button>
+                          <button onClick={() => handleAddCondition(i)} style={{ padding: '0 10px', flexShrink: 0 }}>Add</button>
+                          <button onClick={() => { setAddingConditionIdx(null); setNewConditionName('') }} style={{ padding: '0 10px', flexShrink: 0 }}>✕</button>
                         </div>
                       ) : (
                         <select
@@ -381,8 +381,8 @@ export default function SupplierOrderStagesModal({
                           }}
                           style={{ flex: 1, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
                         >
-                          <option value="">{t('suppliers.unitRegCondition')}</option>
-                          <option value="__new__">＋ {t('warehouse.conditionPlaceholder')}</option>
+                          <option value="">—</option>
+                          <option value="__new__">＋ New condition</option>
                           {conditions.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       )}
