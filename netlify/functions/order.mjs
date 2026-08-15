@@ -73,6 +73,9 @@ LIMIT 1
         oi.covers_product_id,
         oi.covers_order_item_id,
         oi.unit_identifier,
+        oi.unit_id,
+        iu.serial_number AS unit_serial,
+        iu.condition     AS unit_condition,
         p.name AS product_name,
         p.product_kind,
         p.coverage_duration_days,
@@ -83,6 +86,7 @@ LIMIT 1
       JOIN orders o ON o.id = oi.order_id
       JOIN tenants t ON t.id = o.tenant_id
       LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
+      LEFT JOIN inventory_units iu ON iu.id = oi.unit_id
       LEFT JOIN order_items coi ON coi.id = oi.covers_order_item_id
       LEFT JOIN products coi_p ON coi_p.id = coi.product_id AND coi_p.tenant_id = o.tenant_id
       WHERE oi.order_id = ${id}
@@ -249,7 +253,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     for (const item of itemList) {
       await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id, covers_order_item_id, unit_identifier)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id, covers_order_item_id, unit_identifier, unit_id)
         VALUES (
           ${id},
           ${item.product_id},
@@ -258,7 +262,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
           ${typeof item_product_cost === 'number' && !Number.isNaN(item_product_cost) ? item_product_cost : null},
           ${item.covers_product_id ?? null},
           ${item.covers_order_item_id ?? null},
-          ${item.unit_identifier?.trim() || null}
+          ${item.unit_identifier?.trim() || null},
+          ${item.unit_id ?? null}
         )
       `
     }

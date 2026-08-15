@@ -489,11 +489,13 @@ export default function NewOrder() {
                   inputMode="decimal"
                   placeholder="0"
                   value={l.qtyStr}
+                  readOnly={!!l.unit_id}
                   onChange={e => {
+                    if (l.unit_id) return
                     const v = e.target.value.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '')
                     updateLine(idx, { qtyStr: v })
                   }}
-                  style={{ height: CONTROL_H }}
+                  style={{ height: CONTROL_H, opacity: l.unit_id ? 0.6 : undefined }}
                 />
               </div>
             </div>
@@ -506,7 +508,14 @@ export default function NewOrder() {
                 ) : l.availableUnits.length === 0 ? (
                   <div style={{ fontSize: 13, color: 'var(--color-error)', padding: '6px 0' }}>{t('orders.noUnitsAvailable')}</div>
                 ) : (
-                  <select value={l.unit_id ?? ''} onChange={e => updateLine(idx, { unit_id: e.target.value ? Number(e.target.value) : null })} style={{ height: CONTROL_H }}>
+                  <select
+                    value={l.unit_id ?? ''}
+                    onChange={e => {
+                      const uid = e.target.value ? Number(e.target.value) : null
+                      updateLine(idx, { unit_id: uid, qtyStr: uid ? '1' : l.qtyStr })
+                    }}
+                    style={{ height: CONTROL_H }}
+                  >
                     <option value="">{t('orders.selectUnit')}</option>
                     {(l.availableUnits as AvailableUnit[]).map(u => (
                       <option key={u.id} value={u.id}>
@@ -596,7 +605,7 @@ export default function NewOrder() {
               </div>
             )}
 
-            {!isCoverage && (
+            {!isCoverage && !l.unit_id && (
               <div style={{ marginTop: 8 }}>
                 <label>{t('orders.unitIdentifier')}</label>
                 <input

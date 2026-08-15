@@ -249,9 +249,13 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                     <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
                     <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
                   </div>
-                  {item.unit_identifier && (
+                  {(item.unit_serial || item.unit_identifier) && (
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
-                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{item.unit_identifier}</span>
+                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>
+                        {item.unit_serial
+                          ? [item.unit_serial, item.unit_condition].filter(Boolean).join(' — ')
+                          : item.unit_identifier}
+                      </span>
                     </div>
                   )}
                   {coveredName && (
