@@ -233,7 +233,7 @@ export default function NewOrderSupplier() {
                   >
                     <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                     {(() => {
-                      const sellable = products.filter(p => p.category !== 'material')
+                      const sellable = products.filter(p => p.category === 'product')
                       const mats = products.filter(p => p.category === 'material')
                       return (
                         <>

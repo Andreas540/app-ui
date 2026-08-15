@@ -124,7 +124,10 @@ export default function NewOrder() {
 
         const targetProduct = paramProductId
           ? prods.find(p => p.id === paramProductId)
-          : prods.filter(p => (p.category ?? 'product') === 'product').sort((a, b) => a.name.localeCompare(b.name))[0]
+          : (
+              prods.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage').sort((a, b) => a.name.localeCompare(b.name))[0]
+              ?? prods.filter(p => p.category === 'service' && p.product_kind !== 'coverage').sort((a, b) => a.name.localeCompare(b.name))[0]
+            )
 
         if (targetProduct) {
           const line = emptyLine(targetProduct.id)
