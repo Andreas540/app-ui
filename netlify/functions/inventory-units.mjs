@@ -58,7 +58,7 @@ async function createUnit(event) {
   const TENANT_ID = authz.tenantId
 
   const body = JSON.parse(event.body || '{}')
-  const { product_id, serial_number, condition, notes, acquired_at } = body
+  const { product_id, serial_number, condition, notes, acquired_at, supplier_order_id } = body
 
   if (!product_id) return cors(400, { error: 'product_id required' })
 
@@ -75,7 +75,7 @@ async function createUnit(event) {
   const [unit] = await sql`
     INSERT INTO inventory_units (
       tenant_id, product_id, serial_number, condition,
-      listing_status, notes, acquired_at
+      listing_status, notes, acquired_at, supplier_order_id
     )
     VALUES (
       ${TENANT_ID}, ${product_id},
@@ -83,7 +83,8 @@ async function createUnit(event) {
       ${condition?.trim() || null},
       'Inventory',
       ${notes?.trim() || null},
-      ${acquired_at || null}
+      ${acquired_at || null},
+      ${supplier_order_id || null}
     )
     RETURNING *
   `

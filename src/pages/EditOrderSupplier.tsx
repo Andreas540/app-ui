@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 
 type Product = { id: string; name: string; category: string }
 
@@ -49,6 +50,7 @@ export default function EditOrderSupplier() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [showStagesModal, setShowStagesModal] = useState(false)
 
   // Header
   const [orderNo, setOrderNo] = useState('')
@@ -258,8 +260,14 @@ const pRes = await fetch(`${base}/api/product`, {
         const t = await res.text().catch(() => '')
         throw new Error(`Save failed (${res.status}) ${t?.slice(0, 200)}`)
       }
-      alert(t('supplierOrders.updated'))
-      navigate(-1)
+      if (received) {
+        // Open stages modal — it fetches fresh data, detects any unregistered
+        // serialized units, and prompts accordingly. Closes → navigate away.
+        setShowStagesModal(true)
+      } else {
+        alert(t('supplierOrders.updated'))
+        navigate(-1)
+      }
     } catch (e: any) {
       alert(e?.message || t('payments.alertSaveFailed'))
     } finally {
@@ -504,6 +512,13 @@ const pRes = await fetch(`${base}/api/product`, {
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
+
+      <SupplierOrderStagesModal
+        isOpen={showStagesModal}
+        onClose={() => { setShowStagesModal(false); navigate(-1) }}
+        order={showStagesModal ? { id, order_no: orderNo } : null}
+        onSaved={() => {}}
+      />
 
       {/* Actions */}
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>

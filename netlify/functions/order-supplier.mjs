@@ -67,18 +67,27 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         
         const order = orderRows[0]
         
-        // Get order items with stage quantities
+        // Get order items with stage quantities, unit tracking mode, and
+        // how many inventory_units are already registered against this order
         const items = await sql`
           select
             ois.id,
             ois.product_id,
             p.name as product_name,
+            p.unit_tracking,
             ois.qty,
             ois.qty_shipped,
             ois.qty_in_customs,
             ois.qty_received,
             ois.product_cost,
-            ois.shipping_cost
+            ois.shipping_cost,
+            (
+              select count(*)::int
+              from inventory_units iu
+              where iu.supplier_order_id = ${id}
+                and iu.product_id = ois.product_id
+                and iu.tenant_id = ${tenantId}
+            ) as units_registered
           from order_items_suppliers ois
           join products p on p.id = ois.product_id
           where ois.tenant_id = ${tenantId}
