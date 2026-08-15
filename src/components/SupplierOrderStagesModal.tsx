@@ -365,7 +365,7 @@ export default function SupplierOrderStagesModal({
                             placeholder="Condition name"
                             value={newConditionName}
                             onChange={e => setNewConditionName(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleAddCondition(i); if (e.key === 'Escape') { setAddingConditionIdx(null); setNewConditionName('') } }}
+                            onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); handleAddCondition(i) } if (e.key === 'Escape') { setAddingConditionIdx(null); setNewConditionName('') } }}
                             style={{ flex: 1, minWidth: 0 }}
                           />
                           <button onClick={() => handleAddCondition(i)} style={{ padding: '0 10px', flexShrink: 0 }}>Add</button>

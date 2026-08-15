@@ -814,7 +814,7 @@ export default function Warehouse() {
                                             <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                             {editCondAdding ? (
                                             <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-                                              <input autoFocus placeholder="Condition name" value={editCondNew} onChange={e => setEditCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionEdit(); if (e.key === 'Escape') { setEditCondAdding(false); setEditCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                              <input autoFocus placeholder="Condition name" value={editCondNew} onChange={e => setEditCondNew(e.target.value)} onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); handleAddConditionEdit() } if (e.key === 'Escape') { setEditCondAdding(false); setEditCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
                                               <button onClick={handleAddConditionEdit} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>Add</button>
                                               <button onClick={() => { setEditCondAdding(false); setEditCondNew('') }} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>✕</button>
                                             </div>
@@ -888,7 +888,7 @@ export default function Warehouse() {
                                         <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                         {addCondAdding ? (
                                         <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-                                          <input autoFocus placeholder="Condition name" value={addCondNew} onChange={e => setAddCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionAdd(); if (e.key === 'Escape') { setAddCondAdding(false); setAddCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          <input autoFocus placeholder="Condition name" value={addCondNew} onChange={e => setAddCondNew(e.target.value)} onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); handleAddConditionAdd() } if (e.key === 'Escape') { setAddCondAdding(false); setAddCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
                                           <button onClick={handleAddConditionAdd} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>Add</button>
                                           <button onClick={() => { setAddCondAdding(false); setAddCondNew('') }} style={{ height: 28, padding: '0 8px', flexShrink: 0 }}>✕</button>
                                         </div>
