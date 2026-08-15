@@ -184,7 +184,7 @@ export default function Warehouse() {
     } finally { setUnitSaving(false) }
   }
 
-  useEffect(() => { listProductCategories('condition').then(setConditions).catch(() => {}) }, [])
+  useEffect(() => { listProductCategories('condition').then(setConditions).catch(() => {}) }, [editingUnitId, addingForProduct])
 
   function handleAddConditionEdit() {
     const name = editCondNew.trim()
