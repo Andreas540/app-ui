@@ -126,14 +126,14 @@ export default function SupplierOrderStagesModal({
       .finally(() => setLoading(false))
   }, [isOpen, order?.id])
 
-  async function handleAddCondition(slotIdx: number) {
+  function handleAddCondition(slotIdx: number) {
     const name = newConditionName.trim()
     if (!name) return
-    await createProductCategory('condition', name)
-    setConditions(prev => [...prev, name].sort())
+    setConditions(prev => prev.includes(name) ? prev : [...prev, name].sort())
     updateSlot(slotIdx, 'condition', name)
     setAddingConditionIdx(null)
     setNewConditionName('')
+    createProductCategory('condition', name).catch(() => {})
   }
 
   function update(idx: number, field: 'shippedStr' | 'customsStr' | 'receivedStr', val: string) {

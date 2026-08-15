@@ -186,24 +186,24 @@ export default function Warehouse() {
 
   useEffect(() => { listProductCategories('condition').then(setConditions).catch(() => {}) }, [])
 
-  async function handleAddConditionEdit() {
+  function handleAddConditionEdit() {
     const name = editCondNew.trim()
     if (!name) return
-    await createProductCategory('condition', name)
-    setConditions(prev => [...prev, name].sort())
+    setConditions(prev => prev.includes(name) ? prev : [...prev, name].sort())
     setEditForm(f => ({ ...f, condition: name }))
     setEditCondAdding(false)
     setEditCondNew('')
+    createProductCategory('condition', name).catch(() => {})
   }
 
-  async function handleAddConditionAdd() {
+  function handleAddConditionAdd() {
     const name = addCondNew.trim()
     if (!name) return
-    await createProductCategory('condition', name)
-    setConditions(prev => [...prev, name].sort())
+    setConditions(prev => prev.includes(name) ? prev : [...prev, name].sort())
     setAddForm(f => ({ ...f, condition: name }))
     setAddCondAdding(false)
     setAddCondNew('')
+    createProductCategory('condition', name).catch(() => {})
   }
 
   const demoteUnit = async (unitId: number, productId: string) => {
