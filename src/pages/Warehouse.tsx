@@ -1,9 +1,8 @@
 // src/pages/Warehouse.tsx
-const CONDITION_OPTIONS = ['New', 'Like New', 'Good', 'Used', 'Fair', 'Poor']
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage } from '../lib/api'
+import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage, listProductCategories, createProductCategory } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import OrderDetailModal from '../components/OrderDetailModal'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
@@ -96,6 +95,12 @@ export default function Warehouse() {
   const [namedItems, setNamedItems] = useState<NamedItem[]>([])
   const [unitFetchError, setUnitFetchError] = useState<Record<string, string>>({})
 
+  const [conditions, setConditions] = useState<string[]>([])
+  const [editCondAdding, setEditCondAdding] = useState(false)
+  const [editCondNew, setEditCondNew] = useState('')
+  const [addCondAdding, setAddCondAdding] = useState(false)
+  const [addCondNew, setAddCondNew] = useState('')
+
   const toggleRow = (id: string) => setExpandedRows(prev => {
     const next = new Set(prev)
     next.has(id) ? next.delete(id) : next.add(id)
@@ -177,6 +182,28 @@ export default function Warehouse() {
       setAddForm({ serial_number: '', condition: '', notes: '', acquired_at: '' })
       await refreshUnits(productId)
     } finally { setUnitSaving(false) }
+  }
+
+  useEffect(() => { listProductCategories('condition').then(setConditions).catch(() => {}) }, [])
+
+  async function handleAddConditionEdit() {
+    const name = editCondNew.trim()
+    if (!name) return
+    await createProductCategory('condition', name)
+    setConditions(prev => [...prev, name].sort())
+    setEditForm(f => ({ ...f, condition: name }))
+    setEditCondAdding(false)
+    setEditCondNew('')
+  }
+
+  async function handleAddConditionAdd() {
+    const name = addCondNew.trim()
+    if (!name) return
+    await createProductCategory('condition', name)
+    setConditions(prev => [...prev, name].sort())
+    setAddForm(f => ({ ...f, condition: name }))
+    setAddCondAdding(false)
+    setAddCondNew('')
   }
 
   const demoteUnit = async (unitId: number, productId: string) => {
@@ -785,7 +812,19 @@ export default function Warehouse() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 8px 16px' }}>
                                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                             <input placeholder={t('warehouse.serialPlaceholder')} value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                            <select value={editForm.condition} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}><option value="">—</option>{CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                                            {editCondAdding ? (
+                                            <div style={{ display: 'flex', gap: 4, minWidth: 0 }}>
+                                              <input autoFocus value={editCondNew} onChange={e => setEditCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionEdit(); if (e.key === 'Escape') { setEditCondAdding(false); setEditCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                              <button onClick={handleAddConditionEdit} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>+</button>
+                                              <button onClick={() => { setEditCondAdding(false); setEditCondNew('') }} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>✕</button>
+                                            </div>
+                                          ) : (
+                                            <select value={editForm.condition} onChange={e => { if (e.target.value === '__new__') { setEditCondAdding(true); setEditCondNew('') } else setEditForm(f => ({ ...f, condition: e.target.value })) }} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}>
+                                              <option value="">—</option>
+                                              <option value="__new__">＋ New</option>
+                                              {conditions.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                          )}
                                           </div>
                                           <input placeholder={t('warehouse.unitNotesPlaceholder')} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                           <div style={{ display: 'flex', gap: 6 }}>
@@ -847,7 +886,19 @@ export default function Warehouse() {
                                     <div style={{ borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px 4px 16px' }}>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                         <input placeholder={t('warehouse.serialPlaceholder')} value={addForm.serial_number} onChange={e => setAddForm(f => ({ ...f, serial_number: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
-                                        <select value={addForm.condition} onChange={e => setAddForm(f => ({ ...f, condition: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}><option value="">—</option>{CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                                        {addCondAdding ? (
+                                        <div style={{ display: 'flex', gap: 4, minWidth: 0 }}>
+                                          <input autoFocus value={addCondNew} onChange={e => setAddCondNew(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddConditionAdd(); if (e.key === 'Escape') { setAddCondAdding(false); setAddCondNew('') } }} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '4px 8px', height: 28 }} />
+                                          <button onClick={handleAddConditionAdd} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>+</button>
+                                          <button onClick={() => { setAddCondAdding(false); setAddCondNew('') }} style={{ fontSize: 11, padding: '2px 6px', height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none' }}>✕</button>
+                                        </div>
+                                      ) : (
+                                        <select value={addForm.condition} onChange={e => { if (e.target.value === '__new__') { setAddCondAdding(true); setAddCondNew('') } else setAddForm(f => ({ ...f, condition: e.target.value })) }} style={{ fontSize: 12, padding: '4px 8px', height: 28 }}>
+                                          <option value="">—</option>
+                                          <option value="__new__">＋ New</option>
+                                          {conditions.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                      )}
                                       </div>
                                       <input placeholder={t('warehouse.unitNotesPlaceholder')} value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ fontSize: 12, padding: '4px 8px', height: 28 }} />
                                       <div style={{ display: 'flex', gap: 6 }}>

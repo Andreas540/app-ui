@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-
-const CONDITION_OPTIONS = ['New', 'Like New', 'Good', 'Used', 'Fair', 'Poor']
 import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
-import { getAuthHeaders } from '../lib/api'
+import { getAuthHeaders, listProductCategories, createProductCategory } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { formatDate } from '../lib/time'
 
@@ -91,6 +89,10 @@ export default function SupplierOrderStagesModal({
   const [events, setEvents] = useState<StageEvent[]>([])
   const [unitSlots, setUnitSlots] = useState<UnitSlot[]>([])
 
+  const [conditions, setConditions] = useState<string[]>([])
+  const [addingConditionIdx, setAddingConditionIdx] = useState<number | null>(null)
+  const [newConditionName, setNewConditionName] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [registeringSaving, setRegisteringSaving] = useState(false)
@@ -103,6 +105,11 @@ export default function SupplierOrderStagesModal({
     const data = await res.json()
     return data
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    listProductCategories('condition').then(setConditions).catch(() => {})
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen || !order?.id) return
@@ -118,6 +125,16 @@ export default function SupplierOrderStagesModal({
       .catch(e => setError(e.message || t('suppliers.stagesSaveFailed')))
       .finally(() => setLoading(false))
   }, [isOpen, order?.id])
+
+  async function handleAddCondition(slotIdx: number) {
+    const name = newConditionName.trim()
+    if (!name) return
+    await createProductCategory('condition', name)
+    setConditions(prev => [...prev, name].sort())
+    updateSlot(slotIdx, 'condition', name)
+    setAddingConditionIdx(null)
+    setNewConditionName('')
+  }
 
   function update(idx: number, field: 'shippedStr' | 'customsStr' | 'receivedStr', val: string) {
     if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
@@ -341,15 +358,34 @@ export default function SupplierOrderStagesModal({
                         onChange={e => updateSlot(i, 'serial', e.target.value)}
                         style={{ flex: 2, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
                       />
-                      <select
-                        value={slot.condition}
-                        disabled={slot.skipped || registeringSaving}
-                        onChange={e => updateSlot(i, 'condition', e.target.value)}
-                        style={{ flex: 1, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
-                      >
-                        <option value="">{t('suppliers.unitRegCondition')}</option>
-                        {CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      {addingConditionIdx === i ? (
+                        <div style={{ flex: 1, display: 'flex', gap: 4, minWidth: 0 }}>
+                          <input
+                            autoFocus
+                            value={newConditionName}
+                            onChange={e => setNewConditionName(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleAddCondition(i); if (e.key === 'Escape') { setAddingConditionIdx(null); setNewConditionName('') } }}
+                            placeholder={t('suppliers.unitRegCondition')}
+                            style={{ flex: 1, minWidth: 0, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
+                          />
+                          <button onClick={() => handleAddCondition(i)} style={{ padding: '4px 8px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none', flexShrink: 0 }}>+</button>
+                          <button onClick={() => { setAddingConditionIdx(null); setNewConditionName('') }} style={{ padding: '4px 8px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', background: 'none', flexShrink: 0 }}>✕</button>
+                        </div>
+                      ) : (
+                        <select
+                          value={slot.condition}
+                          disabled={slot.skipped || registeringSaving}
+                          onChange={e => {
+                            if (e.target.value === '__new__') { setAddingConditionIdx(i); setNewConditionName('') }
+                            else updateSlot(i, 'condition', e.target.value)
+                          }}
+                          style={{ flex: 1, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
+                        >
+                          <option value="">{t('suppliers.unitRegCondition')}</option>
+                          <option value="__new__">＋ {t('warehouse.conditionPlaceholder')}</option>
+                          {conditions.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      )}
                       <button
                         onClick={() => updateSlot(i, 'skipped', !slot.skipped)}
                         disabled={registeringSaving}

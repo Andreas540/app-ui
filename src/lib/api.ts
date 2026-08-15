@@ -401,14 +401,14 @@ export async function updateCustomer(input: UpdateCustomerInput) {
 }
 
 // --- Product categories ---
-export async function listProductCategories(type: 'category' | 'subcategory'): Promise<string[]> {
+export async function listProductCategories(type: 'category' | 'subcategory' | 'condition'): Promise<string[]> {
   const res = await apiFetch(`${base}/api/product-categories?type=${type}`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Failed to load product categories')
   const j = await res.json()
   return j.categories ?? []
 }
 
-export async function createProductCategory(type: 'category' | 'subcategory', name: string): Promise<void> {
+export async function createProductCategory(type: 'category' | 'subcategory' | 'condition', name: string): Promise<void> {
   const res = await apiFetch(`${base}/api/product-categories`, {
     method: 'POST',
     headers: getAuthHeaders(),
