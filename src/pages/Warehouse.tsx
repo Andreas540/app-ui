@@ -794,7 +794,12 @@ export default function Warehouse() {
                                         </div>
                                       ) : (
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 6, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 8, alignItems: 'center' }}>
-                                          <div style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</div>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                            <span style={{ color: u.serial_number ? undefined : 'var(--text-secondary)' }}>{u.serial_number ?? '—'}</span>
+                                            {u.listing_status === 'Inventory' && !isReserved && (
+                                              <button onClick={() => navigate(`/orders/new?product_id=${item.product_id}&unit_id=${u.id}`)} style={{ fontSize: 10, padding: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', textAlign: 'left' }}>{t('newOrder')}</button>
+                                            )}
+                                          </div>
                                           <div style={{ color: u.condition ? undefined : 'var(--text-secondary)' }}>{u.condition ?? '—'}</div>
                                           <div style={{ color: u.listing_status === 'Sold' ? undefined : isReserved ? 'var(--color-warning, #e6a817)' : undefined }}>
                                             {u.listing_status === 'Sold' ? (
@@ -814,9 +819,6 @@ export default function Warehouse() {
                                             )}
                                           </div>
                                           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                            {u.listing_status === 'Inventory' && !isReserved && (
-                                              <button onClick={() => navigate(`/orders/new?product_id=${item.product_id}&unit_id=${u.id}`)} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--primary)' }}>{t('newOrder')}</button>
-                                            )}
                                             {u.listing_status === 'Inventory' && (
                                               <>
                                                 <button onClick={() => { setEditingUnitId(u.id); setEditForm({ serial_number: u.serial_number ?? '', condition: u.condition ?? '', notes: u.notes ?? '' }) }} style={{ fontSize: 11, padding: '2px 7px', background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer' }}>{t('warehouse.editUnit')}</button>
