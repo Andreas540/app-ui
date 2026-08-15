@@ -200,6 +200,9 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       if (!supplier_id) return json(400, { error: 'Missing supplier_id' })
       if (!Array.isArray(lines) || lines.length === 0) return json(400, { error: 'No lines provided' })
 
+      const tzRowPut = await sql`SELECT COALESCE(default_timezone, 'UTC') AS tz FROM tenants WHERE id = ${tenantId} LIMIT 1`
+      const tzPut = tzRowPut[0]?.tz || 'UTC'
+
       // Update order header (manually set dates if provided, otherwise let trigger handle it)
       await sql`
         update orders_suppliers
@@ -282,6 +285,45 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
                 qty_in_customs = LEAST(${snap.customs},  qty),
                 qty_received   = LEAST(${snap.received}, qty)
             WHERE order_id = ${id} AND tenant_id = ${tenantId} AND product_id = ${productId}
+          `
+        }
+      }
+
+      // Write stage events for any qty_* changes caused by the edit.
+      // (warehouse_deliveries is handled by the DB trigger on orders_suppliers,
+      // so we only need to write to order_supplier_stage_events here.)
+      const afterStage = await sql`
+        SELECT ois.product_id, p.name AS product_name,
+          ois.qty_shipped, ois.qty_in_customs, ois.qty_received
+        FROM order_items_suppliers ois
+        JOIN products p ON p.id = ois.product_id
+        WHERE ois.order_id = ${id} AND ois.tenant_id = ${tenantId}
+      `
+      const allStageProductIds = new Set([
+        ...Object.keys(stageMap),
+        ...afterStage.map(r => String(r.product_id)),
+      ])
+      for (const productId of allStageProductIds) {
+        const before = stageMap[productId] || { shipped: 0, customs: 0, received: 0 }
+        const afterRow = afterStage.find(r => String(r.product_id) === productId)
+        const after = afterRow
+          ? { shipped: Number(afterRow.qty_shipped), customs: Number(afterRow.qty_in_customs), received: Number(afterRow.qty_received) }
+          : { shipped: 0, customs: 0, received: 0 }
+        const productName = afterRow?.product_name || ''
+        for (const [stage, bv, av] of [
+          ['shipped',    before.shipped,  after.shipped],
+          ['in_customs', before.customs,  after.customs],
+          ['received',   before.received, after.received],
+        ]) {
+          const delta = av - bv
+          if (delta === 0) continue
+          await sql`
+            INSERT INTO order_supplier_stage_events
+              (tenant_id, supplier_order_id, product_id, product_name, stage, qty_delta, event_date)
+            VALUES (
+              ${tenantId}, ${id}, ${productId}, ${productName}, ${stage}, ${delta},
+              (CURRENT_TIMESTAMP AT TIME ZONE ${tzPut})::date
+            )
           `
         }
       }
