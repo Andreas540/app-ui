@@ -113,6 +113,17 @@ async function updateDeliveryStatus(event) {
       return cors(404, { error: 'Order not found' });
     }
 
+    const eventStatus = totalDelivered === 0 ? 'not_delivered'
+      : totalDelivered >= totalQty ? 'delivered'
+      : 'partial'
+    const eventDate = newDeliveredAt || new Date().toISOString().slice(0, 10)
+    await sql`
+      INSERT INTO order_delivery_events
+        (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
+      VALUES
+        (${TENANT_ID}::uuid, ${order_id}::uuid, ${totalDelivered}, ${totalQty}, ${eventStatus}, ${eventDate}::date)
+    `
+
     const row = result[0];
     return cors(200, {
       ok: true,
