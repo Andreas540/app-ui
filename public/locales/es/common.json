@@ -483,6 +483,7 @@
     "alertEnterPrice": "Ingrese un precio unitario válido",
     "alertRefundNegative": "Reembolso/Descuento requiere un precio NEGATIVO",
     "alertEnterPositivePrice": "Ingrese un precio unitario > 0",
+    "alertUndeliverFirst": "Esta unidad está marcada como entregada/vendida. Quite la marca de entregado antes de cambiar el producto.",
     "orderSaved": "¡Guardado! Pedido #{{number}}",
     "noProductsYet": "Sin productos — crea un producto primero",
     "selectProduct": "Seleccionar producto...",

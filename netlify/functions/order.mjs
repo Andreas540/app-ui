@@ -332,6 +332,18 @@ if (authz.error) return cors(403, { error: authz.error })
 
 const TENANT_ID = authz.tenantId
 
+    // Revert any serialized units that were marked Sold by this order back to Listed
+    await sql`
+      UPDATE inventory_units
+      SET listing_status = 'Listed', updated_at = now()
+      WHERE tenant_id = ${TENANT_ID}
+        AND listing_status = 'Sold'
+        AND id IN (
+          SELECT unit_id FROM order_items
+          WHERE order_id = ${id} AND unit_id IS NOT NULL
+        )
+    `
+
     // Delete associated records first
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     await sql`DELETE FROM order_partners WHERE order_id = ${id}`

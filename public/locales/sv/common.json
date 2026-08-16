@@ -483,6 +483,7 @@
     "alertEnterPrice": "Ange ett giltigt enhetspris",
     "alertRefundNegative": "Återbetalning/Rabatt kräver ett NEGATIVT enhetspris",
     "alertEnterPositivePrice": "Ange ett enhetspris > 0",
+    "alertUndeliverFirst": "Den här enheten är markerad som levererad/såld. Avmarkera ordern som levererad innan du byter produkt.",
     "orderSaved": "Sparad! Beställning #{{number}}",
     "noProductsYet": "Inga produkter ännu — skapa en produkt först",
     "selectProduct": "Välj produkt...",

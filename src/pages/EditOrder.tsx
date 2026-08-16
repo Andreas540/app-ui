@@ -226,6 +226,10 @@ export default function EditOrder() {
   function removeLine(idx: number) { setLines(prev => prev.filter((_, i) => i !== idx)) }
 
   function onLineProductChange(idx: number, product_id: string) {
+    if (delivered && lines[idx]?.unit_id) {
+      alert(t('orders.alertUndeliverFirst'))
+      return
+    }
     const prod = products.find(p => p.id === product_id)
     const pa = prod?.price_amount
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'

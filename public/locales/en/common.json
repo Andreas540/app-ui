@@ -483,6 +483,7 @@
     "alertEnterPrice": "Enter a valid unit price",
     "alertRefundNegative": "Refund/Discount requires a NEGATIVE unit price",
     "alertEnterPositivePrice": "Enter a unit price > 0",
+    "alertUndeliverFirst": "This unit is marked as delivered/sold. Unmark the order as delivered before changing the product.",
     "orderSaved": "Saved! Order #{{number}}",
     "noProductsYet": "No products yet — create a product first",
     "selectProduct": "Select product...",
