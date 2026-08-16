@@ -433,7 +433,8 @@
     "orderLines": "{{count}} rad(er)",
     "updateDelivery": "Uppdatera leverans",
     "orderedQty": "Beställd kvantitet",
-    "deliveredQty": "Levererad kvantitet",
+    "currentlyDelivered": "Just nu {{current}} av {{total}} levererat",
+    "deliveredQty": "Nytt leveranstotal",
     "setToZero": "Sätt till 0",
     "fullDelivery": "Full leverans",
     "newStatus": "Ny status",
@@ -441,7 +442,7 @@
     "partiallyDeliveredWithRemaining": ", {{remaining}} återstår.",
     "deliveryDate": "Leveransdatum",
     "orderedHeader": "Beställt",
-    "deliveredHeader": "Levererat"
+    "deliveredHeader": "Nytt total"
   },
   "payments": {
     "fromCustomer": "Från kund",

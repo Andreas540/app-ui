@@ -1300,7 +1300,15 @@ function DeliveryModal({
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     fetch(`${base}/api/order?id=${order.id}`, { headers: getAuthHeaders() })
       .then(r => r.json())
-      .then(data => setEvents((data.delivery_events || []).slice().reverse()))
+      .then(data => {
+        const evts: any[] = data.delivery_events || []
+        // Compute how much was added or removed in each event (evts is ASC from server)
+        const withDelta = evts.map((ev, i) => ({
+          ...ev,
+          delta: Number(ev.delivered_quantity) - (i > 0 ? Number(evts[i - 1].delivered_quantity) : 0),
+        }))
+        setEvents(withDelta.reverse()) // latest on top
+      })
       .catch(() => {})
   }, [order?.id])
   const isMulti = items.length > 1
@@ -1424,10 +1432,16 @@ function DeliveryModal({
             const val = inputValues[id] ?? '0'
             const clamped = clamp(val, max)
             const remaining = max - clamped
+            const currentDelivered = Number(item?.delivered_qty ?? order.delivered_quantity ?? 0)
             return (
               <>
                 <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.orderedQty')}</div>
                 <div style={{ marginBottom: 8 }}>{max}</div>
+                {currentDelivered > 0 && (
+                  <div className="helper" style={{ marginBottom: 8 }}>
+                    {t('customerDetail.currentlyDelivered', { current: currentDelivered, total: max })}
+                  </div>
+                )}
                 <div className="helper" style={{ marginBottom: 4 }}>{t('customerDetail.deliveredQty')}</div>
                 <input
                   type="number"
@@ -1490,7 +1504,7 @@ function DeliveryModal({
             <div style={{ borderTop: '1px solid var(--line)', marginTop: 16 }} />
             <div style={{ marginTop: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                {t('customerDetail.deliveryHistory')}
+                {t('orderModal.deliveryHistory')}
               </div>
               {events.map((ev: any, idx: number) => {
                 let symbol = '○', color = '#d1d5db'
@@ -1498,19 +1512,22 @@ function DeliveryModal({
                 else if (ev.delivery_status === 'partial') { symbol = '◐'; color = '#f59e0b' }
                 const dqty = Number(ev.delivered_quantity)
                 const tqty = Number(ev.total_qty)
-                const qtyLabel = dqty % 1 === 0 ? String(dqty) : dqty.toFixed(2).replace(/\.?0+$/, '')
-                const totalLabel = tqty % 1 === 0 ? String(tqty) : tqty.toFixed(2).replace(/\.?0+$/, '')
+                const delta = Number(ev.delta)
+                const fmt = (n: number) => n % 1 === 0 ? String(n) : parseFloat(n.toFixed(4)).toString()
+                const label = ev.delivery_status === 'delivered'
+                  ? t('orderModal.deliveredInFull')
+                  : ev.delivery_status === 'partial'
+                  ? t('orderModal.partiallyDelivered')
+                  : t('notDelivered')
+                const deltaStr = delta > 0 ? `+${fmt(delta)}` : delta < 0 ? fmt(delta) : ''
+                const deltaColor = delta > 0 ? '#10b981' : '#ef4444'
                 return (
-                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '16px 80px 1fr', gap: 8, alignItems: 'center', fontSize: 12, marginBottom: 6 }}>
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '16px 72px 1fr auto auto', gap: '4px 8px', alignItems: 'center', fontSize: 12, marginBottom: 6 }}>
                     <span style={{ color, fontWeight: 600, textAlign: 'center' }}>{symbol}</span>
                     <span className="helper">{formatDate(ev.event_date)}</span>
-                    <span style={{ color: 'var(--text)' }}>
-                      {ev.delivery_status === 'not_delivered'
-                        ? t('notDelivered')
-                        : ev.delivery_status === 'delivered'
-                        ? t('customerDetail.deliveredInFullQty', { delivered: qtyLabel, total: totalLabel })
-                        : t('customerDetail.partiallyDeliveredQty', { delivered: qtyLabel, total: totalLabel })}
-                    </span>
+                    <span style={{ color: 'var(--text)' }}>{label}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{fmt(dqty)}/{fmt(tqty)}</span>
+                    {deltaStr && <span style={{ color: deltaColor, fontWeight: 600, textAlign: 'right' }}>{deltaStr}</span>}
                   </div>
                 )
               })}

@@ -433,7 +433,8 @@
     "orderLines": "{{count}} línea(s)",
     "updateDelivery": "Actualizar entrega",
     "orderedQty": "Cantidad ordenada",
-    "deliveredQty": "Cantidad entregada",
+    "currentlyDelivered": "Actualmente {{current}} de {{total}} entregado",
+    "deliveredQty": "Nuevo total entregado",
     "setToZero": "Poner en 0",
     "fullDelivery": "Entrega completa",
     "newStatus": "Nuevo estado",
@@ -441,7 +442,7 @@
     "partiallyDeliveredWithRemaining": ", {{remaining}} restante.",
     "deliveryDate": "Fecha de entrega",
     "orderedHeader": "Pedido",
-    "deliveredHeader": "Entregado"
+    "deliveredHeader": "Nuevo total"
   },
   "payments": {
     "fromCustomer": "De cliente",
