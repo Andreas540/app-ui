@@ -281,8 +281,8 @@ function MultiSelectDropdown({
         style={{
           padding: '5px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 6,
-          border: count > 0 ? '1.5px solid var(--color-primary)' : '1px solid var(--border-color)',
-          background: count > 0 ? 'var(--color-primary)' : 'var(--bg-primary)',
+          border: count > 0 ? '1.5px solid var(--color-primary)' : '1px solid var(--line)',
+          background: count > 0 ? 'var(--color-primary)' : 'var(--panel)',
           color: count > 0 ? '#fff' : 'var(--text-primary)',
           fontWeight: count > 0 ? 600 : 400,
         }}
@@ -292,7 +292,7 @@ function MultiSelectDropdown({
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
-          background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+          background: 'var(--panel)', border: '1px solid var(--line)',
           borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
           minWidth: 200, maxWidth: 300, overflow: 'hidden',
         }}>
@@ -302,8 +302,8 @@ function MultiSelectDropdown({
               placeholder={t('timeline.filterSearch')} autoFocus
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '5px 8px', fontSize: 12,
-                border: '1px solid var(--border-color)', borderRadius: 5,
-                background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none',
+                border: '1px solid var(--line)', borderRadius: 5,
+                background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none',
               }}
             />
           </div>
