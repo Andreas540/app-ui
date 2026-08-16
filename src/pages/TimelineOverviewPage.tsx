@@ -522,9 +522,10 @@ export default function TimelineOverviewPage() {
   const sliderMax = useMemo(() => {
     const dates = [
       ...custOrders.map(o => o.delivered_at || TODAY),
-      ...suppOrders.map(o => o.received_date || o.est_delivery_date || TODAY),
+      ...suppOrders.map(o => o.received_date || TODAY),
     ]
-    return dates.length ? Math.max(toDay(fetchTo), ...dates.map(toDay)) : toDay(fetchTo)
+    const computed = dates.length ? Math.max(toDay(fetchTo), ...dates.map(toDay)) : toDay(fetchTo)
+    return Math.min(computed, toDay(TODAY))
   }, [custOrders, suppOrders, fetchTo])
 
   // Axis ticks
@@ -818,7 +819,7 @@ export default function TimelineOverviewPage() {
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
-                      const end = o.received_date || o.delivery_date || o.est_delivery_date || addDays(o.order_date, 14)
+                      const end = o.received_date || o.delivery_date || TODAY
                       const ds  = o.derived_status
                       const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${ds === 'received' ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
                       return (
