@@ -55,10 +55,6 @@ function addMonths(s: string, m: number) {
   d.setMonth(d.getMonth() + m)
   return d.toISOString().slice(0, 10)
 }
-function fmtShort(s: string) {
-  const d = new Date(s + 'T00:00:00')
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
 function fmtFull(s: string) {
   const d = new Date(s + 'T00:00:00')
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
