@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import OrderDetailModal from '../components/OrderDetailModal'
+import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -197,13 +199,14 @@ function DateRangeSlider({
 
 function GanttRow({
   label, sublabel, barStart, barEnd, viewFrom, viewTo,
-  color, isDelivered, tooltip,
+  color, isDelivered, tooltip, onLabelClick,
 }: {
   label: string; sublabel?: string
   barStart: string; barEnd: string
   viewFrom: number; viewTo: number
   color: string; isDelivered: boolean
   tooltip: string
+  onLabelClick?: () => void
 }) {
   const geo = barGeometry(barStart, barEnd, viewFrom, viewTo)
   const BAR_H = 9
@@ -212,7 +215,10 @@ function GanttRow({
     <div style={{ display: 'flex', alignItems: 'center', minHeight: 22, gap: 0 }}>
       {/* Label — order # and products on same line */}
       <div style={{ width: 200, flexShrink: 0, paddingRight: 8, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{label}</span>
+        <button
+          onClick={onLabelClick}
+          style={{ fontSize: 12, color: 'var(--color-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 500 }}
+        >{label}</button>
         {sublabel && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{sublabel}</span>}
       </div>
       {/* Bar area */}
@@ -292,6 +298,11 @@ export default function TimelineOverviewPage() {
   const [suppGroupBy, setSuppGroupBy] = useState<SuppGroup>('supplier')
   const [activePreset, setActivePreset] = useState<number | 'ytd' | 'all' | 'custom'>(1)
 
+  // Modal state
+  const [custModalOrder, setCustModalOrder] = useState<any>(null)
+  const [suppModalOrder, setSuppModalOrder] = useState<any>(null)
+  const [suppModalName,  setSuppModalName]  = useState('')
+
   const fetchRef = useRef(0)
 
   async function fetchData(from: string, to: string) {
@@ -315,6 +326,21 @@ export default function TimelineOverviewPage() {
   }
 
   useEffect(() => { fetchData(fetchFrom, fetchTo) }, [])
+
+  async function openSupplierOrder(id: string, supplierName: string) {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(`${base}/api/order-supplier?id=${id}`, { headers: getAuthHeaders() })
+    if (!res.ok) return
+    const data = await res.json()
+    const items = (data.items ?? []).map((item: any) => ({
+      ...item,
+      product_total:  Number(item.product_cost)  * Number(item.qty),
+      shipping_total: Number(item.shipping_cost) * Number(item.qty),
+    }))
+    const total = items.reduce((sum: number, item: any) => sum + item.product_total + item.shipping_total, 0)
+    setSuppModalName(supplierName)
+    setSuppModalOrder({ ...data.order, items, total })
+  }
 
   function applyPreset(months: number | 'ytd' | 'all') {
     let from: string
@@ -572,6 +598,7 @@ export default function TimelineOverviewPage() {
                           color={o.delivered ? '#22c55e' : '#f97316'}
                           isDelivered={o.delivered}
                           tooltip={tip}
+                          onLabelClick={() => setCustModalOrder({ id: o.id, order_no: o.order_no })}
                         />
                       )
                     })}
@@ -607,6 +634,7 @@ export default function TimelineOverviewPage() {
                           color={done ? '#22c55e' : '#f97316'}
                           isDelivered={done}
                           tooltip={tip}
+                          onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
                         />
                       )
                     })}
@@ -626,6 +654,18 @@ export default function TimelineOverviewPage() {
           </div>
         </div>
       )}
+
+      <OrderDetailModal
+        isOpen={!!custModalOrder}
+        onClose={() => setCustModalOrder(null)}
+        order={custModalOrder}
+      />
+      <SupplierOrderDetailModal
+        isOpen={!!suppModalOrder}
+        onClose={() => setSuppModalOrder(null)}
+        order={suppModalOrder}
+        supplierName={suppModalName}
+      />
     </div>
   )
 }
