@@ -109,6 +109,17 @@ function axisMarks(viewFrom: number, viewTo: number): { day: number; label: stri
 
 // ── Dual-thumb date-range slider ───────────────────────────────────────────────
 
+const CTRL_CSS = `
+  .gantt-controls-desktop { display: grid; }
+  .gantt-controls-mobile   { display: none; }
+  @media (max-width: 639px) {
+    .gantt-controls-desktop { display: none !important; }
+    .gantt-controls-mobile  { display: flex !important; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .gantt-ctrl-row  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .gantt-ctrl-lbl  { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  }
+`
+
 const SLIDER_CSS = `
   .gantt-dual-slider {
     position: relative; height: 28px;
@@ -245,7 +256,10 @@ function GroupHeader({ label }: { label: string }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const TODAY = todayStr()
-const DEFAULT_FROM = addMonths(TODAY, -6)
+const DEFAULT_FROM = addMonths(TODAY, -1)
+const PRESETS: [string, number | 'ytd' | 'all'][] = [
+  ['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all'],
+]
 
 function segBtn(active: boolean): React.CSSProperties {
   return {
@@ -276,6 +290,7 @@ export default function TimelineOverviewPage() {
   const [showMode,    setShowMode]    = useState<ShowMode>('both')
   const [custGroupBy, setCustGroupBy] = useState<CustGroup>('customer')
   const [suppGroupBy, setSuppGroupBy] = useState<SuppGroup>('supplier')
+  const [activePreset, setActivePreset] = useState<number | 'ytd' | 'all' | 'custom'>(1)
 
   const fetchRef = useRef(0)
 
@@ -309,12 +324,14 @@ export default function TimelineOverviewPage() {
     else from = addMonths(TODAY, -months)
     setFetchFrom(from); setFetchTo(to)
     setViewFromDay(toDay(from)); setViewToDay(toDay(to))
+    setActivePreset(months)
     fetchData(from, to)
   }
 
   // Extend fetch range if slider is pushed outside
   function handleFromChange(d: number) {
     setViewFromDay(d)
+    setActivePreset('custom')
     if (fromDay(d) < fetchFrom) {
       const newFrom = addDays(fromDay(d), -14)
       setFetchFrom(newFrom)
@@ -323,6 +340,7 @@ export default function TimelineOverviewPage() {
   }
   function handleToChange(d: number) {
     setViewToDay(d)
+    setActivePreset('custom')
     if (fromDay(d) > fetchTo) {
       const newTo = addDays(fromDay(d), 14)
       setFetchTo(newTo)
@@ -395,50 +413,84 @@ export default function TimelineOverviewPage() {
   const showCust = showMode === 'both' || showMode === 'customer'
   const showSupp = showMode === 'both' || showMode === 'supplier'
 
+  const cols = ['auto', showCust && 'auto', showSupp && 'auto', '1fr'].filter(Boolean).join(' ')
+  const hdr: React.CSSProperties  = { fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 5, paddingRight: 16 }
+  const lsep: React.CSSProperties = { borderLeft: '1px solid var(--line)', paddingLeft: 16, paddingRight: 16 }
+  const btns: React.CSSProperties = { display: 'flex', gap: 10, alignItems: 'center', paddingRight: 16 }
+  const lbl11: React.CSSProperties = { fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }
+
+  const presetBtns = (
+    <>
+      {PRESETS.map(([label, val]) => (
+        <button key={label} style={segBtn(activePreset === val)} onClick={() => applyPreset(val)}>{label}</button>
+      ))}
+      {activePreset === 'custom' && <button style={segBtn(true)}>{t('timeline.custom')}</button>}
+    </>
+  )
+
   return (
     <div className="card page-wide" style={{ paddingBottom: 32 }}>
+      <style dangerouslySetInnerHTML={{ __html: CTRL_CSS }} />
       <h3 style={{ marginBottom: 16 }}>{t('timeline.title')}</h3>
 
-      {/* ── Controls — CSS grid so row 1 (labels) and row 2 (buttons) are perfectly aligned across groups ── */}
-      {(() => {
-        const cols = ['auto', showCust && 'auto', showSupp && 'auto', '1fr'].filter(Boolean).join(' ')
-        const hdr: React.CSSProperties  = { fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 5, paddingRight: 16 }
-        const lsep: React.CSSProperties = { borderLeft: '1px solid var(--line)', paddingLeft: 16, paddingRight: 16 }
-        const btns: React.CSSProperties = { display: 'flex', gap: 10, alignItems: 'center', paddingRight: 16 }
-        return (
-          <div style={{ display: 'grid', gridTemplateColumns: cols, marginBottom: 16 }}>
-            {/* ── Row 1: labels ── */}
-            <div style={hdr}>{t('timeline.show')}</div>
-            {showCust && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupCustomerBy')}</div>}
-            {showSupp && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupSupplierBy')}</div>}
-            <div style={{ ...hdr, ...lsep, paddingRight: 0 }}>{t('timeline.period')}</div>
+      {/* ── Desktop controls: CSS grid so labels (row 1) and buttons (row 2) align across columns ── */}
+      <div className="gantt-controls-desktop" style={{ gridTemplateColumns: cols, marginBottom: 16 }}>
+        {/* Row 1: labels */}
+        <div style={hdr}>{t('timeline.show')}</div>
+        {showCust && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupCustomerBy')}</div>}
+        {showSupp && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupSupplierBy')}</div>}
+        <div style={{ ...hdr, ...lsep, paddingRight: 0 }}>{t('timeline.period')}</div>
 
-            {/* ── Row 2: buttons ── */}
-            <div style={btns}>
-              <button style={segBtn(showMode === 'customer')} onClick={() => setShowMode('customer')}>{t('timeline.showCustomer')}</button>
-              <button style={segBtn(showMode === 'supplier')} onClick={() => setShowMode('supplier')}>{t('timeline.showSupplier')}</button>
-              <button style={segBtn(showMode === 'both')}     onClick={() => setShowMode('both')}>{t('timeline.showBoth')}</button>
-            </div>
-            {showCust && (
-              <div style={{ ...btns, ...lsep }}>
-                <button style={segBtn(custGroupBy === 'customer')} onClick={() => setCustGroupBy('customer')}>{t('timeline.byCustomer')}</button>
-                <button style={segBtn(custGroupBy === 'product')}  onClick={() => setCustGroupBy('product')}>{t('timeline.byProduct')}</button>
-              </div>
-            )}
-            {showSupp && (
-              <div style={{ ...btns, ...lsep }}>
-                <button style={segBtn(suppGroupBy === 'supplier')} onClick={() => setSuppGroupBy('supplier')}>{t('timeline.bySupplier')}</button>
-                <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
-              </div>
-            )}
-            <div style={{ ...lsep, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', paddingRight: 0 }}>
-              {([['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
-                <button key={label} style={segBtn(false)} onClick={() => applyPreset(val)}>{label}</button>
-              ))}
-            </div>
+        {/* Row 2: buttons */}
+        <div style={btns}>
+          <button style={segBtn(showMode === 'customer')} onClick={() => setShowMode('customer')}>{t('timeline.showCustomer')}</button>
+          <button style={segBtn(showMode === 'supplier')} onClick={() => setShowMode('supplier')}>{t('timeline.showSupplier')}</button>
+          <button style={segBtn(showMode === 'both')}     onClick={() => setShowMode('both')}>{t('timeline.showBoth')}</button>
+        </div>
+        {showCust && (
+          <div style={{ ...btns, ...lsep }}>
+            <button style={segBtn(custGroupBy === 'customer')} onClick={() => setCustGroupBy('customer')}>{t('timeline.byCustomer')}</button>
+            <button style={segBtn(custGroupBy === 'product')}  onClick={() => setCustGroupBy('product')}>{t('timeline.byProduct')}</button>
           </div>
-        )
-      })()}
+        )}
+        {showSupp && (
+          <div style={{ ...btns, ...lsep }}>
+            <button style={segBtn(suppGroupBy === 'supplier')} onClick={() => setSuppGroupBy('supplier')}>{t('timeline.bySupplier')}</button>
+            <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
+          </div>
+        )}
+        <div style={{ ...lsep, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', paddingRight: 0 }}>
+          {presetBtns}
+        </div>
+      </div>
+
+      {/* ── Mobile controls: each section on its own row (label + buttons inline) ── */}
+      <div className="gantt-controls-mobile">
+        <div className="gantt-ctrl-row">
+          <span style={lbl11}>{t('timeline.show')}</span>
+          <button style={segBtn(showMode === 'customer')} onClick={() => setShowMode('customer')}>{t('timeline.showCustomer')}</button>
+          <button style={segBtn(showMode === 'supplier')} onClick={() => setShowMode('supplier')}>{t('timeline.showSupplier')}</button>
+          <button style={segBtn(showMode === 'both')}     onClick={() => setShowMode('both')}>{t('timeline.showBoth')}</button>
+        </div>
+        {showCust && (
+          <div className="gantt-ctrl-row">
+            <span style={lbl11}>{t('timeline.groupCustomerBy')}</span>
+            <button style={segBtn(custGroupBy === 'customer')} onClick={() => setCustGroupBy('customer')}>{t('timeline.byCustomer')}</button>
+            <button style={segBtn(custGroupBy === 'product')}  onClick={() => setCustGroupBy('product')}>{t('timeline.byProduct')}</button>
+          </div>
+        )}
+        {showSupp && (
+          <div className="gantt-ctrl-row">
+            <span style={lbl11}>{t('timeline.groupSupplierBy')}</span>
+            <button style={segBtn(suppGroupBy === 'supplier')} onClick={() => setSuppGroupBy('supplier')}>{t('timeline.bySupplier')}</button>
+            <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
+          </div>
+        )}
+        <div className="gantt-ctrl-row">
+          <span style={lbl11}>{t('timeline.period')}</span>
+          {presetBtns}
+        </div>
+      </div>
 
       {/* ── Date slider ── */}
       <div style={{ marginBottom: 16 }}>

@@ -256,6 +256,7 @@
     "bySupplier": "Supplier",
     "byProduct": "Product",
     "period": "Period",
+    "custom": "Custom",
     "sectionCustomerOrders": "Customer Orders",
     "sectionSupplierOrders": "Supplier Orders",
     "legendDelivered": "Delivered",

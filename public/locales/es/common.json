@@ -256,6 +256,7 @@
     "bySupplier": "Proveedor",
     "byProduct": "Producto",
     "period": "Período",
+    "custom": "Personalizado",
     "sectionCustomerOrders": "Pedidos de Clientes",
     "sectionSupplierOrders": "Pedidos a Proveedores",
     "legendDelivered": "Entregado",
