@@ -249,10 +249,9 @@ const DEFAULT_FROM = addMonths(TODAY, -6)
 
 function segBtn(active: boolean): React.CSSProperties {
   return {
-    padding: '4px 12px', fontSize: 12, cursor: 'pointer', borderRadius: 4,
-    border: active ? '1.5px solid var(--color-primary)' : '1.5px solid var(--border-color)',
-    background: active ? 'var(--color-primary)' : 'transparent',
-    color: active ? '#fff' : 'var(--text-primary)',
+    padding: '4px 10px 4px 0', fontSize: 12, cursor: 'pointer', borderRadius: 4,
+    border: 'none', background: 'transparent',
+    color: active ? 'var(--color-primary)' : 'var(--text-secondary)',
     fontWeight: active ? 600 : 400,
   }
 }
@@ -405,7 +404,7 @@ export default function TimelineOverviewPage() {
         const cols = ['auto', showCust && 'auto', showSupp && 'auto', '1fr'].filter(Boolean).join(' ')
         const hdr: React.CSSProperties  = { fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 5, paddingRight: 16 }
         const lsep: React.CSSProperties = { borderLeft: '1px solid var(--line)', paddingLeft: 16, paddingRight: 16 }
-        const btns: React.CSSProperties = { display: 'flex', gap: 4, alignItems: 'center', paddingRight: 16 }
+        const btns: React.CSSProperties = { display: 'flex', gap: 10, alignItems: 'center', paddingRight: 16 }
         return (
           <div style={{ display: 'grid', gridTemplateColumns: cols, marginBottom: 16 }}>
             {/* ── Row 1: labels ── */}
@@ -432,7 +431,7 @@ export default function TimelineOverviewPage() {
                 <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
               </div>
             )}
-            <div style={{ ...lsep, display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', paddingRight: 0 }}>
+            <div style={{ ...lsep, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', paddingRight: 0 }}>
               {([['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
                 <button key={label} style={segBtn(false)} onClick={() => applyPreset(val)}>{label}</button>
               ))}
