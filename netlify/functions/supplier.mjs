@@ -127,6 +127,7 @@ async function getSupplier(event) {
       if (tq === 0)                      return 'pending'
       if (tr >= tq)                      return 'received'
       if (tr > 0 && (ts > 0 || tc > 0)) return 'mixed'
+      if (ts > 0 && tc > 0)             return 'mixed'
       if (tr > 0)                        return 'partial'
       if (tc > 0)                        return 'in_customs'
       if (ts > 0)                        return 'shipped'

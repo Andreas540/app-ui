@@ -458,6 +458,7 @@ export default function TimelineOverviewPage() {
     let derived_status: string
     if (ord.received || (totalQty > 0 && recvQty >= totalQty)) derived_status = 'received'
     else if (recvQty > 0 && (shipQty > 0 || custQty > 0))     derived_status = 'mixed'
+    else if (shipQty > 0 && custQty > 0)                       derived_status = 'mixed'
     else if (recvQty > 0)                                      derived_status = 'partial'
     else if (custQty > 0)                                      derived_status = 'in_customs'
     else if (shipQty > 0 || ord.delivered)                     derived_status = 'shipped'

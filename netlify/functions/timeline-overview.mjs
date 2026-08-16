@@ -99,6 +99,7 @@ export async function handler(event) {
       let derived_status
       if (o.received || (tQty > 0 && recv >= tQty)) derived_status = 'received'
       else if (recv > 0 && (ship > 0 || cust > 0))  derived_status = 'mixed'
+      else if (ship > 0 && cust > 0)                derived_status = 'mixed'
       else if (recv > 0)                             derived_status = 'partial'
       else if (cust > 0)                             derived_status = 'in_customs'
       else if (ship > 0 || o.delivered)              derived_status = 'shipped'
