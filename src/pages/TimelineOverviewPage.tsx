@@ -305,7 +305,7 @@ export default function TimelineOverviewPage() {
 
   const fetchRef = useRef(0)
 
-  async function fetchData(from: string, to: string) {
+  async function fetchData(from: string, to: string): Promise<{ customer_orders: CustomerOrder[]; supplier_orders: SupplierOrder[] } | null> {
     const token = ++fetchRef.current
     setLoading(true); setErr(null)
     try {
@@ -313,13 +313,15 @@ export default function TimelineOverviewPage() {
       const res = await fetch(`${base}/api/timeline-overview?from=${from}&to=${to}`, {
         cache: 'no-store', headers: getAuthHeaders(),
       })
-      if (token !== fetchRef.current) return
+      if (token !== fetchRef.current) return null
       if (!res.ok) throw new Error(`${res.status}`)
       const data = await res.json()
       setCustOrders(data.customer_orders || [])
       setSuppOrders(data.supplier_orders || [])
+      return data
     } catch (e: any) {
       if (token === fetchRef.current) setErr(e?.message || String(e))
+      return null
     } finally {
       if (token === fetchRef.current) setLoading(false)
     }
@@ -342,16 +344,27 @@ export default function TimelineOverviewPage() {
     setSuppModalOrder({ ...data.order, items, total })
   }
 
-  function applyPreset(months: number | 'ytd' | 'all') {
-    let from: string
+  async function applyPreset(months: number | 'ytd' | 'all') {
     const to = TODAY
-    if (months === 'ytd')  from = TODAY.slice(0, 4) + '-01-01'
+    let from: string
+    if (months === 'ytd')      from = TODAY.slice(0, 4) + '-01-01'
     else if (months === 'all') from = '2000-01-01'
-    else from = addMonths(TODAY, -months)
+    else                       from = addMonths(TODAY, -months)
     setFetchFrom(from); setFetchTo(to)
     setViewFromDay(toDay(from)); setViewToDay(toDay(to))
     setActivePreset(months)
-    fetchData(from, to)
+    const result = await fetchData(from, to)
+    if (months === 'all' && result) {
+      const allDates = [
+        ...(result.customer_orders || []).map(o => o.order_date),
+        ...(result.supplier_orders || []).map(o => o.order_date),
+      ]
+      if (allDates.length > 0) {
+        const minDate = allDates.reduce((a, b) => a < b ? a : b)
+        setViewFromDay(toDay(minDate))
+        setFetchFrom(minDate)
+      }
+    }
   }
 
   // Extend fetch range if slider is pushed outside
