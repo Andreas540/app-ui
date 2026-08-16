@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, type CardToken, getAuthHeaders } from '../lib/api'
+import { buildGroupOptions } from '../lib/productOptions'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
@@ -208,27 +209,14 @@ export default function EditOrder() {
 
   const firstLineIsRefund = (products.find(p => p.id === lines[0]?.product_id)?.name || '').trim().toLowerCase() === 'refund/discount'
 
-  const optLabel = (p: Product) => p.variant ? `${p.name} · ${p.variant}` : p.name
-
-  const { addOnGroup, productGroups, serviceGroups } = useMemo(() => {
+  const { productGroup, serviceGroup, addOnGroup } = useMemo(() => {
     const sorted = [...products].sort((a, b) => a.name.localeCompare(b.name))
-    const addOnGroup   = sorted.filter(p => p.product_kind === 'coverage')
-    const productGroup = sorted.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage')
-    const serviceGroup = sorted.filter(p => p.category === 'service' && p.product_kind !== 'coverage')
-    const toCatGroups = (items: Product[], fallback: string) => {
-      const cats = [...new Set(items.map(p => p.product_category).filter(Boolean))] as string[]
-      if (cats.length === 0) return [{ label: fallback, items }]
-      const groups = cats.map(cat => ({ label: cat, items: items.filter(p => p.product_category === cat) }))
-      const rest = items.filter(p => !p.product_category)
-      if (rest.length > 0) groups.push({ label: fallback, items: rest })
-      return groups
-    }
     return {
-      addOnGroup,
-      productGroups: toCatGroups(productGroup, t('orders.groupProducts')),
-      serviceGroups: toCatGroups(serviceGroup, t('orders.groupServices')),
+      addOnGroup:   sorted.filter(p => p.product_kind === 'coverage'),
+      productGroup: sorted.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage'),
+      serviceGroup: sorted.filter(p => p.category === 'service' && p.product_kind !== 'coverage'),
     }
-  }, [products, t])
+  }, [products])
 
   // ── Line helpers ────────────────────────────────────────────────────────────
   function updateLine(idx: number, field: keyof Line, value: string | null) {
@@ -530,19 +518,19 @@ export default function EditOrder() {
                   style={{ height: CONTROL_H }}
                 >
                   {!l.product_id && <option value="">{t('orders.selectProduct')}</option>}
-                  {productGroups.map(grp => grp.items.length > 0 && (
-                    <optgroup key={grp.label} label={grp.label}>
-                      {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
+                  {productGroup.length > 0 && (
+                    <optgroup label={t('orders.groupProducts')}>
+                      {buildGroupOptions(productGroup)}
                     </optgroup>
-                  ))}
-                  {serviceGroups.map(grp => grp.items.length > 0 && (
-                    <optgroup key={`svc-${grp.label}`} label={grp.label}>
-                      {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
+                  )}
+                  {serviceGroup.length > 0 && (
+                    <optgroup label={t('orders.groupServices')}>
+                      {buildGroupOptions(serviceGroup)}
                     </optgroup>
-                  ))}
+                  )}
                   {addOnGroup.length > 0 && (
                     <optgroup label={t('orders.groupAddOns')}>
-                      {addOnGroup.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
+                      {buildGroupOptions(addOnGroup)}
                     </optgroup>
                   )}
                 </select>

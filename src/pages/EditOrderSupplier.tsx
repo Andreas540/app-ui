@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
+import { buildGroupOptions } from '../lib/productOptions'
 import { useCurrency } from '../lib/useCurrency'
 import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 
@@ -332,27 +333,18 @@ const pRes = await fetch(`${base}/api/product`, {
               >
                 <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                 {(() => {
-                  const optLabel = (p: Product) => p.variant ? `${p.name} · ${p.variant}` : p.name
-                  const toCatGroups = (items: Product[], fallback: string) => {
-                    const cats = [...new Set(items.map(p => p.product_category).filter(Boolean))] as string[]
-                    if (cats.length === 0) return [{ label: fallback, items }]
-                    const groups = cats.map(cat => ({ label: cat, items: items.filter(p => p.product_category === cat) }))
-                    const rest = items.filter(p => !p.product_category)
-                    if (rest.length > 0) groups.push({ label: fallback, items: rest })
-                    return groups
-                  }
-                  const sellable = toCatGroups(products.filter(p => p.category === 'product'), t('orders.groupProducts'))
+                  const sellable = products.filter(p => p.category === 'product')
                   const mats = products.filter(p => p.category === 'material')
                   return (
                     <>
-                      {sellable.map(grp => grp.items.length > 0 && (
-                        <optgroup key={grp.label} label={grp.label}>
-                          {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
+                      {sellable.length > 0 && (
+                        <optgroup label={t('orders.groupProducts')}>
+                          {buildGroupOptions(sellable)}
                         </optgroup>
-                      ))}
+                      )}
                       {mats.length > 0 && (
                         <optgroup label={t('orders.groupMaterials')}>
-                          {mats.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
+                          {buildGroupOptions(mats)}
                         </optgroup>
                       )}
                     </>
