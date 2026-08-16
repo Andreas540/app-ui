@@ -118,7 +118,9 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
 
     // Tri-state delivery status
   const deliveredQty = Number(order.delivered_quantity ?? 0)
-  const totalQty = Number(order.total_qty ?? order.qty ?? 0)
+  const totalQty = items.length > 0
+    ? items.reduce((sum, item) => sum + Number(item.qty || 0), 0)
+    : Number(order.total_qty ?? order.qty ?? 0)
 
   let deliveryStatus: 'not_delivered' | 'partial' | 'delivered'
 
