@@ -206,14 +206,14 @@ function GanttRow({
   tooltip: string
 }) {
   const geo = barGeometry(barStart, barEnd, viewFrom, viewTo)
-  const BAR_H = 18
+  const BAR_H = 9
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', minHeight: 28, gap: 0 }}>
-      {/* Label */}
-      <div style={{ width: 200, flexShrink: 0, paddingRight: 8, overflow: 'hidden' }}>
-        <div style={{ fontSize: 12, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-        {sublabel && <div style={{ fontSize: 10, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sublabel}</div>}
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: 22, gap: 0 }}>
+      {/* Label — order # and products on same line */}
+      <div style={{ width: 200, flexShrink: 0, paddingRight: 8, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{label}</span>
+        {sublabel && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{sublabel}</span>}
       </div>
       {/* Bar area */}
       <div style={{ flex: 1, position: 'relative', height: BAR_H }}>
@@ -226,7 +226,7 @@ function GanttRow({
               width:  `${geo.width}%`,
               height: BAR_H,
               background: color,
-              opacity: isDelivered ? 1 : 0.65,
+              opacity: isDelivered ? 1 : 0.75,
               borderRadius: 3,
               cursor: 'default',
               boxSizing: 'border-box',
@@ -512,26 +512,14 @@ export default function TimelineOverviewPage() {
 
       {/* ── Legend ── */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text-secondary)' }}>
-        {showCust && <>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 20, height: 10, background: '#3b82f6', borderRadius: 2, display: 'inline-block' }} />
-            {t('timeline.legendDelivered')}
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 20, height: 10, background: '#3b82f6', opacity: 0.55, border: '1.5px dashed #3b82f6', borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
-            {t('timeline.legendPending')}
-          </span>
-        </>}
-        {showSupp && <>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 20, height: 10, background: '#f59e0b', borderRadius: 2, display: 'inline-block' }} />
-            {t('timeline.legendReceived')}
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 20, height: 10, background: '#f59e0b', opacity: 0.55, border: '1.5px dashed #f59e0b', borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
-            {t('timeline.legendOrdered')}
-          </span>
-        </>}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 20, height: 8, background: '#22c55e', borderRadius: 2, display: 'inline-block' }} />
+          {t('timeline.legendDone')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 20, height: 8, background: '#f97316', opacity: 0.75, border: '1.5px dashed #f97316', borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
+          {t('timeline.legendPending')}
+        </span>
       </div>
 
       {err && <p style={{ color: 'var(--color-error)' }}>{err}</p>}
@@ -565,7 +553,7 @@ export default function TimelineOverviewPage() {
             {/* ── Customer orders ── */}
             {showCust && custRows.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>{t('timeline.sectionCustomerOrders')}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{t('timeline.sectionCustomerOrders')}</div>
                 {custRows.map(group => (
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
@@ -581,7 +569,7 @@ export default function TimelineOverviewPage() {
                           barEnd={end}
                           viewFrom={viewFromDay}
                           viewTo={viewToDay}
-                          color="#3b82f6"
+                          color={o.delivered ? '#22c55e' : '#f97316'}
                           isDelivered={o.delivered}
                           tooltip={tip}
                         />
@@ -599,7 +587,7 @@ export default function TimelineOverviewPage() {
             {/* ── Supplier orders ── */}
             {showSupp && suppRows.length > 0 && (
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>{t('timeline.sectionSupplierOrders')}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{t('timeline.sectionSupplierOrders')}</div>
                 {suppRows.map(group => (
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
@@ -616,7 +604,7 @@ export default function TimelineOverviewPage() {
                           barEnd={end}
                           viewFrom={viewFromDay}
                           viewTo={viewToDay}
-                          color="#f59e0b"
+                          color={done ? '#22c55e' : '#f97316'}
                           isDelivered={done}
                           tooltip={tip}
                         />
