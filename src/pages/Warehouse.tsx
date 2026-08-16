@@ -91,7 +91,7 @@ export default function Warehouse() {
   const [unitSaving, setUnitSaving] = useState(false)
   const [customerModalOrder, setCustomerModalOrder] = useState<{ id: string; order_no?: string | number | null } | null>(null)
   const [supplierModalOrder, setSupplierModalOrder] = useState<any | null>(null)
-  const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
+  // const [expandedCoverageUnit, setExpandedCoverageUnit] = useState<number | null>(null)
   const [namedItems, setNamedItems] = useState<NamedItem[]>([])
   const [unitFetchError, setUnitFetchError] = useState<Record<string, string>>({})
 
@@ -868,6 +868,7 @@ export default function Warehouse() {
                                           </div>
                                         </div>
                                       )}
+                                      {/* CoveragePanel hidden — coverage is managed from Order view, not Warehouse
                                       <CoveragePanel
                                         unitId={u.id}
                                         productId={item.product_id}
@@ -876,6 +877,7 @@ export default function Warehouse() {
                                         t={t}
                                         isEditingThisUnit={editingUnitId === u.id}
                                       />
+                                      */}
                                     </div>
                                   )
                                 })}
@@ -1018,7 +1020,8 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-// ─── CoveragePanel ──────────────────────────────────────────────────────────
+// ─── CoveragePanel (hidden — managed from Order view) ───────────────────────
+// @ts-ignore — kept for future use
 
 type CoveragePanelProps = {
   unitId: number
