@@ -696,10 +696,6 @@ export default function TimelineOverviewPage() {
           onFromChange={handleFromChange}
           onToChange={handleToChange}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>
-          <span>{fmtShort(fromDay(sliderMin))}</span>
-          <span>{fmtShort(fromDay(sliderMax))}</span>
-        </div>
       </div>
 
       {/* ── Dropdown filters ── */}
