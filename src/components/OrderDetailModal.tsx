@@ -36,6 +36,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
   const [loadingPartners, setLoadingPartners] = useState(false)
   const [bookings, setBookings] = useState<any[]>([])
   const [items, setItems] = useState<any[]>([])
+  const [deliveryEvents, setDeliveryEvents] = useState<any[]>([])
 
   // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
     setPartnerSplits([])
     setBookings([])
     setItems([])
+    setDeliveryEvents([])
   }, [initialOrder])
 
     useEffect(() => {
@@ -65,6 +67,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         setOrder({ ...initialOrder, ...data.order })
         setItems(data.items || [])
         setBookings(data.bookings || [])
+        setDeliveryEvents(data.delivery_events || [])
 
         // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
@@ -395,6 +398,31 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                 <div>{order.notes}</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Delivery history */}
+        {deliveryEvents.length > 0 && (
+          <div style={{ paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div className="helper" style={{ fontWeight: 600, marginBottom: 8 }}>{t('orderModal.deliveryHistory')}</div>
+            {deliveryEvents.map((ev: any, idx: number) => {
+              let symbol = '○', color = '#d1d5db'
+              if (ev.delivery_status === 'delivered')    { symbol = '✓'; color = '#10b981' }
+              else if (ev.delivery_status === 'partial') { symbol = '◐'; color = '#f59e0b' }
+              return (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: idx < deliveryEvents.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                  <span style={{ fontSize: 13, color, width: 14, textAlign: 'center', flexShrink: 0 }}>{symbol}</span>
+                  <span className="helper" style={{ flexShrink: 0 }}>{formatDate(ev.event_date)}</span>
+                  <span style={{ fontSize: 13 }}>
+                    {ev.delivery_status === 'not_delivered'
+                      ? t('notDelivered')
+                      : ev.delivery_status === 'delivered'
+                      ? t('orderModal.deliveredInFullQty', { delivered: ev.delivered_quantity, total: ev.total_qty })
+                      : t('orderModal.partiallyDeliveredQty', { delivered: ev.delivered_quantity, total: ev.total_qty })}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         )}
 

@@ -172,11 +172,19 @@ LIMIT 1
     `
     const paidAmount = Number(paidRows[0]?.paid_amount || 0)
 
+    const deliveryEvents = await sql`
+      SELECT delivered_quantity, total_qty, delivery_status, event_date
+      FROM order_delivery_events
+      WHERE order_id = ${id} AND tenant_id = ${TENANT_ID}::uuid
+      ORDER BY event_date ASC, created_at ASC
+    `
+
     return cors(200, {
       order: { ...order, profit, profitPercent, paid_amount: paidAmount, total: orderValue },
       items,
       bookings,
-      partner_splits: partnerSplits
+      partner_splits: partnerSplits,
+      delivery_events: deliveryEvents,
     })
 }
 

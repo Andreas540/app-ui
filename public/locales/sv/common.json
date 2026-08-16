@@ -1116,7 +1116,8 @@
     "deliveredInFull": "Levererad i sin helhet",
     "deliveredInFullQty": "Levererad i sin helhet ({{delivered}}/{{total}})",
     "partiallyDelivered": "Delvis levererad",
-    "partiallyDeliveredQty": "Delvis levererad ({{delivered}}/{{total}})"
+    "partiallyDeliveredQty": "Delvis levererad ({{delivered}}/{{total}})",
+    "deliveryHistory": "Leveranshistorik"
   },
   "paymentModal": {
     "title": "Betalningsdetaljer",

@@ -121,7 +121,7 @@ async function updateDeliveryStatus(event) {
       INSERT INTO order_delivery_events
         (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
       VALUES
-        (${TENANT_ID}::uuid, ${order_id}::uuid, ${totalDelivered}, ${totalQty}, ${eventStatus}, ${eventDate}::date)
+        (${TENANT_ID}::uuid, ${order_id}::uuid, ${Math.round(totalDelivered)}, ${Math.round(totalQty)}, ${eventStatus}, ${eventDate}::date)
     `
 
     const row = result[0];

@@ -1116,7 +1116,8 @@
     "deliveredInFull": "Delivered in full",
     "deliveredInFullQty": "Delivered in full ({{delivered}}/{{total}})",
     "partiallyDelivered": "Partially delivered",
-    "partiallyDeliveredQty": "Partially delivered ({{delivered}}/{{total}})"
+    "partiallyDeliveredQty": "Partially delivered ({{delivered}}/{{total}})",
+    "deliveryHistory": "Delivery history"
   },
   "paymentModal": {
     "title": "Payment Details",
