@@ -325,18 +325,6 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
         WHERE tenant_id = ${TENANT_ID} AND id = ${id}
       `
 
-      const evtStatus = delivered ? 'delivered' : 'not_delivered'
-      const evtDate = delivered_at || new Date().toISOString().slice(0, 10)
-      try {
-        await sql`
-          INSERT INTO order_delivery_events
-            (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
-          VALUES
-            (${TENANT_ID}::uuid, ${id}::uuid, ${newDeliveredQty}, ${totalQty}, ${evtStatus}, ${evtDate}::date)
-        `
-      } catch (e) {
-        console.error('order_delivery_events insert failed', e)
-      }
     }
 
     return cors(200, { ok: true })
