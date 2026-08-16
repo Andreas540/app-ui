@@ -400,45 +400,42 @@ export default function TimelineOverviewPage() {
     <div className="card page-wide" style={{ paddingBottom: 32 }}>
       <h3 style={{ marginBottom: 16 }}>{t('timeline.title')}</h3>
 
-      {/* ── Controls ── */}
+      {/* ── Controls — CSS grid so row 1 (labels) and row 2 (buttons) are perfectly aligned across groups ── */}
       {(() => {
-        const hdr: React.CSSProperties = { fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }
-        const sep: React.CSSProperties = { paddingRight: 16, marginRight: 16, borderRight: '1px solid var(--line)' }
+        const cols = ['auto', showCust && 'auto', showSupp && 'auto', '1fr'].filter(Boolean).join(' ')
+        const hdr: React.CSSProperties  = { fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 5, paddingRight: 16 }
+        const lsep: React.CSSProperties = { borderLeft: '1px solid var(--line)', paddingLeft: 16, paddingRight: 16 }
+        const btns: React.CSSProperties = { display: 'flex', gap: 4, alignItems: 'center', paddingRight: 16 }
         return (
-          <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px 0', marginBottom: 16 }}>
-            <div style={sep}>
-              <div style={hdr}>{t('timeline.show')}</div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button style={segBtn(showMode === 'customer')} onClick={() => setShowMode('customer')}>{t('timeline.showCustomer')}</button>
-                <button style={segBtn(showMode === 'supplier')} onClick={() => setShowMode('supplier')}>{t('timeline.showSupplier')}</button>
-                <button style={segBtn(showMode === 'both')}     onClick={() => setShowMode('both')}>{t('timeline.showBoth')}</button>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: cols, marginBottom: 16 }}>
+            {/* ── Row 1: labels ── */}
+            <div style={hdr}>{t('timeline.show')}</div>
+            {showCust && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupCustomerBy')}</div>}
+            {showSupp && <div style={{ ...hdr, ...lsep }}>{t('timeline.groupSupplierBy')}</div>}
+            <div style={{ ...hdr, ...lsep, paddingRight: 0 }}>{t('timeline.period')}</div>
+
+            {/* ── Row 2: buttons ── */}
+            <div style={btns}>
+              <button style={segBtn(showMode === 'customer')} onClick={() => setShowMode('customer')}>{t('timeline.showCustomer')}</button>
+              <button style={segBtn(showMode === 'supplier')} onClick={() => setShowMode('supplier')}>{t('timeline.showSupplier')}</button>
+              <button style={segBtn(showMode === 'both')}     onClick={() => setShowMode('both')}>{t('timeline.showBoth')}</button>
             </div>
             {showCust && (
-              <div style={sep}>
-                <div style={hdr}>{t('timeline.groupCustomerBy')}</div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button style={segBtn(custGroupBy === 'customer')} onClick={() => setCustGroupBy('customer')}>{t('timeline.byCustomer')}</button>
-                  <button style={segBtn(custGroupBy === 'product')}  onClick={() => setCustGroupBy('product')}>{t('timeline.byProduct')}</button>
-                </div>
+              <div style={{ ...btns, ...lsep }}>
+                <button style={segBtn(custGroupBy === 'customer')} onClick={() => setCustGroupBy('customer')}>{t('timeline.byCustomer')}</button>
+                <button style={segBtn(custGroupBy === 'product')}  onClick={() => setCustGroupBy('product')}>{t('timeline.byProduct')}</button>
               </div>
             )}
             {showSupp && (
-              <div style={sep}>
-                <div style={hdr}>{t('timeline.groupSupplierBy')}</div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button style={segBtn(suppGroupBy === 'supplier')} onClick={() => setSuppGroupBy('supplier')}>{t('timeline.bySupplier')}</button>
-                  <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
-                </div>
+              <div style={{ ...btns, ...lsep }}>
+                <button style={segBtn(suppGroupBy === 'supplier')} onClick={() => setSuppGroupBy('supplier')}>{t('timeline.bySupplier')}</button>
+                <button style={segBtn(suppGroupBy === 'product')}  onClick={() => setSuppGroupBy('product')}>{t('timeline.byProduct')}</button>
               </div>
             )}
-            <div style={{ marginLeft: 'auto' }}>
-              <div style={hdr}>{t('timeline.period')}</div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {([['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
-                  <button key={label} style={segBtn(false)} onClick={() => applyPreset(val)}>{label}</button>
-                ))}
-              </div>
+            <div style={{ ...lsep, display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', paddingRight: 0 }}>
+              {([['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
+                <button key={label} style={segBtn(false)} onClick={() => applyPreset(val)}>{label}</button>
+              ))}
             </div>
           </div>
         )
