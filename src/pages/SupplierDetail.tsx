@@ -147,8 +147,8 @@ export default function SupplierDetailPage() {
     else if (ds === 'in_customs') { symbol = '◑'; color = '#f97316' }
     else if (ds === 'shipped')    { symbol = '►'; color = '#3b82f6' }
     const inner = ds === 'pending'
-      ? <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${color}` }} />
-      : <span style={{ fontSize: 12, lineHeight: 1, color }}>{symbol}</span>
+      ? <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+      : <span style={{ fontSize: 11, lineHeight: 1, color }}>{symbol}</span>
     return (
       <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {onClick
@@ -331,9 +331,9 @@ export default function SupplierDetailPage() {
                     >
                       {ds === 'pending'
                         ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
-                            <span style={{ display: 'inline-block', width: 11, height: 11, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+                            <span style={{ display: 'inline-block', width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${color}` }} />
                           </span>
-                        : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 14, lineHeight: 1, color }}>{symbol}</span>
+                        : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
                       }
                     </button>
                   </div>

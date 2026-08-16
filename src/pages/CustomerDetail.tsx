@@ -971,7 +971,7 @@ export default function CustomerDetailPage() {
                       style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }} title={title}>
                       {status === 'not_delivered'
           ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
-              <span style={{ display: 'inline-block', width: 11, height: 11, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+              <span style={{ display: 'inline-block', width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${color}` }} />
             </span>
           : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
         }
