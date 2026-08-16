@@ -17,6 +17,7 @@ type CustomerOrder = {
   delivered: boolean
   delivered_at: string | null
   amount: number
+  cust_status: 'delivered' | 'partial' | 'not_delivered'
 }
 
 type SupplierOrder = {
@@ -32,6 +33,7 @@ type SupplierOrder = {
   received: boolean
   received_date: string | null
   total_cost: number
+  derived_status: 'received' | 'partial' | 'mixed' | 'in_customs' | 'shipped' | 'pending'
 }
 
 type ShowMode    = 'both' | 'customer' | 'supplier'
@@ -199,12 +201,12 @@ function DateRangeSlider({
 
 function GanttRow({
   label, sublabel, barStart, barEnd, viewFrom, viewTo,
-  color, isDelivered, tooltip, onLabelClick,
+  color, isDashed, tooltip, onLabelClick,
 }: {
   label: string; sublabel?: string
   barStart: string; barEnd: string
   viewFrom: number; viewTo: number
-  color: string; isDelivered: boolean
+  color: string; isDashed: boolean
   tooltip: string
   onLabelClick?: () => void
 }) {
@@ -232,17 +234,33 @@ function GanttRow({
               width:  `${geo.width}%`,
               height: BAR_H,
               background: color,
-              opacity: isDelivered ? 1 : 0.75,
+              opacity: isDashed ? 0.7 : 1,
               borderRadius: 3,
               cursor: 'default',
               boxSizing: 'border-box',
-              border: isDelivered ? 'none' : `1.5px dashed ${color}`,
+              border: isDashed ? `1.5px dashed ${color}` : 'none',
             }}
           />
         )}
       </div>
     </div>
   )
+}
+
+// ── Status colors (matching OrderDetailModal / SupplierOrderDetailModal) ───────
+
+const CUST_COLOR: Record<string, string> = {
+  delivered:    '#10b981',
+  partial:      '#f59e0b',
+  not_delivered: '#d1d5db',
+}
+const SUPP_COLOR: Record<string, string> = {
+  received:   '#10b981',
+  partial:    '#f59e0b',
+  mixed:      '#8b5cf6',
+  in_customs: '#f97316',
+  shipped:    '#3b82f6',
+  pending:    '#d1d5db',
 }
 
 // ── Multi-select dropdown ──────────────────────────────────────────────────────
@@ -697,16 +715,24 @@ export default function TimelineOverviewPage() {
       </div>
 
       {/* ── Legend ── */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text-secondary)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 20, height: 8, background: '#22c55e', borderRadius: 2, display: 'inline-block' }} />
-          {t('timeline.legendDone')}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 20, height: 8, background: '#f97316', opacity: 0.75, border: '1.5px dashed #f97316', borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
-          {t('timeline.legendPending')}
-        </span>
-      </div>
+      {(() => {
+        const dot = (color: string, dashed = false) => (
+          <span style={{ width: 20, height: 8, background: color, borderRadius: 2, display: 'inline-block', boxSizing: 'border-box', opacity: dashed ? 0.7 : 1, border: dashed ? `1.5px dashed ${color}` : 'none' }} />
+        )
+        const item = (color: string, label: string, dashed = false) => (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>{dot(color, dashed)}{label}</span>
+        )
+        return (
+          <div style={{ display: 'flex', gap: 14, marginBottom: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text-secondary)' }}>
+            {item('#10b981', t('timeline.legendDone'))}
+            {item('#d1d5db', t('timeline.legendPending'), true)}
+            {item('#f59e0b', t('timeline.legendPartial'))}
+            {item('#3b82f6', t('timeline.legendShipped'))}
+            {item('#f97316', t('timeline.legendInCustoms'))}
+            {item('#8b5cf6', t('timeline.legendMixed'))}
+          </div>
+        )
+      })()}
 
       {err && <p style={{ color: 'var(--color-error)' }}>{err}</p>}
 
@@ -755,8 +781,8 @@ export default function TimelineOverviewPage() {
                           barEnd={end}
                           viewFrom={viewFromDay}
                           viewTo={viewToDay}
-                          color={o.delivered ? '#22c55e' : '#f97316'}
-                          isDelivered={o.delivered}
+                          color={CUST_COLOR[o.cust_status] ?? CUST_COLOR.not_delivered}
+                          isDashed={o.cust_status === 'not_delivered'}
                           tooltip={tip}
                           onLabelClick={() => setCustModalOrder({ id: o.id, order_no: o.order_no })}
                         />
@@ -780,8 +806,8 @@ export default function TimelineOverviewPage() {
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
                       const end = o.received_date || o.delivery_date || o.est_delivery_date || addDays(o.order_date, 14)
-                      const done = o.received
-                      const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${done ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
+                      const ds  = o.derived_status
+                      const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${ds === 'received' ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
                       return (
                         <GanttRow
                           key={o.id}
@@ -791,8 +817,8 @@ export default function TimelineOverviewPage() {
                           barEnd={end}
                           viewFrom={viewFromDay}
                           viewTo={viewToDay}
-                          color={done ? '#22c55e' : '#f97316'}
-                          isDelivered={done}
+                          color={SUPP_COLOR[ds] ?? SUPP_COLOR.pending}
+                          isDashed={ds === 'pending'}
                           tooltip={tip}
                           onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
                         />

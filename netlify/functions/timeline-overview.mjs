@@ -32,10 +32,12 @@ export async function handler(event) {
           o.order_date::text,
           o.delivered,
           o.delivered_at::text,
+          o.delivered_quantity,
           c.id::text   AS customer_id,
           c.name       AS customer_name,
           STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) AS product_names,
-          SUM(oi.qty * oi.unit_price)::float8 AS amount
+          SUM(oi.qty * oi.unit_price)::float8 AS amount,
+          SUM(oi.qty)::int                    AS total_qty
         FROM orders o
         JOIN customers c        ON c.id = o.customer_id AND c.tenant_id = ${tenantId}::uuid
         JOIN order_items oi     ON oi.order_id = o.id
@@ -44,7 +46,7 @@ export async function handler(event) {
           AND o.order_date >= ${from}::date
           AND o.order_date <= ${to}::date
           AND p.category != 'material'
-        GROUP BY o.id, o.order_no, o.order_date, o.delivered, o.delivered_at, c.id, c.name
+        GROUP BY o.id, o.order_no, o.order_date, o.delivered, o.delivered_at, o.delivered_quantity, c.id, c.name
         ORDER BY c.name, o.order_date
       `,
       sql`
@@ -60,7 +62,11 @@ export async function handler(event) {
           s.id::text   AS supplier_id,
           s.name       AS supplier_name,
           STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) AS product_names,
-          SUM(ois.qty * ois.product_cost)::float8 AS total_cost
+          SUM(ois.qty * ois.product_cost)::float8           AS total_cost,
+          SUM(ois.qty)::int                                 AS total_qty,
+          SUM(COALESCE(ois.qty_received,   0))::int         AS qty_received,
+          SUM(COALESCE(ois.qty_shipped,    0))::int         AS qty_shipped,
+          SUM(COALESCE(ois.qty_in_customs, 0))::int         AS qty_in_customs
         FROM orders_suppliers os
         JOIN suppliers s               ON s.id = os.supplier_id AND s.tenant_id = ${tenantId}::uuid
         JOIN order_items_suppliers ois ON ois.order_id = os.id AND ois.tenant_id = ${tenantId}::uuid
@@ -73,7 +79,34 @@ export async function handler(event) {
       `,
     ])
 
-    return cors(200, { customer_orders: customerOrders, supplier_orders: supplierOrders, from, to })
+    // Derive customer order status from qty data
+    const custWithStatus = customerOrders.map(o => {
+      const dQty = Number(o.delivered_quantity ?? 0)
+      const tQty = Number(o.total_qty ?? 0)
+      let cust_status
+      if (o.delivered || (tQty > 0 && dQty >= tQty)) cust_status = 'delivered'
+      else if (dQty > 0)                              cust_status = 'partial'
+      else                                            cust_status = 'not_delivered'
+      return { ...o, cust_status }
+    })
+
+    // Derive supplier order status from item qty aggregates
+    const suppWithStatus = supplierOrders.map(o => {
+      const tQty  = Number(o.total_qty ?? 0)
+      const recv  = Number(o.qty_received ?? 0)
+      const ship  = Number(o.qty_shipped ?? 0)
+      const cust  = Number(o.qty_in_customs ?? 0)
+      let derived_status
+      if (o.received || (tQty > 0 && recv >= tQty)) derived_status = 'received'
+      else if (recv > 0 && (ship > 0 || cust > 0))  derived_status = 'mixed'
+      else if (recv > 0)                             derived_status = 'partial'
+      else if (cust > 0)                             derived_status = 'in_customs'
+      else if (ship > 0 || o.delivered)              derived_status = 'shipped'
+      else                                           derived_status = 'pending'
+      return { ...o, derived_status }
+    })
+
+    return cors(200, { customer_orders: custWithStatus, supplier_orders: suppWithStatus, from, to })
   } catch (e) {
     console.error('timeline-overview error', e)
     return cors(500, { error: String(e?.message ?? e) })
