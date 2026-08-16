@@ -244,6 +244,30 @@
   "reports": {
     "pageTitle": "Ventas y Beneficios"
   },
+  "timeline": {
+    "title": "Cronograma",
+    "show": "Mostrar",
+    "showBoth": "Ambos",
+    "showCustomer": "Pedidos de clientes",
+    "showSupplier": "Pedidos a proveedores",
+    "groupCustomerBy": "Agrupar clientes por",
+    "groupSupplierBy": "Agrupar proveedores por",
+    "byCustomer": "Cliente",
+    "bySupplier": "Proveedor",
+    "byProduct": "Producto",
+    "period": "Período",
+    "sectionCustomerOrders": "Pedidos de Clientes",
+    "sectionSupplierOrders": "Pedidos a Proveedores",
+    "legendDelivered": "Entregado",
+    "legendPending": "Pendiente de entrega",
+    "legendReceived": "Recibido",
+    "legendOrdered": "Pedido / En tránsito",
+    "ongoing": "En curso",
+    "est": "Est.",
+    "noCustomerOrders": "No hay pedidos de clientes en este período.",
+    "noSupplierOrders": "No hay pedidos a proveedores en este período.",
+    "noData": "No se encontraron pedidos para el período seleccionado."
+  },
   "dashboard": {
     "title": "Panel",
     "showPct": "Mostrar %",

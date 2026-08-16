@@ -244,6 +244,30 @@
   "reports": {
     "pageTitle": "Försäljning och vinst"
   },
+  "timeline": {
+    "title": "Tidslinje",
+    "show": "Visa",
+    "showBoth": "Båda",
+    "showCustomer": "Kundorder",
+    "showSupplier": "Leverantörsorder",
+    "groupCustomerBy": "Gruppera kunder per",
+    "groupSupplierBy": "Gruppera leverantörer per",
+    "byCustomer": "Kund",
+    "bySupplier": "Leverantör",
+    "byProduct": "Produkt",
+    "period": "Period",
+    "sectionCustomerOrders": "Kundorder",
+    "sectionSupplierOrders": "Leverantörsorder",
+    "legendDelivered": "Levererad",
+    "legendPending": "Väntar på leverans",
+    "legendReceived": "Mottagen",
+    "legendOrdered": "Beställd / Under transport",
+    "ongoing": "Pågående",
+    "est": "Beräknat",
+    "noCustomerOrders": "Inga kundorder under denna period.",
+    "noSupplierOrders": "Inga leverantörsorder under denna period.",
+    "noData": "Inga order hittades för vald period."
+  },
   "dashboard": {
     "title": "Dashboard",
     "showPct": "Visa %",

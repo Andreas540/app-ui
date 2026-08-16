@@ -80,6 +80,7 @@ import BookingDetailPage from './pages/BookingDetailPage'
 import NewBookingPage from './pages/NewBookingPage'
 import ReportsPage from './pages/ReportsPage'
 import CustomerReportsPage from './pages/CustomerReportsPage'
+import TimelineOverviewPage from './pages/TimelineOverviewPage'
 import BizWizPage from './pages/BizWizPage'
 
 function apiBase() {
@@ -302,6 +303,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/cash/overview':             'page_view_cash_overview',
   '/reports':                    'page_view_reports',
   '/reports/customers':          'page_view_customer_reports',
+  '/reports/timeline':           'page_view_timeline_overview',
   '/warehouse':                  'page_view_warehouse',
   '/supply-chain':               'page_view_supply_chain',
   '/labor-production':           'page_view_labor_production',
@@ -884,7 +886,7 @@ useEffect(() => {
                     )}
                   </>)}
                 </>)}
-                {(canAccess('reports') || canAccess('customer-reports') || canAccess('bizwiz')) && (<>
+                {(canAccess('reports') || canAccess('customer-reports') || canAccess('timeline-overview') || canAccess('bizwiz')) && (<>
                   {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (<>
                     {canAccess('bizwiz') && (
@@ -901,6 +903,11 @@ useEffect(() => {
                     {canAccess('customer-reports') && (
                       <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
                         {t('reportsCustomers')}
+                      </NavLink>
+                    )}
+                    {canAccess('timeline-overview') && (
+                      <NavLink to="/reports/timeline" onClick={() => setNavOpen(false)}>
+                        {t('reportsTimeline')}
                       </NavLink>
                     )}
                   </>)}
@@ -1120,6 +1127,7 @@ useEffect(() => {
                 {hasFeature('cash-overview') && <Route path="/cash/overview" element={<CashOverviewPage />} />}
                 {hasFeature('reports') && <Route path="/reports" element={<ReportsPage />} />}
                 {hasFeature('customer-reports') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
+                {hasFeature('timeline-overview') && <Route path="/reports/timeline" element={<TimelineOverviewPage />} />}
                 {hasFeature('bizwiz') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}

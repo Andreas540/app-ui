@@ -244,6 +244,30 @@
   "reports": {
     "pageTitle": "Sales & Profit"
   },
+  "timeline": {
+    "title": "Timeline Overview",
+    "show": "Show",
+    "showBoth": "Both",
+    "showCustomer": "Customer Orders",
+    "showSupplier": "Supplier Orders",
+    "groupCustomerBy": "Group customers by",
+    "groupSupplierBy": "Group suppliers by",
+    "byCustomer": "Customer",
+    "bySupplier": "Supplier",
+    "byProduct": "Product",
+    "period": "Period",
+    "sectionCustomerOrders": "Customer Orders",
+    "sectionSupplierOrders": "Supplier Orders",
+    "legendDelivered": "Delivered",
+    "legendPending": "Pending delivery",
+    "legendReceived": "Received",
+    "legendOrdered": "Ordered / In transit",
+    "ongoing": "Ongoing",
+    "est": "Est.",
+    "noCustomerOrders": "No customer orders in this period.",
+    "noSupplierOrders": "No supplier orders in this period.",
+    "noData": "No orders found for the selected period."
+  },
   "dashboard": {
     "title": "Dashboard",
     "showPct": "Show %",

@@ -33,6 +33,7 @@ export const FEATURE_NAV_KEY: Record<string, string> = {
   'new-booking':          'newBooking',
   'reports':              'reportsSalesProfit',
   'customer-reports':     'reportsCustomers',
+  'timeline-overview':    'reportsTimeline',
   'bizwiz':               'reportsBizWiz',
   'tenant-admin':         'accountAdmin',
   'settings':             'settings',
