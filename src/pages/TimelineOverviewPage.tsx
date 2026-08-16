@@ -245,6 +245,93 @@ function GanttRow({
   )
 }
 
+// ── Multi-select dropdown ──────────────────────────────────────────────────────
+
+function MultiSelectDropdown({
+  label, options, selected, onChange,
+}: {
+  label: string
+  options: { value: string; label: string }[]
+  selected: string[]
+  onChange: (v: string[]) => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen]     = useState(false)
+  const [search, setSearch] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+  function toggle(val: string) {
+    onChange(selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val])
+  }
+  const count = selected.length
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        style={{
+          padding: '5px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6,
+          border: count > 0 ? '1.5px solid var(--color-primary)' : '1px solid var(--border-color)',
+          background: count > 0 ? 'var(--color-primary)' : 'var(--bg-primary)',
+          color: count > 0 ? '#fff' : 'var(--text-primary)',
+          fontWeight: count > 0 ? 600 : 400,
+        }}
+      >
+        {label}{count > 0 ? ` (${count})` : ''} <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+          background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+          borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
+          minWidth: 200, maxWidth: 300, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '8px 8px 4px' }}>
+            <input
+              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t('timeline.filterSearch')} autoFocus
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '5px 8px', fontSize: 12,
+                border: '1px solid var(--border-color)', borderRadius: 5,
+                background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none',
+              }}
+            />
+          </div>
+          {count > 0 && (
+            <div style={{ padding: '0 8px 4px', textAlign: 'right' }}>
+              <button
+                onClick={() => { onChange([]); setSearch('') }}
+                style={{ fontSize: 11, color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+              >{t('timeline.filterClear')}</button>
+            </div>
+          )}
+          <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>{t('timeline.filterNoResults')}</div>
+            )}
+            {filtered.map(opt => (
+              <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 12 }}>
+                <input type="checkbox" checked={selected.includes(opt.value)} onChange={() => toggle(opt.value)} style={{ margin: 0 }} />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GroupHeader({ label }: { label: string }) {
   return (
     <div style={{
@@ -297,6 +384,11 @@ export default function TimelineOverviewPage() {
   const [custGroupBy, setCustGroupBy] = useState<CustGroup>('customer')
   const [suppGroupBy, setSuppGroupBy] = useState<SuppGroup>('supplier')
   const [activePreset, setActivePreset] = useState<number | 'ytd' | 'all' | 'custom'>(1)
+
+  // Dropdown filters
+  const [selCustomers, setSelCustomers] = useState<string[]>([])
+  const [selSuppliers, setSelSuppliers] = useState<string[]>([])
+  const [selProducts,  setSelProducts]  = useState<string[]>([])
 
   // Modal state
   const [custModalOrder, setCustModalOrder] = useState<any>(null)
@@ -407,19 +499,43 @@ export default function TimelineOverviewPage() {
   // Axis ticks
   const marks = useMemo(() => axisMarks(viewFromDay, viewToDay), [viewFromDay, viewToDay])
 
-  // Customer order rows grouped
+  // Dropdown options (derived from all loaded data, not affected by filters)
+  const custOptions = useMemo(() =>
+    [...new Map(custOrders.map(o => [o.customer_id, o.customer_name])).entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  , [custOrders])
+
+  const suppOptions = useMemo(() =>
+    [...new Map(suppOrders.map(o => [o.supplier_id, o.supplier_name])).entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  , [suppOrders])
+
+  const prodOptions = useMemo(() => {
+    const prods = new Set<string>()
+    custOrders.forEach(o => o.product_names.split(', ').forEach(p => prods.add(p.trim())))
+    suppOrders.forEach(o => o.product_names.split(', ').forEach(p => prods.add(p.trim())))
+    return [...prods].sort().map(p => ({ value: p, label: p }))
+  }, [custOrders, suppOrders])
+
+  // Customer order rows grouped (with dropdown filters applied)
   const custRows = useMemo(() => {
+    const filtered = custOrders.filter(o => {
+      if (selCustomers.length > 0 && !selCustomers.includes(o.customer_id)) return false
+      if (selProducts.length > 0 && !o.product_names.split(', ').some(p => selProducts.includes(p.trim()))) return false
+      return true
+    })
     if (custGroupBy === 'customer') {
       const groups = new Map<string, { name: string; orders: CustomerOrder[] }>()
-      for (const o of custOrders) {
+      for (const o of filtered) {
         if (!groups.has(o.customer_id)) groups.set(o.customer_id, { name: o.customer_name, orders: [] })
         groups.get(o.customer_id)!.orders.push(o)
       }
       return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
     } else {
-      // Group by product
       const groups = new Map<string, { name: string; orders: CustomerOrder[] }>()
-      for (const o of custOrders) {
+      for (const o of filtered) {
         for (const prod of o.product_names.split(', ')) {
           if (!groups.has(prod)) groups.set(prod, { name: prod, orders: [] })
           groups.get(prod)!.orders.push(o)
@@ -427,19 +543,24 @@ export default function TimelineOverviewPage() {
       }
       return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
     }
-  }, [custOrders, custGroupBy])
+  }, [custOrders, custGroupBy, selCustomers, selProducts])
 
   const suppRows = useMemo(() => {
+    const filtered = suppOrders.filter(o => {
+      if (selSuppliers.length > 0 && !selSuppliers.includes(o.supplier_id)) return false
+      if (selProducts.length > 0 && !o.product_names.split(', ').some(p => selProducts.includes(p.trim()))) return false
+      return true
+    })
     if (suppGroupBy === 'supplier') {
       const groups = new Map<string, { name: string; orders: SupplierOrder[] }>()
-      for (const o of suppOrders) {
+      for (const o of filtered) {
         if (!groups.has(o.supplier_id)) groups.set(o.supplier_id, { name: o.supplier_name, orders: [] })
         groups.get(o.supplier_id)!.orders.push(o)
       }
       return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
     } else {
       const groups = new Map<string, { name: string; orders: SupplierOrder[] }>()
-      for (const o of suppOrders) {
+      for (const o of filtered) {
         for (const prod of o.product_names.split(', ')) {
           if (!groups.has(prod)) groups.set(prod, { name: prod, orders: [] })
           groups.get(prod)!.orders.push(o)
@@ -447,7 +568,7 @@ export default function TimelineOverviewPage() {
       }
       return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
     }
-  }, [suppOrders, suppGroupBy])
+  }, [suppOrders, suppGroupBy, selSuppliers, selProducts])
 
   const showCust = showMode === 'both' || showMode === 'customer'
   const showSupp = showMode === 'both' || showMode === 'supplier'
@@ -547,6 +668,32 @@ export default function TimelineOverviewPage() {
           <span>{fmtShort(fromDay(sliderMin))}</span>
           <span>{fmtShort(fromDay(sliderMax))}</span>
         </div>
+      </div>
+
+      {/* ── Dropdown filters ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        {showCust && (
+          <MultiSelectDropdown
+            label={t('timeline.filterCustomers')}
+            options={custOptions}
+            selected={selCustomers}
+            onChange={setSelCustomers}
+          />
+        )}
+        {showSupp && (
+          <MultiSelectDropdown
+            label={t('timeline.filterSuppliers')}
+            options={suppOptions}
+            selected={selSuppliers}
+            onChange={setSelSuppliers}
+          />
+        )}
+        <MultiSelectDropdown
+          label={t('timeline.filterProducts')}
+          options={prodOptions}
+          selected={selProducts}
+          onChange={setSelProducts}
+        />
       </div>
 
       {/* ── Legend ── */}
