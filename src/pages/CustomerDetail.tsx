@@ -1293,6 +1293,16 @@ function DeliveryModal({
 }) {
   const { t } = useTranslation()
   const items: any[] = order.items ?? []
+
+  const [events, setEvents] = useState<any[]>([])
+  useEffect(() => {
+    if (!order?.id) return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/api/order?id=${order.id}`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => setEvents((data.delivery_events || []).slice().reverse()))
+      .catch(() => {})
+  }, [order?.id])
   const isMulti = items.length > 1
 
   // Per-item input state keyed by order_item_id
@@ -1474,6 +1484,39 @@ function DeliveryModal({
             {saving ? t('saving') : t('save')}
           </button>
         </div>
+
+        {events.length > 0 && (
+          <>
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: 16 }} />
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                {t('customerDetail.deliveryHistory')}
+              </div>
+              {events.map((ev: any, idx: number) => {
+                let symbol = '○', color = '#d1d5db'
+                if (ev.delivery_status === 'delivered')    { symbol = '✓'; color = '#10b981' }
+                else if (ev.delivery_status === 'partial') { symbol = '◐'; color = '#f59e0b' }
+                const dqty = Number(ev.delivered_quantity)
+                const tqty = Number(ev.total_qty)
+                const qtyLabel = dqty % 1 === 0 ? String(dqty) : dqty.toFixed(2).replace(/\.?0+$/, '')
+                const totalLabel = tqty % 1 === 0 ? String(tqty) : tqty.toFixed(2).replace(/\.?0+$/, '')
+                return (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '16px 80px 1fr', gap: 8, alignItems: 'center', fontSize: 12, marginBottom: 6 }}>
+                    <span style={{ color, fontWeight: 600, textAlign: 'center' }}>{symbol}</span>
+                    <span className="helper">{formatDate(ev.event_date)}</span>
+                    <span style={{ color: 'var(--text)' }}>
+                      {ev.delivery_status === 'not_delivered'
+                        ? t('notDelivered')
+                        : ev.delivery_status === 'delivered'
+                        ? t('customerDetail.deliveredInFullQty', { delivered: qtyLabel, total: totalLabel })
+                        : t('customerDetail.partiallyDeliveredQty', { delivered: qtyLabel, total: totalLabel })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
