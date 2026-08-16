@@ -109,6 +109,40 @@ function axisMarks(viewFrom: number, viewTo: number): { day: number; label: stri
 
 // ── Dual-thumb date-range slider ───────────────────────────────────────────────
 
+const SLIDER_CSS = `
+  .gantt-dual-slider {
+    position: relative; height: 28px;
+    display: flex; align-items: center;
+  }
+  .gantt-dual-slider input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent;
+    pointer-events: none;
+    margin: 0; padding: 0;
+  }
+  .gantt-dual-slider input[type=range]::-webkit-slider-runnable-track { height: 0; }
+  .gantt-dual-slider input[type=range]::-moz-range-track { background: transparent; height: 0; }
+  .gantt-dual-slider input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    pointer-events: all;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--color-primary, #3b82f6);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    cursor: pointer; margin-top: 0;
+  }
+  .gantt-dual-slider input[type=range]::-moz-range-thumb {
+    pointer-events: all;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--color-primary, #3b82f6);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+`
+
 function DateRangeSlider({
   minDay, maxDay, fromDay: fromD, toDay: toD,
   onFromChange, onToChange,
@@ -118,39 +152,29 @@ function DateRangeSlider({
   onFromChange: (d: number) => void
   onToChange:   (d: number) => void
 }) {
-  const span = maxDay - minDay || 1
+  const [last, setLast] = useState<'from' | 'to'>('to')
+  const span     = Math.max(1, maxDay - minDay)
   const leftPct  = ((fromD - minDay) / span) * 100
-  const widthPct = ((toD   - fromD)  / span) * 100
+  const widthPct = Math.max(0, ((toD - fromD) / span) * 100)
 
-  const thumbStyle: React.CSSProperties = {
-    WebkitAppearance: 'none', appearance: 'none',
-    position: 'absolute', top: 0, left: 0,
-    width: '100%', height: '100%',
-    background: 'transparent',
-    pointerEvents: 'none',
-    margin: 0, padding: 0,
-  }
+  const base: React.CSSProperties = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }
 
   return (
-    <div style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center' }}>
-      {/* Track */}
-      <div style={{ position: 'absolute', left: 0, right: 0, height: 4, background: 'var(--border-color)', borderRadius: 2 }} />
-      {/* Active range */}
-      <div style={{
-        position: 'absolute', height: 4, background: 'var(--color-primary)', borderRadius: 2,
-        left: `${leftPct}%`, width: `${widthPct}%`,
-      }} />
-      {/* From thumb */}
+    <div className="gantt-dual-slider">
+      <style dangerouslySetInnerHTML={{ __html: SLIDER_CSS }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, height: 4, background: 'var(--border-color, #e5e7eb)', borderRadius: 2 }} />
+      <div style={{ position: 'absolute', height: 4, background: 'var(--color-primary, #3b82f6)', borderRadius: 2, left: `${leftPct}%`, width: `${widthPct}%` }} />
       <input
         type="range" min={minDay} max={maxDay} value={fromD}
-        onChange={e => { const v = Math.min(Number(e.target.value), toD - 1); onFromChange(v) }}
-        style={{ ...thumbStyle, pointerEvents: 'auto', zIndex: fromD > minDay + (maxDay - minDay) * 0.9 ? 5 : 3 }}
+        onMouseDown={() => setLast('from')} onTouchStart={() => setLast('from')}
+        onChange={e => onFromChange(Math.min(Number(e.target.value), toD - 1))}
+        style={{ ...base, zIndex: last === 'from' ? 5 : 3 }}
       />
-      {/* To thumb */}
       <input
         type="range" min={minDay} max={maxDay} value={toD}
-        onChange={e => { const v = Math.max(Number(e.target.value), fromD + 1); onToChange(v) }}
-        style={{ ...thumbStyle, pointerEvents: 'auto', zIndex: 4 }}
+        onMouseDown={() => setLast('to')} onTouchStart={() => setLast('to')}
+        onChange={e => onToChange(Math.max(Number(e.target.value), fromD + 1))}
+        style={{ ...base, zIndex: last === 'to' ? 5 : 4 }}
       />
     </div>
   )
@@ -412,7 +436,7 @@ export default function TimelineOverviewPage() {
         <div style={{ marginLeft: 'auto' }}>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('timeline.period')}</div>
           <div style={{ display: 'flex', gap: 4 }}>
-            {([['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
+            {([['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all']] as [string, number | 'ytd' | 'all'][]).map(([label, val]) => (
               <button key={label} style={segBtn(false)} onClick={() => applyPreset(val)}>{label}</button>
             ))}
           </div>
