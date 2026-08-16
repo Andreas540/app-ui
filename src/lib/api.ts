@@ -3,7 +3,7 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake' }
+export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; variant?: string | null; sku?: string | null; product_category?: string | null }
 
 export type CoverageProduct = {
   id: string

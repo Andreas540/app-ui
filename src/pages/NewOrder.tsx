@@ -270,8 +270,10 @@ export default function NewOrder() {
     return q > 0 && Number.isFinite(q) && Number.isFinite(p) ? q * p : NaN
   }
 
+  const optLabel = (p: Product) => p.variant ? `${p.name} · ${p.variant}` : p.name
+
   // Filter and group products
-  const { filteredProducts, productGroup, serviceGroup, addOnGroup } = useMemo(() => {
+  const { filteredProducts, addOnGroup, productGroups, serviceGroups } = useMemo(() => {
     const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
     const filtered = products
       .filter(p => !excludedNames.includes(p.name.toLowerCase()))
@@ -279,8 +281,18 @@ export default function NewOrder() {
     const addOnGroup   = filtered.filter(p => p.product_kind === 'coverage')
     const productGroup = filtered.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage')
     const serviceGroup = filtered.filter(p => p.category === 'service' && p.product_kind !== 'coverage')
-    return { filteredProducts: filtered, productGroup, serviceGroup, addOnGroup }
-  }, [products])
+    const toCatGroups = (items: Product[], fallback: string) => {
+      const cats = [...new Set(items.map(p => p.product_category).filter(Boolean))] as string[]
+      if (cats.length === 0) return [{ label: fallback, items }]
+      const groups = cats.map(cat => ({ label: cat, items: items.filter(p => p.product_category === cat) }))
+      const rest = items.filter(p => !p.product_category)
+      if (rest.length > 0) groups.push({ label: fallback, items: rest })
+      return groups
+    }
+    return { filteredProducts: filtered, addOnGroup,
+      productGroups: toCatGroups(productGroup, t('orders.groupProducts')),
+      serviceGroups: toCatGroups(serviceGroup, t('orders.groupServices')) }
+  }, [products, t])
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -484,24 +496,25 @@ export default function NewOrder() {
                     <option value="">{t('orders.noProductsYet')}</option>
                   ) : (
                     <>
-                      {productGroup.length > 0 && (
-                        <optgroup label={t('orders.groupProducts')}>
-                          {productGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      {productGroups.map(grp => grp.items.length > 0 && (
+                        <optgroup key={grp.label} label={grp.label}>
+                          {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
                         </optgroup>
-                      )}
-                      {serviceGroup.length > 0 && (
-                        <optgroup label={t('orders.groupServices')}>
-                          {serviceGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      ))}
+                      {serviceGroups.map(grp => grp.items.length > 0 && (
+                        <optgroup key={`svc-${grp.label}`} label={grp.label}>
+                          {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
                         </optgroup>
-                      )}
+                      ))}
                       {addOnGroup.length > 0 && (
                         <optgroup label={t('orders.groupAddOns')}>
-                          {addOnGroup.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {addOnGroup.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
                         </optgroup>
                       )}
                     </>
                   )}
                 </select>
+                {prod?.sku && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>SKU: {prod.sku}</div>}
               </div>
               <div>
                 <label>{t('quantity')}</label>

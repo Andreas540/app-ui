@@ -249,9 +249,9 @@ export default function Warehouse() {
       setErr(null)
       const { products: bootProducts } = await fetchBootstrap()
 
-      // Filter out services, materials, Refund/Discount, Other Products, and Other Services
+      // Only show physical products (category 'product' or unset); exclude services, materials, and misc names
       const filtered = bootProducts.filter((p) => {
-        if (p.category === 'service' || p.category === 'material') return false
+        if ((p.category ?? 'product') !== 'product') return false
         const name = p.name.trim().toLowerCase()
         return (
           !name.includes('refund') &&

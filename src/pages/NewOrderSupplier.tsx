@@ -7,7 +7,7 @@ import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 
 type Supplier = { id: string; name: string }
-type Product  = { id: string; name: string; category: string }
+type Product  = { id: string; name: string; category: string; variant?: string | null; sku?: string | null; product_category?: string | null }
 
 type Line = {
   product_id: string | ''
@@ -73,7 +73,7 @@ export default function NewOrderSupplier() {
 
         if (pRes.status === 'fulfilled' && pRes.value.ok) {
           const data = await pRes.value.json()
-          setProducts((data.products || []).map((p:any)=>({id:p.id, name:p.name, category: p.category ?? 'product'})))
+          setProducts((data.products || []).map((p:any)=>({id:p.id, name:p.name, category: p.category ?? 'product', variant: p.variant ?? null, sku: p.sku ?? null, product_category: p.product_category ?? null})))
         } else {
           setProducts([])
         }
@@ -233,24 +233,34 @@ export default function NewOrderSupplier() {
                   >
                     <option value="">{t('supplierOrders.selectPlaceholder')}</option>
                     {(() => {
-                      const sellable = products.filter(p => p.category === 'product')
+                      const optLabel = (p: Product) => p.variant ? `${p.name} · ${p.variant}` : p.name
+                      const toCatGroups = (items: Product[], fallback: string) => {
+                        const cats = [...new Set(items.map(p => p.product_category).filter(Boolean))] as string[]
+                        if (cats.length === 0) return [{ label: fallback, items }]
+                        const groups = cats.map(cat => ({ label: cat, items: items.filter(p => p.product_category === cat) }))
+                        const rest = items.filter(p => !p.product_category)
+                        if (rest.length > 0) groups.push({ label: fallback, items: rest })
+                        return groups
+                      }
+                      const sellable = toCatGroups(products.filter(p => p.category === 'product'), t('orders.groupProducts'))
                       const mats = products.filter(p => p.category === 'material')
                       return (
                         <>
-                          {sellable.length > 0 && (
-                            <optgroup label={t('orders.groupProducts')}>
-                              {sellable.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {sellable.map(grp => grp.items.length > 0 && (
+                            <optgroup key={grp.label} label={grp.label}>
+                              {grp.items.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
                             </optgroup>
-                          )}
+                          ))}
                           {mats.length > 0 && (
                             <optgroup label={t('orders.groupMaterials')}>
-                              {mats.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              {mats.map(p => <option key={p.id} value={p.id}>{optLabel(p)}</option>)}
                             </optgroup>
                           )}
                         </>
                       )
                     })()}
                   </select>
+                  {(() => { const p = products.find(p => p.id === l.product_id); return p?.sku ? <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>SKU: {p.sku}</div> : null })()}
                 </div>
                 <div>
                   <label>{t('quantity')}</label>
