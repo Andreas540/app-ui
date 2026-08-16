@@ -449,9 +449,21 @@ export default function TimelineOverviewPage() {
       product_total:  Number(item.product_cost)  * Number(item.qty),
       shipping_total: Number(item.shipping_cost) * Number(item.qty),
     }))
-    const total = items.reduce((sum: number, item: any) => sum + item.product_total + item.shipping_total, 0)
+    const total   = items.reduce((sum: number, i: any) => sum + i.product_total + i.shipping_total, 0)
+    const totalQty = items.reduce((s: number, i: any) => s + Number(i.qty          || 0), 0)
+    const recvQty  = items.reduce((s: number, i: any) => s + Number(i.qty_received  || 0), 0)
+    const shipQty  = items.reduce((s: number, i: any) => s + Number(i.qty_shipped   || 0), 0)
+    const custQty  = items.reduce((s: number, i: any) => s + Number(i.qty_in_customs|| 0), 0)
+    const ord = data.order
+    let derived_status: string
+    if (ord.received || (totalQty > 0 && recvQty >= totalQty)) derived_status = 'received'
+    else if (recvQty > 0 && (shipQty > 0 || custQty > 0))     derived_status = 'mixed'
+    else if (recvQty > 0)                                      derived_status = 'partial'
+    else if (custQty > 0)                                      derived_status = 'in_customs'
+    else if (shipQty > 0 || ord.delivered)                     derived_status = 'shipped'
+    else                                                       derived_status = 'pending'
     setSuppModalName(supplierName)
-    setSuppModalOrder({ ...data.order, items, total })
+    setSuppModalOrder({ ...ord, items, total, derived_status })
   }
 
   async function applyPreset(months: number | 'ytd' | 'all') {

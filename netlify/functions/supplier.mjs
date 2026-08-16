@@ -124,12 +124,13 @@ async function getSupplier(event) {
       const tr = Number(o.agg_received)
       const tc = Number(o.agg_in_customs)
       const ts = Number(o.agg_shipped)
-      if (tq === 0) return 'pending'
-      if (tr >= tq) return 'received'
-      if (tc + ts + tr === 0) return 'pending'
-      if (tc === tq && ts === 0 && tr === 0) return 'in_customs'
-      if (ts === tq && tc === 0 && tr === 0) return 'shipped'
-      return 'partial'
+      if (tq === 0)                      return 'pending'
+      if (tr >= tq)                      return 'received'
+      if (tr > 0 && (ts > 0 || tc > 0)) return 'mixed'
+      if (tr > 0)                        return 'partial'
+      if (tc > 0)                        return 'in_customs'
+      if (ts > 0)                        return 'shipped'
+      return 'pending'
     }
 
     // Attach items + derived_status to orders

@@ -21,9 +21,10 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
   const statusMap: Record<string, { text: string; color: string; icon: string }> = {
     received:   { text: t('received'),                color: '#10b981', icon: '✓' },
+    partial:    { text: t('suppliers.statusPartial'), color: '#f59e0b', icon: '◐' },
+    mixed:      { text: t('suppliers.statusMixed'),   color: '#8b5cf6', icon: '⊕' },
     in_customs: { text: t('inCustoms'),               color: '#f97316', icon: '◑' },
     shipped:    { text: t('shipped'),                 color: '#3b82f6', icon: '►' },
-    partial:    { text: t('suppliers.statusPartial'), color: '#f59e0b', icon: '◐' },
     pending:    { text: t('pending'),                 color: '#d1d5db', icon: '○' },
   }
   const { text: statusText, color: statusColor, icon: statusIcon } = statusMap[ds] ?? statusMap.pending

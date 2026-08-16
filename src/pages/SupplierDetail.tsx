@@ -51,7 +51,7 @@ interface Order {
   in_customs: boolean
   in_customs_date?: string
   est_delivery_date?: string
-  derived_status?: 'received' | 'in_customs' | 'shipped' | 'partial' | 'pending'
+  derived_status?: 'received' | 'in_customs' | 'shipped' | 'partial' | 'mixed' | 'pending'
 }
 
 interface Payment {
@@ -317,8 +317,9 @@ export default function SupplierDetailPage() {
               // Stage icon — same pattern as CustomerDetail delivery icon
               const stageIcon = (() => {
                 let symbol = '', color = '#d1d5db', title = t('suppliers.stagePending')
-                if (ds === 'received')   { symbol = '✓'; color = '#10b981'; title = t('suppliers.stageReceived') }
-                else if (ds === 'partial')   { symbol = '◐'; color = '#f59e0b'; title = t('suppliers.statusPartial') }
+                if (ds === 'received')        { symbol = '✓'; color = '#10b981'; title = t('suppliers.stageReceived') }
+                else if (ds === 'partial')    { symbol = '◐'; color = '#f59e0b'; title = t('suppliers.statusPartial') }
+                else if (ds === 'mixed')      { symbol = '⊕'; color = '#8b5cf6'; title = t('suppliers.statusMixed') }
                 else if (ds === 'in_customs') { symbol = '◑'; color = '#f97316'; title = t('suppliers.stageInCustoms') }
                 else if (ds === 'shipped')    { symbol = '►'; color = '#3b82f6'; title = t('suppliers.stageShipped') }
                 return (
@@ -351,6 +352,12 @@ export default function SupplierDetailPage() {
                 statusBadge = (
                   <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
                     {t('suppliers.statusPartial')}
+                  </span>
+                )
+              } else if (ds === 'mixed') {
+                statusBadge = (
+                  <span style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('suppliers.statusMixed')}
                   </span>
                 )
               } else if (ds === 'in_customs') {
