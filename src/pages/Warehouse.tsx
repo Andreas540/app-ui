@@ -1021,7 +1021,6 @@ function addDays(dateStr: string, days: number): string {
 }
 
 // ─── CoveragePanel (hidden — managed from Order view) ───────────────────────
-// @ts-ignore — kept for future use
 
 type CoveragePanelProps = {
   unitId: number
@@ -1032,6 +1031,7 @@ type CoveragePanelProps = {
   isEditingThisUnit: boolean
 }
 
+// @ts-ignore — hidden, kept for future use
 function CoveragePanel({ unitId, isExpanded, onToggle, t, isEditingThisUnit }: CoveragePanelProps) {
   const [coverages, setCoverages] = useState<UnitCoverage[] | 'loading' | null>(null)
   const [bindingMode, setBindingMode] = useState(false)
