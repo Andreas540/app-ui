@@ -334,11 +334,13 @@ export default function SupplierDetailPage() {
                             <span style={{ display: 'inline-block', width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${color}` }} />
                           </span>
                         : ds === 'mixed'
-                        ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="7" stroke="#8b5cf6" strokeWidth="1.5"/>
-                            <path d="M8 8 L8 1 A7 7 0 0 1 15 8 Z" fill="#8b5cf6"/>
-                            <path d="M8 8 L8 15 A7 7 0 0 1 1 8 Z" fill="#8b5cf6"/>
-                          </svg>
+                        ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                              <circle cx="8" cy="8" r="7" stroke="#8b5cf6" strokeWidth="1.5"/>
+                              <path d="M8 8 L8 1 A7 7 0 0 1 15 8 Z" fill="#8b5cf6"/>
+                              <path d="M8 8 L8 15 A7 7 0 0 1 1 8 Z" fill="#8b5cf6"/>
+                            </svg>
+                          </span>
                         : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
                       }
                     </button>
