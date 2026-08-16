@@ -12,6 +12,7 @@ interface OrderDetailModalProps {
   onClose: () => void
   order: any
   customerName?: string
+  refreshKey?: number
 }
 
 interface PartnerSplit {
@@ -27,7 +28,7 @@ function coverageDaysLeft(orderDateStr: string, durationDays: number, timezone: 
   return Math.round((expiryMs - todayMs) / 86400000)
 }
 
-export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName }: OrderDetailModalProps) {
+export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName, refreshKey }: OrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { timezone } = useLocale()
@@ -105,7 +106,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
     }
 
     fetchOrderDetails()
-  }, [initialOrder?.id, isOpen])
+  }, [initialOrder?.id, isOpen, refreshKey])
 
   if (!order) return null
 

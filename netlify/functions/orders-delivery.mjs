@@ -117,12 +117,16 @@ async function updateDeliveryStatus(event) {
       : totalDelivered >= totalQty ? 'delivered'
       : 'partial'
     const eventDate = newDeliveredAt || new Date().toISOString().slice(0, 10)
-    await sql`
-      INSERT INTO order_delivery_events
-        (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
-      VALUES
-        (${TENANT_ID}::uuid, ${order_id}::uuid, ${Math.round(totalDelivered)}, ${Math.round(totalQty)}, ${eventStatus}, ${eventDate}::date)
-    `
+    try {
+      await sql`
+        INSERT INTO order_delivery_events
+          (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
+        VALUES
+          (${TENANT_ID}::uuid, ${order_id}::uuid, ${Math.round(totalDelivered)}, ${Math.round(totalQty)}, ${eventStatus}, ${eventDate}::date)
+      `
+    } catch (e) {
+      console.error('order_delivery_events insert failed', e)
+    }
 
     const row = result[0];
     return cors(200, {

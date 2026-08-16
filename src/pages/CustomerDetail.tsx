@@ -87,6 +87,7 @@ export default function CustomerDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [deliveryOrder, setDeliveryOrder] = useState<any | null>(null)
   const [savingDelivery, setSavingDelivery] = useState(false)
+  const [orderModalRefreshKey, setOrderModalRefreshKey] = useState(0)
   const [showShareOrder,        setShowShareOrder]        = useState(false)
   const [generatingOrderLink,   setGeneratingOrderLink]   = useState(false)
   const [orderLink,             setOrderLink]             = useState<string | null>(null)
@@ -392,6 +393,7 @@ export default function CustomerDetailPage() {
       })
 
       setDeliveryOrder(null)
+      setOrderModalRefreshKey(k => k + 1)
     } catch (e: any) {
       console.error('Failed to update delivery status:', e)
       alert(`Failed to update delivery status: ${e.message}`)
@@ -1247,6 +1249,7 @@ export default function CustomerDetailPage() {
         onClose={() => setShowOrderModal(false)}
         order={selectedOrder}
         customerName={data?.customer?.name}
+        refreshKey={orderModalRefreshKey}
       />
 
       <PaymentDetailModal

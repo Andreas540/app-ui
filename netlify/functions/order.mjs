@@ -172,12 +172,17 @@ LIMIT 1
     `
     const paidAmount = Number(paidRows[0]?.paid_amount || 0)
 
-    const deliveryEvents = await sql`
-      SELECT delivered_quantity, total_qty, delivery_status, event_date
-      FROM order_delivery_events
-      WHERE order_id = ${id} AND tenant_id = ${TENANT_ID}::uuid
-      ORDER BY event_date ASC, created_at ASC
-    `
+    let deliveryEvents = []
+    try {
+      deliveryEvents = await sql`
+        SELECT delivered_quantity, total_qty, delivery_status, event_date
+        FROM order_delivery_events
+        WHERE order_id = ${id}::uuid AND tenant_id = ${TENANT_ID}::uuid
+        ORDER BY event_date ASC, created_at ASC
+      `
+    } catch (e) {
+      console.error('delivery_events fetch failed', e)
+    }
 
     return cors(200, {
       order: { ...order, profit, profitPercent, paid_amount: paidAmount, total: orderValue },
@@ -322,12 +327,16 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
 
       const evtStatus = delivered ? 'delivered' : 'not_delivered'
       const evtDate = delivered_at || new Date().toISOString().slice(0, 10)
-      await sql`
-        INSERT INTO order_delivery_events
-          (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
-        VALUES
-          (${TENANT_ID}::uuid, ${id}::uuid, ${newDeliveredQty}, ${totalQty}, ${evtStatus}, ${evtDate}::date)
-      `
+      try {
+        await sql`
+          INSERT INTO order_delivery_events
+            (tenant_id, order_id, delivered_quantity, total_qty, delivery_status, event_date)
+          VALUES
+            (${TENANT_ID}::uuid, ${id}::uuid, ${newDeliveredQty}, ${totalQty}, ${evtStatus}, ${evtDate}::date)
+        `
+      } catch (e) {
+        console.error('order_delivery_events insert failed', e)
+      }
     }
 
     return cors(200, { ok: true })
