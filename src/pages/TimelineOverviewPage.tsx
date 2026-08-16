@@ -112,7 +112,7 @@ function axisMarks(viewFrom: number, viewTo: number): { day: number; label: stri
 const CTRL_CSS = `
   .gantt-controls-desktop { display: grid; }
   .gantt-controls-mobile   { display: none; }
-  @media (max-width: 639px) {
+  @media (hover: none) and (pointer: coarse) {
     .gantt-controls-desktop { display: none !important; }
     .gantt-controls-mobile  { display: flex !important; flex-direction: column; gap: 10px; margin-bottom: 16px; }
     .gantt-ctrl-row  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
