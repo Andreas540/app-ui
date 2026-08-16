@@ -233,7 +233,7 @@ export default function EditOrder() {
     let priceStr = lines[idx].priceStr
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     setLines(prev => prev.map((l, i) => i === idx
-      ? { ...l, product_id, priceStr, qtyStr: l.qtyStr || (isCoverageProduct ? '1' : ''), historicalProductCost: null }
+      ? { ...l, product_id, priceStr, qtyStr: l.qtyStr || (isCoverageProduct ? '1' : ''), historicalProductCost: null, unit_id: null, unit_serial: null, unit_condition: null }
       : l
     ))
     fetchLineCost(idx, product_id, orderDate, customerId)
