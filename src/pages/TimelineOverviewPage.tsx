@@ -51,18 +51,25 @@ type StageEvent = {
 
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
+function localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 function toDay(s: string): number {
   return Math.floor(new Date(s + 'T00:00:00').getTime() / 86400000)
 }
 function fromDay(n: number): string {
   return new Date(n * 86400000).toISOString().slice(0, 10)
 }
-function todayStr() { return new Date().toISOString().slice(0, 10) }
-function addDays(s: string, d: number) { return fromDay(toDay(s) + d) }
+function todayStr() { return localDateStr() }
+function addDays(s: string, d: number) {
+  const dt = new Date(s + 'T00:00:00')
+  dt.setDate(dt.getDate() + d)
+  return localDateStr(dt)
+}
 function addMonths(s: string, m: number) {
   const d = new Date(s + 'T00:00:00')
   d.setMonth(d.getMonth() + m)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(d)
 }
 function fmtFull(s: string) {
   const d = new Date(s + 'T00:00:00')
