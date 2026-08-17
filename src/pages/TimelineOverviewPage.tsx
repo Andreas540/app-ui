@@ -40,6 +40,14 @@ type ShowMode    = 'both' | 'customer' | 'supplier'
 type CustGroup   = 'customer' | 'product'
 type SuppGroup   = 'supplier' | 'product'
 
+type StageEvent = {
+  id: string
+  stage: 'shipped' | 'in_customs' | 'received'
+  product_name: string
+  qty_delta: number
+  event_date: string
+}
+
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
 function toDay(s: string): number {
@@ -197,7 +205,7 @@ function DateRangeSlider({
 
 function GanttRow({
   label, sublabel, barStart, barEnd, viewFrom, viewTo,
-  color, isDashed, tooltip, onLabelClick,
+  color, isDashed, tooltip, onLabelClick, onSublabelClick, isExpanded,
 }: {
   label: string; sublabel?: string
   barStart: string; barEnd: string
@@ -205,6 +213,8 @@ function GanttRow({
   color: string; isDashed: boolean
   tooltip: string
   onLabelClick?: () => void
+  onSublabelClick?: () => void
+  isExpanded?: boolean
 }) {
   const geo = barGeometry(barStart, barEnd, viewFrom, viewTo)
   const BAR_H = 9
@@ -217,7 +227,14 @@ function GanttRow({
           onClick={onLabelClick}
           style={{ fontSize: 12, color: 'var(--color-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 500 }}
         >{label}</button>
-        {sublabel && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{sublabel}</span>}
+        {sublabel && (
+          onSublabelClick
+            ? <button onClick={onSublabelClick} style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginLeft: 6 }}>
+                <span style={{ fontSize: 8, marginRight: 2, display: 'inline-block', transition: 'transform 0.15s', transform: isExpanded ? 'rotate(90deg)' : 'none' }}>▶</span>
+                {sublabel}
+              </button>
+            : <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{sublabel}</span>
+        )}
       </div>
       {/* Bar area */}
       <div style={{ flex: 1, position: 'relative', height: BAR_H }}>
@@ -235,6 +252,58 @@ function GanttRow({
               cursor: 'default',
               boxSizing: 'border-box',
               border: isDashed ? `1.5px dashed ${color}` : 'none',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Stage event dot row ────────────────────────────────────────────────────────
+
+const STAGE_COLORS: Record<StageEvent['stage'], string> = {
+  shipped:    '#3b82f6',
+  in_customs: '#f97316',
+  received:   '#10b981',
+}
+
+function EventDotRow({ event, viewFrom, viewTo }: { event: StageEvent; viewFrom: number; viewTo: number }) {
+  const { t } = useTranslation()
+  const span     = viewTo - viewFrom
+  const eventDay = toDay(event.event_date)
+  const color    = STAGE_COLORS[event.stage]
+  const pct      = span > 0 ? ((eventDay - viewFrom) / span) * 100 : -1
+  const inView   = pct >= 0 && pct <= 100
+
+  const stageLabel = event.stage === 'shipped'
+    ? t('suppliers.stageShipped')
+    : event.stage === 'in_customs'
+    ? t('suppliers.stageInCustoms')
+    : t('suppliers.stageReceived')
+
+  const qty    = Number(event.qty_delta)
+  const qtyStr = qty % 1 === 0 ? String(qty) : parseFloat(qty.toFixed(4)).toString()
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: 18 }}>
+      <div style={{ width: 200, flexShrink: 0, paddingRight: 8, paddingLeft: 20, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        <span style={{ fontSize: 11, color, fontWeight: 600 }}>{stageLabel}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 5 }}>{event.product_name}</span>
+        {qty !== 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 4 }}>×{qtyStr}</span>}
+      </div>
+      <div style={{ flex: 1, position: 'relative', height: 16 }}>
+        {inView && (
+          <div
+            title={`${stageLabel} · ${fmtFull(event.event_date)}`}
+            style={{
+              position: 'absolute',
+              left: `${pct}%`,
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 8, height: 8, borderRadius: 4,
+              background: color,
+              cursor: 'default',
             }}
           />
         )}
@@ -409,6 +478,11 @@ export default function TimelineOverviewPage() {
   const [suppModalOrder, setSuppModalOrder] = useState<any>(null)
   const [suppModalName,  setSuppModalName]  = useState('')
 
+  // Expand state for supplier order stage events
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
+  const [orderEvents,    setOrderEvents]    = useState<Map<string, StageEvent[]>>(new Map())
+  const [loadingEvents,  setLoadingEvents]  = useState<Set<string>>(new Set())
+
   const fetchRef = useRef(0)
 
   async function fetchData(from: string, to: string): Promise<{ customer_orders: CustomerOrder[]; supplier_orders: SupplierOrder[] } | null> {
@@ -435,32 +509,53 @@ export default function TimelineOverviewPage() {
 
   useEffect(() => { fetchData(fetchFrom, fetchTo) }, [])
 
-  async function openSupplierOrder(id: string, supplierName: string) {
+  async function fetchSupplierOrderData(id: string) {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     const res = await fetch(`${base}/api/order-supplier?id=${id}`, { headers: getAuthHeaders() })
-    if (!res.ok) return
-    const data = await res.json()
+    if (!res.ok) return null
+    return res.json()
+  }
+
+  async function openSupplierOrder(id: string, supplierName: string) {
+    const data = await fetchSupplierOrderData(id)
+    if (!data) return
     const items = (data.items ?? []).map((item: any) => ({
       ...item,
       product_total:  Number(item.product_cost)  * Number(item.qty),
       shipping_total: Number(item.shipping_cost) * Number(item.qty),
     }))
-    const total   = items.reduce((sum: number, i: any) => sum + i.product_total + i.shipping_total, 0)
-    const totalQty = items.reduce((s: number, i: any) => s + Number(i.qty          || 0), 0)
+    const total    = items.reduce((sum: number, i: any) => sum + i.product_total + i.shipping_total, 0)
+    const totalQty = items.reduce((s: number, i: any) => s + Number(i.qty           || 0), 0)
     const recvQty  = items.reduce((s: number, i: any) => s + Number(i.qty_received  || 0), 0)
     const shipQty  = items.reduce((s: number, i: any) => s + Number(i.qty_shipped   || 0), 0)
     const custQty  = items.reduce((s: number, i: any) => s + Number(i.qty_in_customs|| 0), 0)
     const ord = data.order
     let derived_status: string
     if (ord.received || (totalQty > 0 && recvQty >= totalQty)) derived_status = 'received'
-    else if (recvQty > 0 && (shipQty > 0 || custQty > 0))     derived_status = 'mixed'
-    else if (shipQty > 0 && custQty > 0)                       derived_status = 'mixed'
-    else if (recvQty > 0)                                      derived_status = 'partial'
-    else if (custQty > 0)                                      derived_status = 'in_customs'
-    else if (shipQty > 0 || ord.delivered)                     derived_status = 'shipped'
-    else                                                       derived_status = 'pending'
+    else if (recvQty > 0 && (shipQty > 0 || custQty > 0))      derived_status = 'mixed'
+    else if (shipQty > 0 && custQty > 0)                        derived_status = 'mixed'
+    else if (recvQty > 0)                                       derived_status = 'partial'
+    else if (custQty > 0)                                       derived_status = 'in_customs'
+    else if (shipQty > 0 || ord.delivered)                      derived_status = 'shipped'
+    else                                                        derived_status = 'pending'
+    // Cache events so expand doesn't need a second fetch
+    setOrderEvents(prev => new Map(prev).set(id, (data.events || []).slice().reverse()))
     setSuppModalName(supplierName)
     setSuppModalOrder({ ...ord, items, total, derived_status })
+  }
+
+  async function toggleExpand(orderId: string) {
+    if (expandedOrders.has(orderId)) {
+      setExpandedOrders(prev => { const next = new Set(prev); next.delete(orderId); return next })
+      return
+    }
+    setExpandedOrders(prev => new Set([...prev, orderId]))
+    if (!orderEvents.has(orderId)) {
+      setLoadingEvents(prev => new Set([...prev, orderId]))
+      const data = await fetchSupplierOrderData(orderId)
+      if (data) setOrderEvents(prev => new Map(prev).set(orderId, (data.events || []).slice().reverse()))
+      setLoadingEvents(prev => { const next = new Set(prev); next.delete(orderId); return next })
+    }
   }
 
   async function applyPreset(months: number | 'ytd' | 'all') {
@@ -811,23 +906,38 @@ export default function TimelineOverviewPage() {
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
-                      const end = o.received_date || o.delivery_date || TODAY
-                      const ds  = o.derived_status
-                      const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${ds === 'received' ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
+                      const end        = o.received_date || o.delivery_date || TODAY
+                      const ds         = o.derived_status
+                      const tip        = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${ds === 'received' ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
+                      const isExpanded = expandedOrders.has(o.id)
+                      const evts       = orderEvents.get(o.id) ?? []
+                      const loadingEvt = loadingEvents.has(o.id)
                       return (
-                        <GanttRow
-                          key={o.id}
-                          label={`#${o.order_no}`}
-                          sublabel={suppGroupBy === 'product' ? o.supplier_name : o.product_names}
-                          barStart={o.order_date}
-                          barEnd={end}
-                          viewFrom={viewFromDay}
-                          viewTo={viewToDay}
-                          color={SUPP_COLOR[ds] ?? SUPP_COLOR.pending}
-                          isDashed={ds === 'pending'}
-                          tooltip={tip}
-                          onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
-                        />
+                        <div key={o.id}>
+                          <GanttRow
+                            label={`#${o.order_no}`}
+                            sublabel={suppGroupBy === 'product' ? o.supplier_name : o.product_names}
+                            barStart={o.order_date}
+                            barEnd={end}
+                            viewFrom={viewFromDay}
+                            viewTo={viewToDay}
+                            color={SUPP_COLOR[ds] ?? SUPP_COLOR.pending}
+                            isDashed={ds === 'pending'}
+                            tooltip={tip}
+                            onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
+                            onSublabelClick={() => toggleExpand(o.id)}
+                            isExpanded={isExpanded}
+                          />
+                          {isExpanded && loadingEvt && (
+                            <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>…</div>
+                          )}
+                          {isExpanded && !loadingEvt && evts.map((ev, idx) => (
+                            <EventDotRow key={ev.id ?? idx} event={ev} viewFrom={viewFromDay} viewTo={viewToDay} />
+                          ))}
+                          {isExpanded && !loadingEvt && evts.length === 0 && (
+                            <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>{t('suppliers.stageHistory')}: —</div>
+                          )}
+                        </div>
                       )
                     })}
                   </div>
