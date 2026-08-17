@@ -35,9 +35,12 @@ export async function handler(event) {
           o.delivered_quantity,
           c.id::text   AS customer_id,
           c.name       AS customer_name,
-          STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) AS product_names,
+          COALESCE(
+            STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) FILTER (WHERE p.product_kind IS DISTINCT FROM 'coverage'),
+            STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name)
+          )                                   AS product_names,
           SUM(oi.qty * oi.unit_price)::float8 AS amount,
-          SUM(oi.qty)::int                    AS total_qty
+          (SUM(oi.qty) FILTER (WHERE p.product_kind IS DISTINCT FROM 'coverage'))::int AS total_qty
         FROM orders o
         JOIN customers c        ON c.id = o.customer_id AND c.tenant_id = ${tenantId}::uuid
         JOIN order_items oi     ON oi.order_id = o.id
