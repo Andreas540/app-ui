@@ -189,11 +189,7 @@ const TENANT_ID = authz.tenantId;
       const isRefund = (prodRows[0].name || '').trim().toLowerCase() === 'refund/discount';
       if (isRefund && !(unitPriceNum < 0)) return cors(400, { error: 'Refund/Discount requires unit_price < 0' });
       if (!isRefund && !(unitPriceNum > 0)) return cors(400, { error: 'unit_price must be > 0' });
-      // unit_id required for serialized_intake products
       const unitId = item.unit_id ? Number(item.unit_id) : null
-      if (prodRows[0].unit_tracking === 'serialized_intake' && !unitId) {
-        return cors(400, { error: `Product "${prodRows[0].name}" requires a specific unit to be selected.` })
-      }
       validatedItems.push({
         product_id: item.product_id,
         qtyNum,
