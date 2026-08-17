@@ -1002,7 +1002,7 @@ export default function TimelineOverviewPage() {
                         <div key={o.id}>
                           <GanttRow
                             label={`#${o.order_no}`}
-                            sublabel={custGroupBy === 'product' ? o.customer_name : fullNames}
+                            sublabel={custGroupBy === 'product' ? o.customer_name : o.product_names}
                             barStart={o.order_date}
                             barEnd={end}
                             viewFrom={viewFromDay}
@@ -1014,6 +1014,14 @@ export default function TimelineOverviewPage() {
                             onSublabelClick={() => toggleExpandCust(o.id)}
                             isExpanded={isExpanded}
                           />
+                          {o.addon_names && custGroupBy !== 'product' && (
+                            <div style={{ display: 'flex', alignItems: 'center', minHeight: 14, paddingRight: 12 }}>
+                              <div style={{ width: 200, flexShrink: 0, paddingLeft: 14, paddingRight: 8, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>+ {o.addon_names}</span>
+                              </div>
+                              <div style={{ flex: 1 }} />
+                            </div>
+                          )}
                           {isExpanded && loadingCustEvt && (
                             <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>…</div>
                           )}
