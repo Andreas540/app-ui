@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
+import { todayYMD } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 
@@ -51,7 +53,7 @@ type StageEvent = {
 
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
-function localDateStr(d: Date = new Date()): string {
+function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 function toDay(s: string): number {
@@ -60,7 +62,6 @@ function toDay(s: string): number {
 function fromDay(n: number): string {
   return new Date(n * 86400000).toISOString().slice(0, 10)
 }
-function todayStr() { return localDateStr() }
 function addDays(s: string, d: number) {
   const dt = new Date(s + 'T00:00:00')
   dt.setDate(dt.getDate() + d)
@@ -465,8 +466,6 @@ function GroupHeader({ label }: { label: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-const TODAY = todayStr()
-const DEFAULT_FROM = addMonths(TODAY, -1)
 const PRESETS: [string, number | 'ytd' | 'all'][] = [
   ['1M', 1], ['3M', 3], ['6M', 6], ['1Y', 12], ['YTD', 'ytd'], ['All', 'all'],
 ]
@@ -482,6 +481,9 @@ function segBtn(active: boolean): React.CSSProperties {
 
 export default function TimelineOverviewPage() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
+  const today       = todayYMD(timezone)
+  const defaultFrom = addMonths(today, -1)
 
   const [loading, setLoading]   = useState(true)
   const [err, setErr]           = useState<string | null>(null)
@@ -489,12 +491,12 @@ export default function TimelineOverviewPage() {
   const [suppOrders, setSuppOrders]     = useState<SupplierOrder[]>([])
 
   // Fetch range (what data we have loaded)
-  const [fetchFrom, setFetchFrom] = useState(DEFAULT_FROM)
-  const [fetchTo,   setFetchTo]   = useState(TODAY)
+  const [fetchFrom, setFetchFrom] = useState(defaultFrom)
+  const [fetchTo,   setFetchTo]   = useState(today)
 
   // View range (slider position within fetch range)
-  const [viewFromDay, setViewFromDay] = useState(toDay(DEFAULT_FROM))
-  const [viewToDay,   setViewToDay]   = useState(toDay(TODAY))
+  const [viewFromDay, setViewFromDay] = useState(toDay(defaultFrom))
+  const [viewToDay,   setViewToDay]   = useState(toDay(today))
 
   // Filters
   const [showMode,    setShowMode]    = useState<ShowMode>('both')
@@ -593,11 +595,11 @@ export default function TimelineOverviewPage() {
   }
 
   async function applyPreset(months: number | 'ytd' | 'all') {
-    const to = TODAY
+    const to = today
     let from: string
-    if (months === 'ytd')      from = TODAY.slice(0, 4) + '-01-01'
+    if (months === 'ytd')      from = today.slice(0, 4) + '-01-01'
     else if (months === 'all') from = '2000-01-01'
-    else                       from = addMonths(TODAY, -months)
+    else                       from = addMonths(today, -months)
     setFetchFrom(from); setFetchTo(to)
     setViewFromDay(toDay(from)); setViewToDay(toDay(to))
     setActivePreset(months)
@@ -646,11 +648,11 @@ export default function TimelineOverviewPage() {
 
   const sliderMax = useMemo(() => {
     const dates = [
-      ...custOrders.map(o => o.delivered_at || TODAY),
-      ...suppOrders.map(o => o.received_date || TODAY),
+      ...custOrders.map(o => o.delivered_at || today),
+      ...suppOrders.map(o => o.received_date || today),
     ]
     const computed = dates.length ? Math.max(toDay(fetchTo), ...dates.map(toDay)) : toDay(fetchTo)
-    return Math.min(computed, toDay(TODAY))
+    return Math.min(computed, toDay(today))
   }, [custOrders, suppOrders, fetchTo])
 
   // Axis ticks
@@ -905,7 +907,7 @@ export default function TimelineOverviewPage() {
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
-                      const end = o.delivered_at || TODAY
+                      const end = o.delivered_at || today
                       const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${o.delivered ? fmtFull(end) : t('timeline.ongoing')}`
                       return (
                         <GanttRow
@@ -940,7 +942,7 @@ export default function TimelineOverviewPage() {
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
-                      const end        = o.received_date || o.delivery_date || TODAY
+                      const end        = o.received_date || o.delivery_date || today
                       const ds         = o.derived_status
                       const tip        = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${ds === 'received' ? fmtFull(end) : (o.est_delivery_date ? t('timeline.est') + ' ' + fmtFull(o.est_delivery_date) : t('timeline.ongoing'))}`
                       const isExpanded = expandedOrders.has(o.id)
