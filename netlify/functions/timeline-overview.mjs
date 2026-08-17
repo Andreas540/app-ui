@@ -24,7 +24,7 @@ export async function handler(event) {
     const from = params.from || sixMonthsAgo
     const to   = params.to   || today
 
-    const [customerOrders, supplierOrders] = await Promise.all([
+    const [customerOrders, supplierOrders, stageEvents] = await Promise.all([
       sql`
         SELECT
           o.id::text,
@@ -77,6 +77,23 @@ export async function handler(event) {
         GROUP BY os.id, os.order_no, os.order_date, os.est_delivery_date, os.delivered, os.delivery_date, os.received, os.received_date, s.id, s.name
         ORDER BY s.name, os.order_date
       `,
+      sql`
+        SELECT
+          e.supplier_order_id::text AS order_id,
+          e.stage,
+          e.event_date::text
+        FROM order_supplier_stage_events e
+        WHERE e.tenant_id  = ${tenantId}::uuid
+          AND e.qty_delta  > 0
+          AND e.supplier_order_id IN (
+            SELECT id FROM orders_suppliers
+            WHERE tenant_id   = ${tenantId}::uuid
+              AND order_date >= ${from}::date
+              AND order_date <= ${to}::date
+          )
+        GROUP BY e.supplier_order_id, e.stage, e.event_date
+        ORDER BY e.supplier_order_id, e.event_date ASC
+      `,
     ])
 
     // Derive customer order status from qty data
@@ -89,6 +106,13 @@ export async function handler(event) {
       else                                            cust_status = 'not_delivered'
       return { ...o, cust_status }
     })
+
+    // Index stage events by order id
+    const eventsByOrder = {}
+    for (const ev of stageEvents) {
+      if (!eventsByOrder[ev.order_id]) eventsByOrder[ev.order_id] = []
+      eventsByOrder[ev.order_id].push({ stage: ev.stage, event_date: ev.event_date })
+    }
 
     // Derive supplier order status from item qty aggregates
     const suppWithStatus = supplierOrders.map(o => {
@@ -104,7 +128,7 @@ export async function handler(event) {
       else if (cust > 0)                             derived_status = 'in_customs'
       else if (ship > 0 || o.delivered)              derived_status = 'shipped'
       else                                           derived_status = 'pending'
-      return { ...o, derived_status }
+      return { ...o, derived_status, stage_events: eventsByOrder[o.id] || [] }
     })
 
     return cors(200, { customer_orders: custWithStatus, supplier_orders: suppWithStatus, from, to })

@@ -34,6 +34,7 @@ type SupplierOrder = {
   received_date: string | null
   total_cost: number
   derived_status: 'received' | 'partial' | 'mixed' | 'in_customs' | 'shipped' | 'pending'
+  stage_events: { stage: string; event_date: string }[]
 }
 
 type ShowMode    = 'both' | 'customer' | 'supplier'
@@ -205,7 +206,7 @@ function DateRangeSlider({
 
 function GanttRow({
   label, sublabel, barStart, barEnd, viewFrom, viewTo,
-  color, isDashed, tooltip, onLabelClick, onSublabelClick, isExpanded,
+  color, isDashed, tooltip, onLabelClick, onSublabelClick, isExpanded, eventMarkers,
 }: {
   label: string; sublabel?: string
   barStart: string; barEnd: string
@@ -215,6 +216,7 @@ function GanttRow({
   onLabelClick?: () => void
   onSublabelClick?: () => void
   isExpanded?: boolean
+  eventMarkers?: { date: string; color: string; label: string }[]
 }) {
   const geo = barGeometry(barStart, barEnd, viewFrom, viewTo)
   const BAR_H = 9
@@ -255,6 +257,29 @@ function GanttRow({
             }}
           />
         )}
+        {eventMarkers?.map((m, i) => {
+          const span = viewTo - viewFrom
+          const pct  = span > 0 ? ((toDay(m.date) - viewFrom) / span) * 100 : -1
+          if (pct < 0 || pct > 100) return null
+          return (
+            <div
+              key={i}
+              title={m.label}
+              style={{
+                position: 'absolute',
+                left: `${pct}%`,
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 9, height: 9, borderRadius: '50%',
+                background: m.color,
+                border: '1.5px solid #fff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                zIndex: 1,
+                cursor: 'default',
+              }}
+            />
+          )
+        })}
       </div>
     </div>
   )
@@ -282,15 +307,17 @@ function EventDotRow({ event, viewFrom, viewTo }: { event: StageEvent; viewFrom:
     ? t('suppliers.stageInCustoms')
     : t('suppliers.stageReceived')
 
-  const qty    = Number(event.qty_delta)
-  const qtyStr = qty % 1 === 0 ? String(qty) : parseFloat(qty.toFixed(4)).toString()
+  const qty     = Number(event.qty_delta)
+  const absStr  = (() => { const a = Math.abs(qty); return a % 1 === 0 ? String(a) : parseFloat(a.toFixed(4)).toString() })()
+  const sign    = qty >= 0 ? '+' : '−'
+  const signColor = qty >= 0 ? '#10b981' : '#ef4444'
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', minHeight: 18 }}>
       <div style={{ width: 200, flexShrink: 0, paddingRight: 8, paddingLeft: 20, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
         <span style={{ fontSize: 11, color, fontWeight: 600 }}>{stageLabel}</span>
         <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 5 }}>{event.product_name}</span>
-        {qty !== 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 4 }}>×{qtyStr}</span>}
+        {qty !== 0 && <span style={{ fontSize: 10, color: signColor, marginLeft: 4, fontWeight: 600 }}>{sign}{absStr}</span>}
       </div>
       <div style={{ flex: 1, position: 'relative', height: 16 }}>
         {inView && (
@@ -539,7 +566,7 @@ export default function TimelineOverviewPage() {
     else if (shipQty > 0 || ord.delivered)                      derived_status = 'shipped'
     else                                                        derived_status = 'pending'
     // Cache events so expand doesn't need a second fetch
-    setOrderEvents(prev => new Map(prev).set(id, (data.events || []).slice().reverse()))
+    setOrderEvents(prev => new Map(prev).set(id, data.events || []))
     setSuppModalName(supplierName)
     setSuppModalOrder({ ...ord, items, total, derived_status })
   }
@@ -553,7 +580,7 @@ export default function TimelineOverviewPage() {
     if (!orderEvents.has(orderId)) {
       setLoadingEvents(prev => new Set([...prev, orderId]))
       const data = await fetchSupplierOrderData(orderId)
-      if (data) setOrderEvents(prev => new Map(prev).set(orderId, (data.events || []).slice().reverse()))
+      if (data) setOrderEvents(prev => new Map(prev).set(orderId, data.events || []))
       setLoadingEvents(prev => { const next = new Set(prev); next.delete(orderId); return next })
     }
   }
@@ -912,6 +939,13 @@ export default function TimelineOverviewPage() {
                       const isExpanded = expandedOrders.has(o.id)
                       const evts       = orderEvents.get(o.id) ?? []
                       const loadingEvt = loadingEvents.has(o.id)
+                      const markers    = o.stage_events.map(ev => ({
+                        date:  ev.event_date,
+                        color: STAGE_COLORS[ev.stage as StageEvent['stage']] ?? '#d1d5db',
+                        label: ev.stage === 'shipped' ? t('suppliers.stageShipped')
+                             : ev.stage === 'in_customs' ? t('suppliers.stageInCustoms')
+                             : t('suppliers.stageReceived'),
+                      }))
                       return (
                         <div key={o.id}>
                           <GanttRow
@@ -927,6 +961,7 @@ export default function TimelineOverviewPage() {
                             onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
                             onSublabelClick={() => toggleExpand(o.id)}
                             isExpanded={isExpanded}
+                            eventMarkers={markers}
                           />
                           {isExpanded && loadingEvt && (
                             <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>…</div>
