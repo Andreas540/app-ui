@@ -96,10 +96,10 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         `
         
         const events = await sql`
-          SELECT id, stage, product_name, qty_delta, event_date, created_at
+          SELECT id, stage, product_name, qty_delta, event_date::text, created_at
           FROM order_supplier_stage_events
           WHERE supplier_order_id = ${id} AND tenant_id = ${tenantId}
-          ORDER BY event_date DESC, created_at DESC
+          ORDER BY created_at DESC
         `
 
         return json(200, { order, items, events })

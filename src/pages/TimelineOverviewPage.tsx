@@ -939,13 +939,6 @@ export default function TimelineOverviewPage() {
                       const isExpanded = expandedOrders.has(o.id)
                       const evts       = orderEvents.get(o.id) ?? []
                       const loadingEvt = loadingEvents.has(o.id)
-                      const markers    = o.stage_events.map(ev => ({
-                        date:  ev.event_date,
-                        color: STAGE_COLORS[ev.stage as StageEvent['stage']] ?? '#d1d5db',
-                        label: ev.stage === 'shipped' ? t('suppliers.stageShipped')
-                             : ev.stage === 'in_customs' ? t('suppliers.stageInCustoms')
-                             : t('suppliers.stageReceived'),
-                      }))
                       return (
                         <div key={o.id}>
                           <GanttRow
@@ -961,12 +954,11 @@ export default function TimelineOverviewPage() {
                             onLabelClick={() => openSupplierOrder(o.id, o.supplier_name)}
                             onSublabelClick={() => toggleExpand(o.id)}
                             isExpanded={isExpanded}
-                            eventMarkers={markers}
                           />
                           {isExpanded && loadingEvt && (
                             <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>…</div>
                           )}
-                          {isExpanded && !loadingEvt && evts.map((ev, idx) => (
+                          {isExpanded && !loadingEvt && evts.filter(ev => Number(ev.qty_delta) > 0).map((ev, idx) => (
                             <EventDotRow key={ev.id ?? idx} event={ev} viewFrom={viewFromDay} viewTo={viewToDay} />
                           ))}
                           {isExpanded && !loadingEvt && evts.length === 0 && (

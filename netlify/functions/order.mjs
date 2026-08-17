@@ -178,7 +178,7 @@ LIMIT 1
         SELECT delivered_quantity, total_qty, delivery_status, event_date
         FROM order_delivery_events
         WHERE order_id = ${id}::uuid AND tenant_id = ${TENANT_ID}::uuid
-        ORDER BY event_date ASC, created_at ASC
+        ORDER BY created_at ASC
       `
     } catch (e) {
       console.error('delivery_events fetch failed', e)
