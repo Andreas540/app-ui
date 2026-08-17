@@ -15,6 +15,7 @@ type CustomerOrder = {
   customer_id: string
   customer_name: string
   product_names: string
+  addon_names: string | null
   order_date: string
   delivered: boolean
   delivered_at: string | null
@@ -992,7 +993,8 @@ export default function TimelineOverviewPage() {
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
                       const end            = o.delivered_at || today
-                      const tip            = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${o.delivered ? fmtFull(end) : t('timeline.ongoing')}`
+                      const fullNames      = o.addon_names ? `${o.product_names} + ${o.addon_names}` : o.product_names
+                      const tip            = `#${o.order_no} · ${fullNames}\n${fmtFull(o.order_date)} → ${o.delivered ? fmtFull(end) : t('timeline.ongoing')}`
                       const isExpanded     = expandedCustOrders.has(o.id)
                       const custEvts       = custOrderEvents.get(o.id) ?? []
                       const loadingCustEvt = loadingCustEvents.has(o.id)
@@ -1000,7 +1002,7 @@ export default function TimelineOverviewPage() {
                         <div key={o.id}>
                           <GanttRow
                             label={`#${o.order_no}`}
-                            sublabel={custGroupBy === 'product' ? o.customer_name : o.product_names}
+                            sublabel={custGroupBy === 'product' ? o.customer_name : fullNames}
                             barStart={o.order_date}
                             barEnd={end}
                             viewFrom={viewFromDay}

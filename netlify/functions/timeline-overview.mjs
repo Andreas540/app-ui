@@ -39,6 +39,7 @@ export async function handler(event) {
             STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) FILTER (WHERE p.product_kind IS DISTINCT FROM 'coverage'),
             STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name)
           )                                   AS product_names,
+          STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) FILTER (WHERE p.product_kind = 'coverage') AS addon_names,
           SUM(oi.qty * oi.unit_price)::float8 AS amount,
           (SUM(oi.qty) FILTER (WHERE p.product_kind IS DISTINCT FROM 'coverage'))::int AS total_qty
         FROM orders o
