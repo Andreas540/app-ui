@@ -129,11 +129,13 @@ function axisMarks(viewFrom: number, viewTo: number): { day: number; label: stri
 const CTRL_CSS = `
   .gantt-controls-desktop { display: grid; }
   .gantt-controls-mobile   { display: none; }
+  .gantt-scroll { overflow-x: hidden; }
   @media (hover: none) and (pointer: coarse) {
     .gantt-controls-desktop { display: none !important; }
     .gantt-controls-mobile  { display: flex !important; flex-direction: column; gap: 10px; margin-bottom: 16px; }
     .gantt-ctrl-row  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .gantt-ctrl-lbl  { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    .gantt-scroll { overflow-x: auto; }
   }
 `
 
@@ -876,7 +878,7 @@ export default function TimelineOverviewPage() {
       {loading ? (
         <p style={{ color: 'var(--text-secondary)' }}>{t('loading')}</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="gantt-scroll">
           <div style={{ minWidth: 600 }}>
 
             {/* ── Time axis ── */}
