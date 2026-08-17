@@ -51,6 +51,14 @@ type StageEvent = {
   event_date: string
 }
 
+type DeliveryEvent = {
+  delivered_quantity: number | string
+  total_qty: number | string
+  delivery_status: 'delivered' | 'partial' | 'not_delivered'
+  event_date: string
+  delta?: number
+}
+
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
 function localDateStr(d: Date): string {
@@ -349,6 +357,52 @@ function EventDotRow({ event, viewFrom, viewTo }: { event: StageEvent; viewFrom:
   )
 }
 
+// ── Customer order delivery event row ─────────────────────────────────────────
+
+const DELIVERY_COLORS: Record<string, string> = {
+  delivered:     '#10b981',
+  partial:       '#f59e0b',
+  not_delivered: '#d1d5db',
+}
+
+function DeliveryEventRow({ event, viewFrom, viewTo }: { event: DeliveryEvent; viewFrom: number; viewTo: number }) {
+  const span     = viewTo - viewFrom
+  const eventDay = toDay(event.event_date)
+  const pct      = span > 0 ? ((eventDay - viewFrom) / span) * 100 : -1
+  const inView   = pct >= 0 && pct <= 100
+  const color    = DELIVERY_COLORS[event.delivery_status] ?? '#d1d5db'
+  const dQty     = Number(event.delivered_quantity)
+  const tQty     = Number(event.total_qty)
+  const delta    = Number(event.delta ?? 0)
+  const fmt      = (n: number) => n % 1 === 0 ? String(n) : parseFloat(n.toFixed(4)).toString()
+  const symbol   = event.delivery_status === 'delivered' ? '✓' : event.delivery_status === 'partial' ? '◐' : '○'
+  const deltaStr = delta > 0 ? `+${fmt(delta)}` : delta < 0 ? fmt(delta) : ''
+  const deltaColor = delta > 0 ? '#10b981' : '#ef4444'
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: 18, paddingRight: 12 }}>
+      <div style={{ width: 200, flexShrink: 0, paddingRight: 8, paddingLeft: 20, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        <span style={{ color, fontWeight: 600, fontSize: 11, marginRight: 4 }}>{symbol}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{fmt(dQty)}/{fmt(tQty)}</span>
+        {deltaStr && <span style={{ fontSize: 10, color: deltaColor, marginLeft: 4, fontWeight: 600 }}>{deltaStr}</span>}
+      </div>
+      <div style={{ flex: 1, position: 'relative', height: 16 }}>
+        {inView && (
+          <div
+            title={`${symbol} ${fmt(dQty)}/${fmt(tQty)}${deltaStr ? ' ' + deltaStr : ''} · ${fmtFull(event.event_date)}`}
+            style={{
+              position: 'absolute', left: `${pct}%`, top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 8, height: 8, borderRadius: 4,
+              background: color, cursor: 'default',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Status colors (matching OrderDetailModal / SupplierOrderDetailModal) ───────
 
 const CUST_COLOR: Record<string, string> = {
@@ -521,6 +575,11 @@ export default function TimelineOverviewPage() {
   const [orderEvents,    setOrderEvents]    = useState<Map<string, StageEvent[]>>(new Map())
   const [loadingEvents,  setLoadingEvents]  = useState<Set<string>>(new Set())
 
+  // Expand state for customer order delivery events
+  const [expandedCustOrders, setExpandedCustOrders] = useState<Set<string>>(new Set())
+  const [custOrderEvents,    setCustOrderEvents]    = useState<Map<string, DeliveryEvent[]>>(new Map())
+  const [loadingCustEvents,  setLoadingCustEvents]  = useState<Set<string>>(new Set())
+
   const fetchRef = useRef(0)
 
   async function fetchData(from: string, to: string): Promise<{ customer_orders: CustomerOrder[]; supplier_orders: SupplierOrder[] } | null> {
@@ -593,6 +652,29 @@ export default function TimelineOverviewPage() {
       const data = await fetchSupplierOrderData(orderId)
       if (data) setOrderEvents(prev => new Map(prev).set(orderId, data.events || []))
       setLoadingEvents(prev => { const next = new Set(prev); next.delete(orderId); return next })
+    }
+  }
+
+  async function toggleExpandCust(orderId: string) {
+    if (expandedCustOrders.has(orderId)) {
+      setExpandedCustOrders(prev => { const next = new Set(prev); next.delete(orderId); return next })
+      return
+    }
+    setExpandedCustOrders(prev => new Set([...prev, orderId]))
+    if (!custOrderEvents.has(orderId)) {
+      setLoadingCustEvents(prev => new Set([...prev, orderId]))
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res  = await fetch(`${base}/api/order?id=${orderId}`, { headers: getAuthHeaders() })
+        const data = await res.json()
+        const evts: DeliveryEvent[] = data.delivery_events || []
+        const withDelta = evts.map((ev, i) => ({
+          ...ev,
+          delta: Number(ev.delivered_quantity) - (i > 0 ? Number(evts[i - 1].delivered_quantity) : 0),
+        }))
+        setCustOrderEvents(prev => new Map(prev).set(orderId, withDelta.reverse()))
+      } catch {}
+      setLoadingCustEvents(prev => { const next = new Set(prev); next.delete(orderId); return next })
     }
   }
 
@@ -909,22 +991,37 @@ export default function TimelineOverviewPage() {
                   <div key={group.name}>
                     <GroupHeader label={group.name} />
                     {group.orders.map(o => {
-                      const end = o.delivered_at || today
-                      const tip = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${o.delivered ? fmtFull(end) : t('timeline.ongoing')}`
+                      const end            = o.delivered_at || today
+                      const tip            = `#${o.order_no} · ${o.product_names}\n${fmtFull(o.order_date)} → ${o.delivered ? fmtFull(end) : t('timeline.ongoing')}`
+                      const isExpanded     = expandedCustOrders.has(o.id)
+                      const custEvts       = custOrderEvents.get(o.id) ?? []
+                      const loadingCustEvt = loadingCustEvents.has(o.id)
                       return (
-                        <GanttRow
-                          key={o.id}
-                          label={`#${o.order_no}`}
-                          sublabel={custGroupBy === 'product' ? o.customer_name : o.product_names}
-                          barStart={o.order_date}
-                          barEnd={end}
-                          viewFrom={viewFromDay}
-                          viewTo={viewToDay}
-                          color={CUST_COLOR[o.cust_status] ?? CUST_COLOR.not_delivered}
-                          isDashed={o.cust_status === 'not_delivered'}
-                          tooltip={tip}
-                          onLabelClick={() => setCustModalOrder({ id: o.id, order_no: o.order_no })}
-                        />
+                        <div key={o.id}>
+                          <GanttRow
+                            label={`#${o.order_no}`}
+                            sublabel={custGroupBy === 'product' ? o.customer_name : o.product_names}
+                            barStart={o.order_date}
+                            barEnd={end}
+                            viewFrom={viewFromDay}
+                            viewTo={viewToDay}
+                            color={CUST_COLOR[o.cust_status] ?? CUST_COLOR.not_delivered}
+                            isDashed={o.cust_status === 'not_delivered'}
+                            tooltip={tip}
+                            onLabelClick={() => setCustModalOrder({ id: o.id, order_no: o.order_no })}
+                            onSublabelClick={() => toggleExpandCust(o.id)}
+                            isExpanded={isExpanded}
+                          />
+                          {isExpanded && loadingCustEvt && (
+                            <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>…</div>
+                          )}
+                          {isExpanded && !loadingCustEvt && custEvts.map((ev, idx) => (
+                            <DeliveryEventRow key={idx} event={ev} viewFrom={viewFromDay} viewTo={viewToDay} />
+                          ))}
+                          {isExpanded && !loadingCustEvt && custEvts.length === 0 && (
+                            <div style={{ paddingLeft: 220, fontSize: 11, color: 'var(--text-secondary)', paddingBottom: 2 }}>{t('orderModal.deliveryHistory')}: —</div>
+                          )}
+                        </div>
                       )
                     })}
                   </div>

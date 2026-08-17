@@ -175,7 +175,7 @@ LIMIT 1
     let deliveryEvents = []
     try {
       deliveryEvents = await sql`
-        SELECT delivered_quantity, total_qty, delivery_status, event_date
+        SELECT delivered_quantity, total_qty, delivery_status, event_date::text
         FROM order_delivery_events
         WHERE order_id = ${id}::uuid AND tenant_id = ${TENANT_ID}::uuid
         ORDER BY created_at ASC
