@@ -232,7 +232,7 @@ function GanttRow({
   const BAR_H = 9
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', minHeight: 22, gap: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: 22, gap: 0, paddingRight: 12 }}>
       {/* Label — order # and products on same line */}
       <div style={{ width: 200, flexShrink: 0, paddingRight: 8, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
         <button
@@ -323,7 +323,7 @@ function EventDotRow({ event, viewFrom, viewTo }: { event: StageEvent; viewFrom:
   const signColor = qty >= 0 ? '#10b981' : '#ef4444'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', minHeight: 18 }}>
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: 18, paddingRight: 12 }}>
       <div style={{ width: 200, flexShrink: 0, paddingRight: 8, paddingLeft: 20, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
         <span style={{ fontSize: 11, color, fontWeight: 600 }}>{stageLabel}</span>
         <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 5 }}>{event.product_name}</span>
@@ -458,7 +458,7 @@ function GroupHeader({ label }: { label: string }) {
       fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
       textTransform: 'uppercase', letterSpacing: '0.06em',
       paddingTop: 12, paddingBottom: 2,
-      display: 'flex', alignItems: 'center', gap: 0,
+      display: 'flex', alignItems: 'center', gap: 0, paddingRight: 12,
     }}>
       <div style={{ width: 200, flexShrink: 0, paddingRight: 8, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{label}</div>
       <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
@@ -814,7 +814,7 @@ export default function TimelineOverviewPage() {
       </div>
 
       {/* ── Date slider ── */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, paddingRight: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2 }}>
           <span>{fmtFull(fromDay(viewFromDay))}</span>
           <span>{fmtFull(fromDay(viewToDay))}</span>
@@ -882,7 +882,7 @@ export default function TimelineOverviewPage() {
           <div style={{ minWidth: 600 }}>
 
             {/* ── Time axis ── */}
-            <div style={{ display: 'flex', marginBottom: 4 }}>
+            <div style={{ display: 'flex', marginBottom: 4, paddingRight: 12 }}>
               <div style={{ width: 200, flexShrink: 0 }} />
               <div style={{ flex: 1, position: 'relative', height: 20, borderBottom: '1px solid var(--border-color)' }}>
                 {marks.map(m => (
