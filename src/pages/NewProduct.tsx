@@ -240,18 +240,11 @@ export default function NewProduct() {
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
           <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
         </div>
-        {category === 'coverage' ? (
-          <button className="primary" style={{ height: BTN_H }}
-            onClick={() => { setListOpen(true); setListCategory('coverage') }}>
-            {t('products.editAddOnProductsButton', 'Edit Add-On Products')}
+        <Link to={category === 'coverage' ? '/products/edit-addon' : `/products/edit?type=${category}`}>
+          <button className="primary" style={{ height: BTN_H }}>
+            {category === 'coverage' ? t('products.editAddOnProductsButton') : category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
           </button>
-        ) : (
-          <Link to={`/products/edit?type=${category}`}>
-            <button className="primary" style={{ height: BTN_H }}>
-              {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
-            </button>
-          </Link>
-        )}
+        </Link>
       </div>
 
       {formOpen && <>

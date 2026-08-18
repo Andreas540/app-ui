@@ -22,6 +22,7 @@ import MergeCustomer from './pages/MergeCustomer'
 import EditCustomer from './pages/EditCustomer'
 import NewProduct from './pages/NewProduct'
 import EditProduct from './pages/EditProduct'
+import EditAddonProduct from './pages/EditAddonProduct'
 import Partners from './pages/Partners'
 import CreatePartner from './pages/CreatePartner'
 import PartnerDetail from './pages/PartnerDetail'
@@ -1079,6 +1080,7 @@ useEffect(() => {
                   <>
                     <Route path="/products/new" element={<NewProduct />} />
                     <Route path="/products/edit" element={<EditProduct />} />
+                    <Route path="/products/edit-addon" element={<EditAddonProduct />} />
                   </>
                 )}
                 {hasFeature('customers') && (
