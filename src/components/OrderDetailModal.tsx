@@ -164,26 +164,79 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
     : 'none'
 
   function printOrder() {
-    const win = window.open('', '_blank')
-    if (!win) { alert('Please allow popups to print'); return }
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) { alert('Please allow popups to print'); return }
+
     const rows = items.length > 0
       ? items.map((item: any) =>
-          `<tr><td>${item.product_name ?? ''}</td><td style="text-align:right">${intFmt.format(Number(item.qty))}</td><td style="text-align:right">${fmtMoney(item.unit_price ?? 0)}</td></tr>`
+          `<tr>
+            <td>${item.product_name ?? ''}</td>
+            <td class="qty-col">${intFmt.format(Number(item.qty))}</td>
+            <td class="qty-col">${fmtMoney(item.unit_price ?? 0)}</td>
+          </tr>`
         ).join('')
-      : `<tr><td colspan="3">${t('customerDetail.orderLines', { count: 0 })}</td></tr>`
-    win.document.write(`<!DOCTYPE html><html><head><title>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</title>
-<style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th{font-weight:600}@media print{button{display:none}}</style></head><body>
-<h2>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</h2>
-${customerName ? `<p>${customerName}</p>` : ''}
-<p>${formatDate(order.order_date)}</p>
-<table><thead><tr><th>${t('product')}</th><th style="text-align:right">${t('quantity')}</th><th style="text-align:right">${t('orderModal.unitPrice')}</th></tr></thead>
-<tbody>${rows}</tbody></table>
-<p style="margin-top:16px;font-weight:600">${t('supplierOrderModal.totalAmount')}: ${fmtMoney(orderTotal)}</p>
-<button onclick="window.print()">${t('print')}</button>
-</body></html>`)
-    win.document.close()
-    win.focus()
-    win.print()
+      : `<tr><td colspan="3">—</td></tr>`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
+            .controls { display: flex; gap: 12px; margin-bottom: 20px; }
+            .btn { padding: 10px 20px; border: 1px solid #ddd; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: 14px; font-weight: 500; }
+            .btn:hover { background: #e5e5e5; }
+            .btn-primary { background: #2f6df6; color: white; border-color: #2f6df6; }
+            .btn-primary:hover { background: #1e5ce6; }
+            h1 { font-size: 24px; margin-bottom: 8px; }
+            .subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #000; font-weight: 600; font-size: 14px; }
+            td { padding: 10px 8px; border-bottom: 1px solid #ddd; font-size: 14px; }
+            .qty-col { text-align: right; font-variant-numeric: tabular-nums; }
+            .total-row td { border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: 600; padding-top: 16px; padding-bottom: 16px; }
+            @media print { .controls { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="controls">
+            <button class="btn btn-primary" onclick="window.print()">${t('print')}</button>
+            <button class="btn" onclick="window.close()">${t('close')}</button>
+          </div>
+          <h1>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</h1>
+          <div class="subtitle">${customerName ? `${customerName} · ` : ''}${formatDate(order.order_date)}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>${t('product')}</th>
+                <th class="qty-col">${t('quantity')}</th>
+                <th class="qty-col">${t('orderModal.unitPrice')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr class="total-row">
+                <td colspan="2">${t('supplierOrderModal.totalAmount')}</td>
+                <td class="qty-col">${fmtMoney(orderTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `
+
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    printWindow.location.href = url
+    printWindow.onload = () => {
+      URL.revokeObjectURL(url)
+      printWindow.focus()
+      const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
+      if (isDesktop) printWindow.print()
+    }
   }
 
   return (
