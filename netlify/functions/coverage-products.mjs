@@ -24,7 +24,8 @@ async function list(event) {
 
   const rows = await sql`
     SELECT id, name, cost::float8 AS cost, price_amount::float8 AS price_amount,
-           coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name
+           coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name,
+           coverage_doc_data
     FROM products
     WHERE tenant_id = ${TENANT_ID}
       AND product_kind = 'coverage'
@@ -53,17 +54,19 @@ async function create(event) {
   const validIssuers   = ['manufacturer', 'shop', 'third_party']
   const issuerType     = validIssuers.includes(body.coverage_issuer_type) ? body.coverage_issuer_type : 'shop'
   const issuerName     = body.coverage_issuer_name ? String(body.coverage_issuer_name).trim() : null
+  const docData        = body.coverage_doc_data ? String(body.coverage_doc_data) : null
 
   const [row] = await sql`
     INSERT INTO products (
       tenant_id, name, cost, category, product_kind, price_amount,
-      coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name
+      coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name, coverage_doc_data
     ) VALUES (
       ${TENANT_ID}, ${name}, ${costNum}, 'product', 'coverage', ${priceAmount},
-      ${durationDays}, ${coverageRef}, ${issuerType}, ${issuerName}
+      ${durationDays}, ${coverageRef}, ${issuerType}, ${issuerName}, ${docData}
     )
     RETURNING id, name, cost::float8 AS cost, price_amount::float8 AS price_amount,
-              coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name
+              coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name,
+              coverage_doc_data
   `
 
   await sql`
@@ -94,6 +97,7 @@ async function update(event) {
   const hasRef      = 'coverage_ref'           in body
   const hasIssType  = 'coverage_issuer_type'   in body
   const hasIssName  = 'coverage_issuer_name'   in body
+  const hasDoc      = 'coverage_doc_data'      in body
 
   const validIssuers = ['manufacturer', 'shop', 'third_party']
   const newName      = hasName     ? body.name.trim()                                                          : null
@@ -103,6 +107,7 @@ async function update(event) {
   const newRef       = hasRef      ? (body.coverage_ref ? String(body.coverage_ref).trim() : null)             : null
   const newIssType   = hasIssType  ? (validIssuers.includes(body.coverage_issuer_type) ? body.coverage_issuer_type : null) : null
   const newIssName   = hasIssName  ? (body.coverage_issuer_name ? String(body.coverage_issuer_name).trim() : null) : null
+  const newDoc       = hasDoc      ? (body.coverage_doc_data ? String(body.coverage_doc_data) : null)          : null
 
   const [updated] = await sql`
     UPDATE products
@@ -112,10 +117,12 @@ async function update(event) {
         coverage_duration_days = CASE WHEN ${hasDuration} THEN ${newDuration} ELSE coverage_duration_days END,
         coverage_ref           = CASE WHEN ${hasRef}      THEN ${newRef}      ELSE coverage_ref           END,
         coverage_issuer_type   = CASE WHEN ${hasIssType}  THEN ${newIssType}  ELSE coverage_issuer_type   END,
-        coverage_issuer_name   = CASE WHEN ${hasIssName}  THEN ${newIssName}  ELSE coverage_issuer_name   END
+        coverage_issuer_name   = CASE WHEN ${hasIssName}  THEN ${newIssName}  ELSE coverage_issuer_name   END,
+        coverage_doc_data      = CASE WHEN ${hasDoc}      THEN ${newDoc}      ELSE coverage_doc_data      END
     WHERE id = ${id} AND tenant_id = ${TENANT_ID} AND product_kind = 'coverage'
     RETURNING id, name, cost::float8 AS cost, price_amount::float8 AS price_amount,
-              coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name
+              coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name,
+              coverage_doc_data
   `
   if (!updated) return cors(404, { error: 'Coverage product not found' })
   return cors(200, { ok: true, coverage_product: updated })

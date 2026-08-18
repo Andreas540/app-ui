@@ -1,7 +1,7 @@
 // src/pages/AddOnProductForm.tsx
 // Create and edit Add On Products (product_kind='coverage'). List lives in the lower card.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type CoverageProduct,
@@ -19,6 +19,8 @@ const EMPTY_FORM = {
   coverage_issuer_type: 'shop' as IssuerType,
   coverage_issuer_name: '',
   coverage_ref: '',
+  coverage_doc_data: null as string | null,
+  coverage_doc_name: '',  // display name only, not persisted
 }
 
 function productToForm(p: CoverageProduct) {
@@ -30,6 +32,8 @@ function productToForm(p: CoverageProduct) {
     coverage_issuer_type: (p.coverage_issuer_type ?? 'shop') as IssuerType,
     coverage_issuer_name: p.coverage_issuer_name ?? '',
     coverage_ref: p.coverage_ref ?? '',
+    coverage_doc_data: p.coverage_doc_data ?? null,
+    coverage_doc_name: p.coverage_doc_data ? 'Uploaded document' : '',
   }
 }
 
@@ -46,6 +50,9 @@ export default function AddOnProductForm({
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
   useEffect(() => {
     if (editProduct) {
@@ -56,6 +63,18 @@ export default function AddOnProductForm({
       setMsg(null)
     }
   }, [editProduct])
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string
+      setForm(f => ({ ...f, coverage_doc_data: dataUrl, coverage_doc_name: file.name }))
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
 
   async function save() {
     setSaving(true)
@@ -69,6 +88,7 @@ export default function AddOnProductForm({
         coverage_issuer_type: form.coverage_issuer_type,
         coverage_issuer_name: form.coverage_issuer_name.trim() || null,
         coverage_ref: form.coverage_ref.trim() || null,
+        coverage_doc_data: form.coverage_doc_data,
       }
       if (!payload.name) { setMsg({ text: 'Name is required', ok: false }); setSaving(false); return }
 
@@ -114,9 +134,54 @@ export default function AddOnProductForm({
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {t('coverage.extendedCoverageSection')}
           </div>
+          {/* Duration + Coverage Ref side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
+              <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
+              <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
+            </div>
+          </div>
+          {/* Reference document upload */}
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
-            <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.refDocLabel', 'Reference document')}</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 'inherit', color: 'inherit' }}
+              >
+                {form.coverage_doc_data ? t('coverage.refDocChange', 'Change document') : t('coverage.refDocUpload', 'Upload document')}
+              </button>
+              {form.coverage_doc_data && (
+                <>
+                  {isEditing && editProduct?.id && (
+                    <a
+                      href={`${BASE}/.netlify/functions/serve-coverage-doc?id=${editProduct.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 12, color: 'var(--primary)' }}
+                    >
+                      {form.coverage_doc_name || 'View'}
+                    </a>
+                  )}
+                  {!isEditing && form.coverage_doc_name && (
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{form.coverage_doc_name}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, coverage_doc_data: null, coverage_doc_name: '' }))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 12, color: 'var(--color-error)' }}
+                  >
+                    {t('coverage.refDocRemove', 'Remove')}
+                  </button>
+                </>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" style={{ display: 'none' }} onChange={handleFileChange} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
@@ -131,10 +196,6 @@ export default function AddOnProductForm({
               <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.issuerNameLabel')}</label>
               <input value={form.coverage_issuer_name} onChange={e => setForm(f => ({ ...f, coverage_issuer_name: e.target.value }))} placeholder={t('coverage.issuerNamePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
             </div>
-          </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
-            <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
         </div>
         {msg && <div style={{ fontSize: 12, color: msg.ok ? 'var(--color-success)' : 'var(--color-error)' }}>{msg.text}</div>}

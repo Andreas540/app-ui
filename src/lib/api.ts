@@ -14,6 +14,7 @@ export type CoverageProduct = {
   coverage_ref: string | null
   coverage_issuer_type: 'manufacturer' | 'shop' | 'third_party' | null
   coverage_issuer_name: string | null
+  coverage_doc_data: string | null
 }
 
 export type UnitCoverage = {
