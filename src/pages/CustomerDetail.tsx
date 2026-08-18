@@ -1,5 +1,5 @@
 // src/pages/CustomerDetail.tsx
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, fetchBootstrap, type CustomerDetail, type CardToken, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
