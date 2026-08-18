@@ -38,6 +38,9 @@ export default function PriceChecker() {
     })()
   }, [])
 
+  const stdProducts = products.filter(p => p.product_kind !== 'coverage')
+  const addonProducts = products.filter(p => p.product_kind === 'coverage')
+
   // Fetch price data when both customer and product are selected
   useEffect(() => {
     if (!selectedCustomerId || !selectedProductId) {
@@ -94,10 +97,9 @@ const res = await fetch(
             style={{ width: '100%' }}
           >
             <option value="">{t('priceChecker.selectCustomer')}</option>
+            <option value="all">{t('priceChecker.allCustomers')}</option>
             {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -110,11 +112,18 @@ const res = await fetch(
             style={{ width: '100%' }}
           >
             <option value="">{t('priceChecker.selectProduct')}</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            <optgroup label={t('priceChecker.productsGroup')}>
+              {stdProducts.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </optgroup>
+            {addonProducts.length > 0 && (
+              <optgroup label={t('priceChecker.addOnProductsGroup')}>
+                {addonProducts.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
       </div>

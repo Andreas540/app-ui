@@ -749,7 +749,10 @@
     "previousOrders_other": "{{count}} pedidos anteriores",
     "loadingPriceData": "Cargando datos de precio...",
     "noPriceData": "No hay datos de precio para esta combinación.",
-    "selectBoth": "Selecciona un cliente y un producto para ver los datos de precio."
+    "selectBoth": "Selecciona un cliente y un producto para ver los datos de precio.",
+    "allCustomers": "Todos los clientes",
+    "productsGroup": "Productos",
+    "addOnProductsGroup": "Productos adicionales"
   },
   "suppliers": {
     "title": "Proveedores",

@@ -749,7 +749,10 @@
     "previousOrders_other": "{{count}} previous orders",
     "loadingPriceData": "Loading price data...",
     "noPriceData": "No price data available for this combination.",
-    "selectBoth": "Select both a customer and a product to view price data."
+    "selectBoth": "Select both a customer and a product to view price data.",
+    "allCustomers": "All Customers",
+    "productsGroup": "Products",
+    "addOnProductsGroup": "Add-On Products"
   },
   "suppliers": {
     "title": "Suppliers",

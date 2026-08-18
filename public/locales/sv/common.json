@@ -749,7 +749,10 @@
     "previousOrders_other": "{{count}} tidigare beställningar",
     "loadingPriceData": "Laddar prisdata...",
     "noPriceData": "Ingen prisdata tillgänglig för denna kombination.",
-    "selectBoth": "Välj både en kund och en produkt för att se prisdata."
+    "selectBoth": "Välj både en kund och en produkt för att se prisdata.",
+    "allCustomers": "Alla kunder",
+    "productsGroup": "Produkter",
+    "addOnProductsGroup": "Tilläggsprodukter"
   },
   "suppliers": {
     "title": "Leverantörer",

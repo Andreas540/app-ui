@@ -41,29 +41,51 @@ async function getPriceData(event) {
     if (authz.error) return cors(403, { error: authz.error });
     const TENANT_ID = authz.tenantId;
 
-    // Get the most recent order's unit price for this customer/product combination
-    const lastPrice = await sql`
-      SELECT oi.unit_price
-      FROM orders o
-      JOIN order_items oi ON oi.order_id = o.id
-      WHERE o.tenant_id = ${TENANT_ID}
-        AND o.customer_id = ${customerId}
-        AND oi.product_id = ${productId}
-      ORDER BY o.order_date DESC, o.created_at DESC
-      LIMIT 1
-    `;
+    const allCustomers = customerId === 'all';
 
-    // Get the average unit price and order count for this customer/product combination
-    const avgData = await sql`
-      SELECT 
-        AVG(oi.unit_price)::numeric(12,2) as average_price,
-        COUNT(DISTINCT o.id) as order_count
-      FROM orders o
-      JOIN order_items oi ON oi.order_id = o.id
-      WHERE o.tenant_id = ${TENANT_ID}
-        AND o.customer_id = ${customerId}
-        AND oi.product_id = ${productId}
-    `;
+    // Get the most recent order's unit price
+    const lastPrice = allCustomers
+      ? await sql`
+          SELECT oi.unit_price
+          FROM orders o
+          JOIN order_items oi ON oi.order_id = o.id
+          WHERE o.tenant_id = ${TENANT_ID}
+            AND oi.product_id = ${productId}
+          ORDER BY o.order_date DESC, o.created_at DESC
+          LIMIT 1
+        `
+      : await sql`
+          SELECT oi.unit_price
+          FROM orders o
+          JOIN order_items oi ON oi.order_id = o.id
+          WHERE o.tenant_id = ${TENANT_ID}
+            AND o.customer_id = ${customerId}
+            AND oi.product_id = ${productId}
+          ORDER BY o.order_date DESC, o.created_at DESC
+          LIMIT 1
+        `;
+
+    // Get the average unit price and order count
+    const avgData = allCustomers
+      ? await sql`
+          SELECT
+            AVG(oi.unit_price)::numeric(12,2) as average_price,
+            COUNT(DISTINCT o.id) as order_count
+          FROM orders o
+          JOIN order_items oi ON oi.order_id = o.id
+          WHERE o.tenant_id = ${TENANT_ID}
+            AND oi.product_id = ${productId}
+        `
+      : await sql`
+          SELECT
+            AVG(oi.unit_price)::numeric(12,2) as average_price,
+            COUNT(DISTINCT o.id) as order_count
+          FROM orders o
+          JOIN order_items oi ON oi.order_id = o.id
+          WHERE o.tenant_id = ${TENANT_ID}
+            AND o.customer_id = ${customerId}
+            AND oi.product_id = ${productId}
+        `;
 
     const priceLastTime = lastPrice.length > 0 && lastPrice[0].unit_price !== null
       ? Number(lastPrice[0].unit_price)
