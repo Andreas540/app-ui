@@ -49,7 +49,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           paddingBottom: 8,
           borderBottom: '1px solid var(--line)'
         }}>
-          <h3 style={{ margin: 0 }}>{title}</h3>
+          <h3 style={{ margin: 0, flex: 1 }}>{title}</h3>
           <button
             onClick={onClose}
             style={{

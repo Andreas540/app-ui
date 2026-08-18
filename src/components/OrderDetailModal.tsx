@@ -163,19 +163,47 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
     : paidAmount > 0 ? 'partial'
     : 'none'
 
+  function printOrder() {
+    const win = window.open('', '_blank')
+    if (!win) { alert('Please allow popups to print'); return }
+    const rows = items.length > 0
+      ? items.map((item: any) =>
+          `<tr><td>${item.product_name ?? ''}</td><td style="text-align:right">${intFmt.format(Number(item.qty))}</td><td style="text-align:right">${fmtMoney(item.unit_price ?? 0)}</td></tr>`
+        ).join('')
+      : `<tr><td colspan="3">${t('customerDetail.orderLines', { count: 0 })}</td></tr>`
+    win.document.write(`<!DOCTYPE html><html><head><title>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</title>
+<style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th{font-weight:600}@media print{button{display:none}}</style></head><body>
+<h2>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</h2>
+${customerName ? `<p>${customerName}</p>` : ''}
+<p>${formatDate(order.order_date)}</p>
+<table><thead><tr><th>${t('product')}</th><th style="text-align:right">${t('quantity')}</th><th style="text-align:right">${t('orderModal.unitPrice')}</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<p style="margin-top:16px;font-weight:600">${t('supplierOrderModal.totalAmount')}: ${fmtMoney(orderTotal)}</p>
+<button onclick="window.print()">${t('print')}</button>
+</body></html>`)
+    win.document.close()
+    win.focus()
+    win.print()
+  }
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {`Order #${order.order_no || order.id}`}
-          {payStatus === 'paid' && (
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
-          )}
-          {payStatus === 'partial' && (
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
-          )}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            {`Order #${order.order_no || order.id}`}
+            {payStatus === 'paid' && (
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
+            )}
+            {payStatus === 'partial' && (
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
+            )}
+          </span>
+          <button onClick={printOrder} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline', fontSize: 14, fontWeight: 500 }}>
+            {t('print')}
+          </button>
         </span>
       }
     >
