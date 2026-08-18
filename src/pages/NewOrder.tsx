@@ -250,7 +250,12 @@ export default function NewOrder() {
   }
 
   function addLine() {
-    setLines(prev => [...prev, emptyLine()])
+    const defaultProd = productGroup[0] ?? serviceGroup[0]
+    const line = emptyLine(defaultProd?.id ?? '')
+    if (defaultProd?.price_amount != null && defaultProd.price_amount > 0) {
+      line.priceStr = fmtInput(defaultProd.price_amount)
+    }
+    setLines(prev => [...prev, line])
   }
 
   function removeLine(idx: number) {

@@ -222,7 +222,12 @@ export default function EditOrder() {
   function updateLine(idx: number, field: keyof Line, value: string | null) {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, [field]: value } : l))
   }
-  function addLine() { setLines(prev => [...prev, emptyLine()]) }
+  function addLine() {
+    const defaultProd = productGroup[0] ?? serviceGroup[0]
+    const pa = defaultProd?.price_amount
+    const priceStr = pa != null && pa > 0 ? fmtInput(pa) : ''
+    setLines(prev => [...prev, { ...emptyLine(), product_id: defaultProd?.id ?? '', priceStr }])
+  }
   function removeLine(idx: number) { setLines(prev => prev.filter((_, i) => i !== idx)) }
 
   function onLineProductChange(idx: number, product_id: string) {
