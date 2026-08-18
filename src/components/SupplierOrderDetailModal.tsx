@@ -31,6 +31,12 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
   const totalShippingCost = order.items?.reduce((s: number, i: any) => s + Number(i.shipping_total || 0), 0) || 0
 
+  const orderTotal = Number(order.total) || 0
+  const paidAmount = Number(order.paid_amount ?? 0)
+  const payStatus = paidAmount >= orderTotal && orderTotal > 0 ? 'paid'
+    : paidAmount > 0 ? 'partial'
+    : 'none'
+
   const fieldStyle = { marginBottom: 4 }
 
   // Secondary dates shown below the top grid (received_date moves into col 2 of the grid)
@@ -41,7 +47,17 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
   ].filter(Boolean) as { label: string; value: string }[]
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Order #${order.order_no}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {`Order #${order.order_no}`}
+        {payStatus === 'paid' && (
+          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
+        )}
+        {payStatus === 'partial' && (
+          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
+        )}
+      </span>
+    }>
       <div style={{ display: 'grid', gap: 16 }}>
 
         {/* Status row — inline, no box */}

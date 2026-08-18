@@ -1126,6 +1126,10 @@
     "partiallyDeliveredQty": "Delvis levererad ({{delivered}}/{{total}})",
     "deliveryHistory": "Leveranshistorik"
   },
+  "paymentStatus": {
+    "paid": "Betald",
+    "partiallyPaid": "Delvis betald"
+  },
   "paymentModal": {
     "title": "Betalningsdetaljer",
     "paymentAmount": "Betalningsbelopp",

@@ -52,6 +52,7 @@ interface Order {
   in_customs_date?: string
   est_delivery_date?: string
   derived_status?: 'received' | 'in_customs' | 'shipped' | 'partial' | 'mixed' | 'pending'
+  paid_amount?: number
 }
 
 interface Payment {
@@ -391,7 +392,7 @@ export default function SupplierDetailPage() {
               return (
                 <div
                   key={o.id}
-                  onClick={() => setSelectedOrder(o)}
+                  onClick={() => setSelectedOrder({ ...o, paid_amount: paidByOrderId[o.id] || 0 })}
                   style={{
                     borderBottom:'1px solid var(--line)',
                     paddingTop: '12px',

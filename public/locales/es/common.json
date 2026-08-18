@@ -1126,6 +1126,10 @@
     "partiallyDeliveredQty": "Parcialmente entregado ({{delivered}}/{{total}})",
     "deliveryHistory": "Historial de entregas"
   },
+  "paymentStatus": {
+    "paid": "Pagado",
+    "partiallyPaid": "Parcialmente pagado"
+  },
   "paymentModal": {
     "title": "Detalles del Pago",
     "paymentAmount": "Monto del Pago",

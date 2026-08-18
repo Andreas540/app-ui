@@ -1126,6 +1126,10 @@
     "partiallyDeliveredQty": "Partially delivered ({{delivered}}/{{total}})",
     "deliveryHistory": "Delivery history"
   },
+  "paymentStatus": {
+    "paid": "Paid",
+    "partiallyPaid": "Partially paid"
+  },
   "paymentModal": {
     "title": "Payment Details",
     "paymentAmount": "Payment Amount",

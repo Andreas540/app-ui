@@ -158,11 +158,26 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
       : t('orderModal.partiallyDelivered')
   }
 
+  const paidAmount = Number(order.paid_amount ?? 0)
+  const payStatus = paidAmount >= orderTotal && orderTotal > 0 ? 'paid'
+    : paidAmount > 0 ? 'partial'
+    : 'none'
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Order #${order.order_no || order.id}`}
+      title={
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {`Order #${order.order_no || order.id}`}
+          {payStatus === 'paid' && (
+            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
+          )}
+          {payStatus === 'partial' && (
+            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
+          )}
+        </span>
+      }
     >
       <div style={{ display: 'grid', gap: 16 }}>
 

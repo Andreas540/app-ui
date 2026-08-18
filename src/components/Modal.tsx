@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  title: string
+  title: React.ReactNode
   children: React.ReactNode
 }
 
