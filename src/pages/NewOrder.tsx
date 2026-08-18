@@ -450,7 +450,8 @@ export default function NewOrder() {
               padding: 6, zIndex: 50, boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
             }}>
               {suggestions.map(s => (
-                <button key={s.id} className="primary" onClick={() => pickSuggestion(s.id, s.name)}
+                <button key={s.id} className="primary"
+                  onMouseDown={(e) => { e.preventDefault(); pickSuggestion(s.id, s.name) }}
                   style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', padding: '8px 10px', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>
                   {s.name}
                 </button>
