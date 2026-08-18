@@ -721,6 +721,7 @@
     "noHistoricalCosts": "Inga historiska kostnader ännu.",
     "editProductTitle": "Redigera produkt",
     "editServiceTitle": "Redigera tjänst",
+    "editAddonProductTitle": "Redigera tilläggsprodukt",
     "newName": "Nytt namn",
     "newProductCostUSD": "Ny produktionskostnad per enhet",
     "applyCostToHistory": "Tillämpa ny kostnad på alla tidigare beställningar",

@@ -721,6 +721,7 @@
     "noHistoricalCosts": "Sin costos históricos aún.",
     "editProductTitle": "Editar Producto",
     "editServiceTitle": "Editar Servicio",
+    "editAddonProductTitle": "Editar producto adicional",
     "newName": "Nuevo nombre",
     "newProductCostUSD": "Nuevo costo de producción por unidad",
     "applyCostToHistory": "Aplicar nuevo costo a todos los pedidos anteriores",
