@@ -182,6 +182,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
       <html>
         <head>
           <title>${t('orderModal.orderNumber', { number: order.order_no || order.id })}</title>
+          <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
