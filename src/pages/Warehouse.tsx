@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage, listProductCategories, createProductCategory } from '../lib/api'
+import { buildGroupOptions } from '../lib/productOptions'
 import { useAuth } from '../contexts/AuthContext'
 import OrderDetailModal from '../components/OrderDetailModal'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
@@ -15,6 +16,8 @@ type OrderRef = { order_id: string; order_no: number; qty: number }
 type InventoryItem = {
   product: string
   product_id: string
+  variant?: string | null
+  product_category?: string | null
   has_bom: boolean
   unit_tracking: 'none' | 'on_promote' | 'serialized_intake'
   unit_instock_count: number
@@ -401,9 +404,10 @@ export default function Warehouse() {
             onChange={(e) => setProductId(e.target.value)}
             style={{ height: CONTROL_H }}
           >
-            {(flag === 'material' ? materialProducts : products).map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
+            {flag === 'material'
+              ? materialProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)
+              : buildGroupOptions(products)
+            }
           </select>
         </div>
 
@@ -681,7 +685,12 @@ export default function Warehouse() {
                             </span>
                           )}
                           <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <span>{item.product}</span>
+                            <span>
+                              {item.variant ? `${item.product} · ${item.variant}` : item.product}
+                            </span>
+                            {item.product_category && (
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.product_category}</span>
+                            )}
                             {hasUniqueUnits && (
                               <button
                                 onClick={e => { e.stopPropagation(); toggleUnits(item.product_id) }}

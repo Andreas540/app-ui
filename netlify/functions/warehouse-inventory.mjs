@@ -52,6 +52,8 @@ async function getInventory(event) {
       SELECT
         p.name               AS product,
         p.id                 AS product_id,
+        p.variant,
+        p.product_category,
         ps.has_bom,
         ps.unit_tracking,
         ps.unit_instock_count,
