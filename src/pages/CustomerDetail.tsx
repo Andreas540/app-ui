@@ -979,6 +979,24 @@ export default function CustomerDetailPage() {
                 )
               })()
 
+              const itemDeliveryIcon = (item: { qty: number; delivered_qty?: number | null }) => {
+                const dqty = Number(item.delivered_qty ?? 0)
+                const total = Number(item.qty) || 0
+                let symbol = '', color = '#d1d5db'
+                if (dqty >= total && total > 0) { symbol = '✓'; color = '#10b981' }
+                else if (dqty > 0) { symbol = '◐'; color = '#f59e0b' }
+                return (
+                  <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {symbol
+                      ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
+                      : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
+                          <span style={{ display: 'inline-block', width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+                        </span>
+                    }
+                  </div>
+                )
+              }
+
               return (
                 <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
                   {/* Header row: date | icon | order# (or first item when order# hidden) | total */}
@@ -1080,7 +1098,7 @@ export default function CustomerDetailPage() {
                   {/* Item rows: all items when order# shown; items[1:] when first item is on header row */}
                   {(showOrderNumber ? (items.length > 0 ? items : [null]) : items.slice(1)).map((item, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, marginTop: LINE_GAP }}>
-                      <div /><div />
+                      <div />{item ? itemDeliveryIcon(item) : <div />}
                       <div className="helper" onClick={() => handleOrderClick(o)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
