@@ -100,6 +100,8 @@ export default function NewProduct() {
       setLoadingCoverage(true)
       const { coverage_products } = await listCoverageProducts()
       setCoverageProducts(coverage_products.slice().sort((a, b) => a.name.localeCompare(b.name)))
+    } catch (e: any) {
+      console.error('loadCoverageProducts failed:', e?.message || e)
     } finally {
       setLoadingCoverage(false)
     }
@@ -218,11 +220,11 @@ export default function NewProduct() {
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
-  // Group historical costs by product
+  // Group historical costs by product, filtered to match the active list tab
   const groupedHistorical = historicalCosts.reduce((acc, item) => {
-    if (!acc[item.product_name]) {
-      acc[item.product_name] = []
-    }
+    const prod = products.find(p => p.id === item.product_id)
+    if ((prod?.category ?? 'product') !== listCategory) return acc
+    if (!acc[item.product_name]) acc[item.product_name] = []
     acc[item.product_name].push(item)
     return acc
   }, {} as Record<string, HistoricalCost[]>)
@@ -238,7 +240,12 @@ export default function NewProduct() {
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
           <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
         </div>
-        {category !== 'coverage' && (
+        {category === 'coverage' ? (
+          <button className="primary" style={{ height: BTN_H }}
+            onClick={() => { setListOpen(true); setListCategory('coverage') }}>
+            {t('products.editAddOnProductsButton', 'Edit Add-On Products')}
+          </button>
+        ) : (
           <Link to={`/products/edit?type=${category}`}>
             <button className="primary" style={{ height: BTN_H }}>
               {category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}

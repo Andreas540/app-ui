@@ -689,6 +689,7 @@
     "productName": "Product name",
     "serviceName": "Service name",
     "editServicesButton": "Edit Service(s)",
+    "editAddOnProductsButton": "Edit Add-On Products",
     "productCostUSD": "Production cost per unit",
     "directServiceCost": "Direct Service Cost",
     "saveProduct": "Save product",

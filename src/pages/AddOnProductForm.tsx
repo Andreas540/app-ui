@@ -134,7 +134,7 @@ export default function AddOnProductForm({
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {t('coverage.extendedCoverageSection')}
           </div>
-          {/* Duration + Coverage Ref side by side */}
+          {/* Duration + Coverage Ref side by side; upload link sits below Coverage Ref */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
               <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
@@ -143,45 +143,42 @@ export default function AddOnProductForm({
             <div>
               <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.coverageRefLabel')}</label>
               <input value={form.coverage_ref} onChange={e => setForm(f => ({ ...f, coverage_ref: e.target.value }))} placeholder={t('coverage.coverageRefPlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
-            </div>
-          </div>
-          {/* Reference document upload */}
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.refDocLabel', 'Reference document')}</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 'inherit', color: 'inherit' }}
-              >
-                {form.coverage_doc_data ? t('coverage.refDocChange', 'Change document') : t('coverage.refDocUpload', 'Upload document')}
-              </button>
-              {form.coverage_doc_data && (
-                <>
-                  {isEditing && editProduct?.id && (
-                    <a
-                      href={`${BASE}/.netlify/functions/serve-coverage-doc?id=${editProduct.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: 'var(--primary)' }}
+              {/* Document upload sits directly below the ref field */}
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 12, color: 'inherit' }}
+                >
+                  {form.coverage_doc_data ? t('coverage.refDocChange', 'Change document') : t('coverage.refDocUpload', 'Upload document')}
+                </button>
+                {form.coverage_doc_data && (
+                  <>
+                    {isEditing && editProduct?.id && (
+                      <a
+                        href={`${BASE}/.netlify/functions/serve-coverage-doc?id=${editProduct.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--primary)' }}
+                      >
+                        {form.coverage_doc_name || 'View'}
+                      </a>
+                    )}
+                    {!isEditing && form.coverage_doc_name && (
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{form.coverage_doc_name}</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, coverage_doc_data: null, coverage_doc_name: '' }))}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 12, color: 'var(--color-error)' }}
                     >
-                      {form.coverage_doc_name || 'View'}
-                    </a>
-                  )}
-                  {!isEditing && form.coverage_doc_name && (
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{form.coverage_doc_name}</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, coverage_doc_data: null, coverage_doc_name: '' }))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 12, color: 'var(--color-error)' }}
-                  >
-                    {t('coverage.refDocRemove', 'Remove')}
-                  </button>
-                </>
-              )}
+                      {t('coverage.refDocRemove', 'Remove')}
+                    </button>
+                  </>
+                )}
+              </div>
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" style={{ display: 'none' }} onChange={handleFileChange} />
             </div>
-            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" style={{ display: 'none' }} onChange={handleFileChange} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
