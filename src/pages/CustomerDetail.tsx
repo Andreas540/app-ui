@@ -985,14 +985,17 @@ export default function CustomerDetailPage() {
                 let symbol = '', color = '#d1d5db'
                 if (dqty >= total && total > 0) { symbol = '✓'; color = '#10b981' }
                 else if (dqty > 0) { symbol = '◐'; color = '#f59e0b' }
+                const inner = symbol
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 13, height: 13, fontSize: 13, lineHeight: 1, color }}>{symbol}</span>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 13, height: 13 }}>
+                      <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', border: `1.5px solid ${color}` }} />
+                    </span>
                 return (
                   <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {symbol
-                      ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 13, height: 13, fontSize: 13, lineHeight: 1, color }}>{symbol}</span>
-                      : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 13, height: 13 }}>
-                          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', border: `1.5px solid ${color}` }} />
-                        </span>
-                    }
+                    <button onClick={(e) => { e.stopPropagation(); handleDeliveryIconClick(o) }}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      {inner}
+                    </button>
                   </div>
                 )
               }
