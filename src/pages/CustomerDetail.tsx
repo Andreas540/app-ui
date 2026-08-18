@@ -999,7 +999,7 @@ export default function CustomerDetailPage() {
               }
 
               return (
-                <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
+                <div key={o.id} onClick={() => handleOrderClick(o)} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12, cursor: 'pointer' }}>
                   {/* Header row: date | icon | order# (or first item when order# hidden) | total */}
                   <div style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, alignItems: 'center' }}>
                     <div className="helper">{formatDate((o as any).order_date)}</div>

@@ -102,7 +102,14 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           ORDER BY created_at DESC
         `
 
-        return json(200, { order, items, events })
+        const paymentRows = await sql`
+          SELECT COALESCE(SUM(amount), 0)::numeric(12,2) AS paid_amount
+          FROM supplier_payments
+          WHERE tenant_id = ${tenantId} AND order_id = ${id}
+        `
+        const paid_amount = Number(paymentRows[0]?.paid_amount ?? 0)
+
+        return json(200, { order: { ...order, paid_amount }, items, events })
       }
 
       // Last-cost lookup
