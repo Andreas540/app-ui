@@ -100,7 +100,7 @@ export default function AddOnProductForm({
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.nameLabel')}</label>
           <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('coverage.namePlaceholder')} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.costLabel')}</label>
             <input type="number" min="0" step="0.01" value={form.cost} onChange={e => setForm(f => ({ ...f, cost: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
@@ -109,14 +109,14 @@ export default function AddOnProductForm({
             <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.priceLabel')}</label>
             <input type="number" min="0" step="0.01" value={form.price_amount} onChange={e => setForm(f => ({ ...f, price_amount: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
-            <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
-          </div>
         </div>
         <div style={{ borderTop: '1px solid var(--separator)', marginTop: 8, paddingTop: 16, display: 'grid', gap: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {t('coverage.extendedCoverageSection')}
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('coverage.durationLabel')}</label>
+            <input type="number" min="1" value={form.coverage_duration_days} onChange={e => setForm(f => ({ ...f, coverage_duration_days: e.target.value }))} style={{ display: 'block', width: '100%', marginTop: 4, height: H, boxSizing: 'border-box' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>

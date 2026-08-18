@@ -273,7 +273,7 @@ export default function NewProduct() {
           </div>
         )}
         <button
-          onClick={() => setCategory('coverage')}
+          onClick={() => { setCategory('coverage'); setEditingCoverage(null) }}
           style={{
             padding: '6px 18px',
             border: '1px solid var(--border, #e6e6e6)',
@@ -523,7 +523,9 @@ export default function NewProduct() {
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
           >
             <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
-            <h3 style={{ margin: 0 }}>{t('products.productCosts')}</h3>
+            <h3 style={{ margin: 0 }}>
+              {listCategory === 'coverage' ? t('products.allAddOnProducts') : listCategory === 'service' ? t('products.allServices') : t('products.allProducts')}
+            </h3>
           </div>
           {listOpen && listCategory !== 'coverage' && (
             <button
@@ -592,7 +594,7 @@ export default function NewProduct() {
                       </div>
                     </div>
                     <button
-                      onClick={() => { setEditingCoverage(p); setFormOpen(true) }}
+                      onClick={() => { setEditingCoverage(p); setFormOpen(true); setCategory('coverage') }}
                       style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
                     >
                       {t('edit')}
