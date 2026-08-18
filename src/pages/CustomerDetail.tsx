@@ -985,14 +985,12 @@ export default function CustomerDetailPage() {
                 let symbol = '', color = '#d1d5db'
                 if (dqty >= total && total > 0) { symbol = '✓'; color = '#10b981' }
                 else if (dqty > 0) { symbol = '◐'; color = '#f59e0b' }
+                const inner = symbol
+                  ? <span style={{ fontSize: 11, lineHeight: 1, color }}>{symbol}</span>
+                  : <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${color}` }} />
                 return (
                   <div style={{ width: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {symbol
-                      ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, fontSize: 16, lineHeight: 1, color }}>{symbol}</span>
-                      : <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
-                          <span style={{ display: 'inline-block', width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${color}` }} />
-                        </span>
-                    }
+                    {inner}
                   </div>
                 )
               }
