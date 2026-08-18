@@ -3,7 +3,7 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; variant?: string | null; sku?: string | null; product_category?: string | null }
+export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; variant?: string | null; sku?: string | null; product_category?: string | null }
 
 export type CoverageProduct = {
   id: string
@@ -436,7 +436,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'coverage'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
@@ -590,13 +590,13 @@ export async function deleteCost(costId: number | string, costType: 'recurring' 
 // ── Coverage products ──────────────────────────────────────────────────────────
 
 export async function listCoverageProducts(): Promise<{ coverage_products: CoverageProduct[] }> {
-  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, { headers: getAuthHeaders() })
+  const r = await apiFetch(`${base}/.netlify/functions/addon-products`, { headers: getAuthHeaders() })
   if (!r.ok) throw new Error(`Failed to load coverage products (${r.status})`)
   return r.json()
 }
 
 export async function createCoverageProduct(input: Omit<CoverageProduct, 'id'>): Promise<{ coverage_product: CoverageProduct }> {
-  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, {
+  const r = await apiFetch(`${base}/.netlify/functions/addon-products`, {
     method: 'POST', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })
@@ -605,7 +605,7 @@ export async function createCoverageProduct(input: Omit<CoverageProduct, 'id'>):
 }
 
 export async function updateCoverageProduct(input: Partial<CoverageProduct> & { id: string }): Promise<{ coverage_product: CoverageProduct }> {
-  const r = await apiFetch(`${base}/.netlify/functions/coverage-products`, {
+  const r = await apiFetch(`${base}/.netlify/functions/addon-products`, {
     method: 'PUT', headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })

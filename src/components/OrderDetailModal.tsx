@@ -335,11 +335,11 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                 ? items.find((i: any) => i.product_id === item.covers_product_id)
                 : null
               // Resolved covered product name: same-order first, then cross-order from backend
-              const coveredName = item.product_kind === 'coverage'
+              const coveredName = item.product_kind === 'addon'
                 ? (sameOrderCoveredItem?.product_name ?? item.covered_product_name ?? null)
                 : null
               // Resolved covered unit_id: same-order item's unit_id, or cross-order from backend
-              const coveredUnitId = item.product_kind === 'coverage'
+              const coveredUnitId = item.product_kind === 'addon'
                 ? (sameOrderCoveredItem?.unit_identifier ?? item.covered_unit_identifier ?? null)
                 : null
               return (
@@ -368,7 +368,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                       {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{coveredUnitId}</span>
                     </div>
                   )}
-                  {item.product_kind === 'coverage' && item.coverage_duration_days != null && order.order_date && (() => {
+                  {item.product_kind === 'addon' && item.coverage_duration_days != null && order.order_date && (() => {
                     const days = coverageDaysLeft(order.order_date, item.coverage_duration_days, timezone)
                     const expired = days < 0
                     const color = expired ? 'var(--error, #dc2626)' : days <= 30 ? 'var(--warning, #d97706)' : 'var(--text-secondary)'

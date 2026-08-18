@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
+import { optLabel } from '../lib/productOptions'
 import { useCurrency } from '../lib/useCurrency'
 
 type PriceData = {
@@ -38,8 +39,8 @@ export default function PriceChecker() {
     })()
   }, [])
 
-  const stdProducts = products.filter(p => p.product_kind !== 'coverage')
-  const addonProducts = products.filter(p => p.product_kind === 'coverage')
+  const stdProducts = products.filter(p => p.product_kind !== 'addon' && p.category !== 'service')
+  const addonProducts = products.filter(p => p.product_kind === 'addon')
 
   // Fetch price data when both customer and product are selected
   useEffect(() => {
@@ -114,13 +115,13 @@ const res = await fetch(
             <option value="">{t('priceChecker.selectProduct')}</option>
             <optgroup label={t('priceChecker.productsGroup')}>
               {stdProducts.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>{optLabel(p)}</option>
               ))}
             </optgroup>
             {addonProducts.length > 0 && (
               <optgroup label={t('priceChecker.addOnProductsGroup')}>
                 {addonProducts.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>{optLabel(p)}</option>
                 ))}
               </optgroup>
             )}

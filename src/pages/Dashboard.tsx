@@ -988,11 +988,11 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   <select value={pcProductId} onChange={e => setPcProductId(e.target.value)} style={{ height: 36 }}>
                     <option value="">{t('priceChecker.selectProduct')}</option>
                     <optgroup label={t('priceChecker.productsGroup')}>
-                      {pcProducts.filter(p => p.product_kind !== 'coverage').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      {pcProducts.filter(p => p.product_kind !== 'addon' && p.category !== 'service').map(p => <option key={p.id} value={p.id}>{p.variant ? `${p.name} · ${p.variant}` : p.name}</option>)}
                     </optgroup>
-                    {pcProducts.some(p => p.product_kind === 'coverage') && (
+                    {pcProducts.some(p => p.product_kind === 'addon') && (
                       <optgroup label={t('priceChecker.addOnProductsGroup')}>
-                        {pcProducts.filter(p => p.product_kind === 'coverage').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {pcProducts.filter(p => p.product_kind === 'addon').map(p => <option key={p.id} value={p.id}>{p.variant ? `${p.name} · ${p.variant}` : p.name}</option>)}
                       </optgroup>
                     )}
                   </select>

@@ -1,5 +1,5 @@
 // src/pages/AddOnProductForm.tsx
-// Create and edit Add On Products (product_kind='coverage'). List lives in the lower card.
+// Create and edit Add On Products (product_kind='addon'). List lives in the lower card.
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'

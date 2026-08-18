@@ -212,9 +212,9 @@ export default function EditOrder() {
   const { productGroup, serviceGroup, addOnGroup } = useMemo(() => {
     const sorted = [...products].sort((a, b) => a.name.localeCompare(b.name))
     return {
-      addOnGroup:   sorted.filter(p => p.product_kind === 'coverage'),
-      productGroup: sorted.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage'),
-      serviceGroup: sorted.filter(p => p.category === 'service' && p.product_kind !== 'coverage'),
+      addOnGroup:   sorted.filter(p => p.product_kind === 'addon'),
+      productGroup: sorted.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'addon'),
+      serviceGroup: sorted.filter(p => p.category === 'service' && p.product_kind !== 'addon'),
     }
   }, [products])
 
@@ -233,7 +233,7 @@ export default function EditOrder() {
     const prod = products.find(p => p.id === product_id)
     const pa = prod?.price_amount
     const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
-    const isCoverageProduct = prod?.product_kind === 'coverage'
+    const isCoverageProduct = prod?.product_kind === 'addon'
     let priceStr = lines[idx].priceStr
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     setLines(prev => prev.map((l, i) => i === idx
@@ -508,9 +508,9 @@ export default function EditOrder() {
       {lines.map((l, idx) => {
         const prod         = products.find(p => p.id === l.product_id)
         const isRefund     = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
-        const isCoverage   = prod?.product_kind === 'coverage'
+        const isCoverage   = prod?.product_kind === 'addon'
         const hasUnit      = !!l.unit_id
-        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'coverage')
+        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'addon')
         return (
           <div key={idx}>
             <div className="row row-2col-mobile" style={{ marginTop: 12 }}>

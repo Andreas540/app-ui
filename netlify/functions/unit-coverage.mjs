@@ -78,7 +78,7 @@ async function get(event) {
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN unit_coverage uc ON uc.order_item_id = oi.id
       WHERE o.tenant_id = ${TENANT_ID}
-        AND p.product_kind = 'coverage'
+        AND p.product_kind = 'addon'
         AND (${tenantWide} OR o.customer_id = ${customerId})
       GROUP BY oi.id, o.id, o.order_no, o.order_date, o.customer_id, c.name,
                p.id, p.name, p.coverage_duration_days, p.coverage_ref,

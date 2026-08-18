@@ -25,13 +25,13 @@ export default function NewProduct() {
   const [costStr, setCostStr] = useState('')  // decimal string
   const [costMethod, setCostMethod] = useState<'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase'>('manual')
   const [saving, setSaving] = useState(false)
-  const [category, setCategory] = useState<'product' | 'service' | 'coverage'>(
+  const [category, setCategory] = useState<'product' | 'service' | 'addon'>(
     searchParams.get('type') === 'service' ? 'service' : 'product'
   )
 
   const [formOpen, setFormOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
-  const [listCategory, setListCategory] = useState<'product' | 'service' | 'coverage'>('product')
+  const [listCategory, setListCategory] = useState<'product' | 'service' | 'addon'>('product')
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -196,7 +196,7 @@ export default function NewProduct() {
 
     try {
       setSaving(true)
-      if (category === 'coverage') return
+      if (category === 'addon') return
       await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
@@ -240,9 +240,9 @@ export default function NewProduct() {
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
           <h3 style={{ margin: 0 }}>{t('products.addOrEdit')}</h3>
         </div>
-        <Link to={category === 'coverage' ? '/products/edit-addon' : `/products/edit?type=${category}`}>
+        <Link to={category === 'addon' ? '/products/edit-addon' : `/products/edit?type=${category}`}>
           <button className="primary" style={{ height: BTN_H }}>
-            {category === 'coverage' ? t('products.editAddOnProductsButton') : category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
+            {category === 'addon' ? t('products.editAddOnProductsButton') : category === 'service' ? t('products.editServicesButton') : t('products.editProductsButton')}
           </button>
         </Link>
       </div>
@@ -273,22 +273,22 @@ export default function NewProduct() {
           </div>
         )}
         <button
-          onClick={() => { setCategory('coverage'); setEditingCoverage(null) }}
+          onClick={() => { setCategory('addon'); setEditingCoverage(null) }}
           style={{
             padding: '6px 18px',
             border: '1px solid var(--border, #e6e6e6)',
             borderRadius: 6,
-            background: category === 'coverage' ? 'var(--primary, #2563eb)' : 'transparent',
-            color: category === 'coverage' ? '#fff' : 'inherit',
+            background: category === 'addon' ? 'var(--primary, #2563eb)' : 'transparent',
+            color: category === 'addon' ? '#fff' : 'inherit',
             cursor: 'pointer',
-            fontWeight: category === 'coverage' ? 600 : 400,
+            fontWeight: category === 'addon' ? 600 : 400,
           }}
         >
           {t('products.addOnProduct')}
         </button>
       </div>
 
-      {category === 'coverage' && (
+      {category === 'addon' && (
         <AddOnProductForm
           editProduct={editingCoverage}
           onSaved={() => { loadCoverageProducts(); setEditingCoverage(null) }}
@@ -296,7 +296,7 @@ export default function NewProduct() {
         />
       )}
 
-      {category !== 'coverage' && <><div style={{ marginTop: 12 }}>
+      {category !== 'addon' && <><div style={{ marginTop: 12 }}>
         <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
         <input
           type="text"
@@ -524,10 +524,10 @@ export default function NewProduct() {
           >
             <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
             <h3 style={{ margin: 0 }}>
-              {listCategory === 'coverage' ? t('products.allAddOnProducts') : listCategory === 'service' ? t('products.allServices') : t('products.allProducts')}
+              {listCategory === 'addon' ? t('products.allAddOnProducts') : listCategory === 'service' ? t('products.allServices') : t('products.allProducts')}
             </h3>
           </div>
-          {listOpen && listCategory !== 'coverage' && (
+          {listOpen && listCategory !== 'addon' && (
             <button
               className="primary"
               onClick={() => setShowHistorical(!showHistorical)}
@@ -542,7 +542,7 @@ export default function NewProduct() {
             {([
               { key: 'product', label: t('products.allProducts') },
               { key: 'service', label: t('products.allServices') },
-              { key: 'coverage', label: t('products.allAddOnProducts') },
+              { key: 'addon', label: t('products.allAddOnProducts') },
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
@@ -558,7 +558,7 @@ export default function NewProduct() {
             ))}
           </div>
         )}
-        {listOpen && listCategory !== 'coverage' && !showHistorical && (
+        {listOpen && listCategory !== 'addon' && !showHistorical && (
           <div style={{ marginBottom: 6 }}>
             <button
               onClick={() => setShowImages(v => !v)}
@@ -570,7 +570,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Add On Products list ── */}
-        {listOpen && listCategory === 'coverage' && (
+        {listOpen && listCategory === 'addon' && (
           loadingCoverage ? (
             <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>{t('loading')}</div>
           ) : coverageProducts.length === 0 ? (
@@ -594,7 +594,7 @@ export default function NewProduct() {
                       </div>
                     </div>
                     <button
-                      onClick={() => { setEditingCoverage(p); setFormOpen(true); setCategory('coverage') }}
+                      onClick={() => { setEditingCoverage(p); setFormOpen(true); setCategory('addon') }}
                       style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
                     >
                       {t('edit')}
@@ -607,7 +607,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Products / Services: current costs ── */}
-        {listOpen && listCategory !== 'coverage' && !showHistorical && (
+        {listOpen && listCategory !== 'addon' && !showHistorical && (
           <div style={{ overflowX: 'auto', marginTop: 4 }}>
             {loadingList ? (
               <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
@@ -667,7 +667,7 @@ export default function NewProduct() {
         )}
 
         {/* ── Products / Services: historical costs ── */}
-        {listOpen && listCategory !== 'coverage' && showHistorical && (
+        {listOpen && listCategory !== 'addon' && showHistorical && (
           <div role="list" aria-busy={loadingHistorical} style={{ display: 'grid', gap: 12, marginTop: 4 }}>
             {loadingHistorical && <div>{t('loading')}</div>}
             {!loadingHistorical && historicalCosts.length === 0 && (

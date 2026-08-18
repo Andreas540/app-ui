@@ -1,5 +1,5 @@
 // src/pages/EditAddonProduct.tsx
-// Edit-page for Add-On Products (product_kind='coverage').
+// Edit-page for Add-On Products (product_kind='addon').
 // Same pattern as EditProduct.tsx: select from list, edit form, Cancel/Save navigate back.
 
 import { useEffect, useState } from 'react'

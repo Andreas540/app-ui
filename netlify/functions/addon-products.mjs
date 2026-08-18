@@ -1,11 +1,11 @@
-// netlify/functions/coverage-products.mjs
-// CRUD for coverage products (product_kind = 'coverage').
-// Distinct from product.mjs so coverage doesn't appear in the standard product list.
+// netlify/functions/addon-products.mjs
+// CRUD for add-on products (product_kind = 'addon').
+// Distinct from product.mjs so add-on products don't appear in the standard product list.
 
 import { resolveAuthz }     from './utils/auth.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
 
-export const handler = withErrorLogging('coverage-products', async (event) => {
+export const handler = withErrorLogging('addon-products', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return list(event)
   if (event.httpMethod === 'POST')   return create(event)
@@ -28,7 +28,7 @@ async function list(event) {
            coverage_doc_data
     FROM products
     WHERE tenant_id = ${TENANT_ID}
-      AND product_kind = 'coverage'
+      AND product_kind = 'addon'
     ORDER BY name
   `
   return cors(200, { coverage_products: rows })
@@ -61,7 +61,7 @@ async function create(event) {
       tenant_id, name, cost, category, product_kind, price_amount,
       coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name, coverage_doc_data
     ) VALUES (
-      ${TENANT_ID}, ${name}, ${costNum}, 'product', 'coverage', ${priceAmount},
+      ${TENANT_ID}, ${name}, ${costNum}, 'product', 'addon', ${priceAmount},
       ${durationDays}, ${coverageRef}, ${issuerType}, ${issuerName}, ${docData}
     )
     RETURNING id, name, cost::float8 AS cost, price_amount::float8 AS price_amount,
@@ -119,7 +119,7 @@ async function update(event) {
         coverage_issuer_type   = CASE WHEN ${hasIssType}  THEN ${newIssType}  ELSE coverage_issuer_type   END,
         coverage_issuer_name   = CASE WHEN ${hasIssName}  THEN ${newIssName}  ELSE coverage_issuer_name   END,
         coverage_doc_data      = CASE WHEN ${hasDoc}      THEN ${newDoc}      ELSE coverage_doc_data      END
-    WHERE id = ${id} AND tenant_id = ${TENANT_ID} AND product_kind = 'coverage'
+    WHERE id = ${id} AND tenant_id = ${TENANT_ID} AND product_kind = 'addon'
     RETURNING id, name, cost::float8 AS cost, price_amount::float8 AS price_amount,
               coverage_duration_days, coverage_ref, coverage_issuer_type, coverage_issuer_name,
               coverage_doc_data

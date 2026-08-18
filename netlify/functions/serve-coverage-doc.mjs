@@ -14,7 +14,7 @@ export async function handler(event) {
 
     const sql = neon(DATABASE_URL)
     const rows = await sql`
-      SELECT name, coverage_doc_data FROM products WHERE id = ${id} AND product_kind = 'coverage' LIMIT 1
+      SELECT name, coverage_doc_data FROM products WHERE id = ${id} AND product_kind = 'addon' LIMIT 1
     `
     if (!rows.length || !rows[0].coverage_doc_data) return { statusCode: 404, body: 'Document not found' }
 

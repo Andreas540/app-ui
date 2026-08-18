@@ -126,8 +126,8 @@ export default function NewOrder() {
         const targetProduct = paramProductId
           ? prods.find(p => p.id === paramProductId)
           : (
-              prods.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage').sort((a, b) => a.name.localeCompare(b.name))[0]
-              ?? prods.filter(p => p.category === 'service' && p.product_kind !== 'coverage').sort((a, b) => a.name.localeCompare(b.name))[0]
+              prods.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'addon').sort((a, b) => a.name.localeCompare(b.name))[0]
+              ?? prods.filter(p => p.category === 'service' && p.product_kind !== 'addon').sort((a, b) => a.name.localeCompare(b.name))[0]
             )
 
         if (targetProduct) {
@@ -218,7 +218,7 @@ export default function NewOrder() {
   }, [entityId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const prevCoverableItems = useMemo(
-    () => prevOrderItems.filter(it => it.product_kind !== 'coverage'),
+    () => prevOrderItems.filter(it => it.product_kind !== 'addon'),
     [prevOrderItems]
   )
 
@@ -230,7 +230,7 @@ export default function NewOrder() {
     let priceStr = ''
     if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
     const needsUnit = prod?.unit_tracking === 'serialized_intake'
-    const isCoverageProduct = prod?.product_kind === 'coverage'
+    const isCoverageProduct = prod?.product_kind === 'addon'
     setLines(prev => prev.map((l, i) => i === idx
       ? { ...l, product_id, priceStr, historicalPrice: null, unit_id: null, availableUnits: needsUnit ? 'loading' : undefined,
           qtyStr: l.qtyStr || (isCoverageProduct ? '1' : '') }
@@ -279,9 +279,9 @@ export default function NewOrder() {
       .sort((a, b) => a.name.localeCompare(b.name))
     return {
       filteredProducts: filtered,
-      addOnGroup:   filtered.filter(p => p.product_kind === 'coverage'),
-      productGroup: filtered.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'coverage'),
-      serviceGroup: filtered.filter(p => p.category === 'service' && p.product_kind !== 'coverage'),
+      addOnGroup:   filtered.filter(p => p.product_kind === 'addon'),
+      productGroup: filtered.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'addon'),
+      serviceGroup: filtered.filter(p => p.category === 'service' && p.product_kind !== 'addon'),
     }
   }, [products])
 
@@ -470,8 +470,8 @@ export default function NewOrder() {
         const isRefund = lineIsRefund(l)
         const isMinusOnly = isRefund && l.priceStr.trim() === '-'
         const prod         = products.find(p => p.id === l.product_id)
-        const isCoverage   = prod?.product_kind === 'coverage'
-        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'coverage')
+        const isCoverage   = prod?.product_kind === 'addon'
+        const coveredLines = lines.filter((ol, oi) => oi !== idx && products.find(p => p.id === ol.product_id)?.product_kind !== 'addon')
         return (
           <div key={idx} style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--line)', marginTop: idx === 0 ? 12 : 16, paddingTop: idx === 0 ? 0 : 12 }}>
             {/* Row 1: Product | Qty */}
