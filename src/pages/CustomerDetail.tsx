@@ -932,9 +932,6 @@ export default function CustomerDetailPage() {
         {orders.length === 0 ? <p className="helper">{t('noOrdersYet')}</p> : (
           <div style={{display:'grid'}}>
             {shownOrders.map(o => {
-              const cols = showOrderNumber
-                ? `50px 18px minmax(24px, max-content) 1fr auto`
-                : `50px 18px 1fr auto`
 
               const items: Array<{ product_name: string | null; qty: number; unit_price: number }> =
                 Array.isArray((o as any).items) && (o as any).items.length > 0
@@ -984,19 +981,19 @@ export default function CustomerDetailPage() {
 
               return (
                 <div key={o.id} style={{ borderBottom: '1px solid var(--line)', paddingTop: 12, paddingBottom: 12 }}>
-                  {/* Single shared grid — auto column sized by #no, all item rows align beneath it */}
-                  <div style={{ display: 'grid', gridTemplateColumns: cols, columnGap: 8, rowGap: LINE_GAP }}>
-
-                    {/* ROW 1: date | icon | [#no] | first item | total */}
+                  {/* Header row: date | icon | order# (or first item when order# hidden) | total */}
+                  <div style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, alignItems: 'center' }}>
                     <div className="helper">{formatDate((o as any).order_date)}</div>
                     {deliveryIcon}
-                    {showOrderNumber && <div className="helper" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>#{(o as any).order_no}</div>}
-                    <div className="helper" onClick={() => handleOrderClick(o)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                      {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
-                    </div>
+                    {showOrderNumber
+                      ? <div><span className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</span></div>
+                      : <div className="helper" onClick={() => handleOrderClick(o)}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                          {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
+                        </div>
+                    }
                     <div className="helper"
                       onClick={orderTotal > paid && orderTotal > 0 ? (e) => {
                         e.stopPropagation()
@@ -1078,35 +1075,35 @@ export default function CustomerDetailPage() {
                         </>
                       )}
                     </div>
-
-                    {/* ADDITIONAL ITEM ROWS: empty | empty | [empty] | item | empty */}
-                    {items.slice(1).map((item, idx) => (
-                      <React.Fragment key={idx}>
-                        <div /><div />{showOrderNumber && <div />}
-                        <div className="helper" onClick={() => handleOrderClick(o)}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                          {itemLine(item)}
-                        </div>
-                        <div />
-                      </React.Fragment>
-                    ))}
-
-                    {/* NOTES ROW: empty | empty | [empty] | notes | empty */}
-                    {hasNotes && !compactOrderRows && (
-                      <React.Fragment>
-                        <div /><div />{showOrderNumber && <div />}
-                        <div className="helper" onClick={() => handleOrderClick(o)}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          style={{ cursor: 'pointer', lineHeight: '1.4' }}>
-                          {(o as any).notes}
-                        </div>
-                        <div />
-                      </React.Fragment>
-                    )}
                   </div>
+
+                  {/* Item rows: all items when order# shown; items[1:] when first item is on header row */}
+                  {(showOrderNumber ? (items.length > 0 ? items : [null]) : items.slice(1)).map((item, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, marginTop: LINE_GAP }}>
+                      <div /><div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                        {item ? itemLine(item) : t('customerDetail.orderLines', { count: 0 })}
+                      </div>
+                      <div />
+                    </div>
+                  ))}
+
+                  {/* Notes row */}
+                  {hasNotes && !compactOrderRows && (
+                    <div style={{ display: 'grid', gridTemplateColumns: `${DATE_COL}px 20px 1fr auto`, columnGap: 8, marginTop: LINE_GAP }}>
+                      <div /><div />
+                      <div className="helper" onClick={() => handleOrderClick(o)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                        {(o as any).notes}
+                      </div>
+                      <div />
+                    </div>
+                  )}
                 </div>
               )
             })}
