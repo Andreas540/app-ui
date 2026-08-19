@@ -3012,7 +3012,7 @@ const available = max - used
               <div>
                 <div style={{ fontWeight: 500, fontSize: 14 }}>Deactivate Payment Providers</div>
                 <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
-                  Greys out Stripe and AMP settings in Tenant Admin. Existing payment functionality is not affected.
+                  Disables the Payment Providers tab in Tenant Admin so the tenant cannot configure Stripe or AMP.
                 </div>
               </div>
             </label>
