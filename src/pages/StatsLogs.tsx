@@ -1,9 +1,9 @@
 // src/pages/StatsLogs.tsx
 // SuperAdmin-only activity dashboard.
-// Global view  (no activeTenantId): one stacked bar chart per tenant.
-// Tenant view  (activeTenantId set): one stacked bar chart per user.
-// X-axis: 96 buckets × 15 min = rolling 24-hour window.
-// Auto-refreshes every 30 seconds.
+// Global view: one chart per tenant.  Tenant view: one chart per user.
+// 24h: 96 × 15-min stacked bars in a multi-column grid.
+// 7d:  168 × 1-hour simple bars, one full-width row per entity.
+// 30d: 30  × 1-day  simple bars, one full-width row per entity.
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
@@ -35,13 +35,13 @@ const FALLBACK_PALETTE = [
 ]
 
 const ERROR_KEYWORD_COLORS: Array<[RegExp, string]> = [
-  [/failed|failure/,              '#f87171'],  // red
-  [/blocked|denied|forbidden/,    '#dc2626'],  // dark red
-  [/unauthorized|auth/,           '#c084fc'],  // purple
-  [/expired|timeout/,             '#fb923c'],  // orange
-  [/invalid/,                     '#fbbf24'],  // amber
-  [/error|exception/,             '#f97316'],  // orange-red
-  [/limit|throttl/,               '#e879f9'],  // pink
+  [/failed|failure/,              '#f87171'],
+  [/blocked|denied|forbidden/,    '#dc2626'],
+  [/unauthorized|auth/,           '#c084fc'],
+  [/expired|timeout/,             '#fb923c'],
+  [/invalid/,                     '#fbbf24'],
+  [/error|exception/,             '#f97316'],
+  [/limit|throttl/,               '#e879f9'],
 ]
 
 function isErrorAction(action: string): boolean {
@@ -65,41 +65,87 @@ function actionColor(action: string): string {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type Period = '24h' | '7d' | '30d'
 interface ActivityRow { bucket_index: number; action: string; count: number }
 interface Entity      { id: string; name: string; total: number; rows: ActivityRow[] }
-interface StatsData   { view: 'global' | 'tenant'; window_start: string; tz: string; entities: Entity[] }
+interface StatsData   {
+  view: 'global' | 'tenant'
+  period: string
+  window_start: string
+  bucket_count: number
+  bucket_sec: number
+  tz: string
+  entities: Entity[]
+}
 type SortOrder = 'activity' | 'name'
 type ReportTab = 'activity' | 'errors' | 'website'
 
+const PERIOD_LABELS: Record<Period, string> = { '24h': '24h', '7d': '7d', '30d': '30d' }
+const PERIOD_CFG: Record<Period, { bucketCount: number; bucketSec: number }> = {
+  '24h': { bucketCount: 96,  bucketSec: 900 },
+  '7d':  { bucketCount: 168, bucketSec: 3600 },
+  '30d': { bucketCount: 30,  bucketSec: 86400 },
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Build a 96-slot array of chart data points, one per 15-min bucket. */
+function formatBucketLabel(t: Date, tz: string, bucketSec: number): string {
+  if (bucketSec < 3600) {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz,
+    }).format(t)
+  } else if (bucketSec < 86400) {
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short', hour: '2-digit', hour12: false, timeZone: tz,
+    }).format(t).replace(',', '')
+  } else {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short', day: 'numeric', timeZone: tz,
+    }).format(t)
+  }
+}
+
 function buildChartData(
   entity: Entity,
   windowStart: Date,
   tz: string,
   allActions: string[],
+  bucketCount: number,
+  bucketSec: number,
 ): Record<string, any>[] {
-  const data = Array.from({ length: 96 }, (_, i) => {
-    const t = new Date(windowStart.getTime() + i * 15 * 60 * 1000)
-    const label = new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz,
-    }).format(t)
-    const point: Record<string, any> = { time: label }
+  const data = Array.from({ length: bucketCount }, (_, i) => {
+    const t = new Date(windowStart.getTime() + i * bucketSec * 1000)
+    const point: Record<string, any> = { time: formatBucketLabel(t, tz, bucketSec) }
     allActions.forEach(a => { point[a] = 0 })
     return point
   })
   entity.rows.forEach(r => {
     const i = r.bucket_index
-    if (i >= 0 && i < 96) data[i][r.action] = (data[i][r.action] || 0) + r.count
+    if (i >= 0 && i < bucketCount) data[i][r.action] = (data[i][r.action] || 0) + r.count
   })
   return data
 }
 
-/** Custom X-axis tick — renders only every 8th bucket (every 2 hours). */
-function XTick({ x, y, payload, index }: any) {
-  if (index % 8 !== 0) return null
+function buildSimpleData(
+  entity: Entity,
+  windowStart: Date,
+  tz: string,
+  bucketCount: number,
+  bucketSec: number,
+): { time: string; total: number }[] {
+  const data = Array.from({ length: bucketCount }, (_, i) => {
+    const t = new Date(windowStart.getTime() + i * bucketSec * 1000)
+    return { time: formatBucketLabel(t, tz, bucketSec), total: 0 }
+  })
+  entity.rows.forEach(r => {
+    const i = r.bucket_index
+    if (i >= 0 && i < bucketCount) data[i].total += r.count
+  })
+  return data
+}
+
+function XTick({ x, y, payload, index, step = 8 }: any) {
+  if (index % step !== 0) return null
   return (
     <text x={x} y={y + 10} textAnchor="middle" fontSize={8} fill="#9ca3af">
       {payload.value}
@@ -107,7 +153,6 @@ function XTick({ x, y, payload, index }: any) {
   )
 }
 
-/** Custom Y-axis tick — uses style so CSS variables resolve correctly. */
 function YTick({ x, y, payload }: any) {
   return (
     <text x={x} y={y + 3} textAnchor="end" fontSize={8} fill="#9ca3af">
@@ -116,7 +161,6 @@ function YTick({ x, y, payload }: any) {
   )
 }
 
-/** Tooltip showing only actions with count > 0. */
 function ActivityTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   const items = (payload as any[]).filter(p => p.value > 0)
@@ -137,19 +181,67 @@ function ActivityTooltip({ active, payload, label }: any) {
   )
 }
 
+function SimpleTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  const total = (payload[0]?.value as number) ?? 0
+  if (!total) return null
+  return (
+    <div style={{
+      background: 'var(--card)', border: '1px solid var(--border)',
+      borderRadius: 6, padding: '6px 10px', fontSize: 12,
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div>{total} action{total !== 1 ? 's' : ''}</div>
+    </div>
+  )
+}
+
 // ─── Per-entity chart card ────────────────────────────────────────────────────
 
 function EntityChart({
-  entity, windowStart, tz, allActions,
+  entity, windowStart, tz, allActions, bucketCount, bucketSec, mode,
 }: {
   entity: Entity; windowStart: Date; tz: string; allActions: string[]
+  bucketCount: number; bucketSec: number; mode: '24h' | 'extended'
 }) {
-  const chartData = buildChartData(entity, windowStart, tz, allActions)
-  const activeActions = allActions.filter(a => entity.rows.some(r => r.action === a))
+  if (mode === 'extended') {
+    const simpleData = buildSimpleData(entity, windowStart, tz, bucketCount, bucketSec)
+    const tickStep   = bucketSec >= 86400 ? 5 : 24
+    const minWidth   = Math.max(300, bucketCount * (bucketSec >= 86400 ? 14 : 5))
+    return (
+      <div className="card" style={{ padding: '12px 12px 8px 12px' }}>
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>{entity.name}</div>
+          <div className="helper" style={{ fontSize: 11, marginTop: 2 }}>
+            {entity.total.toLocaleString()} actions
+          </div>
+        </div>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+          <div style={{ minWidth }}>
+            <ResponsiveContainer width="100%" height={80}>
+              <BarChart data={simpleData} margin={{ top: 2, right: 0, bottom: 14, left: 0 }} barCategoryGap={2}>
+                <XAxis
+                  dataKey="time"
+                  tick={<XTick step={tickStep} />}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={0}
+                />
+                <YAxis allowDecimals={false} width={24} tick={<YTick />} tickLine={false} axisLine={false} />
+                <Tooltip content={<SimpleTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Bar dataKey="total" fill="#60a5fa" isAnimationActive={false} radius={[1, 1, 0, 0] as any} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
+  const chartData     = buildChartData(entity, windowStart, tz, allActions, bucketCount, bucketSec)
+  const activeActions = allActions.filter(a => entity.rows.some(r => r.action === a))
   return (
     <div className="card" style={{ padding: '12px 12px 8px 12px' }}>
-      {/* Card header */}
       <div style={{ marginBottom: 6 }}>
         <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {entity.name}
@@ -158,8 +250,6 @@ function EntityChart({
           {entity.total.toLocaleString()} action{entity.total !== 1 ? 's' : ''} · 24h
         </div>
       </div>
-
-      {/* Legend: only actions that appear in this entity */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', marginBottom: 6 }}>
         {activeActions.map(a => (
           <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -168,24 +258,10 @@ function EntityChart({
           </div>
         ))}
       </div>
-
-      {/* Chart */}
       <ResponsiveContainer width="100%" height={120}>
         <BarChart data={chartData} margin={{ top: 2, right: 0, bottom: 14, left: 0 }} barCategoryGap={0} barGap={0}>
-          <XAxis
-            dataKey="time"
-            tick={<XTick />}
-            tickLine={false}
-            axisLine={false}
-            interval={0}
-          />
-          <YAxis
-            allowDecimals={false}
-            width={24}
-            tick={<YTick />}
-            tickLine={false}
-            axisLine={false}
-          />
+          <XAxis dataKey="time" tick={<XTick />} tickLine={false} axisLine={false} interval={0} />
+          <YAxis allowDecimals={false} width={24} tick={<YTick />} tickLine={false} axisLine={false} />
           <Tooltip content={<ActivityTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
           {allActions.map(a => (
             <Bar key={a} dataKey={a} stackId="s" fill={actionColor(a)} isAnimationActive={false} />
@@ -196,28 +272,99 @@ function EntityChart({
   )
 }
 
+// ─── Period selector ──────────────────────────────────────────────────────────
+
+function PeriodSelector({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 0 }}>
+      {(Object.keys(PERIOD_LABELS) as Period[]).map((p, i, arr) => (
+        <button
+          key={p}
+          onClick={() => onChange(p)}
+          style={{
+            height: 36,
+            padding: '0 14px',
+            fontSize: 13,
+            border: '1px solid var(--border)',
+            borderRight: i < arr.length - 1 ? 'none' : undefined,
+            borderRadius: i === 0 ? '6px 0 0 6px' : i === arr.length - 1 ? '0 6px 6px 0' : 0,
+            background: period === p ? 'var(--primary)' : 'transparent',
+            color: period === p ? '#fff' : 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          {PERIOD_LABELS[p]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Controls bar (shared between activity + errors tabs) ─────────────────────
+
+function ControlsBar({
+  sortOrder, onSortChange, period, onPeriodChange, loading, data, lastRefresh, onRefresh,
+}: {
+  sortOrder: SortOrder
+  onSortChange: (s: SortOrder) => void
+  period: Period
+  onPeriodChange: (p: Period) => void
+  loading: boolean
+  data: StatsData | null
+  lastRefresh: Date | null
+  onRefresh: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{t('sort')}:</span>
+        <select value={sortOrder} onChange={e => onSortChange(e.target.value as SortOrder)} style={{ height: 36 }}>
+          <option value="activity">Activity</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
+
+      <PeriodSelector period={period} onChange={onPeriodChange} />
+
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {loading && data && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
+        {lastRefresh && !loading && (
+          <span className="helper" style={{ fontSize: 12 }}>
+            Updated {lastRefresh.toLocaleTimeString()}
+          </span>
+        )}
+        <button onClick={onRefresh} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function StatsLogs() {
   const { t } = useTranslation()
   const [activeReport, setActiveReport] = useState<ReportTab>('activity')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('activity')
-  const [data, setData] = useState<StatsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [err, setErr] = useState<string | null>(null)
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  const [sortOrder,    setSortOrder]    = useState<SortOrder>('activity')
+  const [period,       setPeriod]       = useState<Period>('24h')
+  const [data,         setData]         = useState<StatsData | null>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [err,          setErr]          = useState<string | null>(null)
+  const [lastRefresh,  setLastRefresh]  = useState<Date | null>(null)
 
-  const [websiteData, setWebsiteData]       = useState<StatsData | null>(null)
+  const [websiteData,    setWebsiteData]    = useState<StatsData | null>(null)
   const [websiteLoading, setWebsiteLoading] = useState(false)
-  const [websiteErr, setWebsiteErr]         = useState<string | null>(null)
+  const [websiteErr,     setWebsiteErr]     = useState<string | null>(null)
 
   const activeTenantId = localStorage.getItem('activeTenantId')
 
   const loadData = useCallback(async () => {
     try {
-      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const params = activeTenantId ? `?tenant_id=${encodeURIComponent(activeTenantId)}` : ''
-      const res = await fetch(`${base}/api/activity-stats${params}`, { headers: getAuthHeaders() })
+      setLoading(true)
+      const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const params = new URLSearchParams({ period })
+      if (activeTenantId) params.set('tenant_id', activeTenantId)
+      const res = await fetch(`${base}/api/activity-stats?${params}`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error(`Failed to load stats (${res.status})`)
       setData(await res.json())
       setLastRefresh(new Date())
@@ -227,10 +374,11 @@ export default function StatsLogs() {
     } finally {
       setLoading(false)
     }
-  }, [activeTenantId])
+  }, [activeTenantId, period])
 
   useEffect(() => {
     loadData()
+    if (period !== '24h') return
     const id = setInterval(loadData, 30_000)
     return () => clearInterval(id)
   }, [loadData])
@@ -239,7 +387,7 @@ export default function StatsLogs() {
     try {
       setWebsiteLoading(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/website-stats`, { headers: getAuthHeaders() })
+      const res  = await fetch(`${base}/api/website-stats`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error(`Failed to load website stats (${res.status})`)
       setWebsiteData(await res.json())
       setWebsiteErr(null)
@@ -257,43 +405,53 @@ export default function StatsLogs() {
     return () => clearInterval(id)
   }, [activeReport, loadWebsiteData])
 
-  // ── Derived data ────────────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────────
+  // Use data only when its period matches the selected period (avoids stale chart flash)
+  const effectiveData = data?.period === period ? data : null
+
+  const { bucketCount, bucketSec } = PERIOD_CFG[period]
+  const chartMode = period === '24h' ? '24h' as const : 'extended' as const
+  const isExtended = period !== '24h'
+
   const allActions = (() => {
-    if (!data) return []
+    if (!effectiveData) return []
     const set = new Set<string>()
-    data.entities.forEach(e => e.rows.forEach(r => set.add(r.action)))
+    effectiveData.entities.forEach(e => e.rows.forEach(r => set.add(r.action)))
     return Array.from(set)
   })()
 
-  const sortedEntities = data
-    ? [...data.entities].sort((a, b) =>
+  const sortedEntities = effectiveData
+    ? [...effectiveData.entities].sort((a, b) =>
         sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total,
       )
     : []
 
-  const windowStart = data ? new Date(data.window_start) : new Date()
-  const tz          = data?.tz ?? 'UTC'
+  const windowStart = effectiveData ? new Date(effectiveData.window_start) : new Date()
+  const tz          = effectiveData?.tz ?? 'UTC'
 
-  // ── Error-filtered data ──────────────────────────────────────────────────────
   const errorActions = allActions.filter(a => isErrorAction(a))
-
-  const errorEntities: Entity[] = data
-    ? data.entities
+  const errorEntities: Entity[] = effectiveData
+    ? effectiveData.entities
         .map(e => ({
           ...e,
-          rows: e.rows.filter(r => isErrorAction(r.action)),
+          rows:  e.rows.filter(r => isErrorAction(r.action)),
           total: e.rows.filter(r => isErrorAction(r.action)).reduce((s, r) => s + r.count, 0),
         }))
         .filter(e => e.total > 0)
     : []
-
   const sortedErrorEntities = [...errorEntities].sort((a, b) =>
     sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total,
   )
 
   const CONTROL_H = 44
+  const gridStyle = {
+    display: 'grid' as const,
+    gridTemplateColumns: isExtended ? '1fr' : 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+    gap: 12,
+  }
+  const noDataPeriod = PERIOD_LABELS[period]
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="page-wide">
       {/* ── Top card: report buttons ───────────────────────────────────── */}
@@ -330,63 +488,30 @@ export default function StatsLogs() {
       {/* ── Activity report ─────────────────────────────────────────────── */}
       {activeReport === 'activity' && (
         <>
-          {/* Controls bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>
-                {t('sort')}:
-              </span>
-              <select
-                value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as SortOrder)}
-                style={{ height: 36 }}
-              >
-                <option value="activity">Activity</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
+          <ControlsBar
+            sortOrder={sortOrder} onSortChange={setSortOrder}
+            period={period} onPeriodChange={setPeriod}
+            loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
+          />
 
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {loading && data && (
-                <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>
-              )}
-              {lastRefresh && (
-                <span className="helper" style={{ fontSize: 12 }}>
-                  Updated {lastRefresh.toLocaleTimeString()}
-                </span>
-              )}
-              <button onClick={loadData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>
-                ↺
-              </button>
-            </div>
-          </div>
-
-          {/* Error */}
           {err && (
             <div className="card">
               <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
             </div>
           )}
 
-          {/* Initial loading */}
-          {loading && !data && (
+          {(loading && !effectiveData) && (
             <div className="card"><p>{t('loading')}</p></div>
           )}
 
-          {/* No data */}
-          {data && sortedEntities.length === 0 && (
+          {effectiveData && sortedEntities.length === 0 && (
             <div className="card">
-              <p className="helper">No activity in the last 24 hours.</p>
+              <p className="helper">No activity in the last {noDataPeriod}.</p>
             </div>
           )}
 
-          {/* Charts grid: auto-fill → 3 cols on desktop, 1 on mobile */}
-          {data && sortedEntities.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-              gap: 12,
-            }}>
+          {effectiveData && sortedEntities.length > 0 && (
+            <div style={gridStyle}>
               {sortedEntities.map(entity => (
                 <EntityChart
                   key={entity.id}
@@ -394,6 +519,9 @@ export default function StatsLogs() {
                   windowStart={windowStart}
                   tz={tz}
                   allActions={allActions}
+                  bucketCount={bucketCount}
+                  bucketSec={bucketSec}
+                  mode={chartMode}
                 />
               ))}
             </div>
@@ -404,63 +532,30 @@ export default function StatsLogs() {
       {/* ── Errors report ───────────────────────────────────────────────── */}
       {activeReport === 'errors' && (
         <>
-          {/* Controls bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>
-                {t('sort')}:
-              </span>
-              <select
-                value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as SortOrder)}
-                style={{ height: 36 }}
-              >
-                <option value="activity">Activity</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
+          <ControlsBar
+            sortOrder={sortOrder} onSortChange={setSortOrder}
+            period={period} onPeriodChange={setPeriod}
+            loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
+          />
 
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {loading && data && (
-                <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>
-              )}
-              {lastRefresh && (
-                <span className="helper" style={{ fontSize: 12 }}>
-                  Updated {lastRefresh.toLocaleTimeString()}
-                </span>
-              )}
-              <button onClick={loadData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>
-                ↺
-              </button>
-            </div>
-          </div>
-
-          {/* Error */}
           {err && (
             <div className="card">
               <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
             </div>
           )}
 
-          {/* Initial loading */}
-          {loading && !data && (
+          {(loading && !effectiveData) && (
             <div className="card"><p>{t('loading')}</p></div>
           )}
 
-          {/* No errors */}
-          {data && sortedErrorEntities.length === 0 && (
+          {effectiveData && sortedErrorEntities.length === 0 && (
             <div className="card">
-              <p className="helper">No errors in the last 24 hours.</p>
+              <p className="helper">No errors in the last {noDataPeriod}.</p>
             </div>
           )}
 
-          {/* Charts grid */}
-          {data && sortedErrorEntities.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-              gap: 12,
-            }}>
+          {effectiveData && sortedErrorEntities.length > 0 && (
+            <div style={gridStyle}>
               {sortedErrorEntities.map(entity => (
                 <EntityChart
                   key={entity.id}
@@ -468,6 +563,9 @@ export default function StatsLogs() {
                   windowStart={windowStart}
                   tz={tz}
                   allActions={errorActions}
+                  bucketCount={bucketCount}
+                  bucketSec={bucketSec}
+                  mode={chartMode}
                 />
               ))}
             </div>
@@ -502,8 +600,8 @@ export default function StatsLogs() {
           )}
 
           {websiteData && websiteData.entities[0]?.total > 0 && (() => {
-            const entity = websiteData.entities[0]
-            const ws = new Date(websiteData.window_start)
+            const entity        = websiteData.entities[0]
+            const ws            = new Date(websiteData.window_start)
             const websiteActions = Array.from(new Set(entity.rows.map(r => r.action)))
             return (
               <EntityChart
@@ -511,6 +609,9 @@ export default function StatsLogs() {
                 windowStart={ws}
                 tz="UTC"
                 allActions={websiteActions}
+                bucketCount={96}
+                bucketSec={900}
+                mode="24h"
               />
             )
           })()}

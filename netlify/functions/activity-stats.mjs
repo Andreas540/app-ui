@@ -80,8 +80,16 @@ export async function handler(event) {
 
   const url = new URL(event.rawUrl || `http://x${event.path}`)
   const tenantId = url.searchParams.get('tenant_id') || null
+  const period   = url.searchParams.get('period')    || '24h'
 
-  const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const PERIOD_CFG = {
+    '7d':  { ms: 7  * 24 * 3600 * 1000, bucketSec: 3600,  bucketCount: 168 },
+    '30d': { ms: 30 * 24 * 3600 * 1000, bucketSec: 86400, bucketCount: 30  },
+  }
+  const { ms: windowMs, bucketSec, bucketCount } =
+    PERIOD_CFG[period] ?? { ms: 24 * 3600 * 1000, bucketSec: 900, bucketCount: 96 }
+
+  const windowStart = new Date(Date.now() - windowMs)
   const windowStartIso = windowStart.toISOString()
   const windowStartEpoch = Math.floor(windowStart.getTime() / 1000)
   const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
@@ -92,8 +100,8 @@ export async function handler(event) {
       // ── Global view: group by tenant ──────────────────────────────────────
       const rows = await sql`
         SELECT
-          GREATEST(0, LEAST(95,
-            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / 900)
+          GREATEST(0, LEAST(${bucketCount - 1},
+            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / ${bucketSec})
           ))::int                                        AS bucket_index,
           action,
           COALESCE(tenant_id::text, 'system')           AS entity_id,
@@ -101,7 +109,7 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          timestamp >= NOW() - INTERVAL '24 hours'
+          timestamp >= ${windowStartIso}::timestamptz
           AND action NOT IN ('verify_token')
           AND NOT (email = ANY(${superAdminEmails}) AND tenant_id IS NOT NULL)
         GROUP BY 1, 2, 3, 4
@@ -110,7 +118,10 @@ export async function handler(event) {
 
       return cors(200, {
         view: 'global',
+        period,
         window_start: windowStartIso,
+        bucket_count: bucketCount,
+        bucket_sec: bucketSec,
         tz: 'America/New_York',
         entities: groupRows(rows),
       })
@@ -123,8 +134,8 @@ export async function handler(event) {
 
       const rows = await sql`
         SELECT
-          GREATEST(0, LEAST(95,
-            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / 900)
+          GREATEST(0, LEAST(${bucketCount - 1},
+            FLOOR((EXTRACT(EPOCH FROM timestamp) - ${windowStartEpoch}) / ${bucketSec})
           ))::int                                        AS bucket_index,
           action,
           COALESCE(user_id::text, 'system')             AS entity_id,
@@ -132,7 +143,7 @@ export async function handler(event) {
           COUNT(*)::int                                  AS count
         FROM user_activity_log
         WHERE
-          timestamp >= NOW() - INTERVAL '24 hours'
+          timestamp >= ${windowStartIso}::timestamptz
           AND tenant_id = ${tenantId}::uuid
           AND action NOT IN ('verify_token')
           AND (email IS NULL OR email != ALL(${superAdminEmails}))
@@ -142,7 +153,10 @@ export async function handler(event) {
 
       return cors(200, {
         view: 'tenant',
+        period,
         window_start: windowStartIso,
+        bucket_count: bucketCount,
+        bucket_sec: bucketSec,
         tz,
         entities: groupRows(rows),
       })
