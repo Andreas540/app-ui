@@ -78,6 +78,9 @@ export interface TenantConfig {
     selectableSkins: ('default' | 'vintage' | 'pool')[]
     selectableModes: ('dark' | 'light')[]
   }
+  special: {
+    paymentProvidersDisabled: boolean
+  }
   frontPageKey: string | null
 }
 
@@ -150,6 +153,9 @@ export const defaultConfig: TenantConfig = {
     defaultMode: 'dark',
     selectableSkins: ['default', 'vintage'],
     selectableModes: ['dark', 'light'],
+  },
+  special: {
+    paymentProvidersDisabled: false,
   },
   frontPageKey: null,
 }

@@ -15,6 +15,7 @@ import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
 import TenantAdminProductSettingsTab from './TenantAdminProductSettingsTab'
 import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 interface TenantUser {
   id: string
@@ -838,6 +839,8 @@ export default function TenantAdmin() {
 
         {/* Tab row — dropdown on mobile, grid buttons on desktop (max 8 per row, alphabetical) */}
         {(() => {
+          const tenantId = localStorage.getItem('activeTenantId') || ''
+          const paymentProvidersDisabled = getTenantConfig(tenantId).special?.paymentProvidersDisabled ?? false
           const tabs: { id: typeof activeTab; label: string }[] = [
             { id: 'booking',           label: t('tenantAdmin.tabBooking') },
             { id: 'cash',              label: t('tenantAdmin.tabCash') },
@@ -861,21 +864,25 @@ export default function TenantAdmin() {
                 style={{ marginBottom: 20 }}
               >
                 {tabs.map(tab => (
-                  <option key={tab.id} value={tab.id}>{tab.label}</option>
+                  <option key={tab.id} value={tab.id} disabled={tab.id === 'payment-providers' && paymentProvidersDisabled}>{tab.label}</option>
                 ))}
               </select>
 
               <div className="tenant-admin-tab-buttons" style={{ gap: 8, marginBottom: 20 }}>
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={activeTab === tab.id ? 'primary' : ''}
-                    style={{ height: 36, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+                {tabs.map(tab => {
+                  const isDisabled = tab.id === 'payment-providers' && paymentProvidersDisabled
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => !isDisabled && setActiveTab(tab.id)}
+                      className={activeTab === tab.id ? 'primary' : ''}
+                      disabled={isDisabled}
+                      style={{ height: 36, minWidth: 0, fontSize: 14, padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isDisabled ? 0.4 : undefined, cursor: isDisabled ? 'not-allowed' : undefined }}
+                    >
+                      {tab.label}
+                    </button>
+                  )
+                })}
               </div>
             </>
           )

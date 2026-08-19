@@ -180,6 +180,12 @@ export default function SuperAdmin() {
   const [editingGeoTimezone, setEditingGeoTimezone] = useState('UTC')
   const [savingGeo, setSavingGeo] = useState(false)
 
+  // Special settings management
+  const [managingSpecialTenantId,   setManagingSpecialTenantId]   = useState<string | null>(null)
+  const [managingSpecialTenantName, setManagingSpecialTenantName] = useState('')
+  const [specialPaymentProvidersDisabled, setSpecialPaymentProvidersDisabled] = useState(false)
+  const [savingSpecial, setSavingSpecial] = useState(false)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -683,6 +689,42 @@ export default function SuperAdmin() {
     } catch {}
   }
 
+  async function openSpecialSettings(tenant: Tenant) {
+    setManagingSpecialTenantId(tenant.id)
+    setManagingSpecialTenantName(tenant.name)
+    setSpecialPaymentProvidersDisabled(false)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res  = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${tenant.id}`, { headers: getAuthHeaders() })
+      const data = await res.json()
+      setSpecialPaymentProvidersDisabled(data.uiConfig?.special?.paymentProvidersDisabled ?? false)
+    } catch { /* keep default false */ }
+  }
+
+  async function handleSaveSpecialSettings() {
+    if (!managingSpecialTenantId) return
+    try {
+      setSavingSpecial(true)
+      const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const getRes = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${managingSpecialTenantId}`, { headers: getAuthHeaders() })
+      const current = await getRes.json()
+      const merged  = {
+        ...(current.uiConfig || {}),
+        special: { ...((current.uiConfig || {}).special || {}), paymentProvidersDisabled: specialPaymentProvidersDisabled },
+      }
+      await fetch(`${base}/api/super-admin`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateUiConfig', tenantId: managingSpecialTenantId, uiConfig: merged }),
+      })
+      setManagingSpecialTenantId(null)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to save special settings')
+    } finally {
+      setSavingSpecial(false)
+    }
+  }
+
   function openManageGeo(tenant: Tenant) {
     setManagingGeoTenantId(tenant.id)
     setManagingGeoTenantName(tenant.name)
@@ -1161,6 +1203,12 @@ async function handleSaveStripeCustomerId() {
                         style={{ height: 36, padding: '0 16px', fontSize: 13 }}
                       >
                         {t('superAdmin.geo')}
+                      </button>
+                      <button
+                        onClick={() => openSpecialSettings(tenant)}
+                        style={{ height: 36, padding: '0 16px', fontSize: 13 }}
+                      >
+                        Special
                       </button>
                     </div>
                   </div>
@@ -2935,6 +2983,50 @@ const available = max - used
                 onClick={() => setManagingGeoTenantId(null)}
                 style={{ height: CONTROL_H, flex: 1 }}
               >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Special Settings Modal */}
+      {managingSpecialTenantId && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setManagingSpecialTenantId(null)}
+        >
+          <div className="card" style={{ maxWidth: 440, width: '100%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Special Settings: {managingSpecialTenantName}</h3>
+            <p className="helper" style={{ marginTop: 4, marginBottom: 16 }}>
+              Override specific features for this tenant. Changes take effect after the tenant user reloads the page.
+            </p>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={specialPaymentProvidersDisabled}
+                onChange={(e) => setSpecialPaymentProvidersDisabled(e.target.checked)}
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+              <div>
+                <div style={{ fontWeight: 500, fontSize: 14 }}>Deactivate Payment Providers</div>
+                <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
+                  Greys out Stripe and AMP settings in Tenant Admin. Existing payment functionality is not affected.
+                </div>
+              </div>
+            </label>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <button
+                className="primary"
+                onClick={handleSaveSpecialSettings}
+                disabled={savingSpecial}
+                style={{ height: CONTROL_H, flex: 1 }}
+              >
+                {savingSpecial ? t('superAdmin.saving') : t('save')}
+              </button>
+              <button onClick={() => setManagingSpecialTenantId(null)} style={{ height: CONTROL_H, flex: 1 }}>
                 {t('cancel')}
               </button>
             </div>
