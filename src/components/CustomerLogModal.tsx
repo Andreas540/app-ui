@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useLocale } from '../contexts/LocaleContext'
 import Modal from './Modal'
 import OrderDetailModal from './OrderDetailModal'
 import PaymentDetailModal from './PaymentDetailModal'
@@ -35,15 +36,26 @@ interface LogItem {
   direction?: 'inbound' | 'outbound'
 }
 
-async function fetchLog(customerId: string): Promise<LogItem[]> {
+// Timestamps from TIMESTAMPTZ columns (e.g. created_at) arrive as UTC ISO strings.
+// Convert any such date to a YYYY-MM-DD in the tenant's timezone so formatDate
+// displays the correct calendar day. DATE columns (order_date, payment_date) are
+// already YYYY-MM-DD and pass through unchanged.
+function toTzDate(raw: string, timezone: string): string {
+  if (!raw || !raw.includes('T')) return raw
+  try { return new Date(raw).toLocaleDateString('en-CA', { timeZone: timezone }) }
+  catch { return raw.slice(0, 10) }
+}
+
+async function fetchLog(customerId: string, timezone: string): Promise<LogItem[]> {
   const res = await fetch(`/.netlify/functions/customer-log?customer_id=${customerId}`, {
     headers: getAuthHeaders(),
   })
   if (!res.ok) throw new Error(await res.text())
-  return (await res.json()).items as LogItem[]
+  const items = (await res.json()).items as LogItem[]
+  return items.map(item => ({ ...item, date: toTzDate(item.date, timezone) }))
 }
 
-async function fetchMessages(customerId: string): Promise<LogItem[]> {
+async function fetchMessages(customerId: string, timezone: string): Promise<LogItem[]> {
   const res = await fetch(`/.netlify/functions/customer-messages?customer_id=${customerId}`, {
     headers: getAuthHeaders(),
   })
@@ -52,7 +64,7 @@ async function fetchMessages(customerId: string): Promise<LogItem[]> {
   return (data.messages ?? []).map((m: any) => ({
     id: `msg-${m.id}`,
     kind: 'message' as const,
-    date: m.created_at,
+    date: new Date(m.created_at).toLocaleDateString('en-CA', { timeZone: timezone }),
     body: m.body,
     direction: m.direction,
   }))
@@ -273,6 +285,7 @@ export default function CustomerLogModal({
   customerName: string
 }) {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const [items, setItems] = useState<LogItem[]>([])
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -285,7 +298,7 @@ export default function CustomerLogModal({
   useEffect(() => {
     if (!isOpen) return
     setLoading(true); setErr(null)
-    Promise.all([fetchLog(customerId), fetchMessages(customerId)])
+    Promise.all([fetchLog(customerId, timezone), fetchMessages(customerId, timezone)])
       .then(([logItems, msgItems]) => {
         const merged = [...logItems, ...msgItems].sort((a, b) => {
           // notes stay anchored (they have no independent timestamp in sort context), preserve log order
@@ -302,7 +315,8 @@ export default function CustomerLogModal({
   // afterItemId = null → top of list.
   // afterItemId = id  → right after that item (and after any notes already there).
   async function handleSaveNote(noteText: string, afterItemId: string | null) {
-    const newItem = await postNote(customerId, noteText, afterItemId)
+    const raw = await postNote(customerId, noteText, afterItemId)
+    const newItem = { ...raw, date: toTzDate(raw.date, timezone) }
     setItems(prev => {
       if (afterItemId === null) {
         // Top note: prepend (newest first among top notes)
