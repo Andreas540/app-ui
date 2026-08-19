@@ -80,16 +80,22 @@ export async function handler(event) {
 
   const url = new URL(event.rawUrl || `http://x${event.path}`)
   const tenantId = url.searchParams.get('tenant_id') || null
-  const period   = url.searchParams.get('period')    || '24h'
 
-  const PERIOD_CFG = {
-    '7d':  { ms: 7  * 24 * 3600 * 1000, bucketSec: 3600,  bucketCount: 168 },
-    '30d': { ms: 30 * 24 * 3600 * 1000, bucketSec: 86400, bucketCount: 30  },
+  // hours: 1–2160 (3 months). Bucket strategy auto-selected from window size.
+  const hours = Math.max(1, Math.min(2160, parseInt(url.searchParams.get('hours') || '24') || 24))
+  let bucketSec, bucketCount
+  if (hours <= 24) {
+    bucketSec   = 900
+    bucketCount = hours * 4         // 15-min buckets, up to 96
+  } else if (hours <= 168) {
+    bucketSec   = 3600
+    bucketCount = hours             // 1-hour buckets, up to 168
+  } else {
+    bucketSec   = 86400
+    bucketCount = Math.ceil(hours / 24)  // 1-day buckets, up to 90
   }
-  const { ms: windowMs, bucketSec, bucketCount } =
-    PERIOD_CFG[period] ?? { ms: 24 * 3600 * 1000, bucketSec: 900, bucketCount: 96 }
 
-  const windowStart = new Date(Date.now() - windowMs)
+  const windowStart = new Date(Date.now() - hours * 3600 * 1000)
   const windowStartIso = windowStart.toISOString()
   const windowStartEpoch = Math.floor(windowStart.getTime() / 1000)
   const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
@@ -118,7 +124,7 @@ export async function handler(event) {
 
       return cors(200, {
         view: 'global',
-        period,
+        hours,
         window_start: windowStartIso,
         bucket_count: bucketCount,
         bucket_sec: bucketSec,
@@ -153,7 +159,7 @@ export async function handler(event) {
 
       return cors(200, {
         view: 'tenant',
-        period,
+        hours,
         window_start: windowStartIso,
         bucket_count: bucketCount,
         bucket_sec: bucketSec,

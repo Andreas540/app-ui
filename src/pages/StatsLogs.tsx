@@ -1,9 +1,10 @@
 // src/pages/StatsLogs.tsx
 // SuperAdmin-only activity dashboard.
 // Global view: one chart per tenant.  Tenant view: one chart per user.
-// 24h: 96 × 15-min stacked bars in a multi-column grid.
-// 7d:  168 × 1-hour simple bars, one full-width row per entity.
-// 30d: 30  × 1-day  simple bars, one full-width row per entity.
+// Slider selects window from 1h to 3 months; bucket strategy auto-selected:
+//   ≤24h  → 15-min stacked bars in a grid
+//   >24h–7d → hourly simple bars, full-width rows
+//   >7d   → daily simple bars, full-width rows
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
@@ -63,14 +64,59 @@ function actionColor(action: string): string {
   return FALLBACK_PALETTE[Math.abs(h) % FALLBACK_PALETTE.length]
 }
 
+// ─── Period slider ────────────────────────────────────────────────────────────
+
+// Stepped values in hours. The slider index maps to these.
+const STEPS         = [1, 3, 6, 12, 24, 48, 72, 168, 336, 720, 2160]
+const STEP_LABELS   = ['1h', '3h', '6h', '12h', '24h', '2d', '3d', '7d', '14d', '30d', '3mo']
+const STEP_DISPLAY  = ['1 hour', '3 hours', '6 hours', '12 hours', '24 hours', '2 days', '3 days', '7 days', '14 days', '30 days', '3 months']
+const DEFAULT_STEP  = 4  // index for 24h
+
+function getConfig(hours: number): { bucketSec: number; bucketCount: number; mode: '24h' | 'extended' } {
+  if (hours <= 24)  return { bucketSec: 900,   bucketCount: hours * 4,        mode: '24h' }
+  if (hours <= 168) return { bucketSec: 3600,  bucketCount: hours,            mode: 'extended' }
+  return                   { bucketSec: 86400, bucketCount: Math.ceil(hours / 24), mode: 'extended' }
+}
+
+function getTickStep(bucketCount: number, bucketSec: number): number {
+  if (bucketSec < 3600)  return 8    // 15-min → label every 2h
+  if (bucketSec < 86400) return 24   // 1-hour → label every day
+  if (bucketCount <= 14) return 2    // daily ≤14d → every 2 days
+  if (bucketCount <= 31) return 5    // daily ≤31d → every 5 days
+  return 7                           // daily >31d → every week
+}
+
+const SLIDER_CSS = `
+  .stats-period-slider {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px;
+    background: var(--border, #e5e7eb);
+    outline: none; cursor: pointer;
+  }
+  .stats-period-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--primary, #3b82f6);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    cursor: pointer;
+  }
+  .stats-period-slider::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--primary, #3b82f6);
+    border: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    cursor: pointer;
+  }
+`
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Period = '24h' | '7d' | '30d'
 interface ActivityRow { bucket_index: number; action: string; count: number }
 interface Entity      { id: string; name: string; total: number; rows: ActivityRow[] }
 interface StatsData   {
   view: 'global' | 'tenant'
-  period: string
+  hours: number
   window_start: string
   bucket_count: number
   bucket_sec: number
@@ -80,14 +126,7 @@ interface StatsData   {
 type SortOrder = 'activity' | 'name'
 type ReportTab = 'activity' | 'errors' | 'website'
 
-const PERIOD_LABELS: Record<Period, string> = { '24h': '24h', '7d': '7d', '30d': '30d' }
-const PERIOD_CFG: Record<Period, { bucketCount: number; bucketSec: number }> = {
-  '24h': { bucketCount: 96,  bucketSec: 900 },
-  '7d':  { bucketCount: 168, bucketSec: 3600 },
-  '30d': { bucketCount: 30,  bucketSec: 86400 },
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Chart helpers ────────────────────────────────────────────────────────────
 
 function formatBucketLabel(t: Date, tz: string, bucketSec: number): string {
   if (bucketSec < 3600) {
@@ -106,12 +145,8 @@ function formatBucketLabel(t: Date, tz: string, bucketSec: number): string {
 }
 
 function buildChartData(
-  entity: Entity,
-  windowStart: Date,
-  tz: string,
-  allActions: string[],
-  bucketCount: number,
-  bucketSec: number,
+  entity: Entity, windowStart: Date, tz: string,
+  allActions: string[], bucketCount: number, bucketSec: number,
 ): Record<string, any>[] {
   const data = Array.from({ length: bucketCount }, (_, i) => {
     const t = new Date(windowStart.getTime() + i * bucketSec * 1000)
@@ -127,16 +162,13 @@ function buildChartData(
 }
 
 function buildSimpleData(
-  entity: Entity,
-  windowStart: Date,
-  tz: string,
-  bucketCount: number,
-  bucketSec: number,
+  entity: Entity, windowStart: Date, tz: string,
+  bucketCount: number, bucketSec: number,
 ): { time: string; total: number }[] {
-  const data = Array.from({ length: bucketCount }, (_, i) => {
-    const t = new Date(windowStart.getTime() + i * bucketSec * 1000)
-    return { time: formatBucketLabel(t, tz, bucketSec), total: 0 }
-  })
+  const data = Array.from({ length: bucketCount }, (_, i) => ({
+    time: formatBucketLabel(new Date(windowStart.getTime() + i * bucketSec * 1000), tz, bucketSec),
+    total: 0,
+  }))
   entity.rows.forEach(r => {
     const i = r.bucket_index
     if (i >= 0 && i < bucketCount) data[i].total += r.count
@@ -206,7 +238,7 @@ function EntityChart({
 }) {
   if (mode === 'extended') {
     const simpleData = buildSimpleData(entity, windowStart, tz, bucketCount, bucketSec)
-    const tickStep   = bucketSec >= 86400 ? 5 : 24
+    const tStep      = getTickStep(bucketCount, bucketSec)
     const minWidth   = Math.max(300, bucketCount * (bucketSec >= 86400 ? 14 : 5))
     return (
       <div className="card" style={{ padding: '12px 12px 8px 12px' }}>
@@ -220,13 +252,7 @@ function EntityChart({
           <div style={{ minWidth }}>
             <ResponsiveContainer width="100%" height={80}>
               <BarChart data={simpleData} margin={{ top: 2, right: 0, bottom: 14, left: 0 }} barCategoryGap={2}>
-                <XAxis
-                  dataKey="time"
-                  tick={<XTick step={tickStep} />}
-                  tickLine={false}
-                  axisLine={false}
-                  interval={0}
-                />
+                <XAxis dataKey="time" tick={<XTick step={tStep} />} tickLine={false} axisLine={false} interval={0} />
                 <YAxis allowDecimals={false} width={24} tick={<YTick />} tickLine={false} axisLine={false} />
                 <Tooltip content={<SimpleTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="total" fill="#60a5fa" isAnimationActive={false} radius={[1, 1, 0, 0] as any} />
@@ -240,6 +266,7 @@ function EntityChart({
 
   const chartData     = buildChartData(entity, windowStart, tz, allActions, bucketCount, bucketSec)
   const activeActions = allActions.filter(a => entity.rows.some(r => r.action === a))
+  const tStep         = getTickStep(bucketCount, bucketSec)
   return (
     <div className="card" style={{ padding: '12px 12px 8px 12px' }}>
       <div style={{ marginBottom: 6 }}>
@@ -247,7 +274,7 @@ function EntityChart({
           {entity.name}
         </div>
         <div className="helper" style={{ fontSize: 11, marginTop: 2 }}>
-          {entity.total.toLocaleString()} action{entity.total !== 1 ? 's' : ''} · 24h
+          {entity.total.toLocaleString()} action{entity.total !== 1 ? 's' : ''}
         </div>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', marginBottom: 6 }}>
@@ -260,7 +287,7 @@ function EntityChart({
       </div>
       <ResponsiveContainer width="100%" height={120}>
         <BarChart data={chartData} margin={{ top: 2, right: 0, bottom: 14, left: 0 }} barCategoryGap={0} barGap={0}>
-          <XAxis dataKey="time" tick={<XTick />} tickLine={false} axisLine={false} interval={0} />
+          <XAxis dataKey="time" tick={<XTick step={tStep} />} tickLine={false} axisLine={false} interval={0} />
           <YAxis allowDecimals={false} width={24} tick={<YTick />} tickLine={false} axisLine={false} />
           <Tooltip content={<ActivityTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
           {allActions.map(a => (
@@ -272,43 +299,17 @@ function EntityChart({
   )
 }
 
-// ─── Period selector ──────────────────────────────────────────────────────────
-
-function PeriodSelector({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
-  return (
-    <div style={{ display: 'flex', gap: 0 }}>
-      {(Object.keys(PERIOD_LABELS) as Period[]).map((p, i, arr) => (
-        <button
-          key={p}
-          onClick={() => onChange(p)}
-          style={{
-            height: 36,
-            padding: '0 14px',
-            fontSize: 13,
-            border: '1px solid var(--border)',
-            borderRight: i < arr.length - 1 ? 'none' : undefined,
-            borderRadius: i === 0 ? '6px 0 0 6px' : i === arr.length - 1 ? '0 6px 6px 0' : 0,
-            background: period === p ? 'var(--primary)' : 'transparent',
-            color: period === p ? '#fff' : 'inherit',
-            cursor: 'pointer',
-          }}
-        >
-          {PERIOD_LABELS[p]}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// ─── Controls bar (shared between activity + errors tabs) ─────────────────────
+// ─── Controls bar ─────────────────────────────────────────────────────────────
 
 function ControlsBar({
-  sortOrder, onSortChange, period, onPeriodChange, loading, data, lastRefresh, onRefresh,
+  sortOrder, onSortChange,
+  sliderIdx, onSliderChange,
+  loading, data, lastRefresh, onRefresh,
 }: {
   sortOrder: SortOrder
   onSortChange: (s: SortOrder) => void
-  period: Period
-  onPeriodChange: (p: Period) => void
+  sliderIdx: number
+  onSliderChange: (i: number) => void
   loading: boolean
   data: StatsData | null
   lastRefresh: Date | null
@@ -317,6 +318,9 @@ function ControlsBar({
   const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <style dangerouslySetInnerHTML={{ __html: SLIDER_CSS }} />
+
+      {/* Sort */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{t('sort')}:</span>
         <select value={sortOrder} onChange={e => onSortChange(e.target.value as SortOrder)} style={{ height: 36 }}>
@@ -325,13 +329,34 @@ function ControlsBar({
         </select>
       </div>
 
-      <PeriodSelector period={period} onChange={onPeriodChange} />
+      {/* Period slider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+          {STEP_LABELS[0]}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={STEPS.length - 1}
+          value={sliderIdx}
+          onChange={e => onSliderChange(Number(e.target.value))}
+          className="stats-period-slider"
+          style={{ flex: 1 }}
+        />
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+          {STEP_LABELS[STEPS.length - 1]}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', minWidth: 72 }}>
+          Last {STEP_DISPLAY[sliderIdx]}
+        </span>
+      </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Refresh */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {loading && data && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
         {lastRefresh && !loading && (
           <span className="helper" style={{ fontSize: 12 }}>
-            Updated {lastRefresh.toLocaleTimeString()}
+            {lastRefresh.toLocaleTimeString()}
           </span>
         )}
         <button onClick={onRefresh} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
@@ -346,23 +371,34 @@ export default function StatsLogs() {
   const { t } = useTranslation()
   const [activeReport, setActiveReport] = useState<ReportTab>('activity')
   const [sortOrder,    setSortOrder]    = useState<SortOrder>('activity')
-  const [period,       setPeriod]       = useState<Period>('24h')
-  const [data,         setData]         = useState<StatsData | null>(null)
-  const [loading,      setLoading]      = useState(true)
-  const [err,          setErr]          = useState<string | null>(null)
-  const [lastRefresh,  setLastRefresh]  = useState<Date | null>(null)
+
+  // sliderIdx is what the slider shows (updates instantly on drag).
+  // fetchIdx is debounced: triggers the actual API call.
+  const [sliderIdx, setSliderIdx] = useState(DEFAULT_STEP)
+  const [fetchIdx,  setFetchIdx]  = useState(DEFAULT_STEP)
+
+  useEffect(() => {
+    const t = setTimeout(() => setFetchIdx(sliderIdx), 350)
+    return () => clearTimeout(t)
+  }, [sliderIdx])
+
+  const [data,        setData]        = useState<StatsData | null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const [err,         setErr]         = useState<string | null>(null)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
   const [websiteData,    setWebsiteData]    = useState<StatsData | null>(null)
   const [websiteLoading, setWebsiteLoading] = useState(false)
   const [websiteErr,     setWebsiteErr]     = useState<string | null>(null)
 
   const activeTenantId = localStorage.getItem('activeTenantId')
+  const hours          = STEPS[fetchIdx]
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const params = new URLSearchParams({ period })
+      const params = new URLSearchParams({ hours: String(hours) })
       if (activeTenantId) params.set('tenant_id', activeTenantId)
       const res = await fetch(`${base}/api/activity-stats?${params}`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error(`Failed to load stats (${res.status})`)
@@ -374,11 +410,12 @@ export default function StatsLogs() {
     } finally {
       setLoading(false)
     }
-  }, [activeTenantId, period])
+  }, [activeTenantId, hours])
 
+  // Auto-refresh only for the 24h window; longer periods change slowly
   useEffect(() => {
     loadData()
-    if (period !== '24h') return
+    if (hours > 24) return
     const id = setInterval(loadData, 30_000)
     return () => clearInterval(id)
   }, [loadData])
@@ -406,12 +443,12 @@ export default function StatsLogs() {
   }, [activeReport, loadWebsiteData])
 
   // ── Derived data ─────────────────────────────────────────────────────────────
-  // Use data only when its period matches the selected period (avoids stale chart flash)
-  const effectiveData = data?.period === period ? data : null
 
-  const { bucketCount, bucketSec } = PERIOD_CFG[period]
-  const chartMode = period === '24h' ? '24h' as const : 'extended' as const
-  const isExtended = period !== '24h'
+  // Guard against showing data from a previous period while a new fetch is in flight
+  const effectiveData = data?.hours === hours ? data : null
+
+  const { bucketSec, bucketCount, mode: chartMode } = getConfig(hours)
+  const isExtended = chartMode === 'extended'
 
   const allActions = (() => {
     if (!effectiveData) return []
@@ -422,8 +459,7 @@ export default function StatsLogs() {
 
   const sortedEntities = effectiveData
     ? [...effectiveData.entities].sort((a, b) =>
-        sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total,
-      )
+        sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total)
     : []
 
   const windowStart = effectiveData ? new Date(effectiveData.window_start) : new Date()
@@ -440,8 +476,7 @@ export default function StatsLogs() {
         .filter(e => e.total > 0)
     : []
   const sortedErrorEntities = [...errorEntities].sort((a, b) =>
-    sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total,
-  )
+    sortOrder === 'name' ? a.name.localeCompare(b.name) : b.total - a.total)
 
   const CONTROL_H = 44
   const gridStyle = {
@@ -449,12 +484,12 @@ export default function StatsLogs() {
     gridTemplateColumns: isExtended ? '1fr' : 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
     gap: 12,
   }
-  const noDataPeriod = PERIOD_LABELS[period]
+  const noDataLabel = `last ${STEP_DISPLAY[sliderIdx]}`
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="page-wide">
-      {/* ── Top card: report buttons ───────────────────────────────────── */}
+      {/* ── Report tabs ────────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: 16 }}>
         <h3 style={{ margin: '0 0 4px 0' }}>Stats &amp; Logs</h3>
         <p className="helper" style={{ margin: '0 0 16px 0', fontSize: 12 }}>
@@ -490,38 +525,21 @@ export default function StatsLogs() {
         <>
           <ControlsBar
             sortOrder={sortOrder} onSortChange={setSortOrder}
-            period={period} onPeriodChange={setPeriod}
+            sliderIdx={sliderIdx} onSliderChange={setSliderIdx}
             loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
           />
 
-          {err && (
-            <div className="card">
-              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
-            </div>
-          )}
-
-          {(loading && !effectiveData) && (
-            <div className="card"><p>{t('loading')}</p></div>
-          )}
-
+          {err && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>}
+          {loading && !effectiveData && <div className="card"><p>{t('loading')}</p></div>}
           {effectiveData && sortedEntities.length === 0 && (
-            <div className="card">
-              <p className="helper">No activity in the last {noDataPeriod}.</p>
-            </div>
+            <div className="card"><p className="helper">No activity in the {noDataLabel}.</p></div>
           )}
-
           {effectiveData && sortedEntities.length > 0 && (
             <div style={gridStyle}>
               {sortedEntities.map(entity => (
                 <EntityChart
-                  key={entity.id}
-                  entity={entity}
-                  windowStart={windowStart}
-                  tz={tz}
-                  allActions={allActions}
-                  bucketCount={bucketCount}
-                  bucketSec={bucketSec}
-                  mode={chartMode}
+                  key={entity.id} entity={entity} windowStart={windowStart} tz={tz}
+                  allActions={allActions} bucketCount={bucketCount} bucketSec={bucketSec} mode={chartMode}
                 />
               ))}
             </div>
@@ -534,38 +552,21 @@ export default function StatsLogs() {
         <>
           <ControlsBar
             sortOrder={sortOrder} onSortChange={setSortOrder}
-            period={period} onPeriodChange={setPeriod}
+            sliderIdx={sliderIdx} onSliderChange={setSliderIdx}
             loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
           />
 
-          {err && (
-            <div className="card">
-              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p>
-            </div>
-          )}
-
-          {(loading && !effectiveData) && (
-            <div className="card"><p>{t('loading')}</p></div>
-          )}
-
+          {err && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>}
+          {loading && !effectiveData && <div className="card"><p>{t('loading')}</p></div>}
           {effectiveData && sortedErrorEntities.length === 0 && (
-            <div className="card">
-              <p className="helper">No errors in the last {noDataPeriod}.</p>
-            </div>
+            <div className="card"><p className="helper">No errors in the {noDataLabel}.</p></div>
           )}
-
           {effectiveData && sortedErrorEntities.length > 0 && (
             <div style={gridStyle}>
               {sortedErrorEntities.map(entity => (
                 <EntityChart
-                  key={entity.id}
-                  entity={entity}
-                  windowStart={windowStart}
-                  tz={tz}
-                  allActions={errorActions}
-                  bucketCount={bucketCount}
-                  bucketSec={bucketSec}
-                  mode={chartMode}
+                  key={entity.id} entity={entity} windowStart={windowStart} tz={tz}
+                  allActions={errorActions} bucketCount={bucketCount} bucketSec={bucketSec} mode={chartMode}
                 />
               ))}
             </div>
@@ -577,41 +578,23 @@ export default function StatsLogs() {
       {activeReport === 'website' && (
         <>
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            {websiteLoading && websiteData && (
-              <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>
-            )}
+            {websiteLoading && websiteData && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
             <button onClick={loadWebsiteData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
           </div>
 
-          {websiteErr && (
-            <div className="card">
-              <p style={{ color: 'var(--color-error)' }}>{t('error')}: {websiteErr}</p>
-            </div>
-          )}
-
-          {websiteLoading && !websiteData && (
-            <div className="card"><p>{t('loading')}</p></div>
-          )}
-
+          {websiteErr && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {websiteErr}</p></div>}
+          {websiteLoading && !websiteData && <div className="card"><p>{t('loading')}</p></div>}
           {websiteData && websiteData.entities[0]?.total === 0 && (
-            <div className="card">
-              <p className="helper">No website events in the last 24 hours.</p>
-            </div>
+            <div className="card"><p className="helper">No website events in the last 24 hours.</p></div>
           )}
-
           {websiteData && websiteData.entities[0]?.total > 0 && (() => {
-            const entity        = websiteData.entities[0]
-            const ws            = new Date(websiteData.window_start)
+            const entity         = websiteData.entities[0]
+            const ws             = new Date(websiteData.window_start)
             const websiteActions = Array.from(new Set(entity.rows.map(r => r.action)))
             return (
               <EntityChart
-                entity={entity}
-                windowStart={ws}
-                tz="UTC"
-                allActions={websiteActions}
-                bucketCount={96}
-                bucketSec={900}
-                mode="24h"
+                entity={entity} windowStart={ws} tz="UTC"
+                allActions={websiteActions} bucketCount={96} bucketSec={900} mode="24h"
               />
             )
           })()}
