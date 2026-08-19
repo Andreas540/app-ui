@@ -1580,6 +1580,7 @@ async function handleSaveStripeCustomerId() {
                         {[
                           { id: 'new-product', label: t('products', { ns: 'navigation' }), file: 'NewProduct.tsx', route: '/products/new' },
                           { id: 'edit-product', label: `${t('products.editProductTitle')} / Service`, file: 'EditProduct.tsx', route: '/products/edit' },
+                          { id: 'supply-chain', label: 'Supply Chain Overview', file: 'SupplyChainOverview.tsx', route: '/supply-chain' },
                         ].map(page => (
                           <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 6 }}>
                             <div>
@@ -1590,6 +1591,8 @@ async function handleSaveStripeCustomerId() {
                                 const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
                                 const baseDefaults = page.id === 'new-product'
                                   ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
+                                  : page.id === 'supply-chain'
+                                  ? { demand: true, recentDeliveries: true, production: true, notDelivered: true, warehouse: true, inCustoms: true, inTransit: true, orderedFromSuppliers: true }
                                   : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
                                 const merged = { ...baseDefaults, ...existing }
                                 setBtFieldConfig(merged)
@@ -1597,7 +1600,7 @@ async function handleSaveStripeCustomerId() {
                                   const svcExisting = (bt.config_defaults as any)?.pages?.['edit-service']?.fields ?? {}
                                   setBtFieldConfigService({ product_category: true, product_subcategory: true, ...svcExisting })
                                   setBtPreviewTab('product')
-                                } else {
+                                } else if (page.id !== 'supply-chain') {
                                   setBtPreviewTab(merged.show_product_tab !== false ? 'product' : 'service')
                                 }
                                 setBtLabelProductCost((bt.config_defaults as any)?.labels?.productCostPerUnit ?? '')
@@ -1836,14 +1839,43 @@ async function handleSaveStripeCustomerId() {
                   {businessTypes.find(bt => bt.id === btPageConfig.btId)?.label} · Page config
                 </div>
                 <div className="helper" style={{ marginTop: 2 }}>
-                  {btPageConfig.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : btPageConfig.pageId === 'edit-product' ? `${t('products.editProductTitle')} / Service` : btPageConfig.pageId}
+                  {btPageConfig.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : btPageConfig.pageId === 'edit-product' ? `${t('products.editProductTitle')} / Service` : 'Supply Chain Overview'}
                 </div>
               </div>
               <button onClick={() => setBtPageConfig(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
             </div>
             {/* Preview */}
             <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
-              {btPageConfig.pageId === 'edit-product' ? (
+              {btPageConfig.pageId === 'supply-chain' ? (
+                <div>
+                  {([
+                    { key: 'demand', label: 'Demand' },
+                    { key: 'recentDeliveries', label: 'Recently Delivered' },
+                    { key: 'production', label: 'Production' },
+                    { key: 'notDelivered', label: 'Not Delivered' },
+                    { key: 'warehouse', label: 'In Warehouse' },
+                    { key: 'inCustoms', label: 'In Customs' },
+                    { key: 'inTransit', label: 'In Transit' },
+                    { key: 'orderedFromSuppliers', label: 'Ordered from Suppliers' },
+                  ] as const).map(({ key, label }) => {
+                    const shown = btFieldConfig[key] !== false
+                    return (
+                      <div key={key} style={{ position: 'relative', opacity: shown ? 1 : 0.35, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '8px 50px 8px 10px', border: `1px solid ${shown ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6, fontSize: 13 }}>
+                          <span style={{ marginRight: 6, fontSize: 10, opacity: 0.5 }}>▶</span>
+                          {label}
+                        </div>
+                        <button
+                          onClick={() => setBtFieldConfig(prev => ({ ...prev, [key]: !shown }))}
+                          style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 8, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}
+                        >
+                          {shown ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : btPageConfig.pageId === 'edit-product' ? (
                 /* Edit Product / Service — toggle switches between independent configs */
                 <>
                   <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>

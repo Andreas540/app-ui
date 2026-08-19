@@ -222,6 +222,8 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
       ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
       : pageId === 'edit-service'
       ? { product_category: true, product_subcategory: true }
+      : pageId === 'supply-chain'
+      ? { demand: true, recentDeliveries: true, production: true, notDelivered: true, warehouse: true, inCustoms: true, inTransit: true, orderedFromSuppliers: true }
       : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
     const btFields: Record<string, boolean> = (user as any)?.businessTypeConfig?.pages?.[pageId]?.fields ?? {}
     return { ...appDefaults, ...btFields }
@@ -243,7 +245,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
       const tenantSvcFields = cfg.pages?.['edit-service']?.fields ?? {}
       setPageFieldConfigService({ ...btSvc, ...tenantSvcFields })
       setPagePreviewTab('product')
-    } else {
+    } else if (pageId !== 'supply-chain') {
       const effective = { ...btEffective, ...tenantFields }
       setPagePreviewTab(effective.show_product_tab !== false ? 'product' : 'service')
     }
@@ -590,6 +592,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
         {([
           { id: 'new-product', label: t('products', { ns: 'navigation' }) },
           { id: 'edit-product', label: `${t('products.editProductTitle')} / Service` },
+          { id: 'supply-chain', label: 'Supply Chain Overview' },
         ] as const).map(page => (
           <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
             <div>
@@ -614,7 +617,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16 }}>Page config</div>
                 <div className="helper" style={{ marginTop: 2 }}>
-                  {pageOverlay.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : `${t('products.editProductTitle')} / Service`}
+                  {pageOverlay.pageId === 'new-product' ? t('products', { ns: 'navigation' }) : pageOverlay.pageId === 'supply-chain' ? 'Supply Chain Overview' : `${t('products.editProductTitle')} / Service`}
                 </div>
               </div>
               <button onClick={() => setPageOverlay(null)} style={{ height: 30, padding: '0 12px', fontSize: 12 }}>Close</button>
@@ -622,7 +625,36 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
             {/* Preview */}
             <div style={{ background: 'var(--bg, #f9fafb)', borderRadius: 8, padding: 16, border: '1px solid var(--line)' }}>
-              {pageOverlay.pageId === 'new-product' ? (
+              {pageOverlay.pageId === 'supply-chain' ? (
+                <div>
+                  {([
+                    { key: 'demand', label: 'Demand' },
+                    { key: 'recentDeliveries', label: 'Recently Delivered' },
+                    { key: 'production', label: 'Production' },
+                    { key: 'notDelivered', label: 'Not Delivered' },
+                    { key: 'warehouse', label: 'In Warehouse' },
+                    { key: 'inCustoms', label: 'In Customs' },
+                    { key: 'inTransit', label: 'In Transit' },
+                    { key: 'orderedFromSuppliers', label: 'Ordered from Suppliers' },
+                  ] as const).map(({ key, label }) => {
+                    const shown = pageFieldConfig[key] !== false
+                    return (
+                      <div key={key} style={{ position: 'relative', opacity: shown ? 1 : 0.35, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '8px 50px 8px 10px', border: `1px solid ${shown ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6, fontSize: 13 }}>
+                          <span style={{ marginRight: 6, fontSize: 10, opacity: 0.5 }}>▶</span>
+                          {label}
+                        </div>
+                        <button
+                          onClick={() => setPageFieldConfig(prev => ({ ...prev, [key]: !shown }))}
+                          style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 8, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}
+                        >
+                          {shown ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : pageOverlay.pageId === 'new-product' ? (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>

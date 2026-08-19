@@ -144,6 +144,17 @@ export default function SupplyChainOverview() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
+  const scSectionFields = getTenantConfig(user?.tenantId).pages['supply-chain']?.fields ?? {}
+  const showSection = {
+    demand:               scSectionFields.demand               !== false,
+    recentDeliveries:     scSectionFields.recentDeliveries     !== false,
+    production:           scSectionFields.production           !== false,
+    notDelivered:         scSectionFields.notDelivered         !== false,
+    warehouse:            scSectionFields.warehouse            !== false,
+    inCustoms:            scSectionFields.inCustoms            !== false,
+    inTransit:            scSectionFields.inTransit            !== false,
+    orderedFromSuppliers: scSectionFields.orderedFromSuppliers !== false,
+  }
   const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
   const inventoryGrid = isRetail
     ? 'minmax(100px, 2fr) repeat(4, minmax(62px, 1fr))'
@@ -667,7 +678,7 @@ export default function SupplyChainOverview() {
       )}
 
       {/* Section: Demand */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.demand ? undefined : 'none' }}>
         <div style={sectionHeaderStyle}>
           <span style={expandIconStyle} onClick={() => toggleSection('demand')}>{expandedSections.demand ? '▼' : '▶'}</span>
           <span onClick={() => toggleSection('demand')} style={{ flex: 1 }}>{t('supplyChain.demand')}</span>
@@ -849,7 +860,7 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* Section 1: Recently delivered */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.recentDeliveries ? undefined : 'none' }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('recentDeliveries')}>
           <span style={expandIconStyle}>{expandedSections.recentDeliveries ? '▼' : '▶'}</span>
           <span>{t('supplyChain.recentlyDelivered')}</span>
@@ -1027,7 +1038,7 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* NEW SECTION: Production */}
-<div style={{ marginTop: 20 }}>
+<div style={{ marginTop: 20, display: showSection.production ? undefined : 'none' }}>
   <div style={sectionHeaderStyle} onClick={() => toggleSection('production')}>
     <span style={expandIconStyle}>{expandedSections.production ? '▼' : '▶'}</span>
     <span>{t('supplyChain.production')}</span>
@@ -1164,7 +1175,7 @@ export default function SupplyChainOverview() {
 </div>
 
       {/* Section 2: Not delivered */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.notDelivered ? undefined : 'none' }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('notDelivered')}>
           <span style={expandIconStyle}>{expandedSections.notDelivered ? '▼' : '▶'}</span>
           <span style={{ flex: 1 }}>{t('supplyChain.notDelivered')}</span>
@@ -1257,7 +1268,7 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* Section 3: In the warehouse */}
-<div style={{ marginTop: 20 }}>
+<div style={{ marginTop: 20, display: showSection.warehouse ? undefined : 'none' }}>
   <div style={sectionHeaderStyle} onClick={() => toggleSection('warehouse')}>
     <span style={expandIconStyle}>{expandedSections.warehouse ? '▼' : '▶'}</span>
     <span>{t('supplyChain.inWarehouse')}</span>
@@ -1463,7 +1474,7 @@ export default function SupplyChainOverview() {
 </div>
 
       {/* Section 4: In Customs */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.inCustoms ? undefined : 'none' }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('inCustoms')}>
           <span style={expandIconStyle}>{expandedSections.inCustoms ? '▼' : '▶'}</span>
           <span>{t('supplyChain.inCustoms')}</span>
@@ -1508,7 +1519,7 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* Section 4b: In Transit */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.inTransit ? undefined : 'none' }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('inTransit')}>
           <span style={expandIconStyle}>{expandedSections.inTransit ? '▼' : '▶'}</span>
           <span>{t('supplyChain.inTransit')}</span>
@@ -1537,7 +1548,7 @@ export default function SupplyChainOverview() {
       </div>
 
       {/* Section 5: Ordered from suppliers */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, display: showSection.orderedFromSuppliers ? undefined : 'none' }}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('orderedFromSuppliers')}>
           <span style={expandIconStyle}>{expandedSections.orderedFromSuppliers ? '▼' : '▶'}</span>
           <span>{t('supplyChain.orderedFromSuppliers')}</span>
