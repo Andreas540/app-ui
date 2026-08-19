@@ -12,7 +12,7 @@ import { formatDate } from '../lib/time'
 
 interface LogItem {
   id: string
-  kind: 'order' | 'payment' | 'note'
+  kind: 'order' | 'payment' | 'note' | 'message'
   date: string
   // order
   order_no?: number
@@ -30,6 +30,9 @@ interface LogItem {
   note_text?: string
   created_by?: string
   after_item_id?: string | null
+  // message
+  body?: string
+  direction?: 'inbound' | 'outbound'
 }
 
 async function fetchLog(customerId: string): Promise<LogItem[]> {
@@ -38,6 +41,21 @@ async function fetchLog(customerId: string): Promise<LogItem[]> {
   })
   if (!res.ok) throw new Error(await res.text())
   return (await res.json()).items as LogItem[]
+}
+
+async function fetchMessages(customerId: string): Promise<LogItem[]> {
+  const res = await fetch(`/.netlify/functions/customer-messages?customer_id=${customerId}`, {
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return (data.messages ?? []).map((m: any) => ({
+    id: `msg-${m.id}`,
+    kind: 'message' as const,
+    date: m.created_at,
+    body: m.body,
+    direction: m.direction,
+  }))
 }
 
 async function deleteNote(noteId: string): Promise<void> {
@@ -62,11 +80,11 @@ async function postNote(
   return (await res.json()).item as LogItem
 }
 
-// Scan backwards from idx to find the nearest non-note item (order or payment).
-// That is the anchor for any note added after position idx.
+// Scan backwards from idx to find the nearest order or payment item.
+// Messages and notes cannot be anchors since they have no DB IDs the note table references.
 function findAnchorId(items: LogItem[], afterIdx: number): string | null {
   for (let i = afterIdx; i >= 0; i--) {
-    if (items[i].kind !== 'note') return items[i].id
+    if (items[i].kind === 'order' || items[i].kind === 'payment') return items[i].id
   }
   return null
 }
@@ -229,6 +247,18 @@ function LogItemCard({ item, onOrderClick, onPaymentClick, onDeleteNote }: {
     )
   }
 
+  if (item.kind === 'message') {
+    const isInbound = item.direction === 'inbound'
+    return (
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--bg)' }}>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+          {t('customerLog.message')} · {isInbound ? t('customerLog.inbound') : t('customerLog.outbound')} · {formatDate(item.date)}
+        </div>
+        <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{item.body}</div>
+      </div>
+    )
+  }
+
   return null
 }
 
@@ -250,12 +280,20 @@ export default function CustomerLogModal({
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<any>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [filter, setFilter] = useState({ orders: true, payments: true, notes: true, messages: true })
 
   useEffect(() => {
     if (!isOpen) return
     setLoading(true); setErr(null)
-    fetchLog(customerId)
-      .then(setItems)
+    Promise.all([fetchLog(customerId), fetchMessages(customerId)])
+      .then(([logItems, msgItems]) => {
+        const merged = [...logItems, ...msgItems].sort((a, b) => {
+          // notes stay anchored (they have no independent timestamp in sort context), preserve log order
+          if (a.kind === 'note' && b.kind === 'note') return 0
+          return new Date(b.date).getTime() - new Date(a.date).getTime()
+        })
+        setItems(merged)
+      })
       .catch(e => setErr(e.message))
       .finally(() => setLoading(false))
   }, [isOpen, customerId])
@@ -294,41 +332,62 @@ export default function CustomerLogModal({
 
           <div style={{ borderTop: '1px solid var(--line)' }} />
 
+          {/* Filter checkboxes */}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            {([['orders', 'filterOrders'], ['payments', 'filterPayments'], ['notes', 'filterNotes'], ['messages', 'filterMessages']] as const).map(([key, i18nKey]) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, cursor: 'pointer' }}>
+                <input type="checkbox" checked={filter[key]} onChange={e => setFilter(prev => ({ ...prev, [key]: e.target.checked }))} />
+                {t(`customerLog.${i18nKey}`)}
+              </label>
+            ))}
+            {Object.values(filter).every(Boolean)
+              ? <button onClick={() => setFilter({ orders: false, payments: false, notes: false, messages: false })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.deselectAll')}</button>
+              : <button onClick={() => setFilter({ orders: true, payments: true, notes: true, messages: true })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.selectAll')}</button>
+            }
+          </div>
+
           {loading && <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>{t('loading')}</div>}
           {err && <div style={{ fontSize: 13, color: 'var(--color-error)' }}>{err}</div>}
           {!loading && !err && items.length === 0 && (
             <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>{t('customerLog.empty')}</div>
           )}
 
-          {!loading && !err && items.length > 0 && (
-            <div>
-              {items.map((item, idx) => {
-                // The anchor for any note added after this item is the nearest
-                // order or payment at or above this position (never a note).
-                const anchorId = findAnchorId(items, idx)
-                return (
-                  <div key={item.id}>
-                    <div style={{ marginBottom: 4 }}>
-                      <LogItemCard
-                        item={item}
-                        onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
-                        onPaymentClick={p => {
-                          // PaymentDetailModal reads payment_date and notes; log item uses date and payment_notes
-                          setSelectedPayment({ ...p, payment_date: p.date, notes: p.payment_notes })
-                          setShowPaymentModal(true)
-                        }}
-                        onDeleteNote={async id => {
-                          await deleteNote(id)
-                          setItems(prev => prev.filter(it => it.id !== id))
-                        }}
-                      />
+          {!loading && !err && items.length > 0 && (() => {
+            const visibleItems = items.filter(item =>
+              (item.kind === 'order' && filter.orders) ||
+              (item.kind === 'payment' && filter.payments) ||
+              (item.kind === 'note' && filter.notes) ||
+              (item.kind === 'message' && filter.messages)
+            )
+            return (
+              <div>
+                {visibleItems.map(item => {
+                  // Anchor for a new note = nearest order/payment in the FULL list above this item
+                  const fullIdx = items.findIndex(it => it.id === item.id)
+                  const anchorId = findAnchorId(items, fullIdx)
+                  return (
+                    <div key={item.id}>
+                      <div style={{ marginBottom: 4 }}>
+                        <LogItemCard
+                          item={item}
+                          onOrderClick={o => { setSelectedOrder(o); setShowOrderModal(true) }}
+                          onPaymentClick={p => {
+                            setSelectedPayment({ ...p, payment_date: p.date, notes: p.payment_notes })
+                            setShowPaymentModal(true)
+                          }}
+                          onDeleteNote={async id => {
+                            await deleteNote(id)
+                            setItems(prev => prev.filter(it => it.id !== id))
+                          }}
+                        />
+                      </div>
+                      <InlineNoteAdder onSave={text => handleSaveNote(text, anchorId)} />
                     </div>
-                    <InlineNoteAdder onSave={text => handleSaveNote(text, anchorId)} />
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       </Modal>
 

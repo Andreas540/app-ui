@@ -650,7 +650,16 @@
     "payment": "Betalning",
     "orderNoNumber": "Order",
     "delivered": "Levererad",
-    "empty": "Ingen aktivitet ännu"
+    "empty": "Ingen aktivitet ännu",
+    "message": "Meddelande",
+    "inbound": "Från kund",
+    "outbound": "Skickat",
+    "filterOrders": "Ordrar",
+    "filterPayments": "Betalningar",
+    "filterNotes": "Anteckningar",
+    "filterMessages": "Meddelanden",
+    "deselectAll": "Avmarkera alla",
+    "selectAll": "Markera alla"
   },
   "coverage": {
     "title": "Skyddsprodukter (utökat skydd)",

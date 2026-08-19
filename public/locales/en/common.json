@@ -650,7 +650,16 @@
     "payment": "Payment",
     "orderNoNumber": "Order",
     "delivered": "Delivered",
-    "empty": "No activity yet"
+    "empty": "No activity yet",
+    "message": "Message",
+    "inbound": "From customer",
+    "outbound": "Sent",
+    "filterOrders": "Orders",
+    "filterPayments": "Payments",
+    "filterNotes": "Notes",
+    "filterMessages": "Messages",
+    "deselectAll": "Deselect all",
+    "selectAll": "Select all"
   },
   "coverage": {
     "title": "Extended Coverage Products",

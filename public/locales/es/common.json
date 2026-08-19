@@ -650,7 +650,16 @@
     "payment": "Pago",
     "orderNoNumber": "Pedido",
     "delivered": "Entregado",
-    "empty": "Sin actividad todavía"
+    "empty": "Sin actividad todavía",
+    "message": "Mensaje",
+    "inbound": "Del cliente",
+    "outbound": "Enviado",
+    "filterOrders": "Pedidos",
+    "filterPayments": "Pagos",
+    "filterNotes": "Notas",
+    "filterMessages": "Mensajes",
+    "deselectAll": "Deseleccionar todo",
+    "selectAll": "Seleccionar todo"
   },
   "coverage": {
     "title": "Productos de cobertura extendida",
