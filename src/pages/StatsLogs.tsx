@@ -1,7 +1,8 @@
 // src/pages/StatsLogs.tsx
 // SuperAdmin-only activity dashboard.
 // Global view: one chart per tenant.  Tenant view: one chart per user.
-// Slider selects window from 1h to 3 months; bucket strategy auto-selected:
+// Slider selects window: left section = hours (1–24), right section = days (1–90).
+// Bucket strategy auto-selected from window size:
 //   ≤24h  → 15-min stacked bars in a grid
 //   >24h–7d → hourly simple bars, full-width rows
 //   >7d   → daily simple bars, full-width rows
@@ -65,50 +66,116 @@ function actionColor(action: string): string {
 }
 
 // ─── Period slider ────────────────────────────────────────────────────────────
+// Slider value 1–24  = hours (1h … 24h)
+// Slider value 25–114 = days  (1d … 90d)
 
-// Stepped values in hours. The slider index maps to these.
-const STEPS         = [1, 3, 6, 12, 24, 48, 72, 168, 336, 720, 2160]
-const STEP_LABELS   = ['1h', '3h', '6h', '12h', '24h', '2d', '3d', '7d', '14d', '30d', '3mo']
-const STEP_DISPLAY  = ['1 hour', '3 hours', '6 hours', '12 hours', '24 hours', '2 days', '3 days', '7 days', '14 days', '30 days', '3 months']
-const DEFAULT_STEP  = 4  // index for 24h
+const SLIDER_MIN = 1
+const SLIDER_MAX = 114
+const HOURS_END  = 24   // slider value where hours section ends
+const DEFAULT_V  = 24   // default = 24h
 
-function getConfig(hours: number): { bucketSec: number; bucketCount: number; mode: '24h' | 'extended' } {
-  if (hours <= 24)  return { bucketSec: 900,   bucketCount: hours * 4,        mode: '24h' }
-  if (hours <= 168) return { bucketSec: 3600,  bucketCount: hours,            mode: 'extended' }
-  return                   { bucketSec: 86400, bucketCount: Math.ceil(hours / 24), mode: 'extended' }
+function toHours(v: number): number {
+  return v <= HOURS_END ? v : (v - HOURS_END) * 24
 }
 
-function getTickStep(bucketCount: number, bucketSec: number): number {
-  if (bucketSec < 3600)  return 8    // 15-min → label every 2h
-  if (bucketSec < 86400) return 24   // 1-hour → label every day
-  if (bucketCount <= 14) return 2    // daily ≤14d → every 2 days
-  if (bucketCount <= 31) return 5    // daily ≤31d → every 5 days
-  return 7                           // daily >31d → every week
+function fromHours(h: number): number {
+  if (h <= HOURS_END) return h
+  return Math.min(SLIDER_MAX, Math.round(h / 24) + HOURS_END)
 }
 
+function valueLabel(v: number): string {
+  if (v === 1)  return '1 hour'
+  if (v < HOURS_END)  return `${v} hours`
+  if (v === HOURS_END) return '24 hours'
+  const d = v - HOURS_END
+  return d === 1 ? '1 day' : `${d} days`
+}
+
+// Preset quick-select buttons
+const PRESETS = [
+  { label: '24h', v: fromHours(24)  },
+  { label: '7d',  v: fromHours(168) },
+  { label: '30d', v: fromHours(720) },
+]
+
+// Same CSS as Timeline slider — single thumb variant
 const SLIDER_CSS = `
-  .stats-period-slider {
-    -webkit-appearance: none; appearance: none;
-    height: 4px; border-radius: 2px;
-    background: var(--border, #e5e7eb);
-    outline: none; cursor: pointer;
+  .stats-slider-wrap {
+    position: relative; height: 28px;
+    display: flex; align-items: center;
   }
-  .stats-period-slider::-webkit-slider-thumb {
+  .stats-slider-wrap input[type=range] {
     -webkit-appearance: none; appearance: none;
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent;
+    pointer-events: none;
+    margin: 0; padding: 0;
+  }
+  .stats-slider-wrap input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; background: transparent;
+  }
+  .stats-slider-wrap input[type=range]::-moz-range-track { background: transparent; height: 4px; }
+  .stats-slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    pointer-events: all;
     width: 16px; height: 16px; border-radius: 50%;
-    background: var(--primary, #3b82f6);
+    background: var(--color-primary, #3b82f6);
     border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,.25);
-    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    cursor: pointer; margin-top: -6px;
   }
-  .stats-period-slider::-moz-range-thumb {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--primary, #3b82f6);
-    border: none;
-    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  .stats-slider-wrap input[type=range]::-moz-range-thumb {
+    pointer-events: all;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--color-primary, #3b82f6);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
     cursor: pointer;
   }
 `
+
+function PeriodSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const span        = SLIDER_MAX - SLIDER_MIN
+  const filledPct   = ((value - SLIDER_MIN) / span) * 100
+  const boundaryPct = ((HOURS_END - SLIDER_MIN) / span) * 100  // ≈ 20%
+
+  return (
+    <div>
+      <style dangerouslySetInnerHTML={{ __html: SLIDER_CSS }} />
+      <div className="stats-slider-wrap">
+        {/* Track base */}
+        <div style={{ position: 'absolute', left: 0, right: 0, height: 4, background: 'var(--border-color, #e5e7eb)', borderRadius: 2 }} />
+        {/* Filled portion */}
+        <div style={{ position: 'absolute', left: 0, height: 4, background: 'var(--color-primary, #3b82f6)', borderRadius: 2, width: `${filledPct}%` }} />
+        {/* Hours/days boundary tick */}
+        <div style={{
+          position: 'absolute', left: `${boundaryPct}%`,
+          top: '50%', transform: 'translate(-50%, -50%)',
+          width: 2, height: 14,
+          background: 'var(--text-secondary, #6b7280)', borderRadius: 1, opacity: 0.4,
+        }} />
+        <input
+          type="range"
+          min={SLIDER_MIN} max={SLIDER_MAX}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+        />
+      </div>
+      {/* Axis labels */}
+      <div style={{ display: 'flex', position: 'relative', paddingTop: 2 }}>
+        <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>1h</span>
+        <span style={{
+          position: 'absolute', left: `${boundaryPct}%`, transform: 'translateX(-50%)',
+          fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7,
+        }}>
+          24h
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 'auto' }}>90d</span>
+      </div>
+    </div>
+  )
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,6 +192,22 @@ interface StatsData   {
 }
 type SortOrder = 'activity' | 'name'
 type ReportTab = 'activity' | 'errors' | 'website'
+
+// ─── Bucket config ────────────────────────────────────────────────────────────
+
+function getConfig(hours: number): { bucketSec: number; bucketCount: number; mode: '24h' | 'extended' } {
+  if (hours <= 24)  return { bucketSec: 900,   bucketCount: hours * 4,        mode: '24h' }
+  if (hours <= 168) return { bucketSec: 3600,  bucketCount: hours,            mode: 'extended' }
+  return                   { bucketSec: 86400, bucketCount: Math.ceil(hours / 24), mode: 'extended' }
+}
+
+function getTickStep(bucketCount: number, bucketSec: number): number {
+  if (bucketSec < 3600)  return 8
+  if (bucketSec < 86400) return 24
+  if (bucketCount <= 14) return 2
+  if (bucketCount <= 31) return 5
+  return 7
+}
 
 // ─── Chart helpers ────────────────────────────────────────────────────────────
 
@@ -303,13 +386,13 @@ function EntityChart({
 
 function ControlsBar({
   sortOrder, onSortChange,
-  sliderIdx, onSliderChange,
+  sliderVal, onSliderChange,
   loading, data, lastRefresh, onRefresh,
 }: {
   sortOrder: SortOrder
   onSortChange: (s: SortOrder) => void
-  sliderIdx: number
-  onSliderChange: (i: number) => void
+  sliderVal: number
+  onSliderChange: (v: number) => void
   loading: boolean
   data: StatsData | null
   lastRefresh: Date | null
@@ -317,50 +400,55 @@ function ControlsBar({
 }) {
   const { t } = useTranslation()
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-      <style dangerouslySetInnerHTML={{ __html: SLIDER_CSS }} />
+    <div style={{ marginBottom: 12 }}>
+      {/* Row 1: sort + presets + current label + refresh */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{t('sort')}:</span>
+          <select value={sortOrder} onChange={e => onSortChange(e.target.value as SortOrder)} style={{ height: 34 }}>
+            <option value="activity">Activity</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
 
-      {/* Sort */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="helper" style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{t('sort')}:</span>
-        <select value={sortOrder} onChange={e => onSortChange(e.target.value as SortOrder)} style={{ height: 36 }}>
-          <option value="activity">Activity</option>
-          <option value="name">Name</option>
-        </select>
+        {/* Quick-select presets */}
+        <div style={{ display: 'flex', gap: 0 }}>
+          {PRESETS.map((p, i) => (
+            <button
+              key={p.label}
+              onClick={() => onSliderChange(p.v)}
+              style={{
+                height: 34, padding: '0 12px', fontSize: 13,
+                border: '1px solid var(--border)',
+                borderRight: i < PRESETS.length - 1 ? 'none' : undefined,
+                borderRadius: i === 0 ? '6px 0 0 6px' : i === PRESETS.length - 1 ? '0 6px 6px 0' : 0,
+                background: sliderVal === p.v ? 'var(--primary)' : 'transparent',
+                color: sliderVal === p.v ? '#fff' : 'inherit',
+                cursor: 'pointer',
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Last {valueLabel(sliderVal)}
+        </span>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {loading && data && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
+          {lastRefresh && !loading && (
+            <span className="helper" style={{ fontSize: 12 }}>
+              {lastRefresh.toLocaleTimeString()}
+            </span>
+          )}
+          <button onClick={onRefresh} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
+        </div>
       </div>
 
-      {/* Period slider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200 }}>
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-          {STEP_LABELS[0]}
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={STEPS.length - 1}
-          value={sliderIdx}
-          onChange={e => onSliderChange(Number(e.target.value))}
-          className="stats-period-slider"
-          style={{ flex: 1 }}
-        />
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-          {STEP_LABELS[STEPS.length - 1]}
-        </span>
-        <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', minWidth: 72 }}>
-          Last {STEP_DISPLAY[sliderIdx]}
-        </span>
-      </div>
-
-      {/* Refresh */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {loading && data && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
-        {lastRefresh && !loading && (
-          <span className="helper" style={{ fontSize: 12 }}>
-            {lastRefresh.toLocaleTimeString()}
-          </span>
-        )}
-        <button onClick={onRefresh} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
-      </div>
+      {/* Row 2: slider — full width */}
+      <PeriodSlider value={sliderVal} onChange={onSliderChange} />
     </div>
   )
 }
@@ -372,15 +460,15 @@ export default function StatsLogs() {
   const [activeReport, setActiveReport] = useState<ReportTab>('activity')
   const [sortOrder,    setSortOrder]    = useState<SortOrder>('activity')
 
-  // sliderIdx is what the slider shows (updates instantly on drag).
-  // fetchIdx is debounced: triggers the actual API call.
-  const [sliderIdx, setSliderIdx] = useState(DEFAULT_STEP)
-  const [fetchIdx,  setFetchIdx]  = useState(DEFAULT_STEP)
+  // sliderVal updates instantly on drag (visual feedback).
+  // fetchVal is debounced 350ms — triggers the API call.
+  const [sliderVal, setSliderVal] = useState(DEFAULT_V)
+  const [fetchVal,  setFetchVal]  = useState(DEFAULT_V)
 
   useEffect(() => {
-    const t = setTimeout(() => setFetchIdx(sliderIdx), 350)
-    return () => clearTimeout(t)
-  }, [sliderIdx])
+    const timer = setTimeout(() => setFetchVal(sliderVal), 350)
+    return () => clearTimeout(timer)
+  }, [sliderVal])
 
   const [data,        setData]        = useState<StatsData | null>(null)
   const [loading,     setLoading]     = useState(true)
@@ -392,7 +480,7 @@ export default function StatsLogs() {
   const [websiteErr,     setWebsiteErr]     = useState<string | null>(null)
 
   const activeTenantId = localStorage.getItem('activeTenantId')
-  const hours          = STEPS[fetchIdx]
+  const hours          = toHours(fetchVal)
 
   const loadData = useCallback(async () => {
     try {
@@ -412,7 +500,7 @@ export default function StatsLogs() {
     }
   }, [activeTenantId, hours])
 
-  // Auto-refresh only for the 24h window; longer periods change slowly
+  // Auto-refresh only for ≤24h windows; longer periods change slowly
   useEffect(() => {
     loadData()
     if (hours > 24) return
@@ -444,7 +532,7 @@ export default function StatsLogs() {
 
   // ── Derived data ─────────────────────────────────────────────────────────────
 
-  // Guard against showing data from a previous period while a new fetch is in flight
+  // Don't render charts with data from a previous period
   const effectiveData = data?.hours === hours ? data : null
 
   const { bucketSec, bucketCount, mode: chartMode } = getConfig(hours)
@@ -484,39 +572,27 @@ export default function StatsLogs() {
     gridTemplateColumns: isExtended ? '1fr' : 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
     gap: 12,
   }
-  const noDataLabel = `last ${STEP_DISPLAY[sliderIdx]}`
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="page-wide">
-      {/* ── Report tabs ────────────────────────────────────────────────── */}
+      {/* Report tabs */}
       <div className="card" style={{ marginBottom: 16 }}>
         <h3 style={{ margin: '0 0 4px 0' }}>Stats &amp; Logs</h3>
         <p className="helper" style={{ margin: '0 0 16px 0', fontSize: 12 }}>
           Stats shown in Tenants/Users time zone
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            className={activeReport === 'activity' ? 'primary' : undefined}
-            onClick={() => setActiveReport('activity')}
-            style={{ height: CONTROL_H, minWidth: 120 }}
-          >
-            Activity
-          </button>
-          <button
-            className={activeReport === 'errors' ? 'primary' : undefined}
-            onClick={() => setActiveReport('errors')}
-            style={{ height: CONTROL_H, minWidth: 120 }}
-          >
-            Errors
-          </button>
-          <button
-            className={activeReport === 'website' ? 'primary' : undefined}
-            onClick={() => setActiveReport('website')}
-            style={{ height: CONTROL_H, minWidth: 120 }}
-          >
-            Website
-          </button>
+          {(['activity', 'errors', 'website'] as const).map(tab => (
+            <button
+              key={tab}
+              className={activeReport === tab ? 'primary' : undefined}
+              onClick={() => setActiveReport(tab)}
+              style={{ height: CONTROL_H, minWidth: 120 }}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -525,14 +601,13 @@ export default function StatsLogs() {
         <>
           <ControlsBar
             sortOrder={sortOrder} onSortChange={setSortOrder}
-            sliderIdx={sliderIdx} onSliderChange={setSliderIdx}
+            sliderVal={sliderVal} onSliderChange={setSliderVal}
             loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
           />
-
           {err && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>}
           {loading && !effectiveData && <div className="card"><p>{t('loading')}</p></div>}
           {effectiveData && sortedEntities.length === 0 && (
-            <div className="card"><p className="helper">No activity in the {noDataLabel}.</p></div>
+            <div className="card"><p className="helper">No activity in the last {valueLabel(sliderVal)}.</p></div>
           )}
           {effectiveData && sortedEntities.length > 0 && (
             <div style={gridStyle}>
@@ -552,14 +627,13 @@ export default function StatsLogs() {
         <>
           <ControlsBar
             sortOrder={sortOrder} onSortChange={setSortOrder}
-            sliderIdx={sliderIdx} onSliderChange={setSliderIdx}
+            sliderVal={sliderVal} onSliderChange={setSliderVal}
             loading={loading} data={data} lastRefresh={lastRefresh} onRefresh={loadData}
           />
-
           {err && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {err}</p></div>}
           {loading && !effectiveData && <div className="card"><p>{t('loading')}</p></div>}
           {effectiveData && sortedErrorEntities.length === 0 && (
-            <div className="card"><p className="helper">No errors in the {noDataLabel}.</p></div>
+            <div className="card"><p className="helper">No errors in the last {valueLabel(sliderVal)}.</p></div>
           )}
           {effectiveData && sortedErrorEntities.length > 0 && (
             <div style={gridStyle}>
@@ -581,7 +655,6 @@ export default function StatsLogs() {
             {websiteLoading && websiteData && <span className="helper" style={{ fontSize: 12 }}>Refreshing…</span>}
             <button onClick={loadWebsiteData} style={{ height: 32, padding: '0 12px', fontSize: 13 }}>↺</button>
           </div>
-
           {websiteErr && <div className="card"><p style={{ color: 'var(--color-error)' }}>{t('error')}: {websiteErr}</p></div>}
           {websiteLoading && !websiteData && <div className="card"><p>{t('loading')}</p></div>}
           {websiteData && websiteData.entities[0]?.total === 0 && (
