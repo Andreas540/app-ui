@@ -7,25 +7,30 @@
     <title>My Biz</title>
     
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
     <meta name="theme-color" content="#6aa1ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
+
     <!-- Dynamic Manifest and Title Script -->
+    <!-- NOTE: manifest link is injected here (not declared statically) so the browser
+         only fetches the tenant-specific manifest URL, never the static fallback. -->
 <script>
   (function() {
     try {
       const tenantId = localStorage.getItem('activeTenantId')
+      const v = Date.now()
+
+      // Inject manifest link dynamically so browser fetches the correct URL from the start.
+      // If declared statically in HTML before this script, the browser would fetch the
+      // generic /manifest.webmanifest before the script can update the href.
+      const manifestLink = document.createElement('link')
+      manifestLink.rel = 'manifest'
+      manifestLink.href = tenantId
+        ? `/api/manifest?tenant_id=${tenantId}&v=${v}`
+        : '/manifest.webmanifest'
+      document.head.appendChild(manifestLink)
+
       if (tenantId) {
-        const v = Date.now()
-        
-        // Set dynamic manifest
-        const manifestLink = document.getElementById('app-manifest')
-        if (manifestLink) {
-          manifestLink.href = `/api/manifest?tenant_id=${tenantId}&v=${v}`
-        }
-        
         // Fetch and set dynamic title from tenant data
         fetch(`/.netlify/functions/serve-icon?tenant_id=${tenantId}&type=name`)
           .then(res => res.json())
@@ -34,13 +39,9 @@
               document.title = data.app_name
             }
           })
-          .catch(() => {
-            console.log('Using static title')
-          })
+          .catch(() => {})
       }
-    } catch (e) {
-      console.log('Using static manifest and title')
-    }
+    } catch (e) {}
   })()
 </script>
     
