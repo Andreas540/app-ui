@@ -24,10 +24,14 @@ import {
 
 // ── Month picker — single select, last 24 months ──────────────────────────────
 
+const PICKER_STYLE = {
+  height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6,
+  border: '1px solid var(--border)',
+  background: 'var(--input, var(--card))', color: 'var(--text)',
+} as const
+
 function MonthPicker({ value, onChange, placeholder }: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
+  value: string; onChange: (v: string) => void; placeholder?: string
 }) {
   const opts: { val: string; label: string }[] = []
   const now = new Date()
@@ -37,17 +41,24 @@ function MonthPicker({ value, onChange, placeholder }: {
     opts.push({ val, label: formatMonthYear(d) })
   }
   return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      style={{
-        height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6, minWidth: 130,
-        border: '1px solid var(--border)',
-        background: 'var(--input, var(--card))', color: 'var(--text)',
-      }}
-    >
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ ...PICKER_STYLE, minWidth: 130 }}>
       <option value="">{placeholder ?? 'Select...'}</option>
       {opts.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+    </select>
+  )
+}
+
+function YearPicker({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder?: string
+}) {
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 10 }, (_, i) => String(currentYear - i))
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ ...PICKER_STYLE, minWidth: 90 }}>
+      <option value="">{placeholder ?? 'Select...'}</option>
+      {years.map(y => <option key={y} value={y}>{y}</option>)}
     </select>
   )
 }
@@ -65,11 +76,20 @@ type RpsPoint = {
   surplusPct: number
 }
 
-async function fetchRpsData(from?: string, to?: string): Promise<RpsPoint[]> {
-  const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-  const params = (from && to)
-    ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-    : 'months=3'
+async function fetchRpsData(
+  from?: string, to?: string, period: 'month' | 'year' = 'month',
+): Promise<RpsPoint[]> {
+  const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  let params: string
+  if (period === 'year') {
+    params = (from && to)
+      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&period=year`
+      : 'years=3&period=year'
+  } else {
+    params = (from && to)
+      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+      : 'months=3'
+  }
   const res = await fetch(`${base}/api/rps/monthly?${params}`, {
     cache: 'no-store',
     headers: getAuthHeaders(),
@@ -337,8 +357,11 @@ export default function ReportsPage() {
     }
   }, [infoOpen])
 
+  const [showBy,       setShowBy]       = useState<'month' | 'year'>('month')
   const [fromMonth,    setFromMonth]    = useState('')
   const [toMonth,      setToMonth]      = useState('')
+  const [fromYear,     setFromYear]     = useState('')
+  const [toYear,       setToYear]       = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
   const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
@@ -355,20 +378,20 @@ export default function ReportsPage() {
 
   const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
 
-  // Fetch data when date range changes
+  // Fetch data when date range or period type changes
   useEffect(() => {
     let stop = false
     setLoading(true)
     setErr(null)
-    fetchRpsData(fromMonth || undefined, toMonth || undefined)
+    const from = showBy === 'month' ? (fromMonth || undefined) : (fromYear || undefined)
+    const to   = showBy === 'month' ? (toMonth   || undefined) : (toYear   || undefined)
+    fetchRpsData(from, to, showBy)
       .then((rows: RpsPoint[]) => {
         if (stop) return
         setRpsData(rows)
         setLoading(false)
-        // Start at the most recent data
         const start = Math.max(0, rows.length - visibleCount)
         setVisibleStart(start)
-        // Flash swipe hint on mobile when there's more data than fits
         if (rows.length > visibleCount && isMobile) {
           setShowHint(true)
           if (hintTimer.current) clearTimeout(hintTimer.current)
@@ -377,7 +400,7 @@ export default function ReportsPage() {
       })
       .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
-  }, [fromMonth, toMonth]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showBy, fromMonth, toMonth, fromYear, toYear]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clamp visibleStart if visibleCount changes (e.g. screen resize)
   const clampedStart = Math.min(visibleStart, Math.max(0, rpsData.length - visibleCount))
@@ -393,13 +416,21 @@ export default function ReportsPage() {
     })
   }
 
-  // Selecting From auto-fills To with current month if To is empty
+  // Selecting From auto-fills To if To is empty
   function handleFromChange(val: string) {
     setFromMonth(val)
     if (val && !toMonth) {
       const now = new Date()
       setToMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
     }
+  }
+  function handleFromYearChange(val: string) {
+    setFromYear(val)
+    if (val && !toYear) setToYear(String(new Date().getFullYear()))
+  }
+  function handleShowByChange(val: 'month' | 'year') {
+    setShowBy(val)
+    setFromMonth(''); setToMonth(''); setFromYear(''); setToYear('')
   }
 
   function toggleVisible(id: string) {
@@ -478,22 +509,40 @@ export default function ReportsPage() {
         </div>
 
         {/* ── Period picker ─────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>{t('from')}</div>
-            <MonthPicker value={fromMonth} onChange={handleFromChange} placeholder={t('from')} />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>{t('to')}</div>
-            <MonthPicker value={toMonth} onChange={setToMonth} placeholder={t('to')} />
-          </div>
-          {(fromMonth || toMonth) && (
-            <button
-              onClick={() => { setFromMonth(''); setToMonth('') }}
-              style={{ height: 34, padding: '0 12px', fontSize: 12, borderRadius: 6 }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Show by</span>
+            <select
+              value={showBy}
+              onChange={e => handleShowByChange(e.target.value as 'month' | 'year')}
+              style={{ ...PICKER_STYLE, minWidth: 90 }}
             >
-              {tc('clear')}
-            </button>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+          {showBy === 'month' ? (
+            <>
+              <MonthPicker value={fromMonth} onChange={handleFromChange} placeholder={t('from')} />
+              <MonthPicker value={toMonth} onChange={setToMonth} placeholder={t('to')} />
+              {(fromMonth || toMonth) && (
+                <button onClick={() => { setFromMonth(''); setToMonth('') }}
+                  style={{ height: 34, padding: '0 12px', fontSize: 12, borderRadius: 6 }}>
+                  {tc('clear')}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <YearPicker value={fromYear} onChange={handleFromYearChange} placeholder={t('from')} />
+              <YearPicker value={toYear} onChange={setToYear} placeholder={t('to')} />
+              {(fromYear || toYear) && (
+                <button onClick={() => { setFromYear(''); setToYear('') }}
+                  style={{ height: 34, padding: '0 12px', fontSize: 12, borderRadius: 6 }}>
+                  {tc('clear')}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

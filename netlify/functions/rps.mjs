@@ -10,10 +10,13 @@ export const handler = async (event) => {
     const url = new URL(
       event.rawUrl || `http://x${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`
     )
-    const from = url.searchParams.get('from') // YYYY-MM, optional
-    const to   = url.searchParams.get('to')   // YYYY-MM, optional
+    const from   = url.searchParams.get('from') // YYYY-MM or YYYY, optional
+    const to     = url.searchParams.get('to')   // YYYY-MM or YYYY, optional
+    const period = url.searchParams.get('period') || 'month' // 'month' | 'year'
     const monthsParam = parseInt(url.searchParams.get('months') || '3', 10)
     const months = Number.isFinite(monthsParam) ? Math.max(1, Math.min(60, monthsParam)) : 3
+    const yearsParam = parseInt(url.searchParams.get('years') || '3', 10)
+    const years = Number.isFinite(yearsParam) ? Math.max(1, Math.min(20, yearsParam)) : 3
 
     const { DATABASE_URL } = process.env
     if (!DATABASE_URL) return resp(500, { error: 'DATABASE_URL missing' })
@@ -26,6 +29,51 @@ export const handler = async (event) => {
     const TENANT_ID = authz.tenantId
 
     let rows
+
+    if (period === 'year') {
+      if (from && to) {
+        const fromY = parseInt(from, 10)
+        const toY   = parseInt(to,   10)
+        rows = await sql`
+          SELECT
+            EXTRACT(YEAR FROM v.month_start)::text     AS month,
+            SUM(COALESCE(v.revenue_amount,    0))::float8 AS revenue,
+            SUM(COALESCE(v.gross_profit,      0))::float8 AS gross_profit,
+            SUM(COALESCE(v.operating_profit,  0))::float8 AS operating_profit,
+            SUM(COALESCE(v.surplus,           0))::float8 AS surplus
+          FROM public.revenue_profit_surplus_by_month v
+          WHERE v.tenant_id = ${TENANT_ID}
+            AND EXTRACT(YEAR FROM v.month_start)::int BETWEEN ${fromY} AND ${toY}
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `
+      } else {
+        rows = await sql`
+          WITH yset AS (
+            SELECT EXTRACT(YEAR FROM month_start)::int AS yr
+            FROM public.revenue_profit_surplus_by_month
+            WHERE tenant_id = ${TENANT_ID}
+              AND revenue_amount IS NOT NULL AND revenue_amount != 0
+            GROUP BY 1
+            ORDER BY 1 DESC
+            LIMIT ${years}
+          )
+          SELECT
+            ys.yr::text                                    AS month,
+            SUM(COALESCE(v.revenue_amount,    0))::float8  AS revenue,
+            SUM(COALESCE(v.gross_profit,      0))::float8  AS gross_profit,
+            SUM(COALESCE(v.operating_profit,  0))::float8  AS operating_profit,
+            SUM(COALESCE(v.surplus,           0))::float8  AS surplus
+          FROM yset ys
+          JOIN public.revenue_profit_surplus_by_month v
+            ON EXTRACT(YEAR FROM v.month_start)::int = ys.yr
+           AND v.tenant_id = ${TENANT_ID}
+          GROUP BY ys.yr
+          ORDER BY ys.yr ASC
+        `
+      }
+      return resp(200, { rows })
+    }
 
     if (from && to) {
       // Date-range mode: return all months in [from, to] regardless of zero revenue
