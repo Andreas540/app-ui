@@ -510,17 +510,7 @@ export default function ReportsPage() {
 
         {/* ── Period picker ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, flexWrap: 'wrap', rowGap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Show by</span>
-            <select
-              value={showBy}
-              onChange={e => handleShowByChange(e.target.value as 'month' | 'year')}
-              style={{ ...PICKER_STYLE, minWidth: 90 }}
-            >
-              <option value="month">Month</option>
-              <option value="year">Year</option>
-            </select>
-          </div>
+          {/* Date pickers — always first */}
           {showBy === 'month' ? (
             <>
               <MonthPicker value={fromMonth} onChange={handleFromChange} placeholder={t('from')} />
@@ -544,6 +534,18 @@ export default function ReportsPage() {
               )}
             </>
           )}
+          {/* Show by — after date pickers on desktop, wraps below on mobile */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Show by</span>
+            <select
+              value={showBy}
+              onChange={e => handleShowByChange(e.target.value as 'month' | 'year')}
+              style={{ ...PICKER_STYLE, minWidth: 90 }}
+            >
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
         </div>
       </div>
 
