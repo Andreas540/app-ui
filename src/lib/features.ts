@@ -37,6 +37,7 @@ export const AVAILABLE_FEATURES = {
   'customer-reports':   { id: 'customer-reports',     name: 'Customer Reports',  route: '/reports/customers',    category: 'Reports', module: 'reports' },
   'timeline-overview':  { id: 'timeline-overview',    name: 'Timeline Overview', route: '/reports/timeline',     category: 'Reports', module: 'reports' },
   bizwiz:               { id: 'bizwiz',               name: 'Ask BizWiz',        route: '/reports/bizwiz',       category: 'Reports', module: 'reports' },
+  simulations:          { id: 'simulations',          name: 'Simulations',       route: '/reports/simulations',  category: 'Reports', module: 'reports' },
 
   // Admin (always included, not a paid module)
   'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },

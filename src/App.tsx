@@ -83,6 +83,7 @@ import ReportsPage from './pages/ReportsPage'
 import CustomerReportsPage from './pages/CustomerReportsPage'
 import TimelineOverviewPage from './pages/TimelineOverviewPage'
 import BizWizPage from './pages/BizWizPage'
+import SimulationsPage from './pages/SimulationsPage'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -305,6 +306,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/reports':                    'page_view_reports',
   '/reports/customers':          'page_view_customer_reports',
   '/reports/timeline':           'page_view_timeline_overview',
+  '/reports/simulations':        'page_view_simulations',
   '/warehouse':                  'page_view_warehouse',
   '/supply-chain':               'page_view_supply_chain',
   '/labor-production':           'page_view_labor_production',
@@ -887,7 +889,7 @@ useEffect(() => {
                     )}
                   </>)}
                 </>)}
-                {(canAccess('reports') || canAccess('customer-reports') || canAccess('timeline-overview') || canAccess('bizwiz')) && (<>
+                {(canAccess('reports') || canAccess('customer-reports') || canAccess('timeline-overview') || canAccess('bizwiz') || canAccess('simulations')) && (<>
                   {sectionHeader('reports', t('reportsSection'))}
                   {!collapsed['reports'] && (<>
                     {canAccess('bizwiz') && (
@@ -909,6 +911,11 @@ useEffect(() => {
                     {canAccess('timeline-overview') && (
                       <NavLink to="/reports/timeline" onClick={() => setNavOpen(false)}>
                         {t('reportsTimeline')}
+                      </NavLink>
+                    )}
+                    {canAccess('simulations') && (
+                      <NavLink to="/reports/simulations" onClick={() => setNavOpen(false)}>
+                        {t('reportsSimulations')}
                       </NavLink>
                     )}
                   </>)}
@@ -1131,6 +1138,7 @@ useEffect(() => {
                 {hasFeature('customer-reports') && <Route path="/reports/customers" element={<CustomerReportsPage />} />}
                 {hasFeature('timeline-overview') && <Route path="/reports/timeline" element={<TimelineOverviewPage />} />}
                 {hasFeature('bizwiz') && <Route path="/reports/bizwiz" element={<BizWizPage />} />}
+                {hasFeature('simulations') && <Route path="/reports/simulations" element={<SimulationsPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
                 {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (

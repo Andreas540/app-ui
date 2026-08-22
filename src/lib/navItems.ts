@@ -21,6 +21,7 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'bizwiz',           section: 'reports', labelKey: 'reportsBizWiz' },
   { id: 'reports',          section: 'reports', labelKey: 'reportsSalesProfit' },
   { id: 'customer-reports', section: 'reports', labelKey: 'reportsCustomers' },
+  { id: 'simulations',     section: 'reports', labelKey: 'reportsSimulations' },
   // Supply Chain
   { id: 'supply-chain',     section: 'supply',  labelKey: 'supplyDemand' },
   { id: 'production',       section: 'supply',  labelKey: 'production' },
