@@ -11,6 +11,7 @@ import {
   YearPicker,
   fetchRpsData,
   type RpsPoint,
+  type ReportDef,
   ChartSlide,
   ALL_REPORTS,
   VISIBLE_MOBILE,
@@ -46,8 +47,6 @@ function loadVisible(): string[] {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const VISIBLE_MOBILE  = 3
-const VISIBLE_DESKTOP = 6
 
 export default function ReportsPage() {
   const { t } = useTranslation('reports')
