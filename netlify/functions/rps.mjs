@@ -36,7 +36,8 @@ export const handler = async (event) => {
         const toY   = parseInt(to,   10)
         rows = await sql`
           SELECT
-            EXTRACT(YEAR FROM v.month_start)::text     AS month,
+            EXTRACT(YEAR FROM v.month_start)::text        AS month,
+            MIN(v.month_start)::text                      AS min_month_start,
             SUM(COALESCE(v.revenue_amount,    0))::float8 AS revenue,
             SUM(COALESCE(v.gross_profit,      0))::float8 AS gross_profit,
             SUM(COALESCE(v.operating_profit,  0))::float8 AS operating_profit,
@@ -60,6 +61,7 @@ export const handler = async (event) => {
           )
           SELECT
             ys.yr::text                                    AS month,
+            MIN(v.month_start)::text                       AS min_month_start,
             SUM(COALESCE(v.revenue_amount,    0))::float8  AS revenue,
             SUM(COALESCE(v.gross_profit,      0))::float8  AS gross_profit,
             SUM(COALESCE(v.operating_profit,  0))::float8  AS operating_profit,

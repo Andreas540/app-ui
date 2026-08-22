@@ -68,6 +68,7 @@ function YearPicker({ value, onChange, placeholder }: {
 
 type RpsPoint = {
   month: string
+  minMonth?: string   // first month with data in this period; set for partial years
   revenue: number
   gross_profit: number
   grossPct: number
@@ -105,6 +106,7 @@ async function fetchRpsData(
     const surplus          = Number(r.surplus          ?? 0)
     return {
       month: String(r.month ?? ''),
+      minMonth: r.min_month_start ? String(r.min_month_start) : undefined,
       revenue,
       gross_profit,
       grossPct:      revenue > 0 ? gross_profit     / revenue : 0,
@@ -118,8 +120,28 @@ async function fetchRpsData(
 
 // ── Chart component ───────────────────────────────────────────────────────────
 
+// Renders "From: Mon" above a bar when a year's data doesn't start in January
+function PartialYearLabel({ x, y, width, value }: any) {
+  if (!value) return null
+  const d = new Date(value)
+  if (d.getMonth() === 0) return null   // starts in January = full year, no label needed
+  const mon = d.toLocaleString('en-US', { month: 'short' })
+  return (
+    <text
+      x={(x ?? 0) + (width ?? 0) / 2}
+      y={(y ?? 0) - 22}
+      textAnchor="middle"
+      fontSize={9}
+      fill="var(--text-secondary, #9ca3af)"
+    >
+      {`From: ${mon}`}
+    </text>
+  )
+}
+
 type ChartSlideProps = {
   data: RpsPoint[]       // already-sliced visible window
+  showBy?: 'month' | 'year'
   bar1Key: string
   bar1Label: string
   bar2Key: string
@@ -135,7 +157,7 @@ type ChartSlideProps = {
 }
 
 function ChartSlide({
-  data, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, computePct,
+  data, showBy, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, computePct,
   needsScroll, canPrev, canNext, onPrev, onNext, showHint,
 }: ChartSlideProps) {
   const { t } = useTranslation('reports')
@@ -224,6 +246,9 @@ function ChartSlide({
               domain={[0, 0.55]} />
 
             <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}>
+              {showBy === 'year' && (
+                <LabelList dataKey="minMonth" content={PartialYearLabel} />
+              )}
               {!showPct && (
                 <LabelList dataKey={bar1Key} position="top" offset={8}
                   formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
@@ -637,6 +662,7 @@ export default function ReportsPage() {
               {/* Chart (legend + Show % toggle now inside ChartSlide) */}
               <ChartSlide
                 data={visibleData}
+                showBy={showBy}
                 bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
                 bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
                 lineKey={report.lineKey}
