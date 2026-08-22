@@ -25,6 +25,7 @@ import {
 // ── Month picker — single select, last 24 months ──────────────────────────────
 
 const PICKER_STYLE = {
+  width: 'auto',   // override global `select { width: 100% }` so pickers stay compact in flex rows
   height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6,
   border: '1px solid var(--border)',
   background: 'var(--input, var(--card))', color: 'var(--text)',
