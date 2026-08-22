@@ -90,7 +90,7 @@ export default function SimulationsPage() {
   }
 
   return (
-    <div className="page-narrow">
+    <div className="page-wide">
       <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
         {t('simulationsTitle', 'Simulations')}
       </h1>
