@@ -6,6 +6,9 @@ import { formatDate, todayYMD } from '../lib/time'
 import { useLocale } from '../contexts/LocaleContext'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import PrintDialog from '../components/PrintDialog'
+import { PrintManager } from '../lib/printManager'
+import type { PrintOptions } from '../lib/printManager'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -96,6 +99,18 @@ export default function PartnerDetailPage() {
   const [paymentToPartnerId, setPaymentToPartnerId] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
   const [paying, setPaying] = useState(false)
+
+  // Print dialog state
+  const [showPrintDialog, setShowPrintDialog] = useState(false)
+  const [printOptions, setPrintOptions] = useState<PrintOptions | null>(null)
+
+  // Register print dialog handler
+  useEffect(() => {
+    PrintManager.setDialogHandler((options) => {
+      setPrintOptions(options)
+      setShowPrintDialog(true)
+    })
+  }, [])
 
   // Load all partners for the dropdown
   useEffect(() => {
@@ -371,128 +386,6 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
   const DATE_COL = 55
   const LINE_GAP = 4
 
-  function printPartner() {
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) { alert('Please allow popups to print'); return }
-
-    const now = new Date().toLocaleString()
-
-    const ordersRows = orders.map(o => {
-      const partnerAmt = Number(o.partner_amount) || 0
-      const paid = paidByOrderId[o.id] || 0
-      const statusText = paid >= partnerAmt && partnerAmt > 0 ? ' (Paid)' : paid > 0 ? ' (Partial)' : ''
-      const statusColor = paid >= partnerAmt && partnerAmt > 0 ? '#10b981' : paid > 0 ? '#f59e0b' : ''
-      return `
-        <tr>
-          <td>${formatDate(o.order_date)}</td>
-          <td>${showOrderNumber && o.order_no ? `#${o.order_no} ` : ''}${o.customer_name}</td>
-          <td>${o.product_name || '—'}</td>
-          <td class="num">${o.qty ?? '—'}</td>
-          <td class="num">${o.unit_price != null ? fmtMoney(o.unit_price) : '—'}</td>
-          <td class="num">${fmtMoney(o.total)}</td>
-          <td class="num" style="color:${statusColor}">${fmtMoney(partnerAmt)}${statusText}</td>
-        </tr>`
-    }).join('')
-
-    const paymentsRows = payments.map(p => {
-      const notes = (p.notes ?? '').trim()
-      const isOther = (p.payment_type || '').toLowerCase() === 'other'
-      const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
-      const mainLine = isOther ? (notes || 'Other') : p.payment_type
-      const notesCell = (!isOther && notes ? notes : '') + (p.order_no ? ` #${p.order_no}` : '')
-      const amountStr = isAddToDebt ? fmtMoney(Math.abs(p.amount)) : `-${fmtMoney(Math.abs(p.amount))}`
-      return `
-        <tr>
-          <td>${formatDate(p.payment_date)}</td>
-          <td>${mainLine}</td>
-          <td>${notesCell}</td>
-          <td class="num">${amountStr}</td>
-        </tr>`
-    }).join('')
-
-    const debtorRows = debtors.map(d => `
-      <tr>
-        <td>${d.partner_name}</td>
-        <td class="num">${fmtIntMoney(d.net_owed)}</td>
-      </tr>`).join('')
-
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>${partner.name} – Partner Statement</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
-    .controls { display: flex; gap: 12px; margin-bottom: 20px; }
-    .btn { padding: 10px 20px; border: 1px solid #ddd; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: 14px; font-weight: 500; }
-    .btn:hover { background: #e5e5e5; }
-    .btn-primary { background: #2f6df6; color: white; border-color: #2f6df6; }
-    .btn-primary:hover { background: #1e5ce6; }
-    h1 { font-size: 24px; margin-bottom: 4px; }
-    h2 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; }
-    .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
-    .summary { display: grid; grid-template-columns: 1fr auto; gap: 4px 32px; max-width: 280px; margin-bottom: 4px; font-size: 14px; }
-    .summary .val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .summary .big { font-size: 17px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #000; font-size: 13px; font-weight: 600; }
-    td { padding: 8px 6px; border-bottom: 1px solid #eee; font-size: 13px; vertical-align: top; }
-    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    @media print { .controls { display: none; } }
-  </style>
-</head>
-<body>
-  <div class="controls">
-    <button class="btn btn-primary" onclick="window.print()">Print</button>
-    <button class="btn" onclick="window.close()">Close</button>
-  </div>
-  <h1>${partner.name}</h1>
-  <div class="subtitle">Generated: ${now}</div>
-  <div class="summary">
-    <span>Net owed to partner</span><span class="val big">${fmtIntMoney(totals.net_owed)}</span>
-    <span>Total owed</span><span class="val">${fmtIntMoney(totals.total_owed)}</span>
-    <span>Total paid</span><span class="val">${fmtIntMoney(totals.total_paid)}</span>
-  </div>
-  ${debtors.length > 0 ? `
-  <h2>Owed by Other Partners</h2>
-  <table>
-    <thead><tr><th>Partner</th><th class="num">Amount</th></tr></thead>
-    <tbody>${debtorRows}</tbody>
-  </table>` : ''}
-  <h2>Orders with Partner Stake</h2>
-  ${orders.length === 0 ? '<p style="color:#666;font-size:13px;margin-top:8px">No orders</p>' : `
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th><th>Customer</th><th>Product</th>
-        <th class="num">Qty</th><th class="num">Unit price</th>
-        <th class="num">Order total</th><th class="num">Partner share</th>
-      </tr>
-    </thead>
-    <tbody>${ordersRows}</tbody>
-  </table>`}
-  <h2>Payments to Partner</h2>
-  ${payments.length === 0 ? '<p style="color:#666;font-size:13px;margin-top:8px">No payments</p>' : `
-  <table>
-    <thead><tr><th>Date</th><th>Type</th><th>Notes</th><th class="num">Amount</th></tr></thead>
-    <tbody>${paymentsRows}</tbody>
-  </table>`}
-</body>
-</html>`
-
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    printWindow.location.href = url
-    printWindow.onload = () => {
-      URL.revokeObjectURL(url)
-      printWindow.focus()
-      const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
-      if (isDesktop) printWindow.print()
-    }
-  }
-
   return (
     <div className="card page-normal" style={{paddingBottom: 12}}>
       <div style={{ display:'flex', alignItems:'center', gap:8, minWidth: 0 }}>
@@ -507,7 +400,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           {t('edit')}
         </Link>
         <button
-          onClick={printPartner}
+          onClick={() => PrintManager.openPrintDialog()}
           className="helper"
           style={{ background:'none', border:'none', padding:0, cursor:'pointer', fontSize:14, lineHeight:1 }}
           title="Print to PDF"
@@ -924,11 +817,17 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         order={selectedOrder}
       />
 
-      <PaymentDetailModal 
+      <PaymentDetailModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         payment={selectedPayment}
         isPartnerPayment={true}
+      />
+
+      <PrintDialog
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        options={printOptions}
       />
 
     </div>

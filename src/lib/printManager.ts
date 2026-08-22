@@ -311,10 +311,34 @@ html, body { height: auto !important; overflow: visible !important; background: 
 [data-printable] { display: block !important; break-inside: auto !important; page-break-inside: auto !important; }
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
+.print-controls {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.print-btn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+}
+.print-btn:hover { background: #e5e5e5; }
+.print-btn-primary { background: #2f6df6; color: #fff; border-color: #2f6df6; }
+.print-btn-primary:hover { background: #1e5ce6; }
 @page { size: A4; margin: 12mm; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { background: #fff !important; color: #000 !important; }
+  .print-controls { display: none !important; }
   .print-hidden { display: none !important; }
   .card, .panel { box-shadow: none !important; border: none !important; }
   h3, h4 { break-after: avoid; page-break-after: avoid; }
@@ -322,6 +346,10 @@ html, body { height: auto !important; overflow: visible !important; background: 
 </style>
 </head>
 <body>
+<div class="print-controls">
+  <button class="print-btn print-btn-primary" onclick="window.print()">Print</button>
+  <button class="print-btn" onclick="window.close()">Cancel</button>
+</div>
 <div id="print-root">
 ${processedHtml}
 </div>
