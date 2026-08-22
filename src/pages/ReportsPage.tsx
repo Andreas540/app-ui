@@ -123,9 +123,12 @@ async function fetchRpsData(
 // Renders "From: Mon" above a bar when a year's data doesn't start in January
 function PartialYearLabel({ x, y, width, value }: any) {
   if (!value) return null
-  const d = new Date(value)
-  if (d.getMonth() === 0) return null   // starts in January = full year, no label needed
-  const mon = d.toLocaleString('en-US', { month: 'short' })
+  // Split 'YYYY-MM-...' directly — avoids new Date() timezone/parsing inconsistencies
+  const parts = String(value).split('-')
+  const minMon = parseInt(parts[1] ?? '0', 10)  // 1–12
+  if (!minMon || minMon === 1) return null   // January or unparseable = full year
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const mon = MONTHS[minMon - 1]
   return (
     <text
       x={(x ?? 0) + (width ?? 0) / 2}
