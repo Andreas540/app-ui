@@ -13,6 +13,8 @@ import {
   VISIBLE_DESKTOP,
 } from '../components/RpsCharts'
 
+const LS_COLS = 'simulations_cols'
+
 export default function SimulationsPage() {
   const { t } = useTranslation('reports')
   const { t: tc } = useTranslation()
@@ -30,6 +32,7 @@ export default function SimulationsPage() {
   const [visibleStart, setVisibleStart] = useState(0)
   const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
+  const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -89,11 +92,25 @@ export default function SimulationsPage() {
     setFromMonth(''); setToMonth(''); setFromYear(''); setToYear('')
   }
 
+  function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
+
   return (
     <div className="page-wide">
-      <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
-        {t('simulationsTitle', 'Simulations')}
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
+          {t('simulationsTitle', 'Simulations')}
+        </h1>
+        <div className="desktop-only" style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+          {([2, 3] as const).map(n => (
+            <button key={n} onClick={() => saveCols(n)} style={{
+              height: 36, width: 36, padding: 0, fontSize: 13, fontWeight: 600,
+              background: cols === n ? 'var(--primary)' : 'transparent',
+              color: cols === n ? '#fff' : 'var(--text-secondary)',
+              border: 'none', cursor: 'pointer',
+            }}>{n}</button>
+          ))}
+        </div>
+      </div>
 
       {/* Simulation type */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -153,7 +170,9 @@ export default function SimulationsPage() {
       {!loading && simType === 'sales-profit' && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))',
+          gridTemplateColumns: isMobile
+            ? 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))'
+            : cols === 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
           gap: 16,
         }}>
           {ALL_REPORTS.map(report => (

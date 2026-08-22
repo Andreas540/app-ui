@@ -21,6 +21,7 @@ import {
 
 const LS_ORDER  = 'reports_order'
 const LS_HIDDEN = 'reports_hidden'
+const LS_COLS   = 'reports_cols'
 
 function loadOrder(): string[] {
   try {
@@ -83,6 +84,7 @@ export default function ReportsPage() {
   const [visibleStart, setVisibleStart] = useState(0)
   const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
+  const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
   const btnRef = useRef<HTMLButtonElement>(null)
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const infoOverlayRef = useRef<HTMLDivElement | null>(null)
@@ -151,6 +153,8 @@ export default function ReportsPage() {
     setFromMonth(''); setToMonth(''); setFromYear(''); setToYear('')
   }
 
+  function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
+
   function toggleVisible(id: string) {
     setVisible(v => {
       const next   = v.includes(id) ? v.filter(x => x !== id) : [...v, id]
@@ -183,8 +187,19 @@ export default function ReportsPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <h3 style={{ margin: 0 }}>{t('pageTitle')}</h3>
 
-          {/* Report selector dropdown */}
-          <div>
+          {/* Cols toggle + Report selector dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="desktop-only" style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              {([2, 3] as const).map(n => (
+                <button key={n} onClick={() => saveCols(n)} style={{
+                  height: 36, width: 36, padding: 0, fontSize: 13, fontWeight: 600,
+                  background: cols === n ? 'var(--primary)' : 'transparent',
+                  color: cols === n ? '#fff' : 'var(--text-secondary)',
+                  border: 'none', cursor: 'pointer',
+                }}>{n}</button>
+              ))}
+            </div>
+            <div>
             <button
               ref={btnRef}
               onClick={() => setDropdownOpen(o => !o)}
@@ -223,6 +238,7 @@ export default function ReportsPage() {
                 </>
               )
             })()}
+            </div>
           </div>
         </div>
 
@@ -281,7 +297,9 @@ export default function ReportsPage() {
       {!loading && orderedVisible.length > 0 && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))',
+          gridTemplateColumns: isMobile
+            ? 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))'
+            : cols === 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
           gap: 16,
         }}>
           {orderedVisible.map((report, idx) => (
