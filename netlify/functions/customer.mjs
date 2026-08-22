@@ -106,7 +106,6 @@ async function getCustomer(event) {
         o.notes,
         pa.partner_amount
       ORDER BY o.order_date DESC, o.order_no DESC
-      LIMIT 100
     `
 
     const payments = await sql`
