@@ -114,7 +114,9 @@ async function getCustomer(event) {
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'::json
         ) AS items,
-        pa.partner_amount
+        pa.partner_amount,
+        ret.return_count,
+        ret.total_settled
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
@@ -123,6 +125,12 @@ async function getCustomer(event) {
         FROM order_partners op
         WHERE op.order_id = o.id
       ) pa ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*)::int AS return_count,
+               COALESCE(SUM(r.settlement_amount),0)::numeric(12,2) AS total_settled
+        FROM returns r
+        WHERE r.order_id = o.id AND r.tenant_id = ${TENANT_ID}
+      ) ret ON true
       WHERE o.tenant_id = ${TENANT_ID}
         AND o.customer_id = ${id}
       GROUP BY
@@ -134,7 +142,9 @@ async function getCustomer(event) {
         o.delivered_at,
         o.delivery_status,
         o.notes,
-        pa.partner_amount
+        pa.partner_amount,
+        ret.return_count,
+        ret.total_settled
       ORDER BY o.order_date DESC, o.order_no DESC
     `
 

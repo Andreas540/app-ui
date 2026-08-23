@@ -185,12 +185,32 @@ LIMIT 1
       console.error('delivery_events fetch failed', e)
     }
 
+    const orderReturns = await sql`
+      SELECT r.id, r.return_date, r.reason, r.reason_notes, r.condition,
+             r.settlement_type, r.settlement_amount, r.notes, r.supplier_fault,
+             COALESCE(
+               json_agg(json_build_object(
+                 'product_name', p.name,
+                 'qty_returned',  ri.qty_returned,
+                 'unit_price',    ri.unit_price
+               ) ORDER BY ri.id) FILTER (WHERE ri.id IS NOT NULL),
+               '[]'::json
+             ) AS items
+      FROM returns r
+      LEFT JOIN return_items ri ON ri.return_id = r.id
+      LEFT JOIN products p ON p.id = ri.product_id
+      WHERE r.order_id = ${id} AND r.tenant_id = ${TENANT_ID}
+      GROUP BY r.id
+      ORDER BY r.return_date DESC, r.created_at DESC
+    `
+
     return cors(200, {
       order: { ...order, profit, profitPercent, paid_amount: paidAmount, total: orderValue },
       items,
       bookings,
       partner_splits: partnerSplits,
       delivery_events: deliveryEvents,
+      returns: orderReturns,
     })
 }
 

@@ -13,7 +13,7 @@ import { formatDate } from '../lib/time'
 
 interface LogItem {
   id: string
-  kind: 'order' | 'payment' | 'note' | 'message'
+  kind: 'order' | 'payment' | 'note' | 'message' | 'return'
   date: string
   // order
   order_no?: number
@@ -34,6 +34,10 @@ interface LogItem {
   // message
   body?: string
   direction?: 'inbound' | 'outbound'
+  // return
+  qty_returned?: number
+  settlement_type?: string
+  settlement_amount?: number
 }
 
 // Timestamps from TIMESTAMPTZ columns (e.g. created_at) arrive as UTC ISO strings.
@@ -253,6 +257,39 @@ function LogItemCard({ item, onOrderClick, onPaymentClick, onDeleteNote }: {
           </div>
           {item.amount != null && (
             <div style={{ fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{item.amount.toFixed(2)}</div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (item.kind === 'return') {
+    const settlement = item.settlement_type === 'refund' ? 'Refund'
+      : item.settlement_type === 'store_credit' ? 'Store credit'
+      : 'No settlement'
+    return (
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', background: 'var(--bg)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: 'var(--color-error, #ef4444)', marginBottom: 2, fontWeight: 500 }}>
+              Return · {formatDate(item.date)}
+              {item.order_no != null && <span style={{ marginLeft: 6, fontWeight: 400, color: 'var(--muted)' }}>· Order #{item.order_no}</span>}
+            </div>
+            <div style={{ fontSize: 13 }}>
+              {item.product_name && <span style={{ fontWeight: 500 }}>{item.product_name}</span>}
+              {item.qty_returned != null && item.qty_returned > 0 && (
+                <span style={{ color: 'var(--muted)', marginLeft: 6 }}>× {item.qty_returned}</span>
+              )}
+            </div>
+          </div>
+          {item.settlement_amount != null && item.settlement_amount > 0 && (
+            <div style={{ fontSize: 13, flexShrink: 0, textAlign: 'right' }}>
+              <div style={{ color: 'var(--muted)', fontSize: 11 }}>{settlement}</div>
+              <div style={{ fontWeight: 500 }}>−{item.settlement_amount.toFixed(2)}</div>
+            </div>
+          )}
+          {(item.settlement_amount == null || item.settlement_amount === 0) && (
+            <div style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{settlement}</div>
           )}
         </div>
       </div>

@@ -37,6 +37,8 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
   const [loadingPartners, setLoadingPartners] = useState(false)
   const [bookings, setBookings] = useState<any[]>([])
   const [items, setItems] = useState<any[]>([])
+  const [returns, setReturns] = useState<any[]>([])
+  const [voidingReturnId, setVoidingReturnId] = useState<string | null>(null)
 
   // Reset local state whenever a new initialOrder is passed in
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
     setPartnerSplits([])
     setBookings([])
     setItems([])
+    setReturns([])
   }, [initialOrder])
 
     useEffect(() => {
@@ -66,6 +69,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
         setOrder({ ...initialOrder, ...data.order })
         setItems(data.items || [])
         setBookings(data.bookings || [])
+        setReturns(data.returns || [])
 
         // Handle partner splits
         if (data.partner_splits && data.partner_splits.length > 0) {
@@ -493,6 +497,55 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                 <div>{order.notes}</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Returns */}
+        {returns.length > 0 && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div className="helper" style={{ marginBottom: 8 }}>Returns</div>
+            {returns.map((ret: any) => {
+              const settlement = ret.settlement_type === 'refund' ? 'Refund'
+                : ret.settlement_type === 'store_credit' ? 'Store credit'
+                : 'No settlement'
+              const retItems: any[] = ret.items || []
+              return (
+                <div key={ret.id} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 13 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <div>
+                      <div style={{ color: 'var(--color-error, #ef4444)', fontWeight: 500, marginBottom: 4 }}>
+                        ↩ Return · {formatDate(ret.return_date)}
+                      </div>
+                      {retItems.map((item: any, i: number) => (
+                        <div key={i} style={{ color: 'var(--text-secondary)', marginBottom: 2 }}>
+                          {item.product_name} × {item.qty_returned}
+                        </div>
+                      ))}
+                      <div style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {settlement}{Number(ret.settlement_amount) > 0 ? `: ${fmtMoney(Number(ret.settlement_amount))}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      disabled={voidingReturnId === ret.id}
+                      onClick={async () => {
+                        if (!confirm('Void this return? This will restore the original balances.')) return
+                        setVoidingReturnId(ret.id)
+                        try {
+                          const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+                          const res = await fetch(`${base}/api/returns?id=${ret.id}`, { method: 'DELETE', headers: getAuthHeaders() })
+                          if (!res.ok) { alert('Failed to void return'); return }
+                          setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
+                        } catch { alert('Network error') }
+                        finally { setVoidingReturnId(null) }
+                      }}
+                      style={{ fontSize: 11, padding: '3px 10px', height: 26, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', flexShrink: 0, color: 'var(--color-error, #ef4444)' }}
+                    >
+                      {voidingReturnId === ret.id ? 'Voiding…' : 'Void'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 

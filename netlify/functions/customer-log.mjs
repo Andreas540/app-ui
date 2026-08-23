@@ -31,7 +31,7 @@ async function getLog(event) {
   const customer_id = event.queryStringParameters?.customer_id
   if (!customer_id) return cors(400, { error: 'customer_id required' })
 
-  const [orders, payments, notes] = await Promise.all([
+  const [orders, payments, notes, returns] = await Promise.all([
     sql`
       SELECT o.id, o.order_no, o.order_date AS date,
              o.delivered_at,
@@ -67,10 +67,26 @@ async function getLog(event) {
       WHERE tenant_id = ${TENANT_ID} AND customer_id = ${customer_id}
       ORDER BY created_at ASC
     `,
+    sql`
+      SELECT r.id, r.return_date AS date,
+             o.order_no,
+             NULLIF(STRING_AGG(DISTINCT COALESCE(p.name, ''), ', '), '') AS product_name,
+             COALESCE(SUM(ri.qty_returned), 0)::float8 AS qty_returned,
+             r.settlement_type,
+             r.settlement_amount::float8 AS settlement_amount,
+             'return' AS kind
+      FROM returns r
+      JOIN orders o ON o.id = r.order_id
+      LEFT JOIN return_items ri ON ri.return_id = r.id
+      LEFT JOIN products p ON p.id = ri.product_id
+      WHERE r.tenant_id = ${TENANT_ID} AND r.customer_id = ${customer_id}
+      GROUP BY r.id, r.return_date, o.order_no, r.settlement_type, r.settlement_amount
+      ORDER BY r.return_date DESC
+    `,
   ])
 
-  // Merge orders + payments by date DESC (stable: order_no / created_at as tiebreaker)
-  const base = [...orders, ...payments].sort((a, b) => {
+  // Merge orders + payments + returns by date DESC
+  const base = [...orders, ...payments, ...returns].sort((a, b) => {
     const diff = new Date(b.date).getTime() - new Date(a.date).getTime()
     if (diff !== 0) return diff
     // payments have no secondary key here; orders use order_no already sorted
