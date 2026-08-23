@@ -13,7 +13,7 @@ interface OrderDetailModalProps {
   order: any
   customerName?: string
   refreshKey?: number
-  onReturnVoided?: () => void
+  onReturnVoided?: (voidedItems: Array<{ order_item_id: string; qty_returned: number }>) => void
 }
 
 interface PartnerSplit {
@@ -547,8 +547,15 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                           const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
                           const res = await fetch(`${base}/api/returns?id=${ret.id}`, { method: 'DELETE', headers: getAuthHeaders() })
                           if (!res.ok) { alert('Failed to void return'); return }
+                          // Decrement qty_returned on each affected item in modal state
+                          const voidedItems: Array<{ order_item_id: string; qty_returned: number }> = ret.items || []
+                          setItems(prev => prev.map((item: any) => {
+                            const ri = voidedItems.find(v => v.order_item_id === item.order_item_id)
+                            if (!ri) return item
+                            return { ...item, qty_returned: Math.max(0, Number(item.qty_returned) - Number(ri.qty_returned)) }
+                          }))
                           setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
-                          onReturnVoided?.()
+                          onReturnVoided?.(voidedItems)
                         } catch { alert('Network error') }
                         finally { setVoidingReturnId(null) }
                       }}

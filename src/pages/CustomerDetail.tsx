@@ -1291,18 +1291,28 @@ export default function CustomerDetailPage() {
         order={selectedOrder}
         customerName={data?.customer?.name}
         refreshKey={orderModalRefreshKey}
-        onReturnVoided={() => {
+        onReturnVoided={(voidedItems) => {
           const voidedOrderId = (selectedOrder as any)?.id
           if (!voidedOrderId) return
           setData(prev => {
             if (!prev) return prev
             return {
               ...prev,
-              orders: prev.orders.map((o: any) =>
-                o.id === voidedOrderId
-                  ? { ...o, return_count: Math.max(0, (Number(o.return_count) || 1) - 1), total_qty_returned: Math.max(0, (Number(o.total_qty_returned) || 0) - 1) }
-                  : o
-              ),
+              orders: prev.orders.map((o: any) => {
+                if (o.id !== voidedOrderId) return o
+                const updatedItems = (o.items || []).map((item: any) => {
+                  const ri = voidedItems.find(v => v.order_item_id === item.id)
+                  if (!ri) return item
+                  return { ...item, qty_returned: Math.max(0, Number(item.qty_returned) - Number(ri.qty_returned)) }
+                })
+                const newTotalQtyReturned = updatedItems.reduce((sum: number, item: any) => sum + (Number(item.qty_returned) || 0), 0)
+                return {
+                  ...o,
+                  items: updatedItems,
+                  return_count: Math.max(0, (Number(o.return_count) || 1) - 1),
+                  total_qty_returned: newTotalQtyReturned,
+                }
+              }),
             }
           })
         }}
