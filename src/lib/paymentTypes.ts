@@ -33,6 +33,8 @@ export type PaymentType =
   | 'Lån/Deposition'
   | 'Återbetalning'
   | 'Förskottsbetalning'
+  // Store credit redemption
+  | 'Store Credit'
   // Auto-created by Stripe webhook
   | 'stripe'
 

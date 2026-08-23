@@ -42,6 +42,7 @@ console.log('Loading customers for tenant:', tenantId);
         COALESCE(t.total_orders, 0)::numeric(12,2)          AS total_orders,
         COALESCE(t.total_payments, 0)::numeric(12,2)         AS total_payments,
         COALESCE(t.total_return_credits, 0)::numeric(12,2)   AS total_return_credits,
+        (COALESCE(t.total_issued_store_credit, 0) - COALESCE(t.total_redeemed_store_credit, 0))::numeric(12,2) AS available_store_credit,
         (COALESCE(t.total_orders, 0) - COALESCE(t.total_payments, 0) - COALESCE(t.total_return_credits, 0))::numeric(12,2) AS owed_to_me
       FROM customers c
       LEFT JOIN LATERAL (
@@ -59,7 +60,17 @@ console.log('Loading customers for tenant:', tenantId);
              FROM returns r
             WHERE r.tenant_id = ${tenantId}
               AND r.customer_id = c.id
-              AND r.settlement_type IN ('refund', 'store_credit')) AS total_return_credits
+              AND r.settlement_type = 'refund') AS total_return_credits,
+          (SELECT COALESCE(SUM(r.settlement_amount), 0)
+             FROM returns r
+            WHERE r.tenant_id = ${tenantId}
+              AND r.customer_id = c.id
+              AND r.settlement_type = 'store_credit') AS total_issued_store_credit,
+          (SELECT COALESCE(SUM(p.amount), 0)
+             FROM payments p
+            WHERE p.tenant_id = ${tenantId}
+              AND p.customer_id = c.id
+              AND p.payment_type = 'Store Credit') AS total_redeemed_store_credit
       ) t ON TRUE
       WHERE c.tenant_id = ${tenantId}
         AND NOT EXISTS (

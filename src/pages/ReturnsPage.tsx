@@ -117,7 +117,6 @@ export default function ReturnsPage() {
   const [notes,      setNotes]      = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [err,        setErr]        = useState<string | null>(null)
-  const [successId,  setSuccessId]  = useState<string | null>(null)
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const selectedOrder = useMemo(
@@ -265,41 +264,12 @@ export default function ReturnsPage() {
       })
       const d = await res.json()
       if (!res.ok) { setErr(d.error ?? 'Failed to save return'); setSubmitting(false); return }
-      setSuccessId(d.id)
+      alert(`Return registered`)
+      if (customer) navigate(`/customers/${customer.id}`)
     } catch (ex: any) {
       setErr(ex?.message ?? 'Network error')
     }
     setSubmitting(false)
-  }
-
-  function resetForm() {
-    setSuccessId(null)
-    setOrderId(''); setReturnQtys({})
-    setReason(''); setCondition(''); setSettlementType('')
-    setSettlementAmount(''); setNotes(''); setSupplierFault(false)
-  }
-
-  // ── Success state ─────────────────────────────────────────────────────────
-  if (successId) {
-    return (
-      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 44, marginBottom: 12, color: 'var(--color-success, #10b981)' }}>✓</div>
-        <h3 style={{ margin: '0 0 8px', color: 'var(--color-success, #10b981)' }}>Return registered</h3>
-        <p className="helper" style={{ marginBottom: 24 }}>
-          Saved and the customer balance updated.
-        </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {customer && (
-            <button className="primary" onClick={() => navigate(`/customers/${customer.id}`)}>
-              Go to {customer.name}
-            </button>
-          )}
-          <button onClick={resetForm}>
-            Register another
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -576,7 +546,8 @@ export default function ReturnsPage() {
           >
             {submitting ? 'Saving…' : 'Register return'}
           </button>
-          <button type="button" onClick={resetForm}
+          <button type="button"
+            onClick={() => { setOrderId(''); setReturnQtys({}); setReason(''); setCondition(''); setSettlementType(''); setSettlementAmount(''); setNotes(''); setSupplierFault(false) }}
             style={{ height: 40, padding: '0 16px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}>
             {t('clear')}
           </button>

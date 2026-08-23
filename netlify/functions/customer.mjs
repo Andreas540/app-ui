@@ -60,16 +60,39 @@ async function getCustomer(event) {
         WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
       ),
       r AS (
-        SELECT COALESCE(SUM(settlement_amount),0)::numeric(12,2) AS total_return_credits
+        SELECT
+          COALESCE(SUM(CASE WHEN settlement_type = 'refund' THEN settlement_amount ELSE 0 END),0)::numeric(12,2) AS total_refund_credits,
+          COALESCE(SUM(CASE WHEN settlement_type = 'store_credit' THEN settlement_amount ELSE 0 END),0)::numeric(12,2) AS total_issued_store_credit
         FROM returns
         WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
           AND settlement_type IN ('refund', 'store_credit')
+      ),
+      sc_used AS (
+        SELECT COALESCE(SUM(amount),0)::numeric(12,2) AS total_redeemed_store_credit
+        FROM payments
+        WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
+          AND payment_type = 'Store Credit'
+      ),
+      dr AS (
+        SELECT
+          COALESCE(SUM(CASE WHEN o.delivered THEN ret.settlement_amount ELSE 0 END),0)::numeric(12,2) AS delivered_return_credits,
+          COALESCE(SUM(CASE WHEN NOT o.delivered THEN ret.settlement_amount ELSE 0 END),0)::numeric(12,2) AS not_delivered_return_credits
+        FROM returns ret
+        JOIN orders o ON o.id = ret.order_id
+        WHERE ret.tenant_id = ${TENANT_ID}
+          AND ret.customer_id = ${id}
+          AND ret.settlement_type = 'refund'
       )
-      SELECT COALESCE(o.total_orders,0)         AS total_orders,
-             COALESCE(p.total_payments,0)        AS total_payments,
-             r.total_return_credits,
-             (COALESCE(o.total_orders,0) - COALESCE(p.total_payments,0) - r.total_return_credits) AS owed_to_me
-      FROM o, p, r
+      SELECT COALESCE(o.total_orders,0)                  AS total_orders,
+             COALESCE(p.total_payments,0)                 AS total_payments,
+             r.total_refund_credits                       AS total_return_credits,
+             r.total_issued_store_credit,
+             sc_used.total_redeemed_store_credit,
+             (r.total_issued_store_credit - sc_used.total_redeemed_store_credit) AS available_store_credit,
+             dr.delivered_return_credits,
+             dr.not_delivered_return_credits,
+             (COALESCE(o.total_orders,0) - COALESCE(p.total_payments,0) - r.total_refund_credits) AS owed_to_me
+      FROM o, p, r, sc_used, dr
     `
 
     const orders = await sql`

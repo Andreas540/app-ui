@@ -77,6 +77,8 @@ export default function Payments() {
   const [notes, setNotes] = useState('')
   // Partner selector shown only when PaymentType === "Partner credit"
   const [partnerForCreditId, setPartnerForCreditId] = useState('')
+  // Store credit available for selected customer
+  const [availableStoreCredit, setAvailableStoreCredit] = useState(0)
 
   // form - partner payments
   const [partnerId, setPartnerId] = useState('')
@@ -184,6 +186,21 @@ useEffect(() => {
     })()
   }, [entityId, config.payments.showOrderSelection])
 
+  // Fetch available store credit whenever selected customer changes
+  useEffect(() => {
+    if (!entityId) { setAvailableStoreCredit(0); return }
+    ;(async () => {
+      try {
+        const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+        const res = await fetch(`${base}/api/customer?id=${entityId}`, { headers: getAuthHeaders() })
+        if (!res.ok) return
+        const data = await res.json()
+        const sc = Number(data.totals?.available_store_credit || 0)
+        setAvailableStoreCredit(Math.max(0, sc))
+      } catch { /* silent */ }
+    })()
+  }, [entityId])
+
   useEffect(() => {
     if (!partnerId || !config.payments.showOrderSelection) {
       setPartnerOrders([])
@@ -229,6 +246,8 @@ useEffect(() => {
     () => (paymentType || '').trim().toLowerCase() === 'partner credit',
     [paymentType]
   )
+
+  const isStoreCredit = paymentType === 'Store Credit'
 
   // ---- Minus handling helpers (keep caret to the right of '-') ----
   function keepCaretAfterMinus(input: HTMLInputElement | null) {
@@ -407,6 +426,11 @@ useEffect(() => {
     const amountNum = parseAmount(amountStr)
     if (!Number.isFinite(amountNum) || amountNum === 0) {
       alert(t('payments.alertEnterAmount'))
+      return
+    }
+
+    if (isStoreCredit && amountNum > availableStoreCredit) {
+      alert(`Store credit available: ${fmtMoney(availableStoreCredit)}. Cannot redeem more than available balance.`)
       return
     }
 
@@ -639,10 +663,15 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   if ((e.target.value || '').toLowerCase() === 'partner credit' && !partnerForCreditId && partners.length) {
                     setPartnerForCreditId(partners[0].id)
                   }
+                  // If switching to Store Credit, pre-fill with available balance
+                  if (e.target.value === 'Store Credit') {
+                    setAmountStr(String(availableStoreCredit))
+                  }
                 }}
                 style={{ height: CONTROL_H }}
               >
                 {activePaymentTypes.filter(type => !config.payments.visibleCustomerPaymentTypes || config.payments.visibleCustomerPaymentTypes.includes(type)).map(type => <option key={type} value={type}>{type}</option>)}
+                {availableStoreCredit > 0 && <option value="Store Credit">Store Credit</option>}
               </select>
             </div>
             <div>
@@ -663,6 +692,11 @@ const hasCustomerType = directCustomers.length + viaPartner.length > 0
                   opacity: isMinusOnly ? 0.6 : undefined,
                 }}
               />
+              {isStoreCredit && (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  Available: {fmtMoney(availableStoreCredit)}
+                </div>
+              )}
             </div>
           </div>
 

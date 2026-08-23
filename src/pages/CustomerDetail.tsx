@@ -442,8 +442,11 @@ export default function CustomerDetailPage() {
   const totalPayments = Number((totals as any).total_payments) || 0
   const deliveredPaid = Math.min(totalPayments, deliveredGrossTotal)
   const notDeliveredPaid = totalPayments - deliveredPaid
-  const deliveredOrdersTotal = Math.max(0, deliveredGrossTotal - deliveredPaid)
-  const notDeliveredOrdersTotal = Math.max(0, notDeliveredGrossTotal - notDeliveredPaid)
+  const deliveredReturnCredits = Number((totals as any).delivered_return_credits) || 0
+  const notDeliveredReturnCredits = Number((totals as any).not_delivered_return_credits) || 0
+  const deliveredOrdersTotal = Math.max(0, deliveredGrossTotal - deliveredPaid - deliveredReturnCredits)
+  const notDeliveredOrdersTotal = Math.max(0, notDeliveredGrossTotal - notDeliveredPaid - notDeliveredReturnCredits)
+  const availableStoreCredit = Number((totals as any).available_store_credit) || 0
 
   // Compact layout constants
   const DATE_COL = 55 // px (smaller; pulls middle text left)
@@ -895,6 +898,10 @@ export default function CustomerDetailPage() {
           <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(deliveredOrdersTotal)}</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('customerDetail.thereofNotDelivered')}</div>
           <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(notDeliveredOrdersTotal)}</div>
+        </>)}
+        {availableStoreCredit > 0 && (<>
+          <div style={{ fontSize: 13, color: 'var(--color-success, #10b981)', fontWeight: 500 }}>Store credit available</div>
+          <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--color-success, #10b981)', fontWeight: 600 }}>{fmtMoney(availableStoreCredit)}</div>
         </>)}
       </div>
       <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
