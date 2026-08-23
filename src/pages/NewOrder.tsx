@@ -400,23 +400,22 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="card page-normal">
+    <div className="page-normal">
+      <div style={{ display: 'flex', marginBottom: 16, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+        {(['order', 'return'] as const).map(tab => (
+          <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
+            padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
+            background: activeTab === tab ? 'var(--primary)' : 'transparent',
+            color: activeTab === tab ? '#fff' : 'inherit',
+            fontWeight: activeTab === tab ? 600 : 400,
+          }}>
+            {tab === 'order' ? 'Order' : 'Return'}
+          </button>
+        ))}
+      </div>
+      <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
-            {(['order', 'return'] as const).map(tab => (
-              <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
-                padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
-                background: activeTab === tab ? 'var(--primary)' : 'transparent',
-                color: activeTab === tab ? '#fff' : 'inherit',
-                fontWeight: activeTab === tab ? 600 : 400,
-              }}>
-                {tab === 'order' ? 'Order' : 'Return'}
-              </button>
-            ))}
-          </div>
-          <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
-        </div>
+        <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
 
         {Number.isFinite(totalOrderValue) && totalOrderValue > 0 && (
           <div style={{ textAlign: 'right', fontSize: 14 }}>
@@ -919,6 +918,7 @@ export default function NewOrder() {
         <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>
           {showMoreFields ? t('orders.less') : t('orders.more')}
         </button>
+      </div>
       </div>
     </div>
   )

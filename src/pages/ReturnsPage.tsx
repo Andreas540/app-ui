@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getAuthHeaders } from '../lib/api'
+import { getAuthHeaders, listCustomersWithOwed } from '../lib/api'
 import { useLocale } from '../contexts/LocaleContext'
 import { todayYMD, formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
@@ -157,11 +157,8 @@ export default function ReturnsPage() {
     searchTimer.current = setTimeout(async () => {
       setCustLoading(true)
       try {
-        const res = await fetch(`${base}/api/customers?q=${encodeURIComponent(custSearch)}`, {
-          cache: 'no-store', headers: getAuthHeaders(),
-        })
-        const d = await res.json()
-        setCustResults((d.customers ?? []).slice(0, 8))
+        const { customers } = await listCustomersWithOwed(custSearch)
+        setCustResults(customers.slice(0, 8))
       } catch {}
       setCustLoading(false)
     }, 300)
