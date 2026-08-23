@@ -9,6 +9,7 @@ import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import ReturnsPage from './ReturnsPage'
 
 type PartnerRef = { id: string; name: string }
 
@@ -370,10 +371,52 @@ export default function NewOrder() {
   const partner1TotalStr = partner1Total > 0 ? fmtMoney(partner1Total) : ''
   const partner2TotalStr = partner2Total > 0 ? fmtMoney(partner2Total) : ''
 
+  const tabParam = new URLSearchParams(location.search).get('tab')
+  const activeTab = tabParam === 'return' ? 'return' : 'order'
+
+  function switchTab(tab: 'order' | 'return') {
+    const next = tab === 'return' ? '/orders/new?tab=return' : '/orders/new'
+    navigate(next, { replace: true })
+  }
+
+  if (activeTab === 'return') {
+    return (
+      <div className="page-normal">
+        <div style={{ display: 'flex', marginBottom: 20, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start', width: 'fit-content' }}>
+          {(['order', 'return'] as const).map(tab => (
+            <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
+              padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
+              background: activeTab === tab ? 'var(--primary)' : 'transparent',
+              color: activeTab === tab ? '#fff' : 'inherit',
+              fontWeight: activeTab === tab ? 600 : 400,
+            }}>
+              {tab === 'order' ? 'Order' : 'Return'}
+            </button>
+          ))}
+        </div>
+        <ReturnsPage />
+      </div>
+    )
+  }
+
   return (
     <div className="card page-normal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-        <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+            {(['order', 'return'] as const).map(tab => (
+              <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
+                padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
+                background: activeTab === tab ? 'var(--primary)' : 'transparent',
+                color: activeTab === tab ? '#fff' : 'inherit',
+                fontWeight: activeTab === tab ? 600 : 400,
+              }}>
+                {tab === 'order' ? 'Order' : 'Return'}
+              </button>
+            ))}
+          </div>
+          <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
+        </div>
 
         {Number.isFinite(totalOrderValue) && totalOrderValue > 0 && (
           <div style={{ textAlign: 'right', fontSize: 14 }}>

@@ -58,11 +58,18 @@ async function getCustomer(event) {
         SELECT SUM(amount)::numeric(12,2) AS total_payments
         FROM payments
         WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
+      ),
+      r AS (
+        SELECT COALESCE(SUM(settlement_amount),0)::numeric(12,2) AS total_return_credits
+        FROM returns
+        WHERE tenant_id = ${TENANT_ID} AND customer_id = ${id}
+          AND settlement_type IN ('refund', 'store_credit')
       )
-      SELECT COALESCE(o.total_orders,0) AS total_orders,
-             COALESCE(p.total_payments,0) AS total_payments,
-             (COALESCE(o.total_orders,0) - COALESCE(p.total_payments,0)) AS owed_to_me
-      FROM o, p
+      SELECT COALESCE(o.total_orders,0)         AS total_orders,
+             COALESCE(p.total_payments,0)        AS total_payments,
+             r.total_return_credits,
+             (COALESCE(o.total_orders,0) - COALESCE(p.total_payments,0) - r.total_return_credits) AS owed_to_me
+      FROM o, p, r
     `
 
     const orders = await sql`

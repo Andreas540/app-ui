@@ -2,7 +2,7 @@ export const AVAILABLE_FEATURES = {
   // Sales & Cash Flow
   dashboard:       { id: 'dashboard',       name: 'Dashboard',      route: '/',                   category: 'Sales',  module: 'sales' },
   customers:       { id: 'customers',       name: 'Customers',      route: '/customers',           category: 'Sales',  module: 'sales' },
-  orders:          { id: 'orders',          name: 'New Order',      route: '/orders/new',          category: 'Sales',  module: 'sales' },
+  orders:          { id: 'orders',          name: 'Orders & Returns', route: '/orders/new',          category: 'Sales',  module: 'sales' },
   payments:        { id: 'payments',        name: 'New Payment',    route: '/payments',            category: 'Sales',  module: 'sales' },
   partners:        { id: 'partners',        name: 'Partners',       route: '/partners',            category: 'Sales',  module: 'sales' },
   products:        { id: 'products',        name: 'Products',       route: '/products/new',        category: 'Sales',  module: 'sales' },
