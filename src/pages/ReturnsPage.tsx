@@ -63,8 +63,8 @@ const RadioRow = ({
 )
 
 const inputStyle: React.CSSProperties = {
-  height: 36, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 6,
-  background: 'var(--input)', color: 'var(--text)', fontSize: 14,
+  height: 36, padding: '0 10px', border: '1px solid var(--line)', borderRadius: 6,
+  background: 'var(--input-bg)', color: 'var(--text)', fontSize: 14,
   width: '100%', boxSizing: 'border-box',
 }
 
