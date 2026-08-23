@@ -369,29 +369,29 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
 
     const now = new Date().toLocaleString()
 
-    const fmt = (n: number) => {
-      const abs = Math.abs(n)
-      return abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    }
+    const fmtAbs = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const fmtAmt = (n: number) => n < 0 ? `-$${fmtAbs(n)}` : `$${fmtAbs(n)}`
 
     const owedBlock = showOwed ? `
-      <h2>Owed to partner</h2>
-      <table>
-        <tbody>
-          <tr class="summary-row">
-            <td>Owed to ${partner.name}</td>
-            <td class="amt-col">$${fmt(totals.net_owed)}</td>
-          </tr>
-          ${debtors.map(d => `
-            <tr>
-              <td style="padding-left:16px;color:#555">Owed by ${d.partner_name}</td>
-              <td class="amt-col" style="color:#555">$${fmt(d.net_owed)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      <div class="section-header">
+        <span>Owed to ${partner.name}</span>
+        <span>${fmtAmt(totals.net_owed)}</span>
+      </div>
+      ${debtors.length > 0 ? `
+        <table>
+          <tbody>
+            ${debtors.map(d => `
+              <tr>
+                <td style="color:#555">Owed by ${d.partner_name}</td>
+                <td class="amt-col" style="color:#555">${fmtAmt(d.net_owed)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : ''}
     ` : ''
 
+    const ordersTotal = orders.reduce((s, o) => s + Number(o.partner_amount), 0)
     const ordersBlock = showOrders ? `
       <h2>Orders with partner stake</h2>
       <table>
@@ -408,15 +408,27 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
             <tr>
               <td>${formatDate(o.order_date)}</td>
               <td><strong>${o.customer_name}</strong></td>
-              <td>${[o.product_name || '—', o.qty ?? '—', o.unit_price != null ? '$' + fmt(o.unit_price) : '—', '$' + fmt(o.total)].join(' / ')}</td>
-              <td class="amt-col">$${fmt(o.partner_amount)}</td>
+              <td>${[o.product_name || '—', o.qty ?? '—', o.unit_price != null ? '$' + fmtAbs(o.unit_price) : '—', '$' + fmtAbs(o.total)].join(' / ')}</td>
+              <td class="amt-col">$${fmtAbs(o.partner_amount)}</td>
             </tr>
           `).join('')}
           ${orders.length === 0 ? '<tr><td colspan="4" style="color:#888">No orders yet.</td></tr>' : ''}
         </tbody>
+        ${orders.length > 0 ? `
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="3">Total</td>
+              <td class="amt-col">$${fmtAbs(ordersTotal)}</td>
+            </tr>
+          </tfoot>
+        ` : ''}
       </table>
     ` : ''
 
+    const paymentsTotal = payments.reduce((s, p) => {
+      const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
+      return s + (isAddToDebt ? 1 : -1) * Math.abs(p.amount)
+    }, 0)
     const paymentsBlock = showPayments ? `
       <h2>Payments to partner</h2>
       <table>
@@ -431,7 +443,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         <tbody>
           ${payments.map(p => {
             const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
-            const amtDisplay = isAddToDebt ? '$' + fmt(Math.abs(p.amount)) : '-$' + fmt(Math.abs(p.amount))
+            const amtDisplay = isAddToDebt ? '$' + fmtAbs(p.amount) : '-$' + fmtAbs(p.amount)
             return `
               <tr>
                 <td>${formatDate(p.payment_date)}</td>
@@ -443,6 +455,14 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           }).join('')}
           ${payments.length === 0 ? '<tr><td colspan="4" style="color:#888">No payments yet.</td></tr>' : ''}
         </tbody>
+        ${payments.length > 0 ? `
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="3">Total</td>
+              <td class="amt-col">${fmtAmt(paymentsTotal)}</td>
+            </tr>
+          </tfoot>
+        ` : ''}
       </table>
     ` : ''
 
@@ -467,7 +487,8 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #000; font-weight: 600; font-size: 14px; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: top; }
     .amt-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .summary-row td { font-weight: 600; border-bottom: none; }
+    .section-header { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
+    .total-row td { border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: 600; padding-top: 16px; padding-bottom: 16px; }
     @media print {
       body { padding: 20px; }
       .controls { display: none; }
