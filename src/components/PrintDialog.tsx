@@ -2,15 +2,16 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PrintManager } from '../lib/printManager'
-import type { PrintOptions } from '../lib/printManager'
+import type { PrintOptions, PrintSettings } from '../lib/printManager'
 
 interface PrintDialogProps {
   isOpen: boolean
   onClose: () => void
   options: PrintOptions | null
+  onPrint?: (settings: PrintSettings, selectedIds: string[]) => void
 }
 
-export default function PrintDialog({ isOpen, onClose, options }: PrintDialogProps) {
+export default function PrintDialog({ isOpen, onClose, options, onPrint }: PrintDialogProps) {
   const { t } = useTranslation()
   const [localOptions, setLocalOptions] = useState<PrintOptions | null>(options)
   const [includeAll, setIncludeAll] = useState(true)
@@ -86,7 +87,6 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
 
   const handlePrint = () => {
     if (localOptions) {
-      // Pass filter/sort options to print manager
       const printSettings = {
         ...localOptions,
         includeAll,
@@ -94,7 +94,12 @@ export default function PrintDialog({ isOpen, onClose, options }: PrintDialogPro
         sortByDate,
         sortByCustomer
       }
-      PrintManager.print(printSettings as any)
+      const selectedIds = localOptions.sections.filter(s => s.selected).map(s => s.id)
+      if (onPrint) {
+        onPrint(printSettings as PrintSettings, selectedIds)
+      } else {
+        PrintManager.print(printSettings as any)
+      }
       onClose()
     }
   }

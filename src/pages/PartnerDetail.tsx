@@ -358,6 +358,148 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     }
   }
 
+  function printPartner(_settings: unknown, selectedIds: string[]) {
+    if (!data) return
+    const { partner, totals, orders, payments } = data
+    const debtors = totals.debtors || []
+
+    const showOwed     = selectedIds.includes('owed') || debtors.some(d => selectedIds.includes(`debtor-${d.partner_id}`))
+    const showOrders   = selectedIds.includes('orders')
+    const showPayments = selectedIds.includes('payments')
+
+    const now = new Date().toLocaleString()
+
+    const fmt = (n: number) => {
+      const abs = Math.abs(n)
+      return abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+
+    const owedBlock = showOwed ? `
+      <h2>Owed to partner</h2>
+      <table>
+        <tbody>
+          <tr class="summary-row">
+            <td>Owed to ${partner.name}</td>
+            <td class="amt-col">$${fmt(totals.net_owed)}</td>
+          </tr>
+          ${debtors.map(d => `
+            <tr>
+              <td style="padding-left:16px;color:#555">Owed by ${d.partner_name}</td>
+              <td class="amt-col" style="color:#555">$${fmt(d.net_owed)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : ''
+
+    const ordersBlock = showOrders ? `
+      <h2>Orders with partner stake</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Details</th>
+            <th class="amt-col">Partner amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td>${formatDate(o.order_date)}</td>
+              <td><strong>${o.customer_name}</strong></td>
+              <td>${[o.product_name || '—', o.qty ?? '—', o.unit_price != null ? '$' + fmt(o.unit_price) : '—', '$' + fmt(o.total)].join(' / ')}</td>
+              <td class="amt-col">$${fmt(o.partner_amount)}</td>
+            </tr>
+          `).join('')}
+          ${orders.length === 0 ? '<tr><td colspan="4" style="color:#888">No orders yet.</td></tr>' : ''}
+        </tbody>
+      </table>
+    ` : ''
+
+    const paymentsBlock = showPayments ? `
+      <h2>Payments to partner</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Notes</th>
+            <th class="amt-col">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${payments.map(p => {
+            const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
+            const amtDisplay = isAddToDebt ? '$' + fmt(Math.abs(p.amount)) : '-$' + fmt(Math.abs(p.amount))
+            return `
+              <tr>
+                <td>${formatDate(p.payment_date)}</td>
+                <td>${p.payment_type || '—'}</td>
+                <td>${p.notes || ''}</td>
+                <td class="amt-col">${amtDisplay}</td>
+              </tr>
+            `
+          }).join('')}
+          ${payments.length === 0 ? '<tr><td colspan="4" style="color:#888">No payments yet.</td></tr>' : ''}
+        </tbody>
+      </table>
+    ` : ''
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${partner.name}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
+    .controls { display: flex; gap: 12px; margin-bottom: 20px; }
+    .btn { padding: 10px 20px; border: 1px solid #ddd; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: 14px; font-weight: 500; }
+    .btn:hover { background: #e5e5e5; }
+    .btn-primary { background: #2f6df6; color: white; border-color: #2f6df6; }
+    .btn-primary:hover { background: #1e5ce6; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    h2 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #000; font-weight: 600; font-size: 14px; }
+    td { padding: 10px 8px; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: top; }
+    .amt-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .summary-row td { font-weight: 600; border-bottom: none; }
+    @media print {
+      body { padding: 20px; }
+      .controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button class="btn btn-primary" onclick="window.print()">Print</button>
+    <button class="btn" onclick="window.close()">Close</button>
+  </div>
+  <h1>${partner.name}</h1>
+  <div class="subtitle">Generated: ${now}</div>
+  ${owedBlock}
+  ${ordersBlock}
+  ${paymentsBlock}
+</body>
+</html>`
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) { alert('Please allow popups to print'); return }
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    printWindow.location.href = url
+    printWindow.onload = () => {
+      URL.revokeObjectURL(url)
+      printWindow.focus()
+      const isDesktop = printWindow.matchMedia && !printWindow.matchMedia('(max-width: 768px)').matches
+      if (isDesktop) printWindow.print()
+    }
+  }
+
   if (loading) return <div className="card page-normal"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-normal"><p style={{color:'var(--color-error)'}}>{t('error')} {err}</p></div>
   if (!data) return null
@@ -828,6 +970,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
         isOpen={showPrintDialog}
         onClose={() => setShowPrintDialog(false)}
         options={printOptions}
+        onPrint={printPartner}
       />
 
     </div>
