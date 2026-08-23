@@ -378,10 +378,10 @@ ${processedHtml}
       window.location.href = url
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } else {
-      const w = window.open('', '_blank', 'noopener')
+      const w = window.open('', '_blank')
       if (!w) {
-        window.location.href = url
-        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        alert('Please allow popups to print')
+        URL.revokeObjectURL(url)
         return
       }
       w.location.href = url
