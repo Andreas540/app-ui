@@ -299,6 +299,7 @@ export default function ReturnsPage() {
 
       {/* ── 1. Customer ── */}
       <div className="card" style={sectionStyle}>
+        <h3 style={{ margin: '0 0 16px' }}>Register New Return</h3>
         <SectionHeading>Customer</SectionHeading>
         {customer ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

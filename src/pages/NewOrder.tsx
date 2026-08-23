@@ -394,7 +394,6 @@ export default function NewOrder() {
             </button>
           ))}
         </div>
-        <h3 style={{ margin: '0 0 16px', fontWeight: 700, fontSize: 18 }}>Register New Return</h3>
         <ReturnsPage />
       </div>
     )
