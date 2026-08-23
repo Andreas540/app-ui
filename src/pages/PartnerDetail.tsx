@@ -8,7 +8,7 @@ import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
 import PrintDialog from '../components/PrintDialog'
 import { PrintManager } from '../lib/printManager'
-import type { PrintOptions } from '../lib/printManager'
+import type { PrintOptions, PrintSettings } from '../lib/printManager'
 import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -358,7 +358,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     }
   }
 
-  function printPartner(_settings: unknown, selectedIds: string[]) {
+  function printPartner(settings: PrintSettings, selectedIds: string[]) {
     if (!data) return
     const { partner, totals, orders, payments } = data
     const debtors = totals.debtors || []
@@ -366,6 +366,14 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     const showOwed     = selectedIds.includes('owed') || debtors.some(d => selectedIds.includes(`debtor-${d.partner_id}`))
     const showOrders   = selectedIds.includes('orders')
     const showPayments = selectedIds.includes('payments')
+
+    const cutoff = settings.thisYear
+      ? new Date(new Date().getFullYear(), 0, 1)
+      : settings.lastThreeMonths
+        ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
+        : null
+    const filteredOrders   = cutoff ? orders.filter(o => new Date(o.order_date) >= cutoff) : orders
+    const filteredPayments = cutoff ? payments.filter(p => new Date(p.payment_date) >= cutoff) : payments
 
     const now = new Date().toLocaleString()
 
@@ -391,7 +399,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       ` : ''}
     ` : ''
 
-    const ordersTotal = orders.reduce((s, o) => s + Number(o.partner_amount), 0)
+    const ordersTotal = filteredOrders.reduce((s, o) => s + Number(o.partner_amount), 0)
     const ordersBlock = showOrders ? `
       <h2>Orders with partner stake</h2>
       <table>
@@ -404,7 +412,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           </tr>
         </thead>
         <tbody>
-          ${orders.map(o => `
+          ${filteredOrders.map(o => `
             <tr>
               <td>${formatDate(o.order_date)}</td>
               <td><strong>${o.customer_name}</strong></td>
@@ -412,9 +420,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               <td class="amt-col">$${fmtAbs(o.partner_amount)}</td>
             </tr>
           `).join('')}
-          ${orders.length === 0 ? '<tr><td colspan="4" style="color:#888">No orders yet.</td></tr>' : ''}
+          ${filteredOrders.length === 0 ? '<tr><td colspan="4" style="color:#888">No orders yet.</td></tr>' : ''}
         </tbody>
-        ${orders.length > 0 ? `
+        ${filteredOrders.length > 0 ? `
           <tfoot>
             <tr class="total-row">
               <td colspan="3">Total</td>
@@ -425,7 +433,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       </table>
     ` : ''
 
-    const paymentsTotal = payments.reduce((s, p) => {
+    const paymentsTotal = filteredPayments.reduce((s, p) => {
       const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
       return s + (isAddToDebt ? 1 : -1) * Math.abs(p.amount)
     }, 0)
@@ -441,7 +449,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
           </tr>
         </thead>
         <tbody>
-          ${payments.map(p => {
+          ${filteredPayments.map(p => {
             const isAddToDebt = (p.payment_type || '').toLowerCase() === 'add to debt'
             const amtDisplay = isAddToDebt ? '$' + fmtAbs(p.amount) : '-$' + fmtAbs(p.amount)
             return `
@@ -453,9 +461,9 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
               </tr>
             `
           }).join('')}
-          ${payments.length === 0 ? '<tr><td colspan="4" style="color:#888">No payments yet.</td></tr>' : ''}
+          ${filteredPayments.length === 0 ? '<tr><td colspan="4" style="color:#888">No payments yet.</td></tr>' : ''}
         </tbody>
-        ${payments.length > 0 ? `
+        ${filteredPayments.length > 0 ? `
           <tfoot>
             <tr class="total-row">
               <td colspan="3">Total</td>
