@@ -1126,6 +1126,10 @@ export default function CustomerDetailPage() {
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         style={{ cursor: 'pointer', lineHeight: '1.4' }}>
                         {item ? itemLine(item) : t('customerDetail.orderLines', { count: 0 })}
+                        {item && Number((item as any).qty_returned) > 0 && (() => {
+                          const fullyReturned = Number((item as any).qty_returned) >= Number((item as any).qty)
+                          return <span style={{ fontSize: 10, color: fullyReturned ? 'var(--color-error, #ef4444)' : '#f59e0b', marginLeft: 4 }}>↩</span>
+                        })()}
                       </div>
                       <div />
                     </div>
