@@ -17,7 +17,7 @@ import { useCurrency } from '../lib/useCurrency'
 
 const LS_COLS = 'simulations_cols'
 
-type Factor    = 'repayment' | 'partner_share'
+type Factor    = 'partner_share'
 type FactorRow = { period_start: string; amount: number }
 
 async function fetchFactorData(
@@ -48,7 +48,7 @@ export default function SimulationsPage() {
 
   // Simulation config
   const [simType,    setSimType]    = useState<'sales-profit'>('sales-profit')
-  const [factor,     setFactor]     = useState<Factor>('repayment')
+  const [factor,     setFactor]     = useState<Factor>('partner_share')
   const [changeSign, setChangeSign] = useState<'+' | '-'>('+')
   const [changePct,  setChangePct]  = useState(0)
 
@@ -178,7 +178,7 @@ export default function SimulationsPage() {
 
   function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
 
-  const factorLabel = factor === 'repayment' ? 'Repayments' : 'Partner share'
+  const factorLabel = 'Partner share'
   const signBtn = (s: '+' | '-') => ({
     height: 34, width: 34, padding: 0, fontSize: 16, fontWeight: 700,
     background: changeSign === s ? 'var(--primary)' : 'transparent',
@@ -227,7 +227,6 @@ export default function SimulationsPage() {
             onChange={e => setFactor(e.target.value as Factor)}
             style={{ ...PICKER_STYLE, minWidth: 140 }}
           >
-            <option value="repayment">Repayment</option>
             <option value="partner_share">Partner share</option>
           </select>
         </div>
