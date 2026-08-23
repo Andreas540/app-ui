@@ -84,7 +84,7 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
     >
       <div
         className="card"
-        style={{ maxWidth: 460, width: '90%', maxHeight: '80vh', overflow: 'auto', margin: 20 }}
+        style={{ maxWidth: 460, width: 'min(460px, calc(100vw - 32px))', maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden', margin: '16px auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

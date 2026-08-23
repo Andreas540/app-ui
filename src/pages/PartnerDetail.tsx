@@ -376,6 +376,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     const filteredPayments = cutoff ? payments.filter(p => new Date(p.payment_date) >= cutoff) : payments
 
     const now = new Date().toLocaleString()
+    const periodLabel = settings.thisYear ? 'This year' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
 
     const fmtAbs = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const fmtAmt = (n: number) => n < 0 ? `-$${fmtAbs(n)}` : `$${fmtAbs(n)}`
@@ -497,6 +498,13 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     .amt-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .section-header { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
     .total-row td { border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: 600; padding-top: 16px; padding-bottom: 16px; }
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      th, td { padding: 6px 4px; font-size: 12px; }
+      h1 { font-size: 20px; }
+      h2 { font-size: 14px; }
+      .section-header { font-size: 14px; }
+    }
     @media print {
       body { padding: 20px; }
       .controls { display: none; }
@@ -509,7 +517,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     <button class="btn" onclick="window.close()">Close</button>
   </div>
   <h1>${partner.name}</h1>
-  <div class="subtitle">Generated: ${now}</div>
+  <div class="subtitle">Generated: ${now} · ${periodLabel}</div>
   ${owedBlock}
   ${ordersBlock}
   ${paymentsBlock}
