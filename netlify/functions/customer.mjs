@@ -109,14 +109,18 @@ async function getCustomer(event) {
         COALESCE(SUM(oi.qty),0)::numeric(10,2) AS total_qty,
         COALESCE(
           json_agg(
-            json_build_object('id', oi.id, 'product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price, 'delivered_qty', oi.delivered_qty)
+            json_build_object(
+              'id', oi.id, 'product_name', p.name, 'qty', oi.qty, 'unit_price', oi.unit_price, 'delivered_qty', oi.delivered_qty,
+              'qty_returned', COALESCE((SELECT SUM(ri.qty_returned) FROM return_items ri WHERE ri.order_item_id = oi.id), 0)
+            )
             ORDER BY oi.id ASC
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'::json
         ) AS items,
         pa.partner_amount,
         ret.return_count,
-        ret.total_settled
+        ret.total_settled,
+        ret.total_qty_returned
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN products p ON p.id = oi.product_id AND p.tenant_id = o.tenant_id
@@ -127,7 +131,12 @@ async function getCustomer(event) {
       ) pa ON true
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS return_count,
-               COALESCE(SUM(r.settlement_amount),0)::numeric(12,2) AS total_settled
+               COALESCE(SUM(r.settlement_amount),0)::numeric(12,2) AS total_settled,
+               COALESCE((
+                 SELECT SUM(ri.qty_returned) FROM return_items ri
+                 JOIN returns r2 ON r2.id = ri.return_id
+                 WHERE r2.order_id = o.id
+               ), 0)::numeric AS total_qty_returned
         FROM returns r
         WHERE r.order_id = o.id AND r.tenant_id = ${TENANT_ID}
       ) ret ON true
@@ -144,7 +153,8 @@ async function getCustomer(event) {
         o.notes,
         pa.partner_amount,
         ret.return_count,
-        ret.total_settled
+        ret.total_settled,
+        ret.total_qty_returned
       ORDER BY o.order_date DESC, o.order_no DESC
     `
 

@@ -1014,18 +1014,24 @@ export default function CustomerDetailPage() {
                     {showOrderNumber
                       ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                           <span className="helper" style={{ whiteSpace: 'nowrap' }}>#{(o as any).order_no}</span>
-                          {(o as any).return_count > 0 && (
-                            <span style={{ fontSize: 10, color: 'var(--color-error, #ef4444)', whiteSpace: 'nowrap' }}>↩</span>
-                          )}
+                          {(o as any).return_count > 0 && (() => {
+                            const totalQtyReturned = Number((o as any).total_qty_returned) || 0
+                            const totalQty = Number((o as any).total_qty) || 1
+                            const fullyReturned = totalQtyReturned >= totalQty
+                            return <span style={{ fontSize: 11, color: fullyReturned ? 'var(--color-error, #ef4444)' : '#f59e0b', whiteSpace: 'nowrap' }}>↩</span>
+                          })()}
                         </div>
                       : <div className="helper" onClick={() => handleOrderClick(o)}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel)'}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           style={{ cursor: 'pointer', lineHeight: '1.4' }}>
                           {items.length > 0 ? itemLine(items[0]) : t('customerDetail.orderLines', { count: 0 })}
-                          {(o as any).return_count > 0 && (
-                            <span style={{ fontSize: 10, color: 'var(--color-error, #ef4444)', marginLeft: 4 }}>↩</span>
-                          )}
+                          {(o as any).return_count > 0 && (() => {
+                            const totalQtyReturned = Number((o as any).total_qty_returned) || 0
+                            const totalQty = Number((o as any).total_qty) || 1
+                            const fullyReturned = totalQtyReturned >= totalQty
+                            return <span style={{ fontSize: 10, color: fullyReturned ? 'var(--color-error, #ef4444)' : '#f59e0b', marginLeft: 4 }}>↩</span>
+                          })()}
                         </div>
                     }
                     <div className="helper"
@@ -1281,6 +1287,21 @@ export default function CustomerDetailPage() {
         order={selectedOrder}
         customerName={data?.customer?.name}
         refreshKey={orderModalRefreshKey}
+        onReturnVoided={() => {
+          const voidedOrderId = (selectedOrder as any)?.id
+          if (!voidedOrderId) return
+          setData(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              orders: prev.orders.map((o: any) =>
+                o.id === voidedOrderId
+                  ? { ...o, return_count: Math.max(0, (Number(o.return_count) || 1) - 1), total_qty_returned: Math.max(0, (Number(o.total_qty_returned) || 0) - 1) }
+                  : o
+              ),
+            }
+          })
+        }}
       />
 
       <PaymentDetailModal

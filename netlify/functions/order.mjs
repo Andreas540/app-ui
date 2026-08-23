@@ -81,7 +81,10 @@ LIMIT 1
         p.coverage_duration_days,
         -- Resolve cross-order coverage: name + unit_id of the referenced order item
         coi_p.name AS covered_product_name,
-        coi.unit_identifier AS covered_unit_identifier
+        coi.unit_identifier AS covered_unit_identifier,
+        COALESCE((
+          SELECT SUM(ri.qty_returned) FROM return_items ri WHERE ri.order_item_id = oi.id
+        ), 0) AS qty_returned
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
       JOIN tenants t ON t.id = o.tenant_id
@@ -190,7 +193,8 @@ LIMIT 1
              r.settlement_type, r.settlement_amount, r.notes, r.supplier_fault,
              COALESCE(
                json_agg(json_build_object(
-                 'product_name', p.name,
+                 'order_item_id', ri.order_item_id,
+                 'product_name', COALESCE(p.name, p_oi.name),
                  'qty_returned',  ri.qty_returned,
                  'unit_price',    ri.unit_price
                ) ORDER BY ri.id) FILTER (WHERE ri.id IS NOT NULL),
@@ -199,6 +203,8 @@ LIMIT 1
       FROM returns r
       LEFT JOIN return_items ri ON ri.return_id = r.id
       LEFT JOIN products p ON p.id = ri.product_id
+      LEFT JOIN order_items oi_ret ON oi_ret.id = ri.order_item_id
+      LEFT JOIN products p_oi ON p_oi.id = oi_ret.product_id AND p_oi.tenant_id = ${TENANT_ID}
       WHERE r.order_id = ${id} AND r.tenant_id = ${TENANT_ID}
       GROUP BY r.id
       ORDER BY r.return_date DESC, r.created_at DESC

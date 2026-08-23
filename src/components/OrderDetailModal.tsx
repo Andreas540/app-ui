@@ -13,6 +13,7 @@ interface OrderDetailModalProps {
   order: any
   customerName?: string
   refreshKey?: number
+  onReturnVoided?: () => void
 }
 
 interface PartnerSplit {
@@ -28,7 +29,7 @@ function coverageDaysLeft(orderDateStr: string, durationDays: number, timezone: 
   return Math.round((expiryMs - todayMs) / 86400000)
 }
 
-export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName, refreshKey }: OrderDetailModalProps) {
+export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName, refreshKey, onReturnVoided }: OrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { timezone } = useLocale()
@@ -349,8 +350,20 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               return (
                 <div key={idx} style={{ paddingTop: 6 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px' }}>
-                    <div style={{ fontWeight: 500 }}>{item.product_name || '—'}</div>
-                    <div style={{ textAlign: 'right' }}>{intFmt.format(item.qty)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 500 }}>{item.product_name || '—'}</span>
+                      {Number(item.qty_returned) > 0 && (
+                        <span style={{ fontSize: 11, color: Number(item.qty_returned) >= Number(item.qty) ? 'var(--color-error, #ef4444)' : '#f59e0b' }}>↩</span>
+                      )}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      {intFmt.format(item.qty)}
+                      {Number(item.qty_returned) > 0 && (
+                        <span style={{ fontSize: 11, color: Number(item.qty_returned) >= Number(item.qty) ? 'var(--color-error, #ef4444)' : '#f59e0b', marginLeft: 4 }}>
+                          −{intFmt.format(Number(item.qty_returned))}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ textAlign: 'right' }}>{fmtMoney(item.unit_price)}</div>
                   </div>
                   {(item.unit_serial || item.unit_identifier) && (
@@ -535,6 +548,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                           const res = await fetch(`${base}/api/returns?id=${ret.id}`, { method: 'DELETE', headers: getAuthHeaders() })
                           if (!res.ok) { alert('Failed to void return'); return }
                           setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
+                          onReturnVoided?.()
                         } catch { alert('Network error') }
                         finally { setVoidingReturnId(null) }
                       }}
