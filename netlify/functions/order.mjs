@@ -118,9 +118,10 @@ LIMIT 1
 
     // Get partner splits for this order
     const partnerSplits = await sql`
-  SELECT op.partner_id, op.amount
+  SELECT op.partner_id, c.name AS partner_name, op.amount
   FROM order_partners op
   JOIN orders o ON o.id = op.order_id
+  JOIN customers c ON c.id = op.partner_id
   WHERE op.order_id = ${id}
     AND o.tenant_id = ${TENANT_ID}
   ORDER BY op.amount DESC

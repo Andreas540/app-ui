@@ -180,12 +180,18 @@ export default function ReturnsPage() {
     setOrdersLoading(false)
   }
 
-  // ── Load partner splits when order changes ────────────────────────────────
+  // ── Load partner splits when order changes; reset downstream fields ──────
   useEffect(() => {
     setPartnerSplits([])
     setReversePartner({})
     setPartnerReverseAmts({})
     setReturnQtys({})
+    setReason('')
+    setReasonNotes('')
+    setCondition('')
+    setSupplierFault(false)
+    setSettlementType('')
+    setSettlementAmount('')
     if (!orderId) return
     fetch(`${base}/api/order?id=${orderId}`, { cache: 'no-store', headers: getAuthHeaders() })
       .then(r => r.json())
@@ -284,11 +290,18 @@ export default function ReturnsPage() {
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           {customer && (
-            <button className="btn-primary" onClick={() => navigate(`/customers/${customer.id}`)}>
+            <button
+              onClick={() => navigate(`/customers/${customer.id}`)}
+              style={{ height: 40, padding: '0 20px', borderRadius: 6, border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+            >
               Back to {customer.name}
             </button>
           )}
-          <button onClick={resetForm}>Register another</button>
+          <button onClick={resetForm}
+            style={{ height: 40, padding: '0 20px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}
+          >
+            Register another
+          </button>
         </div>
       </div>
     )
