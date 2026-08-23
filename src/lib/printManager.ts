@@ -303,11 +303,19 @@ export class PrintManager {
 ${linkTags}
 <style>
 ${styleTags}
+/* Force light theme — reset all CSS custom properties */
+:root {
+  --bg: #fff; --card: #fff; --panel: #f5f5f5;
+  --text: #000; --text-secondary: #555;
+  --border: #ddd; --separator: #eee; --line: #eee;
+  --accent: #2f6df6; --primary: #2f6df6;
+  --input: #fff; --color-error: #dc2626; --color-success: #16a34a;
+}
 html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; -webkit-font-smoothing: antialiased; }
 #print-root, #print-root * { color: #000 !important; -webkit-text-fill-color: #000 !important; opacity: 1 !important; }
 #print-root a, #print-root a:visited { color: #000 !important; text-decoration: none; }
 #print-root { display: block !important; max-width: 100% !important; overflow: visible !important; background: #fff !important; }
-.card, .panel, .container, .row { overflow: visible !important; background: #fff !important; }
+.card, .panel, .container, .row { overflow: visible !important; background: #fff !important; box-shadow: none !important; }
 [data-printable] { display: block !important; break-inside: auto !important; page-break-inside: auto !important; }
 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
 .force-break { break-before: page; page-break-before: always; }
@@ -353,9 +361,6 @@ html, body { height: auto !important; overflow: visible !important; background: 
 <div id="print-root">
 ${processedHtml}
 </div>
-<script>
-  setTimeout(function () { try { window.print(); } catch (e) {} }, 100);
-</script>
 </body>
 </html>`
 
@@ -371,12 +376,22 @@ ${processedHtml}
 
     if (isIOS || isStandalone) {
       window.location.href = url
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } else {
-      const w = window.open(url, '_blank', 'noopener')
-      if (!w) window.location.href = url
+      const w = window.open('', '_blank', 'noopener')
+      if (!w) {
+        window.location.href = url
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        return
+      }
+      w.location.href = url
+      w.onload = () => {
+        URL.revokeObjectURL(url)
+        w.focus()
+        const isDesktop = w.matchMedia && !w.matchMedia('(max-width: 768px)').matches
+        if (isDesktop) w.print()
+      }
     }
-
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 
   static openPreview(options: PrintOptions) {
