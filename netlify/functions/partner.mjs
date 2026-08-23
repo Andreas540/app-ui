@@ -43,11 +43,17 @@ async function getPartner(event) {
         (SELECT COALESCE(SUM(pp.amount), 0)
            FROM partner_payments pp
           WHERE pp.tenant_id = ${TENANT_ID}
-            AND pp.partner_id = ${id}) AS total_paid
+            AND pp.partner_id = ${id}) AS total_paid,
+        (SELECT COALESCE(SUM(rpa.amount_reversed), 0)
+           FROM return_partner_adjustments rpa
+           JOIN returns r ON r.id = rpa.return_id
+          WHERE rpa.partner_id = ${id}
+            AND r.tenant_id = ${TENANT_ID}) AS total_reversals
     `;
     const totalOwed = Number(totals[0].total_owed);
     const totalPaid = Number(totals[0].total_paid);
-    const netOwed = totalOwed - totalPaid;
+    const totalReversals = Number(totals[0].total_reversals);
+    const netOwed = totalOwed - totalPaid - totalReversals;
 
     // Calculate partner-to-partner debt
     // 1. For current partner's page: who owes them money (e.g., Tony sees "Owed by Blanco")
@@ -171,6 +177,7 @@ async function getPartner(event) {
       totals: {
         total_owed: totalOwed,
         total_paid: totalPaid,
+        total_reversals: totalReversals,
         net_owed: netOwed,
         debtors: debtorsBalances,      // who owes money to this partner
         creditors: creditorsBalances    // who this partner owes money to

@@ -283,23 +283,18 @@ export default function ReturnsPage() {
   if (successId) {
     return (
       <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-        <h2 style={{ margin: '0 0 8px' }}>Return registered</h2>
+        <div style={{ fontSize: 44, marginBottom: 12, color: 'var(--color-success, #10b981)' }}>✓</div>
+        <h3 style={{ margin: '0 0 8px', color: 'var(--color-success, #10b981)' }}>Return registered</h3>
         <p className="helper" style={{ marginBottom: 24 }}>
           Saved and the customer balance updated.
         </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           {customer && (
-            <button
-              onClick={() => navigate(`/customers/${customer.id}`)}
-              style={{ height: 40, padding: '0 20px', borderRadius: 6, border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Back to {customer.name}
+            <button className="primary" onClick={() => navigate(`/customers/${customer.id}`)}>
+              Go to {customer.name}
             </button>
           )}
-          <button onClick={resetForm}
-            style={{ height: 40, padding: '0 20px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}
-          >
+          <button onClick={resetForm}>
             Register another
           </button>
         </div>

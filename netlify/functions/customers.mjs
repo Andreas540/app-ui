@@ -79,18 +79,24 @@ console.log('Loading customers for tenant:', tenantId);
           WHERE o.tenant_id = ${tenantId}) AS total_owed_to_partners,
         (SELECT COALESCE(SUM(pp.amount), 0)
            FROM partner_payments pp
-          WHERE pp.tenant_id = ${tenantId}) AS total_partner_payments
+          WHERE pp.tenant_id = ${tenantId}) AS total_partner_payments,
+        (SELECT COALESCE(SUM(rpa.amount_reversed), 0)
+           FROM return_partner_adjustments rpa
+           JOIN returns r ON r.id = rpa.return_id
+          WHERE r.tenant_id = ${tenantId}) AS total_partner_reversals
     `;
 
     const owedToPartners = Number(partnerTotals[0].total_owed_to_partners);
     const paidToPartners = Number(partnerTotals[0].total_partner_payments);
+    const reversalsToPartners = Number(partnerTotals[0].total_partner_reversals);
 
-    return cors(200, { 
+    return cors(200, {
       customers: rows,
       partner_totals: {
         owed: owedToPartners,
         paid: paidToPartners,
-        net: owedToPartners - paidToPartners
+        reversals: reversalsToPartners,
+        net: owedToPartners - paidToPartners - reversalsToPartners
       }
     });
   } catch (e) {
