@@ -145,6 +145,28 @@ LIMIT 1
       ? Number(shippingHistory[0].shipping_cost) 
       : 0
 
+    const orderReturns = await sql`
+      SELECT r.id, r.return_date, r.reason, r.reason_notes, r.condition,
+             r.settlement_type, r.settlement_amount, r.notes, r.supplier_fault,
+             COALESCE(
+               json_agg(json_build_object(
+                 'order_item_id', ri.order_item_id,
+                 'product_name', COALESCE(p.name, p_oi.name),
+                 'qty_returned',  ri.qty_returned,
+                 'unit_price',    ri.unit_price
+               ) ORDER BY ri.id) FILTER (WHERE ri.id IS NOT NULL),
+               '[]'::json
+             ) AS items
+      FROM returns r
+      LEFT JOIN return_items ri ON ri.return_id = r.id
+      LEFT JOIN products p ON p.id = ri.product_id
+      LEFT JOIN order_items oi_ret ON oi_ret.id = ri.order_item_id
+      LEFT JOIN products p_oi ON p_oi.id = oi_ret.product_id AND p_oi.tenant_id = ${TENANT_ID}
+      WHERE r.order_id = ${id} AND r.tenant_id = ${TENANT_ID}
+      GROUP BY r.id
+      ORDER BY r.return_date DESC, r.created_at DESC
+    `
+
     // Calculate profit across all items
     const orderValue = items.reduce((s, i) => s + Number(i.qty) * Number(i.unit_price), 0)
     const totalQty    = items.reduce((s, i) => s + Number(i.qty), 0)
@@ -204,28 +226,6 @@ LIMIT 1
     } catch (e) {
       console.error('delivery_events fetch failed', e)
     }
-
-    const orderReturns = await sql`
-      SELECT r.id, r.return_date, r.reason, r.reason_notes, r.condition,
-             r.settlement_type, r.settlement_amount, r.notes, r.supplier_fault,
-             COALESCE(
-               json_agg(json_build_object(
-                 'order_item_id', ri.order_item_id,
-                 'product_name', COALESCE(p.name, p_oi.name),
-                 'qty_returned',  ri.qty_returned,
-                 'unit_price',    ri.unit_price
-               ) ORDER BY ri.id) FILTER (WHERE ri.id IS NOT NULL),
-               '[]'::json
-             ) AS items
-      FROM returns r
-      LEFT JOIN return_items ri ON ri.return_id = r.id
-      LEFT JOIN products p ON p.id = ri.product_id
-      LEFT JOIN order_items oi_ret ON oi_ret.id = ri.order_item_id
-      LEFT JOIN products p_oi ON p_oi.id = oi_ret.product_id AND p_oi.tenant_id = ${TENANT_ID}
-      WHERE r.order_id = ${id} AND r.tenant_id = ${TENANT_ID}
-      GROUP BY r.id
-      ORDER BY r.return_date DESC, r.created_at DESC
-    `
 
     return cors(200, {
       order: { ...order, profit, profitPercent, paid_amount: paidAmount, total: orderValue },
