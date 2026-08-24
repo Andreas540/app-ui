@@ -217,7 +217,8 @@ LIMIT 1
       const netProductCost = totalProductCost - recoveredProductCost
 
       profit = netRevenue - netPartners - netProductCost - totalShippingCost
-      profitPercent = netRevenue > 0 ? (profit / netRevenue) * 100 : 0
+      const pctBase = netRevenue > 0 ? netRevenue : orderValue
+      profitPercent = pctBase > 0 ? (profit / pctBase) * 100 : 0
     }
 
     const paidRows = await sql`

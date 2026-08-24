@@ -573,10 +573,11 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                             .reduce((s: number, r: any) => s + Number(r.settlement_amount || 0), 0)
                           const newNetRevenue = (Number(order.total) || 0) - remainingSettlement
                           const newProfit = (Number(order.profit) || 0) + profitDelta
+                          const pctBase = newNetRevenue > 0 ? newNetRevenue : (Number(order.total) || 0)
                           setOrder((prev: any) => ({
                             ...prev,
                             profit: newProfit,
-                            profitPercent: newNetRevenue > 0 ? (newProfit / newNetRevenue) * 100 : 0,
+                            profitPercent: pctBase > 0 ? (newProfit / pctBase) * 100 : 0,
                           }))
                           setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
                           onReturnVoided?.(voidedItems)
