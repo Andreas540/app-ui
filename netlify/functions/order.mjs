@@ -166,8 +166,25 @@ LIMIT 1
         : historicalShippingCost
       const totalShippingCost = effectiveShippingCost * totalQty
 
-      profit = orderValue - totalPartners - totalProductCost - totalShippingCost
-      profitPercent = (profit / orderValue) * 100
+      // Return adjustments: reduce revenue by settlement amounts, recover product cost for returned units
+      const itemCostMap = Object.fromEntries(
+        items.map(i => [i.order_item_id, order.product_cost !== null
+          ? Number(order.product_cost)
+          : (Number(i.historical_product_cost) || 0)
+        ])
+      )
+      const totalReturnSettlement = orderReturns.reduce((s, r) => s + Number(r.settlement_amount || 0), 0)
+      const recoveredProductCost  = orderReturns.reduce((s, r) =>
+        s + (r.items || []).reduce((rs, ri) =>
+          rs + Number(ri.qty_returned) * (itemCostMap[ri.order_item_id] || 0), 0
+        ), 0
+      )
+
+      const netRevenue     = orderValue - totalReturnSettlement
+      const netProductCost = totalProductCost - recoveredProductCost
+
+      profit = netRevenue - totalPartners - netProductCost - totalShippingCost
+      profitPercent = netRevenue > 0 ? (profit / netRevenue) * 100 : 0
     }
 
     const paidRows = await sql`
