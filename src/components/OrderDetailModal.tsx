@@ -537,6 +537,11 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                       <div style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
                         {settlement}{Number(ret.settlement_amount) > 0 ? `: ${fmtMoney(Number(ret.settlement_amount))}` : ''}
                       </div>
+                      {(ret.partner_adjustments || []).map((adj: any, i: number) => (
+                        <div key={i} style={{ color: 'var(--text-secondary)', marginTop: 2 }}>
+                          Partner reversal: {fmtMoney(Number(adj.amount_reversed))}
+                        </div>
+                      ))}
                     </div>
                     <button
                       disabled={voidingReturnId === ret.id}
