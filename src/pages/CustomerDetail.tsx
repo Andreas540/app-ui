@@ -84,6 +84,7 @@ export default function CustomerDetailPage() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
+  const returnVoidedRef = useRef(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [deliveryOrder, setDeliveryOrder] = useState<any | null>(null)
   const [savingDelivery, setSavingDelivery] = useState(false)
@@ -1287,46 +1288,40 @@ export default function CustomerDetailPage() {
 
             <OrderDetailModal
         isOpen={showOrderModal}
-        onClose={() => setShowOrderModal(false)}
+        onClose={() => {
+          setShowOrderModal(false)
+          if (returnVoidedRef.current) {
+            returnVoidedRef.current = false
+            fetchCustomerDetail(id!).then(setData).catch(() => {})
+          }
+        }}
         order={selectedOrder}
         customerName={data?.customer?.name}
         refreshKey={orderModalRefreshKey}
-        onReturnVoided={(voidedItems, settlementType, settlementAmount) => {
+        onReturnVoided={(voidedItems) => {
+          returnVoidedRef.current = true
           const voidedOrderId = (selectedOrder as any)?.id
           if (!voidedOrderId) return
           setData(prev => {
             if (!prev) return prev
-            const updatedOrders = prev.orders.map((o: any) => {
-              if (o.id !== voidedOrderId) return o
-              const updatedItems = (o.items || []).map((item: any) => {
-                const ri = voidedItems.find(v => v.order_item_id === item.id)
-                if (!ri) return item
-                return { ...item, qty_returned: Math.max(0, Number(item.qty_returned) - Number(ri.qty_returned)) }
-              })
-              const newTotalQtyReturned = updatedItems.reduce((sum: number, item: any) => sum + (Number(item.qty_returned) || 0), 0)
-              return {
-                ...o,
-                items: updatedItems,
-                return_count: Math.max(0, (Number(o.return_count) || 1) - 1),
-                total_qty_returned: newTotalQtyReturned,
-              }
-            })
-            const t = prev.totals as any
-            let updatedTotals = { ...t }
-            if (settlementType === 'refund') {
-              updatedTotals = {
-                ...updatedTotals,
-                total_return_credits: Math.max(0, Number(t.total_return_credits || 0) - settlementAmount),
-                owed_to_me: Number(t.owed_to_me || 0) + settlementAmount,
-              }
-            } else if (settlementType === 'store_credit') {
-              updatedTotals = {
-                ...updatedTotals,
-                total_issued_store_credit: Math.max(0, Number(t.total_issued_store_credit || 0) - settlementAmount),
-                available_store_credit: Math.max(0, Number(t.available_store_credit || 0) - settlementAmount),
-              }
+            return {
+              ...prev,
+              orders: prev.orders.map((o: any) => {
+                if (o.id !== voidedOrderId) return o
+                const updatedItems = (o.items || []).map((item: any) => {
+                  const ri = voidedItems.find(v => v.order_item_id === item.id)
+                  if (!ri) return item
+                  return { ...item, qty_returned: Math.max(0, Number(item.qty_returned) - Number(ri.qty_returned)) }
+                })
+                const newTotalQtyReturned = updatedItems.reduce((sum: number, item: any) => sum + (Number(item.qty_returned) || 0), 0)
+                return {
+                  ...o,
+                  items: updatedItems,
+                  return_count: Math.max(0, (Number(o.return_count) || 1) - 1),
+                  total_qty_returned: newTotalQtyReturned,
+                }
+              }),
             }
-            return { ...prev, orders: updatedOrders, totals: updatedTotals }
           })
         }}
       />
