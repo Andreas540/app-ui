@@ -64,6 +64,33 @@ export const handler = async (event) => {
           ORDER BY 1 ASC
         `
       }
+    } else if (factor === 'returns') {
+      // returns — total settlement amounts grouped by return_date
+      if (fromDate && toDate) {
+        rows = await sql`
+          SELECT
+            date_trunc(${trunc}, return_date)::date::text AS period_start,
+            SUM(settlement_amount)::float8                AS amount
+          FROM returns
+          WHERE tenant_id = ${TENANT_ID}
+            AND settlement_type IN ('refund', 'store_credit')
+            AND date_trunc(${trunc}, return_date)::date >= ${fromDate}::date
+            AND date_trunc(${trunc}, return_date)::date <= ${toDate}::date
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `
+      } else {
+        rows = await sql`
+          SELECT
+            date_trunc(${trunc}, return_date)::date::text AS period_start,
+            SUM(settlement_amount)::float8                AS amount
+          FROM returns
+          WHERE tenant_id = ${TENANT_ID}
+            AND settlement_type IN ('refund', 'store_credit')
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `
+      }
     } else {
       // partner_share — sum of order_partners.amount grouped by order_date
       if (fromDate && toDate) {
