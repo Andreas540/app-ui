@@ -65,28 +65,59 @@ export const handler = async (event) => {
         `
       }
     } else if (factor === 'returns') {
-      // returns — total settlement amounts grouped by return_date
+      // returns — net profit impact per period:
+      // settlement_amount minus recovered product cost minus partner reversals.
+      // This matches the per-return profit delta used in the order modal so that
+      // "reduce returns by X%" produces the correct profit improvement.
       if (fromDate && toDate) {
         rows = await sql`
           SELECT
-            date_trunc(${trunc}, return_date)::date::text AS period_start,
-            SUM(settlement_amount)::float8                AS amount
-          FROM returns
-          WHERE tenant_id = ${TENANT_ID}
-            AND settlement_type IN ('refund', 'store_credit')
-            AND date_trunc(${trunc}, return_date)::date >= ${fromDate}::date
-            AND date_trunc(${trunc}, return_date)::date <= ${toDate}::date
+            date_trunc(${trunc}, r.return_date)::date::text AS period_start,
+            SUM(
+              r.settlement_amount
+              - COALESCE((
+                  SELECT SUM(ri.qty_returned * COALESCE(o.product_cost, oi.product_cost, 0))
+                  FROM return_items ri
+                  JOIN order_items oi ON oi.id = ri.order_item_id
+                  JOIN orders o ON o.id = r.order_id
+                  WHERE ri.return_id = r.id
+                ), 0)
+              - COALESCE((
+                  SELECT SUM(rpa.amount_reversed)
+                  FROM return_partner_adjustments rpa
+                  WHERE rpa.return_id = r.id
+                ), 0)
+            )::float8 AS amount
+          FROM returns r
+          WHERE r.tenant_id = ${TENANT_ID}
+            AND r.settlement_type IN ('refund', 'store_credit')
+            AND date_trunc(${trunc}, r.return_date)::date >= ${fromDate}::date
+            AND date_trunc(${trunc}, r.return_date)::date <= ${toDate}::date
           GROUP BY 1
           ORDER BY 1 ASC
         `
       } else {
         rows = await sql`
           SELECT
-            date_trunc(${trunc}, return_date)::date::text AS period_start,
-            SUM(settlement_amount)::float8                AS amount
-          FROM returns
-          WHERE tenant_id = ${TENANT_ID}
-            AND settlement_type IN ('refund', 'store_credit')
+            date_trunc(${trunc}, r.return_date)::date::text AS period_start,
+            SUM(
+              r.settlement_amount
+              - COALESCE((
+                  SELECT SUM(ri.qty_returned * COALESCE(o.product_cost, oi.product_cost, 0))
+                  FROM return_items ri
+                  JOIN order_items oi ON oi.id = ri.order_item_id
+                  JOIN orders o ON o.id = r.order_id
+                  WHERE ri.return_id = r.id
+                ), 0)
+              - COALESCE((
+                  SELECT SUM(rpa.amount_reversed)
+                  FROM return_partner_adjustments rpa
+                  WHERE rpa.return_id = r.id
+                ), 0)
+            )::float8 AS amount
+          FROM returns r
+          WHERE r.tenant_id = ${TENANT_ID}
+            AND r.settlement_type IN ('refund', 'store_credit')
           GROUP BY 1
           ORDER BY 1 ASC
         `
