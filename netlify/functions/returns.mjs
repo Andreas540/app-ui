@@ -50,9 +50,9 @@ async function get(event) {
       ORDER BY ri.id
     `
     const partnerAdjs = await sql`
-      SELECT rpa.*, c.name AS partner_name
+      SELECT rpa.*, p.name AS partner_name
       FROM return_partner_adjustments rpa
-      JOIN customers c ON c.id = rpa.partner_id
+      JOIN partners p ON p.id = rpa.partner_id
       WHERE rpa.return_id = ${id}
     `
     return cors(200, { return: { ...ret, items, partner_adjustments: partnerAdjs } })
