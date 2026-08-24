@@ -658,6 +658,7 @@
     "filterPayments": "Payments",
     "filterNotes": "Notes",
     "filterMessages": "Messages",
+    "filterReturns": "Returns",
     "deselectAll": "Deselect all",
     "selectAll": "Select all"
   },

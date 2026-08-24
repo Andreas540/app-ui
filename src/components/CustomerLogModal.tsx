@@ -330,7 +330,7 @@ export default function CustomerLogModal({
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<any>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [filter, setFilter] = useState({ orders: true, payments: true, notes: true, messages: true })
+  const [filter, setFilter] = useState({ orders: true, payments: true, notes: true, messages: true, returns: true })
 
   useEffect(() => {
     if (!isOpen) return
@@ -385,15 +385,15 @@ export default function CustomerLogModal({
 
           {/* Filter checkboxes */}
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-            {([['orders', 'filterOrders'], ['payments', 'filterPayments'], ['notes', 'filterNotes'], ['messages', 'filterMessages']] as const).map(([key, i18nKey]) => (
+            {([['orders', 'filterOrders'], ['payments', 'filterPayments'], ['notes', 'filterNotes'], ['messages', 'filterMessages'], ['returns', 'filterReturns']] as const).map(([key, i18nKey]) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, cursor: 'pointer' }}>
                 <input type="checkbox" checked={filter[key]} onChange={e => setFilter(prev => ({ ...prev, [key]: e.target.checked }))} />
                 {t(`customerLog.${i18nKey}`)}
               </label>
             ))}
             {Object.values(filter).every(Boolean)
-              ? <button onClick={() => setFilter({ orders: false, payments: false, notes: false, messages: false })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.deselectAll')}</button>
-              : <button onClick={() => setFilter({ orders: true, payments: true, notes: true, messages: true })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.selectAll')}</button>
+              ? <button onClick={() => setFilter({ orders: false, payments: false, notes: false, messages: false, returns: false })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.deselectAll')}</button>
+              : <button onClick={() => setFilter({ orders: true, payments: true, notes: true, messages: true, returns: true })} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}>{t('customerLog.selectAll')}</button>
             }
           </div>
 
@@ -408,7 +408,8 @@ export default function CustomerLogModal({
               (item.kind === 'order' && filter.orders) ||
               (item.kind === 'payment' && filter.payments) ||
               (item.kind === 'note' && filter.notes) ||
-              (item.kind === 'message' && filter.messages)
+              (item.kind === 'message' && filter.messages) ||
+              (item.kind === 'return' && filter.returns)
             )
             return (
               <div>
