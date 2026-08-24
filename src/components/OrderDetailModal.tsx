@@ -565,7 +565,9 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                           const recoveredCost = voidedItems.reduce((s: number, ri: any) =>
                             s + Number(ri.qty_returned) * (itemCostMap[ri.order_item_id] || 0), 0
                           )
-                          const profitDelta = Number(ret.settlement_amount || 0) - recoveredCost
+                          const partnerReversalAmount = (ret.partner_adjustments || [])
+                            .reduce((s: number, adj: any) => s + Number(adj.amount_reversed || 0), 0)
+                          const profitDelta = Number(ret.settlement_amount || 0) - recoveredCost + partnerReversalAmount
                           const remainingSettlement = returns
                             .filter((r: any) => r.id !== ret.id)
                             .reduce((s: number, r: any) => s + Number(r.settlement_amount || 0), 0)

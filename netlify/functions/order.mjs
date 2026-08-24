@@ -156,7 +156,14 @@ LIMIT 1
                  'unit_price',    ri.unit_price
                ) ORDER BY ri.id) FILTER (WHERE ri.id IS NOT NULL),
                '[]'::json
-             ) AS items
+             ) AS items,
+             (SELECT COALESCE(json_agg(json_build_object(
+                 'partner_id',      rpa.partner_id,
+                 'amount_reversed', rpa.amount_reversed
+               )), '[]'::json)
+              FROM return_partner_adjustments rpa
+              WHERE rpa.return_id = r.id
+             ) AS partner_adjustments
       FROM returns r
       LEFT JOIN return_items ri ON ri.return_id = r.id
       LEFT JOIN products p ON p.id = ri.product_id
@@ -175,8 +182,12 @@ LIMIT 1
     let profitPercent = 0
 
     if (orderValue > 0) {
-      // Partner amounts
+      // Partner amounts net of any return reversals
       const totalPartners = partnerSplits.reduce((sum, split) => sum + Number(split.amount), 0)
+      const totalPartnerReversals = orderReturns.reduce((s, r) =>
+        s + (r.partner_adjustments || []).reduce((rs, adj) => rs + Number(adj.amount_reversed || 0), 0), 0
+      )
+      const netPartners = totalPartners - totalPartnerReversals
 
       // Product cost: order-level override applies uniformly; otherwise use per-item cost
       const totalProductCost = order.product_cost !== null
@@ -205,7 +216,7 @@ LIMIT 1
       const netRevenue     = orderValue - totalReturnSettlement
       const netProductCost = totalProductCost - recoveredProductCost
 
-      profit = netRevenue - totalPartners - netProductCost - totalShippingCost
+      profit = netRevenue - netPartners - netProductCost - totalShippingCost
       profitPercent = netRevenue > 0 ? (profit / netRevenue) * 100 : 0
     }
 
