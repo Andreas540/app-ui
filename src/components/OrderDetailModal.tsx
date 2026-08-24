@@ -13,7 +13,7 @@ interface OrderDetailModalProps {
   order: any
   customerName?: string
   refreshKey?: number
-  onReturnVoided?: (voidedItems: Array<{ order_item_id: string; qty_returned: number }>) => void
+  onReturnVoided?: (voidedItems: Array<{ order_item_id: string; qty_returned: number }>, settlementType: string, settlementAmount: number) => void
 }
 
 interface PartnerSplit {
@@ -579,7 +579,7 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                             profitPercent: newNetRevenue > 0 ? (newProfit / newNetRevenue) * 100 : 0,
                           }))
                           setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
-                          onReturnVoided?.(voidedItems)
+                          onReturnVoided?.(voidedItems, ret.settlement_type || '', Number(ret.settlement_amount || 0))
                         } catch { alert('Network error') }
                         finally { setVoidingReturnId(null) }
                       }}
