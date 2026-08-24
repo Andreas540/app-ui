@@ -554,6 +554,28 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                             if (!ri) return item
                             return { ...item, qty_returned: Math.max(0, Number(item.qty_returned) - Number(ri.qty_returned)) }
                           }))
+                          // Recalculate profit: voiding restores revenue (+settlement) but un-recovers product cost (-recoveredCost)
+                          const itemCostMap = Object.fromEntries(
+                            items.map((i: any) => [i.order_item_id,
+                              order.product_cost != null
+                                ? Number(order.product_cost)
+                                : (Number(i.historical_product_cost) || 0)
+                            ])
+                          )
+                          const recoveredCost = voidedItems.reduce((s: number, ri: any) =>
+                            s + Number(ri.qty_returned) * (itemCostMap[ri.order_item_id] || 0), 0
+                          )
+                          const profitDelta = Number(ret.settlement_amount || 0) - recoveredCost
+                          const remainingSettlement = returns
+                            .filter((r: any) => r.id !== ret.id)
+                            .reduce((s: number, r: any) => s + Number(r.settlement_amount || 0), 0)
+                          const newNetRevenue = (Number(order.total) || 0) - remainingSettlement
+                          const newProfit = (Number(order.profit) || 0) + profitDelta
+                          setOrder((prev: any) => ({
+                            ...prev,
+                            profit: newProfit,
+                            profitPercent: newNetRevenue > 0 ? (newProfit / newNetRevenue) * 100 : 0,
+                          }))
                           setReturns(prev => prev.filter((r: any) => r.id !== ret.id))
                           onReturnVoided?.(voidedItems)
                         } catch { alert('Network error') }
