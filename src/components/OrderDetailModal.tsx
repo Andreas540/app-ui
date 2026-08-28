@@ -12,6 +12,7 @@ interface OrderDetailModalProps {
   onClose: () => void
   order: any
   customerName?: string
+  customerId?: string
   refreshKey?: number
   onReturnVoided?: (voidedItems: Array<{ order_item_id: string; qty_returned: number }>) => void
 }
@@ -29,7 +30,7 @@ function coverageDaysLeft(orderDateStr: string, durationDays: number, timezone: 
   return Math.round((expiryMs - todayMs) / 86400000)
 }
 
-export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName, refreshKey, onReturnVoided }: OrderDetailModalProps) {
+export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, customerName, customerId, refreshKey, onReturnVoided }: OrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney } = useCurrency()
   const { timezone } = useLocale()
@@ -614,6 +615,13 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               {t('orderModal.editOrder')}
             </button>
           </Link>
+          {customerId && (
+            <Link to={`/orders/new?tab=return&customer_id=${customerId}&order_id=${order.id}`} style={{ flex: 1 }}>
+              <button style={{ width: '100%' }}>
+                {t('orderModal.return', 'Return')}
+              </button>
+            </Link>
+          )}
           <button
             onClick={onClose}
             style={{ flex: 1 }}

@@ -1133,6 +1133,7 @@
     "linkedBookings": "Reservas vinculadas",
     "discount": "Descuento",
     "editOrder": "Editar Pedido",
+    "return": "Devolución",
     "deliveredInFull": "Entregado completo",
     "deliveredInFullQty": "Entregado completo ({{delivered}}/{{total}})",
     "partiallyDelivered": "Parcialmente entregado",

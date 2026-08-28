@@ -1133,6 +1133,7 @@
     "linkedBookings": "Kopplade bokningar",
     "discount": "Rabatt",
     "editOrder": "Redigera beställning",
+    "return": "Retur",
     "deliveredInFull": "Levererad i sin helhet",
     "deliveredInFullQty": "Levererad i sin helhet ({{delivered}}/{{total}})",
     "partiallyDelivered": "Delvis levererad",

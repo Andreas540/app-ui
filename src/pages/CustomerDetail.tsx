@@ -1297,6 +1297,7 @@ export default function CustomerDetailPage() {
         }}
         order={selectedOrder}
         customerName={data?.customer?.name}
+        customerId={id}
         refreshKey={orderModalRefreshKey}
         onReturnVoided={(voidedItems) => {
           returnVoidedRef.current = true

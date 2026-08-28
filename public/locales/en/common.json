@@ -1133,6 +1133,7 @@
     "linkedBookings": "Linked Bookings",
     "discount": "Discount",
     "editOrder": "Edit Order",
+    "return": "Return",
     "deliveredInFull": "Delivered in full",
     "deliveredInFullQty": "Delivered in full ({{delivered}}/{{total}})",
     "partiallyDelivered": "Partially delivered",
