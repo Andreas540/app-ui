@@ -350,8 +350,8 @@ export default function ReturnsPage() {
               const qty = returnQtys[item.id] ?? 0
               return (
                 <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{item.product_name}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name}</div>
                     <div className="helper">{fmtMoney(item.unit_price)} × {item.qty} ordered</div>
                   </div>
                   <span className="helper" style={{ whiteSpace: 'nowrap' }}>Return qty</span>
@@ -362,7 +362,7 @@ export default function ReturnsPage() {
                       const v = parseFloat(e.target.value)
                       setReturnQtys(prev => ({ ...prev, [item.id]: isNaN(v) ? 0 : Math.min(v, item.qty) }))
                     }}
-                    style={{ ...inputStyle, width: 80 }}
+                    style={{ ...inputStyle, width: 80, maxWidth: 80 }}
                   />
                 </div>
               )
@@ -385,7 +385,7 @@ export default function ReturnsPage() {
           <div style={{ marginBottom: 16 }}>
             <label className="helper" style={{ display: 'block', marginBottom: 4 }}>Return date</label>
             <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)}
-              style={{ ...inputStyle, width: 180 }} required />
+              style={{ ...inputStyle, width: '100%', maxWidth: 180 }} required />
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -470,8 +470,8 @@ export default function ReturnsPage() {
             checked={settlementType === 'none'} onChange={() => setSettlementType('none')} />
 
           {settlementType !== '' && settlementType !== 'none' && (
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
+            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>
                   Amount {settlementType === 'store_credit' ? '(store credit)' : '(refund)'}
                 </label>
@@ -480,7 +480,7 @@ export default function ReturnsPage() {
                   placeholder={suggestedAmount > 0 ? suggestedAmount.toFixed(2) : '0.00'}
                   style={inputStyle} required />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label className="helper" style={{ display: 'block', marginBottom: 4 }}>Date</label>
                 <input type="date" value={settlementDate}
                   onChange={e => setSettlementDate(e.target.value)} style={inputStyle} required />
@@ -512,7 +512,7 @@ export default function ReturnsPage() {
                   <input type="number" min={0} step="0.01"
                     value={partnerReverseAmts[ps.partner_id] ?? ''}
                     onChange={e => setPartnerReverseAmts(prev => ({ ...prev, [ps.partner_id]: e.target.value }))}
-                    style={{ ...inputStyle, width: 140 }} placeholder="Amount reversed" />
+                    style={{ ...inputStyle, width: '100%', maxWidth: 160 }} placeholder="Amount reversed" />
                 </div>
               )}
             </div>
