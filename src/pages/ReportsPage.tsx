@@ -1,10 +1,11 @@
 // src/pages/ReportsPage.tsx
 // Financial Reports page — Sales & Profit.
 // Dropdown to select which reports to show; ← → arrows to reorder.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { useCurrency } from '../lib/useCurrency'
 import {
   PICKER_STYLE,
   MonthPicker,
@@ -54,6 +55,7 @@ export default function ReportsPage() {
   const { t: tc } = useTranslation()
   const { user } = useAuth()
   const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsReports
+  const { fmtMoney } = useCurrency()
   const [rpsData,      setRpsData]      = useState<RpsPoint[]>([])
   const [loading,      setLoading]      = useState(true)
   const [err,          setErr]          = useState<string | null>(null)
@@ -180,15 +182,40 @@ export default function ReportsPage() {
     .map(id => ALL_REPORTS.find(r => r.id === id))
     .filter((r): r is ReportDef => !!r && visible.includes(r.id))
 
+  const periodLabel = useMemo(() => {
+    if (showBy === 'year') {
+      if (fromYear && toYear) return `${fromYear} – ${toYear}`
+      if (fromYear) return `From ${fromYear}`
+      if (toYear) return `To ${toYear}`
+      return 'All years'
+    }
+    if (fromMonth && toMonth) return `${fromMonth} – ${toMonth}`
+    if (fromMonth) return `From ${fromMonth}`
+    if (toMonth) return `To ${toMonth}`
+    return 'All periods'
+  }, [showBy, fromMonth, toMonth, fromYear, toYear])
+
+  function fmtPeriod(m: string) {
+    if (showBy === 'year') return m
+    const [y, mo] = m.split('-')
+    return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  }
+
   return (
     <div className="page-wide">
       {/* ── Header card ──────────────────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card no-print" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <h3 style={{ margin: 0 }}>{t('pageTitle')}</h3>
 
-          {/* Cols toggle + Report selector dropdown */}
+          {/* Cols toggle + Report selector dropdown + Print */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => window.print()}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13, textDecoration: 'underline' }}
+            >
+              Print
+            </button>
             <div className="desktop-only" style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
               {([2, 3] as const).map(n => (
                 <button key={n} onClick={() => saveCols(n)} style={{
@@ -293,9 +320,17 @@ export default function ReportsPage() {
         </div>
       )}
 
+      {/* ── Print-only header ────────────────────────────────────────────── */}
+      {!loading && orderedVisible.length > 0 && (
+        <div className="print-only" style={{ display: 'none', marginBottom: 16 }}>
+          <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>{t('pageTitle')}</h2>
+          <p style={{ margin: 0, color: '#666', fontSize: 13 }}>Period: {periodLabel}</p>
+        </div>
+      )}
+
       {/* ── Reports grid ─────────────────────────────────────────────────── */}
       {!loading && orderedVisible.length > 0 && (
-        <div style={{
+        <div className="reports-print-grid" style={{
           display: 'grid',
           gridTemplateColumns: isMobile
             ? 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))'
@@ -383,6 +418,28 @@ export default function ReportsPage() {
                 onNext={() => nav(1)}
                 showHint={showHint}
               />
+
+              {/* Print-only data table — uses full rpsData so all periods appear */}
+              <table className="print-table" style={{ display: 'none' }}>
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>{t(report.bar1Label)}</th>
+                    <th>{t(report.bar2Label)}</th>
+                    <th>%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rpsData.map(point => (
+                    <tr key={point.month}>
+                      <td>{fmtPeriod(point.month)}</td>
+                      <td>{fmtMoney((point as any)[report.bar1Key])}</td>
+                      <td>{fmtMoney((point as any)[report.bar2Key])}</td>
+                      <td>{(((point as any)[report.lineKey] ?? 0) * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ))}
         </div>
