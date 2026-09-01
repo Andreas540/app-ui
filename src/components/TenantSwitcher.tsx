@@ -83,6 +83,7 @@ export default function TenantSwitcher() {
 
   return (
     <div
+      className="no-print"
       style={{
         background: 'linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%)',
         borderBottom: '2px solid #ffc107',

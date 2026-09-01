@@ -183,17 +183,24 @@ export default function ReportsPage() {
     .filter((r): r is ReportDef => !!r && visible.includes(r.id))
 
   const periodLabel = useMemo(() => {
+    // When dates are explicitly set, use them
     if (showBy === 'year') {
       if (fromYear && toYear) return `${fromYear} – ${toYear}`
       if (fromYear) return `From ${fromYear}`
       if (toYear) return `To ${toYear}`
-      return 'All years'
+    } else {
+      if (fromMonth && toMonth) return `${fromMonth} – ${toMonth}`
+      if (fromMonth) return `From ${fromMonth}`
+      if (toMonth) return `To ${toMonth}`
     }
-    if (fromMonth && toMonth) return `${fromMonth} – ${toMonth}`
-    if (fromMonth) return `From ${fromMonth}`
-    if (toMonth) return `To ${toMonth}`
+    // No date selection — derive from actual data (default is last 3 months)
+    if (rpsData.length > 0) {
+      const first = rpsData[0].month
+      const last  = rpsData[rpsData.length - 1].month
+      return first === last ? first : `${first} – ${last}`
+    }
     return 'All periods'
-  }, [showBy, fromMonth, toMonth, fromYear, toYear])
+  }, [showBy, fromMonth, toMonth, fromYear, toYear, rpsData])
 
   function fmtPeriod(m: string) {
     if (showBy === 'year') return m
@@ -420,26 +427,41 @@ export default function ReportsPage() {
               />
 
               {/* Print-only data table — uses full rpsData so all periods appear */}
-              <table className="print-table" style={{ display: 'none' }}>
-                <thead>
-                  <tr>
-                    <th>Period</th>
-                    <th>{t(report.bar1Label)}</th>
-                    <th>{t(report.bar2Label)}</th>
-                    <th>%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rpsData.map(point => (
-                    <tr key={point.month}>
-                      <td>{fmtPeriod(point.month)}</td>
-                      <td>{fmtMoney((point as any)[report.bar1Key])}</td>
-                      <td>{fmtMoney((point as any)[report.bar2Key])}</td>
-                      <td>{(((point as any)[report.lineKey] ?? 0) * 100).toFixed(1)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {(() => {
+                const totalBar1 = rpsData.reduce((s, p) => s + ((p as any)[report.bar1Key] ?? 0), 0)
+                const totalBar2 = rpsData.reduce((s, p) => s + ((p as any)[report.bar2Key] ?? 0), 0)
+                const totalPct  = totalBar1 > 0 ? (totalBar2 / totalBar1) * 100 : 0
+                return (
+                  <table className="print-table" style={{ display: 'none' }}>
+                    <thead>
+                      <tr>
+                        <th>Period</th>
+                        <th>{t(report.bar1Label)}</th>
+                        <th>{t(report.bar2Label)}</th>
+                        <th>%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rpsData.map(point => (
+                        <tr key={point.month}>
+                          <td>{fmtPeriod(point.month)}</td>
+                          <td>{fmtMoney((point as any)[report.bar1Key])}</td>
+                          <td>{fmtMoney((point as any)[report.bar2Key])}</td>
+                          <td>{(((point as any)[report.lineKey] ?? 0) * 100).toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ fontWeight: 600 }}>
+                        <td>Total</td>
+                        <td>{fmtMoney(totalBar1)}</td>
+                        <td>{fmtMoney(totalBar2)}</td>
+                        <td>{totalPct.toFixed(1)}%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )
+              })()}
             </div>
           ))}
         </div>
