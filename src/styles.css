@@ -765,16 +765,6 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
 .recharts-rectangle:focus {
   outline: none !important;
 }
-/* Print chart: off-screen on live pages so recharts renders, visible in print */
-.chart-print-only {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
-}
 
 /* ===================== Print Styles ===================== */
 @media print {
@@ -824,17 +814,4 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
   .print-table thead th { background: #f5f5f5; font-weight: 600; }
   .print-table tfoot td { background: #f5f5f5; font-weight: 600; border-top: 2px solid #999; }
 
-  /* Show the full-data chart and hide the windowed screen chart */
-  .chart-print-only {
-    position: static !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    z-index: auto !important;
-    width: 100% !important;
-  }
-  /* Force recharts SVG to fill print page width (iOS measures at screen width) */
-  .chart-print-only .recharts-wrapper,
-  .chart-print-only .recharts-surface {
-    width: 100% !important;
-  }
 }

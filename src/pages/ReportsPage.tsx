@@ -85,6 +85,7 @@ export default function ReportsPage() {
   const [toYear,       setToYear]       = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
   const [showHint,     setShowHint]     = useState(false)
+  const [isPrinting,   setIsPrinting]   = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
   const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
   const btnRef = useRef<HTMLButtonElement>(null)
@@ -96,6 +97,17 @@ export default function ReportsPage() {
     const handler = () => setIsMobile(window.innerWidth < 640)
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
+  }, [])
+
+  useEffect(() => {
+    const before = () => setIsPrinting(true)
+    const after  = () => setIsPrinting(false)
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint',  after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint',  after)
+    }
   }, [])
 
   // Fetch data when date range or period type changes
@@ -406,40 +418,21 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Screen chart — windowed with nav arrows */}
-              <div className="no-print">
-                <ChartSlide
-                  data={visibleData}
-                  showBy={showBy}
-                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                  lineKey={report.lineKey}
-                  needsScroll={needsScroll}
-                  canPrev={canPrev}
-                  canNext={canNext}
-                  onPrev={() => nav(-1)}
-                  onNext={() => nav(1)}
-                  showHint={showHint}
-                />
-              </div>
-
-              {/* Print chart — all bars, rendered off-screen on live pages */}
-              <div className="chart-print-only">
-                <ChartSlide
-                  data={rpsData}
-                  showBy={showBy}
-                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                  lineKey={report.lineKey}
-                  needsScroll={false}
-                  canPrev={false}
-                  canNext={false}
-                  onPrev={() => {}}
-                  onNext={() => {}}
-                  showHint={false}
-                  forPrint
-                />
-              </div>
+              {/* Single chart — shows windowed data normally, all data when printing */}
+              <ChartSlide
+                data={isPrinting ? rpsData : visibleData}
+                showBy={showBy}
+                bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
+                bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
+                lineKey={report.lineKey}
+                needsScroll={!isPrinting && needsScroll}
+                canPrev={!isPrinting && canPrev}
+                canNext={!isPrinting && canNext}
+                onPrev={() => nav(-1)}
+                onNext={() => nav(1)}
+                showHint={!isPrinting && showHint}
+                forPrint={isPrinting}
+              />
 
               {/* Print-only data table — uses full rpsData so all periods appear */}
               {(() => {

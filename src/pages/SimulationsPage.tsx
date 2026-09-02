@@ -327,40 +327,19 @@ export default function SimulationsPage() {
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
                 {t(`${report.id}.title`)}
               </div>
-              {/* Screen chart — windowed with nav arrows */}
-              <div className="no-print">
-                <ChartSlide
-                  data={visibleSimData}
-                  showBy={showBy}
-                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                  lineKey={report.lineKey}
-                  needsScroll={needsScroll}
-                  canPrev={canPrev}
-                  canNext={canNext}
-                  onPrev={() => nav(-1)}
-                  onNext={() => nav(1)}
-                  showHint={showHint}
-                />
-              </div>
-
-              {/* Print chart — all bars, rendered off-screen on live pages */}
-              <div className="chart-print-only">
-                <ChartSlide
-                  data={simData}
-                  showBy={showBy}
-                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                  lineKey={report.lineKey}
-                  needsScroll={false}
-                  canPrev={false}
-                  canNext={false}
-                  onPrev={() => {}}
-                  onNext={() => {}}
-                  showHint={false}
-                  forPrint
-                />
-              </div>
+              <ChartSlide
+                data={visibleSimData}
+                showBy={showBy}
+                bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
+                bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
+                lineKey={report.lineKey}
+                needsScroll={needsScroll}
+                canPrev={canPrev}
+                canNext={canNext}
+                onPrev={() => nav(-1)}
+                onNext={() => nav(1)}
+                showHint={showHint}
+              />
             </div>
           ))}
         </div>
