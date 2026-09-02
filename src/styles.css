@@ -832,4 +832,9 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
     z-index: auto !important;
     width: 100% !important;
   }
+  /* Force recharts SVG to fill print page width (iOS measures at screen width) */
+  .chart-print-only .recharts-wrapper,
+  .chart-print-only .recharts-surface {
+    width: 100% !important;
+  }
 }
