@@ -814,4 +814,7 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
   .print-table thead th { background: #f5f5f5; font-weight: 600; }
   .print-table tfoot td { background: #f5f5f5; font-weight: 600; border-top: 2px solid #999; }
 
+  /* Stretch recharts SVG to fill print page width on mobile (SVG is baked at screen width) */
+  .reports-print-grid .recharts-wrapper { width: 100% !important; }
+  .reports-print-grid .recharts-surface  { width: 100% !important; }
 }
