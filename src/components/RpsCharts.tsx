@@ -215,7 +215,7 @@ export function ChartSlide({
       </div>
 
       <div
-        style={{ position: 'relative', height: 260 }}
+        style={{ position: 'relative', height: forPrint ? 'auto' : 260 }}
         onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
         onTouchEnd={(e) => {
           if (touchStartX.current === null) return
@@ -231,8 +231,9 @@ export function ChartSlide({
           if (e.deltaX < 0 && canPrev) onPrev()
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={enriched} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
+        {/* For print: explicit width bypasses ResponsiveContainer's async ResizeObserver */}
+        {forPrint ? (
+          <ComposedChart width={800} height={260} data={enriched} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
             <XAxis
               dataKey="month"
               tick={{ fontSize: 11 }}
@@ -249,36 +250,67 @@ export function ChartSlide({
               domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.35)]} />
             <YAxis yAxisId="right" orientation="right" tick={false} axisLine={false} width={0}
               domain={[0, 0.55]} />
-
-            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}
-              {...(forPrint ? { maxBarSize: 40 } : {})}>
-              {showBy === 'year' && (
-                <LabelList dataKey="minMonth" content={PartialYearLabel} />
-              )}
-              {!showPct && showLabels && (
-                <LabelList dataKey={bar1Key} position="top" offset={8}
-                  formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
+            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" maxBarSize={40} isAnimationActive={false}>
+              {showBy === 'year' && <LabelList dataKey="minMonth" content={PartialYearLabel} />}
+              {showLabels && <LabelList dataKey={bar1Key} position="top" offset={8}
+                formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
+                style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
-            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}
-              {...(forPrint ? { maxBarSize: 40 } : {})}>
-              {!showPct && showLabels && (
-                <LabelList dataKey={bar2Key} position="top" offset={8}
-                  formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
+            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" maxBarSize={40} isAnimationActive={false}>
+              {showLabels && <LabelList dataKey={bar2Key} position="top" offset={8}
+                formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
+                style={{ fontSize: 11, fontWeight: 700 }} />}
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
-              strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-              {showPct && showLabels && (
-                <LabelList dataKey={lineKey} position="bottom" offset={8}
-                  formatter={(v: any) => fmtPct(Number(v) * 100)} fill="#fff"
-                  style={{ fontSize: 11, fontWeight: 700 }} />
-              )}
-            </Line>
+              strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} />
           </ComposedChart>
-        </ResponsiveContainer>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={enriched} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                tickLine={false}
+                interval={xInterval}
+                tickFormatter={(m) => {
+                  const [y, mm] = (m || '').split('-').map(Number)
+                  if (!y || !mm) return String(m || '')
+                  return formatMonthYear(new Date(y, mm - 1, 1))
+                }}
+              />
+              <YAxis yAxisId="left"  tick={false} axisLine={false} width={0}
+                domain={[0, (dataMax: number) => Math.ceil((dataMax || 0) * 1.35)]} />
+              <YAxis yAxisId="right" orientation="right" tick={false} axisLine={false} width={0}
+                domain={[0, 0.55]} />
+              <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}>
+                {showBy === 'year' && (
+                  <LabelList dataKey="minMonth" content={PartialYearLabel} />
+                )}
+                {!showPct && showLabels && (
+                  <LabelList dataKey={bar1Key} position="top" offset={8}
+                    formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
+                    style={{ fontSize: 11, fontWeight: 700 }} />
+                )}
+              </Bar>
+              <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}>
+                {!showPct && showLabels && (
+                  <LabelList dataKey={bar2Key} position="top" offset={8}
+                    formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
+                    style={{ fontSize: 11, fontWeight: 700 }} />
+                )}
+              </Bar>
+              <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
+                strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
+                {showPct && showLabels && (
+                  <LabelList dataKey={lineKey} position="bottom" offset={8}
+                    formatter={(v: any) => fmtPct(Number(v) * 100)} fill="#fff"
+                    style={{ fontSize: 11, fontWeight: 700 }} />
+                )}
+              </Line>
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
 
         {showHint && needsScroll && (
           <div style={{
