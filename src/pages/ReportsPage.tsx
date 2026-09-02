@@ -84,9 +84,11 @@ export default function ReportsPage() {
   const [fromYear,     setFromYear]     = useState('')
   const [toYear,       setToYear]       = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
+  const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
   const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
   const btnRef = useRef<HTMLButtonElement>(null)
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const infoOverlayRef = useRef<HTMLDivElement | null>(null)
 
   // Track mobile breakpoint
@@ -108,6 +110,13 @@ export default function ReportsPage() {
         if (stop) return
         setRpsData(rows)
         setLoading(false)
+        const start = Math.max(0, rows.length - visibleCount)
+        setVisibleStart(start)
+        if (rows.length > visibleCount && isMobile) {
+          setShowHint(true)
+          if (hintTimer.current) clearTimeout(hintTimer.current)
+          hintTimer.current = setTimeout(() => setShowHint(false), 2500)
+        }
       })
       .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
@@ -131,9 +140,6 @@ export default function ReportsPage() {
   }
 
   function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
-
-  // Reset window when data changes (new date range fetched)
-  useEffect(() => { setVisibleStart(0) }, [rpsData])
 
   const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
   const clampedStart = Math.min(visibleStart, Math.max(0, rpsData.length - visibleCount))
@@ -413,6 +419,7 @@ export default function ReportsPage() {
                   canNext={canNext}
                   onPrev={() => nav(-1)}
                   onNext={() => nav(1)}
+                  showHint={showHint}
                 />
               </div>
 
@@ -424,6 +431,13 @@ export default function ReportsPage() {
                   bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
                   bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
                   lineKey={report.lineKey}
+                  needsScroll={false}
+                  canPrev={false}
+                  canNext={false}
+                  onPrev={() => {}}
+                  onNext={() => {}}
+                  showHint={false}
+                  forPrint
                 />
               </div>
 

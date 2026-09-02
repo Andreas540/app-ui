@@ -1,5 +1,5 @@
 // src/pages/SimulationsPage.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   PICKER_STYLE,
@@ -66,8 +66,10 @@ export default function SimulationsPage() {
   const [err,        setErr]        = useState<string | null>(null)
 
   const [visibleStart, setVisibleStart] = useState(0)
+  const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
   const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 640)
@@ -87,6 +89,13 @@ export default function SimulationsPage() {
         if (stop) return
         setRpsData(rows)
         setLoading(false)
+        const start = Math.max(0, rows.length - visibleCount)
+        setVisibleStart(start)
+        if (rows.length > visibleCount && isMobile) {
+          setShowHint(true)
+          if (hintTimer.current) clearTimeout(hintTimer.current)
+          hintTimer.current = setTimeout(() => setShowHint(false), 2500)
+        }
       })
       .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
@@ -155,9 +164,6 @@ export default function SimulationsPage() {
   }
 
   function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
-
-  // Reset window when data changes
-  useEffect(() => { setVisibleStart(0) }, [simData])
 
   const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
   const clampedStart = Math.min(visibleStart, Math.max(0, simData.length - visibleCount))
@@ -334,6 +340,7 @@ export default function SimulationsPage() {
                   canNext={canNext}
                   onPrev={() => nav(-1)}
                   onNext={() => nav(1)}
+                  showHint={showHint}
                 />
               </div>
 
@@ -345,6 +352,13 @@ export default function SimulationsPage() {
                   bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
                   bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
                   lineKey={report.lineKey}
+                  needsScroll={false}
+                  canPrev={false}
+                  canNext={false}
+                  onPrev={() => {}}
+                  onNext={() => {}}
+                  showHint={false}
+                  forPrint
                 />
               </div>
             </div>

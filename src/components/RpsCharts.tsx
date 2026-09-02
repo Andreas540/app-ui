@@ -2,7 +2,7 @@
 // Shared pickers, data types, fetch, and ChartSlide used by ReportsPage + SimulationsPage.
 // SimulationsPage fetches real data via fetchRpsData, applies simulation adjustments,
 // then passes the modified points into ChartSlide just like any other data.
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatMonthYear } from '../lib/time'
@@ -149,20 +149,23 @@ export type ChartSlideProps = {
   bar2Label: string
   lineKey: string
   computePct?: (row: any) => number
-  needsScroll?: boolean
-  canPrev?: boolean
-  canNext?: boolean
-  onPrev?: () => void
-  onNext?: () => void
+  needsScroll: boolean
+  canPrev: boolean
+  canNext: boolean
+  onPrev: () => void
+  onNext: () => void
+  showHint: boolean
+  forPrint?: boolean
 }
 
 export function ChartSlide({
   data, showBy, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, computePct,
-  needsScroll, canPrev, canNext, onPrev, onNext,
+  needsScroll, canPrev, canNext, onPrev, onNext, showHint, forPrint,
 }: ChartSlideProps) {
   const { t } = useTranslation('reports')
   const { fmtCompact, fmtPct } = useCurrency()
   const [showPct, setShowPct] = useState(false)
+  const touchStartX = useRef<number | null>(null)
 
   const navBtn = (disabled: boolean) => ({
     width: 32, height: 32, padding: 0, fontSize: 16, fontWeight: 700,
@@ -211,7 +214,23 @@ export function ChartSlide({
         </button>
       </div>
 
-      <div style={{ position: 'relative', height: 260 }}>
+      <div
+        style={{ position: 'relative', height: 260 }}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+        onTouchEnd={(e) => {
+          if (touchStartX.current === null) return
+          const dx = e.changedTouches[0].clientX - touchStartX.current
+          touchStartX.current = null
+          if (Math.abs(dx) < 40) return
+          if (dx < 0 && canNext) onNext()
+          if (dx > 0 && canPrev) onPrev()
+        }}
+        onWheel={(e) => {
+          if (!needsScroll || Math.abs(e.deltaX) < 20) return
+          if (e.deltaX > 0 && canNext) onNext()
+          if (e.deltaX < 0 && canPrev) onPrev()
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={enriched} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
             <XAxis
@@ -231,7 +250,8 @@ export function ChartSlide({
             <YAxis yAxisId="right" orientation="right" tick={false} axisLine={false} width={0}
               domain={[0, 0.55]} />
 
-            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" maxBarSize={40} isAnimationActive={false}>
+            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}
+              {...(forPrint ? { maxBarSize: 40 } : {})}>
               {showBy === 'year' && (
                 <LabelList dataKey="minMonth" content={PartialYearLabel} />
               )}
@@ -241,7 +261,8 @@ export function ChartSlide({
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
             </Bar>
-            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" maxBarSize={40} isAnimationActive={false}>
+            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}
+              {...(forPrint ? { maxBarSize: 40 } : {})}>
               {!showPct && showLabels && (
                 <LabelList dataKey={bar2Key} position="top" offset={8}
                   formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
@@ -258,12 +279,25 @@ export function ChartSlide({
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
+
+        {showHint && needsScroll && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none', zIndex: 10, borderRadius: 8,
+            background: 'var(--backdrop)',
+          }}>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '0 16px' }}>
+              ← Swipe to see all periods →
+            </span>
+          </div>
+        )}
       </div>
 
       {needsScroll && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
-          <button disabled={!canPrev} onClick={onPrev} style={navBtn(!canPrev!)}>‹</button>
-          <button disabled={!canNext} onClick={onNext} style={navBtn(!canNext!)}>›</button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
+          <button onClick={onPrev} disabled={!canPrev} style={navBtn(!canPrev)}>←</button>
+          <button onClick={onNext} disabled={!canNext} style={navBtn(!canNext)}>→</button>
         </div>
       )}
     </div>
