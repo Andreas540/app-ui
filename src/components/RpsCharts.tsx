@@ -2,7 +2,7 @@
 // Shared pickers, data types, fetch, and ChartSlide used by ReportsPage + SimulationsPage.
 // SimulationsPage fetches real data via fetchRpsData, applies simulation adjustments,
 // then passes the modified points into ChartSlide just like any other data.
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatMonthYear } from '../lib/time'
@@ -137,6 +137,9 @@ export function PartialYearLabel({ x, y, width, value }: any) {
 
 // ── ChartSlide ────────────────────────────────────────────────────────────────
 
+export const VISIBLE_MOBILE  = 3
+export const VISIBLE_DESKTOP = 6
+
 export type ChartSlideProps = {
   data: RpsPoint[]
   showBy?: 'month' | 'year'
@@ -146,27 +149,20 @@ export type ChartSlideProps = {
   bar2Label: string
   lineKey: string
   computePct?: (row: any) => number
-  needsScroll: boolean
-  canPrev: boolean
-  canNext: boolean
-  onPrev: () => void
-  onNext: () => void
-  showHint: boolean
+  needsScroll?: boolean
+  canPrev?: boolean
+  canNext?: boolean
+  onPrev?: () => void
+  onNext?: () => void
 }
 
 export function ChartSlide({
   data, showBy, bar1Key, bar1Label, bar2Key, bar2Label, lineKey, computePct,
-  needsScroll, canPrev, canNext, onPrev, onNext, showHint,
+  needsScroll, canPrev, canNext, onPrev, onNext,
 }: ChartSlideProps) {
   const { t } = useTranslation('reports')
   const { fmtCompact, fmtPct } = useCurrency()
   const [showPct, setShowPct] = useState(false)
-  const touchStartX = useRef<number | null>(null)
-
-  const enriched = useMemo(() => {
-    if (!computePct) return data
-    return (data || []).map((r: any) => ({ ...r, [lineKey]: computePct(r) }))
-  }, [data, computePct, lineKey])
 
   const navBtn = (disabled: boolean) => ({
     width: 32, height: 32, padding: 0, fontSize: 16, fontWeight: 700,
@@ -176,6 +172,16 @@ export function ChartSlide({
     opacity: disabled ? 0.3 : 1,
     cursor: disabled ? 'not-allowed' as const : 'pointer' as const,
   })
+
+  const enriched = useMemo(() => {
+    if (!computePct) return data
+    return (data || []).map((r: any) => ({ ...r, [lineKey]: computePct(r) }))
+  }, [data, computePct, lineKey])
+
+  // Hide bar value labels when bars are too narrow to fit text without overlap
+  const showLabels = enriched.length <= 9
+  // Thin out X-axis ticks when many periods so labels don't overlap
+  const xInterval = enriched.length <= 12 ? 0 : enriched.length <= 24 ? 1 : 2
 
   return (
     <div>
@@ -205,23 +211,7 @@ export function ChartSlide({
         </button>
       </div>
 
-      <div
-        style={{ position: 'relative', height: 260 }}
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
-        onTouchEnd={(e) => {
-          if (touchStartX.current === null) return
-          const dx = e.changedTouches[0].clientX - touchStartX.current
-          touchStartX.current = null
-          if (Math.abs(dx) < 40) return
-          if (dx < 0 && canNext) onNext()
-          if (dx > 0 && canPrev) onPrev()
-        }}
-        onWheel={(e) => {
-          if (!needsScroll || Math.abs(e.deltaX) < 20) return
-          if (e.deltaX > 0 && canNext) onNext()
-          if (e.deltaX < 0 && canPrev) onPrev()
-        }}
-      >
+      <div style={{ position: 'relative', height: 260 }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={enriched} margin={{ top: 14, right: 0, bottom: 6, left: 0 }}>
             <XAxis
@@ -229,6 +219,7 @@ export function ChartSlide({
               tick={{ fontSize: 11 }}
               axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
               tickLine={false}
+              interval={xInterval}
               tickFormatter={(m) => {
                 const [y, mm] = (m || '').split('-').map(Number)
                 if (!y || !mm) return String(m || '')
@@ -240,18 +231,18 @@ export function ChartSlide({
             <YAxis yAxisId="right" orientation="right" tick={false} axisLine={false} width={0}
               domain={[0, 0.55]} />
 
-            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" isAnimationActive={false}>
+            <Bar yAxisId="left" dataKey={bar1Key} fill="#f59e0b" maxBarSize={40} isAnimationActive={false}>
               {showBy === 'year' && (
                 <LabelList dataKey="minMonth" content={PartialYearLabel} />
               )}
-              {!showPct && (
+              {!showPct && showLabels && (
                 <LabelList dataKey={bar1Key} position="top" offset={8}
                   formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
               )}
             </Bar>
-            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" isAnimationActive={false}>
-              {!showPct && (
+            <Bar yAxisId="left" dataKey={bar2Key} fill="#60a5fa" maxBarSize={40} isAnimationActive={false}>
+              {!showPct && showLabels && (
                 <LabelList dataKey={bar2Key} position="top" offset={8}
                   formatter={(v: any) => fmtCompact(Number(v))} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
@@ -259,7 +250,7 @@ export function ChartSlide({
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke="#374151"
               strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false}>
-              {showPct && (
+              {showPct && showLabels && (
                 <LabelList dataKey={lineKey} position="bottom" offset={8}
                   formatter={(v: any) => fmtPct(Number(v) * 100)} fill="#fff"
                   style={{ fontSize: 11, fontWeight: 700 }} />
@@ -267,25 +258,12 @@ export function ChartSlide({
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
-
-        {showHint && needsScroll && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none', zIndex: 10, borderRadius: 8,
-            background: 'var(--backdrop)',
-          }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '0 16px' }}>
-              ← Swipe to see all periods →
-            </span>
-          </div>
-        )}
       </div>
 
       {needsScroll && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
-          <button onClick={onPrev} disabled={!canPrev} style={navBtn(!canPrev)}>←</button>
-          <button onClick={onNext} disabled={!canNext} style={navBtn(!canNext)}>→</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
+          <button disabled={!canPrev} onClick={onPrev} style={navBtn(!canPrev!)}>‹</button>
+          <button disabled={!canNext} onClick={onNext} style={navBtn(!canNext!)}>›</button>
         </div>
       )}
     </div>
@@ -318,5 +296,3 @@ export const ALL_REPORTS: ReportDef[] = [
   },
 ]
 
-export const VISIBLE_MOBILE  = 3
-export const VISIBLE_DESKTOP = 6

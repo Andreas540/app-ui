@@ -84,11 +84,9 @@ export default function ReportsPage() {
   const [fromYear,     setFromYear]     = useState('')
   const [toYear,       setToYear]       = useState('')
   const [visibleStart, setVisibleStart] = useState(0)
-  const [showHint,     setShowHint]     = useState(false)
   const [isMobile,     setIsMobile]     = useState(() => window.innerWidth < 640)
   const [cols,         setCols]         = useState<2|3>(() => localStorage.getItem(LS_COLS) === '2' ? 2 : 3)
   const btnRef = useRef<HTMLButtonElement>(null)
-  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const infoOverlayRef = useRef<HTMLDivElement | null>(null)
 
   // Track mobile breakpoint
@@ -97,8 +95,6 @@ export default function ReportsPage() {
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
   }, [])
-
-  const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
 
   // Fetch data when date range or period type changes
   useEffect(() => {
@@ -112,31 +108,10 @@ export default function ReportsPage() {
         if (stop) return
         setRpsData(rows)
         setLoading(false)
-        const start = Math.max(0, rows.length - visibleCount)
-        setVisibleStart(start)
-        if (rows.length > visibleCount && isMobile) {
-          setShowHint(true)
-          if (hintTimer.current) clearTimeout(hintTimer.current)
-          hintTimer.current = setTimeout(() => setShowHint(false), 2500)
-        }
       })
       .catch((e: any) => { if (!stop) { setErr(e?.message || String(e)); setLoading(false) } })
     return () => { stop = true }
   }, [showBy, fromMonth, toMonth, fromYear, toYear]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Clamp visibleStart if visibleCount changes (e.g. screen resize)
-  const clampedStart = Math.min(visibleStart, Math.max(0, rpsData.length - visibleCount))
-  const visibleData  = rpsData.slice(clampedStart, clampedStart + visibleCount)
-  const needsScroll  = rpsData.length > visibleCount
-  const canPrev      = clampedStart > 0
-  const canNext      = clampedStart + visibleCount < rpsData.length
-
-  function nav(dir: -1 | 1) {
-    setVisibleStart(v => {
-      const next = v + dir
-      return Math.max(0, Math.min(next, rpsData.length - visibleCount))
-    })
-  }
 
   // Selecting From auto-fills To if To is empty
   function handleFromChange(val: string) {
@@ -156,6 +131,20 @@ export default function ReportsPage() {
   }
 
   function saveCols(n: 2|3) { setCols(n); localStorage.setItem(LS_COLS, String(n)) }
+
+  // Reset window when data changes (new date range fetched)
+  useEffect(() => { setVisibleStart(0) }, [rpsData])
+
+  const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP
+  const clampedStart = Math.min(visibleStart, Math.max(0, rpsData.length - visibleCount))
+  const visibleData  = rpsData.slice(clampedStart, clampedStart + visibleCount)
+  const needsScroll  = rpsData.length > visibleCount
+  const canPrev      = clampedStart > 0
+  const canNext      = clampedStart + visibleCount < rpsData.length
+
+  function nav(dir: -1 | 1) {
+    setVisibleStart(v => Math.max(0, Math.min(v + dir, rpsData.length - visibleCount)))
+  }
 
   function toggleVisible(id: string) {
     setVisible(v => {
@@ -411,20 +400,32 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Chart (legend + Show % toggle now inside ChartSlide) */}
-              <ChartSlide
-                data={visibleData}
-                showBy={showBy}
-                bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
-                bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
-                lineKey={report.lineKey}
-                needsScroll={needsScroll}
-                canPrev={canPrev}
-                canNext={canNext}
-                onPrev={() => nav(-1)}
-                onNext={() => nav(1)}
-                showHint={showHint}
-              />
+              {/* Screen chart — windowed with nav arrows */}
+              <div className="no-print">
+                <ChartSlide
+                  data={visibleData}
+                  showBy={showBy}
+                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
+                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
+                  lineKey={report.lineKey}
+                  needsScroll={needsScroll}
+                  canPrev={canPrev}
+                  canNext={canNext}
+                  onPrev={() => nav(-1)}
+                  onNext={() => nav(1)}
+                />
+              </div>
+
+              {/* Print chart — all bars, rendered off-screen on live pages */}
+              <div className="chart-print-only">
+                <ChartSlide
+                  data={rpsData}
+                  showBy={showBy}
+                  bar1Key={report.bar1Key}   bar1Label={t(report.bar1Label)}
+                  bar2Key={report.bar2Key}   bar2Label={t(report.bar2Label)}
+                  lineKey={report.lineKey}
+                />
+              </div>
 
               {/* Print-only data table — uses full rpsData so all periods appear */}
               {(() => {
