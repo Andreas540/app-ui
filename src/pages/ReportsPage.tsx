@@ -2,6 +2,7 @@
 // Financial Reports page — Sales & Profit.
 // Dropdown to select which reports to show; ← → arrows to reorder.
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -100,7 +101,7 @@ export default function ReportsPage() {
   }, [])
 
   useEffect(() => {
-    const before = () => setIsPrinting(true)
+    const before = () => flushSync(() => setIsPrinting(true))
     const after  = () => setIsPrinting(false)
     window.addEventListener('beforeprint', before)
     window.addEventListener('afterprint',  after)
