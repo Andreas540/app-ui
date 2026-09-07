@@ -11,7 +11,7 @@ interface PrintDialogProps {
   onPrint?: (settings: PrintSettings, selectedIds: string[]) => void
 }
 
-type TimePeriod = 'all' | 'thisYear' | 'lastThreeMonths'
+type TimePeriod = 'all' | 'thisYear' | 'lastThreeMonths' | 'custom'
 
 const radioLabel: CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer',
@@ -30,6 +30,8 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
   const { t } = useTranslation()
   const [localOptions, setLocalOptions] = useState<PrintOptions | null>(options)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo,   setCustomTo]   = useState('')
   const [sortByDate, setSortByDate] = useState(false)
   const [sortByCustomer, setSortByCustomer] = useState(true)
 
@@ -59,6 +61,8 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
       includeAll:      timePeriod === 'all',
       thisYear:        timePeriod === 'thisYear',
       lastThreeMonths: timePeriod === 'lastThreeMonths',
+      customFrom:      timePeriod === 'custom' ? (customFrom || undefined) : undefined,
+      customTo:        timePeriod === 'custom' ? (customTo   || undefined) : undefined,
       sortByDate,
       sortByCustomer,
     }
@@ -123,12 +127,30 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
               ['all',            t('printDialog.allTime', 'All time')],
               ['thisYear',       t('printDialog.thisYear', 'This year')],
               ['lastThreeMonths', t('printDialog.lastThreeMonths', 'Last 3 months')],
+              ['custom',         t('printDialog.custom', 'Custom')],
             ] as [TimePeriod, string][]).map(([val, label]) => (
               <label key={val} style={radioLabel}>
                 <input type="radio" name="timePeriod" value={val} checked={timePeriod === val} onChange={() => setTimePeriod(val)} style={radioInput} />
                 <span>{label}</span>
               </label>
             ))}
+            {timePeriod === 'custom' && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingLeft: 24, paddingTop: 4, flexWrap: 'wrap' }}>
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={e => setCustomFrom(e.target.value)}
+                  style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', minWidth: 0, flex: 1 }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>–</span>
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={e => setCustomTo(e.target.value)}
+                  style={{ height: 34, padding: '0 8px', fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input, var(--card))', color: 'var(--text)', minWidth: 0, flex: 1 }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

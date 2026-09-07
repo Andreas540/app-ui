@@ -15,6 +15,8 @@ export interface PrintSettings extends PrintOptions {
   includeAll?: boolean
   thisYear?: boolean
   lastThreeMonths?: boolean
+  customFrom?: string   // YYYY-MM-DD
+  customTo?: string     // YYYY-MM-DD
   sortByDate?: boolean
   sortByCustomer?: boolean
 }
@@ -146,7 +148,19 @@ export class PrintManager {
       : settings.lastThreeMonths
         ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
         : null
-    if (cutoff) {
+    const customFrom = settings.customFrom ? new Date(settings.customFrom) : null
+    const customTo   = settings.customTo   ? new Date(settings.customTo + 'T23:59:59') : null
+    if (customFrom || customTo) {
+      const tmp = rows.filter(row => {
+        const dateStr = this.extractDate(row, overrides)
+        const rowDate = this.parseDate(dateStr)
+        if (!dateStr || !rowDate) return true
+        if (customFrom && rowDate < customFrom) return false
+        if (customTo   && rowDate > customTo)   return false
+        return true
+      })
+      if (tmp.length < rows.length) { filteredRows = tmp; usedFilter = true }
+    } else if (cutoff) {
       const tmp = rows.filter(row => {
         const dateStr = this.extractDate(row, overrides)
         const rowDate = this.parseDate(dateStr)
