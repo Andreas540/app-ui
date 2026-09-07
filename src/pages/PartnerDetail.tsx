@@ -372,17 +372,17 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       : settings.lastThreeMonths
         ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
         : null
-    const customFrom = settings.customFrom ? new Date(settings.customFrom) : null
-    const customTo   = settings.customTo   ? new Date(settings.customTo + 'T23:59:59') : null
+    const toLocalYMD = (dateStr: string) =>
+      new Date(dateStr).toLocaleDateString('en-CA', { timeZone: timezone })
 
     const filterDate = (dateStr: string) => {
-      const d = new Date(dateStr)
-      if (customFrom || customTo) {
-        if (customFrom && d < customFrom) return false
-        if (customTo   && d > customTo)   return false
+      if (settings.customFrom || settings.customTo) {
+        const localDate = toLocalYMD(dateStr)
+        if (settings.customFrom && localDate < settings.customFrom) return false
+        if (settings.customTo   && localDate > settings.customTo)   return false
         return true
       }
-      if (cutoff) return d >= cutoff
+      if (cutoff) return new Date(dateStr) >= cutoff
       return true
     }
 
