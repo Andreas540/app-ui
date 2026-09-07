@@ -37,6 +37,16 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
 
   useEffect(() => { setLocalOptions(options) }, [options])
 
+  useEffect(() => {
+    if (isOpen) {
+      setTimePeriod('all')
+      setCustomFrom('')
+      setCustomTo('')
+      setSortByDate(false)
+      setSortByCustomer(true)
+    }
+  }, [isOpen])
+
   if (!isOpen || !localOptions) return null
 
   const handleToggleSection = (id: string) => {

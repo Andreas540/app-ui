@@ -372,11 +372,27 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       : settings.lastThreeMonths
         ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
         : null
-    const filteredOrders   = cutoff ? orders.filter(o => new Date(o.order_date) >= cutoff) : orders
-    const filteredPayments = cutoff ? payments.filter(p => new Date(p.payment_date) >= cutoff) : payments
+    const customFrom = settings.customFrom ? new Date(settings.customFrom) : null
+    const customTo   = settings.customTo   ? new Date(settings.customTo + 'T23:59:59') : null
+
+    const filterDate = (dateStr: string) => {
+      const d = new Date(dateStr)
+      if (customFrom || customTo) {
+        if (customFrom && d < customFrom) return false
+        if (customTo   && d > customTo)   return false
+        return true
+      }
+      if (cutoff) return d >= cutoff
+      return true
+    }
+
+    const filteredOrders   = orders.filter(o => filterDate(o.order_date))
+    const filteredPayments = payments.filter(p => filterDate(p.payment_date))
 
     const now = new Date().toLocaleString()
-    const periodLabel = settings.thisYear ? 'This year' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
+    const periodLabel = settings.customFrom || settings.customTo
+      ? `${settings.customFrom ?? ''}–${settings.customTo ?? ''}`
+      : settings.thisYear ? 'This year' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
 
     const fmtAbs = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const fmtAmt = (n: number) => n < 0 ? `-$${fmtAbs(n)}` : `$${fmtAbs(n)}`
