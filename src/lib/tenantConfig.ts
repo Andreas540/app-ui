@@ -28,6 +28,7 @@ export interface TenantConfig {
     showNavArrowsDesktop: boolean
     showOwedToSuppliers: boolean
     compactCustomerOrderRows: boolean
+    excludePartnerShareOrderRows: boolean
     multipleOrderRows: boolean
     dashboardCards: string[]
     customerDetailShowNewOrder: boolean
@@ -110,6 +111,7 @@ export const defaultConfig: TenantConfig = {
     showNavArrowsDesktop: false,
     showOwedToSuppliers: true,
     compactCustomerOrderRows: true,
+    excludePartnerShareOrderRows: false,
     multipleOrderRows: true,
     dashboardCards: ['financials', 'charts'],
     customerDetailShowNewOrder: true,

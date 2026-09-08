@@ -1671,6 +1671,7 @@
     "customerOrderRows": "Visning av orderrader",
     "orderRowsFull": "Visa all info på orderrader (produkt, antal, pris, partnerandel)",
     "orderRowsCompact": "Visa mindre info på orderrader (endast produkt och antal)",
+    "orderRowsExcludePartnerShare": "Exkludera partnerandel på orderrader (produkt, antal, pris)",
     "customized": "Anpassad",
     "resetSection": "Återställ avsnitt till standard",
     "saved": "Inställningar sparade!",

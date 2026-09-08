@@ -1671,6 +1671,7 @@
     "customerOrderRows": "Visualización de filas de pedido",
     "orderRowsFull": "Mostrar toda la info en filas de pedido (producto, cantidad, precio, parte del socio)",
     "orderRowsCompact": "Mostrar menos info en filas de pedido (solo producto y cantidad)",
+    "orderRowsExcludePartnerShare": "Excluir parte del socio en filas de pedido (producto, cantidad, precio)",
     "customized": "Personalizado",
     "resetSection": "Restablecer sección a valores predeterminados",
     "saved": "¡Configuración guardada!",

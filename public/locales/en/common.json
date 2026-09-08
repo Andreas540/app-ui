@@ -1671,6 +1671,7 @@
     "customerOrderRows": "Order row display",
     "orderRowsFull": "Show all info on order rows (product, quantity, price, partner share)",
     "orderRowsCompact": "Show less info on order rows (product and quantity only)",
+    "orderRowsExcludePartnerShare": "Exclude partner share on order rows (product, quantity, price)",
     "customized": "Customized",
     "resetSection": "Reset section to defaults",
     "saved": "Settings saved!",

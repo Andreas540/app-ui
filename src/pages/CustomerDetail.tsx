@@ -54,7 +54,8 @@ export default function CustomerDetailPage() {
   const tenantConfig = getTenantConfig(user?.tenantId)
   const tenantUi = tenantConfig.ui
   const directLabel = tenantConfig.labels.directLabel
-  const compactOrderRows = tenantUi.compactCustomerOrderRows
+  const compactOrderRows          = tenantUi.compactCustomerOrderRows
+  const excludePartnerShareRows   = tenantUi.excludePartnerShareOrderRows
   const showOrderNumber = tenantUi.showOrderNumberInList
   const platform = getPlatform()
   const cfgShowNewOrder      = tenantUi.customerDetailShowNewOrder
@@ -950,7 +951,7 @@ export default function CustomerDetailPage() {
                 if (compactOrderRows) {
                   return `${item.product_name ?? 'Service'} / ${fmtNumber(item.qty)}`
                 }
-                const suffix = isPartnerCustomer && (o as any).partner_amount != null && items.indexOf(item) === 0
+                const suffix = !excludePartnerShareRows && isPartnerCustomer && (o as any).partner_amount != null && items.indexOf(item) === 0
                   ? ` / ${fmtIntMoney((o as any).partner_amount)}`
                   : ''
                 return `${item.product_name ?? 'Service'} / ${fmtNumber(item.qty)} / ${fmtMoney(item.unit_price ?? 0)}${suffix}`

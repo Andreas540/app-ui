@@ -27,7 +27,7 @@ type UiConfig = {
     order?: string; orders?: string
     directLabel?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[] }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; excludePartnerShareOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[] }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -263,6 +263,7 @@ export default function TenantCustomization() {
       setCfg(p => {
         const ui = { ...p.ui }
         delete ui.compactCustomerOrderRows
+        delete ui.excludePartnerShareOrderRows
         return { ...p, ui }
       })
     }
@@ -417,25 +418,37 @@ export default function TenantCustomization() {
           )}
 
           {/* Pages > Customer Detail */}
-          {section === 'customer-detail' && (
-            <Row label={t('tenantCustom.customerOrderRows')}
-              customized={cu.compactCustomerOrderRows !== undefined && cu.compactCustomerOrderRows !== du.compactCustomerOrderRows}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <input type="radio" name="orderRows" checked={!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                    onChange={() => setUi('compactCustomerOrderRows', false)}
-                    style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-                  <span>{t('tenantCustom.orderRowsFull')}</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <input type="radio" name="orderRows" checked={!!(cu.compactCustomerOrderRows ?? du.compactCustomerOrderRows)}
-                    onChange={() => setUi('compactCustomerOrderRows', true)}
-                    style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-                  <span>{t('tenantCustom.orderRowsCompact')}</span>
-                </label>
-              </div>
-            </Row>
-          )}
+          {section === 'customer-detail' && (() => {
+            const compact      = !!(cu.compactCustomerOrderRows      ?? du.compactCustomerOrderRows)
+            const excludeShare = !!(cu.excludePartnerShareOrderRows  ?? du.excludePartnerShareOrderRows)
+            const customized   =
+              (cu.compactCustomerOrderRows     !== undefined && cu.compactCustomerOrderRows     !== du.compactCustomerOrderRows) ||
+              (cu.excludePartnerShareOrderRows !== undefined && cu.excludePartnerShareOrderRows !== du.excludePartnerShareOrderRows)
+            return (
+              <Row label={t('tenantCustom.customerOrderRows')} customized={customized}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input type="radio" name="orderRows" checked={!compact && !excludeShare}
+                      onChange={() => { setUi('compactCustomerOrderRows', false); setUi('excludePartnerShareOrderRows', false) }}
+                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                    <span>{t('tenantCustom.orderRowsFull')}</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input type="radio" name="orderRows" checked={compact}
+                      onChange={() => { setUi('compactCustomerOrderRows', true); setUi('excludePartnerShareOrderRows', false) }}
+                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                    <span>{t('tenantCustom.orderRowsCompact')}</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input type="radio" name="orderRows" checked={!compact && excludeShare}
+                      onChange={() => { setUi('compactCustomerOrderRows', false); setUi('excludePartnerShareOrderRows', true) }}
+                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                    <span>{t('tenantCustom.orderRowsExcludePartnerShare')}</span>
+                  </label>
+                </div>
+              </Row>
+            )
+          })()}
 
           {/* Pages > Dashboard */}
           {section === 'dashboard' && (
