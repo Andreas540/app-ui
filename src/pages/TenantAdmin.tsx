@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
+import { useLocale } from '../contexts/LocaleContext'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
 import { MODULES } from '../lib/modules'
@@ -40,6 +41,7 @@ export default function TenantAdmin() {
   const { user, verifyAuth, pinLock } = useAuth()
   const { t } = useTranslation()
   const { fmtMoney } = useCurrency()
+  const { currency } = useLocale()
   const navigate = useNavigate()
   const location = useLocation()
   const [users, setUsers] = useState<TenantUser[]>([])
@@ -585,7 +587,7 @@ export default function TenantAdmin() {
           companyAddress2: ic.companyAddress2 ?? '',
           companyPhone: ic.companyPhone ?? '',
           contactName: ic.contactName ?? '',
-          enabledPaymentMethods: ic.enabledPaymentMethods ?? [],
+          enabledPaymentMethods: ic.enabledPaymentMethods ?? (currency === 'USD' ? ['ach'] : []),
           bankName: ic.bankName ?? '',
           bankAccountName: ic.bankAccountName ?? '',
           bankAccountNumber: ic.bankAccountNumber ?? '',
@@ -1058,7 +1060,8 @@ export default function TenantAdmin() {
               { id: 'efectivo_cop',      labelKey: 'efectivoCop',     available: true },
             ],
           }
-          const availablePMs = pmByCountry[invoiceCfg.billingCountry] ?? null
+          const effectiveCountry = currency === 'USD' ? 'US' : invoiceCfg.billingCountry
+          const availablePMs = pmByCountry[effectiveCountry] ?? null
 
           return (<>
 
@@ -1176,7 +1179,7 @@ export default function TenantAdmin() {
             <p className="helper" style={{ marginBottom: 16 }}>{t('tenantAdmin.billingCountryHelp')}</p>
 
             {/* Payment method checkboxes — driven by billing country */}
-            {invoiceCfg.billingCountry === '' ? null : availablePMs ? (<>
+            {(invoiceCfg.billingCountry === '' && currency !== 'USD') ? null : availablePMs ? (<>
               <p className="helper" style={{ marginBottom: 10 }}>{t('tenantAdmin.paymentOptionsHelp')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {availablePMs.map(pm => (

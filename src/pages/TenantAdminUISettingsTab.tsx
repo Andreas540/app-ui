@@ -154,7 +154,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
   const [pageFieldConfigService, setPageFieldConfigService] = useState<Record<string, boolean>>({})
   const [pagePreviewTab, setPagePreviewTab] = useState<'product' | 'service'>('product')
   const [savingPageConfig, setSavingPageConfig] = useState(false)
-  const currency = (user as any)?.default_currency || 'USD'
+  const currency = (user as any)?.tenant_default_currency || (user as any)?.default_currency || 'USD'
 
   useEffect(() => { loadCfg() }, [])
 
