@@ -121,7 +121,7 @@ LIMIT 1
 
     // Get partner splits for this order
     const partnerSplits = await sql`
-  SELECT op.partner_id, p.name AS partner_name, op.amount
+  SELECT op.partner_id, p.name AS partner_name, op.amount, op.share_mode, op.share_value
   FROM order_partners op
   JOIN orders o ON o.id = op.order_id
   JOIN partners p ON p.id = op.partner_id AND p.tenant_id = ${TENANT_ID}
@@ -338,13 +338,15 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
     }
 
     // Update partner splits - delete old ones and insert new ones
+    await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_mode TEXT`.catch(() => {})
+    await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_value NUMERIC`.catch(() => {})
     await sql`DELETE FROM order_partners WHERE order_id = ${id}`
-    
+
     if (partner_splits && partner_splits.length > 0) {
       for (const split of partner_splits) {
         await sql`
-          INSERT INTO order_partners (order_id, partner_id, amount)
-          VALUES (${id}, ${split.partner_id}, ${split.amount})
+          INSERT INTO order_partners (order_id, partner_id, amount, share_mode, share_value)
+          VALUES (${id}, ${split.partner_id}, ${split.amount}, ${split.share_mode ?? null}, ${split.share_value ?? null})
         `
       }
     }

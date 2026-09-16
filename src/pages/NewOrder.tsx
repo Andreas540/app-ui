@@ -842,10 +842,10 @@ export default function NewOrder() {
           }
 
           // Build partner_splits using already-computed totals
-          const splits: Array<{ partner_id: string; amount: number }> = []
+          const splits: Array<{ partner_id: string; amount: number; share_mode: string; share_value: number }> = []
           if (isPartnerCustomer) {
-            if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total })
-            if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total })
+            if (partner1Id && partner1Total > 0) splits.push({ partner_id: partner1Id, amount: partner1Total, share_mode: partner1Mode, share_value: parseAmount(partner1PerItemStr) })
+            if (partner2Id && partner2Total > 0) splits.push({ partner_id: partner2Id, amount: partner2Total, share_mode: partner2Mode, share_value: parseAmount(partner2PerItemStr) })
           }
 
           let productCostToSend: number | undefined = undefined

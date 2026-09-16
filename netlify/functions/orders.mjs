@@ -266,6 +266,8 @@ const TENANT_ID = authz.tenantId;
 
     // Partner splits (insert only finite, non-zero)
     if (Array.isArray(partner_splits) && partner_splits.length) {
+      await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_mode TEXT`.catch(() => {})
+      await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_value NUMERIC`.catch(() => {})
       for (const s of partner_splits) {
         const pid = s?.partner_id?.trim?.();
         const amt = Number(s?.amount);
@@ -278,10 +280,9 @@ const TENANT_ID = authz.tenantId;
           LIMIT 1
         `;
         if (exists.length === 0) continue;
-
         await sql`
-          INSERT INTO order_partners (order_id, partner_id, amount)
-          VALUES (${orderId}, ${pid}, ${amt})
+          INSERT INTO order_partners (order_id, partner_id, amount, share_mode, share_value)
+          VALUES (${orderId}, ${pid}, ${amt}, ${s.share_mode ?? null}, ${s.share_value ?? null})
         `;
       }
     }
