@@ -6,6 +6,7 @@
 
 export type PaymentType =
   // English (default)
+  | 'ACH'
   | 'Cash payment'
   | 'Cash App payment'
   | 'Wire Transfer'
@@ -39,6 +40,7 @@ export type PaymentType =
   | 'stripe'
 
 export const PAYMENT_TYPES: PaymentType[] = [
+  'ACH',
   'Advance Payment',
   'Cash App payment',
   'Cash payment',
@@ -76,8 +78,10 @@ export const PAYMENT_TYPES_COP: PaymentType[] = [
 
 export type PartnerPaymentType =
   // English (default)
+  | 'ACH'
   | 'Cash'
   | 'Cash app'
+  | 'Wire Transfer'
   | 'Other'
   | 'Add to debt'
   // Spanish / COP
@@ -96,8 +100,10 @@ export type PartnerPaymentType =
   | 'Lägg till skuld'
 
 export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = [
+  'ACH',
   'Cash',
   'Cash app',
+  'Wire Transfer',
   'Other',
   'Add to debt',
 ]
@@ -124,8 +130,9 @@ export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = [
 
 export type SupplierPaymentType =
   // English (default)
+  | 'ACH'
   | 'Cash'
-  | 'Bank transfer'
+  | 'Wire Transfer'
   | 'Check'
   | 'Credit card'
   | 'Add to debt'
@@ -149,8 +156,9 @@ export type SupplierPaymentType =
   | 'Övrigt'
 
 export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
+  'ACH',
   'Cash',
-  'Bank transfer',
+  'Wire Transfer',
   'Check',
   'Credit card',
   'Add to debt',
