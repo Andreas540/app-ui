@@ -14,6 +14,7 @@ export interface PrintOptions {
 export interface PrintSettings extends PrintOptions {
   includeAll?: boolean
   thisYear?: boolean
+  lastMonth?: boolean
   lastThreeMonths?: boolean
   customFrom?: string   // YYYY-MM-DD
   customTo?: string     // YYYY-MM-DD

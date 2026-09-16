@@ -372,12 +372,24 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
       : settings.lastThreeMonths
         ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
         : null
+    const lastMonthRange = settings.lastMonth ? (() => {
+      const now = new Date()
+      const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+      const m = now.getMonth() === 0 ? 12 : now.getMonth()
+      const mm = String(m).padStart(2, '0')
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0).getDate()
+      return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${lastDay}` }
+    })() : null
     const filterDate = (dateStr: string) => {
       if (settings.customFrom || settings.customTo) {
         const ymd = dateStr.slice(0, 10)
         if (settings.customFrom && ymd < settings.customFrom) return false
         if (settings.customTo   && ymd > settings.customTo)   return false
         return true
+      }
+      if (lastMonthRange) {
+        const ymd = dateStr.slice(0, 10)
+        return ymd >= lastMonthRange.from && ymd <= lastMonthRange.to
       }
       if (cutoff) return new Date(dateStr) >= cutoff
       return true
@@ -389,7 +401,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     const now = new Date().toLocaleString()
     const periodLabel = settings.customFrom || settings.customTo
       ? `${settings.customFrom ?? ''}–${settings.customTo ?? ''}`
-      : settings.thisYear ? 'This year' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
+      : settings.thisYear ? 'This year' : settings.lastMonth ? 'Last month' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
 
     const fmtAbs = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const fmtAmt = (n: number) => n < 0 ? `-$${fmtAbs(n)}` : `$${fmtAbs(n)}`

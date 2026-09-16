@@ -11,7 +11,7 @@ interface PrintDialogProps {
   onPrint?: (settings: PrintSettings, selectedIds: string[]) => void
 }
 
-type TimePeriod = 'all' | 'thisYear' | 'lastThreeMonths' | 'custom'
+type TimePeriod = 'all' | 'thisYear' | 'lastMonth' | 'lastThreeMonths' | 'custom'
 
 const radioLabel: CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer',
@@ -70,6 +70,7 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
       ...localOptions,
       includeAll:      timePeriod === 'all',
       thisYear:        timePeriod === 'thisYear',
+      lastMonth:       timePeriod === 'lastMonth',
       lastThreeMonths: timePeriod === 'lastThreeMonths',
       customFrom:      timePeriod === 'custom' ? (customFrom || undefined) : undefined,
       customTo:        timePeriod === 'custom' ? (customTo   || undefined) : undefined,
@@ -134,10 +135,11 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
           <h4 style={{ margin: '0 0 10px' }}>{t('printDialog.timePeriod', 'Time period')}</h4>
           <div style={{ display: 'grid', gap: 4 }}>
             {([
-              ['all',            t('printDialog.allTime', 'All time')],
-              ['thisYear',       t('printDialog.thisYear', 'This year')],
+              ['all',             t('printDialog.allTime', 'All time')],
+              ['thisYear',        t('printDialog.thisYear', 'This year')],
               ['lastThreeMonths', t('printDialog.lastThreeMonths', 'Last 3 months')],
-              ['custom',         t('printDialog.custom', 'Custom')],
+              ['lastMonth',       t('printDialog.lastMonth', 'Last month')],
+              ['custom',          t('printDialog.custom', 'Custom')],
             ] as [TimePeriod, string][]).map(([val, label]) => (
               <label key={val} style={radioLabel}>
                 <input type="radio" name="timePeriod" value={val} checked={timePeriod === val} onChange={() => setTimePeriod(val)} style={radioInput} />
