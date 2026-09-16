@@ -2,6 +2,10 @@
 // All payment type definitions live here.
 // api.ts re-exports everything for backward compatibility.
 
+function sorted<T extends string>(arr: T[]): T[] {
+  return [...arr].sort((a, b) => a.localeCompare(b))
+}
+
 // ── Customer payment types ────────────────────────────────────────────────────
 
 export type PaymentType =
@@ -39,7 +43,7 @@ export type PaymentType =
   // Auto-created by Stripe webhook
   | 'stripe'
 
-export const PAYMENT_TYPES: PaymentType[] = [
+export const PAYMENT_TYPES: PaymentType[] = sorted([
   'ACH',
   'Advance Payment',
   'Cash App payment',
@@ -49,9 +53,9 @@ export const PAYMENT_TYPES: PaymentType[] = [
   'Repayment',
   'Wire Transfer',
   'Zelle payment',
-]
+])
 
-export const PAYMENT_TYPES_SEK: PaymentType[] = [
+export const PAYMENT_TYPES_SEK: PaymentType[] = sorted([
   'Bankgiro/Postgiro',
   'Banköverföring',
   'Kontantbetalning',
@@ -61,9 +65,9 @@ export const PAYMENT_TYPES_SEK: PaymentType[] = [
   'Lån/Deposition',
   'Partnerkrediter',
   'Återbetalning',
-]
+])
 
-export const PAYMENT_TYPES_COP: PaymentType[] = [
+export const PAYMENT_TYPES_COP: PaymentType[] = sorted([
   'Transferencias Bancarias / ACH',
   'Pagos Seguros en Línea / PSE',
   'Efectivo',
@@ -72,7 +76,7 @@ export const PAYMENT_TYPES_COP: PaymentType[] = [
   'Préstamo/Depósito',
   'Reembolso',
   'Pago anticipado',
-]
+])
 
 // ── Partner payment types ─────────────────────────────────────────────────────
 
@@ -99,32 +103,32 @@ export type PartnerPaymentType =
   | 'Övrigt'
   | 'Lägg till skuld'
 
-export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = [
+export const PARTNER_PAYMENT_TYPES: PartnerPaymentType[] = sorted([
   'ACH',
+  'Add to debt',
   'Cash',
   'Cash app',
-  'Wire Transfer',
   'Other',
-  'Add to debt',
-]
+  'Wire Transfer',
+])
 
-export const PARTNER_PAYMENT_TYPES_SEK: PartnerPaymentType[] = [
+export const PARTNER_PAYMENT_TYPES_SEK: PartnerPaymentType[] = sorted([
   'Bankgiro/Postgiro',
   'Banköverföring',
   'Kortbetalning',
   'Swish',
   'Övrigt',
   'Lägg till skuld',
-]
+])
 
-export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = [
+export const PARTNER_PAYMENT_TYPES_COP: PartnerPaymentType[] = sorted([
   'Transferencias Bancarias / ACH',
   'Pagos Seguros en Línea / PSE',
   'Efectivo',
   'Cheques',
   'Otro',
   'Añadir a la deuda',
-]
+])
 
 // ── Supplier payment types ────────────────────────────────────────────────────
 
@@ -155,18 +159,18 @@ export type SupplierPaymentType =
   | 'Förskottsbetalning'
   | 'Övrigt'
 
-export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = [
+export const SUPPLIER_PAYMENT_TYPES: SupplierPaymentType[] = sorted([
   'ACH',
+  'Add to debt',
   'Cash',
-  'Wire Transfer',
   'Check',
   'Credit card',
-  'Add to debt',
-  'Prepayment',
   'Other',
-]
+  'Prepayment',
+  'Wire Transfer',
+])
 
-export const SUPPLIER_PAYMENT_TYPES_SEK: SupplierPaymentType[] = [
+export const SUPPLIER_PAYMENT_TYPES_SEK: SupplierPaymentType[] = sorted([
   'Bankgiro/Postgiro',
   'Banköverföring',
   'Kortbetalning',
@@ -174,9 +178,9 @@ export const SUPPLIER_PAYMENT_TYPES_SEK: SupplierPaymentType[] = [
   'Förskottsbetalning',
   'Lägg till skuld',
   'Övrigt',
-]
+])
 
-export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = [
+export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = sorted([
   'Transferencias Bancarias / ACH',
   'Pagos Seguros en Línea / PSE',
   'Efectivo',
@@ -184,7 +188,7 @@ export const SUPPLIER_PAYMENT_TYPES_COP: SupplierPaymentType[] = [
   'Prepago',
   'Añadir a la deuda',
   'Otro',
-]
+])
 
 // ── Translation helper ────────────────────────────────────────────────────────
 // Translates a stored payment_type string for display.
