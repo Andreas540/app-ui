@@ -120,6 +120,8 @@ LIMIT 1
     `
 
     // Get partner splits for this order
+    await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_mode TEXT`.catch(() => {})
+    await sql`ALTER TABLE order_partners ADD COLUMN IF NOT EXISTS share_value NUMERIC`.catch(() => {})
     const partnerSplits = await sql`
   SELECT op.partner_id, p.name AS partner_name, op.amount, op.share_mode, op.share_value
   FROM order_partners op
