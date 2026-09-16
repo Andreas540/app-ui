@@ -14,6 +14,8 @@ import {
 } from '../components/RpsCharts'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 const LS_COLS = 'simulations_cols'
 
@@ -44,6 +46,8 @@ async function fetchFactorData(
 export default function SimulationsPage() {
   const { t }  = useTranslation('reports')
   const { t: tc } = useTranslation()
+  const { user } = useAuth()
+  const rpsBasis = getTenantConfig(user?.tenantId).ui.revenueByPaymentDate ? 'payment' as const : undefined
   const { fmtMoney } = useCurrency()
 
   // Simulation config
@@ -84,7 +88,7 @@ export default function SimulationsPage() {
     setErr(null)
     const from = showBy === 'month' ? (fromMonth || undefined) : (fromYear || undefined)
     const to   = showBy === 'month' ? (toMonth   || undefined) : (toYear   || undefined)
-    fetchRpsData(from, to, showBy)
+    fetchRpsData(from, to, showBy, rpsBasis)
       .then(rows => {
         if (stop) return
         setRpsData(rows)

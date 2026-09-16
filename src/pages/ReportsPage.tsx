@@ -55,7 +55,9 @@ export default function ReportsPage() {
   const { t } = useTranslation('reports')
   const { t: tc } = useTranslation()
   const { user } = useAuth()
-  const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsReports
+  const tenantUi      = getTenantConfig(user?.tenantId).ui
+  const showInfoIcons = tenantUi.showInfoIconsReports
+  const rpsBasis      = tenantUi.revenueByPaymentDate ? 'payment' as const : undefined
   const { fmtMoney } = useCurrency()
   const [rpsData,      setRpsData]      = useState<RpsPoint[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -118,7 +120,7 @@ export default function ReportsPage() {
     setErr(null)
     const from = showBy === 'month' ? (fromMonth || undefined) : (fromYear || undefined)
     const to   = showBy === 'month' ? (toMonth   || undefined) : (toYear   || undefined)
-    fetchRpsData(from, to, showBy)
+    fetchRpsData(from, to, showBy, rpsBasis)
       .then((rows: RpsPoint[]) => {
         if (stop) return
         setRpsData(rows)

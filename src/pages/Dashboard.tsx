@@ -78,10 +78,10 @@ type RpsPoint = {
 }
 
 // --- RPS monthly fetch (for Gross Profic, Operating profit & Surplus slides) ---
-async function fetchRpsMonthly(months = 3): Promise<RpsPoint[]> {
+async function fetchRpsMonthly(months = 3, basis?: 'payment'): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
-  const res = await fetch(`${base}/api/rps/monthly?months=${months}`, {
+  const basisParam = basis === 'payment' ? '&basis=payment' : ''
+  const res = await fetch(`${base}/api/rps/monthly?months=${months}${basisParam}`, {
   cache: 'no-store',
   headers: getAuthHeaders(),
 })
@@ -263,6 +263,7 @@ export default function Dashboard() {
   const config = getTenantConfig(user?.tenantId)
   const showOwedToSuppliers  = config.ui.showOwedToSuppliers
   const showInfoIconsPages   = config.ui.showInfoIconsPages
+  const rpsBasis = config.ui.revenueByPaymentDate ? 'payment' as const : undefined
   const [netBalanceInfoOpen, setNetBalanceInfoOpen] = useState(false)
   const [chartInfoOpen,     setChartInfoOpen]     = useState(false)
 
@@ -417,7 +418,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     const load = async () => {
       try {
         setRpsLoading(true); setRpsErr(null)
-        const rows = await fetchRpsMonthly(3)
+        const rows = await fetchRpsMonthly(3, rpsBasis)
         if (!stop) setRpsMonthly(rows)
       } catch (e: any) {
         if (!stop) setRpsErr(e?.message || String(e))
@@ -435,7 +436,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
     const loadSilent = async () => {
       try {
         if (document.visibilityState !== 'visible') return
-        const rpsRows = await fetchRpsMonthly(3)
+        const rpsRows = await fetchRpsMonthly(3, rpsBasis)
         if (!stop) setRpsMonthly(rpsRows)
       } catch {
         // swallow silent errors
@@ -450,7 +451,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
   useEffect(() => {
     (async () => {
       try {
-        const rpsRows = await fetchRpsMonthly(3)
+        const rpsRows = await fetchRpsMonthly(3, rpsBasis)
         setRpsMonthly(rpsRows)
       } catch {}
     })()

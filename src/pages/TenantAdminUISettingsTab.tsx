@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext'
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40
 
-type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'new-order' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail'
+type Section = 'terminology' | 'payments' | 'booking' | 'orders' | 'new-order' | 'welcome' | 'ui-info' | 'ui-nav' | 'dashboard' | 'customer-detail' | 'calc-sales-profit'
 
 type UiConfig = {
   payments?: {
@@ -28,7 +28,7 @@ type UiConfig = {
     order?: string; orders?: string
     directLabel?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; excludePartnerShareOrderRows?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailShowLog?: boolean; customerDetailOwedBreakdown?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; excludePartnerShareOrderRows?: boolean; revenueByPaymentDate?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailShowLog?: boolean; customerDetailOwedBreakdown?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -316,6 +316,8 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
       setCfg(p => { const ui = { ...p.ui }; delete ui.compactCustomerOrderRows; delete ui.excludePartnerShareOrderRows; delete ui.customerDetailShowNewOrder; delete ui.customerDetailShowNewPayment; delete ui.customerDetailShowNewInvoice; delete ui.customerDetailShowNewBooking; delete ui.customerDetailShowShareBooking; delete ui.customerDetailShowShareOrder; delete ui.customerDetailShowConversation; delete ui.customerDetailShowLog; delete ui.customerDetailOwedBreakdown; return { ...p, ui } })
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
+    } else if (section === 'calc-sales-profit') {
+      setCfg(p => { const ui = { ...p.ui }; delete ui.revenueByPaymentDate; return { ...p, ui } })
     }
   }
 
@@ -361,6 +363,9 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
           </optgroup>
           <optgroup label={t('tenantCustom.groupUI')}>
             <option value="ui-info">{t('tenantCustom.sectionUiInfo')}</option>
+          </optgroup>
+          <optgroup label={t('tenantCustom.groupCalcAccounting')}>
+            <option value="calc-sales-profit">{t('tenantCustom.sectionCalcSalesProfit')}</option>
           </optgroup>
         </select>
       </div>
@@ -584,6 +589,28 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
           <Row label={t('tenantCustom.showInfoIconsReports')} help={t('tenantCustom.showInfoIconsReportsHelp')}
             customized={cu.showInfoIconsReports !== undefined && cu.showInfoIconsReports !== du.showInfoIconsReports}>
             <Toggle value={cu.showInfoIconsReports ?? du.showInfoIconsReports} onChange={v => setUi('showInfoIconsReports', v)} />
+          </Row>
+        </>
+      )}
+
+      {section === 'calc-sales-profit' && (
+        <>
+          <Row label={t('tenantCustom.revenueBasis')} help={t('tenantCustom.revenueBasisHelp')}
+            customized={cu.revenueByPaymentDate !== undefined && cu.revenueByPaymentDate !== du.revenueByPaymentDate}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="revenueBasis" checked={!(cu.revenueByPaymentDate ?? du.revenueByPaymentDate)}
+                  onChange={() => setUi('revenueByPaymentDate', false)}
+                  style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                <span>{t('tenantCustom.revenueBasisOrderDate')}</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input type="radio" name="revenueBasis" checked={!!(cu.revenueByPaymentDate ?? du.revenueByPaymentDate)}
+                  onChange={() => setUi('revenueByPaymentDate', true)}
+                  style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                <span>{t('tenantCustom.revenueBasisPaymentDate')}</span>
+              </label>
+            </div>
           </Row>
         </>
       )}

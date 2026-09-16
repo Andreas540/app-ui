@@ -75,17 +75,19 @@ export type RpsPoint = {
 
 export async function fetchRpsData(
   from?: string, to?: string, period: 'month' | 'year' = 'month',
+  basis?: 'payment',
 ): Promise<RpsPoint[]> {
   const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+  const basisParam = basis === 'payment' ? '&basis=payment' : ''
   let params: string
   if (period === 'year') {
     params = (from && to)
-      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&period=year`
-      : 'years=3&period=year'
+      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&period=year${basisParam}`
+      : `years=3&period=year${basisParam}`
   } else {
     params = (from && to)
-      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-      : 'months=3'
+      ? `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${basisParam}`
+      : `months=3${basisParam}`
   }
   const res = await fetch(`${base}/api/rps/monthly?${params}`, {
     cache: 'no-store',
