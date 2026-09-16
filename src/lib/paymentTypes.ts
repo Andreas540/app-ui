@@ -3,7 +3,7 @@
 // api.ts re-exports everything for backward compatibility.
 
 function sorted<T extends string>(arr: T[]): T[] {
-  return [...arr].sort((a, b) => a.localeCompare(b))
+  return [...arr].sort((a, b) => a.localeCompare(b, 'sv'))
 }
 
 // ── Customer payment types ────────────────────────────────────────────────────
