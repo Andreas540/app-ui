@@ -1813,7 +1813,7 @@ async function handleSaveStripeCustomerId() {
                           ))}
                         </div>
                         <div className="helper" style={{ marginTop: 6 }}>
-                          Manufacturing shows Pre-prod, Finished, and Total columns. Retail collapses these into a single In Stock column. In Retail mode, the Pre-production and Input Materials options are hidden in the Adjust Inventory form.
+                          Manufacturing shows Pre-prod, Finished, and Total columns. Retail collapses these into a single In Stock column. In Retail mode, the Input Materials option is also hidden in the Adjust Inventory form.
                         </div>
                       </div>
 
