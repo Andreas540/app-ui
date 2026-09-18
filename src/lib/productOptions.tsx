@@ -4,11 +4,13 @@ type ProductLike = {
   id: string
   name: string
   variant?: string | null
+  variant_2?: string | null
   product_category?: string | null
 }
 
 export function optLabel(p: ProductLike): string {
-  return p.variant ? `${p.name} · ${p.variant}` : p.name
+  const parts = [p.name, p.variant, p.variant_2].filter(Boolean)
+  return parts.join(' · ')
 }
 
 /**

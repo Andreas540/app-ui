@@ -53,6 +53,7 @@ export default function EditProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
+  const [variant2, setVariant2] = useState('')
   const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
 
   const [categories, setCategories] = useState<string[]>([])
@@ -137,6 +138,7 @@ export default function EditProduct() {
     setProductSubcategory(selected.product_subcategory ?? '')
     setSku(selected.sku ?? '')
     setVariant(selected.variant ?? '')
+    setVariant2(selected.variant_2 ?? '')
     setUnitTracking(selected.unit_tracking ?? 'none')
     setCostMethod(selected.cost_method ?? 'manual')
     setMethodTiming('next')
@@ -197,7 +199,7 @@ export default function EditProduct() {
         ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
         product_category: productCategory || null,
         product_subcategory: productSubcategory || null,
-        ...(type === 'product' ? { sku: sku || null, variant: variant || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
+        ...(type === 'product' ? { sku: sku || null, variant: variant || null, variant_2: variant2 || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -335,6 +337,12 @@ export default function EditProduct() {
             <div>
               <label>Variant</label>
               <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
+            </div>
+          )}
+          {showVariant && (
+            <div>
+              <label>Variant 2</label>
+              <input type="text" value={variant2} onChange={e => setVariant2(e.target.value)} />
             </div>
           )}
         </div>

@@ -47,6 +47,7 @@ export default function NewProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
+  const [variant2, setVariant2] = useState('')
   const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
   const [unitTrackingOpen, setUnitTrackingOpen] = useState(false)
 
@@ -197,7 +198,7 @@ export default function NewProduct() {
     try {
       setSaving(true)
       if (category === 'addon') return
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, variant_2: category === 'product' ? (variant2 || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
@@ -207,6 +208,8 @@ export default function NewProduct() {
       setProductCategory('')
       setProductSubcategory('')
       setSku('')
+      setVariant('')
+      setVariant2('')
       await loadProducts()
       if (showHistorical) {
         await loadHistoricalCosts()
@@ -219,6 +222,20 @@ export default function NewProduct() {
   }
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
+
+  const sortedForTable = useMemo(() => {
+    const prods = filteredProducts
+    const uncategorized = prods.filter(p => !p.product_category).sort((a, b) => a.name.localeCompare(b.name))
+    const cats = [...new Set(prods.filter(p => p.product_category).map(p => p.product_category!))].sort((a, b) => a.localeCompare(b))
+    type Entry = { type: 'row'; product: ProductWithCost } | { type: 'header'; cat: string }
+    return [
+      ...uncategorized.map(p => ({ type: 'row' as const, product: p })),
+      ...cats.flatMap(cat => [
+        { type: 'header' as const, cat },
+        ...prods.filter(p => p.product_category === cat).sort((a, b) => a.name.localeCompare(b.name)).map(p => ({ type: 'row' as const, product: p })),
+      ]),
+    ] as Entry[]
+  }, [filteredProducts])
 
   // Group historical costs by product, filtered to match the active list tab
   const groupedHistorical = historicalCosts.reduce((acc, item) => {
@@ -383,6 +400,12 @@ export default function NewProduct() {
               <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
             </div>
           )}
+          {showVariant && (
+            <div>
+              <label>Variant 2</label>
+              <input type="text" value={variant2} onChange={e => setVariant2(e.target.value)} />
+            </div>
+          )}
         </div>
       )}
 
@@ -506,7 +529,7 @@ export default function NewProduct() {
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku(''); setVariant('') }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku(''); setVariant(''); setVariant2('') }} disabled={saving}>
           {t('clear')}
         </button>
       </div>
@@ -619,6 +642,8 @@ export default function NewProduct() {
                   <tr>
                     {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
+                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant</th>}
+                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant 2</th>}
                     {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
                     {listCategory === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
@@ -626,40 +651,52 @@ export default function NewProduct() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map(p => (
-                    <tr key={p.id}>
-                      {showImages && (
-                        <td style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
-                          {p.has_image
-                            ? <img src={`${BASE}/.netlify/functions/serve-product-image?id=${p.id}`} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
-                            : <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--border)' }} />
-                          }
-                        </td>
-                      )}
-                      <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{p.name}</td>
-                      {listCategory === 'product' && (
-                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                          {p.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
-                            : p.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
-                            : t('products.unitTrackingNone')}
-                        </td>
-                      )}
-                      {listCategory === 'service' && (
-                        <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                          {p.duration_minutes != null ? `${p.duration_minutes} min` : '—'}
-                        </td>
-                      )}
-                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{p.price_amount != null ? fmtMoney(p.price_amount) : '—'}</td>
-                      <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {p.cost_method && p.cost_method !== 'manual' && (
-                          <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>
-                            {p.cost_method === 'last_purchase' ? 'last' : p.cost_method.replace('avg_', 'avg ')}
-                          </span>
+                  {sortedForTable.map((entry, idx) =>
+                    entry.type === 'header' ? (
+                      <tr key={`hdr-${entry.cat}`}>
+                        <td colSpan={showImages ? 8 : 7} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
+                      </tr>
+                    ) : (
+                      <tr key={entry.product.id}>
+                        {showImages && (
+                          <td style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
+                            {entry.product.has_image
+                              ? <img src={`${BASE}/.netlify/functions/serve-product-image?id=${entry.product.id}`} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                              : <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--border)' }} />
+                            }
+                          </td>
                         )}
-                        {fmtMoney(p.cost ?? 0, 3)}
-                      </td>
-                    </tr>
-                  ))}
+                        <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{entry.product.name}</td>
+                        {listCategory === 'product' && (
+                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant ? undefined : 'var(--text-secondary)' }}>{entry.product.variant || '—'}</td>
+                        )}
+                        {listCategory === 'product' && (
+                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant_2 ? undefined : 'var(--text-secondary)' }}>{entry.product.variant_2 || '—'}</td>
+                        )}
+                        {listCategory === 'product' && (
+                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                            {entry.product.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
+                              : entry.product.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
+                              : t('products.unitTrackingNone')}
+                          </td>
+                        )}
+                        {listCategory === 'service' && (
+                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                            {entry.product.duration_minutes != null ? `${entry.product.duration_minutes} min` : '—'}
+                          </td>
+                        )}
+                        <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{entry.product.price_amount != null ? fmtMoney(entry.product.price_amount) : '—'}</td>
+                        <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                          {entry.product.cost_method && entry.product.cost_method !== 'manual' && (
+                            <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>
+                              {entry.product.cost_method === 'last_purchase' ? 'last' : entry.product.cost_method.replace('avg_', 'avg ')}
+                            </span>
+                          )}
+                          {fmtMoney(entry.product.cost ?? 0, 3)}
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             )}
