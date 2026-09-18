@@ -267,7 +267,8 @@ export default function Warehouse() {
 
       setProducts(filtered)
       setMaterialProducts(matFiltered)
-      if (filtered[0]) setProductId(filtered[0].id)
+      const defaultProd = filtered.find(p => p.product_kind !== 'addon') ?? filtered[0]
+      if (defaultProd) setProductId(defaultProd.id)
 
       await loadInventory()
     } catch (e: any) {
@@ -385,7 +386,8 @@ export default function Warehouse() {
                     if (opt.value === 'material') {
                       setProductId(materialProducts[0]?.id ?? '')
                     } else if (flag === 'material') {
-                      setProductId(products[0]?.id ?? '')
+                      const def = products.find(p => p.product_kind !== 'addon') ?? products[0]
+                      setProductId(def?.id ?? '')
                     }
                   }}
                   style={{ cursor: 'pointer', width: 16, height: 16 }}
