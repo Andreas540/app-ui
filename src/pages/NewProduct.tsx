@@ -651,7 +651,7 @@ export default function NewProduct() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedForTable.map((entry, idx) =>
+                  {sortedForTable.map((entry) =>
                     entry.type === 'header' ? (
                       <tr key={`hdr-${entry.cat}`}>
                         <td colSpan={showImages ? 8 : 7} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
