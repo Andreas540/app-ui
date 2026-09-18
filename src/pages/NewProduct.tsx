@@ -363,7 +363,7 @@ export default function NewProduct() {
         />
       </div>
 
-      {(showCategory || showSubcategory) && (
+      {(showCategory || showSubcategory || (category === 'product' && showSku)) && (
         <div className="row" style={{ marginTop: 12 }}>
           {showCategory && (
             <div>
@@ -423,75 +423,71 @@ export default function NewProduct() {
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {category === 'product' && (showSku || showVariant) && (
-        <div className="row" style={{ marginTop: 12 }}>
-          {showSku && (
+          {category === 'product' && showSku && (
             <div>
               <label>Item ID / SKU</label>
               <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
             </div>
           )}
-          {showVariant && (
-            <div>
-              <label>Variant</label>
-              {addingVariant ? (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Variant name"
-                    value={newVariantName}
-                    onChange={e => setNewVariantName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddVariant(); if (e.key === 'Escape') { setAddingVariant(false); setNewVariantName('') } }}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <button onClick={handleAddVariant} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
-                  <button onClick={() => { setAddingVariant(false); setNewVariantName(''); setVariant('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
-                </div>
-              ) : (
-                <select value={variant} onChange={e => {
-                  if (e.target.value === '__new__') { setAddingVariant(true); setVariant('') }
-                  else setVariant(e.target.value)
-                }}>
-                  <option value="">—</option>
-                  <option value="__new__">＋ New variant</option>
-                  {variants.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              )}
-            </div>
-          )}
-          {showVariant && (
-            <div>
-              <label>Variant 2</label>
-              {addingVariant2 ? (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Variant 2 name"
-                    value={newVariant2Name}
-                    onChange={e => setNewVariant2Name(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddVariant2(); if (e.key === 'Escape') { setAddingVariant2(false); setNewVariant2Name('') } }}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <button onClick={handleAddVariant2} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
-                  <button onClick={() => { setAddingVariant2(false); setNewVariant2Name(''); setVariant2('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
-                </div>
-              ) : (
-                <select value={variant2} onChange={e => {
-                  if (e.target.value === '__new__') { setAddingVariant2(true); setVariant2('') }
-                  else setVariant2(e.target.value)
-                }}>
-                  <option value="">—</option>
-                  <option value="__new__">＋ New variant 2</option>
-                  {variants2.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              )}
-            </div>
-          )}
+        </div>
+      )}
+
+      {category === 'product' && showVariant && (
+        <div className="row" style={{ marginTop: 12 }}>
+          <div>
+            <label>Variant</label>
+            {addingVariant ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Variant name"
+                  value={newVariantName}
+                  onChange={e => setNewVariantName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddVariant(); if (e.key === 'Escape') { setAddingVariant(false); setNewVariantName('') } }}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button onClick={handleAddVariant} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                <button onClick={() => { setAddingVariant(false); setNewVariantName(''); setVariant('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+              </div>
+            ) : (
+              <select value={variant} onChange={e => {
+                if (e.target.value === '__new__') { setAddingVariant(true); setVariant('') }
+                else setVariant(e.target.value)
+              }}>
+                <option value="">—</option>
+                <option value="__new__">＋ New variant</option>
+                {variants.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            )}
+          </div>
+          <div>
+            <label>Variant 2</label>
+            {addingVariant2 ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Variant 2 name"
+                  value={newVariant2Name}
+                  onChange={e => setNewVariant2Name(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddVariant2(); if (e.key === 'Escape') { setAddingVariant2(false); setNewVariant2Name('') } }}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button onClick={handleAddVariant2} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                <button onClick={() => { setAddingVariant2(false); setNewVariant2Name(''); setVariant2('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+              </div>
+            ) : (
+              <select value={variant2} onChange={e => {
+                if (e.target.value === '__new__') { setAddingVariant2(true); setVariant2('') }
+                else setVariant2(e.target.value)
+              }}>
+                <option value="">—</option>
+                <option value="__new__">＋ New variant 2</option>
+                {variants2.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            )}
+          </div>
         </div>
       )}
 
