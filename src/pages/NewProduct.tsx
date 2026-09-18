@@ -724,9 +724,9 @@ export default function NewProduct() {
                   <tr>
                     {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant</th>}
-                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant 2</th>}
-                    {listCategory === 'product' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
+                    {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant</th>}
+                    {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant 2</th>}
+                    {listCategory === 'product' && showUnitTracking && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
                     {listCategory === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
                     <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{listCategory === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
@@ -736,7 +736,7 @@ export default function NewProduct() {
                   {sortedForTable.map((entry) =>
                     entry.type === 'header' ? (
                       <tr key={`hdr-${entry.cat}`}>
-                        <td colSpan={showImages ? 8 : 7} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
+                        <td colSpan={(showImages ? 1 : 0) + 1 + (listCategory === 'product' ? (showVariant ? 2 : 0) + (showUnitTracking ? 1 : 0) : 1) + 2} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
                       </tr>
                     ) : (
                       <tr key={entry.product.id}>
@@ -749,13 +749,13 @@ export default function NewProduct() {
                           </td>
                         )}
                         <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{entry.product.name}</td>
-                        {listCategory === 'product' && (
+                        {listCategory === 'product' && showVariant && (
                           <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant ? undefined : 'var(--text-secondary)' }}>{entry.product.variant || '—'}</td>
                         )}
-                        {listCategory === 'product' && (
+                        {listCategory === 'product' && showVariant && (
                           <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant_2 ? undefined : 'var(--text-secondary)' }}>{entry.product.variant_2 || '—'}</td>
                         )}
-                        {listCategory === 'product' && (
+                        {listCategory === 'product' && showUnitTracking && (
                           <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                             {entry.product.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
                               : entry.product.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
