@@ -233,7 +233,7 @@ export default function Warehouse() {
   const [productId, setProductId] = useState('')
   const [qtyStr, setQtyStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
-  const [flag, setFlag] = useState<'M' | 'P' | 'material'>('M')
+  const [flag, setFlag] = useState<'M' | 'P' | 'material'>(isRetail ? 'P' : 'M')
   const [productCostStr, setProductCostStr] = useState('')
   const [laborCostStr, setLaborCostStr] = useState('')
   const [notes, setNotes] = useState('')
@@ -372,7 +372,7 @@ export default function Warehouse() {
               { value: 'M',        label: t('warehouse.preProduction') },
               { value: 'P',        label: isRetail ? t('warehouse.inStockColumn') : t('warehouse.finishedProducts') },
               { value: 'material', label: t('warehouse.materialsSection') },
-            ] as const).filter(opt => !(isRetail && opt.value === 'M')).map(opt => (
+            ] as const).filter(opt => !(isRetail && (opt.value === 'M' || opt.value === 'material'))).map(opt => (
               <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
                 <input
                   type="radio"
