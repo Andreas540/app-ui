@@ -176,8 +176,12 @@ export default function EditProduct() {
     setProductCategory(selected.product_category ?? '')
     setProductSubcategory(selected.product_subcategory ?? '')
     setSku(selected.sku ?? '')
-    setVariant(selected.variant ?? '')
-    setVariant2(selected.variant_2 ?? '')
+    const v1 = selected.variant ?? ''
+    const v2 = selected.variant_2 ?? ''
+    setVariant(v1)
+    setVariant2(v2)
+    if (v1) setVariants(prev => prev.includes(v1) ? prev : [...prev, v1].sort((a, b) => a.localeCompare(b)))
+    if (v2) setVariants2(prev => prev.includes(v2) ? prev : [...prev, v2].sort((a, b) => a.localeCompare(b)))
     setUnitTracking(selected.unit_tracking ?? 'none')
     setCostMethod(selected.cost_method ?? 'manual')
     setMethodTiming('next')
