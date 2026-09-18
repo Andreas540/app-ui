@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listProducts, updateProduct, listProductCategories, createProductCategory, getAuthHeaders, type ProductWithCost } from '../lib/api'
+import { optLabel } from '../lib/productOptions'
 import { ImagePicker } from '../components/ImagePicker'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -296,7 +297,7 @@ export default function EditProduct() {
           <select value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
             {products.filter(p => (p.category ?? 'product') === type).map(p => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {optLabel(p)}
               </option>
             ))}
           </select>
