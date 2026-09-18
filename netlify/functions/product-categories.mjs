@@ -18,7 +18,7 @@ async function list(event) {
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return cors(403, { error: authz.error })
   const type = event.queryStringParameters?.type
-  if (!type || !['category', 'subcategory', 'condition'].includes(type))
+  if (!type || !['category', 'subcategory', 'condition', 'variant', 'variant_2'].includes(type))
     return cors(400, { error: 'type must be category, subcategory or condition' })
   const rows = await sql`
     SELECT name FROM product_categories
@@ -39,7 +39,7 @@ async function create(event) {
   const name = (body.name || '').trim()
   const type = body.type
   if (!name) return cors(400, { error: 'name is required' })
-  if (!type || !['category', 'subcategory', 'condition'].includes(type))
+  if (!type || !['category', 'subcategory', 'condition', 'variant', 'variant_2'].includes(type))
     return cors(400, { error: 'type must be category, subcategory or condition' })
   await sql`
     INSERT INTO product_categories (tenant_id, name, category_type)

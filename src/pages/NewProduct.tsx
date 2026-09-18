@@ -48,6 +48,12 @@ export default function NewProduct() {
   const [sku, setSku] = useState('')
   const [variant, setVariant] = useState('')
   const [variant2, setVariant2] = useState('')
+  const [variants, setVariants] = useState<string[]>([])
+  const [variants2, setVariants2] = useState<string[]>([])
+  const [addingVariant, setAddingVariant] = useState(false)
+  const [addingVariant2, setAddingVariant2] = useState(false)
+  const [newVariantName, setNewVariantName] = useState('')
+  const [newVariant2Name, setNewVariant2Name] = useState('')
   const [unitTracking, setUnitTracking] = useState<'none' | 'on_promote' | 'serialized_intake'>('none')
   const [unitTrackingOpen, setUnitTrackingOpen] = useState(false)
 
@@ -143,6 +149,8 @@ export default function NewProduct() {
     loadProducts()
     loadCategories()
     loadSubcategories()
+    loadVariants()
+    loadVariants2()
     loadCoverageProducts()
   }, [])
 
@@ -158,6 +166,14 @@ export default function NewProduct() {
 
   async function loadSubcategories() {
     try { setSubcategories(await listProductCategories('subcategory')) } catch {}
+  }
+
+  async function loadVariants() {
+    try { setVariants(await listProductCategories('variant')) } catch {}
+  }
+
+  async function loadVariants2() {
+    try { setVariants2(await listProductCategories('variant_2')) } catch {}
   }
 
   async function handleAddCategory() {
@@ -182,6 +198,30 @@ export default function NewProduct() {
       setAddingSubcategory(false)
       setNewSubcategoryName('')
     } catch (e: any) { alert(e?.message || 'Failed to save subcategory') }
+  }
+
+  async function handleAddVariant() {
+    const nm = newVariantName.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('variant', nm)
+      setVariants(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setVariant(nm)
+      setAddingVariant(false)
+      setNewVariantName('')
+    } catch (e: any) { alert(e?.message || 'Failed to save variant') }
+  }
+
+  async function handleAddVariant2() {
+    const nm = newVariant2Name.trim()
+    if (!nm) return
+    try {
+      await createProductCategory('variant_2', nm)
+      setVariants2(prev => [...prev, nm].sort((a, b) => a.localeCompare(b)))
+      setVariant2(nm)
+      setAddingVariant2(false)
+      setNewVariant2Name('')
+    } catch (e: any) { alert(e?.message || 'Failed to save variant') }
   }
 
   async function save() {
@@ -397,13 +437,59 @@ export default function NewProduct() {
           {showVariant && (
             <div>
               <label>Variant</label>
-              <input type="text" value={variant} onChange={e => setVariant(e.target.value)} />
+              {addingVariant ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Variant name"
+                    value={newVariantName}
+                    onChange={e => setNewVariantName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddVariant(); if (e.key === 'Escape') { setAddingVariant(false); setNewVariantName('') } }}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button onClick={handleAddVariant} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                  <button onClick={() => { setAddingVariant(false); setNewVariantName(''); setVariant('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+                </div>
+              ) : (
+                <select value={variant} onChange={e => {
+                  if (e.target.value === '__new__') { setAddingVariant(true); setVariant('') }
+                  else setVariant(e.target.value)
+                }}>
+                  <option value="">—</option>
+                  <option value="__new__">＋ New variant</option>
+                  {variants.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              )}
             </div>
           )}
           {showVariant && (
             <div>
               <label>Variant 2</label>
-              <input type="text" value={variant2} onChange={e => setVariant2(e.target.value)} />
+              {addingVariant2 ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Variant 2 name"
+                    value={newVariant2Name}
+                    onChange={e => setNewVariant2Name(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddVariant2(); if (e.key === 'Escape') { setAddingVariant2(false); setNewVariant2Name('') } }}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button onClick={handleAddVariant2} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                  <button onClick={() => { setAddingVariant2(false); setNewVariant2Name(''); setVariant2('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+                </div>
+              ) : (
+                <select value={variant2} onChange={e => {
+                  if (e.target.value === '__new__') { setAddingVariant2(true); setVariant2('') }
+                  else setVariant2(e.target.value)
+                }}>
+                  <option value="">—</option>
+                  <option value="__new__">＋ New variant 2</option>
+                  {variants2.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              )}
             </div>
           )}
         </div>
