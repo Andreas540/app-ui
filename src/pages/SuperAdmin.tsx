@@ -1638,10 +1638,10 @@ async function handleSaveStripeCustomerId() {
                               onClick={() => {
                                 const existing = (bt.config_defaults as any)?.pages?.[page.id]?.fields ?? {}
                                 const baseDefaults = page.id === 'new-product'
-                                  ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
+                                  ? { product_category: true, product_subcategory: true, sku: true, variant: true, variant_2: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
                                   : page.id === 'supply-chain'
                                   ? { demand: true, recentDeliveries: true, production: true, notDelivered: true, warehouse: true, inCustoms: true, inTransit: true, orderedFromSuppliers: true }
-                                  : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
+                                  : { product_category: true, product_subcategory: true, sku: true, variant: true, variant_2: true, unit_tracking: true }
                                 const merged = { ...baseDefaults, ...existing }
                                 setBtFieldConfig(merged)
                                 if (page.id === 'edit-product') {
@@ -1989,10 +1989,11 @@ async function handleSaveStripeCustomerId() {
 
                   {/* Configurable: SKU + Variant — product only */}
                   {btPreviewTab === 'product' && (() => {
-                    const showSku     = btFieldConfig.sku     !== false
-                    const showVariant = btFieldConfig.variant !== false
+                    const showSku      = btFieldConfig.sku       !== false
+                    const showVariant  = btFieldConfig.variant   !== false
+                    const showVariant2 = btFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
@@ -2005,6 +2006,13 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                           <button onClick={() => setBtFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant2 ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant 2</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant2 ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setBtFieldConfig(prev => ({ ...prev, variant_2: !showVariant2 }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant2 ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </div>
@@ -2152,10 +2160,11 @@ async function handleSaveStripeCustomerId() {
 
                   {/* Configurable: SKU + Variant (product tab only) */}
                   {btPreviewTab === 'product' && (() => {
-                    const showSku     = btFieldConfig.sku     !== false
-                    const showVariant = btFieldConfig.variant !== false
+                    const showSku      = btFieldConfig.sku       !== false
+                    const showVariant  = btFieldConfig.variant   !== false
+                    const showVariant2 = btFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
@@ -2168,6 +2177,13 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
                           <button onClick={() => setBtFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant2 ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant 2</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant2 ? 'var(--color-success, #22c55e)' : 'var(--border)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setBtFieldConfig(prev => ({ ...prev, variant_2: !showVariant2 }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant2 ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </div>

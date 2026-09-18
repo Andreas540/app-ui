@@ -219,12 +219,12 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
   function btDefaultsForPage(pageId: string): Record<string, boolean> {
     const appDefaults: Record<string, boolean> = pageId === 'new-product'
-      ? { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
+      ? { product_category: true, product_subcategory: true, sku: true, variant: true, variant_2: true, unit_tracking: true, show_product_tab: true, show_service_tab: true }
       : pageId === 'edit-service'
       ? { product_category: true, product_subcategory: true }
       : pageId === 'supply-chain'
       ? { demand: true, recentDeliveries: true, production: true, notDelivered: true, warehouse: true, inCustoms: true, inTransit: true, orderedFromSuppliers: true }
-      : { product_category: true, product_subcategory: true, sku: true, variant: true, unit_tracking: true }
+      : { product_category: true, product_subcategory: true, sku: true, variant: true, variant_2: true, unit_tracking: true }
     const btFields: Record<string, boolean> = (user as any)?.businessTypeConfig?.pages?.[pageId]?.fields ?? {}
     return { ...appDefaults, ...btFields }
   }
@@ -769,8 +769,9 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                   {pagePreviewTab === 'product' && (() => {
                     const showSku = pageFieldConfig.sku !== false
                     const showVariant = pageFieldConfig.variant !== false
+                    const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
@@ -783,6 +784,13 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
                           <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant2 ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant 2</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant2 ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant_2: !showVariant2 }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant2 ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </div>
@@ -932,8 +940,9 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                   {pagePreviewTab === 'product' && (() => {
                     const showSku = pageFieldConfig.sku !== false
                     const showVariant = pageFieldConfig.variant !== false
+                    const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
@@ -946,6 +955,13 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
                           <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant: !showVariant }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showVariant ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showVariant2 ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Variant 2</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showVariant2 ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, variant_2: !showVariant2 }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showVariant2 ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </div>
