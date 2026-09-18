@@ -771,7 +771,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                     const showVariant = pageFieldConfig.variant !== false
                     const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
@@ -942,7 +942,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                     const showVariant = pageFieldConfig.variant !== false
                     const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                         <div style={{ position: 'relative', opacity: showSku ? 1 : 0.35 }}>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Item ID / SKU</div>
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
