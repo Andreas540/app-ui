@@ -406,7 +406,20 @@ export default function Warehouse() {
           >
             {flag === 'material'
               ? materialProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)
-              : buildGroupOptions(products)
+              : (() => {
+                  const stdProducts = products.filter(p => p.product_kind !== 'addon')
+                  const addonProducts = products.filter(p => p.product_kind === 'addon')
+                  return <>
+                    <optgroup label={t('orders.groupProducts')}>
+                      {buildGroupOptions(stdProducts)}
+                    </optgroup>
+                    {addonProducts.length > 0 && (
+                      <optgroup label={t('orders.groupAddOns')}>
+                        {buildGroupOptions(addonProducts)}
+                      </optgroup>
+                    )}
+                  </>
+                })()
             }
           </select>
         </div>
