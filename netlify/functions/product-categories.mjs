@@ -41,6 +41,18 @@ async function create(event) {
   if (!name) return cors(400, { error: 'name is required' })
   if (!type || !['category', 'subcategory', 'condition', 'variant', 'variant_2'].includes(type))
     return cors(400, { error: 'type must be category, subcategory or condition' })
+
+  // Widen the CHECK constraint to allow all current valid types
+  await sql`
+    ALTER TABLE product_categories
+      DROP CONSTRAINT IF EXISTS product_categories_category_type_check
+  `.catch(() => {})
+  await sql`
+    ALTER TABLE product_categories
+      ADD CONSTRAINT product_categories_category_type_check
+      CHECK (category_type IN ('category', 'subcategory', 'condition', 'variant', 'variant_2'))
+  `.catch(() => {})
+
   await sql`
     INSERT INTO product_categories (tenant_id, name, category_type)
     VALUES (${authz.tenantId}, ${name}, ${type})
