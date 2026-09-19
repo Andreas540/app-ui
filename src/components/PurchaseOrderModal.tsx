@@ -156,8 +156,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
     <Modal isOpen={isOpen} onClose={onClose} title={`New Purchase Order — ${supplierName}`}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-        {/* PO number + issue date */}
-        <div className="row row-2col-mobile" style={{ gap: 10 }}>
+        {/* PO number + dates — 3 columns on desktop */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           <div>
             <label>PO Number</label>
             <input
@@ -172,11 +172,10 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
             <label>Issue Date</label>
             <DateInput value={issueDate} onChange={setIssueDate} style={{ height: CONTROL_H }} />
           </div>
-        </div>
-
-        <div style={{ maxWidth: 260 }}>
-          <label>Expiry Date <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
-          <DateInput value={expDate} onChange={setExpDate} style={{ height: CONTROL_H }} />
+          <div>
+            <label>Expiry Date <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
+            <DateInput value={expDate} onChange={setExpDate} style={{ height: CONTROL_H }} />
+          </div>
         </div>
 
         {/* Mode toggle */}
@@ -268,12 +267,11 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
 
         {/* Document upload */}
         <div>
-          <label>Attach Document <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional — PDF or image)</span></label>
+          <label>Attach Document <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf,image/*"
               onChange={handleFileChange}
               style={{ fontSize: 13 }}
             />
