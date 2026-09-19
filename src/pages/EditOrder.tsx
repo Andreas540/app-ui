@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, type CardToken, getAuthHeaders } from '../lib/api'
-import { buildGroupOptions } from '../lib/productOptions'
+import { buildGroupOptions, optLabel } from '../lib/productOptions'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
@@ -340,7 +340,7 @@ export default function EditOrder() {
           partner_splits: splits.length ? splits : undefined,
         }),
       })
-      if (!res.ok) throw new Error('Failed to update order')
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Failed to update order (${res.status})`) }
       alert(t('orders.orderUpdated'))
       navigate(-1)
     } catch (e: any) {
@@ -598,7 +598,7 @@ export default function EditOrder() {
                   <option value="">{t('orders.coversProductNone')}</option>
                   {coveredLines.map((ol, oi) => {
                     const op = products.find(p => p.id === ol.product_id)
-                    return <option key={oi} value={ol.product_id}>{op?.name ?? ol.product_id}</option>
+                    return <option key={oi} value={ol.product_id}>{op ? optLabel(op) : ol.product_id}</option>
                   })}
                 </select>
               </div>

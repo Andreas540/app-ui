@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
-import { buildGroupOptions } from '../lib/productOptions'
+import { buildGroupOptions, optLabel } from '../lib/productOptions'
 import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
@@ -661,7 +661,7 @@ export default function NewOrder() {
                     <optgroup label={t('orders.coversThisOrder')}>
                       {coveredLines.map((ol, oi) => {
                         const op = products.find(p => p.id === ol.product_id)
-                        return <option key={`prod-${oi}`} value={`prod:${ol.product_id}`}>{op?.name ?? ol.product_id}</option>
+                        return <option key={`prod-${oi}`} value={`prod:${ol.product_id}`}>{op ? optLabel(op) : ol.product_id}</option>
                       })}
                     </optgroup>
                   )}
