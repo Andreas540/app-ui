@@ -268,23 +268,23 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
         {/* Document upload */}
         <div>
           <label>Attach Document <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileChange}
-              style={{ fontSize: 13 }}
-            />
+          <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: 'none' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
+            <button onClick={() => fileInputRef.current?.click()} style={{ height: CONTROL_H, padding: '0 14px', fontSize: 13 }}>
+              {docName ? 'Replace file' : 'Choose file'}
+            </button>
             {docName && (
-              <button
-                onClick={() => { setDocData(null); setDocName(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
-                style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-error)', padding: 0 }}
-              >
-                ✕ Remove
-              </button>
+              <>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{docName}</span>
+                <button
+                  onClick={() => { setDocData(null); setDocName(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                  style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-error)', padding: 0, flexShrink: 0 }}
+                >
+                  ✕ Remove
+                </button>
+              </>
             )}
           </div>
-          {docName && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{docName}</div>}
         </div>
 
         {/* Notes */}
