@@ -23,6 +23,8 @@ async function migrate(sql) {
       exp_date      DATE,
       notes         TEXT,
       total_amount  NUMERIC,
+      doc_data      TEXT,
+      doc_name      TEXT,
       created_at    TIMESTAMPTZ DEFAULT now()
     )
   `.catch(() => {})
@@ -56,7 +58,7 @@ async function list(event) {
   const pos = await sql`
     SELECT
       po.id, po.po_number, po.po_type, po.supplier_id, po.issue_date, po.exp_date,
-      po.notes, po.total_amount, po.created_at,
+      po.notes, po.total_amount, po.doc_name, po.created_at,
       COALESCE(
         json_agg(
           json_build_object(
@@ -92,13 +94,17 @@ async function create(event) {
   if (authz.error) return cors(403, { error: authz.error })
 
   const body = JSON.parse(event.body || '{}')
-  const { supplier_id, po_number, issue_date, exp_date, notes, total_amount, items } = body
+  const { supplier_id, po_number, issue_date, exp_date, notes, total_amount, doc_data, doc_name, items } = body
 
   if (!po_number?.trim()) return cors(400, { error: 'po_number is required' })
   if (!issue_date)         return cors(400, { error: 'issue_date is required' })
 
+  // Add columns if they don't exist yet (for tenants that already have the table)
+  await sql`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS doc_data TEXT`.catch(() => {})
+  await sql`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS doc_name TEXT`.catch(() => {})
+
   const [po] = await sql`
-    INSERT INTO purchase_orders (tenant_id, po_number, po_type, supplier_id, issue_date, exp_date, notes, total_amount)
+    INSERT INTO purchase_orders (tenant_id, po_number, po_type, supplier_id, issue_date, exp_date, notes, total_amount, doc_data, doc_name)
     VALUES (
       ${authz.tenantId},
       ${po_number.trim()},
@@ -107,7 +113,9 @@ async function create(event) {
       ${issue_date},
       ${exp_date || null},
       ${notes?.trim() || null},
-      ${total_amount != null ? Number(total_amount) : null}
+      ${total_amount != null ? Number(total_amount) : null},
+      ${doc_data || null},
+      ${doc_name || null}
     )
     RETURNING id, po_number
   `
