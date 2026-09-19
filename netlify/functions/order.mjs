@@ -77,11 +77,16 @@ LIMIT 1
         iu.serial_number AS unit_serial,
         iu.condition     AS unit_condition,
         p.name AS product_name,
+        p.variant,
+        p.variant_2,
         p.product_kind,
         p.coverage_duration_days,
         -- Resolve cross-order coverage: name + unit_id of the referenced order item
         coi_p.name AS covered_product_name,
+        coi_p.variant AS covered_product_variant,
+        coi_p.variant_2 AS covered_product_variant_2,
         coi.unit_identifier AS covered_unit_identifier,
+        (SELECT iu2.serial_number FROM inventory_units iu2 WHERE iu2.id = coi.unit_id LIMIT 1) AS covered_unit_serial,
         COALESCE((
           SELECT SUM(ri.qty_returned) FROM return_items ri WHERE ri.order_item_id = oi.id
         ), 0) AS qty_returned

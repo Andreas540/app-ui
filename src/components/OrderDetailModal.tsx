@@ -336,23 +336,32 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
               <div className="helper" style={{ textAlign: 'right' }}>{t('orderModal.unitPrice')}</div>
             </div>
             {items.map((item: any, idx: number) => {
+              const itemLabel = [item.product_name, item.variant, item.variant_2].filter(Boolean).join(' · ')
               // Same-order connection via covers_product_id
               const sameOrderCoveredItem = item.covers_product_id
                 ? items.find((i: any) => i.product_id === item.covers_product_id)
                 : null
-              // Resolved covered product name: same-order first, then cross-order from backend
-              const coveredName = item.product_kind === 'addon'
-                ? (sameOrderCoveredItem?.product_name ?? item.covered_product_name ?? null)
+              // Full identity of covered product: same-order first, then cross-order from backend
+              const coveredLabel = item.product_kind === 'addon'
+                ? (() => {
+                    if (sameOrderCoveredItem) {
+                      return [sameOrderCoveredItem.product_name, sameOrderCoveredItem.variant, sameOrderCoveredItem.variant_2].filter(Boolean).join(' · ')
+                    }
+                    if (item.covered_product_name) {
+                      return [item.covered_product_name, item.covered_product_variant, item.covered_product_variant_2].filter(Boolean).join(' · ')
+                    }
+                    return null
+                  })()
                 : null
-              // Resolved covered unit_id: same-order item's unit_id, or cross-order from backend
-              const coveredUnitId = item.product_kind === 'addon'
-                ? (sameOrderCoveredItem?.unit_identifier ?? item.covered_unit_identifier ?? null)
+              // Unit serial/identifier of the covered item
+              const coveredUnit = item.product_kind === 'addon'
+                ? (sameOrderCoveredItem?.unit_serial ?? sameOrderCoveredItem?.unit_identifier ?? item.covered_unit_serial ?? item.covered_unit_identifier ?? null)
                 : null
               return (
                 <div key={idx} style={{ paddingTop: 6 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontWeight: 500 }}>{item.product_name || '—'}</span>
+                      <span style={{ fontWeight: 500 }}>{itemLabel || '—'}</span>
                       {Number(item.qty_returned) > 0 && (
                         <span style={{ fontSize: 11, color: Number(item.qty_returned) >= Number(item.qty) ? 'var(--color-error, #ef4444)' : '#f59e0b' }}>↩</span>
                       )}
@@ -376,14 +385,14 @@ const res = await fetch(`${base}/api/order?id=${initialOrder.id}`, {
                       </span>
                     </div>
                   )}
-                  {coveredName && (
+                  {coveredLabel && (
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
-                      {t('orders.coversProduct')}: {coveredName}
+                      {t('orders.coversProduct')}: {coveredLabel}
                     </div>
                   )}
-                  {coveredUnitId && (
+                  {coveredUnit && (
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingLeft: 2 }}>
-                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{coveredUnitId}</span>
+                      {t('orders.unitIdentifier')}: <span style={{ fontWeight: 500, color: 'var(--text)' }}>{coveredUnit}</span>
                     </div>
                   )}
                   {item.product_kind === 'addon' && item.coverage_duration_days != null && order.order_date && (() => {
