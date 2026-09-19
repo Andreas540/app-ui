@@ -320,10 +320,14 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `
 
-    // Replace all order_items
+    // Replace all order_items — must clear inventory_units FK references first
+    await sql`
+      UPDATE inventory_units SET order_item_id = NULL
+      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ${id})
+    `
     await sql`DELETE FROM order_items WHERE order_id = ${id}`
     for (const item of itemList) {
-      await sql`
+      const inserted = await sql`
         INSERT INTO order_items (order_id, product_id, qty, unit_price, product_cost, covers_product_id, covers_order_item_id, unit_identifier, unit_id)
         VALUES (
           ${id},
@@ -336,7 +340,15 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
           ${item.unit_identifier?.trim() || null},
           ${item.unit_id ?? null}
         )
+        RETURNING id
       `
+      // Re-link the serialized unit to the new order_item row
+      if (item.unit_id && inserted[0]?.id) {
+        await sql`
+          UPDATE inventory_units SET order_item_id = ${inserted[0].id}
+          WHERE id = ${item.unit_id}
+        `
+      }
     }
 
     // Update partner splits - delete old ones and insert new ones
