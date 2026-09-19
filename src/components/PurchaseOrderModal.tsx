@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import Modal from './Modal'
 import { DateInput } from './DateInput'
 import { fetchBootstrap, getAuthHeaders } from '../lib/api'
-import { buildGroupOptions, optLabel } from '../lib/productOptions'
+import { buildGroupOptions } from '../lib/productOptions'
 import { todayYMD } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
 
