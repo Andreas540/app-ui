@@ -9,6 +9,7 @@ import { getTenantConfig } from '../lib/tenantConfig'
 import SupplierOrderDetailModal from '../components/SupplierOrderDetailModal'
 import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
+import PurchaseOrderModal from '../components/PurchaseOrderModal'
 import { useCurrency } from '../lib/useCurrency'
 
 interface Supplier {
@@ -106,6 +107,7 @@ export default function SupplierDetailPage() {
   const [stagesOrder, setStagesOrder] = useState<Order | null>(null)
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showPoModal, setShowPoModal] = useState(false)
 
   const loadData = async () => {
     try {
@@ -248,6 +250,20 @@ export default function SupplierDetailPage() {
             {t('newPayment')}
           </button>
         </Link>
+
+        <button
+          className="primary"
+          onClick={() => setShowPoModal(true)}
+          style={{
+            height: 28,
+            fontSize: 12,
+            padding: '0 10px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          New PO
+        </button>
       </div>
 
       {/* Collapsible info */}
@@ -634,11 +650,20 @@ export default function SupplierDetailPage() {
       />
 
       {/* Payment Modal */}
-      <PaymentDetailModal 
+      <PaymentDetailModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         payment={selectedPayment}
         isSupplierPayment={true}
+      />
+
+      {/* Purchase Order Modal */}
+      <PurchaseOrderModal
+        isOpen={showPoModal}
+        onClose={() => setShowPoModal(false)}
+        supplierId={supplier.id}
+        supplierName={supplier.name}
+        onSaved={() => {}}
       />
     </div>
   )
