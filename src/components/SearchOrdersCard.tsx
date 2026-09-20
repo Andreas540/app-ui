@@ -29,7 +29,7 @@ type LinkedOrder = {
   received: boolean
   total: number
   paid_amount: number
-  products: string[] | null
+  products: string | null
 }
 
 type PurchaseOrder = {
@@ -351,9 +351,9 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
                                                 )}
                                               </div>
                                               {/* Products line */}
-                                              {so.products && so.products.length > 0 && (
+                                              {so.products && (
                                                 <div style={{ marginTop: 2, color: 'var(--text-secondary)' }}>
-                                                  {so.products.join(', ')}
+                                                  {so.products}
                                                 </div>
                                               )}
                                             </div>

@@ -106,17 +106,19 @@ async function list(event) {
               SELECT SUM(sp.amount) FROM supplier_payments sp
               WHERE sp.order_id = os.id AND sp.tenant_id = po.tenant_id
             ), 0)::numeric(12,2) AS paid_amount,
-            array_to_json(ARRAY(
-              SELECT DISTINCT CONCAT_WS(' · ',
-                p2.name,
-                NULLIF(p2.variant, ''),
-                NULLIF(p2.variant_2, '')
-              )
-              FROM order_items_suppliers ois3
-              JOIN products p2 ON p2.id = ois3.product_id
-              WHERE ois3.order_id = os.id
-              ORDER BY 1
-            )) AS products
+            (
+              SELECT string_agg(label, ', ' ORDER BY label)
+              FROM (
+                SELECT DISTINCT CONCAT_WS(' · ',
+                  p2.name,
+                  NULLIF(p2.variant, ''),
+                  NULLIF(p2.variant_2, '')
+                ) AS label
+                FROM order_items_suppliers ois3
+                JOIN products p2 ON p2.id = ois3.product_id
+                WHERE ois3.order_id = os.id
+              ) pl
+            ) AS products
           FROM order_items_suppliers ois
           JOIN orders_suppliers os ON os.id = ois.order_id
           LEFT JOIN order_items_suppliers ois2 ON ois2.order_id = os.id
