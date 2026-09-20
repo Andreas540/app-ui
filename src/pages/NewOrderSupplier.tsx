@@ -163,6 +163,15 @@ export default function NewOrderSupplier() {
       .catch(() => setPos([]))
   }, [supplierId])
 
+  const orderValue = useMemo(() => {
+    const total = lines.reduce((sum, l) => {
+      const qty = parseInt(l.qty, 10)
+      const cost = parseFloat(l.cost)
+      return Number.isFinite(qty) && qty > 0 && Number.isFinite(cost) ? sum + qty * cost : sum
+    }, 0)
+    return total > 0 ? total : null
+  }, [lines])
+
   const canSave = useMemo(() => {
     if (!supplierId) return false
     return lines.some(l => {
@@ -362,6 +371,16 @@ export default function NewOrderSupplier() {
               </div>
             </div>
           ))}
+
+          {/* Order value */}
+          {orderValue != null && (
+            <div className="row" style={{ marginTop: 12 }}>
+              <div style={{ width: '100%' }}>
+                <label>{t('supplierOrders.orderValue')}</label>
+                <input type="text" value={fmtMoney(orderValue)} readOnly disabled />
+              </div>
+            </div>
+          )}
 
           {/* Checkboxes (smaller) */}
           <div style={{ marginTop: 12, display:'flex', gap:18, alignItems:'center', flexWrap:'wrap' }}>

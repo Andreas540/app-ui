@@ -1001,7 +1001,8 @@
     "alertCanSave": "Select a supplier and add at least one product with quantity and cost",
     "alertAllLinesValid": "Select a supplier and make every line valid: product, quantity, and cost",
     "addProduct": "Add product",
-    "removeProduct": "Remove product"
+    "removeProduct": "Remove product",
+    "orderValue": "Order value"
   },
   "editPayment": {
     "title": "Edit Payment",

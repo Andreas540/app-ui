@@ -1001,7 +1001,8 @@
     "alertCanSave": "Selecciona un proveedor y agrega al menos un producto con cantidad y costo",
     "alertAllLinesValid": "Selecciona un proveedor y valida cada línea: producto, cantidad y costo",
     "addProduct": "Agregar producto",
-    "removeProduct": "Quitar producto"
+    "removeProduct": "Quitar producto",
+    "orderValue": "Valor del pedido"
   },
   "editPayment": {
     "title": "Editar Pago",

@@ -1001,7 +1001,8 @@
     "alertCanSave": "Välj en leverantör och lägg till minst en produkt med antal och kostnad",
     "alertAllLinesValid": "Välj en leverantör och se till att alla rader är giltiga: produkt, antal och kostnad",
     "addProduct": "Lägg till produkt",
-    "removeProduct": "Ta bort produkt"
+    "removeProduct": "Ta bort produkt",
+    "orderValue": "Beställningsvärde"
   },
   "editPayment": {
     "title": "Redigera betalning",

@@ -216,6 +216,15 @@ const pRes = await fetch(`${base}/api/product`, {
     [lines]
   )
 
+  const orderValue = useMemo(() => {
+    const total = lines.reduce((sum, l) => {
+      const qty = parseInt(l.qty, 10)
+      const cost = parseAmount(l.cost)
+      return Number.isFinite(qty) && qty > 0 && Number.isFinite(cost) && cost > 0 ? sum + qty * cost : sum
+    }, 0)
+    return total > 0 ? total : null
+  }, [lines]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Require supplier, at least one relevant line, and ALL relevant lines valid
   const canSave = useMemo(() => {
     if (!supplierId) return false
@@ -460,6 +469,16 @@ const pRes = await fetch(`${base}/api/product`, {
           </div>
         </div>
       ))}
+
+      {/* Order value */}
+      {orderValue != null && (
+        <div className="row" style={{ marginTop: 12 }}>
+          <div style={{ width: '100%' }}>
+            <label>{t('supplierOrders.orderValue')}</label>
+            <input type="text" value={fmtMoney(orderValue)} readOnly disabled />
+          </div>
+        </div>
+      )}
 
       {/* Status checkboxes with date fields */}
       <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
