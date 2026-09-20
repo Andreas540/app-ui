@@ -92,6 +92,8 @@ async function getSupplier(event) {
         SELECT
           ois.id,
           ois.order_id,
+          ois.purchase_order_id,
+          po.po_number AS purchase_order_number,
           p.name AS product_name,
           ois.qty,
           ois.qty_shipped,
@@ -103,6 +105,7 @@ async function getSupplier(event) {
           (ois.qty * ois.shipping_cost)::numeric(12,2) AS shipping_total
         FROM order_items_suppliers ois
         JOIN products p ON p.id = ois.product_id
+        LEFT JOIN purchase_orders po ON po.id = ois.purchase_order_id
         WHERE ois.order_id = ANY(${orderIds})
         ORDER BY ois.id ASC
       `

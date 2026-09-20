@@ -26,6 +26,8 @@ interface Supplier {
 interface OrderItem {
   id: string
   order_id: string
+  purchase_order_id?: string | null
+  purchase_order_number?: string | null
   product_name: string
   qty: number
   qty_shipped: number
