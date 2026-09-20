@@ -174,7 +174,7 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
           {/* Sub-tab toggle */}
           <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
             {segBtn('Purchase Orders', tab === 'po', () => setTab('po'))}
-            {segBtn('Supplier Orders', tab === 'supplier', () => setTab('supplier'))}
+            {segBtn('Supply Orders', tab === 'supplier', () => setTab('supplier'))}
           </div>
 
           {tab === 'po' && (
@@ -324,7 +324,7 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
                                     {po.linked_orders?.length > 0 && (
                                       <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                                         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                          Supplier Orders
+                                          Supply Orders
                                         </div>
                                         {po.linked_orders.map(so => {
                                           const status = so.received ? 'Received' : so.in_customs ? 'In customs' : so.delivered ? 'Shipped' : 'Pending'
@@ -376,7 +376,7 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
           )}
 
           {tab === 'supplier' && (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Supplier order search — coming soon.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Supply order search — coming soon.</p>
           )}
         </div>
       )}

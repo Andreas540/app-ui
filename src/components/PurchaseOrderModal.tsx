@@ -343,7 +343,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   const CONTROL_H = 40
   const EDIT_H = 34
 
-  const segBtn = (label: string, active: boolean, onClick: () => void, h = CONTROL_H) => (
+  const segBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
       style={{
@@ -684,7 +684,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                         {/* Linked supplier orders */}
                                         {po.linked_orders?.length > 0 && (
                                           <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Supplier Orders</div>
+                                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Supply Orders</div>
                                             {po.linked_orders.map(so => {
                                               const status = so.received ? 'Received' : so.in_customs ? 'In customs' : so.delivered ? 'Shipped' : 'Pending'
                                               const statusColor = so.received ? 'var(--color-success)' : so.in_customs ? 'var(--color-warning, #f59e0b)' : so.delivered ? 'var(--primary)' : 'var(--text-secondary)'
