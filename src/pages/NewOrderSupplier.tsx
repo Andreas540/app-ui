@@ -6,6 +6,7 @@ import { DateInput } from '../components/DateInput'
 import { buildGroupOptions } from '../lib/productOptions'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import SearchOrdersCard from '../components/SearchOrdersCard'
 
 type Supplier = { id: string; name: string }
 type Product  = { id: string; name: string; category: string; variant?: string | null; sku?: string | null; product_category?: string | null }
@@ -234,6 +235,7 @@ export default function NewOrderSupplier() {
   }
 
   return (
+    <>
     <div className="card page-normal">
       <div
         onClick={() => setFormOpen(v => !v)}
@@ -435,6 +437,8 @@ export default function NewOrderSupplier() {
       )}
       </>}
     </div>
+    <SearchOrdersCard suppliers={suppliers} />
+    </>
   )
 }
 

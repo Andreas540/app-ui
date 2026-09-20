@@ -59,7 +59,8 @@ async function list(event) {
 
   const pos = await sql`
     SELECT
-      po.id, po.po_number, po.po_type, po.supplier_id, po.issue_date, po.exp_date,
+      po.id, po.po_number, po.po_type, po.supplier_id, s.name AS supplier_name,
+      po.issue_date, po.exp_date,
       po.notes, po.total_amount, po.doc_name, po.created_at,
       COALESCE(
         po.total_amount - (
@@ -84,6 +85,7 @@ async function list(event) {
         '[]'::json
       ) AS items
     FROM purchase_orders po
+    LEFT JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
     LEFT JOIN purchase_order_items poi ON poi.po_id = po.id
     LEFT JOIN products p ON p.id = poi.product_id AND p.tenant_id = po.tenant_id
     WHERE po.tenant_id = ${authz.tenantId}
