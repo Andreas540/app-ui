@@ -262,7 +262,7 @@ export default function SupplierDetailPage() {
             whiteSpace: 'nowrap'
           }}
         >
-          New PO
+          Purchase Orders
         </button>
       </div>
 

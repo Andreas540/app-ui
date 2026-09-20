@@ -6,9 +6,10 @@ interface ModalProps {
   onClose: () => void
   title: React.ReactNode
   children: React.ReactNode
+  zIndex?: number
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, zIndex = 1000 }: ModalProps) {
   const { t } = useTranslation()
   if (!isOpen) return null
 
@@ -24,7 +25,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 1000,
+        zIndex,
         padding: 16
       }}
       onClick={onClose} // Close when clicking backdrop

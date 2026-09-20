@@ -9,9 +9,10 @@ interface SupplierOrderDetailModalProps {
   onClose: () => void
   order: any
   supplierName: string
+  zIndex?: number
 }
 
-export default function SupplierOrderDetailModal({ isOpen, onClose, order, supplierName }: SupplierOrderDetailModalProps) {
+export default function SupplierOrderDetailModal({ isOpen, onClose, order, supplierName, zIndex }: SupplierOrderDetailModalProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
   if (!order) return null
@@ -47,7 +48,7 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
   ].filter(Boolean) as { label: string; value: string }[]
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={
+    <Modal isOpen={isOpen} onClose={onClose} zIndex={zIndex} title={
       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {`Order #${order.order_no}`}
         {payStatus === 'paid' && (
