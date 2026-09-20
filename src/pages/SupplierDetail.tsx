@@ -214,7 +214,7 @@ export default function SupplierDetailPage() {
       {/* Action row under name: New order + New payment */}
       <div style={{ display:'flex', gap:8, marginTop: 12 }}>
         <Link
-          to={`/supplier-orders/new?supplier_id=${supplier.id}&supplier_name=${encodeURIComponent(supplier.name)}&return_to=supplier&return_id=${supplier.id}`}
+          to={`/supplier-orders/new?supplier_id=${supplier.id}&supplier_name=${encodeURIComponent(supplier.name)}&return_to=supplier&return_id=${supplier.id}&expand=1`}
           style={{ textDecoration: 'none' }}
         >
           <button

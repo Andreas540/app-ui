@@ -47,7 +47,7 @@ export default function NewOrderSupplier() {
   const [loading,   setLoading]   = useState(true)
   const [saving,    setSaving]    = useState(false)
   const [err,       setErr]       = useState<string | null>(null)
-  const [formOpen,  setFormOpen]  = useState(false)
+  const [formOpen,  setFormOpen]  = useState(() => searchParams.get('expand') === '1')
 
   // Header
   const [supplierId, setSupplierId] = useState('')
