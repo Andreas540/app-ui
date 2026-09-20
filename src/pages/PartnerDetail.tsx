@@ -367,11 +367,13 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     const showOrders   = selectedIds.includes('orders')
     const showPayments = selectedIds.includes('payments')
 
-    const cutoff = settings.thisYear
-      ? new Date(new Date().getFullYear(), 0, 1)
-      : settings.lastThreeMonths
-        ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
-        : null
+    const cutoff = settings.currentMonth
+      ? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      : settings.thisYear
+        ? new Date(new Date().getFullYear(), 0, 1)
+        : settings.lastThreeMonths
+          ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
+          : null
     const lastMonthRange = settings.lastMonth ? (() => {
       const now = new Date()
       const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
@@ -401,7 +403,7 @@ const res = await fetch(`${base}/api/partner?id=${encodeURIComponent(id)}`, {
     const now = new Date().toLocaleString()
     const periodLabel = settings.customFrom || settings.customTo
       ? `${settings.customFrom ?? ''}–${settings.customTo ?? ''}`
-      : settings.thisYear ? 'This year' : settings.lastMonth ? 'Last month' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
+      : settings.currentMonth ? 'Current month' : settings.thisYear ? 'This year' : settings.lastMonth ? 'Last month' : settings.lastThreeMonths ? 'Last 3 months' : 'All time'
 
     const fmtAbs = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const fmtAmt = (n: number) => n < 0 ? `-$${fmtAbs(n)}` : `$${fmtAbs(n)}`

@@ -11,7 +11,7 @@ interface PrintDialogProps {
   onPrint?: (settings: PrintSettings, selectedIds: string[]) => void
 }
 
-type TimePeriod = 'all' | 'thisYear' | 'lastMonth' | 'lastThreeMonths' | 'custom'
+type TimePeriod = 'currentMonth' | 'all' | 'thisYear' | 'lastMonth' | 'lastThreeMonths' | 'custom'
 
 const radioLabel: CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer',
@@ -29,7 +29,7 @@ const checkInput: CSSProperties = {
 export default function PrintDialog({ isOpen, onClose, options, onPrint }: PrintDialogProps) {
   const { t } = useTranslation()
   const [localOptions, setLocalOptions] = useState<PrintOptions | null>(options)
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('all')
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('currentMonth')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo,   setCustomTo]   = useState('')
   const [sortByDate, setSortByDate] = useState(false)
@@ -39,7 +39,7 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
 
   useEffect(() => {
     if (isOpen) {
-      setTimePeriod('all')
+      setTimePeriod('currentMonth')
       setCustomFrom('')
       setCustomTo('')
       setSortByDate(false)
@@ -69,6 +69,7 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
     const printSettings: PrintSettings = {
       ...localOptions,
       includeAll:      timePeriod === 'all',
+      currentMonth:    timePeriod === 'currentMonth',
       thisYear:        timePeriod === 'thisYear',
       lastMonth:       timePeriod === 'lastMonth',
       lastThreeMonths: timePeriod === 'lastThreeMonths',
@@ -135,6 +136,7 @@ export default function PrintDialog({ isOpen, onClose, options, onPrint }: Print
           <h4 style={{ margin: '0 0 10px' }}>{t('printDialog.timePeriod', 'Time period')}</h4>
           <div style={{ display: 'grid', gap: 4 }}>
             {([
+              ['currentMonth',    t('printDialog.currentMonth', 'Current month')],
               ['all',             t('printDialog.allTime', 'All time')],
               ['thisYear',        t('printDialog.thisYear', 'This year')],
               ['lastThreeMonths', t('printDialog.lastThreeMonths', 'Last 3 months')],

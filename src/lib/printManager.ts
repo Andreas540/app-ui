@@ -13,6 +13,7 @@ export interface PrintOptions {
 
 export interface PrintSettings extends PrintOptions {
   includeAll?: boolean
+  currentMonth?: boolean
   thisYear?: boolean
   lastMonth?: boolean
   lastThreeMonths?: boolean
@@ -144,11 +145,13 @@ export class PrintManager {
     // ---- Filtering (safe)
     let filteredRows = rows
     let usedFilter = false
-    const cutoff = settings.thisYear
-      ? new Date(new Date().getFullYear(), 0, 1)
-      : settings.lastThreeMonths
-        ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
-        : null
+    const cutoff = settings.currentMonth
+      ? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      : settings.thisYear
+        ? new Date(new Date().getFullYear(), 0, 1)
+        : settings.lastThreeMonths
+          ? (() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d })()
+          : null
     const customFrom = settings.customFrom ? new Date(settings.customFrom) : null
     const customTo   = settings.customTo   ? new Date(settings.customTo + 'T23:59:59') : null
     if (customFrom || customTo) {
