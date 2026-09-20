@@ -20,7 +20,6 @@ type POItem = {
   consumed: number
 }
 
-type LinkedOrderProduct = { name: string; variant: string | null; variant_2: string | null }
 type LinkedOrder = {
   id: string
   order_no: string
@@ -30,7 +29,7 @@ type LinkedOrder = {
   received: boolean
   total: number
   paid_amount: number
-  products: LinkedOrderProduct[] | null
+  products: string[] | null
 }
 
 type PurchaseOrder = {
@@ -354,7 +353,7 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
                                               {/* Products line */}
                                               {so.products && so.products.length > 0 && (
                                                 <div style={{ marginTop: 2, color: 'var(--text-secondary)' }}>
-                                                  {so.products.map(p => [p.name, p.variant, p.variant_2].filter(Boolean).join(' · ')).join(', ')}
+                                                  {so.products.join(', ')}
                                                 </div>
                                               )}
                                             </div>
