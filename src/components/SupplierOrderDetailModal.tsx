@@ -59,15 +59,22 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} zIndex={zIndex} title={
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {`Order #${order.order_no}`}
-        {payStatus === 'paid' && (
-          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {`Order #${order.order_no}`}
+          {payStatus === 'paid' && (
+            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#10b981', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.paid')}</span>
+          )}
+          {payStatus === 'partial' && (
+            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
+          )}
+        </span>
+        {linkedPos.length > 0 && (
+          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
+            PO: {linkedPos.map(po => po.number).join(', ')}
+          </span>
         )}
-        {payStatus === 'partial' && (
-          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 600 }}>{t('paymentStatus.partiallyPaid')}</span>
-        )}
-      </span>
+      </div>
     }>
       <div style={{ display: 'grid', gap: 16 }}>
 
@@ -84,14 +91,6 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
           <div>
             <div className="helper" style={fieldStyle}>{t('supplier')}</div>
             <div style={{ fontWeight: 600 }}>{supplierName}</div>
-            {linkedPos.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <div className="helper" style={fieldStyle}>PO</div>
-                {linkedPos.map(po => (
-                  <div key={po.id} style={{ fontWeight: 600 }}>{po.number}</div>
-                ))}
-              </div>
-            )}
           </div>
           <div>
             <div className="helper" style={fieldStyle}>{t('supplierOrderModal.orderDate')}</div>
