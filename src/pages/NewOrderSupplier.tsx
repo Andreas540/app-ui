@@ -373,14 +373,12 @@ export default function NewOrderSupplier() {
           ))}
 
           {/* Order value */}
-          {orderValue != null && (
-            <div className="row" style={{ marginTop: 12 }}>
-              <div style={{ width: '100%' }}>
-                <label>{t('supplierOrders.orderValue')}</label>
-                <input type="text" value={fmtMoney(orderValue)} readOnly disabled />
-              </div>
+          <div className="row" style={{ marginTop: 12 }}>
+            <div style={{ width: '100%' }}>
+              <label>{t('supplierOrders.orderValue')}</label>
+              <input type="text" value={orderValue != null ? fmtMoney(orderValue) : ''} readOnly disabled />
             </div>
-          )}
+          </div>
 
           {/* Checkboxes (smaller) */}
           <div style={{ marginTop: 12, display:'flex', gap:18, alignItems:'center', flexWrap:'wrap' }}>

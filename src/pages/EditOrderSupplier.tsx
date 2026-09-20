@@ -471,14 +471,12 @@ const pRes = await fetch(`${base}/api/product`, {
       ))}
 
       {/* Order value */}
-      {orderValue != null && (
-        <div className="row" style={{ marginTop: 12 }}>
-          <div style={{ width: '100%' }}>
-            <label>{t('supplierOrders.orderValue')}</label>
-            <input type="text" value={fmtMoney(orderValue)} readOnly disabled />
-          </div>
+      <div className="row" style={{ marginTop: 12 }}>
+        <div style={{ width: '100%' }}>
+          <label>{t('supplierOrders.orderValue')}</label>
+          <input type="text" value={orderValue != null ? fmtMoney(orderValue) : ''} readOnly disabled />
         </div>
-      )}
+      </div>
 
       {/* Status checkboxes with date fields */}
       <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
