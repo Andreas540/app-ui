@@ -10,11 +10,21 @@ import { useCurrency } from '../lib/useCurrency'
 type Supplier = { id: string; name: string }
 type Product  = { id: string; name: string; category: string; variant?: string | null; sku?: string | null; product_category?: string | null }
 
+type POItem = { product_id: string | null }
+type PurchaseOrder = {
+  id: string
+  po_number: string
+  total_amount: number | null
+  remaining_amount: number | null
+  items: POItem[]
+}
+
 type Line = {
   product_id: string | ''
   qty: string            // integer as string for input control
   cost: string           // up to 3 decimals as string
   lastCost?: number | null
+  purchase_order_id?: string
 }
 
 const todayYMD = () => {
@@ -26,12 +36,13 @@ const todayYMD = () => {
 
 export default function NewOrderSupplier() {
   const { t } = useTranslation()
-  const { fmtInput } = useCurrency()
+  const { fmtInput, fmtMoney } = useCurrency()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products,  setProducts]  = useState<Product[]>([])
+  const [pos,       setPos]       = useState<PurchaseOrder[]>([])
   const [loading,   setLoading]   = useState(true)
   const [saving,    setSaving]    = useState(false)
   const [err,       setErr]       = useState<string | null>(null)
@@ -139,6 +150,19 @@ export default function NewOrderSupplier() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId])
 
+  // Fetch POs for the selected supplier
+  useEffect(() => {
+    if (!supplierId) { setPos([]); return }
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/.netlify/functions/purchase-orders?supplier_id=${supplierId}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPos(d?.purchase_orders ?? []))
+      .catch(() => setPos([]))
+  }, [supplierId])
+
   const canSave = useMemo(() => {
     if (!supplierId) return false
     return lines.some(l => {
@@ -161,6 +185,7 @@ export default function NewOrderSupplier() {
           qty: Number(l.qty),
           product_cost: Number(Number(l.cost).toFixed(3)),
           shipping_cost: 0,
+          purchase_order_id: l.purchase_order_id || null,
         }))
 
       const body = {
@@ -294,6 +319,32 @@ export default function NewOrderSupplier() {
                   />
                 </div>
               </div>
+
+              {/* PO dropdown — shown once a product is selected */}
+              {l.product_id && (() => {
+                const matchingPos = pos.filter(po =>
+                  po.items.length === 0 || po.items.some(i => !i.product_id || i.product_id === l.product_id)
+                )
+                if (matchingPos.length === 0) return null
+                return (
+                  <div style={{ marginTop: 6 }}>
+                    <label>Purchase Order <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
+                    <select
+                      value={l.purchase_order_id ?? ''}
+                      onChange={e => updateLine(idx, { purchase_order_id: e.target.value || undefined })}
+                    >
+                      <option value="">— No PO —</option>
+                      {matchingPos.map(po => (
+                        <option key={po.id} value={po.id}>
+                          {po.po_number}
+                          {po.total_amount != null ? ` · Total: ${fmtMoney(po.total_amount)}` : ''}
+                          {po.remaining_amount != null ? ` · Remaining: ${fmtMoney(po.remaining_amount)}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })()}
 
               {/* Add / Remove product controls */}
               <div style={{ marginTop: 8, display:'flex', gap:16, alignItems:'center' }}>

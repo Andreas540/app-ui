@@ -10,12 +10,22 @@ import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 
 type Product = { id: string; name: string; category: string; variant?: string | null; sku?: string | null; product_category?: string | null }
 
+type POItem = { product_id: string | null }
+type PurchaseOrder = {
+  id: string
+  po_number: string
+  total_amount: number | null
+  remaining_amount: number | null
+  items: POItem[]
+}
+
 type Line = {
   id: string
   product_id: string
   qty: string
   cost: string
   lastCost?: number | null
+  purchase_order_id?: string
 }
 
 const todayYMD = () => {
@@ -44,10 +54,11 @@ function toQtyIntString(v: any): string {
 export default function EditOrderSupplier() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
-  const { parseAmount, fmtInput } = useCurrency()
+  const { parseAmount, fmtInput, fmtMoney } = useCurrency()
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
+  const [pos, setPos] = useState<PurchaseOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -125,6 +136,7 @@ const pRes = await fetch(`${base}/api/product`, {
               qty: toQtyIntString(item.qty), // <-- normalize "5000.000" -> "5000"
               cost: item.product_cost != null ? fmtInput(item.product_cost, 3) : '',
               lastCost: null,
+              purchase_order_id: item.purchase_order_id ?? undefined,
             }))
           )
         }
@@ -185,6 +197,19 @@ const pRes = await fetch(`${base}/api/product`, {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId])
 
+  // Fetch POs for this supplier
+  useEffect(() => {
+    if (!supplierId) { setPos([]); return }
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    fetch(`${base}/.netlify/functions/purchase-orders?supplier_id=${supplierId}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPos(d?.purchase_orders ?? []))
+      .catch(() => setPos([]))
+  }, [supplierId])
+
   // Consider only "relevant" lines:
   const relevantLines = useMemo(
     () => lines.filter(l => !!l.id || !isBrandNewBlank(l)),
@@ -234,6 +259,7 @@ const pRes = await fetch(`${base}/api/product`, {
           qty: Number(toQtyIntString(l.qty)), // ensure integer
           product_cost: Number(cost.toFixed(3)),
           shipping_cost: 0,
+          purchase_order_id: l.purchase_order_id || null,
         }
       })
 
@@ -391,6 +417,32 @@ const pRes = await fetch(`${base}/api/product`, {
               <input type="text" value={l.lastCost == null ? '' : fmtInput(l.lastCost, 3)} readOnly disabled />
             </div>
           </div>
+
+          {/* PO dropdown — shown once a product is selected */}
+          {l.product_id && (() => {
+            const matchingPos = pos.filter(po =>
+              po.items.length === 0 || po.items.some(i => !i.product_id || i.product_id === l.product_id)
+            )
+            if (matchingPos.length === 0) return null
+            return (
+              <div style={{ marginTop: 6 }}>
+                <label>Purchase Order <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>(optional)</span></label>
+                <select
+                  value={l.purchase_order_id ?? ''}
+                  onChange={e => updateLine(idx, { purchase_order_id: e.target.value || undefined })}
+                >
+                  <option value="">— No PO —</option>
+                  {matchingPos.map(po => (
+                    <option key={po.id} value={po.id}>
+                      {po.po_number}
+                      {po.total_amount != null ? ` · Total: ${fmtMoney(po.total_amount)}` : ''}
+                      {po.remaining_amount != null ? ` · Remaining: ${fmtMoney(po.remaining_amount)}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
+          })()}
 
           {/* Add / Remove product controls */}
           <div style={{ marginTop: 8, display: 'flex', gap: 16, alignItems: 'center' }}>

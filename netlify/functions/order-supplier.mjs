@@ -73,6 +73,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
           select
             ois.id,
             ois.product_id,
+            ois.purchase_order_id,
             p.name as product_name,
             p.unit_tracking,
             ois.qty,
@@ -159,6 +160,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         qty: Number(l.qty || 0),
         product_cost: Number(l.product_cost || 0),
         shipping_cost: Number(l.shipping_cost || 0),
+        purchase_order_id: l.purchase_order_id ? String(l.purchase_order_id) : null,
       })).filter(l => (l.product_id && Number.isInteger(l.qty) && l.qty >= 1 && !isNaN(l.product_cost)))
 
       if (cleaned.length === 0) return json(400, { error: 'No valid lines' })
@@ -177,15 +179,15 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         )
         returning id
       `
-      
+
       const orderId = res?.[0]?.id
       if (!orderId) return json(500, { error: 'Failed to create supplier order' })
 
       for (const line of cleaned) {
         await sql`
-          insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost)
+          insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost, purchase_order_id)
           values (
-            ${tenantId}, ${orderId}, ${line.product_id}, ${line.qty}, ${line.product_cost}, ${line.shipping_cost}
+            ${tenantId}, ${orderId}, ${line.product_id}, ${line.qty}, ${line.product_cost}, ${line.shipping_cost}, ${line.purchase_order_id}
           )
         `
       }
@@ -269,6 +271,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
         qty: Number(l.qty || 0),
         product_cost: Number(l.product_cost || 0),
         shipping_cost: Number(l.shipping_cost || 0),
+        purchase_order_id: l.purchase_order_id ? String(l.purchase_order_id) : null,
       })).filter(l => (l.product_id && Number.isInteger(l.qty) && l.qty >= 1 && !isNaN(l.product_cost)))
 
       if (cleaned.length === 0) return json(400, { error: 'No valid lines' })
@@ -276,9 +279,9 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
       // Insert new lines
       for (const line of cleaned) {
         await sql`
-          insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost)
+          insert into order_items_suppliers (tenant_id, order_id, product_id, qty, product_cost, shipping_cost, purchase_order_id)
           values (
-            ${tenantId}, ${id}, ${line.product_id}, ${line.qty}, ${line.product_cost}, ${line.shipping_cost}
+            ${tenantId}, ${id}, ${line.product_id}, ${line.qty}, ${line.product_cost}, ${line.shipping_cost}, ${line.purchase_order_id}
           )
         `
       }

@@ -42,6 +42,8 @@ async function migrate(sql) {
       created_at  TIMESTAMPTZ DEFAULT now()
     )
   `.catch(() => {})
+  // Link supplier order lines to POs
+  await sql`ALTER TABLE order_items_suppliers ADD COLUMN IF NOT EXISTS purchase_order_id UUID REFERENCES purchase_orders(id) ON DELETE SET NULL`.catch(() => {})
 }
 
 async function list(event) {
@@ -59,6 +61,14 @@ async function list(event) {
     SELECT
       po.id, po.po_number, po.po_type, po.supplier_id, po.issue_date, po.exp_date,
       po.notes, po.total_amount, po.doc_name, po.created_at,
+      COALESCE(
+        po.total_amount - (
+          SELECT COALESCE(SUM(ois.qty * ois.product_cost), 0)
+          FROM order_items_suppliers ois
+          WHERE ois.purchase_order_id = po.id
+        ),
+        po.total_amount
+      ) AS remaining_amount,
       COALESCE(
         json_agg(
           json_build_object(
