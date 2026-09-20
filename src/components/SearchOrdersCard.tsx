@@ -1,10 +1,10 @@
 // src/components/SearchOrdersCard.tsx
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
+import SupplierOrderDetailModal from './SupplierOrderDetailModal'
 
 type Supplier = { id: string; name: string }
 
@@ -20,10 +20,17 @@ type POItem = {
   consumed: number
 }
 
+type LinkedOrderProduct = { name: string; variant: string | null; variant_2: string | null }
 type LinkedOrder = {
   id: string
   order_no: string
   order_date: string | null
+  delivered: boolean
+  in_customs: boolean
+  received: boolean
+  total: number
+  paid_amount: number
+  products: LinkedOrderProduct[] | null
 }
 
 type PurchaseOrder = {
@@ -63,6 +70,34 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
   const [search, setSearch] = useState('')
   const [filterSupplier, setFilterSupplier] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const [modalOrder, setModalOrder] = useState<any | null>(null)
+  const [modalSupplierName, setModalSupplierName] = useState('')
+  const [modalLoadingId, setModalLoadingId] = useState<string | null>(null)
+
+  async function openOrderModal(orderId: string, supplierName: string) {
+    setModalLoadingId(orderId)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/order-supplier?id=${orderId}`, {
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      const itemsWithTotals = (data.items ?? []).map((i: any) => ({
+        ...i,
+        shipping_total: Number(i.qty ?? 0) * Number(i.shipping_cost ?? 0),
+      }))
+      const total = itemsWithTotals.reduce((s: number, i: any) => s + Number(i.qty ?? 0) * Number(i.product_cost ?? 0), 0)
+      setModalOrder({ ...data.order, items: itemsWithTotals, total, paid_amount: data.order?.paid_amount ?? 0 })
+      setModalSupplierName(supplierName)
+    } catch {
+      alert('Failed to load order')
+    } finally {
+      setModalLoadingId(null)
+    }
+  }
 
   // Fetch all POs once when the card opens
   useEffect(() => {
@@ -289,21 +324,42 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
                                     {/* Linked supplier orders */}
                                     {po.linked_orders?.length > 0 && (
                                       <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                           Supplier Orders
                                         </div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
-                                          {po.linked_orders.map(so => (
-                                            <Link
-                                              key={so.id}
-                                              to={`/supplier-orders/${so.id}/edit`}
-                                              style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none' }}
-                                            >
-                                              #{so.order_no}
-                                              {so.order_date ? ` · ${formatDate(so.order_date)}` : ''}
-                                            </Link>
-                                          ))}
-                                        </div>
+                                        {po.linked_orders.map(so => {
+                                          const status = so.received ? 'Received' : so.in_customs ? 'In customs' : so.delivered ? 'Shipped' : 'Pending'
+                                          const statusColor = so.received ? 'var(--color-success)' : so.in_customs ? 'var(--color-warning, #f59e0b)' : so.delivered ? 'var(--primary)' : 'var(--text-secondary)'
+                                          const isLoading = modalLoadingId === so.id
+                                          return (
+                                            <div key={so.id} style={{ padding: '6px 0', borderTop: '1px solid var(--border)', fontSize: 12 }}>
+                                              {/* Top line: order number + meta */}
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                                <button
+                                                  onClick={() => openOrderModal(so.id, po.supplier_name ?? '')}
+                                                  disabled={isLoading}
+                                                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', fontWeight: 600, fontSize: 12 }}
+                                                >
+                                                  {isLoading ? '…' : `#${so.order_no}`}
+                                                </button>
+                                                {so.order_date && <span style={{ color: 'var(--text-secondary)' }}>{formatDate(so.order_date)}</span>}
+                                                <span style={{ color: statusColor }}>{status}</span>
+                                                {so.total > 0 && <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(so.total)}</span>}
+                                                {so.paid_amount > 0 && (
+                                                  <span style={{ color: so.paid_amount >= so.total ? 'var(--color-success)' : 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                                                    {so.paid_amount >= so.total ? 'Paid' : `${fmtMoney(so.paid_amount)} paid`}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {/* Products line */}
+                                              {so.products && so.products.length > 0 && (
+                                                <div style={{ marginTop: 2, color: 'var(--text-secondary)' }}>
+                                                  {so.products.map(p => [p.name, p.variant, p.variant_2].filter(Boolean).join(' · ')).join(', ')}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )
+                                        })}
                                       </div>
                                     )}
                                   </div>
@@ -325,6 +381,13 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
           )}
         </div>
       )}
+
+      <SupplierOrderDetailModal
+        isOpen={!!modalOrder}
+        onClose={() => setModalOrder(null)}
+        order={modalOrder}
+        supplierName={modalSupplierName}
+      />
     </div>
   )
 }

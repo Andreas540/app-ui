@@ -94,10 +94,35 @@ async function list(event) {
       (
         SELECT COALESCE(json_agg(row ORDER BY row.order_date DESC), '[]'::json)
         FROM (
-          SELECT DISTINCT os.id, os.order_no, os.order_date::text
+          SELECT DISTINCT
+            os.id,
+            os.order_no,
+            os.order_date::text,
+            os.delivered,
+            os.in_customs,
+            os.received,
+            COALESCE(SUM(ois2.qty * ois2.product_cost) FILTER (WHERE ois2.order_id = os.id), 0)::numeric(12,2) AS total,
+            COALESCE((
+              SELECT SUM(sp.amount) FROM supplier_payments sp
+              WHERE sp.order_id = os.id AND sp.tenant_id = po.tenant_id
+            ), 0)::numeric(12,2) AS paid_amount,
+            (
+              SELECT json_agg(pr ORDER BY pr.name)
+              FROM (
+                SELECT DISTINCT
+                  p2.name,
+                  p2.variant,
+                  p2.variant_2
+                FROM order_items_suppliers ois3
+                JOIN products p2 ON p2.id = ois3.product_id
+                WHERE ois3.order_id = os.id
+              ) pr
+            ) AS products
           FROM order_items_suppliers ois
           JOIN orders_suppliers os ON os.id = ois.order_id
+          LEFT JOIN order_items_suppliers ois2 ON ois2.order_id = os.id
           WHERE ois.purchase_order_id = po.id
+          GROUP BY os.id, os.order_no, os.order_date, os.delivered, os.in_customs, os.received
         ) row
       ) AS linked_orders
     FROM purchase_orders po
