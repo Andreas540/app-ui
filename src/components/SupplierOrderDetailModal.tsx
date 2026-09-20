@@ -32,6 +32,16 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
 
   const totalShippingCost = order.items?.reduce((s: number, i: any) => s + Number(i.shipping_total || 0), 0) || 0
 
+  // Collect unique POs linked to items on this order
+  const linkedPos = Object.values(
+    (order.items ?? []).reduce((acc: Record<string, { id: string; number: string }>, item: any) => {
+      if (item.purchase_order_id && item.purchase_order_number) {
+        acc[item.purchase_order_id] = { id: item.purchase_order_id, number: item.purchase_order_number }
+      }
+      return acc
+    }, {})
+  ) as { id: string; number: string }[]
+
   const orderTotal = Number(order.total) || 0
   const paidAmount = Number(order.paid_amount ?? 0)
   const payStatus = paidAmount >= orderTotal && orderTotal > 0 ? 'paid'
@@ -74,6 +84,14 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
           <div>
             <div className="helper" style={fieldStyle}>{t('supplier')}</div>
             <div style={{ fontWeight: 600 }}>{supplierName}</div>
+            {linkedPos.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div className="helper" style={fieldStyle}>PO</div>
+                {linkedPos.map(po => (
+                  <div key={po.id} style={{ fontWeight: 600 }}>{po.number}</div>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <div className="helper" style={fieldStyle}>{t('supplierOrderModal.orderDate')}</div>

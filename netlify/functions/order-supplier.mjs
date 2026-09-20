@@ -74,6 +74,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
             ois.id,
             ois.product_id,
             ois.purchase_order_id,
+            po.po_number as purchase_order_number,
             p.name as product_name,
             p.unit_tracking,
             ois.qty,
@@ -91,6 +92,7 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
             ) as units_registered
           from order_items_suppliers ois
           join products p on p.id = ois.product_id
+          left join purchase_orders po on po.id = ois.purchase_order_id
           where ois.tenant_id = ${tenantId}
             and ois.order_id = ${id}
           order by ois.created_at asc

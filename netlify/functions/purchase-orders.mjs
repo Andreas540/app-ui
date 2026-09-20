@@ -7,6 +7,7 @@ export const handler = withErrorLogging('purchase-orders', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
   if (event.httpMethod === 'GET')    return list(event)
   if (event.httpMethod === 'POST')   return create(event)
+  if (event.httpMethod === 'PUT')    return update(event)
   if (event.httpMethod === 'DELETE') return remove(event)
   return cors(405, { error: 'Method not allowed' })
 })
@@ -189,6 +190,51 @@ async function create(event) {
   }
 
   return cors(201, { id: po.id, po_number: po.po_number })
+}
+
+async function update(event) {
+  const { neon } = await import('@neondatabase/serverless')
+  const { DATABASE_URL } = process.env
+  if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+  const sql = neon(DATABASE_URL)
+  await migrate(sql)
+  const authz = await resolveAuthz({ sql, event })
+  if (authz.error) return cors(403, { error: authz.error })
+
+  const body = JSON.parse(event.body || '{}')
+  const { id, po_number, issue_date, exp_date, notes, total_amount, items } = body
+
+  if (!id) return cors(400, { error: 'id is required' })
+  if (!po_number?.trim()) return cors(400, { error: 'po_number is required' })
+  if (!issue_date) return cors(400, { error: 'issue_date is required' })
+
+  await sql`
+    UPDATE purchase_orders SET
+      po_number    = ${po_number.trim()},
+      issue_date   = ${issue_date},
+      exp_date     = ${exp_date || null},
+      notes        = ${notes?.trim() || null},
+      total_amount = ${total_amount != null ? Number(total_amount) : null}
+    WHERE id = ${id} AND tenant_id = ${authz.tenantId}
+  `
+
+  // Replace items: delete existing, re-insert
+  await sql`DELETE FROM purchase_order_items WHERE po_id = ${id}`
+  if (Array.isArray(items) && items.length > 0) {
+    for (const item of items) {
+      await sql`
+        INSERT INTO purchase_order_items (po_id, product_id, qty, unit_price)
+        VALUES (
+          ${id},
+          ${item.product_id || null},
+          ${item.qty != null ? Number(item.qty) : null},
+          ${item.unit_price != null ? Number(item.unit_price) : null}
+        )
+      `
+    }
+  }
+
+  return cors(200, { ok: true })
 }
 
 async function remove(event) {
