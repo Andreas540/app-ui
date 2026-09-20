@@ -982,7 +982,7 @@
     "createOrders": "Crear pedido(s)"
   },
   "supplierOrders": {
-    "newTitle": "Nuevo Pedido (P)",
+    "newTitle": "Nuevo Pedido de Proveedor",
     "editTitle": "Editar Pedido (P)",
     "chooseSupplier": "Elegir proveedor",
     "selectPlaceholder": "Seleccionar…",

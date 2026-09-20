@@ -982,7 +982,7 @@
     "createOrders": "Skapa order(s)"
   },
   "supplierOrders": {
-    "newTitle": "Ny beställning (L)",
+    "newTitle": "Ny leverantörsorder",
     "editTitle": "Redigera beställning (L)",
     "chooseSupplier": "Välj leverantör",
     "selectPlaceholder": "Välj…",

@@ -982,7 +982,7 @@
     "createOrders": "Create order(s)"
   },
   "supplierOrders": {
-    "newTitle": "New Order (S)",
+    "newTitle": "New Supplier Order",
     "editTitle": "Edit Order (S)",
     "chooseSupplier": "Choose supplier",
     "selectPlaceholder": "Select…",

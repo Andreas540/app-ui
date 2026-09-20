@@ -46,6 +46,7 @@ export default function NewOrderSupplier() {
   const [loading,   setLoading]   = useState(true)
   const [saving,    setSaving]    = useState(false)
   const [err,       setErr]       = useState<string | null>(null)
+  const [formOpen,  setFormOpen]  = useState(false)
 
   // Header
   const [supplierId, setSupplierId] = useState('')
@@ -234,8 +235,15 @@ export default function NewOrderSupplier() {
 
   return (
     <div className="card page-normal">
-      <h3>{t('supplierOrders.newTitle')}</h3>
+      <div
+        onClick={() => setFormOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+      >
+        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
+        <h3 style={{ margin: 0 }}>{t('supplierOrders.newTitle')}</h3>
+      </div>
 
+      {formOpen && <>
       {err && <p style={{ color:'var(--color-error)' }}>{t('error')} {err}</p>}
       {loading ? <p>{t('loading')}</p> : (
         <>
@@ -425,6 +433,7 @@ export default function NewOrderSupplier() {
           </div>
         </>
       )}
+      </>}
     </div>
   )
 }
