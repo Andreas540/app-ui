@@ -16,7 +16,7 @@
   "supplyDemand": "Supply & Demand",
   "production": "Production",
   "warehouse": "Inventory",
-  "newOrderSupplier": "New Order (S)",
+  "newOrderSupplier": "Supplier Orders",
   "suppliers": "Suppliers",
   "employees": "Employees",
   "timeApproval": "Time Approval",
