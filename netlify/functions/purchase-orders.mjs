@@ -90,7 +90,7 @@ async function list(event) {
     LEFT JOIN products p ON p.id = poi.product_id AND p.tenant_id = po.tenant_id
     WHERE po.tenant_id = ${authz.tenantId}
       ${supplierId ? sql`AND po.supplier_id = ${supplierId}` : sql``}
-    GROUP BY po.id
+    GROUP BY po.id, s.name
     ORDER BY po.created_at DESC
   `
   return cors(200, { purchase_orders: pos })
