@@ -1,6 +1,7 @@
 // src/components/SearchOrdersCard.tsx
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
@@ -15,6 +16,14 @@ type POItem = {
   variant_2: string | null
   qty: number | null
   unit_price: number | null
+  item_total: number | null
+  consumed: number
+}
+
+type LinkedOrder = {
+  id: string
+  order_no: string
+  order_date: string | null
 }
 
 type PurchaseOrder = {
@@ -29,6 +38,7 @@ type PurchaseOrder = {
   remaining_amount: number | null
   doc_name: string | null
   items: POItem[]
+  linked_orders: LinkedOrder[]
 }
 
 type Tab = 'po' | 'supplier'
@@ -241,25 +251,29 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
                                           <tr style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
                                             <th style={{ textAlign: 'left', padding: '2px 8px 4px 0' }}>Product</th>
                                             <th style={{ textAlign: 'right', padding: '2px 8px 4px' }}>Qty</th>
-                                            <th style={{ textAlign: 'right', padding: '2px 0 4px 8px' }}>Unit price</th>
-                                            <th style={{ textAlign: 'right', padding: '2px 0 4px 8px' }}>Line total</th>
+                                            <th style={{ textAlign: 'right', padding: '2px 8px 4px' }}>Unit price</th>
+                                            <th style={{ textAlign: 'right', padding: '2px 8px 4px' }}>Total</th>
+                                            <th style={{ textAlign: 'right', padding: '2px 0 4px 8px' }}>Remaining</th>
                                           </tr>
                                         </thead>
                                         <tbody>
                                           {po.items.map(item => {
-                                            const lineTotal = item.qty != null && item.unit_price != null
-                                              ? item.qty * item.unit_price : null
+                                            const itemRemaining = item.item_total != null
+                                              ? item.item_total - (item.consumed ?? 0) : null
                                             return (
                                               <tr key={item.id} style={{ borderTop: '1px solid var(--border)' }}>
                                                 <td style={{ padding: '4px 8px 4px 0' }}>{productLabel(item)}</td>
                                                 <td style={{ padding: '4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                                                   {item.qty != null ? fmtNumber(item.qty) : '—'}
                                                 </td>
-                                                <td style={{ padding: '4px 0 4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                                <td style={{ padding: '4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                                                   {item.unit_price != null ? fmtMoney(item.unit_price) : '—'}
                                                 </td>
-                                                <td style={{ padding: '4px 0 4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                                  {lineTotal != null ? fmtMoney(lineTotal) : '—'}
+                                                <td style={{ padding: '4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                                  {item.item_total != null ? fmtMoney(item.item_total) : '—'}
+                                                </td>
+                                                <td style={{ padding: '4px 0 4px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: remainingColor(itemRemaining, item.item_total) }}>
+                                                  {itemRemaining != null ? fmtMoney(itemRemaining) : '—'}
                                                 </td>
                                               </tr>
                                             )
@@ -270,6 +284,27 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
 
                                     {po.items.length === 0 && (
                                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total only — no product breakdown.</div>
+                                    )}
+
+                                    {/* Linked supplier orders */}
+                                    {po.linked_orders?.length > 0 && (
+                                      <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                          Supplier Orders
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+                                          {po.linked_orders.map(so => (
+                                            <Link
+                                              key={so.id}
+                                              to={`/supplier-orders/${so.id}/edit`}
+                                              style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none' }}
+                                            >
+                                              #{so.order_no}
+                                              {so.order_date ? ` · ${formatDate(so.order_date)}` : ''}
+                                            </Link>
+                                          ))}
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
                                 </td>

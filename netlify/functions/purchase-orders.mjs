@@ -79,11 +79,27 @@ async function list(event) {
             'variant',    p.variant,
             'variant_2',  p.variant_2,
             'qty',        poi.qty,
-            'unit_price', poi.unit_price
+            'unit_price', poi.unit_price,
+            'item_total', poi.qty * poi.unit_price,
+            'consumed', (
+              SELECT COALESCE(SUM(ois2.qty * ois2.product_cost), 0)
+              FROM order_items_suppliers ois2
+              WHERE ois2.purchase_order_id = po.id
+                AND ois2.product_id = poi.product_id
+            )
           ) ORDER BY poi.created_at
         ) FILTER (WHERE poi.id IS NOT NULL),
         '[]'::json
-      ) AS items
+      ) AS items,
+      (
+        SELECT COALESCE(json_agg(row ORDER BY row.order_date DESC), '[]'::json)
+        FROM (
+          SELECT DISTINCT os.id, os.order_no, os.order_date::text
+          FROM order_items_suppliers ois
+          JOIN orders_suppliers os ON os.id = ois.order_id
+          WHERE ois.purchase_order_id = po.id
+        ) row
+      ) AS linked_orders
     FROM purchase_orders po
     LEFT JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
     LEFT JOIN purchase_order_items poi ON poi.po_id = po.id
