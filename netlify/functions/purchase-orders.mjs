@@ -92,7 +92,7 @@ async function list(event) {
         '[]'::json
       ) AS items,
       (
-        SELECT COALESCE(json_agg(row ORDER BY row.order_date DESC), '[]'::json)
+        SELECT COALESCE(json_agg(ord_row ORDER BY ord_row.order_date DESC), '[]'::json)
         FROM (
           SELECT DISTINCT
             os.id,
@@ -122,7 +122,7 @@ async function list(event) {
           LEFT JOIN order_items_suppliers ois2 ON ois2.order_id = os.id
           WHERE ois.purchase_order_id = po.id
           GROUP BY os.id, os.order_no, os.order_date, os.delivered, os.in_customs, os.received
-        ) row
+        ) ord_row
       ) AS linked_orders
     FROM purchase_orders po
     LEFT JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
