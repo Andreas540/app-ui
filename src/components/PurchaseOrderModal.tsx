@@ -346,7 +346,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   })
 
   const CONTROL_H = 40
-  const EDIT_H = 34
+  const EDIT_H = 40
 
   const segBtn = (label: string, active: boolean, onClick: () => void) => (
     <button

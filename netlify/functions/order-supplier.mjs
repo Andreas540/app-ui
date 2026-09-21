@@ -76,6 +76,8 @@ export const handler = withErrorLogging('order_supplier', async (event) => {
             ois.purchase_order_id,
             po.po_number as purchase_order_number,
             p.name as product_name,
+            p.variant,
+            p.variant_2,
             p.unit_tracking,
             ois.qty,
             ois.qty_shipped,

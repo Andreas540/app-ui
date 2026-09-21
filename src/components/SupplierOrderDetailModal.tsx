@@ -132,7 +132,9 @@ export default function SupplierOrderDetailModal({ isOpen, onClose, order, suppl
             </div>
             {order.items.map((item: any, idx: number) => (
               <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 16px', paddingTop: 8 }}>
-                <div style={{ fontWeight: 600 }}>{item.product_name}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {[item.product_name, item.variant, item.variant_2].filter(Boolean).join(' · ')}
+                </div>
                 <div style={{ textAlign: 'right', paddingTop: 2 }}>{fmtNumber(item.qty)}</div>
                 <div style={{ textAlign: 'right', paddingTop: 2 }}>{fmtMoney(item.product_cost)}</div>
               </div>
