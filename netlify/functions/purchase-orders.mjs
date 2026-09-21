@@ -45,6 +45,8 @@ async function migrate(sql) {
   `.catch(() => {})
   // Link supplier order lines to POs
   await sql`ALTER TABLE order_items_suppliers ADD COLUMN IF NOT EXISTS purchase_order_id UUID REFERENCES purchase_orders(id) ON DELETE SET NULL`.catch(() => {})
+  // Match level for PO line items: 'exact' = specific variant, 'product' = any variant of same product name
+  await sql`ALTER TABLE purchase_order_items ADD COLUMN IF NOT EXISTS match_mode VARCHAR(20) NOT NULL DEFAULT 'exact'`.catch(() => {})
 }
 
 async function list(event) {
@@ -79,14 +81,25 @@ async function list(event) {
             'product_name', p.name,
             'variant',    p.variant,
             'variant_2',  p.variant_2,
+            'match_mode', poi.match_mode,
             'qty',        poi.qty,
             'unit_price', poi.unit_price,
             'item_total', poi.qty * poi.unit_price,
             'consumed', (
-              SELECT COALESCE(SUM(ois2.qty * ois2.product_cost), 0)
-              FROM order_items_suppliers ois2
-              WHERE ois2.purchase_order_id = po.id
-                AND ois2.product_id = poi.product_id
+              CASE WHEN poi.match_mode = 'product' THEN (
+                SELECT COALESCE(SUM(ois2.qty * ois2.product_cost), 0)
+                FROM order_items_suppliers ois2
+                JOIN products p_link ON p_link.id = ois2.product_id
+                WHERE ois2.purchase_order_id = po.id
+                  AND p_link.name = p.name
+              )
+              ELSE (
+                SELECT COALESCE(SUM(ois2.qty * ois2.product_cost), 0)
+                FROM order_items_suppliers ois2
+                WHERE ois2.purchase_order_id = po.id
+                  AND ois2.product_id = poi.product_id
+              )
+              END
             )
           ) ORDER BY poi.created_at
         ) FILTER (WHERE poi.id IS NOT NULL),
@@ -178,12 +191,13 @@ async function create(event) {
   if (Array.isArray(items) && items.length > 0) {
     for (const item of items) {
       await sql`
-        INSERT INTO purchase_order_items (po_id, product_id, qty, unit_price)
+        INSERT INTO purchase_order_items (po_id, product_id, qty, unit_price, match_mode)
         VALUES (
           ${po.id},
           ${item.product_id || null},
           ${item.qty != null ? Number(item.qty) : null},
-          ${item.unit_price != null ? Number(item.unit_price) : null}
+          ${item.unit_price != null ? Number(item.unit_price) : null},
+          ${item.match_mode || 'exact'}
         )
       `
     }
@@ -223,12 +237,13 @@ async function update(event) {
   if (Array.isArray(items) && items.length > 0) {
     for (const item of items) {
       await sql`
-        INSERT INTO purchase_order_items (po_id, product_id, qty, unit_price)
+        INSERT INTO purchase_order_items (po_id, product_id, qty, unit_price, match_mode)
         VALUES (
           ${id},
           ${item.product_id || null},
           ${item.qty != null ? Number(item.qty) : null},
-          ${item.unit_price != null ? Number(item.unit_price) : null}
+          ${item.unit_price != null ? Number(item.unit_price) : null},
+          ${item.match_mode || 'exact'}
         )
       `
     }

@@ -10,7 +10,7 @@ import SupplierOrderStagesModal from '../components/SupplierOrderStagesModal'
 
 type Product = { id: string; name: string; category: string; variant?: string | null; sku?: string | null; product_category?: string | null }
 
-type POItem = { product_id: string | null }
+type POItem = { product_id: string | null; product_name: string | null; match_mode: string }
 type PurchaseOrder = {
   id: string
   po_number: string
@@ -429,8 +429,13 @@ const pRes = await fetch(`${base}/api/product`, {
 
           {/* PO dropdown — shown once a product is selected */}
           {l.product_id && (() => {
+            const lineProductName = products.find(p => p.id === l.product_id)?.name
             const matchingPos = pos.filter(po =>
-              po.items.length === 0 || po.items.some(i => !i.product_id || i.product_id === l.product_id)
+              po.items.length === 0 || po.items.some(i => {
+                if (!i.product_id) return true
+                if (i.match_mode === 'product') return lineProductName != null && i.product_name === lineProductName
+                return i.product_id === l.product_id
+              })
             )
             if (matchingPos.length === 0) return null
             return (

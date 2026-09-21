@@ -14,6 +14,7 @@ type POItem = {
   product_name: string | null
   variant: string | null
   variant_2: string | null
+  match_mode: string
   qty: number | null
   unit_price: number | null
   item_total: number | null
@@ -155,6 +156,7 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
   }
 
   function productLabel(item: POItem) {
+    if (item.match_mode === 'product') return (item.product_name ?? '—') + ' · any variant'
     return [item.product_name, item.variant, item.variant_2].filter(Boolean).join(' · ') || '—'
   }
 

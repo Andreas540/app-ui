@@ -21,10 +21,11 @@ type LineItem = {
   product_id: string
   qty: string
   unit_price: string
+  match_mode: 'exact' | 'product'
 }
 
 function blankLine(): LineItem {
-  return { product_id: '', qty: '', unit_price: '' }
+  return { product_id: '', qty: '', unit_price: '', match_mode: 'exact' }
 }
 
 type Mode = 'breakdown' | 'total_only'
@@ -35,6 +36,7 @@ type POItem = {
   product_name: string | null
   variant: string | null
   variant_2: string | null
+  match_mode: string
   qty: number | null
   unit_price: number | null
   item_total: number | null
@@ -233,6 +235,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
             product_id: l.product_id || null,
             qty: parseAmount(l.qty),
             unit_price: parseAmount(l.unit_price),
+            match_mode: l.match_mode,
           })),
         }),
       })
@@ -264,6 +267,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
         product_id: i.product_id ?? '',
         qty: i.qty != null ? String(i.qty) : '',
         unit_price: i.unit_price != null ? String(i.unit_price) : '',
+        match_mode: (i.match_mode === 'product' ? 'product' : 'exact') as 'exact' | 'product',
       })))
     }
   }
@@ -292,6 +296,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
             product_id: l.product_id || null,
             qty: parseAmount(l.qty),
             unit_price: parseAmount(l.unit_price),
+            match_mode: l.match_mode,
           })),
         }),
       })
@@ -367,7 +372,14 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
     return 'var(--color-success)'
   }
 
+  function hasVariants(productId: string): boolean {
+    const p = products.find(x => x.id === productId)
+    if (!p?.name) return false
+    return products.filter(x => x.name === p.name).length > 1
+  }
+
   function productLabel(item: POItem) {
+    if (item.match_mode === 'product') return (item.product_name ?? '—') + ' · any variant'
     return [item.product_name, item.variant, item.variant_2].filter(Boolean).join(' · ') || '—'
   }
 
@@ -439,10 +451,16 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                       return (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 72px 100px 90px 28px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
                           <div style={{ minWidth: 0 }}>
-                            <select value={l.product_id} onChange={e => updateLine(idx, { product_id: e.target.value })} style={{ height: CONTROL_H, width: '100%' }}>
+                            <select value={l.product_id} onChange={e => updateLine(idx, { product_id: e.target.value, match_mode: 'exact' })} style={{ height: CONTROL_H, width: '100%' }}>
                               <option value="">— Any product —</option>
                               {buildGroupOptions(products)}
                             </select>
+                            {l.product_id && hasVariants(l.product_id) && (
+                              <div style={{ display: 'flex', marginTop: 3, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
+                                <button onClick={() => updateLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '2px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? '#fff' : undefined, cursor: 'pointer' }}>Exact variant</button>
+                                <button onClick={() => updateLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '2px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? '#fff' : undefined, cursor: 'pointer' }}>Any variant</button>
+                              </div>
+                            )}
                           </div>
                           <input type="text" inputMode="decimal" placeholder="0" value={l.qty} onChange={e => updateLine(idx, { qty: e.target.value })} style={{ height: CONTROL_H, textAlign: 'right' }} />
                           <input type="text" inputMode="decimal" placeholder="0.00" value={l.unit_price} onChange={e => updateLine(idx, { unit_price: e.target.value })} style={{ height: CONTROL_H, textAlign: 'right' }} />
@@ -599,10 +617,16 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                                 return (
                                                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 66px 96px 80px 24px', gap: 5, marginBottom: 5, alignItems: 'center' }}>
                                                     <div style={{ minWidth: 0 }}>
-                                                      <select value={l.product_id} onChange={e => updateEditLine(idx, { product_id: e.target.value })} style={{ height: EDIT_H, width: '100%' }}>
+                                                      <select value={l.product_id} onChange={e => updateEditLine(idx, { product_id: e.target.value, match_mode: 'exact' })} style={{ height: EDIT_H, width: '100%' }}>
                                                         <option value="">— Any —</option>
                                                         {buildGroupOptions(products)}
                                                       </select>
+                                                      {l.product_id && hasVariants(l.product_id) && (
+                                                        <div style={{ display: 'flex', marginTop: 3, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '2px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? '#fff' : undefined, cursor: 'pointer' }}>Exact variant</button>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '2px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? '#fff' : undefined, cursor: 'pointer' }}>Any variant</button>
+                                                        </div>
+                                                      )}
                                                     </div>
                                                     <input type="text" inputMode="decimal" placeholder="0" value={l.qty} onChange={e => updateEditLine(idx, { qty: e.target.value })} style={{ height: EDIT_H, textAlign: 'right' }} />
                                                     <input type="text" inputMode="decimal" placeholder="0.00" value={l.unit_price} onChange={e => updateEditLine(idx, { unit_price: e.target.value })} style={{ height: EDIT_H, textAlign: 'right' }} />
