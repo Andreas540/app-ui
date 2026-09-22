@@ -355,96 +355,80 @@ export default function NewProduct() {
         />
       )}
 
-      {category !== 'addon' && <><div style={{ marginTop: 12 }}>
-        <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
-        <input
-          type="text"
-          placeholder=""
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
+      {category !== 'addon' && <>
+
+      {/* Row 1: Name + Category (+ Subcategory) */}
+      <div className="row" style={{ marginTop: 12 }}>
+        <div>
+          <label>{category === 'service' ? t('products.serviceName') : t('products.productName')}</label>
+          <input
+            type="text"
+            placeholder=""
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+        </div>
+        {showCategory && (
+          <div>
+            <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
+            {addingCategory ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Category name"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryName('') } }}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button onClick={handleAddCategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                <button onClick={() => { setAddingCategory(false); setNewCategoryName(''); setProductCategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+              </div>
+            ) : (
+              <select value={productCategory} onChange={e => {
+                if (e.target.value === '__new__') { setAddingCategory(true); setProductCategory('') }
+                else setProductCategory(e.target.value)
+              }}>
+                <option value="">—</option>
+                <option value="__new__">＋ New category</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+          </div>
+        )}
+        {showSubcategory && (
+          <div>
+            <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
+            {addingSubcategory ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Subcategory name"
+                  value={newSubcategoryName}
+                  onChange={e => setNewSubcategoryName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddSubcategory(); if (e.key === 'Escape') { setAddingSubcategory(false); setNewSubcategoryName('') } }}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button onClick={handleAddSubcategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
+                <button onClick={() => { setAddingSubcategory(false); setNewSubcategoryName(''); setProductSubcategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
+              </div>
+            ) : (
+              <select value={productSubcategory} onChange={e => {
+                if (e.target.value === '__new__') { setAddingSubcategory(true); setProductSubcategory('') }
+                else setProductSubcategory(e.target.value)
+              }}>
+                <option value="">—</option>
+                <option value="__new__">＋ New subcategory</option>
+                {subcategories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
-      {(showCategory || showSubcategory || (category === 'product' && showSku)) && (
-        <div className="row" style={{ marginTop: 12 }}>
-          {showCategory && (
-            <div>
-              <label>{category === 'service' ? 'Service category' : 'Product category'}</label>
-              {addingCategory ? (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Category name"
-                    value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryName('') } }}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <button onClick={handleAddCategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
-                  <button onClick={() => { setAddingCategory(false); setNewCategoryName(''); setProductCategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
-                </div>
-              ) : (
-                <select value={productCategory} onChange={e => {
-                  if (e.target.value === '__new__') { setAddingCategory(true); setProductCategory('') }
-                  else setProductCategory(e.target.value)
-                }}>
-                  <option value="">—</option>
-                  <option value="__new__">＋ New category</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              )}
-            </div>
-          )}
-          {showSubcategory && (
-            <div>
-              <label>{category === 'service' ? 'Service subcategory' : 'Product subcategory'}</label>
-              {addingSubcategory ? (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Subcategory name"
-                    value={newSubcategoryName}
-                    onChange={e => setNewSubcategoryName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddSubcategory(); if (e.key === 'Escape') { setAddingSubcategory(false); setNewSubcategoryName('') } }}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <button onClick={handleAddSubcategory} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>Add</button>
-                  <button onClick={() => { setAddingSubcategory(false); setNewSubcategoryName(''); setProductSubcategory('') }} style={{ height: 'var(--control-h)', padding: '0 10px', flexShrink: 0 }}>✕</button>
-                </div>
-              ) : (
-                <select value={productSubcategory} onChange={e => {
-                  if (e.target.value === '__new__') { setAddingSubcategory(true); setProductSubcategory('') }
-                  else setProductSubcategory(e.target.value)
-                }}>
-                  <option value="">—</option>
-                  <option value="__new__">＋ New subcategory</option>
-                  {subcategories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              )}
-            </div>
-          )}
-          {category === 'product' && showSku && (
-            <div>
-              <label>Item ID / SKU</label>
-              <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
-            </div>
-          )}
-          {category === 'product' && (
-            <div>
-              <label>EAN / Barcode</label>
-              <input
-                type="text"
-                value={barcode}
-                onChange={e => setBarcode(e.target.value)}
-                placeholder="e.g. 1234567890128"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Row 2: Variant + Variant 2 */}
       {category === 'product' && showVariant && (
         <div className="row" style={{ marginTop: 12 }}>
           <div>
@@ -504,35 +488,28 @@ export default function NewProduct() {
         </div>
       )}
 
-      {category === 'product' && showUnitTracking && (
-        <div style={{ marginTop: 12 }}>
-          <div
-            onClick={() => setUnitTrackingOpen(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
-          >
-            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{unitTrackingOpen ? '▼' : '▶'}</span>
-            <label style={{ cursor: 'pointer', margin: 0 }}>{t('products.unitTracking')}</label>
-          </div>
-          {unitTrackingOpen && (
-            <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
-              {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
-                <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                  <input type="radio" name="unit_tracking_new" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
-                  <span>
-                    <span style={{ display: 'block', fontWeight: 500 }}>
-                      {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
-                    </span>
-                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
-                      {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
-                    </span>
-                  </span>
-                </label>
-              ))}
+      {/* Row 3: SKU + Barcode */}
+      {category === 'product' && (
+        <div className="row" style={{ marginTop: 12 }}>
+          {showSku && (
+            <div>
+              <label>Item ID / SKU</label>
+              <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
             </div>
           )}
+          <div>
+            <label>EAN / Barcode</label>
+            <input
+              type="text"
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              placeholder="e.g. 1234567890128"
+            />
+          </div>
         </div>
       )}
 
+      {/* Row 4: Customer price + Purchase price */}
       {category === 'product' && (
         <div className="row" style={{ marginTop: 12 }}>
           <div>
@@ -573,6 +550,36 @@ export default function NewProduct() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Unit tracking — below prices */}
+      {category === 'product' && showUnitTracking && (
+        <div style={{ marginTop: 12 }}>
+          <div
+            onClick={() => setUnitTrackingOpen(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{unitTrackingOpen ? '▼' : '▶'}</span>
+            <label style={{ cursor: 'pointer', margin: 0 }}>{t('products.unitTracking')}</label>
+          </div>
+          {unitTrackingOpen && (
+            <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
+              {(['none', 'on_promote', 'serialized_intake'] as const).map(mode => (
+                <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                  <input type="radio" name="unit_tracking_new" value={mode} checked={unitTracking === mode} onChange={() => setUnitTracking(mode)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
+                  <span>
+                    <span style={{ display: 'block', fontWeight: 500 }}>
+                      {mode === 'none' ? t('products.unitTrackingNone') : mode === 'on_promote' ? t('products.unitTrackingOnPromote') : t('products.unitTrackingSerializedIntake')}
+                    </span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
+                      {mode === 'none' ? t('products.unitTrackingNoneDesc') : mode === 'on_promote' ? t('products.unitTrackingOnPromoteDesc') : t('products.unitTrackingSerializedIntakeDesc')}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
