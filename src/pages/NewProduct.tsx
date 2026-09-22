@@ -46,6 +46,7 @@ export default function NewProduct() {
   const [productCategory, setProductCategory] = useState('')
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
+  const [barcode, setBarcode] = useState('')
   const [variant, setVariant] = useState('')
   const [variant2, setVariant2] = useState('')
   const [variants, setVariants] = useState<string[]>([])
@@ -238,7 +239,7 @@ export default function NewProduct() {
     try {
       setSaving(true)
       if (category === 'addon') return
-      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, variant: category === 'product' ? (variant || null) : null, variant_2: category === 'product' ? (variant2 || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
+      await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, barcode: category === 'product' ? (barcode || null) : null, variant: category === 'product' ? (variant || null) : null, variant_2: category === 'product' ? (variant2 || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
@@ -248,6 +249,7 @@ export default function NewProduct() {
       setProductCategory('')
       setProductSubcategory('')
       setSku('')
+      setBarcode('')
       setVariant('')
       setVariant2('')
       await loadProducts()
@@ -427,6 +429,17 @@ export default function NewProduct() {
             <div>
               <label>Item ID / SKU</label>
               <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
+            </div>
+          )}
+          {category === 'product' && (
+            <div>
+              <label>EAN / Barcode</label>
+              <input
+                type="text"
+                value={barcode}
+                onChange={e => setBarcode(e.target.value)}
+                placeholder="e.g. 1234567890128"
+              />
             </div>
           )}
         </div>
@@ -611,7 +624,7 @@ export default function NewProduct() {
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? t('saving') : t(category === 'service' ? 'products.saveService' : 'products.saveProduct')}
         </button>
-        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku(''); setVariant(''); setVariant2('') }} disabled={saving}>
+        <button onClick={() => { setName(''); setCostStr(''); setDurationStr(''); setPriceStr(''); setImageData(null); setProductCategory(''); setProductSubcategory(''); setSku(''); setBarcode(''); setVariant(''); setVariant2('') }} disabled={saving}>
           {t('clear')}
         </button>
       </div>

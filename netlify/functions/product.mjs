@@ -33,10 +33,11 @@ const TENANT_ID = authz.tenantId;
     `.catch(() => {})
 
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS variant_2 TEXT`.catch(() => {})
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS barcode TEXT`.catch(() => {})
 
     const rows = await sql`
       SELECT id, name, cost, category, duration_minutes, price_amount, currency, external_service_id,
-             product_category, product_subcategory, sku, variant, variant_2, unit_tracking, cost_method,
+             product_category, product_subcategory, sku, barcode, variant, variant_2, unit_tracking, cost_method,
              (image_data IS NOT NULL AND image_data != '') AS has_image
       FROM products
       WHERE tenant_id = ${TENANT_ID}
@@ -76,6 +77,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const productCategory    = body.product_category    ? String(body.product_category)    : null
     const productSubcategory = body.product_subcategory ? String(body.product_subcategory) : null
     const sku                = body.sku                 ? String(body.sku).trim()          : null
+    const barcode            = body.barcode             ? String(body.barcode).trim()       : null
     const variant            = body.variant             ? String(body.variant).trim()       : null
     const variant2           = body.variant_2           ? String(body.variant_2).trim()      : null
     const validModes         = ['none', 'on_promote', 'serialized_intake']
@@ -92,9 +94,9 @@ const TENANT_ID = authz.tenantId;
 
     // Create product (keep products.cost in sync with latest)
     const rows = await sql`
-      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at, product_category, product_subcategory, sku, variant, variant_2, unit_tracking, cost_method)
-      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null}, ${productCategory}, ${productSubcategory}, ${sku}, ${variant}, ${variant2}, ${unitTracking}, ${costMethod})
-      RETURNING id, name, cost, category, duration_minutes, price_amount, product_category, product_subcategory, sku, variant, variant_2, unit_tracking, cost_method,
+      INSERT INTO products (tenant_id, name, cost, category, duration_minutes, price_amount, image_data, image_updated_at, product_category, product_subcategory, sku, barcode, variant, variant_2, unit_tracking, cost_method)
+      VALUES (${TENANT_ID}, ${name}, ${costNum}, ${category}, ${durationMinutes}, ${priceAmount}, ${imageData}, ${imageData ? new Date().toISOString() : null}, ${productCategory}, ${productSubcategory}, ${sku}, ${barcode ?? null}, ${variant}, ${variant2}, ${unitTracking}, ${costMethod})
+      RETURNING id, name, cost, category, duration_minutes, price_amount, product_category, product_subcategory, sku, barcode, variant, variant_2, unit_tracking, cost_method,
                 (image_data IS NOT NULL AND image_data != '') AS has_image,
                 EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
     `;
@@ -138,12 +140,14 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' });
     const hasCategory    = 'product_category'    in body
     const hasSubcategory = 'product_subcategory' in body
     const hasSku         = 'sku'                 in body
+    const hasBarcode     = 'barcode'             in body
     const hasVariant     = 'variant'             in body
     const hasVariant2    = 'variant_2'           in body
     const hasUnitTracking = 'unit_tracking'      in body
     const newCategory    = body.product_category    ? String(body.product_category).trim()    : null
     const newSubcategory = body.product_subcategory ? String(body.product_subcategory).trim() : null
     const newSku         = body.sku      ? String(body.sku).trim()      : null
+    const newBarcode     = body.barcode  ? String(body.barcode).trim()  : null
     const newVariant     = body.variant  ? String(body.variant).trim()  : null
     const newVariant2    = body.variant_2 ? String(body.variant_2).trim() : null
     const validUnitTracking = ['none', 'on_promote', 'serialized_intake']
@@ -227,12 +231,13 @@ const TENANT_ID = authz.tenantId;
       product_category    = CASE WHEN ${hasCategory}     THEN ${newCategory}      ELSE product_category    END,
       product_subcategory = CASE WHEN ${hasSubcategory}  THEN ${newSubcategory}   ELSE product_subcategory END,
       sku                 = CASE WHEN ${hasSku}          THEN ${newSku}           ELSE sku                 END,
+      barcode             = CASE WHEN ${hasBarcode}      THEN ${newBarcode}       ELSE barcode             END,
       variant             = CASE WHEN ${hasVariant}      THEN ${newVariant}       ELSE variant             END,
       variant_2           = CASE WHEN ${hasVariant2}     THEN ${newVariant2}      ELSE variant_2           END,
       unit_tracking       = CASE WHEN ${hasUnitTracking} THEN ${newUnitTracking}  ELSE unit_tracking       END
   WHERE tenant_id = ${TENANT_ID} AND id = ${id}
   RETURNING id, name, cost, duration_minutes, price_amount,
-            product_category, product_subcategory, sku, variant, variant_2, unit_tracking,
+            product_category, product_subcategory, sku, barcode, variant, variant_2, unit_tracking,
             (image_data IS NOT NULL AND image_data != '') AS has_image,
             EXTRACT(EPOCH FROM image_updated_at)::bigint AS image_version
 `;

@@ -3,7 +3,7 @@
 
 // ---- Core types ----
 export type Person = { id: string; name: string; type?: 'Customer' | 'Partner'; customer_type?: 'BLV' | 'Partner' }
-export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; variant?: string | null; sku?: string | null; product_category?: string | null }
+export type Product = { id: string; name: string; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; price_amount?: number | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; variant?: string | null; sku?: string | null; barcode?: string | null; product_category?: string | null }
 
 export type CoverageProduct = {
   id: string
@@ -419,7 +419,7 @@ export async function createProductCategory(type: 'category' | 'subcategory' | '
 }
 
 // --- Products ---
-export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; variant_2?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }) {
+export async function createProduct(input: { name: string; cost: number; category?: 'product' | 'service' | 'material'; duration_minutes?: number | null; price_amount?: number | null; image_data?: string | null; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; barcode?: string | null; variant?: string | null; variant_2?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }) {
   const res = await apiFetch(`${base}/api/product`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -436,7 +436,7 @@ export async function createProduct(input: { name: string; cost: number; categor
   return res.json() as Promise<{ product: { id: string; name: string; cost: number } }>
 }
 
-export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; variant?: string | null; variant_2?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }
+export type ProductWithCost = { id: string; name: string; cost: number | null; category?: 'product' | 'service' | 'material'; product_kind?: 'standard' | 'addon'; external_service_id?: string | null; duration_minutes?: number | null; price_amount?: number | null; has_image?: boolean; product_category?: string | null; product_subcategory?: string | null; sku?: string | null; barcode?: string | null; variant?: string | null; variant_2?: string | null; unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'; cost_method?: 'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase' }
 
 export async function listProducts(): Promise<{ products: ProductWithCost[] }> {
   const r = await apiFetch(`${base}/api/product`, {
@@ -459,6 +459,7 @@ export async function updateProduct(input: {
   product_category?: string | null
   product_subcategory?: string | null
   sku?: string | null
+  barcode?: string | null
   variant?: string | null
   variant_2?: string | null
   unit_tracking?: 'none' | 'on_promote' | 'serialized_intake'

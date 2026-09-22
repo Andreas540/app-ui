@@ -53,6 +53,7 @@ export default function EditProduct() {
   const [productCategory, setProductCategory] = useState('')
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
+  const [barcode, setBarcode] = useState('')
   const [variant, setVariant] = useState('')
   const [variant2, setVariant2] = useState('')
   const [variants, setVariants] = useState<string[]>([])
@@ -176,6 +177,7 @@ export default function EditProduct() {
     setProductCategory(selected.product_category ?? '')
     setProductSubcategory(selected.product_subcategory ?? '')
     setSku(selected.sku ?? '')
+    setBarcode(selected.barcode ?? '')
     const v1 = selected.variant ?? ''
     const v2 = selected.variant_2 ?? ''
     setVariant(v1)
@@ -244,7 +246,7 @@ export default function EditProduct() {
         ...(imageChangeData !== undefined ? { image_data: imageChangeData } : {}),
         product_category: productCategory || null,
         product_subcategory: productSubcategory || null,
-        ...(type === 'product' ? { sku: sku || null, variant: variant || null, variant_2: variant2 || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
+        ...(type === 'product' ? { sku: sku || null, barcode: barcode || null, variant: variant || null, variant_2: variant2 || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
       })
 
       let message = t('products.updatedProduct', { product: res.product.name })
@@ -371,6 +373,17 @@ export default function EditProduct() {
             <div>
               <label>Item ID / SKU</label>
               <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
+            </div>
+          )}
+          {type === 'product' && (
+            <div>
+              <label>EAN / Barcode</label>
+              <input
+                type="text"
+                value={barcode}
+                onChange={e => setBarcode(e.target.value)}
+                placeholder="e.g. 1234567890128"
+              />
             </div>
           )}
         </div>
@@ -603,6 +616,7 @@ export default function EditProduct() {
               setProductCategory(selected.product_category ?? '')
               setProductSubcategory(selected.product_subcategory ?? '')
               setSku(selected.sku ?? '')
+              setBarcode(selected.barcode ?? '')
               setVariant(selected.variant ?? '')
               setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
             }
