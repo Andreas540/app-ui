@@ -509,9 +509,9 @@ export default function NewProduct() {
         </div>
       )}
 
-      {/* Row 4: Customer price + Purchase price */}
+      {/* Row 4: Customer price + Purchase price — each 25% on desktop */}
       {category === 'product' && (
-        <div className="row" style={{ marginTop: 12 }}>
+        <div className="row-4col" style={{ marginTop: 12 }}>
           <div>
             <label>{t('products.servicePrice')}</label>
             <input
@@ -524,29 +524,32 @@ export default function NewProduct() {
           </div>
           <div>
             <label>{labelProductCost}</label>
-            {allowSupplierAvgCost && (
-              <select
-                value={costMethod}
-                onChange={e => setCostMethod(e.target.value as typeof costMethod)}
-                style={{ display: 'block', fontSize: 12, marginBottom: 6, padding: '4px 6px', width: '100%' }}
-              >
-                <option value="manual">Manual</option>
-                <option value="avg_3m">Avg — last 3 months</option>
-                <option value="avg_6m">Avg — last 6 months</option>
-                <option value="avg_12m">Avg — last 12 months</option>
-                <option value="last_purchase">Last purchase price</option>
-              </select>
-            )}
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder={costMethod !== 'manual' ? 'Initial estimate (optional)' : fmtInput(0)}
-              value={costStr}
-              onChange={e => setCostStr(parseCostInput(e.target.value))}
-            />
+            <div style={{ display: 'flex', gap: 4 }}>
+              {allowSupplierAvgCost && (
+                <select
+                  value={costMethod}
+                  onChange={e => setCostMethod(e.target.value as typeof costMethod)}
+                  style={{ flex: '0 0 auto', fontSize: 12, padding: '0 4px', height: 'var(--control-h)', maxWidth: 90 }}
+                >
+                  <option value="manual">Manual</option>
+                  <option value="avg_3m">Avg 3m</option>
+                  <option value="avg_6m">Avg 6m</option>
+                  <option value="avg_12m">Avg 12m</option>
+                  <option value="last_purchase">Last</option>
+                </select>
+              )}
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder={costMethod !== 'manual' ? 'Est.' : fmtInput(0)}
+                value={costStr}
+                onChange={e => setCostStr(parseCostInput(e.target.value))}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+            </div>
             {costMethod !== 'manual' && (
               <div className="helper" style={{ marginTop: 4 }}>
-                Will update automatically from supplier orders
+                Updates automatically from supplier orders
               </div>
             )}
           </div>
