@@ -509,9 +509,9 @@ export default function NewProduct() {
         </div>
       )}
 
-      {/* Row 4: Customer price + Purchase price — each 25% on desktop */}
+      {/* Row 4: Customer price (50%) + Purchase price (50% split as select|input = 25%|25%) */}
       {category === 'product' && (
-        <div className="row-4col" style={{ marginTop: 12 }}>
+        <div className="row" style={{ marginTop: 12 }}>
           <div>
             <label>{t('products.servicePrice')}</label>
             <input
@@ -524,12 +524,12 @@ export default function NewProduct() {
           </div>
           <div>
             <label>{labelProductCost}</label>
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               {allowSupplierAvgCost && (
                 <select
                   value={costMethod}
                   onChange={e => setCostMethod(e.target.value as typeof costMethod)}
-                  style={{ flex: '0 0 auto', fontSize: 12, padding: '0 4px', height: 'var(--control-h)', maxWidth: 90 }}
+                  style={{ flex: 1, minWidth: 0, fontSize: 13 }}
                 >
                   <option value="manual">Manual</option>
                   <option value="avg_3m">Avg 3m</option>
