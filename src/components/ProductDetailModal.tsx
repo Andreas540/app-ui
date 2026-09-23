@@ -9,11 +9,13 @@ interface Props {
   product: ProductWithCost | null
   onClose: () => void
   pageFields: Record<string, boolean | undefined>
+  labelProductCost?: string
 }
 
-export default function ProductDetailModal({ product, onClose, pageFields }: Props) {
+export default function ProductDetailModal({ product, onClose, pageFields, labelProductCost }: Props) {
   const { fmtMoney } = useCurrency()
   const { t } = useTranslation()
+  const costLabel = labelProductCost || t('products.productCostUSD')
 
   if (!product) return null
 
@@ -99,7 +101,7 @@ export default function ProductDetailModal({ product, onClose, pageFields }: Pro
 
         <div style={{ background: 'var(--input-bg, #f9f9f9)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)' }}>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {t('products.productCostUSD')}
+            {costLabel}
             {costMethodLabel && (
               <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600 }}>
                 {costMethodLabel}

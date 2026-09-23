@@ -847,6 +847,7 @@ export default function NewProduct() {
       product={detailProduct}
       onClose={() => setDetailProduct(null)}
       pageFields={pageFields}
+      labelProductCost={labelProductCost}
     />
     </>
   )
