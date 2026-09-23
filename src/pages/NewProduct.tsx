@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, listProductCategories, createProductCategory, listCoverageProducts, type ProductWithCost, type CoverageProduct, getAuthHeaders } from '../lib/api'
 import AddOnProductForm from './AddOnProductForm'
 import { ImagePicker } from '../components/ImagePicker'
+import ProductDetailModal from '../components/ProductDetailModal'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
@@ -69,6 +70,7 @@ export default function NewProduct() {
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
   const [showImages, setShowImages] = useState(false)
+  const [detailProduct, setDetailProduct] = useState<ProductWithCost | null>(null)
   const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
   // Filter out specific products and apply category filter
@@ -765,7 +767,7 @@ export default function NewProduct() {
                         <td colSpan={(showImages ? 1 : 0) + 1 + (listCategory === 'product' ? (showVariant ? 2 : 0) + (showUnitTracking ? 1 : 0) : 1) + 2} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
                       </tr>
                     ) : (
-                      <tr key={entry.product.id}>
+                      <tr key={entry.product.id} onClick={() => setDetailProduct(entry.product)} style={{ cursor: 'pointer' }}>
                         {showImages && (
                           <td style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
                             {entry.product.has_image
@@ -841,6 +843,11 @@ export default function NewProduct() {
           </div>
         )}
     </div>
+    <ProductDetailModal
+      product={detailProduct}
+      onClose={() => setDetailProduct(null)}
+      pageFields={pageFields}
+    />
     </>
   )
 }
