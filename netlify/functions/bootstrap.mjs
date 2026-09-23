@@ -74,6 +74,7 @@ export async function handler(event) {
         PRIMARY KEY (tenant_id, product_id)
       )
     `.catch(() => {})
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS barcode TEXT`.catch(() => {})
 
     // Products (no unit_price here) — hidden products are excluded
     const products = await sql`
