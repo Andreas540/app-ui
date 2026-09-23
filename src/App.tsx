@@ -619,7 +619,7 @@ useEffect(() => {
 
   const frontPageKey = getTenantConfig(user?.tenantId).frontPageKey
   const FrontPage = frontPageKey ? FRONT_PAGE_COMPONENTS[frontPageKey] : null
-  if (FrontPage && !frontPageDismissed) {
+  if (FrontPage && !frontPageDismissed && user?.role !== 'super_admin') {
     return <FrontPage onContinue={() => {
       sessionStorage.setItem('frontPageDismissed', '1')
       setFrontPageDismissed(true)
