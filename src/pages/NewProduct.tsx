@@ -93,6 +93,7 @@ export default function NewProduct() {
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
+  const showBarcode     = pageFields.barcode             !== false
   const showVariant     = pageFields.variant             !== false
   const showUnitTracking = pageFields.unit_tracking      !== false
   const showProductTab  = pageFields.show_product_tab    !== false
@@ -489,7 +490,7 @@ export default function NewProduct() {
       )}
 
       {/* Row 3: SKU + Barcode */}
-      {category === 'product' && (
+      {category === 'product' && (showSku || showBarcode) && (
         <div className="row" style={{ marginTop: 12 }}>
           {showSku && (
             <div>
@@ -497,15 +498,17 @@ export default function NewProduct() {
               <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
             </div>
           )}
-          <div>
-            <label>EAN / Barcode</label>
-            <input
-              type="text"
-              value={barcode}
-              onChange={e => setBarcode(e.target.value)}
-              placeholder="e.g. 1234567890128"
-            />
-          </div>
+          {showBarcode && (
+            <div>
+              <label>EAN / Barcode</label>
+              <input
+                type="text"
+                value={barcode}
+                onChange={e => setBarcode(e.target.value)}
+                placeholder="e.g. 1234567890128"
+              />
+            </div>
+          )}
         </div>
       )}
 

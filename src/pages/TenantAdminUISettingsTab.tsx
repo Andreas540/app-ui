@@ -768,6 +768,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
                   {pagePreviewTab === 'product' && (() => {
                     const showSku = pageFieldConfig.sku !== false
+                    const showBarcode = pageFieldConfig.barcode !== false
                     const showVariant = pageFieldConfig.variant !== false
                     const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
@@ -777,6 +778,13 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
                           <button onClick={() => setPageFieldConfig(prev => ({ ...prev, sku: !showSku }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showSku ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showBarcode ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>EAN / Barcode</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showBarcode ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, barcode: !showBarcode }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showBarcode ? 'Hide' : 'Show'}
                           </button>
                         </div>
                         <div style={{ position: 'relative', opacity: showVariant ? 1 : 0.35 }}>
@@ -939,6 +947,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
                   {pagePreviewTab === 'product' && (() => {
                     const showSku = pageFieldConfig.sku !== false
+                    const showBarcode = pageFieldConfig.barcode !== false
                     const showVariant = pageFieldConfig.variant !== false
                     const showVariant2 = pageFieldConfig.variant_2 !== false
                     return (
@@ -948,6 +957,13 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                           <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showSku ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
                           <button onClick={() => setPageFieldConfig(prev => ({ ...prev, sku: !showSku }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
                             {showSku ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <div style={{ position: 'relative', opacity: showBarcode ? 1 : 0.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>EAN / Barcode</div>
+                          <div style={{ height: 36, background: 'var(--input-bg, #fff)', border: `1px solid ${showBarcode ? 'var(--color-success, #22c55e)' : 'var(--line)'}`, borderRadius: 6 }} />
+                          <button onClick={() => setPageFieldConfig(prev => ({ ...prev, barcode: !showBarcode }))} style={{ position: 'absolute', top: 0, right: 0, height: 20, padding: '0 6px', fontSize: 10, borderRadius: 4 }}>
+                            {showBarcode ? 'Hide' : 'Show'}
                           </button>
                         </div>
                         <div style={{ position: 'relative', opacity: showVariant ? 1 : 0.35 }}>

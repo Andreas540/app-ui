@@ -25,6 +25,7 @@ export default function EditProduct() {
   const showCategory    = pageFields.product_category    !== false
   const showSubcategory = pageFields.product_subcategory !== false
   const showSku         = pageFields.sku                 !== false
+  const showBarcode     = pageFields.barcode             !== false
   const showVariant     = pageFields.variant             !== false
   const showUnitTracking = pageFields.unit_tracking      !== false
   const preselectedId = searchParams.get('id') || ''
@@ -375,7 +376,7 @@ export default function EditProduct() {
               <input type="text" value={sku} onChange={e => setSku(e.target.value)} />
             </div>
           )}
-          {type === 'product' && (
+          {type === 'product' && showBarcode && (
             <div>
               <label>EAN / Barcode</label>
               <input
