@@ -325,7 +325,7 @@ export default function EditProduct() {
         </div>
       </div>
 
-      {(showCategory || showSubcategory || (type === 'product' && showSku)) && (
+      {(showCategory || showSubcategory || type === 'product') && (
         <div className="row" style={{ marginTop: 12 }}>
           {showCategory && (
             <div>
