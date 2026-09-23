@@ -9,6 +9,7 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
 type PriceData = {
   price_last_time: number | null
+  last_sale_customer: string | null
   average_price: number | null
   order_count: number
 }
@@ -127,7 +128,8 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
 
         {tile(
           t('priceChecker.priceLastTime'),
-          priceLoading ? '…' : (priceData?.price_last_time != null ? fmtMoney(priceData.price_last_time) : '—')
+          priceLoading ? '…' : (priceData?.price_last_time != null ? fmtMoney(priceData.price_last_time) : '—'),
+          !priceLoading && priceData?.last_sale_customer ? priceData.last_sale_customer : undefined
         )}
 
         {tile(
