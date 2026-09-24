@@ -29,6 +29,10 @@ export default function SearchCustomerOrdersCard() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
+  type SortCol = 'date' | 'no' | 'customer' | 'products' | 'total' | 'balance'
+  const [sortCol, setSortCol] = useState<SortCol>('date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
   // Search state
   const [q, setQ] = useState('')
   const [fromDate, setFromDate] = useState('')
@@ -145,43 +149,71 @@ export default function SearchCustomerOrdersCard() {
             <div style={{ opacity: 0.7, fontSize: 14 }}>No orders found.</div>
           )}
 
-          {!loading && !err && orders.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    <th style={th}>Date</th>
-                    <th style={th}>Order #</th>
-                    <th style={th}>Customer</th>
-                    <th style={th}>Products</th>
-                    <th style={{ ...th, textAlign: 'right' }}>Total</th>
-                    <th style={{ ...th, textAlign: 'right' }}>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map(o => (
-                    <tr
-                      key={o.id}
-                      onClick={() => openOrderModal(o)}
-                      style={{ cursor: modalLoadingId === o.id ? 'wait' : 'pointer' }}
-                    >
-                      <td style={td}>{o.order_date ? formatDate(o.order_date) : '—'}</td>
-                      <td style={td}>{o.order_no}</td>
-                      <td style={td}>{o.customer_name ?? '—'}</td>
-                      <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.product_list || '—'}</td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(o.total)}</td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: balance(o) > 0.009 ? 'var(--color-error)' : 'var(--color-success)' }}>
-                        {fmtMoney(balance(o))}
-                      </td>
+          {!loading && !err && orders.length > 0 && (() => {
+            function toggleSort(col: SortCol) {
+              if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+              else { setSortCol(col); setSortDir('asc') }
+            }
+            function colHeader(col: SortCol, label: string, align: 'left' | 'right' = 'left') {
+              const active = sortCol === col
+              const arrow = active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
+              return (
+                <th
+                  style={{ ...th, textAlign: align, cursor: 'pointer', userSelect: 'none', color: active ? 'var(--primary)' : undefined }}
+                  onClick={() => toggleSort(col)}
+                >
+                  {label}{arrow}
+                </th>
+              )
+            }
+            const sorted = [...orders].sort((a, b) => {
+              let v = 0
+              if (sortCol === 'date')     v = (a.order_date ?? '').localeCompare(b.order_date ?? '')
+              else if (sortCol === 'no')  v = a.order_no - b.order_no
+              else if (sortCol === 'customer') v = (a.customer_name ?? '').localeCompare(b.customer_name ?? '')
+              else if (sortCol === 'products') v = a.product_list.localeCompare(b.product_list)
+              else if (sortCol === 'total')   v = Number(a.total) - Number(b.total)
+              else if (sortCol === 'balance') v = balance(a) - balance(b)
+              return sortDir === 'asc' ? v : -v
+            })
+            return (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      {colHeader('date', 'Date')}
+                      {colHeader('no', 'Order #')}
+                      {colHeader('customer', 'Customer')}
+                      {colHeader('products', 'Products')}
+                      {colHeader('total', 'Total', 'right')}
+                      {colHeader('balance', 'Balance', 'right')}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!q && !fromDate && !toDate && !minAmount && !maxAmount && orders.length === 50 && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>Showing last 50 orders — use search to find older ones.</div>
-              )}
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {sorted.map(o => (
+                      <tr
+                        key={o.id}
+                        onClick={() => openOrderModal(o)}
+                        style={{ cursor: modalLoadingId === o.id ? 'wait' : 'pointer' }}
+                      >
+                        <td style={td}>{o.order_date ? formatDate(o.order_date) : '—'}</td>
+                        <td style={td}>{o.order_no}</td>
+                        <td style={td}>{o.customer_name ?? '—'}</td>
+                        <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.product_list || '—'}</td>
+                        <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(o.total)}</td>
+                        <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: balance(o) > 0.009 ? 'var(--color-error)' : 'var(--color-success)' }}>
+                          {fmtMoney(balance(o))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!q && !fromDate && !toDate && !minAmount && !maxAmount && orders.length === 50 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>Showing last 50 orders — use search to find older ones.</div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       )}
 
