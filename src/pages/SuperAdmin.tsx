@@ -454,6 +454,7 @@ export default function SuperAdmin() {
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       setEditingTenantBtId(null)
       await loadData()
+      await verifyAuth()
     } catch (e: any) { alert(e?.message || 'Failed') } finally { setSavingTenantBt(false) }
   }
 
