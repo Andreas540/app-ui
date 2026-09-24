@@ -1,6 +1,6 @@
 // src/pages/Warehouse.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage, listProductCategories, createProductCategory } from '../lib/api'
 import { buildGroupOptions } from '../lib/productOptions'
@@ -68,12 +68,15 @@ type MaterialItem = {
 export default function Warehouse() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { parseAmount, fmtQty } = useCurrency()
   const { user } = useAuth()
   const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
   const inventoryGrid = isRetail
     ? 'minmax(100px, 2fr) repeat(4, minmax(62px, 1fr))'
     : 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))'
+
+  const prefillProductId = searchParams.get('product_id') ?? ''
 
   const [products, setProducts] = useState<Product[]>([])
   const [materialProducts, setMaterialProducts] = useState<Product[]>([])
@@ -82,7 +85,7 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [adjustOpen, setAdjustOpen] = useState(!!prefillProductId)
   const [materialsOpen, setMaterialsOpen] = useState(false)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
@@ -230,7 +233,7 @@ export default function Warehouse() {
   }
 
   // Form fields
-  const [productId, setProductId] = useState('')
+  const [productId, setProductId] = useState(prefillProductId)
   const [qtyStr, setQtyStr] = useState('')
   const [date, setDate] = useState<string>(todayYMD())
   const [flag, setFlag] = useState<'M' | 'P' | 'material'>(isRetail ? 'P' : 'M')

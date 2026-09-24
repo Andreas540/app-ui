@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Modal from './Modal'
 import { useCurrency } from '../lib/useCurrency'
 import { useTranslation } from 'react-i18next'
@@ -88,10 +89,6 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
     ? `${BASE}/.netlify/functions/serve-product-image?id=${product.id}`
     : null
 
-  const unitTrackingLabel =
-    product.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
-    : product.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
-    : null
 
   const tile = (label: React.ReactNode, value: React.ReactNode, sub?: React.ReactNode) => (
     <div style={{ background: 'var(--input-bg, #f9f9f9)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)' }}>
@@ -101,8 +98,25 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
     </div>
   )
 
+  const modalTitle = (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</span>
+      <Link
+        to={`/products/edit?id=${product.id}`}
+        style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)', textDecoration: 'none', flexShrink: 0 }}
+      >
+        {t('edit')}
+      </Link>
+    </span>
+  )
+
+  const unitTrackingText =
+    product.unit_tracking === 'on_promote'         ? t('products.unitTrackingOnPromote')
+    : product.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
+    : t('products.unitTrackingNone', { defaultValue: 'None' })
+
   return (
-    <Modal isOpen title={product.name} onClose={onClose}>
+    <Modal isOpen title={modalTitle} onClose={onClose}>
       {/* Top section: image + descriptors */}
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 20 }}>
         <div style={{ flexShrink: 0 }}>
@@ -198,15 +212,24 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
       {/* ── Inventory ────────────────────────────────────────── */}
       {isProduct && (
         <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-          <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
-            {t('warehouse.title', { defaultValue: 'Inventory' })}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              {t('warehouse.inventorySection', { defaultValue: 'Inventory' })}
+            </div>
+            <Link
+              to={`/warehouse?product_id=${product.id}`}
+              style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none' }}
+            >
+              {t('warehouse.adjustLink', { defaultValue: 'Adjust inventory' })}
+            </Link>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12 }}>
-            {showUnitTracking && unitTrackingLabel &&
-              tile(t('products.unitTracking'), unitTrackingLabel)
-            }
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: showUnitTracking && unitTrackingLabel ? 12 : 0 }}>
+          {showUnitTracking && (
+            <div style={{ fontSize: 13, marginBottom: 12 }}>
+              <span style={{ color: 'var(--muted)', marginRight: 6 }}>{t('products.unitTracking')}:</span>
+              <span>{unitTrackingText}</span>
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {invLoading ? (
               <div style={{ gridColumn: '1 / -1', fontSize: 13, color: 'var(--text-secondary)' }}>{t('loading')}</div>
             ) : (() => {
