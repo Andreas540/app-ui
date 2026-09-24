@@ -147,77 +147,93 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
         </div>
       </div>
 
-      {/* Row 1: Customer price · Price last sale · Avg price all sales */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
-        {tile(t('products.servicePrice'), product.price_amount != null ? fmtMoney(product.price_amount) : '—')}
+      {/* ── Pricing ─────────────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
+          {t('products.sectionPricing', { defaultValue: 'Pricing' })}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {tile(t('products.servicePrice'), product.price_amount != null ? fmtMoney(product.price_amount) : '—')}
 
-        {tile(
-          t('priceChecker.priceLastTime'),
-          priceLoading ? '…' : (priceData?.price_last_time != null ? fmtMoney(priceData.price_last_time) : '—'),
-          !priceLoading && priceData?.last_sale_customer ? priceData.last_sale_customer : undefined
-        )}
+          {tile(
+            t('priceChecker.priceLastTime'),
+            priceLoading ? '…' : (priceData?.price_last_time != null ? fmtMoney(priceData.price_last_time) : '—'),
+            !priceLoading && priceData?.last_sale_customer ? priceData.last_sale_customer : undefined
+          )}
 
-        {tile(
-          t('priceChecker.averagePrice'),
-          priceLoading ? '…' : (priceData?.average_price != null ? fmtMoney(priceData.average_price) : '—'),
-          !priceLoading && priceData != null
-            ? t('priceChecker.previousOrders', { count: priceData.order_count })
-            : undefined
-        )}
+          {tile(
+            t('priceChecker.averagePrice'),
+            priceLoading ? '…' : (priceData?.average_price != null ? fmtMoney(priceData.average_price) : '—'),
+            !priceLoading && priceData != null
+              ? t('priceChecker.previousOrders', { count: priceData.order_count })
+              : undefined
+          )}
+        </div>
       </div>
 
-      {/* Row 2: Production cost · Duration · Unit tracking */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: isProduct ? 12 : 0 }}>
-        {tile(
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {costLabel}
-            {costMethodLabel && (
-              <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600 }}>
-                {costMethodLabel}
-              </span>
-            )}
-          </span>,
-          fmtMoney(product.cost ?? 0, 3)
-        )}
+      {/* ── Purchase price ───────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, marginBottom: isProduct ? 12 : 0 }}>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
+          {t('products.sectionPurchasePrice', { defaultValue: 'Purchase price' })}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+          {tile(
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {costLabel}
+              {costMethodLabel && (
+                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600 }}>
+                  {costMethodLabel}
+                </span>
+              )}
+            </span>,
+            fmtMoney(product.cost ?? 0, 3)
+          )}
 
-        {isService && product.duration_minutes != null &&
-          tile(t('products.duration'), `${product.duration_minutes} min`)
-        }
-
-        {isProduct && showUnitTracking && unitTrackingLabel &&
-          tile(t('products.unitTracking'), unitTrackingLabel)
-        }
+          {isService && product.duration_minutes != null &&
+            tile(t('products.duration'), `${product.duration_minutes} min`)
+          }
+        </div>
       </div>
 
-      {/* Row 3: Inventory — products only */}
+      {/* ── Inventory ────────────────────────────────────────── */}
       {isProduct && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {invLoading ? (
-            <div style={{ gridColumn: '1 / -1', fontSize: 13, color: 'var(--text-secondary)' }}>{t('loading')}</div>
-          ) : (() => {
-            const inv = invData
-            const fmt = (n: number) => fmtNumber(n)
-            const numStyle = (n: number): React.CSSProperties => ({
-              fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
-              color: n < 0 ? 'var(--color-error)' : n === 0 ? 'var(--text-secondary)' : undefined,
-            })
-            if (isRetail) return (
-              <>
-                {tile(t('warehouse.inStockColumn'),    <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
-                {tile(t('warehouse.committedColumn'),  <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
-                {tile(t('warehouse.availableColumn'),  <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
-                {tile(t('warehouse.onOrderColumn'),    <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
-              </>
-            )
-            return (
-              <>
-                {tile(t('warehouse.totalQtyColumn'),        <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
-                {tile(t('warehouse.committedColumn'),       <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
-                {tile(t('warehouse.availableTotalColumn'),  <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
-                {tile(t('warehouse.onOrderColumn'),         <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
-              </>
-            )
-          })()}
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+          <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
+            {t('warehouse.title', { defaultValue: 'Inventory' })}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12 }}>
+            {showUnitTracking && unitTrackingLabel &&
+              tile(t('products.unitTracking'), unitTrackingLabel)
+            }
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: showUnitTracking && unitTrackingLabel ? 12 : 0 }}>
+            {invLoading ? (
+              <div style={{ gridColumn: '1 / -1', fontSize: 13, color: 'var(--text-secondary)' }}>{t('loading')}</div>
+            ) : (() => {
+              const inv = invData
+              const fmt = (n: number) => fmtNumber(n)
+              const numStyle = (n: number): React.CSSProperties => ({
+                fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+                color: n < 0 ? 'var(--color-error)' : n === 0 ? 'var(--text-secondary)' : undefined,
+              })
+              if (isRetail) return (
+                <>
+                  {tile(t('warehouse.inStockColumn'),   <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
+                  {tile(t('warehouse.committedColumn'), <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
+                  {tile(t('warehouse.availableColumn'), <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
+                  {tile(t('warehouse.onOrderColumn'),   <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
+                </>
+              )
+              return (
+                <>
+                  {tile(t('warehouse.totalQtyColumn'),       <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
+                  {tile(t('warehouse.committedColumn'),      <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
+                  {tile(t('warehouse.availableTotalColumn'), <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
+                  {tile(t('warehouse.onOrderColumn'),        <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
+                </>
+              )
+            })()}
+          </div>
         </div>
       )}
     </Modal>
