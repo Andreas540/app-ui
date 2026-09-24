@@ -71,6 +71,7 @@ export default function NewProduct() {
   const [loadingHistorical, setLoadingHistorical] = useState(false)
   const [showImages, setShowImages] = useState(false)
   const [detailProduct, setDetailProduct] = useState<ProductWithCost | null>(null)
+  const [productSearch, setProductSearch] = useState('')
   const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
   // Filter out specific products and apply category filter
@@ -268,8 +269,19 @@ export default function NewProduct() {
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
+  const searchFilteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    if (!q) return filteredProducts
+    return filteredProducts.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.variant ?? '').toLowerCase().includes(q) ||
+      (p.variant_2 ?? '').toLowerCase().includes(q) ||
+      (p.sku ?? '').toLowerCase().includes(q)
+    )
+  }, [filteredProducts, productSearch])
+
   const sortedForTable = useMemo(() => {
-    const prods = filteredProducts
+    const prods = searchFilteredProducts
     const uncategorized = prods.filter(p => !p.product_category).sort((a, b) => a.name.localeCompare(b.name))
     const cats = [...new Set(prods.filter(p => p.product_category).map(p => p.product_category!))].sort((a, b) => a.localeCompare(b))
     type Entry = { type: 'row'; product: ProductWithCost } | { type: 'header'; cat: string }
@@ -679,7 +691,7 @@ export default function NewProduct() {
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setListCategory(key)}
+                onClick={() => { setListCategory(key); setProductSearch('') }}
                 style={{
                   background: 'none', border: 'none', fontSize: 14,
                   padding: '6px 14px 10px', marginBottom: -1, cursor: 'pointer',
@@ -692,10 +704,17 @@ export default function NewProduct() {
           </div>
         )}
         {listOpen && listCategory !== 'addon' && !showHistorical && (
-          <div style={{ marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              placeholder={listCategory === 'service' ? 'Search by name…' : 'Search by name, variant, SKU…'}
+              value={productSearch}
+              onChange={e => setProductSearch(e.target.value)}
+              style={{ flex: '1 1 180px', minWidth: 0 }}
+            />
             <button
               onClick={() => setShowImages(v => !v)}
-              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
             >
               {showImages ? t('products.hideImages') : t('products.showImages')}
             </button>
@@ -744,8 +763,8 @@ export default function NewProduct() {
           <div style={{ overflowX: 'auto', marginTop: 4 }}>
             {loadingList ? (
               <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
-            ) : filteredProducts.length === 0 ? (
-              <div style={{ opacity: 0.7, fontSize: 14 }}>{t('products.noProducts')}</div>
+            ) : searchFilteredProducts.length === 0 ? (
+              <div style={{ opacity: 0.7, fontSize: 14 }}>{productSearch.trim() ? 'No products match your search.' : t('products.noProducts')}</div>
             ) : (
               <table style={{ width: '100%', minWidth: showImages ? 440 : undefined, borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
