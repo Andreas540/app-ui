@@ -205,7 +205,10 @@ const ALL_CARDS = [
   { id: 'charts',        labelKey: 'dashboard.cardCharts'       },
   { id: 'orders',        labelKey: 'dashboard.cardOrders'       },
   { id: 'price-checker', labelKey: 'dashboard.cardPriceChecker' },
+  { id: 'bookings',      labelKey: 'dashboard.cardBookings'     },
 ] as const
+
+const BK_DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
 const LS_DASH_ORDER   = 'dashboard_order'
 const LS_DASH_VISIBLE = 'dashboard_visible'
@@ -259,8 +262,9 @@ export default function Dashboard() {
   const { t } = useTranslation()
   const { t: tr } = useTranslation('reports')
   const { fmtMoney, fmtIntMoney, fmtNumber } = useCurrency()
-  const { user } = useAuth()
-  const { timezone } = useLocale()
+  const { user, hasFeature } = useAuth()
+  const hasBkFeature = hasFeature('booking-dashboard')
+  const { timezone, locale } = useLocale()
   const config = getTenantConfig(user?.tenantId)
   const showOwedToSuppliers  = config.ui.showOwedToSuppliers
   const showInfoIconsPages   = config.ui.showInfoIconsPages
@@ -301,6 +305,15 @@ export default function Dashboard() {
   const [pcProductId,   setPcProductId]   = useState('')
   const [pcData,        setPcData]        = useState<{ price_last_time: number | null; last_sale_customer: string | null; last_sale_customer_id: string | null; average_price: number | null; order_count: number; customer_price: number | null } | null>(null)
   const [pcLoading,     setPcLoading]     = useState(false)
+
+  // Booking card state
+  type BkRow = { id: string; start_at: string; customer_name: string | null; service_name: string | null }
+  const [bkSelectedDate,  setBkSelectedDate]  = useState('')
+  const [bkDateList,      setBkDateList]      = useState<BkRow[]>([])
+  const [bkDateLoading,   setBkDateLoading]   = useState(false)
+  const [bkCalCounts,     setBkCalCounts]     = useState<Record<string, number>>({})
+  const [bkCalMonth,      setBkCalMonth]      = useState<Date>(() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d })
+  const bkCalMonthInitRef = useRef(true)
 
   // Dashboard card customisation
   const [dashOrder,    setDashOrder]    = useState<string[]>(loadDashOrder)
@@ -359,6 +372,53 @@ export default function Dashboard() {
       finally { setPcLoading(false) }
     })()
   }, [pcCustomerId, pcProductId])
+
+  // Booking card — initial load (today's bookings + current month counts)
+  useEffect(() => {
+    if (!hasBkFeature) return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
+    setBkSelectedDate(todayStr)
+    fetch(`${base}/api/get-booking-dashboard`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.today) setBkDateList(data.today) })
+      .catch(() => {})
+    const month = todayStr.slice(0, 7)
+    fetch(`${base}/api/get-booking-calendar?month=${month}`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setBkCalCounts(data?.counts ?? {}))
+      .catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Booking card — calendar month navigation
+  useEffect(() => {
+    if (bkCalMonthInitRef.current) { bkCalMonthInitRef.current = false; return }
+    if (!hasBkFeature) return
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const month = `${bkCalMonth.getFullYear()}-${String(bkCalMonth.getMonth() + 1).padStart(2, '0')}`
+    setBkCalCounts({})
+    setBkSelectedDate('')
+    setBkDateList([])
+    fetch(`${base}/api/get-booking-calendar?month=${month}`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setBkCalCounts(data?.counts ?? {}))
+      .catch(() => {})
+  }, [bkCalMonth]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleBkDateClick(dateStr: string) {
+    setBkSelectedDate(dateStr)
+    setBkDateLoading(true)
+    setBkDateList([])
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/get-booking-calendar-date?date=${dateStr}`, { headers: getAuthHeaders() })
+      if (res.ok) {
+        const json = await res.json()
+        setBkDateList(json.bookings ?? [])
+      }
+    } catch { /* ignore */ }
+    setBkDateLoading(false)
+  }
 
   // Load JJ Boston partner net and exclude it from partner totals
   useEffect(() => {
@@ -664,7 +724,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   border: '1px solid var(--border)', borderRadius: 8,
                   padding: '4px 0', zIndex: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
                 }}>
-                  {ALL_CARDS.map(c => (
+                  {ALL_CARDS.filter(c => c.id !== 'bookings' || hasBkFeature).map(c => (
                     <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
@@ -1051,6 +1111,131 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               )}
             </div>
           )
+
+          if (cardId === 'bookings') {
+            if (!hasBkFeature) return null
+            const bkTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
+            const bkYear  = bkCalMonth.getFullYear()
+            const bkMo    = bkCalMonth.getMonth()
+            const firstDow    = new Date(bkYear, bkMo, 1).getDay()
+            const daysInMonth = new Date(bkYear, bkMo + 1, 0).getDate()
+            const bkCalDays: (number | null)[] = []
+            for (let i = 0; i < firstDow; i++) bkCalDays.push(null)
+            for (let d = 1; d <= daysInMonth; d++) bkCalDays.push(d)
+            const monthLabel = bkCalMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+
+            const selectedLabel = bkSelectedDate
+              ? bkSelectedDate === bkTodayStr
+                ? t('bookingDashboard.todayCount', "Today's bookings").replace("'s bookings", '')
+                : new Date(bkSelectedDate + 'T12:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })
+              : ''
+
+            return (
+              <div key="bookings" className="card" style={{ position: 'relative' }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {moveArrows}
+                    <h3 style={{ margin: 0, fontSize: 16 }}>{t('dashboard.cardBookings')}</h3>
+                  </div>
+                  {hasFeature('new-booking') && (
+                    <Link to="/bookings/new" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none' }}>
+                      + {t('newBooking', { defaultValue: 'New booking' })}
+                    </Link>
+                  )}
+                </div>
+
+                {/* Date label + count */}
+                {bkSelectedDate && (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{selectedLabel}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {bkDateLoading ? '…' : `${bkDateList.length} ${t('bookingDashboard.bookings', 'bookings')}`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Mini calendar */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <button
+                      onClick={() => setBkCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })}
+                      style={{ padding: '2px 10px', fontSize: 13 }}
+                    >←</button>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>{monthLabel}</span>
+                    <button
+                      onClick={() => setBkCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d })}
+                      style={{ padding: '2px 10px', fontSize: 13 }}
+                    >→</button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
+                    {BK_DAY_LABELS.map(dl => (
+                      <div key={dl} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--muted)', padding: '2px 0' }}>{dl}</div>
+                    ))}
+                    {bkCalDays.map((day, i) => {
+                      if (day === null) return <div key={`e${i}`} />
+                      const ds = `${bkYear}-${String(bkMo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                      const count = bkCalCounts[ds] ?? 0
+                      const isToday    = ds === bkTodayStr
+                      const isSelected = ds === bkSelectedDate
+                      return (
+                        <div
+                          key={ds}
+                          onClick={() => handleBkDateClick(ds)}
+                          style={{
+                            textAlign: 'center', padding: '4px 1px', borderRadius: 5,
+                            cursor: 'pointer', fontSize: 12,
+                            background: isSelected ? 'var(--primary)' : isToday ? 'var(--primary)22' : undefined,
+                            color: isSelected ? '#fff' : undefined,
+                            fontWeight: isToday || isSelected ? 700 : undefined,
+                          }}
+                        >
+                          <div>{day}</div>
+                          {count > 0 && (
+                            <div style={{ fontSize: 9, lineHeight: 1, fontWeight: 600, color: isSelected ? 'rgba(255,255,255,0.8)' : '#10b981' }}>{count}</div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Booking list */}
+                {bkDateLoading ? (
+                  <div className="helper">{t('loading')}</div>
+                ) : bkSelectedDate && bkDateList.length === 0 ? (
+                  <div className="helper">{t('bookingDashboard.nothingToday', 'No bookings.')}</div>
+                ) : bkDateList.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {bkDateList.map((bk, i) => {
+                      const time = new Date(bk.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+                      return (
+                        <Link key={bk.id} to={`/bookings/${bk.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <div style={{
+                            display: 'grid', gridTemplateColumns: '1fr auto auto',
+                            gap: '0 12px', alignItems: 'center',
+                            padding: '7px 0',
+                            borderTop: i === 0 ? '1px solid var(--border)' : undefined,
+                            borderBottom: '1px solid var(--border)',
+                          }}>
+                            <span style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {bk.customer_name ?? '—'}
+                            </span>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                              {bk.service_name ?? '—'}
+                            </span>
+                            <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                              {time}
+                            </span>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            )
+          }
 
           return null
         })}
