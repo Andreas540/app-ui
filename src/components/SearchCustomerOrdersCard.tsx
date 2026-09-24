@@ -39,6 +39,7 @@ export default function SearchCustomerOrdersCard() {
   const [toDate, setToDate] = useState('')
   const [minAmount, setMinAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
+  const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all')
 
   // Modal state
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
@@ -76,6 +77,12 @@ export default function SearchCustomerOrdersCard() {
 
   function handleSearch() {
     fetchOrders(buildUrl())
+  }
+
+  function handleClear() {
+    setQ(''); setFromDate(''); setToDate(''); setMinAmount(''); setMaxAmount(''); setPaidFilter('all')
+    setSortCol('date'); setSortDir('desc')
+    fetchOrders(`${BASE}/api/search-orders`)
   }
 
   async function openOrderModal(row: OrderRow) {
@@ -139,7 +146,26 @@ export default function SearchCustomerOrdersCard() {
             </div>
           </div>
 
-          <button className="primary" onClick={handleSearch} style={{ marginBottom: 14 }}>Search</button>
+          {/* Paid filter + action buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              {(['all', 'paid', 'unpaid'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setPaidFilter(f)}
+                  style={{
+                    padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
+                    background: paidFilter === f ? 'var(--primary)' : 'transparent',
+                    color: paidFilter === f ? '#fff' : undefined,
+                  }}
+                >
+                  {f === 'all' ? 'All' : f === 'paid' ? 'Paid' : 'Unpaid'}
+                </button>
+              ))}
+            </div>
+            <button className="primary" onClick={handleSearch}>Search</button>
+            <button onClick={handleClear}>Clear</button>
+          </div>
 
           {/* Results */}
           {loading && <div style={{ color: 'var(--muted)', fontSize: 14 }}>Loading…</div>}
@@ -176,6 +202,8 @@ export default function SearchCustomerOrdersCard() {
               else if (sortCol === 'balance') v = balance(a) - balance(b)
               return sortDir === 'asc' ? v : -v
             })
+            const displayed = paidFilter === 'all' ? sorted
+              : sorted.filter(o => paidFilter === 'paid' ? balance(o) <= 0.009 : balance(o) > 0.009)
             return (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -190,7 +218,7 @@ export default function SearchCustomerOrdersCard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sorted.map(o => (
+                    {displayed.map(o => (
                       <tr
                         key={o.id}
                         onClick={() => openOrderModal(o)}
