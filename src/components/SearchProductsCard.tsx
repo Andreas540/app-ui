@@ -129,7 +129,7 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
           >
             <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{open ? '▼' : '▶'}</span>
             <h3 style={{ margin: 0 }}>
-              {listCategory === 'service' ? t('products.allServices') : t('products.allProducts')}
+              {t('products.allProductsServices')}
             </h3>
           </div>
         )}
