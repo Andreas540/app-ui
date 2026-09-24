@@ -1,5 +1,6 @@
 // src/pages/PriceChecker.tsx
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { optLabel } from '../lib/productOptions'
@@ -8,6 +9,7 @@ import { useCurrency } from '../lib/useCurrency'
 type PriceData = {
   price_last_time: number | null
   last_sale_customer: string | null
+  last_sale_customer_id: string | null
   average_price: number | null
   order_count: number
   customer_price: number | null
@@ -156,7 +158,11 @@ const res = await fetch(
                   {priceData.price_last_time == null ? '—' : fmtMoney(priceData.price_last_time)}
                 </div>
                 {selectedCustomerId === 'all' && priceData.last_sale_customer && (
-                  <div className="helper" style={{ marginTop: 4 }}>{priceData.last_sale_customer}</div>
+                  <div className="helper" style={{ marginTop: 4 }}>
+                    {priceData.last_sale_customer_id
+                      ? <Link to={`/customers/${priceData.last_sale_customer_id}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{priceData.last_sale_customer}</Link>
+                      : priceData.last_sale_customer}
+                  </div>
                 )}
               </div>
 

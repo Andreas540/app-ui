@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { listCustomersWithOwed, type CustomerWithOwed, type Product, getAuthHeaders } from '../lib/api'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -298,7 +299,7 @@ export default function Dashboard() {
   const [pcProducts,    setPcProducts]    = useState<Product[]>([])
   const [pcCustomerId,  setPcCustomerId]  = useState('all')
   const [pcProductId,   setPcProductId]   = useState('')
-  const [pcData,        setPcData]        = useState<{ price_last_time: number | null; last_sale_customer: string | null; average_price: number | null; order_count: number; customer_price: number | null } | null>(null)
+  const [pcData,        setPcData]        = useState<{ price_last_time: number | null; last_sale_customer: string | null; last_sale_customer_id: string | null; average_price: number | null; order_count: number; customer_price: number | null } | null>(null)
   const [pcLoading,     setPcLoading]     = useState(false)
 
   // Dashboard card customisation
@@ -1017,7 +1018,11 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                           {pcData.price_last_time == null ? '—' : fmtMoney(pcData.price_last_time)}
                         </div>
                         {pcCustomerId === 'all' && pcData.last_sale_customer && (
-                          <div className="helper" style={{ marginTop: 4 }}>{pcData.last_sale_customer}</div>
+                          <div className="helper" style={{ marginTop: 4 }}>
+                            {pcData.last_sale_customer_id
+                              ? <Link to={`/customers/${pcData.last_sale_customer_id}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{pcData.last_sale_customer}</Link>
+                              : pcData.last_sale_customer}
+                          </div>
                         )}
                       </div>
                       <div>

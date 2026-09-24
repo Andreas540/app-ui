@@ -68,7 +68,7 @@ async function getPriceData(event) {
     // Get the most recent order's unit price
     const lastPrice = allCustomers
       ? await sql`
-          SELECT oi.unit_price, c.name AS customer_name
+          SELECT oi.unit_price, c.name AS customer_name, c.id AS customer_id
           FROM orders o
           JOIN order_items oi ON oi.order_id = o.id
           LEFT JOIN customers c ON c.id = o.customer_id
@@ -78,7 +78,7 @@ async function getPriceData(event) {
           LIMIT 1
         `
       : await sql`
-          SELECT oi.unit_price, c.name AS customer_name
+          SELECT oi.unit_price, c.name AS customer_name, c.id AS customer_id
           FROM orders o
           JOIN order_items oi ON oi.order_id = o.id
           LEFT JOIN customers c ON c.id = o.customer_id
@@ -115,7 +115,8 @@ async function getPriceData(event) {
       ? Number(lastPrice[0].unit_price)
       : null;
 
-    const lastSaleCustomer = lastPrice.length > 0 ? (lastPrice[0].customer_name ?? null) : null;
+    const lastSaleCustomer   = lastPrice.length > 0 ? (lastPrice[0].customer_name ?? null) : null;
+    const lastSaleCustomerId = lastPrice.length > 0 ? (lastPrice[0].customer_id   ?? null) : null;
 
     const averagePrice = avgData[0].average_price !== null
       ? Number(avgData[0].average_price)
@@ -128,6 +129,7 @@ async function getPriceData(event) {
     return cors(200, {
       price_last_time: priceLastTime,
       last_sale_customer: lastSaleCustomer,
+      last_sale_customer_id: lastSaleCustomerId,
       average_price: averagePrice,
       order_count: orderCount,
       customer_price: customerPrice,
