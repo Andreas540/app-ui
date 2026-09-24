@@ -4,6 +4,7 @@ import { useCurrency } from '../lib/useCurrency'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import type { ProductWithCost } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -14,6 +15,13 @@ type PriceData = {
   order_count: number
 }
 
+type InventoryData = {
+  qty: number
+  committed: number
+  on_order: number
+  available_total: number
+}
+
 interface Props {
   product: ProductWithCost | null
   onClose: () => void
@@ -22,15 +30,19 @@ interface Props {
 }
 
 export default function ProductDetailModal({ product, onClose, pageFields, labelProductCost }: Props) {
-  const { fmtMoney } = useCurrency()
+  const { fmtMoney, fmtNumber } = useCurrency()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const costLabel = labelProductCost || t('products.productCostUSD')
+  const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
 
   const [priceData, setPriceData] = useState<PriceData | null>(null)
   const [priceLoading, setPriceLoading] = useState(false)
+  const [invData, setInvData] = useState<InventoryData | null>(null)
+  const [invLoading, setInvLoading] = useState(false)
 
   useEffect(() => {
-    if (!product) { setPriceData(null); return }
+    if (!product) { setPriceData(null); setInvData(null); return }
     setPriceData(null)
     setPriceLoading(true)
     fetch(`${BASE}/api/price-checker?customer_id=all&product_id=${product.id}`, {
@@ -41,6 +53,19 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
       .then(data => setPriceData(data))
       .catch(() => setPriceData(null))
       .finally(() => setPriceLoading(false))
+
+    // Only fetch inventory for physical products
+    if ((product.category ?? 'product') !== 'product') return
+    setInvData(null)
+    setInvLoading(true)
+    fetch(`${BASE}/api/product-inventory?product_id=${product.id}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setInvData(data?.inventory ?? null))
+      .catch(() => setInvData(null))
+      .finally(() => setInvLoading(false))
   }, [product?.id])
 
   if (!product) return null
@@ -142,7 +167,7 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
       </div>
 
       {/* Row 2: Production cost · Duration · Unit tracking */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: isProduct ? 12 : 0 }}>
         {tile(
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {costLabel}
@@ -163,6 +188,38 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
           tile(t('products.unitTracking'), unitTrackingLabel)
         }
       </div>
+
+      {/* Row 3: Inventory — products only */}
+      {isProduct && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {invLoading ? (
+            <div style={{ gridColumn: '1 / -1', fontSize: 13, color: 'var(--text-secondary)' }}>{t('loading')}</div>
+          ) : (() => {
+            const inv = invData
+            const fmt = (n: number) => fmtNumber(n)
+            const numStyle = (n: number): React.CSSProperties => ({
+              fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+              color: n < 0 ? 'var(--color-error)' : n === 0 ? 'var(--text-secondary)' : undefined,
+            })
+            if (isRetail) return (
+              <>
+                {tile(t('warehouse.inStockColumn'),    <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
+                {tile(t('warehouse.committedColumn'),  <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
+                {tile(t('warehouse.availableColumn'),  <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
+                {tile(t('warehouse.onOrderColumn'),    <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
+              </>
+            )
+            return (
+              <>
+                {tile(t('warehouse.totalQtyColumn'),        <span style={numStyle(inv?.qty ?? 0)}>{fmt(inv?.qty ?? 0)}</span>)}
+                {tile(t('warehouse.committedColumn'),       <span style={numStyle(inv?.committed ?? 0)}>{fmt(inv?.committed ?? 0)}</span>)}
+                {tile(t('warehouse.availableTotalColumn'),  <span style={numStyle(inv?.available_total ?? 0)}>{fmt(inv?.available_total ?? 0)}</span>)}
+                {tile(t('warehouse.onOrderColumn'),         <span style={{ ...numStyle(inv?.on_order ?? 0), color: (inv?.on_order ?? 0) > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>{fmt(inv?.on_order ?? 0)}</span>)}
+              </>
+            )
+          })()}
+        </div>
+      )}
     </Modal>
   )
 }
