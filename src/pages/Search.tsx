@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import SearchCustomersCard from '../components/SearchCustomersCard'
 import SearchCustomerOrdersCard from '../components/SearchCustomerOrdersCard'
 import SearchProductsCard from '../components/SearchProductsCard'
@@ -14,7 +15,12 @@ const OPTIONS: Array<{ value: SearchType; label: string }> = [
 ]
 
 export default function Search() {
-  const [type, setType] = useState<SearchType>('customers')
+  const [searchParams] = useSearchParams()
+  const initialType = (searchParams.get('type') as SearchType) ?? 'customers'
+  const initialProductId  = searchParams.get('product_id')  ?? undefined
+  const initialCustomerId = searchParams.get('customer_id') ?? undefined
+
+  const [type, setType] = useState<SearchType>(initialType)
 
   return (
     <div className="card page-normal">
@@ -39,7 +45,14 @@ export default function Search() {
 
       {/* Selected search module */}
       {type === 'customers'       && <SearchCustomersCard hideHeader defaultOpen />}
-      {type === 'customer_orders' && <SearchCustomerOrdersCard hideHeader defaultOpen />}
+      {type === 'customer_orders' && (
+        <SearchCustomerOrdersCard
+          hideHeader
+          defaultOpen
+          initialProductId={initialProductId}
+          initialCustomerId={initialCustomerId}
+        />
+      )}
       {type === 'products'        && <SearchProductsCard hideHeader defaultOpen />}
       {type === 'supply_orders'   && <SearchOrdersCard hideHeader defaultOpen />}
     </div>

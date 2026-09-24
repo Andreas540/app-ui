@@ -1031,7 +1031,12 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                           {pcData.average_price == null ? '—' : fmtMoney(pcData.average_price)}
                         </div>
                         <div className="helper" style={{ marginTop: 4 }}>
-                          {t('priceChecker.previousOrders', { count: pcData.order_count })}
+                          <Link
+                            to={`/search?type=customer_orders&product_id=${pcProductId}${pcCustomerId !== 'all' ? `&customer_id=${pcCustomerId}` : ''}`}
+                            style={{ color: 'var(--primary)', textDecoration: 'none' }}
+                          >
+                            {t('priceChecker.previousOrders', { count: pcData.order_count })}
+                          </Link>
                         </div>
                       </div>
                     </div>

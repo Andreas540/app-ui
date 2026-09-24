@@ -12,6 +12,7 @@ const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 type PriceData = {
   price_last_time: number | null
   last_sale_customer: string | null
+  last_sale_customer_id: string | null
   average_price: number | null
   order_count: number
 }
@@ -172,14 +173,20 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
           {tile(
             t('priceChecker.priceLastTime'),
             priceLoading ? '…' : (priceData?.price_last_time != null ? fmtMoney(priceData.price_last_time) : '—'),
-            !priceLoading && priceData?.last_sale_customer ? priceData.last_sale_customer : undefined
+            !priceLoading && priceData?.last_sale_customer
+              ? priceData.last_sale_customer_id
+                ? <Link to={`/customers/${priceData.last_sale_customer_id}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{priceData.last_sale_customer}</Link>
+                : priceData.last_sale_customer
+              : undefined
           )}
 
           {tile(
             t('priceChecker.averagePrice'),
             priceLoading ? '…' : (priceData?.average_price != null ? fmtMoney(priceData.average_price) : '—'),
             !priceLoading && priceData != null
-              ? t('priceChecker.previousOrders', { count: priceData.order_count })
+              ? <Link to={`/search?type=customer_orders&product_id=${product.id}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>
+                  {t('priceChecker.previousOrders', { count: priceData.order_count })}
+                </Link>
               : undefined
           )}
         </div>

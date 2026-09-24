@@ -22,13 +22,18 @@ type OrderRow = {
 interface Props {
   defaultOpen?: boolean
   hideHeader?: boolean
+  initialProductId?: string
+  initialCustomerId?: string
 }
 
-export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHeader = false }: Props) {
+export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHeader = false, initialProductId, initialCustomerId }: Props) {
   const { fmtMoney } = useCurrency()
 
-  const [open, setOpen] = useState(defaultOpen || hideHeader)
+  const [open, setOpen] = useState(defaultOpen || hideHeader || !!initialProductId || !!initialCustomerId)
   const fetchedRef = useRef(false)
+
+  const filterProductId  = initialProductId  ?? ''
+  const filterCustomerId = initialCustomerId ?? ''
 
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,6 +65,8 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
     if (params.to_date)    p.set('to_date',    params.to_date)
     if (params.min_amount) p.set('min_amount', params.min_amount)
     if (params.max_amount) p.set('max_amount', params.max_amount)
+    if (filterProductId)   p.set('product_id',  filterProductId)
+    if (filterCustomerId)  p.set('customer_id', filterCustomerId)
     return `${BASE}/api/search-orders?${p}`
   }
 
@@ -242,7 +249,7 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
                     ))}
                   </tbody>
                 </table>
-                {!q && !fromDate && !toDate && !minAmount && !maxAmount && orders.length === 50 && (
+                {!q && !fromDate && !toDate && !minAmount && !maxAmount && !filterProductId && !filterCustomerId && orders.length === 50 && (
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>Showing last 50 orders — use search to find older ones.</div>
                 )}
               </div>

@@ -21,12 +21,14 @@ async function searchOrders(event) {
 
     const params = event.queryStringParameters ?? {};
     const q          = params.q?.trim() || null;
-    const fromDate   = params.from_date || null;
-    const toDate     = params.to_date   || null;
+    const fromDate   = params.from_date  || null;
+    const toDate     = params.to_date    || null;
     const minAmount  = params.min_amount != null ? Number(params.min_amount) : null;
     const maxAmount  = params.max_amount != null ? Number(params.max_amount) : null;
+    const productId  = params.product_id  || null;
+    const customerId = params.customer_id || null;
 
-    const hasSearch = q || fromDate || toDate || minAmount != null || maxAmount != null;
+    const hasSearch = q || fromDate || toDate || minAmount != null || maxAmount != null || productId || customerId;
 
     const orders = await sql`
       WITH order_totals AS (
@@ -56,14 +58,19 @@ async function searchOrders(event) {
       LEFT JOIN order_totals ot ON ot.order_id = o.id
       WHERE o.tenant_id = ${TENANT_ID}
         ${q ? sql`AND (
-          c.name       ILIKE ${'%' + q + '%'} OR
+          c.name           ILIKE ${'%' + q + '%'} OR
           o.order_no::text ILIKE ${'%' + q + '%'} OR
           ot.product_list  ILIKE ${'%' + q + '%'}
         )` : sql``}
-        ${fromDate ? sql`AND o.order_date >= ${fromDate}::date` : sql``}
-        ${toDate   ? sql`AND o.order_date <= ${toDate}::date`   : sql``}
+        ${fromDate   ? sql`AND o.order_date >= ${fromDate}::date` : sql``}
+        ${toDate     ? sql`AND o.order_date <= ${toDate}::date`   : sql``}
         ${minAmount != null ? sql`AND COALESCE(ot.total, 0) >= ${minAmount}` : sql``}
         ${maxAmount != null ? sql`AND COALESCE(ot.total, 0) <= ${maxAmount}` : sql``}
+        ${productId  ? sql`AND EXISTS (
+          SELECT 1 FROM order_items oi2
+          WHERE oi2.order_id = o.id AND oi2.product_id = ${productId}::uuid
+        )` : sql``}
+        ${customerId ? sql`AND o.customer_id = ${customerId}::uuid` : sql``}
       ORDER BY o.order_date DESC, o.order_no DESC
       ${hasSearch ? sql`` : sql`LIMIT 50`}
     `;

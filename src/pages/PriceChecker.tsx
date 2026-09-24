@@ -175,7 +175,12 @@ const res = await fetch(
                   {priceData.average_price == null ? '—' : fmtMoney(priceData.average_price)}
                 </div>
                 <div className="helper" style={{ marginTop: 8 }}>
-                  {t('priceChecker.previousOrders', { count: priceData.order_count })}
+                  <Link
+                    to={`/search?type=customer_orders&product_id=${selectedProductId}${selectedCustomerId !== 'all' ? `&customer_id=${selectedCustomerId}` : ''}`}
+                    style={{ color: 'var(--primary)', textDecoration: 'none' }}
+                  >
+                    {t('priceChecker.previousOrders', { count: priceData.order_count })}
+                  </Link>
                 </div>
               </div>
             </div>
