@@ -10,6 +10,7 @@ import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
 import ReturnsPage from './ReturnsPage'
+import SearchCustomerOrdersCard from '../components/SearchCustomerOrdersCard'
 
 type PartnerRef = { id: string; name: string }
 
@@ -49,6 +50,8 @@ export default function NewOrder() {
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const allowMultipleRows = config.ui.multipleOrderRows
+
+  const [formOpen, setFormOpen] = useState(() => new URLSearchParams(location.search).get('customer_id') !== null)
 
   const [people, setPeople] = useState<Person[]>([])
   const [partners, setPartners] = useState<PartnerRef[]>([])
@@ -414,21 +417,26 @@ export default function NewOrder() {
         ))}
       </div>
       <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+      <div
+        onClick={() => setFormOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+      >
+        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
         <h3 style={{ margin: 0 }}>{t('orders.newOrderTitle')}</h3>
-
-        {Number.isFinite(totalOrderValue) && totalOrderValue > 0 && (
-          <div style={{ textAlign: 'right', fontSize: 14 }}>
-            <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
-            <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
-              {fmtMoney(profit)}
-            </div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-              {fmtPct(profitPercent)}
-            </div>
-          </div>
-        )}
       </div>
+
+      {formOpen && <>
+      {Number.isFinite(totalOrderValue) && totalOrderValue > 0 && (
+        <div style={{ textAlign: 'right', fontSize: 14, marginTop: 8 }}>
+          <div style={{ color: 'var(--text-secondary)' }}>{t('orders.profit')}</div>
+          <div style={{ fontWeight: 600, fontSize: 16, color: profit >= 0 ? 'var(--primary)' : 'var(--color-error)' }}>
+            {fmtMoney(profit)}
+          </div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+            {fmtPct(profitPercent)}
+          </div>
+        </div>
+      )}
 
       {/* Order site expander */}
       <div style={{ marginBottom: 16, marginTop: 12 }}>
@@ -919,7 +927,9 @@ export default function NewOrder() {
           {showMoreFields ? t('orders.less') : t('orders.more')}
         </button>
       </div>
+      </>}
       </div>
+      <SearchCustomerOrdersCard />
     </div>
   )
 }
