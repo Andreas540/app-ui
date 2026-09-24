@@ -5,6 +5,8 @@ export interface NavItemDef {
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
+  // Cross-module
+  { id: 'search',           section: 'sales',   labelKey: 'search' },
   // Sales / Cash Flow
   { id: 'dashboard',        section: 'sales',   labelKey: 'mainDashboard' },
   { id: 'customers',        section: 'sales',   labelKey: 'customers' },

@@ -76,6 +76,27 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
   const [filterSupplier, setFilterSupplier] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  type SortCol = 'po_number' | 'supplier' | 'issue_date' | 'total' | 'remaining'
+  const [sortCol, setSortCol] = useState<SortCol>('issue_date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  function toggleSort(col: SortCol) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir(col === 'total' || col === 'remaining' || col === 'issue_date' ? 'desc' : 'asc') }
+  }
+
+  function poThStyle(col: SortCol, align: 'left' | 'right' = 'left') {
+    const active = sortCol === col
+    return {
+      textAlign: align as 'left' | 'right',
+      padding: align === 'right' ? '4px 0 6px 8px' : col === 'po_number' ? '4px 8px 6px 0' : '4px 8px 6px',
+      fontSize: 12, fontWeight: 600,
+      color: active ? 'var(--primary)' : 'var(--text-secondary)',
+      borderBottom: '1px solid var(--border)',
+      cursor: 'pointer', userSelect: 'none' as const, whiteSpace: 'nowrap' as const,
+    }
+  }
+
   const [modalOrder, setModalOrder] = useState<any | null>(null)
   const [modalSupplierName, setModalSupplierName] = useState('')
   const [modalLoadingId, setModalLoadingId] = useState<string | null>(null)
@@ -130,18 +151,30 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
       .finally(() => setPosLoading(false))
   }, [open])
 
-  const filteredPos = pos.filter(po => {
-    if (filterSupplier && po.supplier_id !== filterSupplier) return false
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      return (
-        po.po_number.toLowerCase().includes(q) ||
-        (po.supplier_name ?? '').toLowerCase().includes(q) ||
-        (po.notes ?? '').toLowerCase().includes(q)
-      )
-    }
-    return true
-  })
+  const filteredPos = (() => {
+    const arr = pos.filter(po => {
+      if (filterSupplier && po.supplier_id !== filterSupplier) return false
+      if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        return (
+          po.po_number.toLowerCase().includes(q) ||
+          (po.supplier_name ?? '').toLowerCase().includes(q) ||
+          (po.notes ?? '').toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+    arr.sort((a, b) => {
+      let v = 0
+      if (sortCol === 'po_number')  v = a.po_number.localeCompare(b.po_number)
+      else if (sortCol === 'supplier') v = (a.supplier_name ?? '').localeCompare(b.supplier_name ?? '')
+      else if (sortCol === 'issue_date') v = a.issue_date.localeCompare(b.issue_date)
+      else if (sortCol === 'total') v = Number(a.total_amount ?? 0) - Number(b.total_amount ?? 0)
+      else v = Number(a.remaining_amount ?? 0) - Number(b.remaining_amount ?? 0)
+      return sortDir === 'asc' ? v : -v
+    })
+    return arr
+  })()
 
   const CONTROL_H = 36
 
@@ -235,12 +268,12 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        <th style={{ textAlign: 'left',  padding: '4px 8px 6px 0' }}>PO #</th>
-                        <th style={{ textAlign: 'left',  padding: '4px 8px 6px' }}>Supplier</th>
-                        <th style={{ textAlign: 'left',  padding: '4px 8px 6px' }}>Issue date</th>
-                        <th style={{ textAlign: 'right', padding: '4px 0 6px 8px' }}>Total</th>
-                        <th style={{ textAlign: 'right', padding: '4px 0 6px 8px' }}>Remaining</th>
+                      <tr>
+                        <th onClick={() => toggleSort('po_number')}  style={poThStyle('po_number')}>PO #{sortCol === 'po_number' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                        <th onClick={() => toggleSort('supplier')}   style={poThStyle('supplier')}>Supplier{sortCol === 'supplier' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                        <th onClick={() => toggleSort('issue_date')} style={poThStyle('issue_date')}>Issue date{sortCol === 'issue_date' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                        <th onClick={() => toggleSort('total')}      style={poThStyle('total', 'right')}>Total{sortCol === 'total' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                        <th onClick={() => toggleSort('remaining')}  style={poThStyle('remaining', 'right')}>Remaining{sortCol === 'remaining' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
                         <th style={{ width: 20 }} />
                       </tr>
                     </thead>

@@ -26,6 +26,8 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
   const showProductTab   = pageFields.show_product_tab !== false
   const showServiceTab   = pageFields.show_service_tab !== false
 
+  type SortCol = 'name' | 'variant' | 'variant_2' | 'unit' | 'price' | 'cost'
+
   const [open, setOpen]           = useState(defaultOpen || hideHeader)
   const [loading, setLoading]     = useState(false)
   const [products, setProducts]   = useState<ProductWithCost[]>([])
@@ -33,7 +35,29 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
   const [productSearch, setProductSearch] = useState('')
   const [showImages, setShowImages]       = useState(false)
   const [detailProduct, setDetailProduct] = useState<ProductWithCost | null>(null)
+  const [sortCol, setSortCol]     = useState<SortCol>('name')
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc')
   const fetchedRef = useRef(false)
+
+  function toggleSort(col: SortCol) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir(col === 'price' || col === 'cost' ? 'desc' : 'asc') }
+  }
+
+  function thStyle(col: SortCol, align: 'left' | 'right' = 'left') {
+    const active = sortCol === col
+    return {
+      fontSize: 12, fontWeight: 600,
+      color: active ? 'var(--primary)' : 'var(--text-secondary)',
+      padding: align === 'right' ? '4px 0 4px 8px' : '4px 8px 4px 0',
+      borderBottom: '1px solid var(--border)', textAlign: align as 'left' | 'right',
+      cursor: 'pointer', userSelect: 'none' as const, whiteSpace: 'nowrap' as const,
+    }
+  }
+
+  function thArrow(col: SortCol) {
+    return sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
+  }
 
   useEffect(() => {
     if (!open || fetchedRef.current) return
@@ -63,16 +87,32 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
 
   type Entry = { type: 'row'; product: ProductWithCost } | { type: 'header'; cat: string }
   const sorted: Entry[] = useMemo(() => {
-    const uncategorized = searchFiltered.filter(p => !p.product_category).sort((a, b) => a.name.localeCompare(b.name))
+    if (sortCol !== 'name') {
+      // Flat sort — no category grouping
+      const arr = [...searchFiltered]
+      arr.sort((a, b) => {
+        let v = 0
+        if (sortCol === 'variant')   v = (a.variant ?? '').localeCompare(b.variant ?? '')
+        else if (sortCol === 'variant_2') v = (a.variant_2 ?? '').localeCompare(b.variant_2 ?? '')
+        else if (sortCol === 'unit') v = (a.unit_tracking ?? '').localeCompare(b.unit_tracking ?? '')
+        else if (sortCol === 'price') v = Number(a.price_amount ?? 0) - Number(b.price_amount ?? 0)
+        else if (sortCol === 'cost') v = Number(a.cost ?? 0) - Number(b.cost ?? 0)
+        return sortDir === 'asc' ? v : -v
+      })
+      return arr.map(p => ({ type: 'row' as const, product: p }))
+    }
+    // Name sort — preserve category grouping
+    const dir = sortDir === 'asc' ? 1 : -1
+    const uncategorized = searchFiltered.filter(p => !p.product_category).sort((a, b) => dir * a.name.localeCompare(b.name))
     const cats = [...new Set(searchFiltered.filter(p => p.product_category).map(p => p.product_category!))].sort()
     return [
       ...uncategorized.map(p => ({ type: 'row' as const, product: p })),
       ...cats.flatMap(cat => [
         { type: 'header' as const, cat },
-        ...searchFiltered.filter(p => p.product_category === cat).sort((a, b) => a.name.localeCompare(b.name)).map(p => ({ type: 'row' as const, product: p })),
+        ...searchFiltered.filter(p => p.product_category === cat).sort((a, b) => dir * a.name.localeCompare(b.name)).map(p => ({ type: 'row' as const, product: p })),
       ]),
     ]
-  }, [searchFiltered])
+  }, [searchFiltered, sortCol, sortDir])
 
   const tabs = ([
     showProductTab && { key: 'product' as const, label: t('products.allProducts') },
@@ -143,13 +183,13 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
                   <thead>
                     <tr>
                       {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
-                      <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                      {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant</th>}
-                      {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant 2</th>}
-                      {listCategory === 'product' && showUnitTracking && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
-                      {listCategory === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
-                      <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
-                      <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{listCategory === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
+                      <th onClick={() => toggleSort('name')} style={thStyle('name')}>{t('name')}{thArrow('name')}</th>
+                      {listCategory === 'product' && showVariant && <th onClick={() => toggleSort('variant')} style={thStyle('variant')}>Variant{thArrow('variant')}</th>}
+                      {listCategory === 'product' && showVariant && <th onClick={() => toggleSort('variant_2')} style={thStyle('variant_2')}>Variant 2{thArrow('variant_2')}</th>}
+                      {listCategory === 'product' && showUnitTracking && <th onClick={() => toggleSort('unit')} style={thStyle('unit')}>{t('products.unitTracking')}{thArrow('unit')}</th>}
+                      {listCategory === 'service' && <th onClick={() => toggleSort('unit')} style={thStyle('unit', 'right')}>{t('products.duration')}{thArrow('unit')}</th>}
+                      <th onClick={() => toggleSort('price')} style={thStyle('price', 'right')}>{t('products.servicePrice')}{thArrow('price')}</th>
+                      <th onClick={() => toggleSort('cost')} style={thStyle('cost', 'right')}>{listCategory === 'service' ? t('products.directServiceCost') : labelProductCost}{thArrow('cost')}</th>
                     </tr>
                   </thead>
                   <tbody>

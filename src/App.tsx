@@ -830,7 +830,7 @@ useEffect(() => {
               <>
                 {canAccess('search') && (
                   <NavLink to="/search" onClick={() => setNavOpen(false)}>
-                    {t('search', { ns: 'navigation', defaultValue: 'Search' })}
+                    {t('search', { ns: 'navigation' })}
                   </NavLink>
                 )}
                 {sectionHeader('sales', t('salesCashFlow'), true)}

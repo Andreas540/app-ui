@@ -20,10 +20,10 @@ export default function Search() {
     <div className="card page-normal">
       <h3 style={{ margin: '0 0 16px' }}>Search</h3>
 
-      {/* Search type selector */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+      {/* Search type selector — row on desktop, wraps on mobile */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', marginBottom: 20 }}>
         {OPTIONS.map(opt => (
-          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 15 }}>
+          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 15, whiteSpace: 'nowrap' }}>
             <input
               type="radio"
               name="search-type"
