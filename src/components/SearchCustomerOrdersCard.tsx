@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
-import { useLocale } from '../contexts/LocaleContext'
 import OrderDetailModal from './OrderDetailModal'
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -22,7 +21,6 @@ type OrderRow = {
 
 export default function SearchCustomerOrdersCard() {
   const { fmtMoney } = useCurrency()
-  const { timezone } = useLocale()
 
   const [open, setOpen] = useState(false)
   const fetchedRef = useRef(false)
@@ -167,7 +165,7 @@ export default function SearchCustomerOrdersCard() {
                       onClick={() => openOrderModal(o)}
                       style={{ cursor: modalLoadingId === o.id ? 'wait' : 'pointer' }}
                     >
-                      <td style={td}>{o.order_date ? formatDate(o.order_date, timezone) : '—'}</td>
+                      <td style={td}>{o.order_date ? formatDate(o.order_date) : '—'}</td>
                       <td style={td}>{o.order_no}</td>
                       <td style={td}>{o.customer_name ?? '—'}</td>
                       <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.product_list || '—'}</td>
