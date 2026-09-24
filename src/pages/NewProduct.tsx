@@ -292,7 +292,7 @@ export default function NewProduct() {
         ...prods.filter(p => p.product_category === cat).sort((a, b) => a.name.localeCompare(b.name)).map(p => ({ type: 'row' as const, product: p })),
       ]),
     ] as Entry[]
-  }, [filteredProducts])
+  }, [searchFilteredProducts])
 
   // Group historical costs by product, filtered to match the active list tab
   const groupedHistorical = historicalCosts.reduce((acc, item) => {
@@ -704,17 +704,17 @@ export default function NewProduct() {
           </div>
         )}
         {listOpen && listCategory !== 'addon' && !showHistorical && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ marginBottom: 8 }}>
             <input
               type="text"
               placeholder={listCategory === 'service' ? 'Search by name…' : 'Search by name, variant, SKU…'}
               value={productSearch}
               onChange={e => setProductSearch(e.target.value)}
-              style={{ flex: '1 1 180px', minWidth: 0 }}
+              style={{ width: '100%' }}
             />
             <button
               onClick={() => setShowImages(v => !v)}
-              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', marginTop: 6 }}
             >
               {showImages ? t('products.hideImages') : t('products.showImages')}
             </button>
