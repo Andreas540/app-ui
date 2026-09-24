@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
+
 interface InventoryRow {
   product_id: string
   product: string
   pre_prod: number
   finished: number
+  qty: number
 }
 
 function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '' }
 
 export default function TenantAdminInventoryTab() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const isRetail = (user as any)?.businessTypeConfig?.inventory_mode === 'retail'
   const [rows,      setRows]      = useState<InventoryRow[]>([])
   const [checked,   setChecked]   = useState<Set<string>>(new Set())
   const [loading,   setLoading]   = useState(true)
@@ -64,11 +69,14 @@ export default function TenantAdminInventoryTab() {
     }
   }
 
+  const hasStock = (row: InventoryRow) =>
+    isRetail ? Number(row.qty) !== 0 : (Number(row.pre_prod) !== 0 || Number(row.finished) !== 0)
+
   const selectedHasStock = [...checked].some(id => {
     const row = rows.find(r => r.product_id === id)
-    return row && (Number(row.pre_prod) !== 0 || Number(row.finished) !== 0)
+    return row && hasStock(row)
   })
-  const anyHasStock = rows.some(r => Number(r.pre_prod) !== 0 || Number(r.finished) !== 0)
+  const anyHasStock = rows.some(hasStock)
 
   if (loading) return <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
 
@@ -138,25 +146,31 @@ export default function TenantAdminInventoryTab() {
           <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
             {/* Header row */}
             <div style={{
-              display: 'grid', gridTemplateColumns: '24px 1fr 80px 80px',
+              display: 'grid', gridTemplateColumns: isRetail ? '24px 1fr 80px' : '24px 1fr 80px 80px',
               padding: '8px 12px', background: 'var(--bg-secondary, #f8f9fa)',
               borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600,
             }}>
               <span />
               <span>{t('tenantAdmin.inventory.product')}</span>
-              <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.preProd')}</span>
-              <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.finished')}</span>
+              {isRetail
+                ? <span style={{ textAlign: 'right' }}>{t('warehouse.inStockColumn', { defaultValue: 'In Stock' })}</span>
+                : <>
+                    <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.preProd')}</span>
+                    <span style={{ textAlign: 'right' }}>{t('tenantAdmin.inventory.finished')}</span>
+                  </>
+              }
             </div>
 
             {rows.map((row, i) => {
               const preProd  = Number(row.pre_prod)
               const finished = Number(row.finished)
-              const isZero   = preProd === 0 && finished === 0
+              const qty      = Number(row.qty)
+              const isZero   = isRetail ? qty === 0 : (preProd === 0 && finished === 0)
               return (
                 <div
                   key={row.product_id}
                   style={{
-                    display: 'grid', gridTemplateColumns: '24px 1fr 80px 80px',
+                    display: 'grid', gridTemplateColumns: isRetail ? '24px 1fr 80px' : '24px 1fr 80px 80px',
                     padding: '8px 12px', fontSize: 14,
                     borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                     opacity: isZero ? 0.45 : 1,
@@ -171,14 +185,22 @@ export default function TenantAdminInventoryTab() {
                     />
                   </label>
                   <span style={{ alignSelf: 'center' }}>{row.product}</span>
-                  <span style={{
-                    textAlign: 'right', alignSelf: 'center', fontWeight: 600,
-                    color: preProd < 0 ? '#ef4444' : preProd === 0 ? 'var(--muted)' : undefined,
-                  }}>{preProd}</span>
-                  <span style={{
-                    textAlign: 'right', alignSelf: 'center', fontWeight: 600,
-                    color: finished < 0 ? '#ef4444' : finished === 0 ? 'var(--muted)' : undefined,
-                  }}>{finished}</span>
+                  {isRetail
+                    ? <span style={{
+                        textAlign: 'right', alignSelf: 'center', fontWeight: 600,
+                        color: qty < 0 ? '#ef4444' : qty === 0 ? 'var(--muted)' : undefined,
+                      }}>{qty}</span>
+                    : <>
+                        <span style={{
+                          textAlign: 'right', alignSelf: 'center', fontWeight: 600,
+                          color: preProd < 0 ? '#ef4444' : preProd === 0 ? 'var(--muted)' : undefined,
+                        }}>{preProd}</span>
+                        <span style={{
+                          textAlign: 'right', alignSelf: 'center', fontWeight: 600,
+                          color: finished < 0 ? '#ef4444' : finished === 0 ? 'var(--muted)' : undefined,
+                        }}>{finished}</span>
+                      </>
+                  }
                 </div>
               )
             })}
