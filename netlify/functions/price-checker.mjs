@@ -43,6 +43,28 @@ async function getPriceData(event) {
 
     const allCustomers = customerId === 'all';
 
+    // Get effective customer price: customer override if set, otherwise product catalog price
+    const customerPriceRows = allCustomers
+      ? await sql`
+          SELECT price_amount AS customer_price
+          FROM products
+          WHERE id = ${productId} AND tenant_id = ${TENANT_ID}
+          LIMIT 1
+        `
+      : await sql`
+          SELECT COALESCE(o.price_amount, p.price_amount) AS customer_price
+          FROM products p
+          LEFT JOIN customer_product_offers o
+            ON  o.product_id   = p.id
+            AND o.tenant_id    = p.tenant_id
+            AND o.customer_id  = ${customerId}::uuid
+          WHERE p.id = ${productId} AND p.tenant_id = ${TENANT_ID}
+          LIMIT 1
+        `;
+    const customerPrice = customerPriceRows.length > 0 && customerPriceRows[0].customer_price != null
+      ? Number(customerPriceRows[0].customer_price)
+      : null;
+
     // Get the most recent order's unit price
     const lastPrice = allCustomers
       ? await sql`
@@ -107,7 +129,8 @@ async function getPriceData(event) {
       price_last_time: priceLastTime,
       last_sale_customer: lastSaleCustomer,
       average_price: averagePrice,
-      order_count: orderCount
+      order_count: orderCount,
+      customer_price: customerPrice,
     });
   } catch (e) {
     console.error(e);

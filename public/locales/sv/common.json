@@ -762,6 +762,7 @@
     "noPriceData": "Ingen prisdata tillgänglig för denna kombination.",
     "selectBoth": "Välj både en kund och en produkt för att se prisdata.",
     "allCustomers": "Alla kunder",
+    "customerPrice": "Kundpris",
     "productsGroup": "Produkter",
     "addOnProductsGroup": "Tilläggsprodukter"
   },

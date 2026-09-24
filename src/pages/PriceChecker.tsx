@@ -7,15 +7,17 @@ import { useCurrency } from '../lib/useCurrency'
 
 type PriceData = {
   price_last_time: number | null
+  last_sale_customer: string | null
   average_price: number | null
   order_count: number
+  customer_price: number | null
 }
 
 export default function PriceChecker() {
   const { t } = useTranslation()
   const [customers, setCustomers] = useState<Person[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState('all')
   const [selectedProductId, setSelectedProductId] = useState('')
   const [priceData, setPriceData] = useState<PriceData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,7 +84,7 @@ const res = await fetch(
   if (loading) return <div className="card page-narrow"><p>{t('loading')}</p></div>
   if (err) return <div className="card page-narrow"><p style={{ color: 'var(--color-error)' }}>{t('error')} {err}</p></div>
 
-  const showResults = selectedCustomerId && selectedProductId
+  const showResults = !!selectedProductId
 
   return (
     <div className="card page-narrow">
@@ -90,21 +92,6 @@ const res = await fetch(
 
       {/* Filters */}
       <div className="row row-2col-mobile" style={{ gap: 12 }}>
-        <div>
-          <label>{t('customer')}</label>
-          <select
-            value={selectedCustomerId}
-            onChange={(e) => setSelectedCustomerId(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            <option value="">{t('priceChecker.selectCustomer')}</option>
-            <option value="all">{t('priceChecker.allCustomers')}</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-
         <div>
           <label>{t('product')}</label>
           <select
@@ -127,6 +114,20 @@ const res = await fetch(
             )}
           </select>
         </div>
+
+        <div>
+          <label>{t('customer')}</label>
+          <select
+            value={selectedCustomerId}
+            onChange={(e) => setSelectedCustomerId(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            <option value="all">{t('priceChecker.allCustomers')}</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Results */}
@@ -136,6 +137,16 @@ const res = await fetch(
             <p className="helper">{t('priceChecker.loadingPriceData')}</p>
           ) : priceData ? (
             <div style={{ display: 'grid', gap: 20 }}>
+              {/* Customer price */}
+              <div>
+                <div className="helper" style={{ marginBottom: 8 }}>
+                  {t('priceChecker.customerPrice')}
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 700 }}>
+                  {priceData.customer_price == null ? '—' : fmtMoney(priceData.customer_price)}
+                </div>
+              </div>
+
               {/* Price last time */}
               <div>
                 <div className="helper" style={{ marginBottom: 8 }}>
@@ -144,6 +155,9 @@ const res = await fetch(
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
                   {priceData.price_last_time == null ? '—' : fmtMoney(priceData.price_last_time)}
                 </div>
+                {selectedCustomerId === 'all' && priceData.last_sale_customer && (
+                  <div className="helper" style={{ marginTop: 4 }}>{priceData.last_sale_customer}</div>
+                )}
               </div>
 
               {/* Average price */}
@@ -167,7 +181,7 @@ const res = await fetch(
 
       {!showResults && (
         <p className="helper" style={{ marginTop: 24 }}>
-          {t('priceChecker.selectBoth')}
+          {t('priceChecker.selectProduct')}
         </p>
       )}
     </div>

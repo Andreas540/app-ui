@@ -296,9 +296,9 @@ export default function Dashboard() {
 
   // Price Checker card state
   const [pcProducts,    setPcProducts]    = useState<Product[]>([])
-  const [pcCustomerId,  setPcCustomerId]  = useState('')
+  const [pcCustomerId,  setPcCustomerId]  = useState('all')
   const [pcProductId,   setPcProductId]   = useState('')
-  const [pcData,        setPcData]        = useState<{ price_last_time: number | null; average_price: number | null; order_count: number } | null>(null)
+  const [pcData,        setPcData]        = useState<{ price_last_time: number | null; last_sale_customer: string | null; average_price: number | null; order_count: number; customer_price: number | null } | null>(null)
   const [pcLoading,     setPcLoading]     = useState(false)
 
   // Dashboard card customisation
@@ -343,7 +343,7 @@ export default function Dashboard() {
 
   // Fetch price data when both IDs selected
   useEffect(() => {
-    if (!pcCustomerId || !pcProductId) { setPcData(null); return }
+    if (!pcProductId) { setPcData(null); return }
     setPcLoading(true)
     ;(async () => {
       try {
@@ -977,14 +977,6 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
-                  <label>{t('customer')}</label>
-                  <select value={pcCustomerId} onChange={e => setPcCustomerId(e.target.value)} style={{ height: 36 }}>
-                    <option value="">{t('priceChecker.selectCustomer')}</option>
-                    <option value="all">{t('priceChecker.allCustomers')}</option>
-                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
                   <label>{t('product')}</label>
                   <select value={pcProductId} onChange={e => setPcProductId(e.target.value)} style={{ height: 36 }}>
                     <option value="">{t('priceChecker.selectProduct')}</option>
@@ -998,19 +990,35 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     )}
                   </select>
                 </div>
+                <div>
+                  <label>{t('customer')}</label>
+                  <select value={pcCustomerId} onChange={e => setPcCustomerId(e.target.value)} style={{ height: 36 }}>
+                    <option value="all">{t('priceChecker.allCustomers')}</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
               </div>
 
-              {pcCustomerId && pcProductId && (
+              {pcProductId && (
                 <div style={{ marginTop: 16 }}>
                   {pcLoading ? (
                     <span className="helper">{t('loading')}</span>
                   ) : pcData ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                      <div>
+                        <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.customerPrice')}</div>
+                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                          {pcData.customer_price == null ? '—' : fmtMoney(pcData.customer_price)}
+                        </div>
+                      </div>
                       <div>
                         <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.priceLastTime')}</div>
                         <div style={{ fontSize: 24, fontWeight: 700 }}>
                           {pcData.price_last_time == null ? '—' : fmtMoney(pcData.price_last_time)}
                         </div>
+                        {pcCustomerId === 'all' && pcData.last_sale_customer && (
+                          <div className="helper" style={{ marginTop: 4 }}>{pcData.last_sale_customer}</div>
+                        )}
                       </div>
                       <div>
                         <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.averagePrice')}</div>
@@ -1028,8 +1036,8 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 </div>
               )}
 
-              {(!pcCustomerId || !pcProductId) && (
-                <p className="helper" style={{ marginTop: 12, marginBottom: 0 }}>{t('priceChecker.selectBoth')}</p>
+              {!pcProductId && (
+                <p className="helper" style={{ marginTop: 12, marginBottom: 0 }}>{t('priceChecker.selectProduct')}</p>
               )}
             </div>
           )

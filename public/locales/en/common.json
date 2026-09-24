@@ -762,6 +762,7 @@
     "noPriceData": "No price data available for this combination.",
     "selectBoth": "Select both a customer and a product to view price data.",
     "allCustomers": "All Customers",
+    "customerPrice": "Customer price",
     "productsGroup": "Products",
     "addOnProductsGroup": "Add-On Products"
   },
