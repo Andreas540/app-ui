@@ -1,4 +1,7 @@
 export const AVAILABLE_FEATURES = {
+  // Cross-module
+  search:          { id: 'search',          name: 'Search',         route: '/search',              category: 'Sales',  module: 'sales' },
+
   // Sales & Cash Flow
   dashboard:       { id: 'dashboard',       name: 'Dashboard',      route: '/',                   category: 'Sales',  module: 'sales' },
   customers:       { id: 'customers',       name: 'Customers',      route: '/customers',           category: 'Sales',  module: 'sales' },

@@ -19,10 +19,15 @@ type OrderRow = {
   product_list: string
 }
 
-export default function SearchCustomerOrdersCard() {
+interface Props {
+  defaultOpen?: boolean
+  hideHeader?: boolean
+}
+
+export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHeader = false }: Props) {
   const { fmtMoney } = useCurrency()
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen || hideHeader)
   const fetchedRef = useRef(false)
 
   const [orders, setOrders] = useState<OrderRow[]>([])
@@ -105,14 +110,15 @@ export default function SearchCustomerOrdersCard() {
 
   return (
     <div className="card page-normal" style={{ marginTop: 12 }}>
-      {/* Header */}
-      <div
-        onClick={() => setOpen(v => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
-      >
-        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{open ? '▼' : '▶'}</span>
-        <h3 style={{ margin: 0 }}>Search Orders</h3>
-      </div>
+      {!hideHeader && (
+        <div
+          onClick={() => setOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{open ? '▼' : '▶'}</span>
+          <h3 style={{ margin: 0 }}>Search Orders</h3>
+        </div>
+      )}
 
       {open && (
         <div style={{ marginTop: 14 }}>

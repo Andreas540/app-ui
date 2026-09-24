@@ -84,6 +84,7 @@ import CustomerReportsPage from './pages/CustomerReportsPage'
 import TimelineOverviewPage from './pages/TimelineOverviewPage'
 import BizWizPage from './pages/BizWizPage'
 import SimulationsPage from './pages/SimulationsPage'
+import Search from './pages/Search'
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -275,6 +276,7 @@ function PublicOrderPageShell() {
 
 // ── Page-view action mapping ───────────────────────────────────────────────────
 const PAGE_ACTIONS: Record<string, string> = {
+  '/search':                     'page_view_search',
   '/':                           'page_view_dashboard',
   '/customers':                  'page_view_customers',
   '/customers/new':              'page_view_create_customer',
@@ -826,6 +828,11 @@ useEffect(() => {
 
             return (
               <>
+                {canAccess('search') && (
+                  <NavLink to="/search" onClick={() => setNavOpen(false)}>
+                    {t('search', { ns: 'navigation', defaultValue: 'Search' })}
+                  </NavLink>
+                )}
                 {sectionHeader('sales', t('salesCashFlow'), true)}
                 {!collapsed['sales'] && (<>
                 {canAccess('dashboard') && (
@@ -1131,6 +1138,7 @@ useEffect(() => {
                     <Route path="/supplier-orders/:id/edit" element={<EditOrderSupplier />} />
                   </>
                 )}
+                {hasFeature('search') && <Route path="/search" element={<Search />} />}
                 {hasFeature('costs') && <Route path="/costs/new" element={<NewCost />} />}
                 {hasFeature('cash-management') && <Route path="/cash/money-in-out" element={<CashManagementPage />} />}
                 {hasFeature('cash-overview') && <Route path="/cash/overview" element={<CashOverviewPage />} />}

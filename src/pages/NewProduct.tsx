@@ -1,11 +1,11 @@
 // src/pages/NewProduct.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createProduct, listProducts, listProductCategories, createProductCategory, listCoverageProducts, type ProductWithCost, type CoverageProduct, getAuthHeaders } from '../lib/api'
 import AddOnProductForm from './AddOnProductForm'
 import { ImagePicker } from '../components/ImagePicker'
-import ProductDetailModal from '../components/ProductDetailModal'
+import SearchProductsCard from '../components/SearchProductsCard'
 import { formatDate } from '../lib/time'
 import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
@@ -31,11 +31,9 @@ export default function NewProduct() {
   )
 
   const [formOpen, setFormOpen] = useState(false)
-  const [listOpen, setListOpen] = useState(false)
-  const [listCategory, setListCategory] = useState<'product' | 'service' | 'addon'>('product')
+  const [addonOpen, setAddonOpen] = useState(false)
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
-  const [loadingList, setLoadingList] = useState(false)
   const [coverageProducts, setCoverageProducts] = useState<CoverageProduct[]>([])
   const [loadingCoverage, setLoadingCoverage] = useState(false)
   const [editingCoverage, setEditingCoverage] = useState<CoverageProduct | null>(null)
@@ -69,19 +67,7 @@ export default function NewProduct() {
   const [showHistorical, setShowHistorical] = useState(false)
   const [historicalCosts, setHistoricalCosts] = useState<HistoricalCost[]>([])
   const [loadingHistorical, setLoadingHistorical] = useState(false)
-  const [showImages, setShowImages] = useState(false)
-  const [detailProduct, setDetailProduct] = useState<ProductWithCost | null>(null)
-  const [productSearch, setProductSearch] = useState('')
-  const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
-  // Filter out specific products and apply category filter
-  const filteredProducts = useMemo(() => {
-    const excludedNames = ['boutiq', 'perfect day_2', 'muha meds', 'clouds', 'mix pack', 'bodega boys', 'hex fuel']
-    return products.filter(p =>
-      !excludedNames.includes(p.name.toLowerCase()) &&
-      (p.category ?? 'product') === listCategory
-    )
-  }, [products, listCategory])
 
   function parseCostInput(s: string) {
     return s.replace(/[^\d.,]/g, '')
@@ -120,14 +106,8 @@ export default function NewProduct() {
   }
 
   async function loadProducts() {
-    try {
-      setLoadingList(true)
-      const { products: raw } = await listProducts()
-      const rows = raw.slice().sort((a, b) => a.name.localeCompare(b.name))
-      setProducts(rows)
-    } finally {
-      setLoadingList(false)
-    }
+    const { products: raw } = await listProducts()
+    setProducts(raw.slice().sort((a, b) => a.name.localeCompare(b.name)))
   }
 
   async function loadHistoricalCosts() {
@@ -269,35 +249,8 @@ export default function NewProduct() {
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
-  const searchFilteredProducts = useMemo(() => {
-    const q = productSearch.trim().toLowerCase()
-    if (!q) return filteredProducts
-    return filteredProducts.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      (p.variant ?? '').toLowerCase().includes(q) ||
-      (p.variant_2 ?? '').toLowerCase().includes(q) ||
-      (p.sku ?? '').toLowerCase().includes(q)
-    )
-  }, [filteredProducts, productSearch])
-
-  const sortedForTable = useMemo(() => {
-    const prods = searchFilteredProducts
-    const uncategorized = prods.filter(p => !p.product_category).sort((a, b) => a.name.localeCompare(b.name))
-    const cats = [...new Set(prods.filter(p => p.product_category).map(p => p.product_category!))].sort((a, b) => a.localeCompare(b))
-    type Entry = { type: 'row'; product: ProductWithCost } | { type: 'header'; cat: string }
-    return [
-      ...uncategorized.map(p => ({ type: 'row' as const, product: p })),
-      ...cats.flatMap(cat => [
-        { type: 'header' as const, cat },
-        ...prods.filter(p => p.product_category === cat).sort((a, b) => a.name.localeCompare(b.name)).map(p => ({ type: 'row' as const, product: p })),
-      ]),
-    ] as Entry[]
-  }, [searchFilteredProducts])
-
-  // Group historical costs by product, filtered to match the active list tab
+  // Group historical costs by product
   const groupedHistorical = historicalCosts.reduce((acc, item) => {
-    const prod = products.find(p => p.id === item.product_id)
-    if ((prod?.category ?? 'product') !== listCategory) return acc
     if (!acc[item.product_name]) acc[item.product_name] = []
     acc[item.product_name].push(item)
     return acc
@@ -660,214 +613,91 @@ export default function NewProduct() {
 
     </div>
 
-    {/* ---- Product costs card ---- */}
+    {/* ---- All Products / Services search ---- */}
+    <SearchProductsCard />
+
+    {/* ---- Add-on Products card ---- */}
     <div className="card page-normal" style={{ marginTop: 16 }}>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', alignItems:'center', gap:8, marginBottom: listOpen ? 4 : 0 }}>
-          <div
-            onClick={() => setListOpen(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
-          >
-            <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
-            <h3 style={{ margin: 0 }}>
-              {listCategory === 'addon' ? t('products.allAddOnProducts') : listCategory === 'service' ? t('products.allServices') : t('products.allProducts')}
-            </h3>
-          </div>
-          {listOpen && listCategory !== 'addon' && (
-            <button
-              className="primary"
-              onClick={() => setShowHistorical(!showHistorical)}
-              style={{ height: BTN_H, minWidth: 140 }}
-            >
-              {showHistorical ? t('products.currentCosts') : t('products.historicalCosts')}
-            </button>
-          )}
-        </div>
-        {listOpen && (
-          <div style={{ display: 'flex', gap: 4, marginBottom: 8, borderBottom: '1px solid var(--separator, var(--border))' }}>
-            {([
-              { key: 'product', label: t('products.allProducts') },
-              { key: 'service', label: t('products.allServices') },
-              { key: 'addon', label: t('products.allAddOnProducts') },
-            ] as const).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => { setListCategory(key); setProductSearch('') }}
-                style={{
-                  background: 'none', border: 'none', fontSize: 14,
-                  padding: '6px 14px 10px', marginBottom: -1, cursor: 'pointer',
-                  borderBottom: listCategory === key ? '2px solid var(--primary)' : '2px solid transparent',
-                  color: listCategory === key ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontWeight: listCategory === key ? 600 : 400,
-                }}
-              >{label}</button>
-            ))}
-          </div>
-        )}
-        {listOpen && listCategory !== 'addon' && !showHistorical && (
-          <div style={{ marginBottom: 8 }}>
-            <input
-              type="text"
-              placeholder={listCategory === 'service' ? 'Search by name…' : 'Search by name, variant, SKU…'}
-              value={productSearch}
-              onChange={e => setProductSearch(e.target.value)}
-              style={{ width: '100%' }}
-            />
-            <button
-              onClick={() => setShowImages(v => !v)}
-              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', marginTop: 6 }}
-            >
-              {showImages ? t('products.hideImages') : t('products.showImages')}
-            </button>
-          </div>
-        )}
-
-        {/* ── Add On Products list ── */}
-        {listOpen && listCategory === 'addon' && (
-          loadingCoverage ? (
-            <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>{t('loading')}</div>
-          ) : coverageProducts.length === 0 ? (
-            <div style={{ opacity: 0.7, fontSize: 14, marginTop: 8 }}>{t('coverage.noProducts')}</div>
-          ) : (
-            <div style={{ marginTop: 8 }}>
-              {coverageProducts.map(p => (
-                <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
-                        {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
-                        {p.coverage_issuer_type && <span>{p.coverage_issuer_type === 'manufacturer' ? t('coverage.issuerManufacturer') : p.coverage_issuer_type === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
-                        {p.coverage_ref && (
-                          p.coverage_ref.startsWith('http')
-                            ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
-                            : <span>{p.coverage_ref}</span>
-                        )}
-                        {p.price_amount != null && <span>{fmtMoney(p.price_amount)}</span>}
-                      </div>
+      <div
+        onClick={() => setAddonOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: addonOpen ? 8 : 0 }}
+      >
+        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{addonOpen ? '▼' : '▶'}</span>
+        <h3 style={{ margin: 0 }}>{t('products.allAddOnProducts')}</h3>
+      </div>
+      {addonOpen && (
+        loadingCoverage ? (
+          <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
+        ) : coverageProducts.length === 0 ? (
+          <div style={{ opacity: 0.7, fontSize: 14 }}>{t('coverage.noProducts')}</div>
+        ) : (
+          <div>
+            {coverageProducts.map(p => (
+              <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                      {p.coverage_duration_days != null && <span>{p.coverage_duration_days}d</span>}
+                      {p.coverage_issuer_type && <span>{p.coverage_issuer_type === 'manufacturer' ? t('coverage.issuerManufacturer') : p.coverage_issuer_type === 'shop' ? t('coverage.issuerShop') : t('coverage.issuerThirdParty')}{p.coverage_issuer_name ? ` — ${p.coverage_issuer_name}` : ''}</span>}
+                      {p.coverage_ref && (
+                        p.coverage_ref.startsWith('http')
+                          ? <a href={p.coverage_ref} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>{p.coverage_ref}</a>
+                          : <span>{p.coverage_ref}</span>
+                      )}
+                      {p.price_amount != null && <span>{fmtMoney(p.price_amount)}</span>}
                     </div>
-                    <button
-                      onClick={() => { setEditingCoverage(p); setFormOpen(true); setCategory('addon') }}
-                      style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
-                    >
-                      {t('edit')}
-                    </button>
                   </div>
+                  <button
+                    onClick={() => { setEditingCoverage(p); setFormOpen(true); setCategory('addon') }}
+                    style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
+                  >
+                    {t('edit')}
+                  </button>
                 </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* ── Products / Services: current costs ── */}
-        {listOpen && listCategory !== 'addon' && !showHistorical && (
-          <div style={{ overflowX: 'auto', marginTop: 4 }}>
-            {loadingList ? (
-              <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
-            ) : searchFilteredProducts.length === 0 ? (
-              <div style={{ opacity: 0.7, fontSize: 14 }}>{productSearch.trim() ? 'No products match your search.' : t('products.noProducts')}</div>
-            ) : (
-              <table style={{ width: '100%', minWidth: showImages ? 440 : undefined, borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    {showImages && <th style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', width: 48 }} />}
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 0', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>{t('name')}</th>
-                    {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant</th>}
-                    {listCategory === 'product' && showVariant && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>Variant 2</th>}
-                    {listCategory === 'product' && showUnitTracking && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'left', whiteSpace: 'nowrap' }}>{t('products.unitTracking')}</th>}
-                    {listCategory === 'service' && <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.duration')}</th>}
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{t('products.servicePrice')}</th>
-                    <th style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, padding: '4px 0 4px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', whiteSpace: 'nowrap' }}>{listCategory === 'service' ? t('products.directServiceCost') : labelProductCost}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedForTable.map((entry) =>
-                    entry.type === 'header' ? (
-                      <tr key={`hdr-${entry.cat}`}>
-                        <td colSpan={(showImages ? 1 : 0) + 1 + (listCategory === 'product' ? (showVariant ? 2 : 0) + (showUnitTracking ? 1 : 0) : 1) + 2} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', padding: '10px 0 2px', letterSpacing: '0.04em', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{entry.cat}</td>
-                      </tr>
-                    ) : (
-                      <tr key={entry.product.id} onClick={() => setDetailProduct(entry.product)} style={{ cursor: 'pointer' }}>
-                        {showImages && (
-                          <td style={{ padding: '4px 8px 4px 0', borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
-                            {entry.product.has_image
-                              ? <img src={`${BASE}/.netlify/functions/serve-product-image?id=${entry.product.id}`} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
-                              : <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--border)' }} />
-                            }
-                          </td>
-                        )}
-                        <td style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{entry.product.name}</td>
-                        {listCategory === 'product' && showVariant && (
-                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant ? undefined : 'var(--text-secondary)' }}>{entry.product.variant || '—'}</td>
-                        )}
-                        {listCategory === 'product' && showVariant && (
-                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', color: entry.product.variant_2 ? undefined : 'var(--text-secondary)' }}>{entry.product.variant_2 || '—'}</td>
-                        )}
-                        {listCategory === 'product' && showUnitTracking && (
-                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                            {entry.product.unit_tracking === 'on_promote' ? t('products.unitTrackingOnPromote')
-                              : entry.product.unit_tracking === 'serialized_intake' ? t('products.unitTrackingSerializedIntake')
-                              : t('products.unitTrackingNone')}
-                          </td>
-                        )}
-                        {listCategory === 'service' && (
-                          <td style={{ fontSize: 13, padding: '6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                            {entry.product.duration_minutes != null ? `${entry.product.duration_minutes} min` : '—'}
-                          </td>
-                        )}
-                        <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{entry.product.price_amount != null ? fmtMoney(entry.product.price_amount) : '—'}</td>
-                        <td style={{ fontSize: 13, padding: '6px 0 6px 8px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                          {entry.product.cost_method && entry.product.cost_method !== 'manual' && (
-                            <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>
-                              {entry.product.cost_method === 'last_purchase' ? 'last' : entry.product.cost_method.replace('avg_', 'avg ')}
-                            </span>
-                          )}
-                          {fmtMoney(entry.product.cost ?? 0, 3)}
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-
-        {/* ── Products / Services: historical costs ── */}
-        {listOpen && listCategory !== 'addon' && showHistorical && (
-          <div role="list" aria-busy={loadingHistorical} style={{ display: 'grid', gap: 12, marginTop: 4 }}>
-            {loadingHistorical && <div>{t('loading')}</div>}
-            {!loadingHistorical && historicalCosts.length === 0 && (
-              <div style={{ opacity: 0.7 }}>{t('products.noHistoricalCosts')}</div>
-            )}
-            {!loadingHistorical && Object.keys(groupedHistorical).sort().map(productName => (
-              <div key={productName} style={{ borderBottom: '2px solid var(--border)', paddingBottom: 8 }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>{productName}</div>
-                {groupedHistorical[productName]
-                  .sort((a, b) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime())
-                  .map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px auto', alignItems: 'center', padding: '4px 0 4px 16px', gap: 12, fontSize: 14, opacity: 0.9 }}>
-                      <div className="helper">{formatDate(item.effective_from)}</div>
-                      <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {item.source === 'supplier_avg' && (() => {
-                          const method = products.find(p => p.id === item.product_id)?.cost_method
-                          const label = method === 'last_purchase' ? 'last' : method?.replace('avg_', 'avg ') ?? 'avg'
-                          return <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>{label}</span>
-                        })()}
-                        {fmtMoney(item.cost, 3)}
-                      </div>
-                    </div>
-                  ))}
               </div>
             ))}
           </div>
-        )}
+        )
+      )}
     </div>
-    <ProductDetailModal
-      product={detailProduct}
-      onClose={() => setDetailProduct(null)}
-      pageFields={pageFields}
-      labelProductCost={labelProductCost}
-    />
+
+    {/* ---- Historical Costs card ---- */}
+    <div className="card page-normal" style={{ marginTop: 16 }}>
+      <div
+        onClick={() => setShowHistorical(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: showHistorical ? 8 : 0 }}
+      >
+        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{showHistorical ? '▼' : '▶'}</span>
+        <h3 style={{ margin: 0 }}>{t('products.historicalCosts')}</h3>
+      </div>
+      {showHistorical && (
+        <div role="list" aria-busy={loadingHistorical} style={{ display: 'grid', gap: 12, marginTop: 4 }}>
+          {loadingHistorical && <div>{t('loading')}</div>}
+          {!loadingHistorical && historicalCosts.length === 0 && <div style={{ opacity: 0.7 }}>{t('products.noHistoricalCosts')}</div>}
+          {!loadingHistorical && Object.keys(groupedHistorical).sort().map(productName => (
+            <div key={productName} style={{ borderBottom: '2px solid var(--border)', paddingBottom: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{productName}</div>
+              {groupedHistorical[productName]
+                .sort((a, b) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime())
+                .map((item, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px auto', alignItems: 'center', padding: '4px 0 4px 16px', gap: 12, fontSize: 14, opacity: 0.9 }}>
+                    <div className="helper">{formatDate(item.effective_from)}</div>
+                    <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      {item.source === 'supplier_avg' && (() => {
+                        const method = products.find(p => p.id === item.product_id)?.cost_method
+                        const label = method === 'last_purchase' ? 'last' : method?.replace('avg_', 'avg ') ?? 'avg'
+                        return <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 10, background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #2563eb)', fontWeight: 600, marginRight: 6 }}>{label}</span>
+                      })()}
+                      {fmtMoney(item.cost, 3)}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
     </>
   )
 }

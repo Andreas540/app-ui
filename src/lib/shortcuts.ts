@@ -8,6 +8,7 @@ export const DEFAULT_SHORTCUTS: FeatureId[] = []
 
 // Maps each feature ID to its key in the 'navigation' i18n namespace
 export const FEATURE_NAV_KEY: Record<string, string> = {
+  'search':               'search',
   'dashboard':            'mainDashboard',
   'customers':            'customers',
   'orders':               'newOrder',

@@ -50,15 +50,20 @@ type PurchaseOrder = {
 
 type Tab = 'po' | 'supplier'
 
+const BASE_ORDERS = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
 interface SearchOrdersCardProps {
-  suppliers: Supplier[]
+  suppliers?: Supplier[]
+  defaultOpen?: boolean
+  hideHeader?: boolean
 }
 
-export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
+export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen = false, hideHeader = false }: SearchOrdersCardProps) {
   const { t } = useTranslation()
   const { fmtMoney, fmtNumber } = useCurrency()
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen || hideHeader)
+  const [suppliers, setSuppliers] = useState<Supplier[]>(suppliersProp ?? [])
   const [tab, setTab] = useState<Tab>('po')
 
   // PO state
@@ -100,6 +105,15 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
   }
 
   // Fetch all POs once when the card opens
+  // Fetch suppliers internally if not provided as a prop
+  useEffect(() => {
+    if (suppliersProp != null) return
+    fetch(`${BASE_ORDERS}/api/suppliers`, { cache: 'no-store', headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.suppliers && setSuppliers(d.suppliers.map((s: any) => ({ id: s.id, name: s.name }))))
+      .catch(() => {})
+  }, [suppliersProp])
+
   useEffect(() => {
     if (!open || fetchedRef.current) return
     fetchedRef.current = true
@@ -162,14 +176,15 @@ export default function SearchOrdersCard({ suppliers }: SearchOrdersCardProps) {
 
   return (
     <div className="card page-normal" style={{ marginTop: 12 }}>
-      {/* Header */}
-      <div
-        onClick={() => setOpen(v => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
-      >
-        <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{open ? '▼' : '▶'}</span>
-        <h3 style={{ margin: 0 }}>Search Orders</h3>
-      </div>
+      {!hideHeader && (
+        <div
+          onClick={() => setOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{open ? '▼' : '▶'}</span>
+          <h3 style={{ margin: 0 }}>Search Orders</h3>
+        </div>
+      )}
 
       {open && (
         <div style={{ marginTop: 14 }}>
