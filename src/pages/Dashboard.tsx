@@ -1112,22 +1112,22 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                   )}
                 </div>
 
-                {/* Date picker row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                    {t('bookingDashboard.chooseDate', 'Choose date')}:
-                  </label>
-                  <input
-                    type="date"
-                    value={bkSelectedDate}
-                    onChange={e => { if (e.target.value) handleBkDateClick(e.target.value) }}
-                    style={{ fontSize: 16, flex: 1, minWidth: 0 }}
-                  />
-                  {!bkDateLoading && bkSelectedDate && (
-                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                      {bkDateList.length} {t('bookingDashboard.bookings', 'bookings')}
-                    </span>
-                  )}
+                {/* Date picker */}
+                <div style={{ marginBottom: 14 }}>
+                  <label>{t('bookingDashboard.chooseDate', 'Choose date')}</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input
+                      type="date"
+                      value={bkSelectedDate}
+                      onChange={e => { if (e.target.value) handleBkDateClick(e.target.value) }}
+                      style={{ flex: 1, minWidth: 0 }}
+                    />
+                    {!bkDateLoading && bkSelectedDate && (
+                      <span className="helper" style={{ whiteSpace: 'nowrap' }}>
+                        {bkDateList.length} {t('bookingDashboard.bookings', 'bookings')}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Booking list */}

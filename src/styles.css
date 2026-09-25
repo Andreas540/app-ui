@@ -417,6 +417,7 @@ label {
 
 input, select, textarea {
   width: 100%;
+  /* --control-h must stay ≥ font-size(16px) + vertical-padding(20px) = 36px to prevent text cutoff */
   height: var(--control-h);
   font-size: 16px; /* Prevents iOS zoom */
   padding: 10px 12px;
@@ -485,9 +486,19 @@ input[type="date"] {
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+/* Dark mode: browser renders icon dark by default — invert to make it visible on dark backgrounds */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.8;
+  }
+}
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.8;
-  cursor: pointer;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
