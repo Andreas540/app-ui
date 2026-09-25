@@ -97,6 +97,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   const fetchedRef = useRef(false)
   const [includeCompleted, setIncludeCompleted] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [docLoadingId, setDocLoadingId] = useState<string | null>(null)
 
   // Inline edit state
   const [editingPoId, setEditingPoId] = useState<string | null>(null)
@@ -248,6 +249,33 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
       alert(e.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function fetchAndOpenDoc(poId: string) {
+    setDocLoadingId(poId)
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/.netlify/functions/purchase-orders?action=get_doc&id=${poId}`, {
+        headers: getAuthHeaders(),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load document')
+      // doc_data is a base64 data URL — convert to blob and open in new tab
+      const dataUrl: string = data.doc_data
+      const [meta, b64] = dataUrl.split(',')
+      const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
+      const binary = atob(b64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const blob = new Blob([bytes], { type: mime })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setDocLoadingId(null)
     }
   }
 
@@ -558,6 +586,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                 {po.remaining_amount != null ? fmtMoney(po.remaining_amount) : '—'}
                               </td>
                               <td style={{ padding: '7px 0 7px 4px', textAlign: 'right', color: 'var(--text-secondary)', fontSize: 11 }}>
+                                {po.doc_name && <span title={po.doc_name} style={{ marginRight: 4 }}>📎</span>}
                                 {isExpanded ? '▲' : '▼'}
                               </td>
                             </tr>
@@ -662,7 +691,14 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                           )}
                                           {po.doc_name && (
                                             <div style={{ fontSize: 12 }}>
-                                              <span style={{ color: 'var(--text-secondary)' }}>Document: </span>{po.doc_name}
+                                              <span style={{ color: 'var(--text-secondary)' }}>Document: </span>
+                                              <button
+                                                onClick={e => { e.stopPropagation(); fetchAndOpenDoc(po.id) }}
+                                                disabled={docLoadingId === po.id}
+                                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline', fontSize: 12 }}
+                                              >
+                                                {docLoadingId === po.id ? 'Opening…' : po.doc_name}
+                                              </button>
                                             </div>
                                           )}
                                         </div>

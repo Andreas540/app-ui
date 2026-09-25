@@ -5,7 +5,11 @@ import { withErrorLogging } from './utils/with-error-logging.mjs'
 
 export const handler = withErrorLogging('purchase-orders', async (event) => {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
-  if (event.httpMethod === 'GET')    return list(event)
+  if (event.httpMethod === 'GET') {
+    const action = event.queryStringParameters?.action
+    if (action === 'get_doc') return getDoc(event)
+    return list(event)
+  }
   if (event.httpMethod === 'POST')   return create(event)
   if (event.httpMethod === 'PUT')    return update(event)
   if (event.httpMethod === 'DELETE') return remove(event)
@@ -150,6 +154,30 @@ async function list(event) {
     ORDER BY po.created_at DESC
   `
   return cors(200, { purchase_orders: pos })
+}
+
+async function getDoc(event) {
+  const { neon } = await import('@neondatabase/serverless')
+  const { DATABASE_URL } = process.env
+  if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
+  const sql = neon(DATABASE_URL)
+  const authz = await resolveAuthz({ sql, event })
+  if (authz.error) return cors(403, { error: authz.error })
+
+  const id = event.queryStringParameters?.id
+  if (!id) return cors(400, { error: 'id required' })
+
+  const rows = await sql`
+    SELECT doc_data, doc_name
+    FROM purchase_orders
+    WHERE id = ${id}::uuid
+      AND tenant_id = ${authz.tenantId}::uuid
+    LIMIT 1
+  `
+  if (rows.length === 0) return cors(404, { error: 'PO not found' })
+  if (!rows[0].doc_data) return cors(404, { error: 'No document attached' })
+
+  return cors(200, { doc_data: rows[0].doc_data, doc_name: rows[0].doc_name })
 }
 
 async function create(event) {
