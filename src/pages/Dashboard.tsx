@@ -1043,13 +1043,13 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                       <div>
                         <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.customerPrice')}</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>
                           {pcData.customer_price == null ? '—' : fmtMoney(pcData.customer_price)}
                         </div>
                       </div>
                       <div>
                         <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.priceLastTime')}</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>
                           {pcData.price_last_time == null ? '—' : fmtMoney(pcData.price_last_time)}
                         </div>
                         {pcCustomerId === 'all' && pcData.last_sale_customer && (
@@ -1062,7 +1062,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                       </div>
                       <div>
                         <div className="helper" style={{ marginBottom: 4 }}>{t('priceChecker.averagePrice')}</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>
                           {pcData.average_price == null ? '—' : fmtMoney(pcData.average_price)}
                         </div>
                         <div className="helper" style={{ marginTop: 4 }}>
