@@ -763,12 +763,10 @@ useEffect(() => {
       <div className="layout">
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           {(() => {
-            // SuperAdmin with tenant selected gets access to ALL features
-            const superAdminWithTenant = user?.role === 'super_admin' && user?.tenantId
             const hiddenNav: Set<string> = (() => {
               try { return new Set<string>(JSON.parse(localStorage.getItem('userSettings') || '{}').hiddenNavItems || []) } catch { return new Set<string>() }
             })()
-            const canAccess = (featureId: string) => (hasFeature(featureId as any) || !!superAdminWithTenant) && !hiddenNav.has(featureId)
+            const canAccess = (featureId: string) => hasFeature(featureId as any) && !hiddenNav.has(featureId)
 
             if (user?.businessType === 'physical_store') {
               return (

@@ -217,7 +217,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasFeature = (featureId: FeatureId): boolean => {
     if (!user) return false
-    if (user.role === 'super_admin' && user.tenantId) return true
     if (user.role === 'super_admin' && !user.tenantId) return false
     return user.features?.includes(featureId) || false
   }
