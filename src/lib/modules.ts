@@ -1,5 +1,6 @@
 import type { FeatureId, ModuleId } from './features'
 import { AVAILABLE_FEATURES } from './features'
+import { NAV_ITEMS } from './navItems'
 
 export interface ModuleDef {
   id: ModuleId
@@ -11,9 +12,13 @@ export interface ModuleDef {
 }
 
 const ALL_FEATURES = Object.values(AVAILABLE_FEATURES)
+const NAV_ORDER = new Map(NAV_ITEMS.map((n, i) => [n.id, i]))
 
 function featuresForModule(moduleId: ModuleId): FeatureId[] {
-  return ALL_FEATURES.filter(f => f.module === moduleId).map(f => f.id) as FeatureId[]
+  return ALL_FEATURES
+    .filter(f => f.module === moduleId)
+    .sort((a, b) => (NAV_ORDER.get(a.id) ?? 999) - (NAV_ORDER.get(b.id) ?? 999))
+    .map(f => f.id) as FeatureId[]
 }
 
 export const MODULES: ModuleDef[] = [
