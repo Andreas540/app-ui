@@ -12,7 +12,6 @@ interface TenantUser {
   id: string
   name: string
   email: string
-  access_level: string
   role: string
 }
 
@@ -124,7 +123,7 @@ export default function TenantSwitcher() {
   const selectedTenant = tenants.find(t => t.id === activeTenantId)
   const impersonating = user?.impersonatingUser
   const selectedUser = tenantUsers.find(u => u.id === activeUserId) ?? (
-    impersonating ? { id: impersonating.id, name: impersonating.name, email: impersonating.email, role: impersonating.role, access_level: '' } : null
+    impersonating ? { id: impersonating.id, name: impersonating.name, email: impersonating.email, role: impersonating.role } : null
   )
 
   return (
@@ -174,7 +173,7 @@ export default function TenantSwitcher() {
                 <option value="">— Admin view —</option>
                 {tenantUsers.map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.name} ({u.role === 'tenant_admin' ? 'Admin' : 'User'}{u.access_level === 'inventory' ? ', Inventory' : ''})
+                    {u.name} ({u.role === 'tenant_admin' ? 'Admin' : 'User'})
                   </option>
                 ))}
               </select>

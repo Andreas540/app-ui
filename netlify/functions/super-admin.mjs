@@ -49,18 +49,19 @@ async function handleGet(event) {
     if (action === 'listTenantUsers') {
       const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
       if (!tenantId) return cors(400, { error: 'tenantId required' })
+      // Include users via tenant_memberships (multi-tenant) OR via home tenant_id (primary tenant)
       const users = await sql`
-        SELECT
+        SELECT DISTINCT ON (u.id)
           u.id,
           u.name,
           u.email,
-          u.access_level,
-          tm.role
-        FROM tenant_memberships tm
-        JOIN users u ON u.id = tm.user_id
-        WHERE tm.tenant_id = ${tenantId}::uuid
+          COALESCE(tm.role, u.role) AS role
+        FROM users u
+        LEFT JOIN tenant_memberships tm
+          ON tm.user_id = u.id AND tm.tenant_id = ${tenantId}::uuid
+        WHERE (tm.tenant_id IS NOT NULL OR u.tenant_id = ${tenantId}::uuid)
           AND u.active = true
-        ORDER BY u.name ASC
+        ORDER BY u.id, u.name ASC
       `
       return cors(200, { users })
     }
