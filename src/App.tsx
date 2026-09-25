@@ -396,6 +396,10 @@ function MainApp() {
 
   const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth, pinLock, isLocked, lock } = useAuth()
 
+  // When impersonating a specific tenant user, use their role for nav/route guards
+  // so we see exactly what they see. user.role stays 'super_admin' so TenantSwitcher stays visible.
+  const effectiveRole = user?.impersonatingUser?.role ?? user?.role
+
   const [legacyUserLevel, setLegacyUserLevel] = useState<'admin' | 'inventory' | null>(
     (localStorage.getItem('userLevel') as 'admin' | 'inventory') || null
   )
@@ -621,7 +625,7 @@ useEffect(() => {
 
   const frontPageKey = getTenantConfig(user?.tenantId).frontPageKey
   const FrontPage = frontPageKey ? FRONT_PAGE_COMPONENTS[frontPageKey] : null
-  if (FrontPage && !frontPageDismissed && user?.role !== 'super_admin') {
+  if (FrontPage && !frontPageDismissed && effectiveRole !== 'super_admin') {
     return <FrontPage onContinue={() => {
       sessionStorage.setItem('frontPageDismissed', '1')
       setFrontPageDismissed(true)
@@ -1009,7 +1013,7 @@ useEffect(() => {
                     {t('contact')}
                   </NavLink>
                 )}
-                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || canAccess('tenant-admin')) && (
+                {(effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin' || canAccess('tenant-admin')) && (
                   <NavLink to="/admin" onClick={() => setNavOpen(false)}>
                     {t('accountAdmin')}
                   </NavLink>
@@ -1019,22 +1023,22 @@ useEffect(() => {
                     {t('settings')}
                   </NavLink>
                 )}
-                {user?.role === 'super_admin' && (
+                {effectiveRole === 'super_admin' && (
                   <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
                     {t('superAdmin')}
                   </NavLink>
                 )}
-                {user?.role === 'super_admin' && (
+                {effectiveRole === 'super_admin' && (
                   <NavLink to="/messages" onClick={() => setNavOpen(false)}>
                     {t('messages')}
                   </NavLink>
                 )}
-                {user?.role === 'super_admin' && (
+                {effectiveRole === 'super_admin' && (
                   <NavLink to="/tenant-customization" onClick={() => setNavOpen(false)}>
                     {t('tenantCustomization')}
                   </NavLink>
                 )}
-                {user?.role === 'super_admin' && (
+                {effectiveRole === 'super_admin' && (
                   <NavLink to="/stats-logs" onClick={() => setNavOpen(false)}>
                     Stats &amp; Logs
                   </NavLink>
@@ -1147,16 +1151,16 @@ useEffect(() => {
                 {hasFeature('simulations') && <Route path="/reports/simulations" element={<SimulationsPage />} />}
                 {hasFeature('warehouse') && <Route path="/warehouse" element={<Warehouse />} />}
                 {hasFeature('supply-chain') && <Route path="/supply-chain" element={<SupplyChainOverview />} />}
-                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
+                {(effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin' || hasFeature('tenant-admin')) && (
                   <Route path="/admin" element={<TenantAdmin />} />
                 )}
-                {(user?.role === 'tenant_admin' || user?.role === 'super_admin' || hasFeature('tenant-admin')) && (
+                {(effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin' || hasFeature('tenant-admin')) && (
                   <Route path="/admin/import/customers" element={<CustomerImportPage />} />
                 )}
-                {user?.role === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
-                {user?.role === 'super_admin' && <Route path="/tenant-customization" element={<TenantCustomization />} />}
-                {user?.role === 'super_admin' && <Route path="/messages" element={<Messages />} />}
-                {user?.role === 'super_admin' && <Route path="/stats-logs" element={<StatsLogs />} />}
+                {effectiveRole === 'super_admin' && <Route path="/super-admin" element={<SuperAdmin />} />}
+                {effectiveRole === 'super_admin' && <Route path="/tenant-customization" element={<TenantCustomization />} />}
+                {effectiveRole === 'super_admin' && <Route path="/messages" element={<Messages />} />}
+                {effectiveRole === 'super_admin' && <Route path="/stats-logs" element={<StatsLogs />} />}
                 {hasFeature('production') && <Route path="/labor-production" element={<LaborProduction />} />}
                 {hasFeature('time-entry') && <Route path="/time-entry" element={<TimeEntry />} />}
                 {hasFeature('employees') && <Route path="/employees" element={<EmployeeManagement />} />}
@@ -1245,7 +1249,7 @@ useEffect(() => {
       {/* ── Welcome modal ── */}
       {tiReady && showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
         const linkStyle = { textDecoration: 'underline' } as const
-        const messagePath = user?.role === 'super_admin' ? '/messages' : '/contact'
+        const messagePath = effectiveRole === 'super_admin' ? '/messages' : '/contact'
         const closeModal = () => { sessionStorage.setItem('welcomeClosed', '1'); setShowWelcomeModal(false) }
         const InfoBadge = () => (
           <span style={{
