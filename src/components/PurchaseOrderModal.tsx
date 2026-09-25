@@ -463,7 +463,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                 ) : (
                   <>
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
                       <div>Product (optional)</div>
                       <div>Qty</div>
                       <div>Unit Price</div>
