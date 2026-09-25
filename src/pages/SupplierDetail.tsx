@@ -1,6 +1,6 @@
 // src/pages/SupplierDetail.tsx
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { formatDate } from '../lib/time'
@@ -95,6 +95,7 @@ async function fetchSupplierDetail(id: string): Promise<SupplierDetail> {
 export default function SupplierDetailPage() {
   // --- Hooks (fixed, stable order) ---
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
   const showOrderNumber = config.ui.showOrderNumberInList
@@ -265,6 +266,19 @@ export default function SupplierDetailPage() {
           }}
         >
           Purchase Orders
+        </button>
+
+        <button
+          onClick={() => navigate(`/reports/timeline?supplier=${supplier.id}&showMode=supplier`)}
+          style={{
+            height: 28,
+            fontSize: 12,
+            padding: '0 10px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {t('navigation:reportsTimeline')}
         </button>
       </div>
 

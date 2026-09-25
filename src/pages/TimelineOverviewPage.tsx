@@ -1,5 +1,6 @@
 // src/pages/TimelineOverviewPage.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useLocale } from '../contexts/LocaleContext'
@@ -539,6 +540,7 @@ function segBtn(active: boolean): React.CSSProperties {
 export default function TimelineOverviewPage() {
   const { t } = useTranslation()
   const { timezone } = useLocale()
+  const [searchParams] = useSearchParams()
   const today       = todayYMD(timezone)
   const defaultFrom = addMonths(today, -1)
 
@@ -555,15 +557,18 @@ export default function TimelineOverviewPage() {
   const [viewFromDay, setViewFromDay] = useState(toDay(defaultFrom))
   const [viewToDay,   setViewToDay]   = useState(toDay(today))
 
-  // Filters
-  const [showMode,    setShowMode]    = useState<ShowMode>('both')
+  // Filters — pre-seeded from URL params when navigating from e.g. SupplierDetail
+  const initSupplier = searchParams.get('supplier')
+  const initShowMode = (searchParams.get('showMode') as ShowMode | null) ?? (initSupplier ? 'supplier' : 'both')
+
+  const [showMode,    setShowMode]    = useState<ShowMode>(initShowMode)
   const [custGroupBy, setCustGroupBy] = useState<CustGroup>('customer')
   const [suppGroupBy, setSuppGroupBy] = useState<SuppGroup>('supplier')
   const [activePreset, setActivePreset] = useState<number | 'ytd' | 'all' | 'custom'>(1)
 
   // Dropdown filters
   const [selCustomers, setSelCustomers] = useState<string[]>([])
-  const [selSuppliers, setSelSuppliers] = useState<string[]>([])
+  const [selSuppliers, setSelSuppliers] = useState<string[]>(initSupplier ? [initSupplier] : [])
   const [selProducts,  setSelProducts]  = useState<string[]>([])
 
   // Modal state
