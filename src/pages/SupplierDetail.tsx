@@ -269,6 +269,7 @@ export default function SupplierDetailPage() {
         </button>
 
         <button
+          className="primary"
           onClick={() => navigate(`/reports/timeline?supplier=${supplier.id}&showMode=supplier`)}
           style={{
             height: 28,
