@@ -23,6 +23,7 @@ interface User {
   tenant_available_languages?: string[]
   tenant_default_currency?: string | null
   tenant_default_timezone?: string | null
+  impersonatingUser?: { id: string; name: string; email: string; role: string } | null
 }
 
 export interface PinLockConfig {
@@ -107,11 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifyToken = async (tokenToVerify: string) => {
     try {
       const activeTenantId = localStorage.getItem('activeTenantId')
+      const activeUserId = localStorage.getItem('activeUserId')
       const response = await fetch('/.netlify/functions/auth-verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {})
+          ...(activeTenantId ? { 'X-Active-Tenant': activeTenantId } : {}),
+          ...(activeUserId ? { 'X-Active-User': activeUserId } : {}),
         },
         body: JSON.stringify({ token: tokenToVerify })
       })
@@ -179,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('userData')
     localStorage.removeItem('userLevel')
     localStorage.removeItem('activeTenantId')
+    localStorage.removeItem('activeUserId')
     localStorage.removeItem('pinLockConfig')
   }
 

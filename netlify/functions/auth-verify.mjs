@@ -47,17 +47,96 @@ async function handleVerify(event) {
 
     console.log('🔵 auth-verify: user:', userEmail, 'isSuperAdmin:', isSuperAdmin)
 
-    // Check for active tenant from header (for tenant switching)
-    const activeTenantId = 
-      event.headers['x-active-tenant'] || 
+    // Check for active tenant/user from headers (for tenant/user switching)
+    const activeTenantId =
+      event.headers['x-active-tenant'] ||
       event.headers['X-Active-Tenant'] ||
+      null
+
+    const activeUserId =
+      event.headers['x-active-user'] ||
+      event.headers['X-Active-User'] ||
       null
 
     // SUPERADMIN HANDLING
     if (isSuperAdmin) {
-      console.log('🟢 SuperAdmin verification, activeTenantId:', activeTenantId)
-      
-      // SuperAdmin with specific tenant (impersonation)
+      console.log('🟢 SuperAdmin verification, activeTenantId:', activeTenantId, 'activeUserId:', activeUserId)
+
+      // SuperAdmin with specific tenant AND specific user (user impersonation)
+      if (activeTenantId && activeUserId) {
+        const rows = await sql`
+          SELECT
+            u.id, u.email, u.name, u.access_level, u.active,
+            u.preferred_language, u.preferred_locale, u.preferred_currency, u.preferred_timezone,
+            tm.role, tm.features as user_features,
+            t.id::text as tenant_id, t.name as tenant_name, t.business_type,
+            t.features as tenant_features,
+            t.default_language as tenant_default_language,
+            t.default_locale as tenant_default_locale,
+            t.available_languages as tenant_available_languages,
+            t.default_currency as tenant_default_currency,
+            t.default_timezone as tenant_default_timezone,
+            t.ui_config,
+            bt.config_defaults as business_type_config
+          FROM tenant_memberships tm
+          JOIN users u ON u.id = tm.user_id
+          JOIN tenants t ON t.id = tm.tenant_id
+          LEFT JOIN business_types bt ON bt.id = t.business_type
+          WHERE tm.user_id = ${activeUserId}::uuid
+            AND tm.tenant_id = ${activeTenantId}::uuid
+          LIMIT 1
+        `
+
+        if (rows.length === 0) {
+          return cors(403, { error: 'User not found in tenant' })
+        }
+
+        const r = rows[0]
+        const tenantFeatures = r.tenant_features || []
+        const userFeatures = r.user_features !== null ? r.user_features : null
+        const effectiveFeatures = userFeatures !== null
+          ? userFeatures.filter(f => tenantFeatures.includes(f))
+          : tenantFeatures
+
+        console.log('🟢 SuperAdmin impersonating user:', r.name, 'in tenant:', r.tenant_name)
+
+        // Get SuperAdmin's own identity (name/email stay as SuperAdmin)
+        const admins = await sql`SELECT id, email, name FROM users WHERE id = ${decoded.userId} LIMIT 1`
+        const admin = admins[0]
+
+        await logActivity({ sql, event, action: 'verify_token', success: true, userId: admin.id, tenantId: r.tenant_id })
+
+        return cors(200, {
+          valid: true,
+          token: signToken({ userId: admin.id, email: admin.email, role: 'super_admin' }),
+          user: {
+            id: admin.id,
+            email: admin.email,
+            name: admin.name,
+            role: 'super_admin',
+            accessLevel: r.access_level,
+            tenantId: r.tenant_id,
+            tenantName: r.tenant_name,
+            businessType: r.business_type,
+            businessTypeConfig: r.business_type_config || {},
+            features: effectiveFeatures,
+            preferred_language: r.preferred_language,
+            preferred_locale: r.preferred_locale,
+            preferred_currency: r.preferred_currency,
+            preferred_timezone: r.preferred_timezone,
+            tenant_default_language: r.tenant_default_language,
+            tenant_default_locale: r.tenant_default_locale,
+            tenant_available_languages: r.tenant_available_languages,
+            tenant_default_currency: r.tenant_default_currency,
+            tenant_default_timezone: r.tenant_default_timezone,
+            uiConfig: r.ui_config || {},
+            impersonatingUser: { id: r.id, name: r.name, email: r.email, role: r.role },
+          },
+          pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
+        })
+      }
+
+      // SuperAdmin with specific tenant (tenant view, admin-level access)
       if (activeTenantId) {
         const tenantRows = await sql`
           SELECT
@@ -77,7 +156,7 @@ async function handleVerify(event) {
           WHERE t.id = ${activeTenantId}::uuid
           LIMIT 1
         `
-        
+
         if (tenantRows.length === 0) {
           console.log('🔴 Tenant not found:', activeTenantId)
           return cors(403, { error: 'Tenant not found' })
@@ -100,9 +179,9 @@ async function handleVerify(event) {
 
         console.log('🟢 SuperAdmin impersonating:', tenant.tenant_name)
 
-        await logActivity({ 
-          sql, 
-          event, 
+        await logActivity({
+          sql,
+          event,
           action: 'verify_token',
           success: true,
           userId: user.id,
@@ -420,7 +499,7 @@ function cors(status, body) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Active-Tenant',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Active-Tenant, X-Active-User',
     },
     body: JSON.stringify(body),
   }

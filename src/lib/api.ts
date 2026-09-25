@@ -57,11 +57,13 @@ const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 export function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('authToken')
   const activeTenant = localStorage.getItem('activeTenantId')
+  const activeUser = localStorage.getItem('activeUserId')
 
   return {
     'content-type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(activeTenant ? { 'X-Active-Tenant': activeTenant } : {})
+    ...(activeTenant ? { 'X-Active-Tenant': activeTenant } : {}),
+    ...(activeUser ? { 'X-Active-User': activeUser } : {}),
   }
 }
 

@@ -46,6 +46,25 @@ async function handleGet(event) {
       return cors(200, { businessTypes: types })
     }
 
+    if (action === 'listTenantUsers') {
+      const tenantId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('tenantId')
+      if (!tenantId) return cors(400, { error: 'tenantId required' })
+      const users = await sql`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.access_level,
+          tm.role
+        FROM tenant_memberships tm
+        JOIN users u ON u.id = tm.user_id
+        WHERE tm.tenant_id = ${tenantId}::uuid
+          AND u.active = true
+        ORDER BY u.name ASC
+      `
+      return cors(200, { users })
+    }
+
     if (action === 'listUsers') {
   const users = await sql`
     SELECT 
