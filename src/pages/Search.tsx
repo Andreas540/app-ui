@@ -10,7 +10,7 @@ type SearchType = 'customers' | 'customer_orders' | 'products' | 'supply_orders'
 const OPTIONS: Array<{ value: SearchType; label: string }> = [
   { value: 'customers',      label: 'Customers' },
   { value: 'customer_orders', label: 'Customer Orders' },
-  { value: 'products',       label: 'Products' },
+  { value: 'products',       label: 'Products/Services' },
   { value: 'supply_orders',  label: 'Supply Orders' },
 ]
 

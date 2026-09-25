@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import ManageUserModal from '../components/ManageUserModal'
 import type { FeatureId } from '../lib/features'
 import { AVAILABLE_FEATURES } from '../lib/features'
+import { getFeatureLabelKey } from '../lib/navItems'
 import { MODULES } from '../lib/modules'
 import { FRONT_PAGES } from '../lib/frontPages'
 
@@ -2448,7 +2449,7 @@ async function handleSaveStripeCustomerId() {
                                 style={{ width: 20, height: 20 }}
                               />
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 600 }}>{feature.name}</div>
+                                <div style={{ fontWeight: 600 }}>{t(getFeatureLabelKey(featureId) ?? '_', { defaultValue: feature.name })}</div>
                                 <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>{feature.route}</div>
                               </div>
                             </label>

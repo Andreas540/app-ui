@@ -20,10 +20,11 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'cash-management', section: 'cash-management', labelKey: 'cashMgmt' },
   { id: 'cash-overview',   section: 'cash-management', labelKey: 'cashOverviewLink' },
   // Reports
-  { id: 'bizwiz',           section: 'reports', labelKey: 'reportsBizWiz' },
-  { id: 'reports',          section: 'reports', labelKey: 'reportsSalesProfit' },
-  { id: 'customer-reports', section: 'reports', labelKey: 'reportsCustomers' },
-  { id: 'simulations',     section: 'reports', labelKey: 'reportsSimulations' },
+  { id: 'bizwiz',            section: 'reports', labelKey: 'reportsBizWiz' },
+  { id: 'reports',           section: 'reports', labelKey: 'reportsSalesProfit' },
+  { id: 'customer-reports',  section: 'reports', labelKey: 'reportsCustomers' },
+  { id: 'timeline-overview', section: 'reports', labelKey: 'reportsTimeline' },
+  { id: 'simulations',       section: 'reports', labelKey: 'reportsSimulations' },
   // Supply Chain
   { id: 'supply-chain',     section: 'supply',  labelKey: 'supplyDemand' },
   { id: 'production',       section: 'supply',  labelKey: 'production' },
@@ -55,6 +56,11 @@ export const NAV_SECTIONS: { id: NavItemDef['section']; labelKey: string }[] = [
   { id: 'booking', labelKey: 'bookingSection' },
   { id: 'admin',   labelKey: 'admin' },
 ]
+
+/** Returns the i18n labelKey for a feature, or undefined if it has no nav entry. */
+export function getFeatureLabelKey(featureId: string): string | undefined {
+  return NAV_ITEMS.find(n => n.id === featureId)?.labelKey
+}
 
 export function loadHiddenNavItems(): Set<string> {
   try {

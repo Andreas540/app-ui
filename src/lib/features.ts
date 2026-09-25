@@ -6,7 +6,7 @@ export const AVAILABLE_FEATURES = {
   dashboard:       { id: 'dashboard',       name: 'Dashboard',      route: '/',                   category: 'Sales',  module: 'sales' },
   customers:       { id: 'customers',       name: 'Customers',      route: '/customers',           category: 'Sales',  module: 'sales' },
   orders:          { id: 'orders',          name: 'Orders & Returns', route: '/orders/new',          category: 'Sales',  module: 'sales' },
-  payments:        { id: 'payments',        name: 'New Payment',    route: '/payments',            category: 'Sales',  module: 'sales' },
+  payments:        { id: 'payments',        name: 'Payments',       route: '/payments',            category: 'Sales',  module: 'sales' },
   partners:        { id: 'partners',        name: 'Partners',       route: '/partners',            category: 'Sales',  module: 'sales' },
   products:        { id: 'products',        name: 'Products',       route: '/products/new',        category: 'Sales',  module: 'sales' },
   'price-checker': { id: 'price-checker',   name: 'Price Checker',  route: '/price-checker',       category: 'Sales',  module: 'sales' },
