@@ -441,9 +441,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
               </div>
 
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <label style={{ margin: 0 }}>Products</label>
-                  <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
                     {segBtn('Product breakdown', mode === 'breakdown', () => setMode('breakdown'))}
                     {segBtn('Total only', mode === 'total_only', () => setMode('total_only'))}
                   </div>
@@ -464,11 +463,11 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                 ) : (
                   <>
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6 }}>
                       <div>Product (optional)</div>
-                      <div style={{ textAlign: 'right' }}>Qty</div>
-                      <div style={{ textAlign: 'right' }}>Unit Price</div>
-                      <div style={{ textAlign: 'right' }}>Total</div>
+                      <div>Qty</div>
+                      <div>Unit Price</div>
+                      <div>Total</div>
                       <div />
                     </div>
                     {lines.map((l, idx) => {
