@@ -270,8 +270,10 @@ export default function Warehouse() {
 
       setProducts(filtered)
       setMaterialProducts(matFiltered)
-      const defaultProd = filtered.find(p => p.product_kind !== 'addon') ?? filtered[0]
-      if (defaultProd) setProductId(defaultProd.id)
+      if (!prefillProductId) {
+        const defaultProd = filtered.find(p => p.product_kind !== 'addon') ?? filtered[0]
+        if (defaultProd) setProductId(defaultProd.id)
+      }
 
       await loadInventory()
     } catch (e: any) {
