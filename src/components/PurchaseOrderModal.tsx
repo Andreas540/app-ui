@@ -408,7 +408,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   return (
     <>
       <Modal isOpen={isOpen} onClose={handleClose} title={`Purchase Orders — ${supplierName}`}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Tab toggle */}
           <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
@@ -419,7 +419,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
           {/* ── New PO form ── */}
           {tab === 'new' && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
                 <div>
                   <label>PO Number</label>
                   <input
@@ -441,10 +441,12 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: 6 }}>Products</label>
-                <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 12 }}>
-                  {segBtn('Product breakdown', mode === 'breakdown', () => setMode('breakdown'))}
-                  {segBtn('Total only', mode === 'total_only', () => setMode('total_only'))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <label style={{ margin: 0 }}>Products</label>
+                  <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                    {segBtn('Product breakdown', mode === 'breakdown', () => setMode('breakdown'))}
+                    {segBtn('Total only', mode === 'total_only', () => setMode('total_only'))}
+                  </div>
                 </div>
 
                 {mode === 'total_only' ? (
@@ -461,7 +463,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 72px 100px 90px 28px', gap: 6, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>
+                    {/* Column headers */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>
                       <div>Product (optional)</div>
                       <div style={{ textAlign: 'right' }}>Qty</div>
                       <div style={{ textAlign: 'right' }}>Unit Price</div>
@@ -471,14 +474,14 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                     {lines.map((l, idx) => {
                       const total = lineTotal(l)
                       return (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 72px 100px 90px 28px', gap: 6, marginBottom: 6, alignItems: 'start' }}>
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px 28px', gap: 10, marginBottom: 10, alignItems: 'start' }}>
                           <div style={{ minWidth: 0 }}>
                             <select value={l.product_id} onChange={e => updateLine(idx, { product_id: e.target.value, match_mode: 'exact' })} style={{ height: CONTROL_H, width: '100%' }}>
                               <option value="">— Any product —</option>
                               {buildGroupOptions(products)}
                             </select>
                             {l.product_id && (
-                              <div style={{ display: 'flex', marginTop: 8, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
+                              <div style={{ display: 'flex', marginTop: 6, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
                                 <button onClick={() => updateLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? '#fff' : undefined, cursor: 'pointer' }}>Exact variant</button>
                                 <button onClick={() => updateLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? '#fff' : undefined, cursor: 'pointer' }}>Any variant</button>
                               </div>
@@ -486,14 +489,16 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                           </div>
                           <input type="text" inputMode="decimal" placeholder="0" value={l.qty} onChange={e => updateLine(idx, { qty: e.target.value })} style={{ height: CONTROL_H, textAlign: 'right' }} />
                           <input type="text" inputMode="decimal" placeholder="0.00" value={l.unit_price} onChange={e => updateLine(idx, { unit_price: e.target.value })} style={{ height: CONTROL_H, textAlign: 'right' }} />
-                          <div style={{ textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums', color: total != null ? 'var(--text)' : 'var(--text-secondary)' }}>
+                          <div style={{ height: CONTROL_H, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 13, fontVariantNumeric: 'tabular-nums', color: total != null ? 'var(--text)' : 'var(--text-secondary)' }}>
                             {total != null ? fmtMoney(total) : '—'}
                           </div>
-                          <button onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} disabled={lines.length === 1} style={{ height: CONTROL_H, padding: 0, background: 'none', border: 'none', cursor: lines.length === 1 ? 'default' : 'pointer', color: 'var(--color-error)', fontSize: 16, opacity: lines.length === 1 ? 0.3 : 1 }}>✕</button>
+                          <div style={{ height: CONTROL_H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} disabled={lines.length === 1} style={{ padding: 0, background: 'none', border: 'none', cursor: lines.length === 1 ? 'default' : 'pointer', color: 'var(--color-error)', fontSize: 16, opacity: lines.length === 1 ? 0.3 : 1, lineHeight: 1 }}>✕</button>
+                          </div>
                         </div>
                       )
                     })}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 }}>
                       <button onClick={() => setLines(prev => [...prev, blankLine()])} style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--primary)' }}>+ Add line</button>
                       {breakdownTotal > 0 && <span style={{ fontWeight: 600, fontSize: 14 }}>Total: {fmtMoney(breakdownTotal)}</span>}
                     </div>
@@ -522,7 +527,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                 <input type="text" placeholder="Internal notes..." value={notes} onChange={e => setNotes(e.target.value)} style={{ height: CONTROL_H }} />
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
                 <button className="primary" onClick={save} disabled={saving} style={{ height: CONTROL_H }}>
                   {saving ? t('saving') : t('save')}
                 </button>
