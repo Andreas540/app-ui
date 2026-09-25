@@ -1014,7 +1014,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
                   <label>{t('product')}</label>
-                  <select value={pcProductId} onChange={e => setPcProductId(e.target.value)} style={{ height: 36 }}>
+                  <select value={pcProductId} onChange={e => setPcProductId(e.target.value)}>
                     <option value="">{t('priceChecker.selectProduct')}</option>
                     <optgroup label={t('priceChecker.productsGroup')}>
                       {pcProducts.filter(p => p.product_kind !== 'addon' && p.category !== 'service').map(p => <option key={p.id} value={p.id}>{p.variant ? `${p.name} · ${p.variant}` : p.name}</option>)}
@@ -1028,7 +1028,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 </div>
                 <div>
                   <label>{t('customer')}</label>
-                  <select value={pcCustomerId} onChange={e => setPcCustomerId(e.target.value)} style={{ height: 36 }}>
+                  <select value={pcCustomerId} onChange={e => setPcCustomerId(e.target.value)}>
                     <option value="all">{t('priceChecker.allCustomers')}</option>
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
