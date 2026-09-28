@@ -377,6 +377,13 @@ export default function Dashboard() {
       .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function stepBkDate(days: number) {
+    if (!bkSelectedDate) return
+    const d = new Date(bkSelectedDate + 'T00:00:00')
+    d.setDate(d.getDate() + days)
+    handleBkDateClick(d.toISOString().slice(0, 10))
+  }
+
   async function handleBkDateClick(dateStr: string) {
     setBkSelectedDate(dateStr)
     setBkDateLoading(true)
@@ -1115,13 +1122,27 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 {/* Date picker */}
                 <div style={{ marginBottom: 14 }}>
                   <label>{t('bookingDashboard.chooseDate', 'Choose date')}</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button
+                      className="icon-btn"
+                      onClick={() => stepBkDate(-1)}
+                      disabled={!bkSelectedDate}
+                      aria-label="Previous day"
+                      style={{ fontSize: 18 }}
+                    >‹</button>
                     <input
                       type="date"
                       value={bkSelectedDate}
                       onChange={e => { if (e.target.value) handleBkDateClick(e.target.value) }}
                       style={{ flex: 1, minWidth: 0 }}
                     />
+                    <button
+                      className="icon-btn"
+                      onClick={() => stepBkDate(1)}
+                      disabled={!bkSelectedDate}
+                      aria-label="Next day"
+                      style={{ fontSize: 18 }}
+                    >›</button>
                     {!bkDateLoading && bkSelectedDate && (
                       <span className="helper" style={{ whiteSpace: 'nowrap' }}>
                         {bkDateList.length} {t('bookingDashboard.bookings', 'bookings')}
