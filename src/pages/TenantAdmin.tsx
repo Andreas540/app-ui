@@ -773,6 +773,23 @@ export default function TenantAdmin() {
     return moduleFeatures
   }
 
+  function alwaysIncludedForRole(role: string): FeatureId[] {
+    return MODULES
+      .filter(m => m.alwaysIncluded)
+      .flatMap(m => m.features)
+      .filter(f => !(f === 'tenant-admin' && role === 'tenant_user')) as FeatureId[]
+  }
+
+  function effectiveFeatureCount(u: { features: FeatureId[] | null; role: string }): number {
+    const admin = alwaysIncludedForRole(u.role)
+    if (u.features === null) return tenantFeatures.length + admin.length
+    return u.features.length + admin.length
+  }
+
+  function totalFeatureCount(role: string): number {
+    return tenantFeatures.length + alwaysIncludedForRole(role).length
+  }
+
   function isModuleFullyChecked(moduleFeatures: FeatureId[], currentFeatures: FeatureId[]): boolean {
     const available = getAvailableModuleFeatures(moduleFeatures)
     if (available.length === 0) return false
@@ -992,8 +1009,8 @@ export default function TenantAdmin() {
                   </div>
                   <div className="helper" style={{ fontSize: 12, marginTop: 2 }}>
                     {u.features === null
-                      ? t('tenantAdmin.accessAll', { count: tenantFeatures.length })
-                      : t('tenantAdmin.accessCount', { count: u.features.length, total: tenantFeatures.length })
+                      ? t('tenantAdmin.accessAll', { count: totalFeatureCount(u.role) })
+                      : t('tenantAdmin.accessCount', { count: effectiveFeatureCount(u), total: totalFeatureCount(u.role) })
                     }
                   </div>
                   {!u.active && (
