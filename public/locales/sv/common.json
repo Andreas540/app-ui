@@ -726,6 +726,8 @@
     "allAddOnProducts": "Alla tilläggsprodukter",
     "showImages": "Visa produktbilder",
     "hideImages": "Dölj produktbilder",
+    "showServiceImages": "Visa tjänstebilder",
+    "hideServiceImages": "Dölj tjänstebilder",
     "currentCosts": "Aktuella kostnader",
     "historicalCosts": "Historiska kostnader",
     "created": "Produkt skapad!",

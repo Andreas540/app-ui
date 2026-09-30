@@ -726,6 +726,8 @@
     "allAddOnProducts": "Todos los productos adicionales",
     "showImages": "Mostrar imágenes de productos",
     "hideImages": "Ocultar imágenes de productos",
+    "showServiceImages": "Mostrar imágenes de servicios",
+    "hideServiceImages": "Ocultar imágenes de servicios",
     "currentCosts": "Costos actuales",
     "historicalCosts": "Costos históricos",
     "created": "¡Producto creado!",

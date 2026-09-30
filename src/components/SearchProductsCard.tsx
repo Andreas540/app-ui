@@ -168,7 +168,10 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
                 onClick={() => setShowImages(v => !v)}
                 style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', marginTop: 6 }}
               >
-                {showImages ? t('products.hideImages') : t('products.showImages')}
+                {listCategory === 'service'
+                  ? (showImages ? t('products.hideServiceImages', 'Hide service images') : t('products.showServiceImages', 'Show service images'))
+                  : (showImages ? t('products.hideImages') : t('products.showImages'))
+                }
               </button>
             </div>
 
