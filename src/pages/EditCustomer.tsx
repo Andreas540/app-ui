@@ -8,6 +8,8 @@ import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { COUNTRIES, dialForCountry, buildPhone, parseStoredPhone, CURRENCY_TO_COUNTRY } from '../lib/countries'
+import { useLocale } from '../contexts/LocaleContext'
 
 export default function EditCustomer() {
   const { t, i18n } = useTranslation()
@@ -15,6 +17,7 @@ export default function EditCustomer() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { parseAmount, fmtInput } = useCurrency()
+  const { currency } = useLocale()
   const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   const [loading, setLoading]       = useState(true)
@@ -63,7 +66,7 @@ export default function EditCustomer() {
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
   const [specificDate, setSpecificDate] = useState<string>(todayYMD())
   const [companyName, setCompanyName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [localPhone, setLocalPhone] = useState('')
   const [email, setEmail] = useState('')
   const [smsConsent, setSmsConsent] = useState(true)
   const [address1, setAddress1] = useState('')
@@ -72,6 +75,7 @@ export default function EditCustomer() {
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
   const [country, setCountry] = useState('')
+  const dialCode = dialForCountry(country)
 
   useEffect(() => {
     (async () => {
@@ -87,7 +91,9 @@ export default function EditCustomer() {
         )
         setShippingCost(c.shipping_cost != null ? fmtInput(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
-        setPhone(c.phone || '')
+        setCountry(c.country || CURRENCY_TO_COUNTRY[currency] || '')
+        const parsed = parseStoredPhone(c.phone || '')
+        setLocalPhone(parsed.local)
         setEmail(c.email || '')
         setSmsConsent(c.sms_consent ?? true)
         setAddress1(c.address1 || '')
@@ -95,7 +101,6 @@ export default function EditCustomer() {
         setCity(c.city || '')
         setState(c.state || '')
         setPostal(c.postal_code || '')
-        setCountry(c.country || '')
         setCostOption('next')
         setSpecificDate(todayYMD())
       } catch (e:any) {
@@ -127,7 +132,7 @@ export default function EditCustomer() {
         apply_to_history: costOption === 'history',
         effective_date: costOption === 'specific' ? specificDate : undefined,
         company_name: companyName.trim() || null,
-        phone: phone.trim() || null,
+        phone: buildPhone(dialCode, localPhone) || null,
         email: email.trim() || null,
         sms_consent: smsConsent,
         address1: address1.trim() || null,
@@ -280,7 +285,14 @@ export default function EditCustomer() {
       <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
         <div>
           <label>{t('phone')}</label>
-          <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555-123-4567" />
+          <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+            {dialCode && (
+              <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 10, whiteSpace: 'nowrap', fontSize: 14, flexShrink: 0 }}>
+                {dialCode}
+              </span>
+            )}
+            <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+          </div>
         </div>
         <div>
           <label>{t('email')}</label>
@@ -320,7 +332,12 @@ export default function EditCustomer() {
         </div>
         <div>
           <label>{t('country')}</label>
-          <input value={country} onChange={e=>setCountry(e.target.value)} />
+          <select value={country} onChange={e => setCountry(e.target.value)}>
+            <option value="">—</option>
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={c.code}>{c.name} ({c.dial})</option>
+            ))}
+          </select>
         </div>
       </div>
 

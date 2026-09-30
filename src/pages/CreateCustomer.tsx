@@ -6,6 +6,8 @@ import { createCustomer, updateCustomer, type CustomerType } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { COUNTRIES, dialForCountry, buildPhone, CURRENCY_TO_COUNTRY } from '../lib/countries'
+import { useLocale } from '../contexts/LocaleContext'
 
 export default function CreateCustomer() {
   const { t, i18n } = useTranslation()
@@ -13,6 +15,7 @@ export default function CreateCustomer() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { parseAmount } = useCurrency()
+  const { currency } = useLocale()
   const tenantConfig = getTenantConfig(user?.tenantId)
   const tenantUi = tenantConfig.ui
   const directLabel = tenantConfig.labels.directLabel
@@ -31,14 +34,15 @@ export default function CreateCustomer() {
   const customInputRef = useRef<HTMLInputElement>(null)
 
   // Contact/address
-  const [phone, setPhone] = useState('')
+  const [localPhone, setLocalPhone] = useState('')
   const [email, setEmail] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
-  const [country, setCountry] = useState('')
+  const [country, setCountry] = useState(() => CURRENCY_TO_COUNTRY[currency] ?? '')
+  const dialCode = dialForCountry(country)
 
   const CONTROL_H = 44
 
@@ -66,7 +70,7 @@ export default function CreateCustomer() {
           company_name:  companyName.trim() || undefined,
           customer_type: ctype,
           shipping_cost: resolvedShipping() || 0,
-          phone:    phone.trim()    || undefined,
+          phone:    buildPhone(dialCode, localPhone) || undefined,
           address1: address1.trim() || undefined,
           address2: address2.trim() || undefined,
           city:     city.trim()     || undefined,
@@ -111,7 +115,7 @@ export default function CreateCustomer() {
       customer_type: ctype,
       shipping_cost: ship,
       company_name: companyName.trim() || undefined,
-      phone: phone.trim() || undefined,
+      phone: buildPhone(dialCode, localPhone) || undefined,
       email: email.trim() || undefined,
       address1: address1.trim() || undefined,
       address2: address2.trim() || undefined,
@@ -300,7 +304,14 @@ export default function CreateCustomer() {
       <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('phone')}</label>
-          <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} />
+          <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+            {dialCode && (
+              <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 10, whiteSpace: 'nowrap', fontSize: 14, flexShrink: 0 }}>
+                {dialCode}
+              </span>
+            )}
+            <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+          </div>
         </div>
         <div>
           <label>{t('email')}</label>
@@ -340,7 +351,12 @@ export default function CreateCustomer() {
         </div>
         <div>
           <label>{t('country')}</label>
-          <input type="text" value={country} onChange={e=>setCountry(e.target.value)} />
+          <select value={country} onChange={e => setCountry(e.target.value)}>
+            <option value="">—</option>
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={c.code}>{c.name} ({c.dial})</option>
+            ))}
+          </select>
         </div>
       </div>
 
