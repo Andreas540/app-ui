@@ -72,46 +72,51 @@ export const COUNTRIES: Country[] = [
   { code: 'MA', name: 'Morocco',             dial: '+212' },
 ]
 
-/** Best-guess country code from a tenant currency, used as a form default. */
+/** Best-guess country name from a tenant currency, used as a form default. */
 export const CURRENCY_TO_COUNTRY: Record<string, string> = {
-  USD: 'US',
-  CAD: 'CA',
-  MXN: 'MX',
-  GBP: 'GB',
-  SEK: 'SE',
-  NOK: 'NO',
-  DKK: 'DK',
-  EUR: 'DE', // fallback; EUR is multi-country
-  CHF: 'CH',
-  PLN: 'PL',
-  CZK: 'CZ',
-  HUF: 'HU',
-  RON: 'RO',
-  TRY: 'TR',
-  COP: 'CO',
-  BRL: 'BR',
-  ARS: 'AR',
-  CLP: 'CL',
-  PEN: 'PE',
-  AUD: 'AU',
-  NZD: 'NZ',
-  JPY: 'JP',
-  CNY: 'CN',
-  KRW: 'KR',
-  INR: 'IN',
-  SGD: 'SG',
-  MYR: 'MY',
-  AED: 'AE',
-  SAR: 'SA',
-  ILS: 'IL',
-  ZAR: 'ZA',
-  NGN: 'NG',
-  KES: 'KE',
-  EGP: 'EG',
-  MAD: 'MA',
+  USD: 'United States',
+  CAD: 'Canada',
+  MXN: 'Mexico',
+  GBP: 'United Kingdom',
+  SEK: 'Sweden',
+  NOK: 'Norway',
+  DKK: 'Denmark',
+  EUR: 'Germany', // fallback; EUR is multi-country
+  CHF: 'Switzerland',
+  PLN: 'Poland',
+  CZK: 'Czech Republic',
+  HUF: 'Hungary',
+  RON: 'Romania',
+  TRY: 'Turkey',
+  COP: 'Colombia',
+  BRL: 'Brazil',
+  ARS: 'Argentina',
+  CLP: 'Chile',
+  PEN: 'Peru',
+  AUD: 'Australia',
+  NZD: 'New Zealand',
+  JPY: 'Japan',
+  CNY: 'China',
+  KRW: 'South Korea',
+  INR: 'India',
+  SGD: 'Singapore',
+  MYR: 'Malaysia',
+  AED: 'UAE',
+  SAR: 'Saudi Arabia',
+  ILS: 'Israel',
+  ZAR: 'South Africa',
+  NGN: 'Nigeria',
+  KES: 'Kenya',
+  EGP: 'Egypt',
+  MAD: 'Morocco',
 }
 
-/** Returns the dial code for a given ISO country code, or '' if not found. */
+/** Returns the dial code for a given country name, or '' if not found. */
+export function dialForCountryName(name: string): string {
+  return COUNTRIES.find(c => c.name === name)?.dial ?? ''
+}
+
+/** @deprecated Use dialForCountryName. Returns the dial code for a given ISO code. */
 export function dialForCountry(code: string): string {
   return COUNTRIES.find(c => c.code === code)?.dial ?? ''
 }

@@ -6,7 +6,7 @@ import { createCustomer, updateCustomer, type CustomerType } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
-import { COUNTRIES, dialForCountry, buildPhone, CURRENCY_TO_COUNTRY } from '../lib/countries'
+import { COUNTRIES, dialForCountryName, buildPhone, CURRENCY_TO_COUNTRY, type Country } from '../lib/countries'
 import { useLocale } from '../contexts/LocaleContext'
 
 export default function CreateCustomer() {
@@ -41,8 +41,20 @@ export default function CreateCustomer() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
-  const [country, setCountry] = useState(() => CURRENCY_TO_COUNTRY[currency] ?? '')
-  const dialCode = dialForCountry(country)
+  const defaultCountry = CURRENCY_TO_COUNTRY[currency] ?? ''
+  const [country, setCountry]   = useState(defaultCountry)
+  const [dialCode, setDialCode] = useState(() => dialForCountryName(defaultCountry))
+
+  function handleCountryChange(name: string) {
+    setCountry(name)
+    setDialCode(dialForCountryName(name))
+  }
+
+  function handleDialChange(dial: string) {
+    setDialCode(dial)
+    const match = COUNTRIES.find((c: Country) => c.dial === dial)
+    if (match) setCountry(match.name)
+  }
 
   const CONTROL_H = 44
 
@@ -305,11 +317,12 @@ export default function CreateCustomer() {
         <div>
           <label>{t('phone')}</label>
           <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-            {dialCode && (
-              <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 10, whiteSpace: 'nowrap', fontSize: 14, flexShrink: 0 }}>
-                {dialCode}
-              </span>
-            )}
+            <select value={dialCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 'auto' }}>
+              <option value="">—</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.dial}>{c.dial} {c.name}</option>
+              ))}
+            </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
           </div>
         </div>
@@ -351,10 +364,10 @@ export default function CreateCustomer() {
         </div>
         <div>
           <label>{t('country')}</label>
-          <select value={country} onChange={e => setCountry(e.target.value)}>
+          <select value={country} onChange={e => handleCountryChange(e.target.value)}>
             <option value="">—</option>
             {COUNTRIES.map(c => (
-              <option key={c.code} value={c.code}>{c.name} ({c.dial})</option>
+              <option key={c.code} value={c.name}>{c.name}</option>
             ))}
           </select>
         </div>

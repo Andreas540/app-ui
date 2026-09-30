@@ -8,7 +8,7 @@ import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
 import { getTenantConfig } from '../lib/tenantConfig'
-import { COUNTRIES, dialForCountry, buildPhone, parseStoredPhone, CURRENCY_TO_COUNTRY } from '../lib/countries'
+import { COUNTRIES, dialForCountryName, buildPhone, parseStoredPhone, CURRENCY_TO_COUNTRY, type Country } from '../lib/countries'
 import { useLocale } from '../contexts/LocaleContext'
 
 export default function EditCustomer() {
@@ -74,8 +74,19 @@ export default function EditCustomer() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
-  const [country, setCountry] = useState('')
-  const dialCode = dialForCountry(country)
+  const [country,  setCountry]  = useState('')
+  const [dialCode, setDialCode] = useState('')
+
+  function handleCountryChange(name: string) {
+    setCountry(name)
+    setDialCode(dialForCountryName(name))
+  }
+
+  function handleDialChange(dial: string) {
+    setDialCode(dial)
+    const match = COUNTRIES.find((c: Country) => c.dial === dial)
+    if (match) setCountry(match.name)
+  }
 
   useEffect(() => {
     (async () => {
@@ -91,7 +102,9 @@ export default function EditCustomer() {
         )
         setShippingCost(c.shipping_cost != null ? fmtInput(c.shipping_cost) : '')
         setCompanyName(c.company_name || '')
-        setCountry(c.country || CURRENCY_TO_COUNTRY[currency] || '')
+        const loadedCountry = c.country || CURRENCY_TO_COUNTRY[currency] || ''
+        setCountry(loadedCountry)
+        setDialCode(dialForCountryName(loadedCountry))
         const parsed = parseStoredPhone(c.phone || '')
         setLocalPhone(parsed.local)
         setEmail(c.email || '')
@@ -286,11 +299,12 @@ export default function EditCustomer() {
         <div>
           <label>{t('phone')}</label>
           <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-            {dialCode && (
-              <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 10, whiteSpace: 'nowrap', fontSize: 14, flexShrink: 0 }}>
-                {dialCode}
-              </span>
-            )}
+            <select value={dialCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 'auto' }}>
+              <option value="">—</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.dial}>{c.dial} {c.name}</option>
+              ))}
+            </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
           </div>
         </div>
@@ -332,10 +346,10 @@ export default function EditCustomer() {
         </div>
         <div>
           <label>{t('country')}</label>
-          <select value={country} onChange={e => setCountry(e.target.value)}>
+          <select value={country} onChange={e => handleCountryChange(e.target.value)}>
             <option value="">—</option>
             {COUNTRIES.map(c => (
-              <option key={c.code} value={c.code}>{c.name} ({c.dial})</option>
+              <option key={c.code} value={c.name}>{c.name}</option>
             ))}
           </select>
         </div>

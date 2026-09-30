@@ -10,6 +10,7 @@ import PaymentDetailModal from '../components/PaymentDetailModal'
 import CustomerLogModal from '../components/CustomerLogModal'
 import { useAuth } from '../contexts/AuthContext'
 import { getTenantConfig } from '../lib/tenantConfig'
+import { COUNTRIES } from '../lib/countries'
 import { useCurrency } from '../lib/useCurrency'
 
 type Platform = 'ios' | 'android' | 'mac' | 'windows' | 'other'
@@ -881,7 +882,7 @@ export default function CustomerDetailPage() {
                     <>
                       {addrLine1 && <div>{addrLine1}</div>}
                       {addrLine2 && <div>{addrLine2}</div>}
-                      {customer.country && <div>{customer.country}</div>}
+                      {customer.country && <div>{COUNTRIES.find(c => c.code === customer.country)?.name ?? customer.country}</div>}
                     </>
                   ) : '—'}
                 </div>
