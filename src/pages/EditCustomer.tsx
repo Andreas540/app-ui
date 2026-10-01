@@ -8,7 +8,7 @@ import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
 import { getTenantConfig } from '../lib/tenantConfig'
-import { COUNTRIES, dialForCountryName, buildPhone, parseStoredPhone, CURRENCY_TO_COUNTRY, type Country } from '../lib/countries'
+import { COUNTRIES, buildPhone, parseStoredPhone, CURRENCY_TO_COUNTRY, type Country } from '../lib/countries'
 import { useLocale } from '../contexts/LocaleContext'
 
 export default function EditCustomer() {
@@ -74,17 +74,19 @@ export default function EditCustomer() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [postal, setPostal] = useState('')
-  const [country,  setCountry]  = useState('')
-  const [dialCode, setDialCode] = useState('')
+  const [country,        setCountry]        = useState('')
+  const [dialCountryCode, setDialCountryCode] = useState('')
+  const dialCode = COUNTRIES.find((c: Country) => c.code === dialCountryCode)?.dial ?? ''
 
   function handleCountryChange(name: string) {
     setCountry(name)
-    setDialCode(dialForCountryName(name))
+    const match = COUNTRIES.find((c: Country) => c.name === name)
+    setDialCountryCode(match?.code ?? '')
   }
 
-  function handleDialChange(dial: string) {
-    setDialCode(dial)
-    const match = COUNTRIES.find((c: Country) => c.dial === dial)
+  function handleDialChange(code: string) {
+    setDialCountryCode(code)
+    const match = COUNTRIES.find((c: Country) => c.code === code)
     if (match) setCountry(match.name)
   }
 
@@ -104,7 +106,8 @@ export default function EditCustomer() {
         setCompanyName(c.company_name || '')
         const loadedCountry = c.country || CURRENCY_TO_COUNTRY[currency] || ''
         setCountry(loadedCountry)
-        setDialCode(dialForCountryName(loadedCountry))
+        const loadedMatch = COUNTRIES.find((cc: Country) => cc.name === loadedCountry)
+        setDialCountryCode(loadedMatch?.code ?? '')
         const parsed = parseStoredPhone(c.phone || '')
         setLocalPhone(parsed.local)
         setEmail(c.email || '')
@@ -299,10 +302,10 @@ export default function EditCustomer() {
         <div>
           <label>{t('phone')}</label>
           <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-            <select value={dialCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 90 }}>
+            <select value={dialCountryCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 90 }}>
               <option value="">—</option>
               {COUNTRIES.map(c => (
-                <option key={c.code} value={c.dial}>{c.dial} {c.code}</option>
+                <option key={c.code} value={c.code}>{c.dial} {c.code}</option>
               ))}
             </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
