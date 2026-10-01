@@ -317,10 +317,10 @@ export default function CreateCustomer() {
         <div>
           <label>{t('phone')}</label>
           <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-            <select value={dialCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 'auto' }}>
+            <select value={dialCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 90 }}>
               <option value="">—</option>
               {COUNTRIES.map(c => (
-                <option key={c.code} value={c.dial}>{c.dial} {c.name}</option>
+                <option key={c.code} value={c.dial}>{c.dial} {c.code}</option>
               ))}
             </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
