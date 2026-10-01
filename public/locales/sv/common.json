@@ -293,6 +293,8 @@
     "netBalance": "Nettosaldo",
     "netBalanceInfo_p1": "Visar ditt aktuella kassaflöde. 'Totalt skyldigt av kunder' är summan av alla utestående kundsaldon. 'Totalt skyldigt till partners' är vad du är skyldig dina partners netto.",
     "netBalanceInfo_p2": "'Netto skyldigt' är skillnaden — vad som återstår till dig efter betalning av partners och leverantörer.",
+    "priceCheckerInfo_p1": "Slå upp prissättning för valfri produkt, med möjlighet att filtrera på en specifik kund. Välj en produkt för att se tre datapunkter: kundens konfigurerade pris, priset i deras senaste order, och genomsnittspriset över alla tidigare ordrar.",
+    "priceCheckerInfo_p2": "Använd detta för att snabbt kontrollera vad en kund har betalat tidigare, fånga prisinkonsekvenser eller bekräfta rätt pris innan en order läggs."
     "chartSwitchHint": "Klicka på pilarna/svep för att byta diagram.",
     "myDollars": "Nettoskuld",
     "revenueGrossProfit": "Intäkter och bruttovinst",

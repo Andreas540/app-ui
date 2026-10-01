@@ -293,6 +293,8 @@
     "netBalance": "Net balance",
     "netBalanceInfo_p1": "Shows your current cash flow position. 'Total owed by customers' is the sum of all outstanding customer balances. 'Total owed to partners' is what you owe your partners in net.",
     "netBalanceInfo_p2": "'Net owed' is the difference — what is left for you after paying partners and suppliers.",
+    "priceCheckerInfo_p1": "Look up pricing for any product, optionally filtered to a specific customer. Select a product to see three data points: the customer's configured price, the price charged in their most recent order, and the average price across all past orders.",
+    "priceCheckerInfo_p2": "Use this to quickly check what a customer has paid before, catch pricing inconsistencies, or confirm the right price before placing an order."
     "chartSwitchHint": "Click arrows/swipe to switch chart.",
     "myDollars": "Net owed",
     "revenueGrossProfit": "Revenue & Gross profit",
