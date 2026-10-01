@@ -359,7 +359,7 @@ export default function EditCustomer() {
           <label>{t('country')}</label>
           <select value={country} onChange={e => handleCountryChange(e.target.value)}>
             <option value="">—</option>
-            {COUNTRIES.map(c => (
+            {[...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name)).map(c => (
               <option key={c.code} value={c.name}>{c.name}</option>
             ))}
           </select>
