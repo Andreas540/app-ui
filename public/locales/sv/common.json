@@ -291,7 +291,7 @@
     "owedToPartners": "Totalt skyldigt till partners",
     "owedToSuppliers": "Totalt skyldigt till leverantörer",
     "netBalance": "Nettosaldo",
-    "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "netBalanceInfo": "Visar ditt aktuella kassaflöde. 'Totalt skyldigt av kunder' är summan av alla utestående kundsaldon. 'Totalt skyldigt till partners' är vad du är skyldig dina partners netto. 'Netto skyldigt' är skillnaden — vad som återstår till dig efter betalning av partners och leverantörer.",
     "chartSwitchHint": "Klicka på pilarna/svep för att byta diagram.",
     "myDollars": "Nettoskuld",
     "revenueGrossProfit": "Intäkter och bruttovinst",

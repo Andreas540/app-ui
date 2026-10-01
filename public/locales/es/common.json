@@ -291,7 +291,7 @@
     "owedToPartners": "Total adeudado a socios",
     "owedToSuppliers": "Total adeudado a proveedores",
     "netBalance": "Saldo neto",
-    "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "netBalanceInfo": "Muestra tu posición actual de flujo de caja. 'Total adeudado por clientes' es la suma de todos los saldos pendientes de clientes. 'Total adeudado a socios' es lo que debes a tus socios en términos netos. 'Neto adeudado' es la diferencia — lo que te queda después de pagar a socios y proveedores.",
     "chartSwitchHint": "Haz clic en las flechas/desliza para cambiar el gráfico.",
     "myDollars": "Neto adeudado",
     "revenueGrossProfit": "Ingresos y ganancia bruta",

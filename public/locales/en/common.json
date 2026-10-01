@@ -291,7 +291,7 @@
     "owedToPartners": "Total owed to partners",
     "owedToSuppliers": "Total owed to suppliers",
     "netBalance": "Net balance",
-    "netBalanceInfo": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "netBalanceInfo": "Shows your current cash flow position. 'Total owed by customers' is the sum of all outstanding customer balances. 'Total owed to partners' is what you owe your partners in net. 'Net owed' is the difference — what is left for you after paying partners and suppliers.",
     "chartSwitchHint": "Click arrows/swipe to switch chart.",
     "myDollars": "Net owed",
     "revenueGrossProfit": "Revenue & Gross profit",
