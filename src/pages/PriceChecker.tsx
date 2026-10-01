@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { optLabel } from '../lib/productOptions'
 import { useCurrency } from '../lib/useCurrency'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type PriceData = {
   price_last_time: number | null
@@ -17,6 +19,9 @@ type PriceData = {
 
 export default function PriceChecker() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const showInfoIconsPages = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
+  const [showInfo, setShowInfo] = useState(false)
   const [customers, setCustomers] = useState<Person[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState('all')
@@ -90,7 +95,36 @@ const res = await fetch(
 
   return (
     <div className="card page-narrow">
-      <h3 style={{ margin: 0, marginBottom: 16 }}>{t('priceChecker.title')}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: showInfo ? 0 : 16 }}>
+        <h3 style={{ margin: 0 }}>{t('priceChecker.title')}</h3>
+        {showInfoIconsPages && (
+          <button
+            onClick={() => setShowInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+        )}
+      </div>
+
+      {showInfo && (
+        <div style={{ marginTop: 10, marginBottom: 16, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontWeight: 600 }}>{t('priceChecker.title')}</div>
+            <button onClick={() => setShowInfo(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
+          </div>
+          <div style={{ color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(['p1', 'p2'] as const).map(k => (
+              <p key={k} style={{ margin: 0 }}>{t(`dashboard.priceCheckerInfo_${k}`)}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="row row-2col-mobile" style={{ gap: 12 }}>
