@@ -1223,7 +1223,7 @@ useEffect(() => {
                     label = tc('externalEvents.messageReplyEmail', { email: ev.customer_name })
                   } else if (ev.event_type === 'message_reply' && ev.extra?.via === 'app') {
                     label = tc('externalEvents.messageReplyApp')
-                    href = '/messages'
+                    href = effectiveRole === 'super_admin' ? '/messages' : '/contact'
                   }
                   return (
                     <div key={ev.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
