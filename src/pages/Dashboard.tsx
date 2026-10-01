@@ -753,8 +753,10 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                       style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
                     >✕</button>
                   </div>
-                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
-                    {t('dashboard.netBalanceInfo')}
+                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(['p1', 'p2'] as const).map(k => (
+                      <p key={k} style={{ margin: 0 }}>{t(`dashboard.netBalanceInfo_${k}`)}</p>
+                    ))}
                   </div>
                 </div>
               )}
