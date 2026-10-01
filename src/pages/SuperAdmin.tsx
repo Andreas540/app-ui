@@ -3041,21 +3041,19 @@ const available = max - used
 
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Business Model</div>
-              <div style={{ display: 'flex', gap: 0, border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden', width: 'fit-content' }}>
+              <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
                 {(['B2B', 'B2C'] as const).map(val => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setSpecialBusinessModel(val)}
                     style={{
-                      padding: '6px 20px',
+                      padding: '6px 18px',
                       border: 'none',
                       borderRadius: 0,
-                      cursor: 'pointer',
-                      fontWeight: specialBusinessModel === val ? 600 : 400,
-                      background: specialBusinessModel === val ? 'var(--color-primary)' : 'transparent',
-                      color: specialBusinessModel === val ? '#fff' : 'var(--text)',
-                      fontSize: 14,
+                      fontWeight: specialBusinessModel === val ? 600 : undefined,
+                      background: specialBusinessModel === val ? 'var(--primary)' : 'transparent',
+                      color: specialBusinessModel === val ? '#fff' : undefined,
                     }}
                   >
                     {val}
