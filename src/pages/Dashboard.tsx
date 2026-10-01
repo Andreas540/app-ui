@@ -5,6 +5,7 @@ import { listCustomersWithOwed, type CustomerWithOwed, type Product, getAuthHead
 import { getTenantConfig } from '../lib/tenantConfig'
 import { useAuth } from '../contexts/AuthContext'
 import { AVAILABLE_FEATURES, type ModuleId } from '../lib/features'
+import { ALL_DASHBOARD_CARDS, ALL_DASHBOARD_CARD_IDS } from '../lib/dashboardCards'
 import { useLocale } from '../contexts/LocaleContext'
 import { todayYMD, formatDate, formatMonthYear } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
@@ -201,21 +202,12 @@ function ChartSlide({
 
 // ── Dashboard card registry ────────────────────────────────────────────────────
 
-// module: ModuleId the tenant must have for this card to appear; null = always shown
-const ALL_CARDS = [
-  { id: 'financials',    labelKey: 'dashboard.cardFinancials',   module: 'sales'    as ModuleId },
-  { id: 'charts',        labelKey: 'dashboard.cardCharts',       module: 'reports'  as ModuleId },
-  { id: 'orders',        labelKey: 'dashboard.cardOrders',       module: 'sales'    as ModuleId },
-  { id: 'price-checker', labelKey: 'dashboard.cardPriceChecker', module: 'sales'    as ModuleId },
-  { id: 'bookings',      labelKey: 'dashboard.cardBookings',     module: 'booking'  as ModuleId },
-] as const
-
+const ALL_CARDS    = ALL_DASHBOARD_CARDS
+const ALL_CARD_IDS = ALL_DASHBOARD_CARD_IDS
 
 const LS_DASH_ORDER  = 'dashboard_order'
 const LS_DASH_HIDDEN = 'dashboard_hidden_v2' // hidden-list: only cards the user explicitly deselected
 const LS_DASH_COLS   = 'dashboard_cols'
-
-const ALL_CARD_IDS = ALL_CARDS.map(c => c.id)
 
 function loadDashOrder(): string[] {
   try {

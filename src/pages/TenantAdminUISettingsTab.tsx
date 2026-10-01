@@ -1,5 +1,5 @@
 // src/pages/TenantAdminUISettingsTab.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getAuthHeaders,
@@ -9,6 +9,8 @@ import {
 } from '../lib/api'
 import { defaultConfig } from '../lib/tenantConfig'
 import { useAuth } from '../contexts/AuthContext'
+import { ALL_DASHBOARD_CARDS } from '../lib/dashboardCards'
+import { AVAILABLE_FEATURES } from '../lib/features'
 
 const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 const H = 40
@@ -125,7 +127,7 @@ function CheckboxDropdown({ label, allTypes, visible, onChange }: {
   )
 }
 
-function Row({ label, help, customized, children }: { label: string; help?: string; customized: boolean; children: React.ReactNode }) {
+function Row({ label, help, customized, children }: { label: ReactNode; help?: string; customized: boolean; children: ReactNode }) {
   return (
     <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
       <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
@@ -202,13 +204,6 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
   }
   function setUi(key: keyof NonNullable<UiConfig['ui']>, val: boolean) {
     setCfg(p => ({ ...p, ui: { ...p.ui, [key]: val } }))
-  }
-  function toggleDashboardCard(cardId: string) {
-    setCfg(p => {
-      const current = p.ui?.dashboardCards ?? du.dashboardCards
-      const next = current.includes(cardId) ? current.filter(id => id !== cardId) : [...current, cardId]
-      return { ...p, ui: { ...p.ui, dashboardCards: next } }
-    })
   }
   function setBookingBool(key: 'smsRemindersEnabled' | 'showBookingParticipants', val: boolean) {
     setCfg(p => ({ ...p, booking: { ...p.booking, [key]: val } }))
@@ -523,24 +518,20 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
             customized={cu.showOwedToSuppliers !== undefined && cu.showOwedToSuppliers !== du.showOwedToSuppliers}>
             <Toggle value={cu.showOwedToSuppliers ?? du.showOwedToSuppliers} onChange={v => setUi('showOwedToSuppliers', v)} />
           </Row>
-          <Row label={t('tenantCustom.dashboardCards')} customized={cu.dashboardCards !== undefined}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {([
-                { id: 'financials',    key: 'dashboard.cardFinancials'   },
-                { id: 'charts',        key: 'dashboard.cardCharts'       },
-                { id: 'orders',        key: 'dashboard.cardOrders'       },
-                { id: 'price-checker', key: 'dashboard.cardPriceChecker' },
-              ] as const).map(({ id: cardId, key }) => {
-                const cards = cu.dashboardCards ?? du.dashboardCards
-                return (
-                  <label key={cardId} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={cards.includes(cardId)}
-                      onChange={() => toggleDashboardCard(cardId)}
-                      style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-                    <span>{t(key)}</span>
+          <Row
+            label={<span style={{ opacity: 0.45 }}>{t('tenantCustom.dashboardCards')} <span style={{ fontWeight: 400 }}>(deprecated)</span></span>}
+            customized={false}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, opacity: 0.45, pointerEvents: 'none' }}>
+              {ALL_DASHBOARD_CARDS
+                .filter(c => Object.values(AVAILABLE_FEATURES).filter(f => f.module === c.module).some(f => hasFeature(f.id as any)))
+                .map(c => (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="checkbox" checked readOnly style={{ width: 16, height: 16, flexShrink: 0 }} />
+                    <span>{t(c.labelKey)}</span>
                   </label>
-                )
-              })}
+                ))
+              }
             </div>
           </Row>
         </>
