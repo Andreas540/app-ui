@@ -106,10 +106,18 @@ export default function EditCustomer() {
         setCompanyName(c.company_name || '')
         const loadedCountry = c.country || CURRENCY_TO_COUNTRY[currency] || ''
         setCountry(loadedCountry)
-        const loadedMatch = COUNTRIES.find((cc: Country) => cc.name === loadedCountry)
-        setDialCountryCode(loadedMatch?.code ?? '')
         const parsed = parseStoredPhone(c.phone || '')
         setLocalPhone(parsed.local)
+        // Prefer country name for dial lookup; fall back to dial code from phone, biased by currency country
+        const countryMatch = COUNTRIES.find((cc: Country) => cc.name === loadedCountry)
+        if (countryMatch) {
+          setDialCountryCode(countryMatch.code)
+        } else if (parsed.dialCode) {
+          const currencyCountry = CURRENCY_TO_COUNTRY[currency] || ''
+          const candidates = COUNTRIES.filter((cc: Country) => cc.dial === parsed.dialCode)
+          const preferred = candidates.find((cc: Country) => cc.name === currencyCountry) ?? candidates[0]
+          setDialCountryCode(preferred?.code ?? '')
+        }
         setEmail(c.email || '')
         setSmsConsent(c.sms_consent ?? true)
         setAddress1(c.address1 || '')
@@ -217,7 +225,7 @@ export default function EditCustomer() {
       </div>
 
       {/* Customer Name | Contact */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.customerName')}</label>
           <input value={name} onChange={e=>setName(e.target.value)} placeholder={t('fullNamePlaceholder')} />
@@ -229,7 +237,7 @@ export default function EditCustomer() {
       </div>
 
       {/* Shipping cost | Customer Type */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('customers.shippingCost')}</label>
           <input
@@ -298,14 +306,14 @@ export default function EditCustomer() {
       </div>
 
       {/* Row: Phone | Email */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('phone')}</label>
           <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
             <select value={dialCountryCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 90 }}>
               <option value="">—</option>
               {COUNTRIES.map(c => (
-                <option key={c.code} value={c.code}>{c.dial} {c.code}</option>
+                <option key={c.code} value={c.code}>{c.dial}</option>
               ))}
             </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
@@ -318,7 +326,7 @@ export default function EditCustomer() {
       </div>
 
       {/* Row 2: Address line 1 | Address line 2 */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('addressLine1')}</label>
           <input value={address1} onChange={e=>setAddress1(e.target.value)} />
@@ -330,7 +338,7 @@ export default function EditCustomer() {
       </div>
 
       {/* Row 3: City | State */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('city')}</label>
           <input value={city} onChange={e=>setCity(e.target.value)} />
@@ -342,7 +350,7 @@ export default function EditCustomer() {
       </div>
 
       {/* Row 4: Postal code | Country */}
-      <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <div>
           <label>{t('postalCode')}</label>
           <input value={postal} onChange={e=>setPostal(e.target.value)} />

@@ -324,7 +324,7 @@ export default function CreateCustomer() {
             <select value={dialCountryCode} onChange={e => handleDialChange(e.target.value)} style={{ flexShrink: 0, width: 90 }}>
               <option value="">—</option>
               {COUNTRIES.map(c => (
-                <option key={c.code} value={c.code}>{c.dial} {c.code}</option>
+                <option key={c.code} value={c.code}>{c.dial}</option>
               ))}
             </select>
             <input type="tel" value={localPhone} onChange={e => setLocalPhone(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
