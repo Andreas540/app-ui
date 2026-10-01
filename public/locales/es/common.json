@@ -294,7 +294,7 @@
     "netBalanceInfo_p1": "Muestra tu posición actual de flujo de caja. 'Total adeudado por clientes' es la suma de todos los saldos pendientes de clientes. 'Total adeudado a socios' es lo que debes a tus socios en términos netos.",
     "netBalanceInfo_p2": "'Neto adeudado' es la diferencia — lo que te queda después de pagar a socios y proveedores.",
     "priceCheckerInfo_p1": "Consulta el precio de cualquier producto, con opción de filtrar por un cliente específico. Selecciona un producto para ver tres datos: el precio configurado del cliente, el precio cobrado en su pedido más reciente y el precio promedio de todos los pedidos anteriores.",
-    "priceCheckerInfo_p2": "Úsalo para verificar rápidamente lo que ha pagado un cliente antes, detectar inconsistencias de precios o confirmar el precio correcto antes de hacer un pedido."
+    "priceCheckerInfo_p2": "Úsalo para verificar rápidamente lo que ha pagado un cliente antes, detectar inconsistencias de precios o confirmar el precio correcto antes de hacer un pedido.",
     "chartSwitchHint": "Haz clic en las flechas/desliza para cambiar el gráfico.",
     "myDollars": "Neto adeudado",
     "revenueGrossProfit": "Ingresos y ganancia bruta",
