@@ -185,6 +185,7 @@ export default function SuperAdmin() {
   const [managingSpecialTenantId,   setManagingSpecialTenantId]   = useState<string | null>(null)
   const [managingSpecialTenantName, setManagingSpecialTenantName] = useState('')
   const [specialPaymentProvidersDisabled, setSpecialPaymentProvidersDisabled] = useState(false)
+  const [specialBusinessModel, setSpecialBusinessModel] = useState<'B2B' | 'B2C'>('B2B')
   const [savingSpecial, setSavingSpecial] = useState(false)
 
   useEffect(() => {
@@ -695,12 +696,14 @@ export default function SuperAdmin() {
     setManagingSpecialTenantId(tenant.id)
     setManagingSpecialTenantName(tenant.name)
     setSpecialPaymentProvidersDisabled(false)
+    setSpecialBusinessModel('B2B')
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res  = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${tenant.id}`, { headers: getAuthHeaders() })
       const data = await res.json()
       setSpecialPaymentProvidersDisabled(data.uiConfig?.special?.paymentProvidersDisabled ?? false)
-    } catch { /* keep default false */ }
+      setSpecialBusinessModel(data.uiConfig?.special?.businessModel ?? 'B2B')
+    } catch { /* keep defaults */ }
   }
 
   async function handleSaveSpecialSettings() {
@@ -712,7 +715,7 @@ export default function SuperAdmin() {
       const current = await getRes.json()
       const merged  = {
         ...(current.uiConfig || {}),
-        special: { ...((current.uiConfig || {}).special || {}), paymentProvidersDisabled: specialPaymentProvidersDisabled },
+        special: { ...((current.uiConfig || {}).special || {}), paymentProvidersDisabled: specialPaymentProvidersDisabled, businessModel: specialBusinessModel },
       }
       await fetch(`${base}/api/super-admin`, {
         method: 'POST',
@@ -3035,6 +3038,34 @@ const available = max - used
             <p className="helper" style={{ marginTop: 4, marginBottom: 16 }}>
               Override specific features for this tenant. Changes take effect after the tenant user reloads the page.
             </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Business Model</div>
+              <div style={{ display: 'flex', gap: 0, border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden', width: 'fit-content' }}>
+                {(['B2B', 'B2C'] as const).map(val => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setSpecialBusinessModel(val)}
+                    style={{
+                      padding: '6px 20px',
+                      border: 'none',
+                      borderRadius: 0,
+                      cursor: 'pointer',
+                      fontWeight: specialBusinessModel === val ? 600 : 400,
+                      background: specialBusinessModel === val ? 'var(--color-primary)' : 'transparent',
+                      color: specialBusinessModel === val ? '#fff' : 'var(--text)',
+                      fontSize: 14,
+                    }}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
+              <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                B2B = business customers (default). B2C = end consumers.
+              </div>
+            </div>
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
               <input
