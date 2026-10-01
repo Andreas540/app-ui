@@ -109,7 +109,7 @@ export const defaultConfig: TenantConfig = {
     showInfoIconsPages: true,
     showInfoIconsReports: true,
     showNavArrowsMobile: true,
-    showNavArrowsDesktop: false,
+    showNavArrowsDesktop: true,
     showOwedToSuppliers: true,
     compactCustomerOrderRows: true,
     excludePartnerShareOrderRows: false,
