@@ -641,6 +641,7 @@ function MainApp() {
         barcodeLastTimeRef.current = 0
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
+          e.preventDefault()
           if (cachedProductsRef.current) {
             processBarcodeResult(buf)
           } else {
