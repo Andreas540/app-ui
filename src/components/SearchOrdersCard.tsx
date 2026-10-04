@@ -75,6 +75,8 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
   const [search, setSearch] = useState('')
   const [filterSupplier, setFilterSupplier] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [scanProductId, setScanProductId] = useState('')
+  const [scanProductName, setScanProductName] = useState('')
 
   type SortCol = 'po_number' | 'supplier' | 'issue_date' | 'total' | 'remaining'
   const [sortCol, setSortCol] = useState<SortCol>('issue_date')
@@ -151,9 +153,23 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
       .finally(() => setPosLoading(false))
   }, [open])
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { component, productId, productName, barcode } = (e as CustomEvent).detail
+      if (component !== 'supply-orders') return
+      setScanProductId(productId ?? '')
+      setScanProductName(productId ? (productName ?? barcode) : '')
+      setSearch('')
+      setOpen(true)
+    }
+    window.addEventListener('barcode-search-scan', handler)
+    return () => window.removeEventListener('barcode-search-scan', handler)
+  }, [])
+
   const filteredPos = (() => {
     const arr = pos.filter(po => {
       if (filterSupplier && po.supplier_id !== filterSupplier) return false
+      if (scanProductId && !po.items.some(i => i.product_id === scanProductId)) return false
       if (search.trim()) {
         const q = search.trim().toLowerCase()
         return (
@@ -234,11 +250,23 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
                 <div style={{ flex: 2, minWidth: 0 }}>
                   <input
                     type="text"
-                    placeholder="Search by PO number, supplier, notes…"
+                    placeholder="Search by PO number, supplier, notes, or scan barcode…"
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={e => { setSearch(e.target.value); setScanProductId(''); setScanProductName('') }}
+                    data-barcode-search="supply-orders"
                     style={{ height: CONTROL_H }}
                   />
+                  {scanProductName && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12 }}>
+                      <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: 4, padding: '2px 8px' }}>
+                        Product: {scanProductName}
+                      </span>
+                      <button
+                        onClick={() => { setScanProductId(''); setScanProductName('') }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0, color: 'var(--text-secondary)' }}
+                      >×</button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <select

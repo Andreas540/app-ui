@@ -74,6 +74,17 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
     [products, listCategory]
   )
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { component, productName, barcode } = (e as CustomEvent).detail
+      if (component !== 'products') return
+      setProductSearch(productName ?? barcode)
+      setOpen(true)
+    }
+    window.addEventListener('barcode-search-scan', handler)
+    return () => window.removeEventListener('barcode-search-scan', handler)
+  }, [])
+
   const searchFiltered = useMemo(() => {
     const q = productSearch.trim().toLowerCase()
     if (!q) return filtered
@@ -81,7 +92,8 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
       p.name.toLowerCase().includes(q) ||
       (p.variant ?? '').toLowerCase().includes(q) ||
       (p.variant_2 ?? '').toLowerCase().includes(q) ||
-      (p.sku ?? '').toLowerCase().includes(q)
+      (p.sku ?? '').toLowerCase().includes(q) ||
+      (p.barcode ?? '').toLowerCase().includes(q)
     )
   }, [filtered, productSearch])
 
@@ -159,9 +171,10 @@ export default function SearchProductsCard({ defaultOpen = false, hideHeader = f
             <div style={{ marginBottom: 8 }}>
               <input
                 type="text"
-                placeholder={listCategory === 'service' ? 'Search by name…' : 'Search by name, variant, SKU…'}
+                placeholder={listCategory === 'service' ? 'Search by name or barcode…' : 'Search by name, variant, SKU, or barcode…'}
                 value={productSearch}
                 onChange={e => setProductSearch(e.target.value)}
+                data-barcode-search="products"
                 style={{ width: '100%' }}
               />
               <button

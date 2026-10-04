@@ -627,7 +627,9 @@ function MainApp() {
 
     const handleKeydown = (e: KeyboardEvent) => {
       const tag = (document.activeElement?.tagName ?? '').toLowerCase()
-      if (tag === 'input' || tag === 'textarea') return
+      const activeEl = document.activeElement as HTMLElement | null
+      const isBarcodeSearch = activeEl?.dataset?.barcodeSearch != null
+      if ((tag === 'input' || tag === 'textarea') && !isBarcodeSearch) return
       // Skip modifier combos (shortcuts)
       if (e.ctrlKey || e.metaKey || e.altKey) return
       // Skip if barcode field is disabled for this tenant
@@ -642,16 +644,23 @@ function MainApp() {
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
           e.preventDefault()
-          const activeEl = document.activeElement as HTMLElement | null
-          if (activeEl?.tagName.toLowerCase() === 'select') {
-            (activeEl as HTMLSelectElement).value = ''
-          }
-          activeEl?.blur()
-          if (cachedProductsRef.current) {
-            processBarcodeResult(buf)
+          if (isBarcodeSearch && activeEl) {
+            const found = cachedProductsRef.current?.find(p => p.barcode === buf) ?? null
+            window.dispatchEvent(new CustomEvent('barcode-search-scan', {
+              detail: { barcode: buf, productId: found?.id ?? null, productName: found?.name ?? null, component: activeEl.dataset.barcodeSearch }
+            }))
+            activeEl.blur()
           } else {
-            pendingScanRef.current = buf
-            loadProductCache() // retry if initial load failed or cache is gone
+            if (activeEl?.tagName.toLowerCase() === 'select') {
+              (activeEl as HTMLSelectElement).value = ''
+            }
+            activeEl?.blur()
+            if (cachedProductsRef.current) {
+              processBarcodeResult(buf)
+            } else {
+              pendingScanRef.current = buf
+              loadProductCache() // retry if initial load failed or cache is gone
+            }
           }
         }
         return
