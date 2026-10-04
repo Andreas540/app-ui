@@ -51,6 +51,14 @@ export default function PriceChecker() {
   const stdProducts = products.filter(p => p.product_kind !== 'addon' && p.category !== 'service')
   const addonProducts = products.filter(p => p.product_kind === 'addon')
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setSelectedProductId((e as CustomEvent<{ productId: string }>).detail.productId)
+    }
+    window.addEventListener('barcode-price-checker-product', handler)
+    return () => window.removeEventListener('barcode-price-checker-product', handler)
+  }, [])
+
   // Fetch price data when both customer and product are selected
   useEffect(() => {
     if (!selectedCustomerId || !selectedProductId) {
