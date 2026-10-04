@@ -643,6 +643,7 @@ function MainApp() {
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
           e.preventDefault()
+          ;(document.activeElement as HTMLElement | null)?.blur()
           if (cachedProductsRef.current) {
             processBarcodeResult(buf)
           } else {
