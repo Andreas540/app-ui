@@ -397,6 +397,7 @@ function MainApp() {
   const cachedProductsRef = useRef<Product[] | null>(null)
   const pendingScanRef = useRef<string | null>(null)
   const pathnameRef = useRef(location.pathname)
+  const barcodeFeatureEnabledRef = useRef(true)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -492,6 +493,12 @@ function MainApp() {
 
   // Keep pathname ref in sync for the barcode scanner (avoids re-registering listener on nav)
   useEffect(() => { pathnameRef.current = location.pathname }, [location.pathname])
+
+  // Keep barcode feature gate in sync with tenant config
+  useEffect(() => {
+    const fields = getTenantConfig(user?.tenantId).pages?.['new-product']?.fields ?? {}
+    barcodeFeatureEnabledRef.current = fields.barcode !== false
+  }, [user?.tenantId])
 
   // Pre-load product cache so barcode lookups are instant from the first scan.
   // Also flushes any scan that arrived before the cache was ready.
@@ -618,6 +625,8 @@ function MainApp() {
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return
       // Skip modifier combos (shortcuts)
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      // Skip if barcode field is disabled for this tenant
+      if (!barcodeFeatureEnabledRef.current) return
       const now = Date.now()
       const gap = now - barcodeLastTimeRef.current
 

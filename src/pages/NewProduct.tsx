@@ -46,6 +46,11 @@ export default function NewProduct() {
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
   const [barcode, setBarcode] = useState(() => searchParams.get('barcode') ?? '')
+  // Sync barcode + open form when URL param changes without unmounting (already on this page)
+  useEffect(() => {
+    const bc = searchParams.get('barcode')
+    if (bc) { setBarcode(bc); setFormOpen(true) }
+  }, [searchParams.get('barcode')])
   const [variant, setVariant] = useState('')
   const [variant2, setVariant2] = useState('')
   const [variants, setVariants] = useState<string[]>([])
