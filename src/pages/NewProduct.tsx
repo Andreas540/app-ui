@@ -45,7 +45,7 @@ export default function NewProduct() {
   const [productCategory, setProductCategory] = useState('')
   const [productSubcategory, setProductSubcategory] = useState('')
   const [sku, setSku] = useState('')
-  const [barcode, setBarcode] = useState('')
+  const [barcode, setBarcode] = useState(() => searchParams.get('barcode') ?? '')
   const [variant, setVariant] = useState('')
   const [variant2, setVariant2] = useState('')
   const [variants, setVariants] = useState<string[]>([])

@@ -4,6 +4,11 @@
   "saveChanges": "Spara ändringar",
   "saving": "Sparar…",
   "cancel": "Avbryt",
+  "barcodeScanner": {
+    "productNotFound": "Produkt ej registrerad",
+    "productNotFoundSub": "Ingen produkt med streckkod {{barcode}} hittades i systemet.",
+    "addProduct": "Lägg till produkt"
+  },
   "externalEvents": {
     "title": "Extern aktivitet",
     "noEvents": "Ingen ny aktivitet.",

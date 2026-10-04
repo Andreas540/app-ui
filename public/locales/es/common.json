@@ -4,6 +4,11 @@
   "saveChanges": "Guardar cambios",
   "saving": "Guardando…",
   "cancel": "Cancelar",
+  "barcodeScanner": {
+    "productNotFound": "Producto no registrado",
+    "productNotFoundSub": "No se encontró ningún producto con el código {{barcode}} en el sistema.",
+    "addProduct": "Agregar producto"
+  },
   "externalEvents": {
     "title": "Actividad externa",
     "noEvents": "Sin actividad reciente.",

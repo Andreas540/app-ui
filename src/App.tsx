@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
-import { getAuthHeaders } from './lib/api'
+import { getAuthHeaders, fetchBootstrap } from './lib/api'
 import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
 import { applyTheme, getMode, getSkin } from './lib/theme'
 
@@ -368,6 +368,7 @@ function MainApp() {
   const { t: ti, ready: tiReady } = useTranslation('info')
   const { t: tc, i18n } = useTranslation('common')
   const location = useLocation()
+  const navigate = useNavigate()
   const [navOpen, setNavOpen] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
   const [showWelcomeModal, setShowWelcomeModal] = useState(() => !localStorage.getItem('welcomeDismissed') && !sessionStorage.getItem('welcomeClosed'))
@@ -387,6 +388,11 @@ function MainApp() {
   const [externalEvents, setExternalEvents] = useState<any[]>([])
   const [externalSeenAt, setExternalSeenAt] = useState<number>(() => Number(localStorage.getItem('externalSeenAt') || '0'))
   const [showExternalOverlay, setShowExternalOverlay] = useState(false)
+
+  const [barcodeModalBarcode, setBarcodeModalBarcode] = useState<string | null>(null)
+  const barcodeBufferRef = useRef('')
+  const barcodeLastTimeRef = useRef(0)
+  const cachedProductsRef = useRef<Array<{ id: string; name: string; barcode: string | null }> | null>(null)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -559,6 +565,55 @@ function MainApp() {
     const id = setInterval(fetchEvents, 60 * 1000)
     return () => clearInterval(id)
   }, [isLoggedIn])
+
+  // ── Global barcode scanner ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const handleKeydown = async (e: KeyboardEvent) => {
+      // Skip when an input, textarea, or select has focus
+      const tag = (document.activeElement?.tagName ?? '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      // Skip modifier combos (shortcuts)
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+
+      const now = Date.now()
+      const gap = now - barcodeLastTimeRef.current
+
+      if (e.key === 'Enter') {
+        const buf = barcodeBufferRef.current
+        barcodeBufferRef.current = ''
+        barcodeLastTimeRef.current = 0
+        // Only treat as barcode if ≥4 chars accumulated rapidly
+        if (buf.length >= 4 && gap < 100) {
+          // Load products cache on first scan
+          if (!cachedProductsRef.current) {
+            try {
+              const data = await fetchBootstrap()
+              cachedProductsRef.current = (data.products ?? []).map((p: any) => ({ id: p.id, name: p.name, barcode: p.barcode ?? null }))
+            } catch { return }
+          }
+          const found = cachedProductsRef.current.find(p => p.barcode === buf)
+          if (!found) {
+            setBarcodeModalBarcode(buf)
+          }
+        }
+        return
+      }
+
+      // Only accumulate printable single characters
+      if (e.key.length !== 1) return
+
+      if (gap > 100) {
+        barcodeBufferRef.current = e.key
+      } else {
+        barcodeBufferRef.current += e.key
+      }
+      barcodeLastTimeRef.current = now
+    }
+
+    window.addEventListener('keydown', handleKeydown)
+    return () => window.removeEventListener('keydown', handleKeydown)
+  }, [isLoggedIn, navigate])
 
   const handleExternalBadgeClick = () => {
     const now = Date.now()
@@ -1241,6 +1296,32 @@ useEffect(() => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="primary" onClick={() => setShowExternalOverlay(false)}>{tc('close')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Barcode scanner modal ── */}
+      {barcodeModalBarcode !== null && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setBarcodeModalBarcode(null)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0 }}>{tc('barcodeScanner.productNotFound')}</h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+              {tc('barcodeScanner.productNotFoundSub', { barcode: barcodeModalBarcode })}
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setBarcodeModalBarcode(null)}>{tc('cancel')}</button>
+              <button className="primary" onClick={() => {
+                navigate(`/products/new?barcode=${encodeURIComponent(barcodeModalBarcode)}`)
+                setBarcodeModalBarcode(null)
+              }}>{tc('barcodeScanner.addProduct')}</button>
             </div>
           </div>
         </div>
