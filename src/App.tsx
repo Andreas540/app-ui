@@ -583,8 +583,8 @@ function MainApp() {
         const buf = barcodeBufferRef.current
         barcodeBufferRef.current = ''
         barcodeLastTimeRef.current = 0
-        // Only treat as barcode if ≥4 chars accumulated rapidly
-        if (buf.length >= 4 && gap < 100) {
+        // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
+        if (buf.length >= 4) {
           // Load products cache on first scan
           if (!cachedProductsRef.current) {
             try {
