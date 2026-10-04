@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
-import { getAuthHeaders, fetchBootstrap } from './lib/api'
+import { getAuthHeaders, fetchBootstrap, type Product } from './lib/api'
 import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
 import { applyTheme, getMode, getSkin } from './lib/theme'
 
@@ -65,6 +65,7 @@ import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useIdleLock } from './hooks/useIdleLock'
 import LockOverlay from './components/LockOverlay'
 import TenantSwitcher from './components/TenantSwitcher'
+import ProductDetailModal from './components/ProductDetailModal'
 import Contact from './pages/Contact'
 import Messages from './pages/Messages'
 import StatsLogs from './pages/StatsLogs'
@@ -390,9 +391,11 @@ function MainApp() {
   const [showExternalOverlay, setShowExternalOverlay] = useState(false)
 
   const [barcodeModalBarcode, setBarcodeModalBarcode] = useState<string | null>(null)
+  const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<Product | null>(null)
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
-  const cachedProductsRef = useRef<Array<{ id: string; name: string; barcode: string | null }> | null>(null)
+  const cachedProductsRef = useRef<Product[] | null>(null)
+  const pathnameRef = useRef(location.pathname)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -485,6 +488,15 @@ function MainApp() {
     }, 5 * 60 * 1000) // every 5 minutes
     return () => clearInterval(id)
   }, [isAuthenticated, isLocked])
+
+  // Keep pathname ref in sync for the barcode scanner (avoids re-registering listener on nav)
+  useEffect(() => { pathnameRef.current = location.pathname }, [location.pathname])
+
+  // Pre-load product cache so barcode lookups are instant from the first scan
+  useEffect(() => {
+    if (!isLoggedIn || cachedProductsRef.current) return
+    fetchBootstrap().then(data => { cachedProductsRef.current = data.products ?? [] }).catch(() => {})
+  }, [isLoggedIn])
 
   useEffect(() => {
     try {
@@ -585,15 +597,19 @@ function MainApp() {
         barcodeLastTimeRef.current = 0
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
-          // Load products cache on first scan
+          // Load products cache on first scan (pre-load effect may not have completed yet)
           if (!cachedProductsRef.current) {
             try {
               const data = await fetchBootstrap()
-              cachedProductsRef.current = (data.products ?? []).map((p: any) => ({ id: p.id, name: p.name, barcode: p.barcode ?? null }))
+              cachedProductsRef.current = data.products ?? []
             } catch { return }
           }
           const found = cachedProductsRef.current.find(p => p.barcode === buf)
-          if (!found) {
+          if (found) {
+            if (pathnameRef.current === '/products/new') {
+              setBarcodeFoundProduct(found)
+            }
+          } else {
             setBarcodeModalBarcode(buf)
           }
         }
@@ -1325,6 +1341,15 @@ useEffect(() => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Barcode scanner: found product modal (shown when on /products/new) ── */}
+      {barcodeFoundProduct && (
+        <ProductDetailModal
+          product={barcodeFoundProduct as any}
+          onClose={() => setBarcodeFoundProduct(null)}
+          pageFields={{}}
+        />
       )}
 
       {/* ── Welcome modal ── */}
