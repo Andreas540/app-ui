@@ -30,7 +30,7 @@ export default function NewProduct() {
     searchParams.get('type') === 'service' ? 'service' : 'product'
   )
 
-  const [formOpen, setFormOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(() => !!new URLSearchParams(window.location.search).get('barcode'))
   const [addonOpen, setAddonOpen] = useState(false)
 
   const [products, setProducts] = useState<ProductWithCost[]>([])
