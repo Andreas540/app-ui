@@ -396,6 +396,7 @@ function MainApp() {
   const barcodeLastTimeRef = useRef(0)
   const cachedProductsRef = useRef<Product[] | null>(null)
   const pathnameRef = useRef(location.pathname)
+  const lastInputActiveRef = useRef(0)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
   const [activeTenantId, setActiveTenantId] = useState<string | null>(localStorage.getItem('activeTenantId'))
@@ -581,12 +582,34 @@ function MainApp() {
   // ── Global barcode scanner ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) return
+
+    // Track when any input/textarea/select was last active so we can suppress
+    // the scanner briefly after focus leaves a field (guards against autoFocus
+    // timing races where the first keystrokes arrive before the browser has
+    // moved focus to the newly rendered input).
+    const handleFocusin = (e: FocusEvent) => {
+      const tag = ((e.target as Element)?.tagName ?? '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        lastInputActiveRef.current = Date.now()
+        barcodeBufferRef.current = ''
+      }
+    }
+    const handleFocusout = (e: FocusEvent) => {
+      const tag = ((e.target as Element)?.tagName ?? '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        lastInputActiveRef.current = Date.now()
+        barcodeBufferRef.current = ''
+      }
+    }
+
     const handleKeydown = async (e: KeyboardEvent) => {
       // Skip when an input, textarea, or select has focus
       const tag = (document.activeElement?.tagName ?? '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return
       // Skip modifier combos (shortcuts)
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      // Skip if an input was active very recently (guards autoFocus timing races)
+      if (Date.now() - lastInputActiveRef.current < 500) return
 
       const now = Date.now()
       const gap = now - barcodeLastTimeRef.current
@@ -628,7 +651,13 @@ function MainApp() {
     }
 
     window.addEventListener('keydown', handleKeydown)
-    return () => window.removeEventListener('keydown', handleKeydown)
+    window.addEventListener('focusin', handleFocusin)
+    window.addEventListener('focusout', handleFocusout)
+    return () => {
+      window.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('focusin', handleFocusin)
+      window.removeEventListener('focusout', handleFocusout)
+    }
   }, [isLoggedIn, navigate])
 
   const handleExternalBadgeClick = () => {

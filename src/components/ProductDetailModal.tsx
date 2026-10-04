@@ -104,6 +104,7 @@ export default function ProductDetailModal({ product, onClose, pageFields, label
       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</span>
       <Link
         to={`/products/edit?id=${product.id}`}
+        onClick={onClose}
         style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)', textDecoration: 'none', flexShrink: 0 }}
       >
         {t('edit')}
