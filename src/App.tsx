@@ -626,9 +626,8 @@ function MainApp() {
     }
 
     const handleKeydown = (e: KeyboardEvent) => {
-      // Skip when an input, textarea, or select has focus
       const tag = (document.activeElement?.tagName ?? '').toLowerCase()
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      if (tag === 'input' || tag === 'textarea') return
       // Skip modifier combos (shortcuts)
       if (e.ctrlKey || e.metaKey || e.altKey) return
       // Skip if barcode field is disabled for this tenant
