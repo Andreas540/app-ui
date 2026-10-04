@@ -500,10 +500,9 @@ function MainApp() {
     barcodeFeatureEnabledRef.current = fields.barcode !== false
   }, [user?.tenantId])
 
-  // Pre-load product cache so barcode lookups are instant from the first scan.
-  // Also flushes any scan that arrived before the cache was ready.
-  useEffect(() => {
-    if (!isLoggedIn || cachedProductsRef.current) return
+  // Shared cache loader — called on mount, on tab return, on product-saved, and
+  // as a retry when a scan arrives before the cache is ready.
+  const loadProductCache = () => {
     listProducts().then(({ products }) => {
       cachedProductsRef.current = products
       if (pendingScanRef.current) {
@@ -511,6 +510,11 @@ function MainApp() {
         pendingScanRef.current = null
       }
     }).catch(() => {})
+  }
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    loadProductCache()
   }, [isLoggedIn])
 
   useEffect(() => {
@@ -639,8 +643,8 @@ function MainApp() {
           if (cachedProductsRef.current) {
             processBarcodeResult(buf)
           } else {
-            // Cache not ready yet — pre-load effect will flush this when it completes
             pendingScanRef.current = buf
+            loadProductCache() // retry if initial load failed or cache is gone
           }
         }
         return
@@ -657,19 +661,23 @@ function MainApp() {
       barcodeLastTimeRef.current = now
     }
 
-    const handleProductSaved = () => {
-      listProducts().then(({ products }) => { cachedProductsRef.current = products }).catch(() => {})
+    const handleProductSaved = () => loadProductCache()
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) loadProductCache()
     }
 
     window.addEventListener('keydown', handleKeydown)
     window.addEventListener('focusin', handleFocusin)
     window.addEventListener('focusout', handleFocusout)
     window.addEventListener('product-saved', handleProductSaved)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
       window.removeEventListener('keydown', handleKeydown)
       window.removeEventListener('focusin', handleFocusin)
       window.removeEventListener('focusout', handleFocusout)
       window.removeEventListener('product-saved', handleProductSaved)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [isLoggedIn, navigate])
 
