@@ -395,6 +395,7 @@ function MainApp() {
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
   const cachedProductsRef = useRef<Product[] | null>(null)
+  const pendingScanRef = useRef<string | null>(null)
   const pathnameRef = useRef(location.pathname)
 
   const [availableTenants, setAvailableTenants] = useState<Array<{ id: string; name: string; display_name: string; role: string }>>([])
@@ -492,10 +493,17 @@ function MainApp() {
   // Keep pathname ref in sync for the barcode scanner (avoids re-registering listener on nav)
   useEffect(() => { pathnameRef.current = location.pathname }, [location.pathname])
 
-  // Pre-load product cache so barcode lookups are instant from the first scan
+  // Pre-load product cache so barcode lookups are instant from the first scan.
+  // Also flushes any scan that arrived before the cache was ready.
   useEffect(() => {
     if (!isLoggedIn || cachedProductsRef.current) return
-    fetchBootstrap().then(data => { cachedProductsRef.current = data.products ?? [] }).catch(() => {})
+    fetchBootstrap().then(data => {
+      cachedProductsRef.current = data.products ?? []
+      if (pendingScanRef.current) {
+        processBarcodeResult(pendingScanRef.current)
+        pendingScanRef.current = null
+      }
+    }).catch(() => {})
   }, [isLoggedIn])
 
   useEffect(() => {
@@ -578,6 +586,15 @@ function MainApp() {
     return () => clearInterval(id)
   }, [isLoggedIn])
 
+  const processBarcodeResult = (buf: string) => {
+    const found = cachedProductsRef.current!.find(p => p.barcode === buf)
+    if (found) {
+      if (pathnameRef.current === '/products/new') setBarcodeFoundProduct(found)
+    } else {
+      setBarcodeModalBarcode(buf)
+    }
+  }
+
   // ── Global barcode scanner ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) return
@@ -595,7 +612,7 @@ function MainApp() {
       }
     }
 
-    const handleKeydown = async (e: KeyboardEvent) => {
+    const handleKeydown = (e: KeyboardEvent) => {
       // Skip when an input, textarea, or select has focus
       const tag = (document.activeElement?.tagName ?? '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return
@@ -610,20 +627,11 @@ function MainApp() {
         barcodeLastTimeRef.current = 0
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
-          // Load products cache on first scan (pre-load effect may not have completed yet)
-          if (!cachedProductsRef.current) {
-            try {
-              const data = await fetchBootstrap()
-              cachedProductsRef.current = data.products ?? []
-            } catch { return }
-          }
-          const found = cachedProductsRef.current.find(p => p.barcode === buf)
-          if (found) {
-            if (pathnameRef.current === '/products/new') {
-              setBarcodeFoundProduct(found)
-            }
+          if (cachedProductsRef.current) {
+            processBarcodeResult(buf)
           } else {
-            setBarcodeModalBarcode(buf)
+            // Cache not ready yet — pre-load effect will flush this when it completes
+            pendingScanRef.current = buf
           }
         }
         return
