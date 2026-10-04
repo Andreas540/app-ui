@@ -1,6 +1,6 @@
 // src/pages/Warehouse.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage, listProductCategories, createProductCategory } from '../lib/api'
 import { buildGroupOptions } from '../lib/productOptions'
@@ -76,7 +76,8 @@ export default function Warehouse() {
     ? 'minmax(100px, 2fr) repeat(4, minmax(62px, 1fr))'
     : 'minmax(100px, 2fr) repeat(7, minmax(62px, 1fr))'
 
-  const prefillProductId = searchParams.get('product_id') ?? ''
+  const location = useLocation()
+  const prefillProductId = searchParams.get('product_id') ?? (location.state as any)?.scanProductId ?? ''
 
   const [products, setProducts] = useState<Product[]>([])
   const [materialProducts, setMaterialProducts] = useState<Product[]>([])
@@ -289,6 +290,8 @@ export default function Warehouse() {
       if (!prefillProductId) {
         const defaultProd = filtered.find(p => p.product_kind !== 'addon') ?? filtered[0]
         if (defaultProd) setProductId(defaultProd.id)
+      } else if (matFiltered.some(p => p.id === prefillProductId)) {
+        setFlag('material')
       }
 
       await loadInventory()

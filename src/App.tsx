@@ -397,7 +397,6 @@ function MainApp() {
   const barcodeLastTimeRef = useRef(0)
   const cachedProductsRef = useRef<ProductWithCost[] | null>(null)
   const pendingScanRef = useRef<string | null>(null)
-  const pendingWarehouseProductIdRef = useRef<string | null>(null)
   const pathnameRef = useRef(location.pathname)
   const barcodeFeatureEnabledRef = useRef(true)
 
@@ -496,14 +495,6 @@ function MainApp() {
   // Keep pathname ref in sync for the barcode scanner (avoids re-registering listener on nav)
   useEffect(() => { pathnameRef.current = location.pathname }, [location.pathname])
 
-  // Dispatch pending warehouse product once the Warehouse component has mounted
-  // (child effects run before parent, so the listener is registered before we dispatch)
-  useEffect(() => {
-    const pid = pendingWarehouseProductIdRef.current
-    if (!pid || location.pathname !== '/warehouse') return
-    pendingWarehouseProductIdRef.current = null
-    window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: pid } }))
-  }, [location.pathname])
 
   // Keep barcode feature gate in sync with tenant config
   useEffect(() => {
@@ -1432,7 +1423,9 @@ useEffect(() => {
             style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 style={{ margin: 0 }}>{barcodeActionProduct.name}</h3>
+            <h3 style={{ margin: 0 }}>
+              {[barcodeActionProduct.name, barcodeActionProduct.variant, barcodeActionProduct.variant_2].filter(Boolean).join(' · ')}
+            </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button disabled style={{ opacity: 0.4, cursor: 'not-allowed' }}>Quick Sale</button>
               <button onClick={() => {
@@ -1441,8 +1434,7 @@ useEffect(() => {
                 setBarcodeActionProduct(null)
               }}>View Product</button>
               <button onClick={() => {
-                pendingWarehouseProductIdRef.current = barcodeActionProduct.id
-                navigate('/warehouse')
+                navigate('/warehouse', { state: { scanProductId: barcodeActionProduct.id } })
                 setBarcodeActionProduct(null)
               }}>Adjust Inventory</button>
             </div>
