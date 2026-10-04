@@ -227,6 +227,42 @@ export default function NewOrder() {
   )
 
   // Pre-fill price from product's price_amount when product on a line changes
+  // Barcode scanner: live ref so the event handler always calls with latest closure
+  const barcodeAddProductRef = useRef<(productId: string) => void>(() => {})
+  barcodeAddProductRef.current = (productId: string) => {
+    const prod = products.find(p => p.id === productId)
+    const pa = prod?.price_amount
+    const isRefund = (prod?.name || '').trim().toLowerCase() === 'refund/discount'
+    let priceStr = ''
+    if (pa != null && pa > 0) priceStr = isRefund ? '-' + fmtInput(Math.abs(pa)) : fmtInput(pa)
+    const needsUnit = prod?.unit_tracking === 'serialized_intake'
+    const isCoverageProduct = prod?.product_kind === 'addon'
+    const patch = { product_id: productId, priceStr, historicalPrice: null as null, qtyStr: isCoverageProduct ? '1' : '' }
+    const emptyIdx = lines.findIndex(l => !l.product_id)
+    const targetIdx = emptyIdx >= 0 ? emptyIdx : lines.length
+    setFormOpen(true)
+    setLines(prev => {
+      const ei = prev.findIndex(l => !l.product_id)
+      if (ei >= 0) return prev.map((l, i) => i === ei ? { ...l, ...patch, qtyStr: l.qtyStr || patch.qtyStr } : l)
+      return [...prev, { ...emptyLine(productId), ...patch }]
+    })
+    fetchLastPrice(targetIdx, productId)
+    if (needsUnit && productId) {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      setLines(prev => prev.map((l, i) => i === targetIdx ? { ...l, availableUnits: 'loading' } : l))
+      fetch(`${base}/.netlify/functions/inventory-units?product_id=${productId}&status=Inventory`, { headers: getAuthHeaders() })
+        .then(r => r.json())
+        .then(d => setLines(prev => prev.map((l, i) => i === targetIdx ? { ...l, availableUnits: (d.units ?? []) as AvailableUnit[] } : l)))
+        .catch(() => setLines(prev => prev.map((l, i) => i === targetIdx ? { ...l, availableUnits: [] } : l)))
+    }
+  }
+
+  useEffect(() => {
+    const handler = (e: Event) => barcodeAddProductRef.current((e as CustomEvent<{ productId: string }>).detail.productId)
+    window.addEventListener('barcode-order-product', handler)
+    return () => window.removeEventListener('barcode-order-product', handler)
+  }, [])
+
   function onLineProductChange(idx: number, product_id: string) {
     const prod = products.find(p => p.id === product_id)
     const pa = prod?.price_amount

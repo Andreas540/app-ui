@@ -602,6 +602,7 @@ function MainApp() {
     if (found) {
       if (pathnameRef.current === '/products/new') setBarcodeFoundProduct(found)
       else if (pathnameRef.current === '/warehouse') window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: found.id } }))
+      else if (pathnameRef.current === '/orders/new') window.dispatchEvent(new CustomEvent('barcode-order-product', { detail: { productId: found.id } }))
     } else {
       setBarcodeModalBarcode(buf)
     }
