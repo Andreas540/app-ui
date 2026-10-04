@@ -129,10 +129,7 @@ export default function NewOrder() {
 
         const targetProduct = paramProductId
           ? prods.find(p => p.id === paramProductId)
-          : (
-              prods.filter(p => (p.category ?? 'product') === 'product' && p.product_kind !== 'addon').sort((a, b) => a.name.localeCompare(b.name))[0]
-              ?? prods.filter(p => p.category === 'service' && p.product_kind !== 'addon').sort((a, b) => a.name.localeCompare(b.name))[0]
-            )
+          : null
 
         if (targetProduct) {
           const line = emptyLine(targetProduct.id)
@@ -579,6 +576,7 @@ export default function NewOrder() {
                     <option value="">{t('orders.noProductsYet')}</option>
                   ) : (
                     <>
+                      <option value="">—</option>
                       {productGroup.length > 0 && (
                         <optgroup label={t('orders.groupProducts')}>
                           {buildGroupOptions(productGroup)}
