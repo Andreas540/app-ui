@@ -243,19 +243,21 @@ export default function Warehouse() {
 
   const CONTROL_H = 44
 
-  // Sync form when ?product_id changes (e.g. barcode scanner navigates to same route)
+  // Barcode scanner: open form and select scanned product
   useEffect(() => {
-    const pid = searchParams.get('product_id')
-    if (!pid) return
-    setAdjustOpen(true)
-    setProductId(pid)
-    if (materialProducts.some(p => p.id === pid)) {
-      setFlag('material')
-    } else {
-      setFlag(isRetail ? 'P' : 'M')
+    const handler = (e: Event) => {
+      const pid = (e as CustomEvent<{ productId: string }>).detail.productId
+      setAdjustOpen(true)
+      setProductId(pid)
+      if (materialProducts.some(p => p.id === pid)) {
+        setFlag('material')
+      } else {
+        setFlag(isRetail ? 'P' : 'M')
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.get('product_id')])
+    window.addEventListener('barcode-warehouse-product', handler)
+    return () => window.removeEventListener('barcode-warehouse-product', handler)
+  }, [materialProducts, isRetail])
 
   // Load products and inventory
   useEffect(() => {
