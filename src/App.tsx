@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
-import { getAuthHeaders, fetchBootstrap, type Product } from './lib/api'
+import { getAuthHeaders, listProducts, type ProductWithCost } from './lib/api'
 import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
 import { applyTheme, getMode, getSkin } from './lib/theme'
 
@@ -391,10 +391,10 @@ function MainApp() {
   const [showExternalOverlay, setShowExternalOverlay] = useState(false)
 
   const [barcodeModalBarcode, setBarcodeModalBarcode] = useState<string | null>(null)
-  const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<Product | null>(null)
+  const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<ProductWithCost | null>(null)
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
-  const cachedProductsRef = useRef<Product[] | null>(null)
+  const cachedProductsRef = useRef<ProductWithCost[] | null>(null)
   const pendingScanRef = useRef<string | null>(null)
   const pathnameRef = useRef(location.pathname)
   const barcodeFeatureEnabledRef = useRef(true)
@@ -504,8 +504,8 @@ function MainApp() {
   // Also flushes any scan that arrived before the cache was ready.
   useEffect(() => {
     if (!isLoggedIn || cachedProductsRef.current) return
-    fetchBootstrap().then(data => {
-      cachedProductsRef.current = data.products ?? []
+    listProducts().then(({ products }) => {
+      cachedProductsRef.current = products
       if (pendingScanRef.current) {
         processBarcodeResult(pendingScanRef.current)
         pendingScanRef.current = null
@@ -658,7 +658,7 @@ function MainApp() {
     }
 
     const handleProductSaved = () => {
-      fetchBootstrap().then(data => { cachedProductsRef.current = data.products ?? [] }).catch(() => {})
+      listProducts().then(({ products }) => { cachedProductsRef.current = products }).catch(() => {})
     }
 
     window.addEventListener('keydown', handleKeydown)
@@ -1386,13 +1386,19 @@ useEffect(() => {
       )}
 
       {/* ── Barcode scanner: found product modal (shown when on /products/new) ── */}
-      {barcodeFoundProduct && (
-        <ProductDetailModal
-          product={barcodeFoundProduct as any}
-          onClose={() => setBarcodeFoundProduct(null)}
-          pageFields={{}}
-        />
-      )}
+      {barcodeFoundProduct && (() => {
+        const pf = getTenantConfig(user?.tenantId).pages?.['new-product']?.fields ?? {}
+        const btLabels = (user as any)?.businessTypeConfig?.labels ?? {}
+        const labelProductCost: string = btLabels.productCostPerUnit || undefined
+        return (
+          <ProductDetailModal
+            product={barcodeFoundProduct}
+            onClose={() => setBarcodeFoundProduct(null)}
+            pageFields={pf}
+            labelProductCost={labelProductCost}
+          />
+        )
+      })()}
 
       {/* ── Welcome modal ── */}
       {tiReady && showWelcomeModal && getTenantConfig(user?.tenantId).ui.showWelcomeModal && (() => {
