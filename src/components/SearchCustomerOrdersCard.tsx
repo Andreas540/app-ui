@@ -59,14 +59,14 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
   const [modalCustomerId, setModalCustomerId] = useState<string | undefined>(undefined)
   const [modalLoadingId, setModalLoadingId] = useState<string | null>(null)
 
-  function buildUrl(overridePid?: string | null) {
+  function buildUrl(scanOverride?: string) {
     const p = new URLSearchParams()
     if (q)           p.set('q',          q)
     if (fromDate)    p.set('from_date',  fromDate)
     if (toDate)      p.set('to_date',    toDate)
     if (minAmount)   p.set('min_amount', minAmount)
     if (maxAmount)   p.set('max_amount', maxAmount)
-    const pid = overridePid !== undefined ? overridePid : (scanProductId || filterProductId)
+    const pid = (scanOverride !== undefined ? scanOverride : scanProductId) || filterProductId
     if (pid)         p.set('product_id', pid)
     if (filterCustomerId) p.set('customer_id', filterCustomerId)
     return `${BASE}/api/search-orders?${p}`
@@ -160,7 +160,6 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
                 placeholder="Customer, order #, product, or scan barcode…"
                 value={q}
                 onChange={e => setQ(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 data-barcode-search="customer-orders"
                 style={{ width: '100%' }}
               />
@@ -170,7 +169,7 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
                     Product: {scanProductName}
                   </span>
                   <button
-                    onClick={() => { setScanProductId(''); setScanProductName(''); fetchOrders(buildUrl(null)) }}
+                    onClick={() => { setScanProductId(''); setScanProductName(''); fetchOrders(buildUrl('')) }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0, color: 'var(--text-secondary)' }}
                   >×</button>
                 </div>
