@@ -167,14 +167,21 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
   const filteredPos = (() => {
     const arr = pos.filter(po => {
       if (filterSupplier && po.supplier_id !== filterSupplier) return false
-      if (scanProductId) return po.items.some(i => i.product_id === scanProductId)
+      if (scanProductId) {
+        const nameQ = search.trim().toLowerCase()
+        return (
+          po.items.some(i => i.product_id === scanProductId) ||
+          (nameQ !== '' && po.linked_orders.some(lo => (lo.products ?? '').toLowerCase().includes(nameQ)))
+        )
+      }
       if (search.trim()) {
         const q = search.trim().toLowerCase()
         return (
           po.po_number.toLowerCase().includes(q) ||
           (po.supplier_name ?? '').toLowerCase().includes(q) ||
           (po.notes ?? '').toLowerCase().includes(q) ||
-          po.items.some(i => (i.product_name ?? '').toLowerCase().includes(q))
+          po.items.some(i => (i.product_name ?? '').toLowerCase().includes(q)) ||
+          po.linked_orders.some(lo => (lo.products ?? '').toLowerCase().includes(q))
         )
       }
       return true
