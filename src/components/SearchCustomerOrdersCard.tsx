@@ -51,7 +51,6 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
   const [maxAmount, setMaxAmount] = useState('')
   const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all')
   const [scanProductId, setScanProductId] = useState('')
-  const [scanProductName, setScanProductName] = useState('')
 
   // Modal state
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
@@ -96,7 +95,7 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
   function handleClear() {
     setQ(''); setFromDate(''); setToDate(''); setMinAmount(''); setMaxAmount(''); setPaidFilter('all')
     setSortCol('date'); setSortDir('desc')
-    setScanProductId(''); setScanProductName('')
+    setScanProductId('')
     const url = new URLSearchParams()
     if (filterCustomerId) url.set('customer_id', filterCustomerId)
     if (filterProductId)  url.set('product_id',  filterProductId)
@@ -108,8 +107,7 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
       const { component, productId, productName, barcode } = (e as CustomEvent).detail
       if (component !== 'customer-orders') return
       setScanProductId(productId ?? '')
-      setScanProductName(productId ? (productName ?? barcode) : '')
-      setQ('')
+      setQ(productName ?? barcode)
       setOpen(true)
       const p = new URLSearchParams()
       if (productId)       p.set('product_id',  productId)
@@ -159,21 +157,10 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
                 type="text"
                 placeholder="Customer, order #, product, or scan barcode…"
                 value={q}
-                onChange={e => setQ(e.target.value)}
+                onChange={e => { setQ(e.target.value); setScanProductId('') }}
                 data-barcode-search="customer-orders"
                 style={{ width: '100%' }}
               />
-              {scanProductName && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12 }}>
-                  <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: 4, padding: '2px 8px' }}>
-                    Product: {scanProductName}
-                  </span>
-                  <button
-                    onClick={() => { setScanProductId(''); setScanProductName(''); fetchOrders(buildUrl('')) }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0, color: 'var(--text-secondary)' }}
-                  >×</button>
-                </div>
-              )}
             </div>
             <div>
               <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Date from</label>
