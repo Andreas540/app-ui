@@ -392,10 +392,12 @@ function MainApp() {
 
   const [barcodeModalBarcode, setBarcodeModalBarcode] = useState<string | null>(null)
   const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<ProductWithCost | null>(null)
+  const [barcodeActionProduct, setBarcodeActionProduct] = useState<ProductWithCost | null>(null)
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
   const cachedProductsRef = useRef<ProductWithCost[] | null>(null)
   const pendingScanRef = useRef<string | null>(null)
+  const pendingWarehouseProductIdRef = useRef<string | null>(null)
   const pathnameRef = useRef(location.pathname)
   const barcodeFeatureEnabledRef = useRef(true)
 
@@ -493,6 +495,15 @@ function MainApp() {
 
   // Keep pathname ref in sync for the barcode scanner (avoids re-registering listener on nav)
   useEffect(() => { pathnameRef.current = location.pathname }, [location.pathname])
+
+  // Dispatch pending warehouse product once the Warehouse component has mounted
+  // (child effects run before parent, so the listener is registered before we dispatch)
+  useEffect(() => {
+    const pid = pendingWarehouseProductIdRef.current
+    if (!pid || location.pathname !== '/warehouse') return
+    pendingWarehouseProductIdRef.current = null
+    window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: pid } }))
+  }, [location.pathname])
 
   // Keep barcode feature gate in sync with tenant config
   useEffect(() => {
@@ -603,6 +614,7 @@ function MainApp() {
       if (pathnameRef.current === '/products/new') setBarcodeFoundProduct(found)
       else if (pathnameRef.current === '/warehouse') window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: found.id } }))
       else if (pathnameRef.current === '/orders/new') window.dispatchEvent(new CustomEvent('barcode-order-product', { detail: { productId: found.id } }))
+      else setBarcodeActionProduct(found)
     } else {
       setBarcodeModalBarcode(buf)
     }
@@ -1404,6 +1416,38 @@ useEffect(() => {
                 navigate(`/products/new?barcode=${encodeURIComponent(barcodeModalBarcode)}`)
                 setBarcodeModalBarcode(null)
               }}>{tc('barcodeScanner.addProduct')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Barcode scanner: product action modal (catch-all for other pages) ── */}
+      {barcodeActionProduct && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => setBarcodeActionProduct(null)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0 }}>{barcodeActionProduct.name}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button disabled style={{ opacity: 0.4, cursor: 'not-allowed' }}>Quick Sale</button>
+              <button onClick={() => {
+                setBarcodeFoundProduct(barcodeActionProduct)
+                navigate('/products/new')
+                setBarcodeActionProduct(null)
+              }}>View Product</button>
+              <button onClick={() => {
+                pendingWarehouseProductIdRef.current = barcodeActionProduct.id
+                navigate('/warehouse')
+                setBarcodeActionProduct(null)
+              }}>Adjust Inventory</button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setBarcodeActionProduct(null)}>{tc('cancel')}</button>
             </div>
           </div>
         </div>
