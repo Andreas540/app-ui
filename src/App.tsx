@@ -642,7 +642,11 @@ function MainApp() {
         // Only treat as barcode if ≥4 chars accumulated rapidly before Enter
         if (buf.length >= 4) {
           e.preventDefault()
-          ;(document.activeElement as HTMLElement | null)?.blur()
+          const activeEl = document.activeElement as HTMLElement | null
+          if (activeEl?.tagName.toLowerCase() === 'select') {
+            (activeEl as HTMLSelectElement).value = ''
+          }
+          activeEl?.blur()
           if (cachedProductsRef.current) {
             processBarcodeResult(buf)
           } else {
