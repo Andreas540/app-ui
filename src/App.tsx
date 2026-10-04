@@ -601,6 +601,7 @@ function MainApp() {
     const found = cachedProductsRef.current!.find(p => p.barcode === buf)
     if (found) {
       if (pathnameRef.current === '/products/new') setBarcodeFoundProduct(found)
+      else if (pathnameRef.current === '/warehouse') navigate(`/warehouse?product_id=${encodeURIComponent(found.id)}`)
     } else {
       setBarcodeModalBarcode(buf)
     }
