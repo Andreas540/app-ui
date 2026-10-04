@@ -249,6 +249,7 @@ export default function EditProduct() {
         product_subcategory: productSubcategory || null,
         ...(type === 'product' ? { sku: sku || null, barcode: barcode || null, variant: variant || null, variant_2: variant2 || null, ...(showUnitTracking ? { unit_tracking: unitTracking } : {}) } : {}),
       })
+      window.dispatchEvent(new Event('product-saved'))
 
       let message = t('products.updatedProduct', { product: res.product.name })
       if (res.applied_to_history) {

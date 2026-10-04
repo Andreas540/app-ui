@@ -657,13 +657,19 @@ function MainApp() {
       barcodeLastTimeRef.current = now
     }
 
+    const handleProductSaved = () => {
+      fetchBootstrap().then(data => { cachedProductsRef.current = data.products ?? [] }).catch(() => {})
+    }
+
     window.addEventListener('keydown', handleKeydown)
     window.addEventListener('focusin', handleFocusin)
     window.addEventListener('focusout', handleFocusout)
+    window.addEventListener('product-saved', handleProductSaved)
     return () => {
       window.removeEventListener('keydown', handleKeydown)
       window.removeEventListener('focusin', handleFocusin)
       window.removeEventListener('focusout', handleFocusout)
+      window.removeEventListener('product-saved', handleProductSaved)
     }
   }, [isLoggedIn, navigate])
 

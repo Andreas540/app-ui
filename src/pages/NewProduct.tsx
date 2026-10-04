@@ -229,6 +229,7 @@ export default function NewProduct() {
       setSaving(true)
       if (category === 'addon') return
       await createProduct({ name: nm, cost: costNum, category, duration_minutes: durationMinutes, price_amount: priceAmount, image_data: imageData, product_category: productCategory || null, product_subcategory: productSubcategory || null, sku: category === 'product' ? (sku || null) : null, barcode: category === 'product' ? (barcode || null) : null, variant: category === 'product' ? (variant || null) : null, variant_2: category === 'product' ? (variant2 || null) : null, ...(category === 'product' && showUnitTracking ? { unit_tracking: unitTracking } : {}), ...(allowSupplierAvgCost && costMethod !== 'manual' ? { cost_method: costMethod } : {}) })
+      window.dispatchEvent(new Event('product-saved'))
       alert(t(category === 'service' ? 'products.serviceCreated' : 'products.created'))
       setName('')
       setCostStr('')
