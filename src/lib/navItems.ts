@@ -1,6 +1,6 @@
 export interface NavItemDef {
   id: string
-  section: 'sales' | 'cash-management' | 'reports' | 'supply' | 'labor' | 'booking' | 'admin'
+  section: 'sales' | 'cash-management' | 'reports' | 'supply' | 'labor' | 'booking' | 'pos' | 'admin'
   labelKey: string
 }
 
@@ -35,6 +35,8 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'employees',        section: 'labor',   labelKey: 'employees' },
   { id: 'time-approval',    section: 'labor',   labelKey: 'timeApproval' },
   { id: 'time-entry',       section: 'labor',   labelKey: 'timeEntry' },
+  // POS
+  { id: 'quick-sales', section: 'pos', labelKey: 'quickSales' },
   // Booking
   { id: 'booking-dashboard',  section: 'booking', labelKey: 'bookingDashboard' },
   { id: 'new-booking',         section: 'booking', labelKey: 'newBooking' },
@@ -53,6 +55,7 @@ export const NAV_SECTIONS: { id: NavItemDef['section']; labelKey: string }[] = [
   { id: 'reports',          labelKey: 'reportsSection' },
   { id: 'supply',  labelKey: 'supplyChain' },
   { id: 'labor',   labelKey: 'employeeManagement' },
+  { id: 'pos',     labelKey: 'posSection' },
   { id: 'booking', labelKey: 'bookingSection' },
   { id: 'admin',   labelKey: 'admin' },
 ]

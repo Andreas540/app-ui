@@ -3,10 +3,13 @@ import MaintenanceGate from './components/MaintenanceGate'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { useLocale } from './contexts/LocaleContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { getTenantConfig } from './lib/tenantConfig'
-import { getAuthHeaders, listProducts, type ProductWithCost } from './lib/api'
+import { getAuthHeaders, listProducts, fetchBootstrap, createCustomer, type ProductWithCost } from './lib/api'
+import { todayYMD } from './lib/time'
+import { useCurrency } from './lib/useCurrency'
 import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
 import { applyTheme, getMode, getSkin } from './lib/theme'
 
@@ -69,6 +72,7 @@ import ProductDetailModal from './components/ProductDetailModal'
 import Contact from './pages/Contact'
 import Messages from './pages/Messages'
 import StatsLogs from './pages/StatsLogs'
+import QuickSalesPage from './pages/QuickSalesPage'
 import BookingIntegrationPage from './pages/BookingIntegrationPage'
 import BookingDashboardPage from './pages/BookingDashboardPage'
 import BookingPage from './pages/BookingPage'
@@ -329,6 +333,7 @@ const PAGE_ACTIONS: Record<string, string> = {
   '/bookings/clients':           'page_view_booking_clients',
   '/bookings/payments':          'page_view_booking_payments',
   '/order/:slug':                'page_view_public_order_page',
+  '/pos/quick-sales':            'page_view_pos_quick_sales',
 
 }
 
@@ -393,6 +398,30 @@ function MainApp() {
   const [barcodeModalBarcode, setBarcodeModalBarcode] = useState<string | null>(null)
   const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<ProductWithCost | null>(null)
   const [barcodeActionProduct, setBarcodeActionProduct] = useState<ProductWithCost | null>(null)
+
+  type QuickSaleLine = { product_id: string; name: string; variant: string | null; variant_2: string | null; qty: number; unit_price: number }
+  type QSTerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
+  const [quickSaleLines, setQuickSaleLines] = useState<QuickSaleLine[]>([])
+  const [quickSaleOpen, setQuickSaleOpen] = useState(false)
+  const [qsTerminalState, setQsTerminalState] = useState<QSTerminalState>('idle')
+  const [qsTerminalMsg, setQsTerminalMsg] = useState('')
+  const qsReceiptIdRef = useRef<string | null>(null)
+  const qsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const qsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const quickSaleActiveRef = useRef(false)
+  const addToCartRef = useRef<(p: ProductWithCost) => void>(() => {})
+  const qsBootstrapRef = useRef<{ customerId: string | null } | null>(null)
+
+  quickSaleActiveRef.current = quickSaleLines.length > 0
+  addToCartRef.current = (product: ProductWithCost) => {
+    setQuickSaleLines(prev => {
+      const idx = prev.findIndex(l => l.product_id === product.id)
+      if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, qty: l.qty + 1 } : l)
+      return [...prev, { product_id: product.id, name: product.name, variant: product.variant ?? null, variant_2: product.variant_2 ?? null, qty: 1, unit_price: Number((product as any).price_amount ?? 0) }]
+    })
+    setQuickSaleOpen(true)
+  }
+
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
   const cachedProductsRef = useRef<ProductWithCost[] | null>(null)
@@ -407,6 +436,8 @@ function MainApp() {
   })
 
   const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth, pinLock, isLocked, lock } = useAuth()
+  const { timezone } = useLocale()
+  const { fmtMoney } = useCurrency()
 
   // When impersonating a specific tenant user, use their role for nav/route guards
   // so we see exactly what they see. user.role stays 'super_admin' so TenantSwitcher stays visible.
@@ -606,9 +637,86 @@ function MainApp() {
       else if (pathnameRef.current === '/warehouse') window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: found.id } }))
       else if (pathnameRef.current === '/orders/new') window.dispatchEvent(new CustomEvent('barcode-order-product', { detail: { productId: found.id } }))
       else if (pathnameRef.current === '/price-checker') window.dispatchEvent(new CustomEvent('barcode-price-checker-product', { detail: { productId: found.id } }))
+      else if (pathnameRef.current === '/pos/quick-sales' || quickSaleActiveRef.current) addToCartRef.current(found)
       else setBarcodeActionProduct(found)
     } else {
       setBarcodeModalBarcode(buf)
+    }
+  }
+
+  // ── Quick Sale terminal functions ────────────────────────────────────────────
+  const BASE_QS = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+
+  function stopQsPoll() {
+    if (qsPollRef.current) { clearInterval(qsPollRef.current); qsPollRef.current = null }
+    if (qsTimeoutRef.current) { clearTimeout(qsTimeoutRef.current); qsTimeoutRef.current = null }
+  }
+
+  async function chargeQsTerminal(orderId: string) {
+    try {
+      setQsTerminalState('initiating')
+      setQsTerminalMsg('')
+      const initRes = await fetch(`${BASE_QS}/api/amp-terminal-initiate`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const initData = await initRes.json()
+      if (!initRes.ok) throw new Error(initData.error || 'Failed to reach terminal')
+      qsReceiptIdRef.current = initData.receipt_id
+      setQsTerminalState('waiting')
+      qsTimeoutRef.current = setTimeout(() => { stopQsPoll(); setQsTerminalState('timeout') }, 60_000)
+      qsPollRef.current = setInterval(async () => {
+        try {
+          const pr = await fetch(`${BASE_QS}/api/amp-terminal-poll`, {
+            method: 'POST', headers: getAuthHeaders(),
+            body: JSON.stringify({ receipt_id: qsReceiptIdRef.current, order_id: orderId }),
+          })
+          const pd = await pr.json()
+          if (pd.status === 'pending') return
+          stopQsPoll()
+          if (pd.status === 'approved') {
+            setQsTerminalState('approved')
+            setQsTerminalMsg(`Approved · ${pd.card_type || ''} ···${pd.last_four || ''}`.trim())
+          } else {
+            setQsTerminalState('declined')
+            setQsTerminalMsg(pd.message || 'Payment declined')
+          }
+        } catch { /* network hiccup */ }
+      }, 3_000)
+    } catch (e: any) {
+      stopQsPoll(); setQsTerminalState('idle'); alert(e?.message || 'Terminal error')
+    }
+  }
+
+  async function handleQsCharge() {
+    if (qsTerminalState !== 'idle' || quickSaleLines.length === 0) return
+    try {
+      if (!qsBootstrapRef.current) {
+        const { customers } = await fetchBootstrap()
+        const qsc = customers.find(c => c.name === 'Quick Sales')
+        qsBootstrapRef.current = { customerId: qsc?.id ?? null }
+      }
+      let { customerId } = qsBootstrapRef.current
+      if (!customerId) {
+        const created = await createCustomer({ name: 'Quick Sales' })
+        customerId = created.id
+        qsBootstrapRef.current = { customerId }
+      }
+      const res = await fetch(`${BASE_QS}/api/orders`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({
+          customer_id: customerId,
+          date: todayYMD(timezone),
+          delivered: true,
+          delivered_at: todayYMD(timezone),
+          items: quickSaleLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_price: l.unit_price })),
+        }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || `Order creation failed (${res.status})`) }
+      const data = await res.json()
+      chargeQsTerminal(data.id ?? data.order_id)
+    } catch (e: any) {
+      setQsTerminalState('idle'); alert(e?.message || 'Failed to charge')
     }
   }
 
@@ -1308,6 +1416,7 @@ useEffect(() => {
                 {hasFeature('time-approval') && <Route path="/time-approval" element={<TimeApproval />} />}
 
                 {/* Booking module */}
+                {hasFeature('quick-sales') && <Route path="/pos/quick-sales" element={<QuickSalesPage />} />}
                 {hasFeature('booking-dashboard') && <Route path="/bookings" element={<BookingDashboardPage />} />}
                 {hasFeature('new-booking') && <Route path="/bookings/new" element={<NewBookingPage />} />}
                 {hasFeature('bookings') && <Route path="/bookings/list" element={<BookingsPage />} />}
@@ -1413,6 +1522,127 @@ useEffect(() => {
         </div>
       )}
 
+      {/* ── Quick Sale: floating cart button ── */}
+      {quickSaleLines.length > 0 && !quickSaleOpen && (
+        <button
+          onClick={() => setQuickSaleOpen(true)}
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 990,
+            background: 'var(--primary)', color: '#fff',
+            border: 'none', borderRadius: 28, padding: '10px 20px',
+            fontSize: 15, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>🛒</span>
+          Cart ({quickSaleLines.reduce((s, l) => s + l.qty, 0)}) · {fmtMoney(quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0))}
+        </button>
+      )}
+
+      {/* ── Quick Sale: cart overlay ── */}
+      {quickSaleOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={() => { if (qsTerminalState === 'idle') setQuickSaleOpen(false) }}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '90vh', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>Quick Sale</h3>
+              {qsTerminalState === 'idle' && (
+                <button onClick={() => setQuickSaleOpen(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', lineHeight: 1, color: 'var(--text-secondary)', padding: '0 4px' }}>✕</button>
+              )}
+            </div>
+
+            {/* Items */}
+            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {quickSaleLines.map((line, i) => (
+                <div key={line.product_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {[line.name, line.variant, line.variant_2].filter(Boolean).join(' · ')}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(line.unit_price)} each</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      disabled={qsTerminalState !== 'idle'}
+                      onClick={() => setQuickSaleLines(prev => prev.map((l, j) => j === i ? { ...l, qty: Math.max(1, l.qty - 1) } : l))}
+                      style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >−</button>
+                    <span style={{ minWidth: 20, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{line.qty}</span>
+                    <button
+                      disabled={qsTerminalState !== 'idle'}
+                      onClick={() => setQuickSaleLines(prev => prev.map((l, j) => j === i ? { ...l, qty: l.qty + 1 } : l))}
+                      style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >+</button>
+                  </div>
+                  <div style={{ minWidth: 64, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                    {fmtMoney(line.qty * line.unit_price)}
+                  </div>
+                  {qsTerminalState === 'idle' && (
+                    <button
+                      onClick={() => setQuickSaleLines(prev => prev.filter((_, j) => j !== i))}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, padding: '0 2px', lineHeight: 1 }}
+                    >✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Total */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 18, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+              <span>Total</span>
+              <span>{fmtMoney(quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0))}</span>
+            </div>
+
+            {/* Terminal status */}
+            {qsTerminalState !== 'idle' && (
+              <div style={{ textAlign: 'center', padding: '8px 0', color: qsTerminalState === 'approved' ? 'var(--color-success)' : qsTerminalState === 'declined' || qsTerminalState === 'timeout' ? 'var(--color-error)' : 'var(--text-secondary)' }}>
+                {qsTerminalState === 'initiating' && 'Initiating terminal…'}
+                {qsTerminalState === 'waiting' && 'Waiting for card…'}
+                {qsTerminalState === 'approved' && `✓ ${qsTerminalMsg}`}
+                {qsTerminalState === 'declined' && `✗ ${qsTerminalMsg}`}
+                {qsTerminalState === 'timeout' && 'Terminal timed out'}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(qsTerminalState === 'idle') && (
+                <>
+                  <button
+                    className="primary"
+                    style={{ flex: 1 }}
+                    onClick={handleQsCharge}
+                    disabled={quickSaleLines.length === 0}
+                  >Charge Terminal</button>
+                  <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false) }}>Clear</button>
+                </>
+              )}
+              {(qsTerminalState === 'approved') && (
+                <button
+                  className="primary"
+                  style={{ flex: 1 }}
+                  onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg('') }}
+                >Done</button>
+              )}
+              {(qsTerminalState === 'declined' || qsTerminalState === 'timeout') && (
+                <>
+                  <button className="primary" style={{ flex: 1 }} onClick={() => { setQsTerminalState('idle'); setQsTerminalMsg('') }}>Try Again</button>
+                  <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg('') }}>Cancel</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Barcode scanner: product action modal (catch-all for other pages) ── */}
       {barcodeActionProduct && (
         <div
@@ -1428,7 +1658,10 @@ useEffect(() => {
               {[barcodeActionProduct.name, barcodeActionProduct.variant, barcodeActionProduct.variant_2].filter(Boolean).join(' · ')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button disabled style={{ opacity: 0.4, cursor: 'not-allowed' }}>Quick Sale</button>
+              <button className="primary" onClick={() => {
+                addToCartRef.current(barcodeActionProduct!)
+                setBarcodeActionProduct(null)
+              }}>Quick Sale</button>
               <button onClick={() => {
                 setBarcodeFoundProduct(barcodeActionProduct)
                 navigate('/products/new')

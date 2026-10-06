@@ -32,6 +32,7 @@ export const FEATURE_NAV_KEY: Record<string, string> = {
   'booking-payments':     'bookingPayments',
 
   'new-booking':          'newBooking',
+  'quick-sales':          'quickSales',
   'reports':              'reportsSalesProfit',
   'customer-reports':     'reportsCustomers',
   'timeline-overview':    'reportsTimeline',

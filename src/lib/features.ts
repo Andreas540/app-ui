@@ -42,6 +42,9 @@ export const AVAILABLE_FEATURES = {
   bizwiz:               { id: 'bizwiz',               name: 'Ask BizWiz',        route: '/reports/bizwiz',       category: 'Reports', module: 'reports' },
   simulations:          { id: 'simulations',          name: 'Simulations',       route: '/reports/simulations',  category: 'Reports', module: 'reports' },
 
+  // POS
+  'quick-sales': { id: 'quick-sales', name: 'Quick Sales', route: '/pos/quick-sales', category: 'POS', module: 'pos' },
+
   // Admin (always included, not a paid module)
   'tenant-admin':  { id: 'tenant-admin',    name: 'Account Admin',  route: '/admin',               category: 'Admin',  module: 'admin' },
   settings:        { id: 'settings',        name: 'Settings',       route: '/settings',            category: 'Admin',  module: 'admin' },
@@ -49,7 +52,7 @@ export const AVAILABLE_FEATURES = {
 } as const
 
 export type FeatureId = keyof typeof AVAILABLE_FEATURES
-export type ModuleId = 'sales' | 'cash-management' | 'supply-chain' | 'labor' | 'reports' | 'admin' | 'booking'
+export type ModuleId = 'sales' | 'cash-management' | 'supply-chain' | 'labor' | 'reports' | 'admin' | 'booking' | 'pos'
 
 export const FEATURE_CATEGORIES = {
   Sales:   'Sales & Cash Flow',
@@ -57,6 +60,7 @@ export const FEATURE_CATEGORIES = {
   Labor:   'Employee Management',
   Booking: 'Bookings',
   Reports: 'Reports',
+  POS:     'Point of Sale',
   Admin:   'Administration',
 } as const
 

@@ -71,6 +71,14 @@ export const MODULES: ModuleDef[] = [
     features: featuresForModule('booking'),
   },
   {
+    id: 'pos',
+    name: 'POS',
+    pricePerUser: 9.99,
+    description: 'Point of sale — quick sales terminal for walk-in customers',
+    alwaysIncluded: false,
+    features: featuresForModule('pos'),
+  },
+  {
     id: 'admin',
     name: 'Administration',
     pricePerUser: 0,

@@ -48,5 +48,7 @@
   "addQuickNavigation": "Añadir accesos directos",
   "cashMgmtSection": "Gestión de Efectivo",
   "cashMgmt": "Ingresos/Egresos",
-  "cashOverviewLink": "Resumen"
+  "cashOverviewLink": "Resumen",
+  "posSection": "TPV",
+  "quickSales": "Venta Rápida"
 }

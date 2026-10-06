@@ -48,5 +48,7 @@
   "addQuickNavigation": "Add shortcuts",
   "cashMgmtSection": "Cash Management",
   "cashMgmt": "Money In / Out",
-  "cashOverviewLink": "Overview"
+  "cashOverviewLink": "Overview",
+  "posSection": "POS",
+  "quickSales": "Quick Sales"
 }

@@ -48,5 +48,7 @@
   "addQuickNavigation": "Lägg till genvägar",
   "cashMgmtSection": "Kassahantering",
   "cashMgmt": "In / Ut",
-  "cashOverviewLink": "Översikt"
+  "cashOverviewLink": "Översikt",
+  "posSection": "Kassa",
+  "quickSales": "Direktförsäljning"
 }

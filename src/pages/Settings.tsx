@@ -40,12 +40,16 @@ export default function Settings() {
   const [settingPin, setSettingPin]     = useState(false)
   const [pinMessage, setPinMessage]     = useState<{ ok: boolean; text: string } | null>(null)
 
+  // When a super_admin is impersonating a tenant user, use that user's role so
+  // the shortcut list reflects what the tenant actually sees, not the super_admin's view.
+  const effectiveRole = user?.impersonatingUser?.role ?? user?.role
+
   // Shortcuts filtered to what the current user has access to
   const availableShortcuts = ALL_SHORTCUTS.filter(s => {
-    if (s.id === 'tenant-admin') return user?.role === 'tenant_admin' || user?.role === 'super_admin'
+    if (s.id === 'tenant-admin') return effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin'
     if (s.id === 'settings') return true  // always available to any logged-in user
     if (s.id === 'contact')  return true  // always available
-    return user?.role === 'super_admin' || hasFeature(s.id)
+    return effectiveRole === 'super_admin' || hasFeature(s.id)
   })
   const unselectedShortcuts = availableShortcuts.filter(s => !selectedShortcuts.includes(s.id))
 
