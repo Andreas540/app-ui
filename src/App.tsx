@@ -1403,12 +1403,12 @@ useEffect(() => {
       {/* ── Quick Sale: cart overlay ── */}
       {quickSaleOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '72px 16px 16px' }}
           onClick={() => { if (qsTerminalState === 'idle') setQuickSaleOpen(false) }}
         >
           <div
             className="card"
-            style={{ maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '90vh', overflow: 'hidden' }}
+            style={{ maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 88px)', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
