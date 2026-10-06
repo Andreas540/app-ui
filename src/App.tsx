@@ -698,7 +698,7 @@ function MainApp() {
       }
       let { customerId } = qsBootstrapRef.current
       if (!customerId) {
-        const created = await createCustomer({ name: 'Quick Sales' })
+        const created = await createCustomer({ name: 'Quick Sales', customer_type: 'Direct' })
         customerId = created.id
         qsBootstrapRef.current = { customerId }
       }

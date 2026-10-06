@@ -9,7 +9,7 @@ export default function QuickSalesPage() {
       try {
         const { customers } = await fetchBootstrap()
         if (!customers.find(c => c.name === 'Quick Sales')) {
-          await createCustomer({ name: 'Quick Sales' })
+          await createCustomer({ name: 'Quick Sales', customer_type: 'Direct' })
         }
         setStatus('ready')
       } catch {
