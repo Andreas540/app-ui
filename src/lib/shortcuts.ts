@@ -1,4 +1,5 @@
 import { AVAILABLE_FEATURES, type FeatureId } from './features'
+import { NAV_ITEMS } from './navItems'
 
 // Feature IDs excluded from the quick-access shortcut picker
 // Note: tenant-admin and settings are NOT excluded — they are filtered by role in Settings.tsx
@@ -71,10 +72,13 @@ export function buildLetterMap(items: Array<{ id: FeatureId; name: string }>): M
   return map
 }
 
-// Build the full shortcut list (all non-excluded features, in declaration order)
+// Build the full shortcut list ordered by NAV_ITEMS position (same source as the nav menu)
+const _navOrder = new Map(NAV_ITEMS.map((n, i) => [n.id, i]))
 const _rawShortcuts = (
   Object.values(AVAILABLE_FEATURES) as Array<{ id: FeatureId; name: string; route: string; category: string }>
-).filter(f => !EXCLUDED_FROM_SHORTCUTS.includes(f.id))
+)
+  .filter(f => !EXCLUDED_FROM_SHORTCUTS.includes(f.id))
+  .sort((a, b) => (_navOrder.get(a.id) ?? 999) - (_navOrder.get(b.id) ?? 999))
 
 const _letterMap = buildLetterMap(_rawShortcuts)
 

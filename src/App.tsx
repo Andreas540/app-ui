@@ -1,11 +1,13 @@
 // src/App.tsx
 import MaintenanceGate from './components/MaintenanceGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useLocale } from './contexts/LocaleContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
+import { NAV_ITEMS, NAV_SECTIONS } from './lib/navItems'
+import { AVAILABLE_FEATURES, type FeatureId } from './lib/features'
 import { getTenantConfig } from './lib/tenantConfig'
 import { getAuthHeaders, listProducts, fetchBootstrap, createCustomer, type ProductWithCost } from './lib/api'
 import { todayYMD } from './lib/time'
@@ -1077,221 +1079,79 @@ useEffect(() => {
               </button>
             )
 
+            // BizWiz has a custom image link instead of a text NavLink
+            const customNavRender: Partial<Record<string, () => ReactElement>> = {
+              bizwiz: () => (
+                <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)} style={{ padding: '6px 12px 4px 7px' }}>
+                  <img src="/images/bizwiz_ai_dark.svg"  alt={t('reportsBizWiz')} className="bizwiz-logo-dark"  style={{ height: 40, width: 'auto' }} />
+                  <img src="/images/bizwiz_ai_light.svg" alt=""                   className="bizwiz-logo-light" style={{ height: 40, width: 'auto' }} />
+                </NavLink>
+              ),
+            }
+
+            // Sections visible to this user (admin handled separately below)
+            const visibleSections = NAV_SECTIONS.filter(s => {
+              if (s.id === 'admin') return false
+              if (s.alwaysShow) return true
+              return NAV_ITEMS.filter(i => i.section === s.id).some(i => canAccess(i.id))
+            })
+
             return (
               <>
-                {canAccess('search') && (
-                  <NavLink to="/search" onClick={() => setNavOpen(false)}>
-                    {t('search', { ns: 'navigation' })}
-                  </NavLink>
-                )}
-                {sectionHeader('sales', t('salesCashFlow'), true)}
-                {!collapsed['sales'] && (<>
-                {canAccess('dashboard') && (
-                  <NavLink to="/" end onClick={() => setNavOpen(false)}>
-                    {t('mainDashboard')}
-                  </NavLink>
-                )}
-                {canAccess('customers') && (
-                  <NavLink to="/customers" onClick={() => setNavOpen(false)}>
-                    {t('customers')}
-                  </NavLink>
-                )}
-                {canAccess('partners') && (
-                  <NavLink to="/partners" onClick={() => setNavOpen(false)}>
-                    {t('partners')}
-                  </NavLink>
-                )}
-                {canAccess('price-checker') && (
-                  <NavLink to="/price-checker" onClick={() => setNavOpen(false)}>
-                    {t('priceChecker')}
-                  </NavLink>
-                )}
-                {canAccess('orders') && (
-                  <NavLink to="/orders/new" onClick={() => setNavOpen(false)}>
-                    {t('newOrder')}
-                  </NavLink>
-                )}
-                {canAccess('payments') && (
-                  <NavLink to="/payments" onClick={() => setNavOpen(false)}>
-                    {t('newPayment')}
-                  </NavLink>
-                )}
-                {canAccess('products') && (
-                  <NavLink to="/products/new" onClick={() => setNavOpen(false)}>
-                    {t('products')}
-                  </NavLink>
-                )}
-                {canAccess('invoices') && (
-                  <NavLink to="/invoices/create" onClick={() => setNavOpen(false)}>
-                    {t('createInvoice')}
-                  </NavLink>
-                )}
-                {canAccess('costs') && (
-                  <NavLink to="/costs/new" onClick={() => setNavOpen(false)}>
-                    {t('newCost')}
-                  </NavLink>
-                )}
-                </>)}
-                {(canAccess('cash-management') || canAccess('cash-overview')) && (<>
-                  {sectionHeader('cash-management', t('cashMgmtSection'))}
-                  {!collapsed['cash-management'] && (<>
-                    {canAccess('cash-management') && (
-                      <NavLink to="/cash/money-in-out" onClick={() => setNavOpen(false)}>
-                        {t('cashMgmt')}
-                      </NavLink>
-                    )}
-                    {canAccess('cash-overview') && (
-                      <NavLink to="/cash/overview" onClick={() => setNavOpen(false)}>
-                        {t('cashOverviewLink')}
-                      </NavLink>
-                    )}
-                  </>)}
-                </>)}
-                {(canAccess('reports') || canAccess('customer-reports') || canAccess('timeline-overview') || canAccess('bizwiz') || canAccess('simulations')) && (<>
-                  {sectionHeader('reports', t('reportsSection'))}
-                  {!collapsed['reports'] && (<>
-                    {canAccess('bizwiz') && (
-                      <NavLink to="/reports/bizwiz" onClick={() => setNavOpen(false)} style={{ padding: '6px 12px 4px 7px' }}>
-                        <img src="/images/bizwiz_ai_dark.svg"  alt={t('reportsBizWiz')} className="bizwiz-logo-dark"  style={{ height: 40, width: 'auto' }} />
-                        <img src="/images/bizwiz_ai_light.svg" alt=""                   className="bizwiz-logo-light" style={{ height: 40, width: 'auto' }} />
-                      </NavLink>
-                    )}
-                    {canAccess('reports') && (
-                      <NavLink to="/reports" end onClick={() => setNavOpen(false)}>
-                        {t('reportsSalesProfit')}
-                      </NavLink>
-                    )}
-                    {canAccess('customer-reports') && (
-                      <NavLink to="/reports/customers" onClick={() => setNavOpen(false)}>
-                        {t('reportsCustomers')}
-                      </NavLink>
-                    )}
-                    {canAccess('timeline-overview') && (
-                      <NavLink to="/reports/timeline" onClick={() => setNavOpen(false)}>
-                        {t('reportsTimeline')}
-                      </NavLink>
-                    )}
-                    {canAccess('simulations') && (
-                      <NavLink to="/reports/simulations" onClick={() => setNavOpen(false)}>
-                        {t('reportsSimulations')}
-                      </NavLink>
-                    )}
-                  </>)}
-                </>)}
-                {sectionHeader('supply', t('supplyChain'))}
-                {!collapsed['supply'] && (<>
-                {canAccess('supply-chain') && (
-                  <NavLink to="/supply-chain" onClick={() => setNavOpen(false)}>
-                    {t('supplyDemand')}
-                  </NavLink>
-                )}
-                {canAccess('production') && (
-                  <NavLink to="/labor-production" onClick={() => setNavOpen(false)}>
-                    {t('production')}
-                  </NavLink>
-                )}
-                {canAccess('warehouse') && (
-                  <NavLink to="/warehouse" onClick={() => setNavOpen(false)}>
-                    {t('warehouse')}
-                  </NavLink>
-                )}
-                {canAccess('supplier-orders') && (
-                  <NavLink to="/supplier-orders/new" onClick={() => setNavOpen(false)}>
-                    {t('newOrderSupplier')}
-                  </NavLink>
-                )}
-                {canAccess('suppliers') && (
-                  <NavLink to="/suppliers" end onClick={() => setNavOpen(false)}>
-                    {t('suppliers')}
-                  </NavLink>
-                )}
-                </>)}
-
-                {sectionHeader('labor', t('employeeManagement'))}
-                {!collapsed['labor'] && (<>
-                {canAccess('employees') && (
-                  <NavLink to="/employees" onClick={() => setNavOpen(false)}>
-                    {t('employees')}
-                  </NavLink>
-                )}
-                {canAccess('time-approval') && (
-                  <NavLink to="/time-approval" onClick={() => setNavOpen(false)}>
-                    {t('timeApproval')}
-                  </NavLink>
-                )}
-                {canAccess('time-entry') && (
-                  <NavLink to="/time-entry" onClick={() => setNavOpen(false)}>
-                    {t('timeEntry')}
-                  </NavLink>
-                )}
-                </>)}
-
-                {canAccess('booking-dashboard') && (<>
-                  {sectionHeader('booking', t('bookingSection', { ns: 'navigation' }))}
-                  {!collapsed['booking'] && (<>
-                    <NavLink to="/bookings" end onClick={() => setNavOpen(false)}>
-                      {t('bookingDashboard', { ns: 'navigation' })}
+                {/* Top-level items (no section header) */}
+                {NAV_ITEMS.filter(i => i.section === 'top' && canAccess(i.id)).map(item => {
+                  const feat = AVAILABLE_FEATURES[item.id as FeatureId]
+                  if (!feat) return null
+                  return (
+                    <NavLink key={item.id} to={feat.route} end={item.end} onClick={() => setNavOpen(false)}>
+                      {t(item.labelKey, { ns: 'navigation' })}
                     </NavLink>
-                    {canAccess('new-booking') && (
-                      <NavLink to="/bookings/new" onClick={() => setNavOpen(false)}>
-                        {t('newBooking', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('bookings') && (
-                      <NavLink to="/bookings/list" onClick={() => setNavOpen(false)}>
-                        {t('bookingList', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('booking-customers') && (
-                      <NavLink to="/bookings/clients" onClick={() => setNavOpen(false)}>
-                        {t('bookingClients', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                    {canAccess('booking-payments') && (
-                      <NavLink to="/bookings/payments" onClick={() => setNavOpen(false)}>
-                        {t('bookingPayments', { ns: 'navigation' })}
-                      </NavLink>
-                    )}
-                  </>)}
-                </>)}
+                  )
+                })}
 
+                {/* Section-driven items — order follows NAV_SECTIONS */}
+                {visibleSections.map((section, idx) => (
+                  <Fragment key={section.id}>
+                    {sectionHeader(section.id, t(section.labelKey, { ns: 'navigation' }), idx === 0)}
+                    {!collapsed[section.id] && NAV_ITEMS.filter(i => i.section === section.id).map(item => {
+                      if (!canAccess(item.id)) return null
+                      const renderer = customNavRender[item.id]
+                      if (renderer) return <Fragment key={item.id}>{renderer()}</Fragment>
+                      const feat = AVAILABLE_FEATURES[item.id as FeatureId]
+                      if (!feat) return null
+                      return (
+                        <NavLink key={item.id} to={feat.route} end={item.end} onClick={() => setNavOpen(false)}>
+                          {t(item.labelKey, { ns: 'navigation' })}
+                        </NavLink>
+                      )
+                    })}
+                  </Fragment>
+                ))}
+
+                {/* Admin section — always shown, includes role-gated extras */}
                 {sectionHeader('admin', t('admin'))}
                 {!collapsed['admin'] && (<>
-                {!hiddenNav.has('contact') && (
-                  <NavLink to="/contact" onClick={() => setNavOpen(false)}>
-                    {t('contact')}
-                  </NavLink>
-                )}
-                {(effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin' || canAccess('tenant-admin')) && (
-                  <NavLink to="/admin" onClick={() => setNavOpen(false)}>
-                    {t('accountAdmin')}
-                  </NavLink>
-                )}
-                {canAccess('settings') && (
-                  <NavLink to="/settings" onClick={() => setNavOpen(false)}>
-                    {t('settings')}
-                  </NavLink>
-                )}
-                {effectiveRole === 'super_admin' && (
-                  <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>
-                    {t('superAdmin')}
-                  </NavLink>
-                )}
-                {effectiveRole === 'super_admin' && (
-                  <NavLink to="/messages" onClick={() => setNavOpen(false)}>
-                    {t('messages')}
-                  </NavLink>
-                )}
-                {effectiveRole === 'super_admin' && (
-                  <NavLink to="/tenant-customization" onClick={() => setNavOpen(false)}>
-                    {t('tenantCustomization')}
-                  </NavLink>
-                )}
-                {effectiveRole === 'super_admin' && (
-                  <NavLink to="/stats-logs" onClick={() => setNavOpen(false)}>
-                    Stats &amp; Logs
-                  </NavLink>
-                )}
+                  {!hiddenNav.has('contact') && (
+                    <NavLink to="/contact" onClick={() => setNavOpen(false)}>{t('contact')}</NavLink>
+                  )}
+                  {(effectiveRole === 'tenant_admin' || effectiveRole === 'super_admin' || canAccess('tenant-admin')) && (
+                    <NavLink to="/admin" onClick={() => setNavOpen(false)}>{t('accountAdmin')}</NavLink>
+                  )}
+                  {canAccess('settings') && (
+                    <NavLink to="/settings" onClick={() => setNavOpen(false)}>{t('settings')}</NavLink>
+                  )}
+                  {effectiveRole === 'super_admin' && (
+                    <NavLink to="/super-admin" onClick={() => setNavOpen(false)}>{t('superAdmin')}</NavLink>
+                  )}
+                  {effectiveRole === 'super_admin' && (
+                    <NavLink to="/messages" onClick={() => setNavOpen(false)}>{t('messages')}</NavLink>
+                  )}
+                  {effectiveRole === 'super_admin' && (
+                    <NavLink to="/tenant-customization" onClick={() => setNavOpen(false)}>{t('tenantCustomization')}</NavLink>
+                  )}
+                  {effectiveRole === 'super_admin' && (
+                    <NavLink to="/stats-logs" onClick={() => setNavOpen(false)}>Stats &amp; Logs</NavLink>
+                  )}
                 </>)}
 
                 <button
