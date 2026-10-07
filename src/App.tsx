@@ -408,6 +408,7 @@ function MainApp() {
   const [qsTerminalState, setQsTerminalState] = useState<QSTerminalState>('idle')
   const [qsTerminalMsg, setQsTerminalMsg] = useState('')
   const qsReceiptIdRef = useRef<string | null>(null)
+  const qsOrderIdRef = useRef<string | null>(null)
   const qsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const qsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const quickSaleActiveRef = useRef(false)
@@ -654,6 +655,18 @@ function MainApp() {
     if (qsTimeoutRef.current) { clearTimeout(qsTimeoutRef.current); qsTimeoutRef.current = null }
   }
 
+  async function deleteQsOrder() {
+    const id = qsOrderIdRef.current
+    if (!id) return
+    qsOrderIdRef.current = null
+    try {
+      await fetch(`${BASE_QS}/api/order`, {
+        method: 'DELETE', headers: getAuthHeaders(),
+        body: JSON.stringify({ id }),
+      })
+    } catch { /* best-effort */ }
+  }
+
   async function chargeQsTerminal(orderId: string) {
     try {
       setQsTerminalState('initiating')
@@ -666,7 +679,7 @@ function MainApp() {
       if (!initRes.ok) throw new Error(initData.error || 'Failed to reach terminal')
       qsReceiptIdRef.current = initData.receipt_id
       setQsTerminalState('waiting')
-      qsTimeoutRef.current = setTimeout(() => { stopQsPoll(); setQsTerminalState('timeout') }, 60_000)
+      qsTimeoutRef.current = setTimeout(() => { stopQsPoll(); deleteQsOrder(); setQsTerminalState('timeout') }, 60_000)
       qsPollRef.current = setInterval(async () => {
         try {
           const pr = await fetch(`${BASE_QS}/api/amp-terminal-poll`, {
@@ -677,9 +690,11 @@ function MainApp() {
           if (pd.status === 'pending') return
           stopQsPoll()
           if (pd.status === 'approved') {
+            qsOrderIdRef.current = null
             setQsTerminalState('approved')
             setQsTerminalMsg(`Approved · ${pd.card_type || ''} ···${pd.last_four || ''}`.trim())
           } else {
+            deleteQsOrder()
             setQsTerminalState('declined')
             setQsTerminalMsg(pd.message || 'Payment declined')
           }
@@ -716,7 +731,8 @@ function MainApp() {
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || `Order creation failed (${res.status})`) }
       const data = await res.json()
-      chargeQsTerminal(data.id ?? data.order_id)
+      qsOrderIdRef.current = data.id ?? data.order_id
+      chargeQsTerminal(qsOrderIdRef.current!)
     } catch (e: any) {
       setQsTerminalState('idle'); alert(e?.message || 'Failed to charge')
     }
