@@ -52,7 +52,8 @@ async function searchOrders(event) {
         COALESCE((
           SELECT SUM(py.amount) FROM payments py WHERE py.order_id = o.id
         ), 0)::numeric(12,2)         AS paid_amount,
-        COALESCE(ot.product_list, '') AS product_list
+        COALESCE(ot.product_list, '') AS product_list,
+        (SELECT py.payment_type FROM payments py WHERE py.order_id = o.id ORDER BY py.id LIMIT 1) AS payment_type
       FROM orders o
       LEFT JOIN customers    c  ON c.id = o.customer_id
       LEFT JOIN order_totals ot ON ot.order_id = o.id
