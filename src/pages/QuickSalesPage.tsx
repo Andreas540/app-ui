@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchBootstrap, createCustomer, getAuthHeaders } from '../lib/api'
+import { fetchBootstrap, createCustomer, getAuthHeaders, type ProductWithCost } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { formatDate } from '../lib/time'
 import OrderDetailModal from '../components/OrderDetailModal'
+import QsProductPicker from '../components/QsProductPicker'
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -23,6 +24,7 @@ export default function QuickSalesPage() {
 
   const [customerId, setCustomerId] = useState<string | null>(null)
   const customerIdRef = useRef<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   // Search fields
   const [q, setQ] = useState('')
@@ -87,6 +89,11 @@ export default function QuickSalesPage() {
     window.addEventListener('qs-sale-completed', handler)
     return () => window.removeEventListener('qs-sale-completed', handler)
   }, [])
+
+  function handlePickerSelect(product: ProductWithCost) {
+    window.dispatchEvent(new CustomEvent('qs-add-to-cart', { detail: product }))
+    setPickerOpen(false)
+  }
 
   function handleSearch() {
     if (!customerId) return
@@ -156,12 +163,24 @@ export default function QuickSalesPage() {
   return (
     <div className="page-narrow">
       {/* Banner */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 20px' }}>
-        <div>
-          <h2 style={{ margin: '0 0 2px' }}>Quick Sale</h2>
-          <p className="helper" style={{ margin: 0, fontSize: 14 }}>Scan a product barcode to add it to the cart.</p>
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <h2 style={{ margin: '0 0 2px' }}>Quick Sale</h2>
+            <p className="helper" style={{ margin: 0, fontSize: 14 }}>Scan a product barcode or select a product below</p>
+          </div>
+          <span style={{ fontSize: 40, lineHeight: 1, flexShrink: 0 }}>🛒</span>
         </div>
-        <span style={{ fontSize: 40, lineHeight: 1, flexShrink: 0 }}>🛒</span>
+        <div
+          onClick={() => setPickerOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginTop: 12 }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{pickerOpen ? '▼' : '▶'}</span>
+          <span style={{ fontSize: 14, fontWeight: 500 }}>Select product</span>
+        </div>
+        {pickerOpen && (
+          <QsProductPicker onSelect={handlePickerSelect} maxHeight={300} />
+        )}
       </div>
 
       {/* Orders */}

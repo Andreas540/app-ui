@@ -1,8 +1,9 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react'
 import { getAuthHeaders, fetchBootstrap, createCustomer, type ProductWithCost } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { useLocale } from '../contexts/LocaleContext'
 import { todayYMD } from '../lib/time'
+import QsProductPicker from './QsProductPicker'
 
 export type QuickSalesCartHandle = {
   isActive: boolean
@@ -32,6 +33,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
   const [terminalMsg, setTerminalMsg] = useState('')
   const [cashOpen, setCashOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
+  const [manualPickerOpen, setManualPickerOpen] = useState(false)
 
   const receiptIdRef = useRef<string | null>(null)
   const orderIdRef = useRef<string | null>(null)
@@ -41,24 +43,32 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
   const linesRef = useRef<QuickSaleLine[]>([])
   linesRef.current = lines
 
+  function addProduct(product: ProductWithCost) {
+    setLines(prev => {
+      const idx = prev.findIndex(l => l.product_id === product.id)
+      if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, qty: l.qty + 1 } : l)
+      return [...prev, {
+        product_id: product.id,
+        name: product.name,
+        variant: product.variant ?? null,
+        variant_2: product.variant_2 ?? null,
+        qty: 1,
+        unit_price: Number((product as any).price_amount ?? 0),
+      }]
+    })
+    setOpen(true)
+  }
+
   useImperativeHandle(ref, () => ({
     get isActive() { return linesRef.current.length > 0 },
-    addToCart(product: ProductWithCost) {
-      setLines(prev => {
-        const idx = prev.findIndex(l => l.product_id === product.id)
-        if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, qty: l.qty + 1 } : l)
-        return [...prev, {
-          product_id: product.id,
-          name: product.name,
-          variant: product.variant ?? null,
-          variant_2: product.variant_2 ?? null,
-          qty: 1,
-          unit_price: Number((product as any).price_amount ?? 0),
-        }]
-      })
-      setOpen(true)
-    },
+    addToCart(product: ProductWithCost) { addProduct(product) },
   }), [])
+
+  useEffect(() => {
+    const handler = (e: Event) => addProduct((e as CustomEvent).detail as ProductWithCost)
+    window.addEventListener('qs-add-to-cart', handler)
+    return () => window.removeEventListener('qs-add-to-cart', handler)
+  }, [])
 
   function stopPoll() {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
@@ -197,6 +207,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     setTerminalMsg('')
     setCashOpen(false)
     setCashAmount('')
+    setManualPickerOpen(false)
   }
 
   const total = Math.round(lines.reduce((s, l) => s + Math.round(l.unit_price * 100) * l.qty, 0)) / 100
@@ -275,6 +286,25 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
                 </div>
               ))}
             </div>
+
+            {/* Add product manually */}
+            {terminalState === 'idle' && (
+              <div>
+                <button
+                  onClick={() => setManualPickerOpen(v => !v)}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{manualPickerOpen ? '▼' : '▶'}</span>
+                  Add product manually
+                </button>
+                {manualPickerOpen && (
+                  <QsProductPicker
+                    onSelect={p => { addProduct(p); setManualPickerOpen(false) }}
+                    maxHeight={220}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Total */}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 18, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
