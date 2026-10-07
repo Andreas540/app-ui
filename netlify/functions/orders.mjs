@@ -238,17 +238,21 @@ const TENANT_ID = authz.tenantId;
     `;
     const orderId = hdr[0].id;
 
-    // Insert all line items
+    // Insert all line items.
+    // delivered_qty is set here (not via a later UPDATE) so the trigger on
+    // order_items.delivered_qty doesn't fire — the manual warehouse_deliveries
+    // insert below already handles inventory when delivered=true.
     for (const item of validatedItems) {
       const [oi] = await sql`
-        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id, covers_product_id, covers_order_item_id, unit_identifier)
+        INSERT INTO order_items (order_id, product_id, qty, unit_price, cost, unit_id, covers_product_id, covers_order_item_id, unit_identifier, delivered_qty)
         VALUES (
           ${orderId}, ${item.product_id}, ${item.qtyNum}, ${item.unitPriceNum},
           (SELECT cost FROM products WHERE id = ${item.product_id} AND tenant_id = ${TENANT_ID}),
           ${item.unitId ?? null},
           ${item.covers_product_id ?? null},
           ${item.covers_order_item_id ?? null},
-          ${item.unit_identifier ?? null}
+          ${item.unit_identifier ?? null},
+          ${delivered ? item.qtyNum : 0}
         )
         RETURNING id
       `;
