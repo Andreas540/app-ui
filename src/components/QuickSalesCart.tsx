@@ -240,7 +240,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
         >
           <div
             className="card"
-            style={{ maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 88px)', overflow: 'hidden' }}
+            style={{ maxWidth: 520, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 88px)', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
