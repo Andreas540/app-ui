@@ -261,20 +261,20 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(line.unit_price)} each</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <button
                       disabled={terminalState !== 'idle'}
                       onClick={() => setLines(prev => prev.map((l, j) => j === i ? { ...l, qty: Math.max(1, l.qty - 1) } : l))}
                       style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >−</button>
-                    <span style={{ minWidth: 20, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{line.qty}</span>
+                    <span style={{ minWidth: 24, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{line.qty}</span>
                     <button
                       disabled={terminalState !== 'idle'}
                       onClick={() => setLines(prev => prev.map((l, j) => j === i ? { ...l, qty: l.qty + 1 } : l))}
                       style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >+</button>
                   </div>
-                  <div style={{ minWidth: 64, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                  <div style={{ minWidth: 90, flexShrink: 0, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
                     {fmtMoney(line.qty * line.unit_price)}
                   </div>
                   {terminalState === 'idle' && (
