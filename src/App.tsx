@@ -1550,23 +1550,23 @@ useEffect(() => {
                 const qsCashValid = qsCashNum >= qsTotal
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 500 }}>Amount received</span>
+                    <span style={{ fontWeight: 500 }}>Amount received</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button
-                        style={{ fontSize: 13, padding: '4px 10px' }}
+                        style={{ fontSize: 13, padding: '4px 10px', flexShrink: 0 }}
                         onClick={() => setQsCashAmount(String(qsTotal))}
                       >{fmtMoney(qsTotal)}</button>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={qsCashAmount}
+                        onChange={e => setQsCashAmount(e.target.value)}
+                        placeholder="0.00"
+                        autoFocus
+                        style={{ flex: 1, minWidth: 0, textAlign: 'right', padding: '8px 12px', fontSize: 24 }}
+                      />
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={qsCashAmount}
-                      onChange={e => setQsCashAmount(e.target.value)}
-                      placeholder="0.00"
-                      autoFocus
-                      style={{ textAlign: 'right', padding: '8px 12px', fontSize: 24 }}
-                    />
                     {qsCashAmount !== '' && (
                       <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 15, color: qsCashValid ? 'var(--color-success)' : 'var(--color-error)' }}>
                         {qsCashValid ? `Change: ${fmtMoney(qsCashNum - qsTotal)}` : 'Amount too low'}
