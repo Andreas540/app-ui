@@ -3,15 +3,13 @@ import MaintenanceGate from './components/MaintenanceGate'
 import { Fragment, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { useLocale } from './contexts/LocaleContext'
 import { useTranslation, Trans } from 'react-i18next'
 import { DEFAULT_SHORTCUTS, ALL_SHORTCUTS, FEATURE_NAV_KEY, buildLetterMap } from './lib/shortcuts'
 import { NAV_ITEMS, NAV_SECTIONS } from './lib/navItems'
 import { AVAILABLE_FEATURES, type FeatureId } from './lib/features'
 import { getTenantConfig } from './lib/tenantConfig'
-import { getAuthHeaders, listProducts, fetchBootstrap, createCustomer, type ProductWithCost } from './lib/api'
-import { todayYMD } from './lib/time'
-import { useCurrency } from './lib/useCurrency'
+import { getAuthHeaders, listProducts, type ProductWithCost } from './lib/api'
+import QuickSalesCart, { type QuickSalesCartHandle } from './components/QuickSalesCart'
 import { FRONT_PAGE_COMPONENTS } from './lib/frontPages'
 import { applyTheme, getMode, getSkin } from './lib/theme'
 
@@ -401,31 +399,7 @@ function MainApp() {
   const [barcodeFoundProduct, setBarcodeFoundProduct] = useState<ProductWithCost | null>(null)
   const [barcodeActionProduct, setBarcodeActionProduct] = useState<ProductWithCost | null>(null)
 
-  type QuickSaleLine = { product_id: string; name: string; variant: string | null; variant_2: string | null; qty: number; unit_price: number }
-  type QSTerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
-  const [quickSaleLines, setQuickSaleLines] = useState<QuickSaleLine[]>([])
-  const [quickSaleOpen, setQuickSaleOpen] = useState(false)
-  const [qsTerminalState, setQsTerminalState] = useState<QSTerminalState>('idle')
-  const [qsTerminalMsg, setQsTerminalMsg] = useState('')
-  const [qsCashOpen, setQsCashOpen] = useState(false)
-  const [qsCashAmount, setQsCashAmount] = useState('')
-  const qsReceiptIdRef = useRef<string | null>(null)
-  const qsOrderIdRef = useRef<string | null>(null)
-  const qsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const qsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const quickSaleActiveRef = useRef(false)
-  const addToCartRef = useRef<(p: ProductWithCost) => void>(() => {})
-  const qsBootstrapRef = useRef<{ customerId: string | null } | null>(null)
-
-  quickSaleActiveRef.current = quickSaleLines.length > 0
-  addToCartRef.current = (product: ProductWithCost) => {
-    setQuickSaleLines(prev => {
-      const idx = prev.findIndex(l => l.product_id === product.id)
-      if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, qty: l.qty + 1 } : l)
-      return [...prev, { product_id: product.id, name: product.name, variant: product.variant ?? null, variant_2: product.variant_2 ?? null, qty: 1, unit_price: Number((product as any).price_amount ?? 0) }]
-    })
-    setQuickSaleOpen(true)
-  }
+  const cartRef = useRef<QuickSalesCartHandle>(null)
 
   const barcodeBufferRef = useRef('')
   const barcodeLastTimeRef = useRef(0)
@@ -441,8 +415,6 @@ function MainApp() {
   })
 
   const { isAuthenticated, user, logout: authLogout, hasFeature, verifyAuth, pinLock, isLocked, lock } = useAuth()
-  const { timezone } = useLocale()
-  const { fmtMoney } = useCurrency()
 
   // When impersonating a specific tenant user, use their role for nav/route guards
   // so we see exactly what they see. user.role stays 'super_admin' so TenantSwitcher stays visible.
@@ -642,152 +614,10 @@ function MainApp() {
       else if (pathnameRef.current === '/warehouse') window.dispatchEvent(new CustomEvent('barcode-warehouse-product', { detail: { productId: found.id } }))
       else if (pathnameRef.current === '/orders/new') window.dispatchEvent(new CustomEvent('barcode-order-product', { detail: { productId: found.id } }))
       else if (pathnameRef.current === '/price-checker') window.dispatchEvent(new CustomEvent('barcode-price-checker-product', { detail: { productId: found.id } }))
-      else if (pathnameRef.current === '/pos/quick-sales' || quickSaleActiveRef.current) addToCartRef.current(found)
+      else if (pathnameRef.current === '/pos/quick-sales' || cartRef.current?.isActive) cartRef.current?.addToCart(found)
       else setBarcodeActionProduct(found)
     } else {
       setBarcodeModalBarcode(buf)
-    }
-  }
-
-  // ── Quick Sale terminal functions ────────────────────────────────────────────
-  const BASE_QS = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-
-  function stopQsPoll() {
-    if (qsPollRef.current) { clearInterval(qsPollRef.current); qsPollRef.current = null }
-    if (qsTimeoutRef.current) { clearTimeout(qsTimeoutRef.current); qsTimeoutRef.current = null }
-  }
-
-  async function deleteQsOrder() {
-    const id = qsOrderIdRef.current
-    if (!id) return
-    qsOrderIdRef.current = null
-    try {
-      await fetch(`${BASE_QS}/api/order`, {
-        method: 'DELETE', headers: getAuthHeaders(),
-        body: JSON.stringify({ id }),
-      })
-    } catch { /* best-effort */ }
-  }
-
-  async function chargeQsTerminal(orderId: string) {
-    try {
-      setQsTerminalState('initiating')
-      setQsTerminalMsg('')
-      const initRes = await fetch(`${BASE_QS}/api/amp-terminal-initiate`, {
-        method: 'POST', headers: getAuthHeaders(),
-        body: JSON.stringify({ order_id: orderId }),
-      })
-      const initData = await initRes.json()
-      if (!initRes.ok) throw new Error(initData.error || 'Failed to reach terminal')
-      qsReceiptIdRef.current = initData.receipt_id
-      setQsTerminalState('waiting')
-      qsTimeoutRef.current = setTimeout(() => { stopQsPoll(); deleteQsOrder(); setQsTerminalState('timeout') }, 60_000)
-      qsPollRef.current = setInterval(async () => {
-        try {
-          const pr = await fetch(`${BASE_QS}/api/amp-terminal-poll`, {
-            method: 'POST', headers: getAuthHeaders(),
-            body: JSON.stringify({ receipt_id: qsReceiptIdRef.current, order_id: orderId }),
-          })
-          const pd = await pr.json()
-          if (pd.status === 'pending') return
-          stopQsPoll()
-          if (pd.status === 'approved') {
-            qsOrderIdRef.current = null
-            setQsTerminalState('approved')
-            setQsTerminalMsg(`Approved · ${pd.card_type || ''} ···${pd.last_four || ''}`.trim())
-          } else {
-            deleteQsOrder()
-            setQsTerminalState('declined')
-            setQsTerminalMsg(pd.message || 'Payment declined')
-          }
-        } catch { /* network hiccup */ }
-      }, 3_000)
-    } catch (e: any) {
-      stopQsPoll(); setQsTerminalState('idle'); alert(e?.message || 'Terminal error')
-    }
-  }
-
-  async function handleQsCharge() {
-    if (qsTerminalState !== 'idle' || quickSaleLines.length === 0) return
-    try {
-      if (!qsBootstrapRef.current) {
-        const { customers } = await fetchBootstrap()
-        const qsc = customers.find(c => c.name === 'Quick Sales')
-        qsBootstrapRef.current = { customerId: qsc?.id ?? null }
-      }
-      let { customerId } = qsBootstrapRef.current
-      if (!customerId) {
-        const created = await createCustomer({ name: 'Quick Sales', customer_type: 'Direct', shipping_cost: 0 })
-        customerId = created.id
-        qsBootstrapRef.current = { customerId }
-      }
-      const res = await fetch(`${BASE_QS}/api/orders`, {
-        method: 'POST', headers: getAuthHeaders(),
-        body: JSON.stringify({
-          customer_id: customerId,
-          date: todayYMD(timezone),
-          delivered: true,
-          delivered_at: todayYMD(timezone),
-          items: quickSaleLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_price: l.unit_price })),
-        }),
-      })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || `Order creation failed (${res.status})`) }
-      const data = await res.json()
-      qsOrderIdRef.current = data.id ?? data.order_id
-      chargeQsTerminal(qsOrderIdRef.current!)
-    } catch (e: any) {
-      setQsTerminalState('idle'); alert(e?.message || 'Failed to charge')
-    }
-  }
-
-  async function handleQsCash() {
-    if (qsTerminalState !== 'idle' || quickSaleLines.length === 0) return
-    try {
-      if (!qsBootstrapRef.current) {
-        const { customers } = await fetchBootstrap()
-        const qsc = customers.find(c => c.name === 'Quick Sales')
-        qsBootstrapRef.current = { customerId: qsc?.id ?? null }
-      }
-      let { customerId } = qsBootstrapRef.current
-      if (!customerId) {
-        const created = await createCustomer({ name: 'Quick Sales', customer_type: 'Direct', shipping_cost: 0 })
-        customerId = created.id
-        qsBootstrapRef.current = { customerId }
-      }
-      const total = quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0)
-      const orderRes = await fetch(`${BASE_QS}/api/orders`, {
-        method: 'POST', headers: getAuthHeaders(),
-        body: JSON.stringify({
-          customer_id: customerId,
-          date: todayYMD(timezone),
-          delivered: true,
-          delivered_at: todayYMD(timezone),
-          items: quickSaleLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_price: l.unit_price })),
-        }),
-      })
-      if (!orderRes.ok) { const d = await orderRes.json(); throw new Error(d.error || `Order creation failed (${orderRes.status})`) }
-      const orderData = await orderRes.json()
-      const orderId = orderData.id ?? orderData.order_id
-      qsOrderIdRef.current = orderId
-      const payRes = await fetch(`${BASE_QS}/api/payments`, {
-        method: 'POST', headers: getAuthHeaders(),
-        body: JSON.stringify({
-          customer_id: customerId,
-          payment_type: 'Cash',
-          amount: total,
-          payment_date: todayYMD(timezone),
-          order_id: orderId,
-        }),
-      })
-      if (!payRes.ok) {
-        await deleteQsOrder()
-        const d = await payRes.json(); throw new Error(d.error || `Payment creation failed (${payRes.status})`)
-      }
-      qsOrderIdRef.current = null
-      setQsTerminalState('approved')
-      setQsTerminalMsg('Cash payment recorded')
-    } catch (e: any) {
-      setQsTerminalState('idle'); alert(e?.message || 'Failed to record cash payment')
     }
   }
 
@@ -1451,175 +1281,9 @@ useEffect(() => {
         </div>
       )}
 
-      {/* ── Quick Sale: floating cart button ── */}
-      {quickSaleLines.length > 0 && !quickSaleOpen && (
-        <button
-          onClick={() => setQuickSaleOpen(true)}
-          style={{
-            position: 'fixed', bottom: 24, right: 24, zIndex: 990,
-            background: 'var(--primary)', color: '#fff',
-            border: 'none', borderRadius: 28, padding: '10px 20px',
-            fontSize: 15, fontWeight: 600, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-          }}
-        >
-          <span style={{ fontSize: 18 }}>🛒</span>
-          Cart ({quickSaleLines.reduce((s, l) => s + l.qty, 0)}) · {fmtMoney(quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0))}
-        </button>
-      )}
+      {/* ── Quick Sale ── */}
+      {hasFeature('quick-sales') && <QuickSalesCart ref={cartRef} />}
 
-      {/* ── Quick Sale: cart overlay ── */}
-      {quickSaleOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '72px 16px 16px' }}
-          onClick={() => { if (qsTerminalState === 'idle') { setQuickSaleOpen(false); setQsCashOpen(false); setQsCashAmount('') } }}
-        >
-          <div
-            className="card"
-            style={{ maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 88px)', overflow: 'hidden' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Quick Sale</h3>
-              {qsTerminalState === 'idle' && (
-                <button onClick={() => setQuickSaleOpen(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', lineHeight: 1, color: 'var(--text-secondary)', padding: '0 4px' }}>✕</button>
-              )}
-            </div>
-
-            {/* Items */}
-            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {quickSaleLines.map((line, i) => (
-                <div key={line.product_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {[line.name, line.variant, line.variant_2].filter(Boolean).join(' · ')}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{fmtMoney(line.unit_price)} each</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <button
-                      disabled={qsTerminalState !== 'idle'}
-                      onClick={() => setQuickSaleLines(prev => prev.map((l, j) => j === i ? { ...l, qty: Math.max(1, l.qty - 1) } : l))}
-                      style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >−</button>
-                    <span style={{ minWidth: 20, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{line.qty}</span>
-                    <button
-                      disabled={qsTerminalState !== 'idle'}
-                      onClick={() => setQuickSaleLines(prev => prev.map((l, j) => j === i ? { ...l, qty: l.qty + 1 } : l))}
-                      style={{ width: 28, height: 28, padding: 0, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >+</button>
-                  </div>
-                  <div style={{ minWidth: 64, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                    {fmtMoney(line.qty * line.unit_price)}
-                  </div>
-                  {qsTerminalState === 'idle' && (
-                    <button
-                      onClick={() => setQuickSaleLines(prev => prev.filter((_, j) => j !== i))}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, padding: '0 2px', lineHeight: 1 }}
-                    >✕</button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Total */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 18, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-              <span>Total</span>
-              <span>{fmtMoney(quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0))}</span>
-            </div>
-
-            {/* Terminal status */}
-            {qsTerminalState !== 'idle' && (
-              <div style={{ textAlign: 'center', padding: '8px 0', color: qsTerminalState === 'approved' ? 'var(--color-success)' : qsTerminalState === 'declined' || qsTerminalState === 'timeout' ? 'var(--color-error)' : 'var(--text-secondary)' }}>
-                {qsTerminalState === 'initiating' && 'Initiating terminal…'}
-                {qsTerminalState === 'waiting' && 'Waiting for card…'}
-                {qsTerminalState === 'approved' && `✓ ${qsTerminalMsg}`}
-                {qsTerminalState === 'declined' && `✗ ${qsTerminalMsg}`}
-                {qsTerminalState === 'timeout' && 'Terminal timed out'}
-              </div>
-            )}
-
-            {/* Actions */}
-            {qsTerminalState === 'idle' && qsCashOpen ? (
-              /* ── Cash entry step ── */
-              (() => {
-                const qsTotal = quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0)
-                const qsCashNum = parseFloat(qsCashAmount) || 0
-                const qsCashValid = qsCashNum >= qsTotal
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <span style={{ fontWeight: 500 }}>Amount received</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button
-                        style={{ fontSize: 13, padding: '4px 10px', flexShrink: 0 }}
-                        onClick={() => setQsCashAmount(String(qsTotal))}
-                      >{fmtMoney(qsTotal)}</button>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={qsCashAmount}
-                        onChange={e => setQsCashAmount(e.target.value)}
-                        placeholder="0.00"
-                        autoFocus
-                        style={{ flex: 1, minWidth: 0, textAlign: 'right', padding: '8px 12px', fontSize: 24 }}
-                      />
-                    </div>
-                    {qsCashAmount !== '' && (
-                      <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 15, color: qsCashValid ? 'var(--color-success)' : 'var(--color-error)' }}>
-                        {qsCashValid ? `Change: ${fmtMoney(qsCashNum - qsTotal)}` : 'Amount too low'}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="primary"
-                        style={{ flex: 1 }}
-                        disabled={!qsCashValid}
-                        onClick={() => { setQsCashOpen(false); setQsCashAmount(''); handleQsCash() }}
-                      >Confirm</button>
-                      <button onClick={() => { setQsCashOpen(false); setQsCashAmount('') }}>Back</button>
-                    </div>
-                  </div>
-                )
-              })()
-            ) : (
-              <div style={{ display: 'flex', gap: 8 }}>
-                {(qsTerminalState === 'idle') && (
-                  <>
-                    <button
-                      className="primary"
-                      style={{ flex: 1 }}
-                      onClick={handleQsCharge}
-                      disabled={quickSaleLines.length === 0}
-                    >Charge Terminal</button>
-                    <button
-                      style={{ flex: 1 }}
-                      onClick={() => setQsCashOpen(true)}
-                      disabled={quickSaleLines.length === 0}
-                    >Pay Cash</button>
-                    <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false) }}>Clear</button>
-                  </>
-                )}
-                {(qsTerminalState === 'approved') && (
-                  <button
-                    className="primary"
-                    style={{ flex: 1 }}
-                    onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg(''); setQsCashOpen(false); setQsCashAmount('') }}
-                  >Done</button>
-                )}
-                {(qsTerminalState === 'declined' || qsTerminalState === 'timeout') && (
-                  <>
-                    <button className="primary" style={{ flex: 1 }} onClick={() => { setQsTerminalState('idle'); setQsTerminalMsg('') }}>Try Again</button>
-                    <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg(''); setQsCashOpen(false); setQsCashAmount('') }}>Cancel</button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Barcode scanner: product action modal (catch-all for other pages) ── */}
       {barcodeActionProduct && (
@@ -1636,10 +1300,12 @@ useEffect(() => {
               {[barcodeActionProduct.name, barcodeActionProduct.variant, barcodeActionProduct.variant_2].filter(Boolean).join(' · ')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button className="primary" onClick={() => {
-                addToCartRef.current(barcodeActionProduct!)
-                setBarcodeActionProduct(null)
-              }}>Quick Sale</button>
+              {hasFeature('quick-sales') && (
+                <button className="primary" onClick={() => {
+                  cartRef.current?.addToCart(barcodeActionProduct!)
+                  setBarcodeActionProduct(null)
+                }}>Quick Sale</button>
+              )}
               <button onClick={() => {
                 setBarcodeFoundProduct(barcodeActionProduct)
                 navigate('/products/new')
