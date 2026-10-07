@@ -199,7 +199,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     setCashAmount('')
   }
 
-  const total = lines.reduce((s, l) => s + l.qty * l.unit_price, 0)
+  const total = Math.round(lines.reduce((s, l) => s + Math.round(l.unit_price * 100) * l.qty, 0)) / 100
 
   return (
     <>
@@ -320,7 +320,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
                   const valid = cashNum >= total
                   return (
                     <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 15, color: valid ? 'var(--color-success)' : 'var(--color-error)' }}>
-                      {valid ? `Change: ${fmtMoney(cashNum - total)}` : 'Amount too low'}
+                      {valid ? `Change: ${fmtMoney(Math.round((cashNum - total) * 100) / 100)}` : 'Amount too low'}
                     </div>
                   )
                 })()}
