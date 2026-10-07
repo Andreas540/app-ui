@@ -18,7 +18,7 @@ type QuickSaleLine = {
   unit_price: number
 }
 
-type QSTerminalState = 'idle' | 'initiating' | 'waiting' | 'approved' | 'declined' | 'timeout'
+type QSTerminalState = 'idle' | 'initiating' | 'waiting' | 'cash-processing' | 'approved' | 'declined' | 'timeout'
 
 const BASE = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
 
@@ -103,6 +103,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
             orderIdRef.current = null
             setTerminalState('approved')
             setTerminalMsg(`Approved · ${pd.card_type || ''} ···${pd.last_four || ''}`.trim())
+            window.dispatchEvent(new CustomEvent('qs-sale-completed'))
           } else {
             deleteOrder()
             setTerminalState('declined')
@@ -159,7 +160,8 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
   }
 
   async function handleCash() {
-    if (terminalState !== 'idle' || lines.length === 0) return
+    if (terminalState !== 'idle' && terminalState !== 'cash-processing') return
+    if (lines.length === 0) return
     try {
       const customerId = await resolveCustomer()
       const total = linesRef.current.reduce((s, l) => s + l.qty * l.unit_price, 0)
@@ -182,6 +184,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
       orderIdRef.current = null
       setTerminalState('approved')
       setTerminalMsg('Cash payment recorded')
+      window.dispatchEvent(new CustomEvent('qs-sale-completed'))
     } catch (e: any) {
       setTerminalState('idle'); alert(e?.message || 'Failed to record cash payment')
     }
@@ -284,6 +287,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
               <div style={{ textAlign: 'center', padding: '8px 0', color: terminalState === 'approved' ? 'var(--color-success)' : terminalState === 'declined' || terminalState === 'timeout' ? 'var(--color-error)' : 'var(--text-secondary)' }}>
                 {terminalState === 'initiating' && 'Initiating terminal…'}
                 {terminalState === 'waiting' && 'Waiting for card…'}
+                {terminalState === 'cash-processing' && 'Processing cash payment…'}
                 {terminalState === 'approved' && `✓ ${terminalMsg}`}
                 {terminalState === 'declined' && `✗ ${terminalMsg}`}
                 {terminalState === 'timeout' && 'Terminal timed out'}
@@ -325,7 +329,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
                     className="primary"
                     style={{ flex: 1 }}
                     disabled={(parseFloat(cashAmount) || 0) < total}
-                    onClick={() => { setCashOpen(false); setCashAmount(''); handleCash() }}
+                    onClick={() => { setTerminalState('cash-processing'); handleCash() }}
                   >Confirm</button>
                   <button onClick={() => { setCashOpen(false); setCashAmount('') }}>Back</button>
                 </div>

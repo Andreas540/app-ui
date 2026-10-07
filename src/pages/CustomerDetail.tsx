@@ -224,6 +224,12 @@ export default function CustomerDetailPage() {
   }, [id])
 
   useEffect(() => {
+    const handler = () => { if (id) fetchCustomerDetail(id).then(setData).catch(() => {}) }
+    window.addEventListener('qs-sale-completed', handler)
+    return () => window.removeEventListener('qs-sale-completed', handler)
+  }, [id])
+
+  useEffect(() => {
     if (!showShareOrder) return
     listProducts().then(({ products }) => {
       setProductsNeedingPrice(products.filter(p => (p.category ?? 'product') === 'product' && p.price_amount == null))
