@@ -4,6 +4,7 @@ import { useCurrency } from '../lib/useCurrency'
 import { useLocale } from '../contexts/LocaleContext'
 import { todayYMD } from '../lib/time'
 import QsProductPicker from './QsProductPicker'
+import QsReceipt, { type QsReceiptData } from './QsReceipt'
 
 export type QuickSalesCartHandle = {
   isActive: boolean
@@ -34,6 +35,8 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
   const [cashOpen, setCashOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
   const [manualPickerOpen, setManualPickerOpen] = useState(false)
+  const [receiptData, setReceiptData] = useState<QsReceiptData | null>(null)
+  const [receiptOpen, setReceiptOpen] = useState(false)
 
   const receiptIdRef = useRef<string | null>(null)
   const orderIdRef = useRef<string | null>(null)
@@ -141,7 +144,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     return customerId
   }
 
-  async function createQsOrder(customerId: string): Promise<string> {
+  async function createQsOrder(customerId: string): Promise<{ id: string; order_no: number }> {
     const res = await fetch(`${BASE}/api/orders`, {
       method: 'POST', headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -154,14 +157,14 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     })
     if (!res.ok) { const d = await res.json(); throw new Error(d.error || `Order creation failed (${res.status})`) }
     const data = await res.json()
-    return data.id ?? data.order_id
+    return { id: data.order_id ?? data.id, order_no: data.order_no }
   }
 
   async function handleCharge() {
     if (terminalState !== 'idle' || lines.length === 0) return
     try {
       const customerId = await resolveCustomer()
-      const orderId = await createQsOrder(customerId)
+      const { id: orderId } = await createQsOrder(customerId)
       orderIdRef.current = orderId
       chargeTerminal(orderId)
     } catch (e: any) {
@@ -174,8 +177,10 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     if (lines.length === 0) return
     try {
       const customerId = await resolveCustomer()
-      const total = linesRef.current.reduce((s, l) => s + l.qty * l.unit_price, 0)
-      const orderId = await createQsOrder(customerId)
+      const snapLines = [...linesRef.current]
+      const total = Math.round(snapLines.reduce((s, l) => s + Math.round(l.unit_price * 100) * l.qty, 0)) / 100
+      const cashNum = parseFloat(cashAmount) || 0
+      const { id: orderId, order_no } = await createQsOrder(customerId)
       orderIdRef.current = orderId
       const payRes = await fetch(`${BASE}/api/payments`, {
         method: 'POST', headers: getAuthHeaders(),
@@ -192,6 +197,14 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
         const d = await payRes.json(); throw new Error(d.error || `Payment creation failed (${payRes.status})`)
       }
       orderIdRef.current = null
+      setReceiptData({
+        lines: snapLines,
+        total,
+        cashReceived: cashNum,
+        change: Math.round((cashNum - total) * 100) / 100,
+        orderNo: order_no,
+        date: todayYMD(timezone),
+      })
       setTerminalState('approved')
       setTerminalMsg('Cash payment recorded')
       window.dispatchEvent(new CustomEvent('qs-sale-completed'))
@@ -208,6 +221,8 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     setCashOpen(false)
     setCashAmount('')
     setManualPickerOpen(false)
+    setReceiptData(null)
+    setReceiptOpen(false)
   }
 
   const total = Math.round(lines.reduce((s, l) => s + Math.round(l.unit_price * 100) * l.qty, 0)) / 100
@@ -374,7 +389,12 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
                   </>
                 )}
                 {terminalState === 'approved' && (
-                  <button className="primary" style={{ flex: 1 }} onClick={resetAll}>Done</button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                    {receiptData && (
+                      <button style={{ width: '100%' }} onClick={() => setReceiptOpen(true)}>Receipt</button>
+                    )}
+                    <button className="primary" style={{ width: '100%' }} onClick={resetAll}>Done</button>
+                  </div>
                 )}
                 {(terminalState === 'declined' || terminalState === 'timeout') && (
                   <>
@@ -386,6 +406,10 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
             )}
           </div>
         </div>
+      )}
+
+      {receiptOpen && receiptData && (
+        <QsReceipt {...receiptData} onClose={() => setReceiptOpen(false)} />
       )}
     </>
   )
