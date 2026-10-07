@@ -407,6 +407,8 @@ function MainApp() {
   const [quickSaleOpen, setQuickSaleOpen] = useState(false)
   const [qsTerminalState, setQsTerminalState] = useState<QSTerminalState>('idle')
   const [qsTerminalMsg, setQsTerminalMsg] = useState('')
+  const [qsCashOpen, setQsCashOpen] = useState(false)
+  const [qsCashAmount, setQsCashAmount] = useState('')
   const qsReceiptIdRef = useRef<string | null>(null)
   const qsOrderIdRef = useRef<string | null>(null)
   const qsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -735,6 +737,57 @@ function MainApp() {
       chargeQsTerminal(qsOrderIdRef.current!)
     } catch (e: any) {
       setQsTerminalState('idle'); alert(e?.message || 'Failed to charge')
+    }
+  }
+
+  async function handleQsCash() {
+    if (qsTerminalState !== 'idle' || quickSaleLines.length === 0) return
+    try {
+      if (!qsBootstrapRef.current) {
+        const { customers } = await fetchBootstrap()
+        const qsc = customers.find(c => c.name === 'Quick Sales')
+        qsBootstrapRef.current = { customerId: qsc?.id ?? null }
+      }
+      let { customerId } = qsBootstrapRef.current
+      if (!customerId) {
+        const created = await createCustomer({ name: 'Quick Sales', customer_type: 'Direct', shipping_cost: 0 })
+        customerId = created.id
+        qsBootstrapRef.current = { customerId }
+      }
+      const total = quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0)
+      const orderRes = await fetch(`${BASE_QS}/api/orders`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({
+          customer_id: customerId,
+          date: todayYMD(timezone),
+          delivered: true,
+          delivered_at: todayYMD(timezone),
+          items: quickSaleLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_price: l.unit_price })),
+        }),
+      })
+      if (!orderRes.ok) { const d = await orderRes.json(); throw new Error(d.error || `Order creation failed (${orderRes.status})`) }
+      const orderData = await orderRes.json()
+      const orderId = orderData.id ?? orderData.order_id
+      qsOrderIdRef.current = orderId
+      const payRes = await fetch(`${BASE_QS}/api/payments`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({
+          customer_id: customerId,
+          payment_type: 'Cash',
+          amount: total,
+          payment_date: todayYMD(timezone),
+          order_id: orderId,
+        }),
+      })
+      if (!payRes.ok) {
+        await deleteQsOrder()
+        const d = await payRes.json(); throw new Error(d.error || `Payment creation failed (${payRes.status})`)
+      }
+      qsOrderIdRef.current = null
+      setQsTerminalState('approved')
+      setQsTerminalMsg('Cash payment recorded')
+    } catch (e: any) {
+      setQsTerminalState('idle'); alert(e?.message || 'Failed to record cash payment')
     }
   }
 
@@ -1420,7 +1473,7 @@ useEffect(() => {
       {quickSaleOpen && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '72px 16px 16px' }}
-          onClick={() => { if (qsTerminalState === 'idle') setQuickSaleOpen(false) }}
+          onClick={() => { if (qsTerminalState === 'idle') { setQuickSaleOpen(false); setQsCashOpen(false); setQsCashAmount('') } }}
         >
           <div
             className="card"
@@ -1489,32 +1542,81 @@ useEffect(() => {
             )}
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              {(qsTerminalState === 'idle') && (
-                <>
+            {qsTerminalState === 'idle' && qsCashOpen ? (
+              /* ── Cash entry step ── */
+              (() => {
+                const qsTotal = quickSaleLines.reduce((s, l) => s + l.qty * l.unit_price, 0)
+                const qsCashNum = parseFloat(qsCashAmount) || 0
+                const qsCashValid = qsCashNum >= qsTotal
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 500 }}>Amount received</span>
+                      <button
+                        style={{ fontSize: 13, padding: '4px 10px' }}
+                        onClick={() => setQsCashAmount(String(qsTotal))}
+                      >{fmtMoney(qsTotal)}</button>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={qsCashAmount}
+                      onChange={e => setQsCashAmount(e.target.value)}
+                      placeholder="0.00"
+                      autoFocus
+                      style={{ textAlign: 'right', padding: '8px 12px', fontSize: 24 }}
+                    />
+                    {qsCashAmount !== '' && (
+                      <div style={{ textAlign: 'right', fontWeight: 600, fontSize: 15, color: qsCashValid ? 'var(--color-success)' : 'var(--color-error)' }}>
+                        {qsCashValid ? `Change: ${fmtMoney(qsCashNum - qsTotal)}` : 'Amount too low'}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="primary"
+                        style={{ flex: 1 }}
+                        disabled={!qsCashValid}
+                        onClick={() => { setQsCashOpen(false); setQsCashAmount(''); handleQsCash() }}
+                      >Confirm</button>
+                      <button onClick={() => { setQsCashOpen(false); setQsCashAmount('') }}>Back</button>
+                    </div>
+                  </div>
+                )
+              })()
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(qsTerminalState === 'idle') && (
+                  <>
+                    <button
+                      className="primary"
+                      style={{ flex: 1 }}
+                      onClick={handleQsCharge}
+                      disabled={quickSaleLines.length === 0}
+                    >Charge Terminal</button>
+                    <button
+                      style={{ flex: 1 }}
+                      onClick={() => setQsCashOpen(true)}
+                      disabled={quickSaleLines.length === 0}
+                    >Pay Cash</button>
+                    <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false) }}>Clear</button>
+                  </>
+                )}
+                {(qsTerminalState === 'approved') && (
                   <button
                     className="primary"
                     style={{ flex: 1 }}
-                    onClick={handleQsCharge}
-                    disabled={quickSaleLines.length === 0}
-                  >Charge Terminal</button>
-                  <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false) }}>Clear</button>
-                </>
-              )}
-              {(qsTerminalState === 'approved') && (
-                <button
-                  className="primary"
-                  style={{ flex: 1 }}
-                  onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg('') }}
-                >Done</button>
-              )}
-              {(qsTerminalState === 'declined' || qsTerminalState === 'timeout') && (
-                <>
-                  <button className="primary" style={{ flex: 1 }} onClick={() => { setQsTerminalState('idle'); setQsTerminalMsg('') }}>Try Again</button>
-                  <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg('') }}>Cancel</button>
-                </>
-              )}
-            </div>
+                    onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg(''); setQsCashOpen(false); setQsCashAmount('') }}
+                  >Done</button>
+                )}
+                {(qsTerminalState === 'declined' || qsTerminalState === 'timeout') && (
+                  <>
+                    <button className="primary" style={{ flex: 1 }} onClick={() => { setQsTerminalState('idle'); setQsTerminalMsg('') }}>Try Again</button>
+                    <button onClick={() => { setQuickSaleLines([]); setQuickSaleOpen(false); setQsTerminalState('idle'); setQsTerminalMsg(''); setQsCashOpen(false); setQsCashAmount('') }}>Cancel</button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
