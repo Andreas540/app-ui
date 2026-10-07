@@ -186,19 +186,19 @@ export default function QuickSalesPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Date from</label>
-            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} style={{ width: '100%' }} />
+            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSearch() }} style={{ width: '100%' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Date to</label>
-            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} style={{ width: '100%' }} />
+            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSearch() }} style={{ width: '100%' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Amount from</label>
-            <input type="number" min="0" placeholder="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} style={{ width: '100%' }} />
+            <input type="number" min="0" placeholder="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSearch() }} style={{ width: '100%' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Amount to</label>
-            <input type="number" min="0" placeholder="Any" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} style={{ width: '100%' }} />
+            <input type="number" min="0" placeholder="Any" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSearch() }} style={{ width: '100%' }} />
           </div>
         </div>
 
