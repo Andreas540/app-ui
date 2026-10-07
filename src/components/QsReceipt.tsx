@@ -16,13 +16,17 @@ export type QsReceiptData = {
   change: number
   orderNo: number | null
   date: string
+  companyName?: string
+  companyAddress1?: string
+  companyAddress2?: string
+  companyPhone?: string
 }
 
 interface Props extends QsReceiptData {
   onClose: () => void
 }
 
-export default function QsReceipt({ lines, total, cashReceived, change, orderNo, date, onClose }: Props) {
+export default function QsReceipt({ lines, total, cashReceived, change, orderNo, date, companyName, companyAddress1, companyAddress2, companyPhone, onClose }: Props) {
   const { currency } = useLocale()
   const { fmtMoney } = useCurrency()
 
@@ -46,7 +50,7 @@ export default function QsReceipt({ lines, total, cashReceived, change, orderNo,
         body { font-family: monospace; font-size: 13px; width: 300px; margin: 0 auto; padding: 16px; }
         h2 { text-align: center; margin: 0 0 2px; font-size: 16px; }
         .center { text-align: center; }
-        .placeholder { color: #888; font-style: italic; }
+        .muted { color: #888; font-style: italic; }
         hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 2px 0; }
@@ -54,9 +58,10 @@ export default function QsReceipt({ lines, total, cashReceived, change, orderNo,
         .footer { text-align: center; margin-top: 12px; }
       </style>
     </head><body>
-      <h2 class="placeholder">[Business Name]</h2>
-      <div class="center placeholder">[Address]</div>
-      <div class="center placeholder">[Phone]</div>
+      <h2>${companyName || '<span class="muted">[Business Name]</span>'}</h2>
+      ${companyAddress1 ? `<div class="center">${companyAddress1}</div>` : ''}
+      ${companyAddress2 ? `<div class="center">${companyAddress2}</div>` : ''}
+      ${companyPhone    ? `<div class="center">${companyPhone}</div>`    : ''}
       <hr>
       <div style="display:flex;justify-content:space-between">
         <span>${dateStr} ${timeStr}</span>
@@ -122,9 +127,12 @@ export default function QsReceipt({ lines, total, cashReceived, change, orderNo,
           <>
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 12 }}>
-              <div style={{ fontWeight: 700, fontSize: 16, fontStyle: 'italic', color: '#888' }}>[Business Name]</div>
-              <div style={{ color: '#888', fontStyle: 'italic' }}>[Address]</div>
-              <div style={{ color: '#888', fontStyle: 'italic' }}>[Phone]</div>
+              {companyName
+                ? <div style={{ fontWeight: 700, fontSize: 16 }}>{companyName}</div>
+                : <div style={{ fontStyle: 'italic', color: '#888' }}>[Business Name]</div>}
+              {companyAddress1 && <div>{companyAddress1}</div>}
+              {companyAddress2 && <div>{companyAddress2}</div>}
+              {companyPhone    && <div>{companyPhone}</div>}
             </div>
 
             <hr style={{ border: 'none', borderTop: '1px dashed #ccc', margin: '8px 0' }} />

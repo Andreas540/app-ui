@@ -43,6 +43,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bootstrapRef = useRef<{ customerId: string | null } | null>(null)
+  const companyRef = useRef<{ name?: string; address1?: string; address2?: string; phone?: string } | null>(null)
   const linesRef = useRef<QuickSaleLine[]>([])
   linesRef.current = lines
 
@@ -129,6 +130,22 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     }
   }
 
+  async function resolveCompanyInfo() {
+    if (companyRef.current) return
+    try {
+      const res = await fetch(`${BASE}/api/tenant-admin?action=getInvoiceConfig`, { headers: getAuthHeaders() })
+      if (!res.ok) { companyRef.current = {}; return }
+      const data = await res.json()
+      const ic = data.invoiceConfig ?? {}
+      companyRef.current = {
+        name:     ic.companyName     || undefined,
+        address1: ic.companyAddress1 || undefined,
+        address2: ic.companyAddress2 || undefined,
+        phone:    ic.companyPhone    || undefined,
+      }
+    } catch { companyRef.current = {} }
+  }
+
   async function resolveCustomer(): Promise<string> {
     if (!bootstrapRef.current) {
       const { customers } = await fetchBootstrap()
@@ -176,7 +193,7 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
     if (terminalState !== 'idle' && terminalState !== 'cash-processing') return
     if (lines.length === 0) return
     try {
-      const customerId = await resolveCustomer()
+      const [customerId] = await Promise.all([resolveCustomer(), resolveCompanyInfo()])
       const snapLines = [...linesRef.current]
       const total = Math.round(snapLines.reduce((s, l) => s + Math.round(l.unit_price * 100) * l.qty, 0)) / 100
       const cashNum = parseFloat(cashAmount) || 0
@@ -204,6 +221,10 @@ const QuickSalesCart = forwardRef<QuickSalesCartHandle>(function QuickSalesCart(
         change: Math.round((cashNum - total) * 100) / 100,
         orderNo: order_no,
         date: todayYMD(timezone),
+        companyName:     companyRef.current?.name,
+        companyAddress1: companyRef.current?.address1,
+        companyAddress2: companyRef.current?.address2,
+        companyPhone:    companyRef.current?.phone,
       })
       setTerminalState('approved')
       setTerminalMsg('Cash payment recorded')
