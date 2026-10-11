@@ -74,7 +74,7 @@ const NewCost = () => {
   const _now = new Date();
   const [selectedYear,  setSelectedYear]  = useState(_now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(_now.getMonth() + 1);
-  const [filterType, setFilterType] = useState<'all' | 'B' | 'P'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'B' | 'P'>('B');
   const [filterKind, setFilterKind] = useState<'all' | 'recurring' | 'non-recurring'>('all');
   const [bRecurring,    setBRecurring]    = useState<RecurringCostSummary[]>([]);
   const [bNonRecurring, setBNonRecurring] = useState<NonRecurringCostSummary[]>([]);
@@ -824,15 +824,15 @@ const NewCost = () => {
         {loadingCosts ? (
           <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('costs.loadingCosts')}</div>
         ) : (() => {
-          const sections: Array<{ label: string; items: RecurringCostSummary[]; kind: 'recurring' } | { label: string; items: NonRecurringCostSummary[]; kind: 'non-recurring' }> = [];
+          const sections: Array<{ label: string; items: RecurringCostSummary[]; kind: 'recurring'; bp: 'B' | 'P' } | { label: string; items: NonRecurringCostSummary[]; kind: 'non-recurring'; bp: 'B' | 'P' }> = [];
           if (filterType !== 'P' && filterKind !== 'non-recurring' && bRecurring.length > 0)
-            sections.push({ label: t('costs.businessRecurring'), items: bRecurring, kind: 'recurring' });
+            sections.push({ label: t('costs.businessRecurring'), items: bRecurring, kind: 'recurring', bp: 'B' as const });
           if (filterType !== 'P' && filterKind !== 'recurring' && bNonRecurring.length > 0)
-            sections.push({ label: t('costs.businessNonRecurring'), items: bNonRecurring, kind: 'non-recurring' });
+            sections.push({ label: t('costs.businessNonRecurring'), items: bNonRecurring, kind: 'non-recurring', bp: 'B' as const });
           if (filterType !== 'B' && filterKind !== 'non-recurring' && pRecurring.length > 0)
-            sections.push({ label: t('costs.privateRecurring'), items: pRecurring, kind: 'recurring' });
+            sections.push({ label: t('costs.privateRecurring'), items: pRecurring, kind: 'recurring', bp: 'P' as const });
           if (filterType !== 'B' && filterKind !== 'recurring' && pNonRecurring.length > 0)
-            sections.push({ label: t('costs.privateNonRecurring'), items: pNonRecurring, kind: 'non-recurring' });
+            sections.push({ label: t('costs.privateNonRecurring'), items: pNonRecurring, kind: 'non-recurring', bp: 'P' as const });
 
           if (sections.length === 0) return <p className="helper">{t('costs.noCostsFound')}</p>;
 
@@ -862,7 +862,7 @@ const NewCost = () => {
                             <div />
                             <div className="helper">{detail.cost || t('costs.noDescription')}</div>
                             <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
-                            <button onClick={() => handleEditCost(detail.id, 'recurring', { ...detail, cost_type: item.cost_type })}
+                            <button onClick={() => handleEditCost(detail.id, 'recurring', { ...detail, cost_type: item.cost_type }, section.bp)}
                               style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
                           </div>
                         ))}
@@ -886,7 +886,7 @@ const NewCost = () => {
                             <div />
                             <div className="helper">{detail.cost || t('costs.noDescription')}</div>
                             <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
-                            <button onClick={() => handleEditCost(detail.id, 'non-recurring', { ...detail, cost_type: item.cost_type })}
+                            <button onClick={() => handleEditCost(detail.id, 'non-recurring', { ...detail, cost_type: item.cost_type }, section.bp)}
                               style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
                           </div>
                         ))}
