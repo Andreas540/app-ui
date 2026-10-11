@@ -896,6 +896,7 @@
   },
   "costs": {
     "registerTitle": "Registrera ny kostnad",
+    "allCosts": "Kostnader",
     "editTitle": "Redigera kostnad",
     "business": "Företag",
     "private": "Privat",

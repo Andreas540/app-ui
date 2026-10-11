@@ -487,14 +487,24 @@ const NewCost = () => {
   };
 
   const CONTROL_H = 44;
+  const [formOpen, setFormOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(true);
 
   return (
     <>
-      {/* Register/Edit Cost Card */}
+      {/* Add / Edit Cost Card */}
       <div ref={formRef} className="card page-normal">
-        <h3 style={{ margin: 0, marginBottom: 16 }}>
-          {editingCostId ? t('costs.editTitle') : t('costs.registerTitle')}
-        </h3>
+        <div
+          onClick={() => setFormOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: formOpen ? 16 : 0 }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
+          <h3 style={{ margin: 0 }}>
+            {editingCostId ? t('costs.editTitle') : t('costs.registerTitle')}
+          </h3>
+        </div>
+
+      {formOpen && <>
 
         {error && (
           <div style={{
@@ -709,7 +719,7 @@ const NewCost = () => {
             <button
               onClick={handleDeleteCost}
               disabled={loading}
-              style={{ 
+              style={{
                 height: CONTROL_H,
                 backgroundColor: '#d32f2f',
                 color: 'white',
@@ -734,10 +744,20 @@ const NewCost = () => {
             {t('cancel')}
           </button>
         </div>
+      </>}
       </div>
 
-      {/* View Costs Card */}
+      {/* Costs List Card */}
       <div className="card page-normal" style={{ marginTop: 16 }}>
+        <div
+          onClick={() => setListOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: listOpen ? 16 : 0 }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
+          <h3 style={{ margin: 0 }}>{t('costs.allCosts', 'Costs')}</h3>
+        </div>
+
+      {listOpen && <>
         {/* Filter Buttons for Viewing Costs */}
         <div
           style={{
@@ -965,6 +985,7 @@ const NewCost = () => {
             </>
           )}
         </div>
+      </>}
       </div>
     </>
   );
