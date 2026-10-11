@@ -4,14 +4,16 @@ import SearchCustomersCard from '../components/SearchCustomersCard'
 import SearchCustomerOrdersCard from '../components/SearchCustomerOrdersCard'
 import SearchProductsCard from '../components/SearchProductsCard'
 import SearchOrdersCard from '../components/SearchOrdersCard'
+import SearchCostsCard from '../components/SearchCostsCard'
 
-type SearchType = 'customers' | 'customer_orders' | 'products' | 'supply_orders'
+type SearchType = 'customers' | 'customer_orders' | 'products' | 'supply_orders' | 'costs'
 
 const OPTIONS: Array<{ value: SearchType; label: string }> = [
-  { value: 'customers',      label: 'Customers' },
+  { value: 'customers',       label: 'Customers' },
   { value: 'customer_orders', label: 'Customer Orders' },
-  { value: 'products',       label: 'Products/Services' },
-  { value: 'supply_orders',  label: 'Supply Orders' },
+  { value: 'products',        label: 'Products/Services' },
+  { value: 'supply_orders',   label: 'Supply Orders' },
+  { value: 'costs',           label: 'Costs' },
 ]
 
 export default function Search() {
@@ -55,6 +57,7 @@ export default function Search() {
       )}
       {type === 'products'        && <SearchProductsCard hideHeader defaultOpen />}
       {type === 'supply_orders'   && <SearchOrdersCard hideHeader defaultOpen />}
+      {type === 'costs'           && <SearchCostsCard hideHeader defaultOpen />}
     </div>
   )
 }

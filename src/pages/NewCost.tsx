@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getCostCategories, getCostTypes, createCost, getExistingCosts, updateCost, deleteCost } from '../lib/api';
+import { getCostCategories, getCostTypes, createCost, updateCost, deleteCost } from '../lib/api';
+import SearchCostsCard from '../components/SearchCostsCard';
 import { useCurrency } from '../lib/useCurrency';
 import { DateInput } from '../components/DateInput';
 
@@ -10,37 +11,11 @@ interface RecurringDetails {
   recur_interval: number;
 }
 
-interface RecurringCostSummary {
-  cost_type: string;
-  start_month: string;
-  total_amount: number;
-  details: Array<{
-    id: number | string;
-    cost: string;
-    amount: number;
-    start_date?: string;
-    end_date?: string;
-    recur_kind?: 'monthly' | 'weekly' | 'yearly';
-    recur_interval?: number;
-  }>;
-}
-
-interface NonRecurringCostSummary {
-  cost_type: string;
-  month: string;
-  total_amount: number;
-  details: Array<{
-    id: number | string;
-    cost: string;
-    amount: number;
-    cost_date?: string;
-  }>;
-}
 
 const NewCost = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { parseAmount, fmtInput, fmtMoney } = useCurrency();
+  const { parseAmount, fmtInput } = useCurrency();
   const formRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef<boolean>(false);
   
@@ -70,18 +45,7 @@ const NewCost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // Cost viewing state
-  const _now = new Date();
-  const [selectedYear,  setSelectedYear]  = useState(_now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(_now.getMonth() + 1);
-  const [filterType, setFilterType] = useState<'all' | 'B' | 'P'>('B');
-  const [filterKind, setFilterKind] = useState<'all' | 'recurring' | 'non-recurring'>('all');
-  const [bRecurring,    setBRecurring]    = useState<RecurringCostSummary[]>([]);
-  const [bNonRecurring, setBNonRecurring] = useState<NonRecurringCostSummary[]>([]);
-  const [pRecurring,    setPRecurring]    = useState<RecurringCostSummary[]>([]);
-  const [pNonRecurring, setPNonRecurring] = useState<NonRecurringCostSummary[]>([]);
-  const [expandedKeys,  setExpandedKeys]  = useState<Set<string>>(new Set());
-  const [loadingCosts,  setLoadingCosts]  = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Derived state - check if it's recurring (but NOT non-recurring)
   const isRecurring = costCategory.toLowerCase().includes('recurring') && !costCategory.toLowerCase().includes('non-recurring');
@@ -130,11 +94,6 @@ const NewCost = () => {
     }
   }, [costTypeOptions, pendingCostTypeValue]);
 
-  // Load costs when filters change
-  useEffect(() => {
-    loadExistingCosts();
-  }, [filterType, selectedYear, selectedMonth]);
-
   const loadCostCategoryOptions = async () => {
     try {
       const response = await getCostCategories(businessPrivate);
@@ -160,45 +119,6 @@ const NewCost = () => {
       console.error('Error loading cost types:', err);
       setError(t('costs.failedLoadTypes'));
     }
-  };
-
-  const loadExistingCosts = async () => {
-    setLoadingCosts(true);
-    try {
-      if (filterType === 'all') {
-        const [bRes, pRes] = await Promise.all([
-          getExistingCosts('B', selectedYear, selectedMonth),
-          getExistingCosts('P', selectedYear, selectedMonth),
-        ]);
-        setBRecurring(bRes.recurring || []);
-        setBNonRecurring(bRes.non_recurring || []);
-        setPRecurring(pRes.recurring || []);
-        setPNonRecurring(pRes.non_recurring || []);
-      } else {
-        const res = await getExistingCosts(filterType, selectedYear, selectedMonth);
-        if (filterType === 'B') {
-          setBRecurring(res.recurring || []);
-          setBNonRecurring(res.non_recurring || []);
-          setPRecurring([]); setPNonRecurring([]);
-        } else {
-          setPRecurring(res.recurring || []);
-          setPNonRecurring(res.non_recurring || []);
-          setBRecurring([]); setBNonRecurring([]);
-        }
-      }
-    } catch (err) {
-      console.error('Error loading existing costs:', err);
-    } finally {
-      setLoadingCosts(false);
-    }
-  };
-
-  const toggleExpanded = (key: string) => {
-    setExpandedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
   };
 
   // Edit a cost - populate form with existing data
@@ -299,7 +219,7 @@ const NewCost = () => {
       await deleteCost(editingCostId, editingCostType);
       alert(t('costs.deleted'));
       handleClear();
-      loadExistingCosts();
+      setRefreshKey(k => k + 1);
     } catch (err: any) {
       console.error('Error deleting cost:', err);
       setError(err.message || t('costs.failedDelete'));
@@ -458,7 +378,7 @@ const NewCost = () => {
 
       handleClear();
       // Reload costs to show the changes
-      loadExistingCosts();
+      setRefreshKey(k => k + 1);
     } catch (err: any) {
       console.error('Error saving cost:', err);
       setError(err.message || t('costs.failedSave'));
@@ -498,7 +418,6 @@ const NewCost = () => {
 
   const CONTROL_H = 44;
   const [formOpen, setFormOpen] = useState(false);
-  const [listOpen, setListOpen] = useState(false);
 
   return (
     <>
@@ -755,149 +674,7 @@ const NewCost = () => {
       </>}
       </div>
 
-      {/* Costs List Card */}
-      <div className="card page-normal" style={{ marginTop: 16 }}>
-        <div
-          onClick={() => setListOpen(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: listOpen ? 16 : 0 }}
-        >
-          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
-          <h3 style={{ margin: 0 }}>{t('costs.allCosts', 'All Costs')}</h3>
-        </div>
-
-      {listOpen && <>
-        {/* Year / Month picker */}
-        {(() => {
-          const now2 = new Date();
-          const monthOptions: { year: number; month: number }[] = [];
-          for (let i = 0; i < 24; i++) {
-            const d = new Date(now2.getFullYear(), now2.getMonth() - i, 1);
-            monthOptions.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
-          }
-          const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          return (
-            <select
-              value={`${selectedYear}-${selectedMonth}`}
-              onChange={e => {
-                const [y, m] = e.target.value.split('-').map(Number);
-                setSelectedYear(y); setSelectedMonth(m);
-              }}
-              style={{ marginBottom: 12 }}
-            >
-              {monthOptions.map(({ year, month }) => (
-                <option key={`${year}-${month}`} value={`${year}-${month}`}>
-                  {monthNames[month - 1]} {year}
-                </option>
-              ))}
-            </select>
-          );
-        })()}
-
-        {/* Type filter: All | Business | Private */}
-        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 8 }}>
-          {(['all', 'B', 'P'] as const).map(f => (
-            <button key={f} onClick={() => { setFilterType(f); setFilterKind('all'); }}
-              style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                background: filterType === f ? 'var(--primary)' : 'transparent',
-                color: filterType === f ? '#fff' : undefined }}>
-              {f === 'all' ? t('costs.allCosts', 'All') : f === 'B' ? t('costs.business') : t('costs.private')}
-            </button>
-          ))}
-        </div>
-
-        {/* Kind filter: All | Recurring | Non-recurring (only when B or P selected) */}
-        {filterType !== 'all' && (
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
-            {(['all', 'recurring', 'non-recurring'] as const).map(f => (
-              <button key={f} onClick={() => setFilterKind(f)}
-                style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: filterKind === f ? 'var(--primary)' : 'transparent',
-                  color: filterKind === f ? '#fff' : undefined }}>
-                {f === 'all' ? t('all', 'All') : f === 'recurring' ? t('costs.recurring', 'Recurring') : t('costs.nonRecurring', 'Non-recurring')}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Results */}
-        {loadingCosts ? (
-          <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('costs.loadingCosts')}</div>
-        ) : (() => {
-          const sections: Array<{ label: string; items: RecurringCostSummary[]; kind: 'recurring'; bp: 'B' | 'P' } | { label: string; items: NonRecurringCostSummary[]; kind: 'non-recurring'; bp: 'B' | 'P' }> = [];
-          if (filterType !== 'P' && filterKind !== 'non-recurring' && bRecurring.length > 0)
-            sections.push({ label: t('costs.businessRecurring'), items: bRecurring, kind: 'recurring', bp: 'B' as const });
-          if (filterType !== 'P' && filterKind !== 'recurring' && bNonRecurring.length > 0)
-            sections.push({ label: t('costs.businessNonRecurring'), items: bNonRecurring, kind: 'non-recurring', bp: 'B' as const });
-          if (filterType !== 'B' && filterKind !== 'non-recurring' && pRecurring.length > 0)
-            sections.push({ label: t('costs.privateRecurring'), items: pRecurring, kind: 'recurring', bp: 'P' as const });
-          if (filterType !== 'B' && filterKind !== 'recurring' && pNonRecurring.length > 0)
-            sections.push({ label: t('costs.privateNonRecurring'), items: pNonRecurring, kind: 'non-recurring', bp: 'P' as const });
-
-          if (sections.length === 0) return <p className="helper">{t('costs.noCostsFound')}</p>;
-
-          return sections.map((section, si) => (
-            <div key={si} style={{ marginBottom: si < sections.length - 1 ? 28 : 0 }}>
-              <h4 style={{ margin: '0 0 10px' }}>{section.label}</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, paddingBottom: 8, borderBottom: '2px solid var(--border)', fontWeight: 600, fontSize: 14 }}>
-                <div>{t('costs.monthColumn')}</div>
-                <div>{t('costs.costType')}</div>
-                <div style={{ textAlign: 'right' }}>{t('amount')}</div>
-              </div>
-              {section.kind === 'recurring'
-                ? (section.items as RecurringCostSummary[]).map((item, idx) => {
-                    const key = `B${si}-rec-${item.cost_type}-${item.start_month}`;
-                    const isExp = expandedKeys.has(key);
-                    const hasDet = item.details?.length > 0;
-                    return (
-                      <div key={idx} style={{ borderBottom: '1px solid var(--border)', paddingTop: 10, paddingBottom: 10 }}>
-                        <div onClick={() => hasDet && toggleExpanded(key)}
-                          style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, cursor: hasDet ? 'pointer' : 'default' }}>
-                          <div className="helper">{item.start_month || '—'}</div>
-                          <div className="helper">{item.cost_type}</div>
-                          <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(item.total_amount)}</div>
-                        </div>
-                        {isExp && item.details.map((detail, di) => (
-                          <div key={di} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 60px', gap: 8, marginTop: 8, paddingLeft: 12, alignItems: 'center' }}>
-                            <div />
-                            <div className="helper">{detail.cost || t('costs.noDescription')}</div>
-                            <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
-                            <button onClick={() => handleEditCost(detail.id, 'recurring', { ...detail, cost_type: item.cost_type }, section.bp)}
-                              style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })
-                : (section.items as NonRecurringCostSummary[]).map((item, idx) => {
-                    const key = `${si}-nr-${item.cost_type}-${item.month}`;
-                    const isExp = expandedKeys.has(key);
-                    const hasDet = item.details?.length > 0;
-                    return (
-                      <div key={idx} style={{ borderBottom: '1px solid var(--border)', paddingTop: 10, paddingBottom: 10 }}>
-                        <div onClick={() => hasDet && toggleExpanded(key)}
-                          style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, cursor: hasDet ? 'pointer' : 'default' }}>
-                          <div className="helper">{item.month || '—'}</div>
-                          <div className="helper">{item.cost_type}</div>
-                          <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(item.total_amount)}</div>
-                        </div>
-                        {isExp && item.details.map((detail, di) => (
-                          <div key={di} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 60px', gap: 8, marginTop: 8, paddingLeft: 12, alignItems: 'center' }}>
-                            <div />
-                            <div className="helper">{detail.cost || t('costs.noDescription')}</div>
-                            <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
-                            <button onClick={() => handleEditCost(detail.id, 'non-recurring', { ...detail, cost_type: item.cost_type }, section.bp)}
-                              style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })
-              }
-            </div>
-          ));
-        })()}
-      </>}
-      </div>
+      <SearchCostsCard onEdit={handleEditCost} refreshKey={refreshKey} />
     </>
   );
 };
