@@ -140,27 +140,22 @@ async function getExistingCosts(params) {
     const TENANT_ID = authz.tenantId
 
     const type = params.type || 'B'
-    
+
     if (type !== 'B' && type !== 'P') {
       return cors(400, { error: 'Invalid type. Must be B or P' })
     }
 
-    // Calculate 3-month window: current month + 2 previous months
+    // Month window: use provided year/month or default to current month
     const now = new Date()
-    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-    const windowStartDate = `${twoMonthsAgo.getFullYear()}-${String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`
-    
-    // End of current month
-    const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    const windowEndDate = `${endOfCurrentMonth.getFullYear()}-${String(endOfCurrentMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfCurrentMonth.getDate()).padStart(2, '0')}`
+    const year  = params.year  ? parseInt(params.year,  10) : now.getFullYear()
+    const month = params.month ? parseInt(params.month, 10) : now.getMonth() + 1
+    const windowStartDate = `${year}-${String(month).padStart(2, '0')}-01`
+    const lastDay = new Date(year, month, 0).getDate()
+    const windowEndDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
-    console.log('Fetching costs for window:', windowStartDate, 'to', windowEndDate)
-    console.log('Type:', type, 'Tenant:', TENANT_ID)
-
-    // Get recurring costs that were active during the 3-month window
-    // A cost is active if it started before/during the window AND hasn't ended before the window
+    // Get recurring costs active during the selected month
     const recurringRaw = await sql`
-      SELECT 
+      SELECT
         id,
         cost_type,
         cost,
@@ -177,14 +172,9 @@ async function getExistingCosts(params) {
       ORDER BY start_date DESC, cost_type
     `
 
-    console.log('Recurring costs found:', recurringRaw.length)
-    if (recurringRaw.length > 0) {
-      console.log('Sample:', JSON.stringify(recurringRaw[0]))
-    }
-
-    // Get non-recurring costs from last 3 months
+    // Get non-recurring costs in the selected month
     const nonRecurringRaw = await sql`
-      SELECT 
+      SELECT
         id,
         cost_type,
         cost,
@@ -194,13 +184,9 @@ async function getExistingCosts(params) {
       WHERE tenant_id = ${TENANT_ID}
         AND business_private = ${type}
         AND cost_date >= ${windowStartDate}
+        AND cost_date <= ${windowEndDate}
       ORDER BY cost_date DESC, cost_type
     `
-
-    console.log('Non-recurring costs found:', nonRecurringRaw.length)
-    if (nonRecurringRaw.length > 0) {
-      console.log('Sample non-recurring:', JSON.stringify(nonRecurringRaw[0]))
-    }
 
     // Process recurring costs - expand to each active month in the window
     const recurringMap = new Map()

@@ -531,8 +531,11 @@ export async function createCost(costData: {
   return res.json()
 }
 
-export async function getExistingCosts(businessPrivate: 'B' | 'P') {
-  const response = await apiFetch(`${base}/api/cost/existing?type=${businessPrivate}`, {
+export async function getExistingCosts(businessPrivate: 'B' | 'P', year?: number, month?: number) {
+  const p = new URLSearchParams({ type: businessPrivate })
+  if (year)  p.set('year',  String(year))
+  if (month) p.set('month', String(month))
+  const response = await apiFetch(`${base}/api/cost/existing?${p}`, {
     headers: getAuthHeaders()
   })
   if (!response.ok) {

@@ -71,12 +71,17 @@ const NewCost = () => {
   const [error, setError] = useState<string>('');
 
   // Cost viewing state
-  const [viewMode, setViewMode] = useState<'B' | 'P'>('B');
-  const [recurringCosts, setRecurringCosts] = useState<RecurringCostSummary[]>([]);
-  const [nonRecurringCosts, setNonRecurringCosts] = useState<NonRecurringCostSummary[]>([]);
-  const [expandedRecurring, setExpandedRecurring] = useState<Set<string>>(new Set());
-  const [expandedNonRecurring, setExpandedNonRecurring] = useState<Set<string>>(new Set());
-  const [loadingCosts, setLoadingCosts] = useState(false);
+  const _now = new Date();
+  const [selectedYear,  setSelectedYear]  = useState(_now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(_now.getMonth() + 1);
+  const [filterType, setFilterType] = useState<'all' | 'B' | 'P'>('all');
+  const [filterKind, setFilterKind] = useState<'all' | 'recurring' | 'non-recurring'>('all');
+  const [bRecurring,    setBRecurring]    = useState<RecurringCostSummary[]>([]);
+  const [bNonRecurring, setBNonRecurring] = useState<NonRecurringCostSummary[]>([]);
+  const [pRecurring,    setPRecurring]    = useState<RecurringCostSummary[]>([]);
+  const [pNonRecurring, setPNonRecurring] = useState<NonRecurringCostSummary[]>([]);
+  const [expandedKeys,  setExpandedKeys]  = useState<Set<string>>(new Set());
+  const [loadingCosts,  setLoadingCosts]  = useState(false);
 
   // Derived state - check if it's recurring (but NOT non-recurring)
   const isRecurring = costCategory.toLowerCase().includes('recurring') && !costCategory.toLowerCase().includes('non-recurring');
@@ -125,10 +130,10 @@ const NewCost = () => {
     }
   }, [costTypeOptions, pendingCostTypeValue]);
 
-  // Load costs when viewMode changes
+  // Load costs when filters change
   useEffect(() => {
     loadExistingCosts();
-  }, [viewMode]);
+  }, [filterType, selectedYear, selectedMonth]);
 
   const loadCostCategoryOptions = async () => {
     try {
@@ -160,9 +165,27 @@ const NewCost = () => {
   const loadExistingCosts = async () => {
     setLoadingCosts(true);
     try {
-      const response = await getExistingCosts(viewMode);
-      setRecurringCosts(response.recurring || []);
-      setNonRecurringCosts(response.non_recurring || []);
+      if (filterType === 'all') {
+        const [bRes, pRes] = await Promise.all([
+          getExistingCosts('B', selectedYear, selectedMonth),
+          getExistingCosts('P', selectedYear, selectedMonth),
+        ]);
+        setBRecurring(bRes.recurring || []);
+        setBNonRecurring(bRes.non_recurring || []);
+        setPRecurring(pRes.recurring || []);
+        setPNonRecurring(pRes.non_recurring || []);
+      } else {
+        const res = await getExistingCosts(filterType, selectedYear, selectedMonth);
+        if (filterType === 'B') {
+          setBRecurring(res.recurring || []);
+          setBNonRecurring(res.non_recurring || []);
+          setPRecurring([]); setPNonRecurring([]);
+        } else {
+          setPRecurring(res.recurring || []);
+          setPNonRecurring(res.non_recurring || []);
+          setBRecurring([]); setBNonRecurring([]);
+        }
+      }
     } catch (err) {
       console.error('Error loading existing costs:', err);
     } finally {
@@ -170,24 +193,12 @@ const NewCost = () => {
     }
   };
 
-  const toggleRecurringExpanded = (key: string) => {
-    const newExpanded = new Set(expandedRecurring);
-    if (newExpanded.has(key)) {
-      newExpanded.delete(key);
-    } else {
-      newExpanded.add(key);
-    }
-    setExpandedRecurring(newExpanded);
-  };
-
-  const toggleNonRecurringExpanded = (key: string) => {
-    const newExpanded = new Set(expandedNonRecurring);
-    if (newExpanded.has(key)) {
-      newExpanded.delete(key);
-    } else {
-      newExpanded.add(key);
-    }
-    setExpandedNonRecurring(newExpanded);
+  const toggleExpanded = (key: string) => {
+    setExpandedKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
 
   // Edit a cost - populate form with existing data
@@ -756,233 +767,136 @@ const NewCost = () => {
         </div>
 
       {listOpen && <>
-        {/* Filter Buttons for Viewing Costs */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 8,
-          }}
-        >
-          <button
-            className="primary"
-            onClick={() => setViewMode('B')}
-            aria-pressed={viewMode === 'B'}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
-          >
-            {t('costs.seeBusinessCosts')}
-          </button>
-          <button
-            className="primary"
-            onClick={() => setViewMode('P')}
-            aria-pressed={viewMode === 'P'}
-            style={{ height: 'calc(var(--control-h) * 0.67)' }}
-          >
-            {t('costs.seePrivateCosts')}
-          </button>
+        {/* Year / Month picker */}
+        {(() => {
+          const now2 = new Date();
+          const monthOptions: { year: number; month: number }[] = [];
+          for (let i = 0; i < 24; i++) {
+            const d = new Date(now2.getFullYear(), now2.getMonth() - i, 1);
+            monthOptions.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+          }
+          const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return (
+            <select
+              value={`${selectedYear}-${selectedMonth}`}
+              onChange={e => {
+                const [y, m] = e.target.value.split('-').map(Number);
+                setSelectedYear(y); setSelectedMonth(m);
+              }}
+              style={{ marginBottom: 12 }}
+            >
+              {monthOptions.map(({ year, month }) => (
+                <option key={`${year}-${month}`} value={`${year}-${month}`}>
+                  {monthNames[month - 1]} {year}
+                </option>
+              ))}
+            </select>
+          );
+        })()}
+
+        {/* Type filter: All | Business | Private */}
+        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 8 }}>
+          {(['all', 'B', 'P'] as const).map(f => (
+            <button key={f} onClick={() => { setFilterType(f); setFilterKind('all'); }}
+              style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
+                background: filterType === f ? 'var(--primary)' : 'transparent',
+                color: filterType === f ? '#fff' : undefined }}>
+              {f === 'all' ? t('costs.allCosts', 'All') : f === 'B' ? t('costs.business') : t('costs.private')}
+            </button>
+          ))}
         </div>
 
-        {/* Existing Costs Display */}
-        <div style={{ marginTop: 24 }}>
-          {loadingCosts ? (
-            <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-              {t('costs.loadingCosts')}
+        {/* Kind filter: All | Recurring | Non-recurring (only when B or P selected) */}
+        {filterType !== 'all' && (
+          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
+            {(['all', 'recurring', 'non-recurring'] as const).map(f => (
+              <button key={f} onClick={() => setFilterKind(f)}
+                style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
+                  background: filterKind === f ? 'var(--primary)' : 'transparent',
+                  color: filterKind === f ? '#fff' : undefined }}>
+                {f === 'all' ? t('all', 'All') : f === 'recurring' ? t('costs.recurring', 'Recurring') : t('costs.nonRecurring', 'Non-recurring')}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Results */}
+        {loadingCosts ? (
+          <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('costs.loadingCosts')}</div>
+        ) : (() => {
+          const sections: Array<{ label: string; items: RecurringCostSummary[]; kind: 'recurring' } | { label: string; items: NonRecurringCostSummary[]; kind: 'non-recurring' }> = [];
+          if (filterType !== 'P' && filterKind !== 'non-recurring' && bRecurring.length > 0)
+            sections.push({ label: t('costs.businessRecurring'), items: bRecurring, kind: 'recurring' });
+          if (filterType !== 'P' && filterKind !== 'recurring' && bNonRecurring.length > 0)
+            sections.push({ label: t('costs.businessNonRecurring'), items: bNonRecurring, kind: 'non-recurring' });
+          if (filterType !== 'B' && filterKind !== 'non-recurring' && pRecurring.length > 0)
+            sections.push({ label: t('costs.privateRecurring'), items: pRecurring, kind: 'recurring' });
+          if (filterType !== 'B' && filterKind !== 'recurring' && pNonRecurring.length > 0)
+            sections.push({ label: t('costs.privateNonRecurring'), items: pNonRecurring, kind: 'non-recurring' });
+
+          if (sections.length === 0) return <p className="helper">{t('costs.noCostsFound')}</p>;
+
+          return sections.map((section, si) => (
+            <div key={si} style={{ marginBottom: si < sections.length - 1 ? 28 : 0 }}>
+              <h4 style={{ margin: '0 0 10px' }}>{section.label}</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, paddingBottom: 8, borderBottom: '2px solid var(--border)', fontWeight: 600, fontSize: 14 }}>
+                <div>{t('costs.monthColumn')}</div>
+                <div>{t('costs.costType')}</div>
+                <div style={{ textAlign: 'right' }}>{t('amount')}</div>
+              </div>
+              {section.kind === 'recurring'
+                ? (section.items as RecurringCostSummary[]).map((item, idx) => {
+                    const key = `B${si}-rec-${item.cost_type}-${item.start_month}`;
+                    const isExp = expandedKeys.has(key);
+                    const hasDet = item.details?.length > 0;
+                    return (
+                      <div key={idx} style={{ borderBottom: '1px solid var(--border)', paddingTop: 10, paddingBottom: 10 }}>
+                        <div onClick={() => hasDet && toggleExpanded(key)}
+                          style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, cursor: hasDet ? 'pointer' : 'default' }}>
+                          <div className="helper">{item.start_month || '—'}</div>
+                          <div className="helper">{item.cost_type}</div>
+                          <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(item.total_amount)}</div>
+                        </div>
+                        {isExp && item.details.map((detail, di) => (
+                          <div key={di} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 60px', gap: 8, marginTop: 8, paddingLeft: 12, alignItems: 'center' }}>
+                            <div />
+                            <div className="helper">{detail.cost || t('costs.noDescription')}</div>
+                            <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
+                            <button onClick={() => handleEditCost(detail.id, 'recurring', { ...detail, cost_type: item.cost_type })}
+                              style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })
+                : (section.items as NonRecurringCostSummary[]).map((item, idx) => {
+                    const key = `${si}-nr-${item.cost_type}-${item.month}`;
+                    const isExp = expandedKeys.has(key);
+                    const hasDet = item.details?.length > 0;
+                    return (
+                      <div key={idx} style={{ borderBottom: '1px solid var(--border)', paddingTop: 10, paddingBottom: 10 }}>
+                        <div onClick={() => hasDet && toggleExpanded(key)}
+                          style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 8, cursor: hasDet ? 'pointer' : 'default' }}>
+                          <div className="helper">{item.month || '—'}</div>
+                          <div className="helper">{item.cost_type}</div>
+                          <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(item.total_amount)}</div>
+                        </div>
+                        {isExp && item.details.map((detail, di) => (
+                          <div key={di} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 60px', gap: 8, marginTop: 8, paddingLeft: 12, alignItems: 'center' }}>
+                            <div />
+                            <div className="helper">{detail.cost || t('costs.noDescription')}</div>
+                            <div className="helper" style={{ textAlign: 'right' }}>{fmtMoney(detail.amount)}</div>
+                            <button onClick={() => handleEditCost(detail.id, 'non-recurring', { ...detail, cost_type: item.cost_type })}
+                              style={{ padding: '4px 8px', fontSize: 12, height: 'auto', minHeight: 'unset' }}>{t('edit')}</button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })
+              }
             </div>
-          ) : (
-            <>
-              {/* Recurring Costs Section */}
-              {recurringCosts.length > 0 && (
-                <div style={{ marginBottom: 32 }}>
-                  <h4 style={{ margin: 0, marginBottom: 12 }}>
-                    {viewMode === 'B' ? t('costs.businessRecurring') : t('costs.privateRecurring')}
-                  </h4>
-                  
-                  {/* Headers */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '80px 1fr auto',
-                    gap: 8,
-                    paddingBottom: 8,
-                    borderBottom: '2px solid #ddd',
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    <div>{t('costs.monthColumn')}</div>
-                    <div>{t('costs.costType')}</div>
-                    <div style={{ textAlign: 'right' }}>{t('amount')}</div>
-                  </div>
-
-                  {/* Data rows */}
-                  <div style={{ display: 'grid' }}>
-                    {recurringCosts.map((item, idx) => {
-                      const key = `${item.cost_type}-${item.start_month}`;
-                      const isExpanded = expandedRecurring.has(key);
-                      const hasDetails = item.details && item.details.length > 0;
-                      
-                      return (
-                        <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
-                          {/* Main row */}
-                          <div
-                            onClick={() => hasDetails && toggleRecurringExpanded(key)}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '80px 1fr auto',
-                              gap: 8,
-                              cursor: hasDetails ? 'pointer' : 'default'
-                            }}
-                            onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
-                            onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            <div className="helper">{item.start_month || '—'}</div>
-                            <div className="helper">{item.cost_type}</div>
-                            <div className="helper" style={{ textAlign: 'right' }}>
-                              {fmtMoney(item.total_amount)}
-                            </div>
-                          </div>
-
-                          {/* Expanded details */}
-                          {isExpanded && item.details.map((detail, detailIdx) => (
-                            <div
-                              key={detailIdx}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '80px 1fr auto 60px',
-                                gap: 8,
-                                marginTop: 8,
-                                paddingLeft: 12,
-                                alignItems: 'center'
-                              }}
-                            >
-                              <div></div>
-                              <div className="helper" style={{ lineHeight: '1.4' }}>
-                                {detail.cost || t('costs.noDescription')}
-                              </div>
-                              <div className="helper" style={{ textAlign: 'right' }}>
-                                {fmtMoney(detail.amount)}
-                              </div>
-                              <button
-                                onClick={() => handleEditCost(detail.id, 'recurring', {
-                                  ...detail,
-                                  cost_type: item.cost_type
-                                })}
-                                style={{
-                                  padding: '4px 8px',
-                                  fontSize: '12px',
-                                  height: 'auto',
-                                  minHeight: 'unset'
-                                }}
-                              >
-                                {t('edit')}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Non-Recurring Costs Section */}
-              {nonRecurringCosts.length > 0 && (
-                <div>
-                  <h4 style={{ margin: 0, marginBottom: 12 }}>
-                    {viewMode === 'B' ? t('costs.businessNonRecurring') : t('costs.privateNonRecurring')}
-                  </h4>
-                  
-                  {/* Headers */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '80px 1fr auto',
-                    gap: 8,
-                    paddingBottom: 8,
-                    borderBottom: '2px solid #ddd',
-                    fontWeight: 600,
-                    fontSize: 14
-                  }}>
-                    <div>{t('costs.monthColumn')}</div>
-                    <div>{t('costs.costType')}</div>
-                    <div style={{ textAlign: 'right' }}>{t('amount')}</div>
-                  </div>
-
-                  {/* Data rows */}
-                  <div style={{ display: 'grid' }}>
-                    {nonRecurringCosts.map((item, idx) => {
-                      const key = `${item.cost_type}-${item.month}`;
-                      const isExpanded = expandedNonRecurring.has(key);
-                      const hasDetails = item.details && item.details.length > 0;
-                      
-                      return (
-                        <div key={idx} style={{ borderBottom: '1px solid #eee', paddingTop: 12, paddingBottom: 12 }}>
-                          {/* Main row */}
-                          <div
-                            onClick={() => hasDetails && toggleNonRecurringExpanded(key)}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '80px 1fr auto',
-                              gap: 8,
-                              cursor: hasDetails ? 'pointer' : 'default'
-                            }}
-                            onMouseEnter={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'var(--panel)')}
-                            onMouseLeave={(e) => hasDetails && (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            <div className="helper">{item.month || '—'}</div>
-                            <div className="helper">{item.cost_type}</div>
-                            <div className="helper" style={{ textAlign: 'right' }}>
-                              {fmtMoney(item.total_amount)}
-                            </div>
-                          </div>
-
-                          {/* Expanded details */}
-                          {isExpanded && item.details.map((detail, detailIdx) => (
-                            <div
-                              key={detailIdx}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '80px 1fr auto 60px',
-                                gap: 8,
-                                marginTop: 8,
-                                paddingLeft: 12,
-                                alignItems: 'center'
-                              }}
-                            >
-                              <div></div>
-                              <div className="helper" style={{ lineHeight: '1.4' }}>
-                                {detail.cost || t('costs.noDescription')}
-                              </div>
-                              <div className="helper" style={{ textAlign: 'right' }}>
-                                {fmtMoney(detail.amount)}
-                              </div>
-                              <button
-                                onClick={() => handleEditCost(detail.id, 'non-recurring', {
-                                  ...detail,
-                                  cost_type: item.cost_type
-                                })}
-                                style={{
-                                  padding: '4px 8px',
-                                  fontSize: '12px',
-                                  height: 'auto',
-                                  minHeight: 'unset'
-                                }}
-                              >
-                                {t('edit')}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* No costs message */}
-              {recurringCosts.length === 0 && nonRecurringCosts.length === 0 && (
-                <p className="helper">{t('costs.noCostsFound')}</p>
-              )}
-            </>
-          )}
-        </div>
+          ));
+        })()}
       </>}
       </div>
     </>
