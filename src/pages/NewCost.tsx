@@ -202,7 +202,7 @@ const NewCost = () => {
   };
 
   // Edit a cost - populate form with existing data
-  const handleEditCost = async (costId: number | string, costType: 'recurring' | 'non-recurring', detail: any) => {
+  const handleEditCost = async (costId: number | string, costType: 'recurring' | 'non-recurring', detail: any, businessPrivateContext: 'B' | 'P' = 'B') => {
     try {
       // CRITICAL: Set ref FIRST before any state changes
       isEditingRef.current = true;
@@ -218,18 +218,18 @@ const NewCost = () => {
       
       // STEP 2: Set business/private type FIRST (before edit mode)
       // This prevents the checkbox change from interfering with the edit flow
-      setBusinessPrivate(viewMode);
-      
+      setBusinessPrivate(businessPrivateContext);
+
       // STEP 3: Set edit mode AFTER businessPrivate is set
       setEditingCostId(costId);
       setEditingCostType(costType);
-      
+
       // STEP 4: Determine category
       let category = '';
       if (costType === 'recurring') {
-        category = viewMode === 'B' ? 'Business recurring cost' : 'Private recurring cost';
+        category = businessPrivateContext === 'B' ? 'Business recurring cost' : 'Private recurring cost';
       } else {
-        category = viewMode === 'B' ? 'Business non-recurring cost' : 'Private non-recurring cost';
+        category = businessPrivateContext === 'B' ? 'Business non-recurring cost' : 'Private non-recurring cost';
       }
       
       const targetCostType = detail.cost_type || '';
