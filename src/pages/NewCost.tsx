@@ -487,8 +487,8 @@ const NewCost = () => {
   };
 
   const CONTROL_H = 44;
-  const [formOpen, setFormOpen] = useState(true);
-  const [listOpen, setListOpen] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
   return (
     <>
@@ -499,9 +499,7 @@ const NewCost = () => {
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: formOpen ? 16 : 0 }}
         >
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{formOpen ? '▼' : '▶'}</span>
-          <h3 style={{ margin: 0 }}>
-            {editingCostId ? t('costs.editTitle') : t('costs.registerTitle')}
-          </h3>
+          <h3 style={{ margin: 0 }}>{t('costs.addOrEditTitle', 'Add new or Edit existing Cost')}</h3>
         </div>
 
       {formOpen && <>
@@ -754,7 +752,7 @@ const NewCost = () => {
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: listOpen ? 16 : 0 }}
         >
           <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{listOpen ? '▼' : '▶'}</span>
-          <h3 style={{ margin: 0 }}>{t('costs.allCosts', 'Costs')}</h3>
+          <h3 style={{ margin: 0 }}>{t('costs.allCosts', 'All Costs')}</h3>
         </div>
 
       {listOpen && <>

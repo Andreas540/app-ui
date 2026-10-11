@@ -896,7 +896,8 @@
   },
   "costs": {
     "registerTitle": "Register New Cost",
-    "allCosts": "Costs",
+    "addOrEditTitle": "Add new or Edit existing Cost",
+    "allCosts": "All Costs",
     "editTitle": "Edit Cost",
     "business": "Business",
     "private": "Private",
