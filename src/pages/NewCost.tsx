@@ -276,9 +276,8 @@ const NewCost = () => {
       }
       
       setError('');
-      
-      console.log('Edit setup complete - waiting for useEffect to apply cost type');
-      
+      setFormOpen(true);
+
       // Scroll to form
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
