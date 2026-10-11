@@ -25,6 +25,7 @@ export default function QuickSalesPage() {
   const [customerId, setCustomerId] = useState<string | null>(null)
   const customerIdRef = useRef<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   // Search fields
   const [q, setQ] = useState('')
@@ -185,8 +186,15 @@ export default function QuickSalesPage() {
 
       {/* Orders */}
       <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ margin: '0 0 14px' }}>Quick Sale Orders</h3>
+        <div
+          onClick={() => setSearchOpen(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', marginBottom: searchOpen ? 14 : 0 }}
+        >
+          <span style={{ fontSize: 'var(--expand-icon-size)', color: 'var(--muted)' }}>{searchOpen ? '▼' : '▶'}</span>
+          <h3 style={{ margin: 0 }}>View and Search Quick Sales</h3>
+        </div>
 
+        {searchOpen && <>
         {/* Row 1: free text + action buttons */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <input
@@ -281,6 +289,7 @@ export default function QuickSalesPage() {
             )}
           </div>
         )}
+        </>}
       </div>
 
       {selectedOrder && (
