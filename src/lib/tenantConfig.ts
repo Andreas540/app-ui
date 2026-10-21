@@ -30,6 +30,7 @@ export interface TenantConfig {
     compactCustomerOrderRows: boolean
     excludePartnerShareOrderRows: boolean
     revenueByPaymentDate: boolean
+    excludeOrdersFromRevenue: boolean
     multipleOrderRows: boolean
     dashboardCards: string[]
     customerDetailShowNewOrder: boolean
@@ -114,6 +115,7 @@ export const defaultConfig: TenantConfig = {
     compactCustomerOrderRows: true,
     excludePartnerShareOrderRows: false,
     revenueByPaymentDate: false,
+    excludeOrdersFromRevenue: false,
     multipleOrderRows: true,
     dashboardCards: ['financials', 'charts'],
     customerDetailShowNewOrder: true,

@@ -7,6 +7,8 @@ import { buildGroupOptions, optLabel } from '../lib/productOptions'
 import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useCurrency } from '../lib/useCurrency'
+import { useAuth } from '../contexts/AuthContext'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 type PartnerRef = { id: string; name: string }
 type Line = { product_id: string; qtyStr: string; priceStr: string; covers_product_id: string | null; unit_identifier: string; historicalProductCost: number | null; unit_id: number | null; unit_serial: string | null; unit_condition: string | null }
@@ -18,6 +20,8 @@ function emptyLine(): Line {
 export default function EditOrder() {
   const { t } = useTranslation()
   const { parseAmount, fmtInput, fmtMoney, fmtPct } = useCurrency()
+  const { user } = useAuth()
+  const config = getTenantConfig(user?.tenantId)
   const { orderId } = useParams<{ orderId: string }>()
   const [generatingLink, setGeneratingLink] = useState(false)
   const [ampHasTerminal, setAmpHasTerminal] = useState(false)
@@ -62,6 +66,7 @@ export default function EditOrder() {
   const [showMoreFields, setShowMoreFields]     = useState(false)
   const [productCostStr, setProductCostStr]     = useState('')
   const [shippingCostStr, setShippingCostStr]   = useState('')
+  const [excludeFromRevenue, setExcludeFromRevenue] = useState(false)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
   // ── Load bootstrap + order ──────────────────────────────────────────────────
@@ -112,6 +117,7 @@ export default function EditOrder() {
         // Cost overrides
         if (order.product_cost != null) { setProductCostStr(fmtInput(order.product_cost)); setShowMoreFields(true) }
         if (order.shipping_cost != null) { setShippingCostStr(fmtInput(order.shipping_cost)); setShowMoreFields(true) }
+        if (order.exclude_from_revenue) { setExcludeFromRevenue(true); setShowMoreFields(true) }
 
         // Partner splits — restore original mode and value if stored, else fall back to per-item
         if (orderData.partner_splits?.length > 0) {
@@ -715,16 +721,25 @@ export default function EditOrder() {
 
       {/* More fields */}
       {showMoreFields && (
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-          <div>
-            <label>{t('orders.productCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr} onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+        <>
+          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+            <div>
+              <label>{t('orders.productCostThisOrder')}</label>
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr} onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
+            <div>
+              <label>{t('orders.shippingCostThisOrder')}</label>
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr} onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
           </div>
-          <div>
-            <label>{t('orders.shippingCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr} onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
-          </div>
-        </div>
+          {config.ui.excludeOrdersFromRevenue && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, cursor: 'pointer', width: 'fit-content' }}>
+              <input type="checkbox" checked={excludeFromRevenue} onChange={e => setExcludeFromRevenue(e.target.checked)}
+                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+              {t('orders.excludeFromRevenue', 'Exclude order from Revenue and Profit')}
+            </label>
+          )}
+        </>
       )}
 
       {/* Actions */}

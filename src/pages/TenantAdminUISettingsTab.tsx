@@ -30,7 +30,7 @@ type UiConfig = {
     order?: string; orders?: string
     directLabel?: string
   }
-  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; excludePartnerShareOrderRows?: boolean; revenueByPaymentDate?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailShowLog?: boolean; customerDetailOwedBreakdown?: boolean }
+  ui?: { showCostEffectiveness?: boolean; requiresApproval?: boolean; showOrderNumberInList?: boolean; showWelcomeModal?: boolean; showInfoIconsPages?: boolean; showInfoIconsReports?: boolean; showNavArrowsMobile?: boolean; showNavArrowsDesktop?: boolean; showOwedToSuppliers?: boolean; compactCustomerOrderRows?: boolean; excludePartnerShareOrderRows?: boolean; revenueByPaymentDate?: boolean; excludeOrdersFromRevenue?: boolean; multipleOrderRows?: boolean; dashboardCards?: string[]; customerDetailShowNewOrder?: boolean; customerDetailShowNewPayment?: boolean; customerDetailShowNewInvoice?: boolean; customerDetailShowNewBooking?: boolean; customerDetailShowShareBooking?: boolean; customerDetailShowShareOrder?: boolean; customerDetailShowConversation?: boolean; customerDetailShowLog?: boolean; customerDetailOwedBreakdown?: boolean }
   booking?: {
     serviceTypeLabel?: string; bookingProviderName?: string
     smsRemindersEnabled?: boolean; showBookingParticipants?: boolean
@@ -312,7 +312,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
     } else if (section === 'new-order') {
       setCfg(p => { const ui = { ...p.ui }; delete ui.multipleOrderRows; return { ...p, ui } })
     } else if (section === 'calc-sales-profit') {
-      setCfg(p => { const ui = { ...p.ui }; delete ui.revenueByPaymentDate; return { ...p, ui } })
+      setCfg(p => { const ui = { ...p.ui }; delete ui.revenueByPaymentDate; delete ui.excludeOrdersFromRevenue; return { ...p, ui } })
     }
   }
 
@@ -586,6 +586,11 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
 
       {section === 'calc-sales-profit' && (
         <>
+          <Row label={t('tenantCustom.excludeOrdersFromRevenue', 'Exclude selected orders from Revenue & Profit')}
+            help={t('tenantCustom.excludeOrdersFromRevenueHelp', 'When on, a checkbox appears on new/edit order to mark specific orders as excluded from revenue and profit calculations.')}
+            customized={cu.excludeOrdersFromRevenue !== undefined && cu.excludeOrdersFromRevenue !== du.excludeOrdersFromRevenue}>
+            <Toggle value={cu.excludeOrdersFromRevenue ?? du.excludeOrdersFromRevenue} onChange={v => setUi('excludeOrdersFromRevenue', v)} />
+          </Row>
           <Row label={t('tenantCustom.revenueBasis')} help={t('tenantCustom.revenueBasisHelp')}
             customized={cu.revenueByPaymentDate !== undefined && cu.revenueByPaymentDate !== du.revenueByPaymentDate}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

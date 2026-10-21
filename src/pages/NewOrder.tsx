@@ -93,6 +93,7 @@ export default function NewOrder() {
   const [showMoreFields, setShowMoreFields] = useState(false)
   const [productCostStr, setProductCostStr] = useState('')
   const [shippingCostStr, setShippingCostStr] = useState('')
+  const [excludeFromRevenue, setExcludeFromRevenue] = useState(false)
   const [historicalShippingCost, setHistoricalShippingCost] = useState<number | null>(null)
 
 
@@ -849,18 +850,27 @@ export default function NewOrder() {
 
       {/* More fields */}
       {showMoreFields && (
-        <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
-          <div>
-            <label>{t('orders.productCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr}
-              onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+        <>
+          <div className="row row-2col-mobile" style={{ marginTop: 12 }}>
+            <div>
+              <label>{t('orders.productCostThisOrder')}</label>
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={productCostStr}
+                onChange={e => setProductCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
+            <div>
+              <label>{t('orders.shippingCostThisOrder')}</label>
+              <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr}
+                onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
+            </div>
           </div>
-          <div>
-            <label>{t('orders.shippingCostThisOrder')}</label>
-            <input type="text" inputMode="decimal" placeholder={fmtInput(0)} value={shippingCostStr}
-              onChange={e => setShippingCostStr(e.target.value)} style={{ height: CONTROL_H }} />
-          </div>
-        </div>
+          {config.ui.excludeOrdersFromRevenue && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, cursor: 'pointer', width: 'fit-content' }}>
+              <input type="checkbox" checked={excludeFromRevenue} onChange={e => setExcludeFromRevenue(e.target.checked)}
+                style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+              {t('orders.excludeFromRevenue', 'Exclude order from Revenue and Profit')}
+            </label>
+          )}
+        </>
       )}
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
@@ -942,7 +952,7 @@ export default function NewOrder() {
             setPartner1Id(''); setPartner2Id('')
             setPartner1PerItemStr(''); setPartner2PerItemStr('')
             setPartner1Mode('per-item'); setPartner2Mode('per-item')
-            setProductCostStr(''); setShippingCostStr('')
+            setProductCostStr(''); setShippingCostStr(''); setExcludeFromRevenue(false)
             setShowMoreFields(false)
           } catch (e: any) {
             alert(e?.message || t('payments.alertSaveFailed'))
@@ -954,7 +964,7 @@ export default function NewOrder() {
           setNotes(''); setQuery(''); setEntityId('')
           setPartner1Id(''); setPartner2Id(''); setPartner1PerItemStr(''); setPartner2PerItemStr('')
           setPartner1Mode('per-item'); setPartner2Mode('per-item')
-          setProductCostStr(''); setShippingCostStr(''); setShowMoreFields(false)
+          setProductCostStr(''); setShippingCostStr(''); setExcludeFromRevenue(false); setShowMoreFields(false)
         }} style={{ height: CONTROL_H }}>{t('clear')}</button>
 
         <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>
