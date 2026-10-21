@@ -343,6 +343,7 @@ export default function EditOrder() {
           notes:          notes.trim() || undefined,
           product_cost:   productCostToSend,
           shipping_cost:  shippingCostToSend,
+          exclude_from_revenue: excludeFromRevenue || undefined,
           partner_splits: splits.length ? splits : undefined,
         }),
       })

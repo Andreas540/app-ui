@@ -916,6 +916,7 @@ export default function NewOrder() {
               notes: notes.trim() || undefined,
               product_cost: productCostToSend,
               shipping_cost: shippingCostToSend,
+              exclude_from_revenue: excludeFromRevenue || undefined,
               partner_splits: splits.length ? splits : undefined,
               items: validLines.map(l => ({
                 product_id: l.product_id,

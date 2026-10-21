@@ -162,7 +162,7 @@ const TENANT_ID = authz.tenantId;
     const body = JSON.parse(event.body || '{}');
     const {
       customer_id, date, delivered, delivered_at, discount,
-      notes, product_cost, shipping_cost, partner_splits
+      notes, product_cost, shipping_cost, partner_splits, exclude_from_revenue
     } = body || {};
 
     // Normalise to items array (supports both multi-item and legacy single-item)
@@ -227,12 +227,13 @@ const TENANT_ID = authz.tenantId;
       INSERT INTO orders (
         tenant_id, customer_id, order_no, order_date,
         delivered, delivered_quantity, delivered_at,
-        discount, notes, product_cost, shipping_cost
+        discount, notes, product_cost, shipping_cost, exclude_from_revenue
       )
       VALUES (
         ${TENANT_ID}, ${customer_id}, ${orderNo}, ${date},
         ${!!delivered}, ${deliveredQty}, ${delivered ? (delivered_at || null) : null},
-        ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum}
+        ${discount ?? 0}, ${notes || null}, ${productCostNum}, ${shippingCostNum},
+        ${exclude_from_revenue === true}
       )
       RETURNING id
     `;

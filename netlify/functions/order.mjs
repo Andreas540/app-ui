@@ -40,6 +40,7 @@ const TENANT_ID = authz.tenantId
         o.customer_id,
         o.product_cost,
         o.shipping_cost,
+        o.exclude_from_revenue,
         c.name AS customer_name,
         c.customer_type
       FROM orders o
@@ -277,6 +278,7 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
       notes,
       product_cost,
       shipping_cost,
+      exclude_from_revenue,
       partner_splits,
       item_product_cost,
     } = body
@@ -321,7 +323,8 @@ if (!DATABASE_URL) return cors(500, { error: 'DATABASE_URL missing' })
           delivered_at = ${delivered_at || null},
           notes = ${notes ?? null},
           product_cost = ${product_cost ?? null},
-          shipping_cost = ${shipping_cost ?? null}
+          shipping_cost = ${shipping_cost ?? null},
+          exclude_from_revenue = ${exclude_from_revenue === true}
       WHERE tenant_id = ${TENANT_ID} AND id = ${id}
     `
 
