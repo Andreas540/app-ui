@@ -45,6 +45,7 @@ export const handler = async (event) => {
               JOIN payments p ON p.order_id = o.id AND p.tenant_id = ${TENANT_ID}
               WHERE o.tenant_id = ${TENANT_ID} AND o.order_date IS NOT NULL
                 AND o.notes IS DISTINCT FROM 'Old tab'
+                AND o.exclude_from_revenue IS NOT TRUE
               GROUP BY o.id
             ),
             rc AS (
@@ -91,6 +92,7 @@ export const handler = async (event) => {
               JOIN payments p ON p.order_id = o.id AND p.tenant_id = ${TENANT_ID}
               WHERE o.tenant_id = ${TENANT_ID} AND o.order_date IS NOT NULL
                 AND o.notes IS DISTINCT FROM 'Old tab'
+                AND o.exclude_from_revenue IS NOT TRUE
               GROUP BY o.id
             ),
             rc AS (
@@ -146,6 +148,7 @@ export const handler = async (event) => {
             JOIN payments p ON p.order_id = o.id AND p.tenant_id = ${TENANT_ID}
             WHERE o.tenant_id = ${TENANT_ID} AND o.order_date IS NOT NULL
               AND o.notes IS DISTINCT FROM 'Old tab'
+              AND o.exclude_from_revenue IS NOT TRUE
             GROUP BY o.id
           ),
           rc AS (
@@ -195,6 +198,7 @@ export const handler = async (event) => {
             JOIN payments p ON p.order_id = o.id AND p.tenant_id = ${TENANT_ID}
             WHERE o.tenant_id = ${TENANT_ID} AND o.order_date IS NOT NULL
               AND o.notes IS DISTINCT FROM 'Old tab'
+              AND o.exclude_from_revenue IS NOT TRUE
             GROUP BY o.id
           ),
           rc AS (
