@@ -746,7 +746,7 @@ export default function EditOrder() {
       <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="primary" onClick={save} style={{ height: CONTROL_H }}>{t('saveChanges')}</button>
         <button onClick={() => navigate(-1)} style={{ height: CONTROL_H }}>{t('cancel')}</button>
-        <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>{t('orders.more')}</button>
+        <button onClick={() => setShowMoreFields(v => !v)} style={{ height: CONTROL_H }}>{showMoreFields ? t('orders.less') : t('orders.more')}</button>
         {Number.isFinite(orderValue) && orderValue > paidAmount && (
           <button
             onClick={generatePaymentLink}
