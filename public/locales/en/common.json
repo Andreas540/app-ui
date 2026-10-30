@@ -466,7 +466,7 @@
     "paymentType": "Payment Type",
     "amountUSD": "Amount",
     "savePayment": "Save payment",
-"paymentToPartner": "Payment to Partner",
+    "paymentToPartner": "Payment to Partner",
     "noPartners": "No partners found. Create partners first.",
     "paymentToSupplier": "Payment to Supplier",
     "noSuppliers": "No suppliers found. Create suppliers first.",
@@ -1590,6 +1590,27 @@
       "saveSettings": "Save settings",
       "smsUsageTab": "Usage",
       "remindersTab": "Reminders"
+    },
+    "tabPartnerSettings": "Partner Settings",
+    "partnerSettings": {
+      "hideDeleteDesc": "Hide a partner to remove them from view across the app. Delete permanently removes the partner and all their records.",
+      "search": "Search partners...",
+      "partner": "Partner",
+      "noPartners": "No partners found.",
+      "noMatch": "No partners match your search.",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "delete": "Delete",
+      "deleteTitle": "Delete partner?",
+      "deleteConfirm": "You are about to permanently delete {{name}}.",
+      "deleteRecordsWarning": "The following records will also be deleted:",
+      "deleteOrders": "{{count}} order share(s)",
+      "deletePayments": "{{count}} payment(s)",
+      "deleteDebtPayments": "{{count}} partner-to-partner payment(s)",
+      "deleteBlockedCustomers": "This partner still has {{count}} customer(s). Reassign or delete them before deleting the partner.",
+      "deleteCannotUndo": "This cannot be undone.",
+      "deletePermanently": "Delete permanently",
+      "deleting": "Deleting…"
     }
   },
   "customerOffers": {

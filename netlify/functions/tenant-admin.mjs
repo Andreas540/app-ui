@@ -142,6 +142,28 @@ async function handleGet(event) {
       return cors(200, { customers })
     }
 
+    if (action === 'getPartnerSettings') {
+      await sql`
+        CREATE TABLE IF NOT EXISTS tenant_hidden_partners (
+          tenant_id  UUID NOT NULL,
+          partner_id UUID NOT NULL,
+          PRIMARY KEY (tenant_id, partner_id)
+        )
+      `.catch(() => {})
+      const partners = await sql`
+        SELECT
+          p.id,
+          p.name,
+          (thp.partner_id IS NOT NULL) AS hidden
+        FROM partners p
+        LEFT JOIN tenant_hidden_partners thp
+          ON thp.partner_id = p.id AND thp.tenant_id = ${tenantId}::uuid
+        WHERE p.tenant_id = ${tenantId}::uuid
+        ORDER BY p.name ASC
+      `
+      return cors(200, { partners })
+    }
+
     if (action === 'getProductSettings') {
       await sql`
         CREATE TABLE IF NOT EXISTS tenant_hidden_products (
@@ -174,6 +196,23 @@ async function handleGet(event) {
         sql`SELECT COUNT(*)::int AS n FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
       ])
       return cors(200, { orders: orders.n, payments: payments.n, bookings: bookings.n })
+    }
+
+    if (action === 'getPartnerRecordCounts') {
+      const partnerId = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('partner_id')
+      if (!partnerId) return cors(400, { error: 'partner_id required' })
+      // order_partners has no tenant_id of its own — scope it through orders.
+      const [[orders], [payments], [customers], [debtPayments]] = await Promise.all([
+        sql`SELECT COUNT(*)::int AS n FROM order_partners op
+              JOIN orders o ON o.id = op.order_id
+             WHERE op.partner_id = ${partnerId}::uuid AND o.tenant_id = ${tenantId}::uuid`,
+        sql`SELECT COUNT(*)::int AS n FROM partner_payments WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`,
+        sql`SELECT COUNT(*)::int AS n FROM customers       WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`,
+        sql`SELECT COUNT(*)::int AS n FROM partner_to_partner_debt_payments
+             WHERE (from_partner_id = ${partnerId}::uuid OR to_partner_id = ${partnerId}::uuid)
+               AND tenant_id = ${tenantId}::uuid`,
+      ])
+      return cors(200, { orders: orders.n, payments: payments.n, customers: customers.n, debtPayments: debtPayments.n })
     }
 
     if (action === 'getCashReporters') {
@@ -654,6 +693,39 @@ if (action === 'toggleUserStatus') {
       await sql`DELETE FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       // Deleting the customer row cascades to: customer_links, customer_messages, shipping_cost_history
       await sql`DELETE FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'toggleHidePartner') {
+      const { partnerId, hide } = body
+      if (!partnerId) return cors(400, { error: 'partnerId required' })
+      const owns = await sql`SELECT id FROM partners WHERE id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!owns.length) return cors(404, { error: 'Partner not found' })
+      await sql`CREATE TABLE IF NOT EXISTS tenant_hidden_partners (tenant_id UUID NOT NULL, partner_id UUID NOT NULL, PRIMARY KEY (tenant_id, partner_id))`.catch(() => {})
+      if (hide) {
+        await sql`INSERT INTO tenant_hidden_partners (tenant_id, partner_id) VALUES (${tenantId}::uuid, ${partnerId}::uuid) ON CONFLICT DO NOTHING`
+      } else {
+        await sql`DELETE FROM tenant_hidden_partners WHERE tenant_id = ${tenantId}::uuid AND partner_id = ${partnerId}::uuid`
+      }
+      return cors(200, { success: true })
+    }
+
+    if (action === 'deletePartner') {
+      const { partnerId } = body
+      if (!partnerId) return cors(400, { error: 'partnerId required' })
+      const owns = await sql`SELECT id FROM partners WHERE id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
+      if (!owns.length) return cors(404, { error: 'Partner not found' })
+      // customers.partner_id is RESTRICT. Clearing it here would silently detach customers
+      // from their partner, and deleting them would cascade into their whole order history —
+      // so refuse instead and let the admin reassign them deliberately.
+      const [linked] = await sql`SELECT COUNT(*)::int AS n FROM customers WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      if (linked.n > 0) return cors(409, { error: 'PARTNER_HAS_CUSTOMERS', customers: linked.n })
+      // partner_payments and return_partner_adjustments cascade on the partner row.
+      // order_partners and partner_to_partner_debt_payments are RESTRICT, so clear them first.
+      await sql`DELETE FROM partner_to_partner_debt_payments WHERE (from_partner_id = ${partnerId}::uuid OR to_partner_id = ${partnerId}::uuid) AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM order_partners WHERE partner_id = ${partnerId}::uuid AND order_id IN (SELECT id FROM orders WHERE tenant_id = ${tenantId}::uuid)`
+      await sql`DELETE FROM tenant_hidden_partners WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      await sql`DELETE FROM partners WHERE id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
       return cors(200, { success: true })
     }
 

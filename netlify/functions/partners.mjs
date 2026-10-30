@@ -44,6 +44,10 @@ async function listPartners(event) {
           ) AS total_owed
       ) t ON TRUE
       WHERE p.tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_partners thp
+          WHERE thp.tenant_id = ${TENANT_ID} AND thp.partner_id = p.id
+        )
         ${like ? sql`AND LOWER(p.name) LIKE ${like}` : sql``}
       ORDER BY p.name
     `;

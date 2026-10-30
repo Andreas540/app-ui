@@ -88,11 +88,24 @@ export async function handler(event) {
       ORDER BY name
     `;
 
-    // Partners come from the dedicated partners table
+    // Ensure hidden-partners table exists before querying it
+    await sql`
+      CREATE TABLE IF NOT EXISTS tenant_hidden_partners (
+        tenant_id  UUID NOT NULL,
+        partner_id UUID NOT NULL,
+        PRIMARY KEY (tenant_id, partner_id)
+      )
+    `.catch(() => {})
+
+    // Partners come from the dedicated partners table — hidden partners are excluded
     const partners = await sql`
       SELECT id, name
       FROM partners
       WHERE tenant_id = ${TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1 FROM tenant_hidden_partners thp
+          WHERE thp.tenant_id = ${TENANT_ID} AND thp.partner_id = id
+        )
       ORDER BY name
     `;
 

@@ -466,7 +466,7 @@
     "paymentType": "Tipo de pago",
     "amountUSD": "Monto",
     "savePayment": "Guardar pago",
-"paymentToPartner": "Pago a Socio",
+    "paymentToPartner": "Pago a Socio",
     "noPartners": "No se encontraron socios. Cree socios primero.",
     "paymentToSupplier": "Pago a Proveedor",
     "noSuppliers": "No se encontraron proveedores. Cree proveedores primero.",
@@ -1590,6 +1590,27 @@
       "saveSettings": "Guardar configuración",
       "smsUsageTab": "Uso",
       "remindersTab": "Recordatorios"
+    },
+    "tabPartnerSettings": "Ajustes de socios",
+    "partnerSettings": {
+      "hideDeleteDesc": "Oculta un socio para quitarlo de la vista en toda la aplicación. Eliminar borra permanentemente el socio y todos sus registros.",
+      "search": "Buscar socios...",
+      "partner": "Socio",
+      "noPartners": "No se encontraron socios.",
+      "noMatch": "Ningún socio coincide con tu búsqueda.",
+      "hide": "Ocultar",
+      "unhide": "Mostrar",
+      "delete": "Eliminar",
+      "deleteTitle": "¿Eliminar socio?",
+      "deleteConfirm": "Estás a punto de eliminar permanentemente a {{name}}.",
+      "deleteRecordsWarning": "También se eliminarán los siguientes registros:",
+      "deleteOrders": "{{count}} participación(es) en pedidos",
+      "deletePayments": "{{count}} pago(s)",
+      "deleteDebtPayments": "{{count}} pago(s) entre socios",
+      "deleteBlockedCustomers": "Este socio todavía tiene {{count}} cliente(s). Reasígnalos o elimínalos antes de eliminar el socio.",
+      "deleteCannotUndo": "Esto no se puede deshacer.",
+      "deletePermanently": "Eliminar permanentemente",
+      "deleting": "Eliminando…"
     }
   },
   "customerOffers": {

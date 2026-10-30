@@ -466,7 +466,7 @@
     "paymentType": "Betalningstyp",
     "amountUSD": "Belopp",
     "savePayment": "Spara betalning",
-"paymentToPartner": "Betalning till Partner",
+    "paymentToPartner": "Betalning till Partner",
     "noPartners": "Inga partners hittades. Skapa partners först.",
     "paymentToSupplier": "Betalning till Leverantör",
     "noSuppliers": "Inga leverantörer hittades. Skapa leverantörer först.",
@@ -1590,6 +1590,27 @@
       "saveSettings": "Spara inställningar",
       "smsUsageTab": "Användning",
       "remindersTab": "Påminnelser"
+    },
+    "tabPartnerSettings": "Partnerinställningar",
+    "partnerSettings": {
+      "hideDeleteDesc": "Dölj en partner för att ta bort den från vyn i hela appen. Radera tar permanent bort partnern och alla dess poster.",
+      "search": "Sök partners...",
+      "partner": "Partner",
+      "noPartners": "Inga partners hittades.",
+      "noMatch": "Inga partners matchar din sökning.",
+      "hide": "Dölj",
+      "unhide": "Visa",
+      "delete": "Radera",
+      "deleteTitle": "Radera partner?",
+      "deleteConfirm": "Du är på väg att permanent radera {{name}}.",
+      "deleteRecordsWarning": "Följande poster raderas också:",
+      "deleteOrders": "{{count}} orderandel(ar)",
+      "deletePayments": "{{count}} betalning(ar)",
+      "deleteDebtPayments": "{{count}} betalning(ar) mellan partners",
+      "deleteBlockedCustomers": "Partnern har fortfarande {{count}} kund(er). Flytta eller radera dem innan du raderar partnern.",
+      "deleteCannotUndo": "Detta kan inte ångras.",
+      "deletePermanently": "Radera permanent",
+      "deleting": "Raderar…"
     }
   },
   "customerOffers": {
