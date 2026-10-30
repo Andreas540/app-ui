@@ -265,10 +265,10 @@ html[data-theme="miami-dark"] {
   --color-info:        #6f9a8a;
   --color-neutral:     #8a9480;
   /* Layout */
-  --bg:            #0a1c13;
-  --panel:         #102a1c;
-  --card:          #102a1c;
-  --line:          #294034;
+  --bg:            #081310;
+  --panel:         #0d1a14;
+  --card:          #0d1a14;
+  --line:          #2a3a32;
   --border:        #2c4234;
   /* Only theme where these differ: inputs take the champagne outline, while
      --border stays dark so the info icon (filled with it) blends as elsewhere. */
@@ -277,9 +277,9 @@ html[data-theme="miami-dark"] {
   --text:          #f2f4ec;
   --text-secondary:#9aa690;
   --muted:         #9aa690;
-  --input-bg:      #07140d;
+  --input-bg:      #081310;
   --btn-bg:        #26332d;
-  --nav-active:    #1a3122;
+  --nav-active:    #16261d;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
   --invoiced-row-bg: rgba(193,163,103,0.10);
   /* Semantic state backgrounds */
