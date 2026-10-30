@@ -247,43 +247,43 @@ html[data-theme="pool-dark"] {
 /* ── Miami dark (Midnight Forest & Champagne Gold) ─────── */
 html[data-theme="miami-dark"] {
   --brand-blue:        #c1a367;
-  --brand-blue-hover:  #d4b87a;
-  --brand-blue-active: #ae9059;
+  --brand-blue-hover:  #ae9059;
+  --brand-blue-active: #9b7e4c;
   --brand-contrast:    #ffffff;
   --primary:           #c1a367;
   --accent:            #c1a367;
-  --danger:            #e05c4a;
-  --color-success:     #5a9e6a;
+  --danger:            #c25548;
+  --color-success:     #6a9e70;
   --color-warning:     #d4a040;
-  --color-error:       #e05c4a;
-  --color-info:        #5a8a7a;
-  --color-neutral:     #7a8e70;
+  --color-error:       #c25548;
+  --color-info:        #6f9a8a;
+  --color-neutral:     #8a9480;
   /* Layout */
-  --bg:            #0c1c14;
-  --panel:         #12231a;
-  --card:          #12231a;
-  --line:          #1c3022;
-  --border:        #243a2a;
-  --separator:     #3a5040;
-  --text:          #ede5cc;
-  --text-secondary:#8a9878;
-  --muted:         #8a9878;
-  --input-bg:      #0a1810;
+  --bg:            #0b1d14;
+  --panel:         #10261b;
+  --card:          #10261b;
+  --line:          #2a3d30;
+  --border:        #9a8450;
+  --separator:     #b0a68d;
+  --text:          #eef0e7;
+  --text-secondary:#a3ab98;
+  --muted:         #a3ab98;
+  --input-bg:      #0a1c13;
   --btn-bg:        #26332d;
-  --nav-active:    #1c3224;
+  --nav-active:    #1b3024;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
   --invoiced-row-bg: rgba(193,163,103,0.10);
   /* Semantic state backgrounds */
-  --color-success-bg:  rgba(90,158,106,0.18);
+  --color-success-bg:  rgba(106,158,112,0.18);
   --color-warning-bg:  rgba(212,160,64,0.18);
-  --color-error-bg:    rgba(224,92,74,0.20);
-  --color-info-bg:     rgba(90,138,122,0.18);
-  --color-neutral-bg:  rgba(122,142,112,0.16);
+  --color-error-bg:    rgba(194,85,72,0.20);
+  --color-info-bg:     rgba(111,154,138,0.18);
+  --color-neutral-bg:  rgba(138,148,128,0.16);
   /* Overlays & surfaces */
   --backdrop:          rgba(5,12,8,0.70);
-  --surface-subtle:    rgba(201,168,76,0.05);
-  --shadow-sm:         0 1px 3px rgba(0,0,0,0.28);
-  --shadow-md:         0 4px 14px rgba(0,0,0,0.48);
+  --surface-subtle:    rgba(193,163,103,0.05);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
 }
 
 /* ===================== Base Reset ===================== */

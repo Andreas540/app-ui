@@ -24,7 +24,12 @@ export default function Settings() {
   const [hasChanges, setHasChanges]       = useState(false)
   const [saving, setSaving]               = useState(false)
 
-  const { mode, setMode, skin, setSkin, modeSelectable, skinSelectable, selectableModes, selectableSkins } = useTheme()
+  const { mode, setMode, skin, setSkin, skinSelectable, selectableModes, selectableSkins } = useTheme()
+
+  // Modes offered are the policy's modes narrowed to what the active skin supports
+  // (Miami is dark-only), so one skin's restriction never hides modes for the others.
+  const visibleModes = selectableModes.filter(m => skinSupportedModes(skin).includes(m))
+  const canToggleMode = visibleModes.length > 1
 
   const [defaultTenantId, setDefaultTenantId]     = useState<string | null>(null)
   const [loadedDefaultTenantId, setLoadedDefaultTenantId] = useState<string | null>(null)
@@ -302,36 +307,30 @@ export default function Settings() {
       {/* Appearance */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
-        {(() => {
-          const skinModes = skinSupportedModes(skin)
-          const visibleModes = selectableModes.filter(m => skinModes.includes(m))
-          const canToggleMode = visibleModes.length > 1
-          if (visibleModes.length === 0) return null
-          return (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {visibleModes.includes('dark') && (
-                <button
-                  onClick={() => canToggleMode && setMode('dark')}
-                  className={mode === 'dark' ? 'primary' : ''}
-                  style={{ flex: 1, opacity: canToggleMode ? 1 : 0.6, cursor: canToggleMode ? 'pointer' : 'default' }}
-                >
-                  Dark
-                </button>
-              )}
-              {visibleModes.includes('light') && (
-                <button
-                  onClick={() => canToggleMode && setMode('light')}
-                  className={mode === 'light' ? 'primary' : ''}
-                  style={{ flex: 1 }}
-                >
-                  Light
-                </button>
-              )}
-            </div>
-          )
-        })()}
+        {visibleModes.length > 0 && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {visibleModes.includes('dark') && (
+              <button
+                onClick={() => canToggleMode && setMode('dark')}
+                className={mode === 'dark' ? 'primary' : ''}
+                style={{ flex: 1, cursor: canToggleMode ? 'pointer' : 'default' }}
+              >
+                Dark
+              </button>
+            )}
+            {visibleModes.includes('light') && (
+              <button
+                onClick={() => canToggleMode && setMode('light')}
+                className={mode === 'light' ? 'primary' : ''}
+                style={{ flex: 1, cursor: canToggleMode ? 'pointer' : 'default' }}
+              >
+                Light
+              </button>
+            )}
+          </div>
+        )}
         {skinSelectable && (
-          <div style={{ display: 'flex', gap: 8, marginTop: modeSelectable ? 8 : 0 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: visibleModes.length > 0 ? 8 : 0 }}>
             {selectableSkins.includes('default') && (
               <button
                 onClick={() => setSkin('default')}

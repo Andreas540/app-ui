@@ -13,6 +13,10 @@
 // independently — see SuperAdmin's per-business-type Theme section, which
 // sets config_defaults.theme.{defaultSkin,defaultMode,selectableSkins,selectableModes}.
 //
+// A skin may support fewer modes than the policy allows (miami ships dark-only)
+// — see skinSupportedModes(). That narrowing is per-skin on purpose: restricting
+// selectableModes globally would hide light mode for every other skin too.
+//
 // Stored preferences are scoped to the logged-in tenant (or user, for
 // tenant-less accounts like SuperAdmin) — see getScope(). Without this, one
 // browser switching between different tenants/business types would leak one
@@ -81,14 +85,17 @@ function resolveValue<T extends string>(stored: T | null, def: T, selectable: T[
 
 export function getMode(): Mode {
   const policy = getThemePolicy()
+  const supported = skinSupportedModes(getSkin())
+  const allowed = policy.selectableModes.filter(m => supported.includes(m))
+  const fallback = allowed.includes(policy.defaultMode) ? policy.defaultMode : (allowed[0] ?? 'dark')
   const scope = getScope()
-  if (!scope) return policy.defaultMode
+  if (!scope) return fallback
   let stored: Mode | null = null
   try {
     const saved = localStorage.getItem(MODE_KEY_PREFIX + scope)
     if (saved === 'light' || saved === 'dark') stored = saved
   } catch {}
-  return resolveValue(stored, policy.defaultMode, policy.selectableModes)
+  return resolveValue(stored, fallback, allowed)
 }
 
 export function getSkin(): Skin {
