@@ -715,10 +715,11 @@ export default function SuperAdmin() {
 
   async function handleSaveSpecialSettings() {
     if (!managingSpecialTenantId) return
+    const editedTenantId = managingSpecialTenantId
     try {
       setSavingSpecial(true)
       const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const getRes = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${managingSpecialTenantId}`, { headers: getAuthHeaders() })
+      const getRes = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${editedTenantId}`, { headers: getAuthHeaders() })
       const current = await getRes.json()
       const existingTheme = { ...((current.uiConfig || {}).theme || {}) }
       if (specialThemeOverrideSkin) {
@@ -736,30 +737,31 @@ export default function SuperAdmin() {
       await fetch(`${base}/api/super-admin`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'updateUiConfig', tenantId: managingSpecialTenantId, uiConfig: merged }),
+        body: JSON.stringify({ action: 'updateUiConfig', tenantId: editedTenantId, uiConfig: merged }),
       })
       setManagingSpecialTenantId(null)
-      // Patch localStorage so the override takes effect immediately in this session
+      // Repaint only when this session IS the edited tenant. Without the guard, a
+      // SuperAdmin editing tenant X while impersonating tenant Y would write X's
+      // override into Y's cached config and recolour Y.
       try {
         const ud = JSON.parse(localStorage.getItem('userData') || '{}')
-        if (!ud.uiConfig) ud.uiConfig = {}
-        if (!ud.uiConfig.theme) ud.uiConfig.theme = {}
-        if (specialThemeOverrideSkin) {
-          ud.uiConfig.theme.overrideSkin = specialThemeOverrideSkin
-          ud.uiConfig.theme.overrideMode = specialThemeOverrideMode
-        } else {
-          delete ud.uiConfig.theme.overrideSkin
-          delete ud.uiConfig.theme.overrideMode
-        }
-        localStorage.setItem('userData', JSON.stringify(ud))
-        // Clear any stored skin/mode so override default wins
-        const scope = ud.tenantId ? `tenant:${ud.tenantId}` : ud.id ? `user:${ud.id}` : null
-        if (scope) {
-          localStorage.removeItem(`app-theme-skin:${scope}`)
-          localStorage.removeItem(`app-theme:${scope}`)
+        if (ud.tenantId === editedTenantId) {
+          if (!ud.uiConfig) ud.uiConfig = {}
+          if (!ud.uiConfig.theme) ud.uiConfig.theme = {}
+          if (specialThemeOverrideSkin) {
+            ud.uiConfig.theme.overrideSkin = specialThemeOverrideSkin
+            ud.uiConfig.theme.overrideMode = specialThemeOverrideMode
+          } else {
+            delete ud.uiConfig.theme.overrideSkin
+            delete ud.uiConfig.theme.overrideMode
+          }
+          localStorage.setItem('userData', JSON.stringify(ud))
+          // Clear the stored preference so the new default wins
+          localStorage.removeItem(`app-theme-skin:tenant:${editedTenantId}`)
+          localStorage.removeItem(`app-theme:tenant:${editedTenantId}`)
+          applyTheme(getMode(), getSkin())
         }
       } catch {}
-      applyTheme(getMode(), getSkin())
     } catch (e: any) {
       alert(e?.message || 'Failed to save special settings')
     } finally {
