@@ -246,12 +246,12 @@ html[data-theme="pool-dark"] {
 
 /* ── Miami dark (Midnight Forest & Champagne Gold) ─────── */
 html[data-theme="miami-dark"] {
-  --brand-blue:        #26332d;
-  --brand-blue-hover:  #ae9059;
-  --brand-blue-active: #9b7e4c;
+  --brand-blue:        #c1a367;
+  --brand-blue-hover:  #d4b87a;
+  --brand-blue-active: #ae9059;
   --brand-contrast:    #ffffff;
-  --primary:           #26332d;
-  --accent:            #26332d;
+  --primary:           #c1a367;
+  --accent:            #c1a367;
   --danger:            #e05c4a;
   --color-success:     #5a9e6a;
   --color-warning:     #d4a040;
@@ -269,7 +269,7 @@ html[data-theme="miami-dark"] {
   --text-secondary:#8a9878;
   --muted:         #8a9878;
   --input-bg:      #0a1810;
-  --btn-bg:        #182a1e;
+  --btn-bg:        #26332d;
   --nav-active:    #1c3224;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
   --invoiced-row-bg: rgba(193,163,103,0.10);
