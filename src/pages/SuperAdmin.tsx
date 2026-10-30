@@ -10,7 +10,7 @@ import { AVAILABLE_FEATURES } from '../lib/features'
 import { getFeatureLabelKey } from '../lib/navItems'
 import { MODULES } from '../lib/modules'
 import { FRONT_PAGES } from '../lib/frontPages'
-import { applyTheme, getMode, getSkin } from '../lib/theme'
+import { applyTheme, getMode, getSkin, skinSupportedModes, ALL_SKINS, SKIN_LABELS, type Skin } from '../lib/theme'
 
 interface Tenant {
   id: string
@@ -98,9 +98,9 @@ export default function SuperAdmin() {
   const [btPreviewTab, setBtPreviewTab] = useState<'product' | 'service'>('product')
   const [savingBtPageConfig, setSavingBtPageConfig] = useState(false)
   const [btLabelProductCost, setBtLabelProductCost] = useState('')
-  const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<'default' | 'vintage' | 'pool' | 'miami'>('default')
+  const [btThemeDefaultSkin, setBtThemeDefaultSkin] = useState<Skin>('default')
   const [btThemeDefaultMode, setBtThemeDefaultMode] = useState<'dark' | 'light'>('dark')
-  const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<('default' | 'vintage' | 'pool' | 'miami')[]>(['default', 'vintage'])
+  const [btThemeSelectableSkins, setBtThemeSelectableSkins] = useState<Skin[]>(['default', 'vintage'])
   const [btThemeSelectableModes, setBtThemeSelectableModes] = useState<('dark' | 'light')[]>(['dark', 'light'])
   const [savingBtTheme, setSavingBtTheme] = useState(false)
   const [btFrontPageKey, setBtFrontPageKey] = useState<string>('')
@@ -187,7 +187,7 @@ export default function SuperAdmin() {
   const [managingSpecialTenantName, setManagingSpecialTenantName] = useState('')
   const [specialPaymentProvidersDisabled, setSpecialPaymentProvidersDisabled] = useState(false)
   const [specialBusinessModel, setSpecialBusinessModel] = useState<'B2B' | 'B2C'>('B2B')
-  const [specialThemeOverrideSkin, setSpecialThemeOverrideSkin] = useState<'default' | 'vintage' | 'pool' | 'miami' | ''>('')
+  const [specialThemeOverrideSkin, setSpecialThemeOverrideSkin] = useState<Skin | ''>('')
   const [specialThemeOverrideMode, setSpecialThemeOverrideMode] = useState<'dark' | 'light'>('dark')
   const [savingSpecial, setSavingSpecial] = useState(false)
 
@@ -1710,14 +1710,14 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ marginBottom: 10 }}>
                             <label style={{ fontSize: 12 }}>Default skin</label>
                             <div style={{ display: 'flex', gap: 0, marginTop: 4, border: '1px solid var(--border, #e6e6e6)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
-                              {(['default', 'vintage', 'pool', 'miami'] as const).map(skin => (
+                              {ALL_SKINS.map(skin => (
                                 <button key={skin} onClick={() => setBtThemeDefaultSkin(skin)} style={{
                                   padding: '5px 16px', border: 'none', borderRadius: 0, height: 28, fontSize: 12,
                                   background: btThemeDefaultSkin === skin ? 'var(--primary, #2563eb)' : 'transparent',
                                   color: btThemeDefaultSkin === skin ? '#fff' : 'inherit',
                                   cursor: 'pointer', fontWeight: btThemeDefaultSkin === skin ? 600 : 400,
                                 }}>
-                                  {skin === 'default' ? 'Default' : skin === 'vintage' ? 'Vintage' : skin === 'pool' ? 'Aqua' : 'Miami'}
+                                  {SKIN_LABELS[skin]}
                                 </button>
                               ))}
                             </div>
@@ -1740,7 +1740,7 @@ async function handleSaveStripeCustomerId() {
                           <div style={{ marginBottom: 10 }}>
                             <label style={{ fontSize: 12 }}>Selectable skins (tenant/user can choose between these)</label>
                             <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                              {(['default', 'vintage', 'pool', 'miami'] as const).map(skin => {
+                              {ALL_SKINS.map(skin => {
                                 const active = btThemeSelectableSkins.includes(skin)
                                 return (
                                   <button key={skin} onClick={() => {
@@ -1754,7 +1754,7 @@ async function handleSaveStripeCustomerId() {
                                     background: active ? 'rgba(34,197,94,0.12)' : 'transparent',
                                     color: 'inherit', cursor: 'pointer', fontWeight: active ? 600 : 400,
                                   }}>
-                                    {active ? '✓ ' : ''}{skin === 'default' ? 'Default' : skin === 'vintage' ? 'Vintage' : skin === 'pool' ? 'Aqua' : 'Miami'}
+                                    {active ? '✓ ' : ''}{SKIN_LABELS[skin]}
                                   </button>
                                 )
                               })}
@@ -1880,7 +1880,7 @@ async function handleSaveStripeCustomerId() {
                             setEditingBtLabel(bt.label)
                             setEditingBtConfig(Object.keys(bt.config_defaults).length ? JSON.stringify(bt.config_defaults, null, 2) : '')
                             const themeDefaults = (bt.config_defaults as any)?.theme ?? {}
-                            const defaultSkin = themeDefaults.defaultSkin === 'vintage' ? 'vintage' : themeDefaults.defaultSkin === 'pool' ? 'pool' : themeDefaults.defaultSkin === 'miami' ? 'miami' : 'default'
+                            const defaultSkin: Skin = (ALL_SKINS as readonly string[]).includes(themeDefaults.defaultSkin) ? themeDefaults.defaultSkin as Skin : 'default'
                             const defaultMode = themeDefaults.defaultMode === 'light' ? 'light' : 'dark'
                             setBtThemeDefaultSkin(defaultSkin)
                             setBtThemeDefaultMode(defaultMode)
@@ -3125,17 +3125,17 @@ const available = max - used
                   <select
                     value={specialThemeOverrideSkin}
                     onChange={e => {
-                      const s = e.target.value as typeof specialThemeOverrideSkin
+                      const s = e.target.value as Skin | ''
                       setSpecialThemeOverrideSkin(s)
-                      if (s === 'miami') setSpecialThemeOverrideMode('dark')
+                      // Snap the mode back if the chosen skin doesn't support the current one
+                      if (s && !skinSupportedModes(s).includes(specialThemeOverrideMode)) {
+                        setSpecialThemeOverrideMode(skinSupportedModes(s)[0])
+                      }
                     }}
                     style={{ width: '100%', height: CONTROL_H }}
                   >
                     <option value="">— None (use business type) —</option>
-                    <option value="default">Default</option>
-                    <option value="vintage">Vintage</option>
-                    <option value="pool">Aqua</option>
-                    <option value="miami">Miami</option>
+                    {ALL_SKINS.map(s => <option key={s} value={s}>{SKIN_LABELS[s]}</option>)}
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -3143,11 +3143,11 @@ const available = max - used
                   <select
                     value={specialThemeOverrideMode}
                     onChange={e => setSpecialThemeOverrideMode(e.target.value as 'dark' | 'light')}
-                    disabled={!specialThemeOverrideSkin || specialThemeOverrideSkin === 'miami'}
+                    disabled={!specialThemeOverrideSkin || skinSupportedModes(specialThemeOverrideSkin).length <= 1}
                     style={{ width: '100%', height: CONTROL_H }}
                   >
                     <option value="dark">Dark</option>
-                    <option value="light" disabled={specialThemeOverrideSkin === 'miami'}>Light</option>
+                    <option value="light" disabled={!!specialThemeOverrideSkin && !skinSupportedModes(specialThemeOverrideSkin).includes('light')}>Light</option>
                   </select>
                 </div>
               </div>

@@ -13,7 +13,7 @@
 // independently — see SuperAdmin's per-business-type Theme section, which
 // sets config_defaults.theme.{defaultSkin,defaultMode,selectableSkins,selectableModes}.
 //
-// A skin may support fewer modes than the policy allows (miami ships dark-only)
+// A skin may support fewer modes than the policy allows (miami and jersey ship dark-only)
 // — see skinSupportedModes(). That narrowing is per-skin on purpose: restricting
 // selectableModes globally would hide light mode for every other skin too.
 //
@@ -32,7 +32,17 @@ import { useState } from 'react'
 import { getTenantConfig } from './tenantConfig'
 
 export type Mode = 'dark' | 'light'
-export type Skin = 'default' | 'vintage' | 'pool' | 'miami'
+
+export const ALL_SKINS = ['default', 'vintage', 'pool', 'miami', 'jersey'] as const
+export type Skin = typeof ALL_SKINS[number]
+
+export const SKIN_LABELS: Record<Skin, string> = {
+  default: 'Default',
+  vintage: 'Vintage',
+  pool: 'Aqua',
+  miami: 'Miami',
+  jersey: 'Jersey',
+}
 
 const MODE_KEY_PREFIX = 'app-theme:'
 const SKIN_KEY_PREFIX = 'app-theme-skin:'
@@ -105,21 +115,20 @@ export function getSkin(): Skin {
   let stored: Skin | null = null
   try {
     const saved = localStorage.getItem(SKIN_KEY_PREFIX + scope)
-    if (saved === 'vintage' || saved === 'default' || saved === 'pool' || saved === 'miami') stored = saved
+    if (saved && (ALL_SKINS as readonly string[]).includes(saved)) stored = saved as Skin
   } catch {}
   return resolveValue(stored, policy.defaultSkin, policy.selectableSkins)
 }
 
 export function skinSupportedModes(s: Skin): Mode[] {
-  if (s === 'miami') return ['dark']
+  if (s === 'miami' || s === 'jersey') return ['dark']
   return ['dark', 'light']
 }
 
 function combinedTheme(mode: Mode, skin: Skin): string {
-  if (skin === 'vintage') return `vintage-${mode}`
-  if (skin === 'pool') return `pool-${mode}`
-  if (skin === 'miami') return 'miami-dark'   // dark only for now
-  return mode
+  if (skin === 'default') return mode
+  const supported = skinSupportedModes(skin)
+  return `${skin}-${supported.includes(mode) ? mode : supported[0]}`
 }
 
 export function applyTheme(mode: Mode, skin: Skin) {

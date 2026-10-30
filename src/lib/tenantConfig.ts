@@ -76,9 +76,9 @@ export interface TenantConfig {
     }
   }
   theme: {
-    defaultSkin: 'default' | 'vintage' | 'pool' | 'miami'
+    defaultSkin: 'default' | 'vintage' | 'pool' | 'miami' | 'jersey'
     defaultMode: 'dark' | 'light'
-    selectableSkins: ('default' | 'vintage' | 'pool' | 'miami')[]
+    selectableSkins: ('default' | 'vintage' | 'pool' | 'miami' | 'jersey')[]
     selectableModes: ('dark' | 'light')[]
   }
   special: {

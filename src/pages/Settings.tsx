@@ -367,6 +367,15 @@ export default function Settings() {
                 Miami
               </button>
             )}
+            {selectableSkins.includes('jersey') && (
+              <button
+                onClick={() => setSkin('jersey')}
+                className={skin === 'jersey' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Jersey
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -295,6 +295,50 @@ html[data-theme="miami-dark"] {
   --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
 }
 
+/* ── Jersey dark (Oxblood & Ivory) ─────────────────────── */
+html[data-theme="jersey-dark"] {
+  --brand-blue:        #f2e3cc;
+  --brand-blue-hover:  #e2d0b4;
+  --brand-blue-active: #d0bb9c;
+  /* Ivory buttons are light, so button text is dark here (Miami uses white). */
+  --brand-contrast:    #2a1013;
+  --primary:           #f2e3cc;
+  --accent:            #f2e3cc;
+  --danger:            #d9634f;
+  --color-success:     #7fa06b;
+  --color-warning:     #d4a040;
+  --color-error:       #d9634f;
+  --color-info:        #b0848c;
+  --color-neutral:     #a08e88;
+  /* Layout */
+  --bg:            #1e0b0d;
+  --panel:         #260f12;
+  --card:          #260f12;
+  --line:          #4a2429;
+  --border:        #5a2b30;
+  --input-border:  #a87c45;
+  --separator:     #7d4a48;
+  --text:          #f5efe8;
+  --text-secondary:#bda49a;
+  --muted:         #bda49a;
+  --input-bg:      #140607;
+  --btn-bg:        #5c252a;
+  --nav-active:    #3a161a;
+  --shadow:        0 1px 0 rgba(0,0,0,0.3);
+  --invoiced-row-bg: rgba(242,227,204,0.10);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(127,160,107,0.18);
+  --color-warning-bg:  rgba(212,160,64,0.18);
+  --color-error-bg:    rgba(217,99,79,0.20);
+  --color-info-bg:     rgba(176,132,140,0.18);
+  --color-neutral-bg:  rgba(160,142,136,0.16);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(18,6,8,0.70);
+  --surface-subtle:    rgba(242,227,204,0.05);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
+}
+
 /* ===================== Base Reset ===================== */
 * { box-sizing: border-box; }
 
