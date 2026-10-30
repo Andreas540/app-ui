@@ -85,6 +85,9 @@ export default function TenantAdminPartnerSettingsTab() {
       })
       if (!res.ok) {
         const d = await res.json()
+        if (d.error === 'PARTNER_HAS_ORDER_SHARES') {
+          throw new Error(t('tenantAdmin.partnerSettings.deleteBlockedOrderShares', { count: d.orders }))
+        }
         if (d.error === 'PARTNER_HAS_CUSTOMERS') {
           throw new Error(t('tenantAdmin.partnerSettings.deleteBlockedCustomers', { count: d.customers }))
         }
@@ -97,8 +100,11 @@ export default function TenantAdminPartnerSettingsTab() {
     finally { setDeleting(false) }
   }
 
-  // Deleting a partner that still owns customers would detach or cascade them, so it is blocked.
+  // Order shares feed the revenue/profit views, so deleting a partner that has any would
+  // rewrite historical figures. Legacy customer links are blocked for the same reason.
+  const blockedByOrders    = (deleteCounts?.orders ?? 0) > 0
   const blockedByCustomers = (deleteCounts?.customers ?? 0) > 0
+  const blocked            = blockedByOrders || blockedByCustomers
 
   return (
     <div>
@@ -157,30 +163,31 @@ export default function TenantAdminPartnerSettingsTab() {
             </p>
             {deleteCountsLoading ? (
               <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t('loading')}</div>
-            ) : blockedByCustomers ? (
+            ) : blocked ? (
               <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-error-bg)', border: '1px solid var(--color-error)', fontSize: 13, lineHeight: 1.6 }}>
-                {t('tenantAdmin.partnerSettings.deleteBlockedCustomers', { count: deleteCounts!.customers })}
+                {blockedByOrders
+                  ? t('tenantAdmin.partnerSettings.deleteBlockedOrderShares', { count: deleteCounts!.orders })
+                  : t('tenantAdmin.partnerSettings.deleteBlockedCustomers', { count: deleteCounts!.customers })}
               </div>
-            ) : deleteCounts && (deleteCounts.orders > 0 || deleteCounts.payments > 0 || deleteCounts.debtPayments > 0) ? (
+            ) : deleteCounts && (deleteCounts.payments > 0 || deleteCounts.debtPayments > 0) ? (
               <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', fontSize: 13, lineHeight: 1.6 }}>
                 {t('tenantAdmin.partnerSettings.deleteRecordsWarning')}
                 <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-                  {deleteCounts.orders       > 0 && <li>{t('tenantAdmin.partnerSettings.deleteOrders',       { count: deleteCounts.orders })}</li>}
                   {deleteCounts.payments     > 0 && <li>{t('tenantAdmin.partnerSettings.deletePayments',     { count: deleteCounts.payments })}</li>}
                   {deleteCounts.debtPayments > 0 && <li>{t('tenantAdmin.partnerSettings.deleteDebtPayments', { count: deleteCounts.debtPayments })}</li>}
                 </ul>
               </div>
             ) : null}
-            {!blockedByCustomers && (
+            {!blocked && (
               <p style={{ margin: 0, fontSize: 13, color: 'var(--color-error)', fontWeight: 500 }}>
                 {t('tenantAdmin.partnerSettings.deleteCannotUndo')}
               </p>
             )}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setDeleteTarget(null)} disabled={deleting} style={{ height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer' }}>
-                {blockedByCustomers ? t('close') : t('cancel')}
+                {blocked ? t('close') : t('cancel')}
               </button>
-              {!blockedByCustomers && (
+              {!blocked && (
                 <button onClick={confirmDelete} disabled={deleting || deleteCountsLoading} style={{ height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8, border: 'none', background: 'var(--color-error)', color: '#fff', cursor: deleting ? 'default' : 'pointer', opacity: deleting || deleteCountsLoading ? 0.7 : 1 }}>
                   {deleting ? t('tenantAdmin.partnerSettings.deleting') : t('tenantAdmin.partnerSettings.deletePermanently')}
                 </button>

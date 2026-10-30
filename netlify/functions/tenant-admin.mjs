@@ -715,9 +715,17 @@ if (action === 'toggleUserStatus') {
       if (!partnerId) return cors(400, { error: 'partnerId required' })
       const owns = await sql`SELECT id FROM partners WHERE id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid LIMIT 1`
       if (!owns.length) return cors(404, { error: 'Partner not found' })
-      // customers.partner_id is RESTRICT. Clearing it here would silently detach customers
-      // from their partner, and deleting them would cascade into their whole order history —
-      // so refuse instead and let the admin reassign them deliberately.
+      // order_partners feeds revenue_profit_surplus and v_customer_product_monthly, so
+      // dropping these rows would silently rewrite historical revenue and profit for every
+      // month the partner took part in. Hiding is the way to retire an active partner;
+      // deleting is only for partners with no financial history.
+      const [shares] = await sql`
+        SELECT COUNT(*)::int AS n FROM order_partners op
+          JOIN orders o ON o.id = op.order_id
+         WHERE op.partner_id = ${partnerId}::uuid AND o.tenant_id = ${tenantId}::uuid`
+      if (shares.n > 0) return cors(409, { error: 'PARTNER_HAS_ORDER_SHARES', orders: shares.n })
+      // customers.partner_id is a RESTRICT FK. The app no longer writes this column, but
+      // legacy rows still carry it, so keep refusing rather than detaching them.
       const [linked] = await sql`SELECT COUNT(*)::int AS n FROM customers WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
       if (linked.n > 0) return cors(409, { error: 'PARTNER_HAS_CUSTOMERS', customers: linked.n })
       // partner_payments and return_partner_adjustments cascade on the partner row.
