@@ -739,7 +739,26 @@ export default function SuperAdmin() {
         body: JSON.stringify({ action: 'updateUiConfig', tenantId: managingSpecialTenantId, uiConfig: merged }),
       })
       setManagingSpecialTenantId(null)
-      await verifyAuth()
+      // Patch localStorage so the override takes effect immediately in this session
+      try {
+        const ud = JSON.parse(localStorage.getItem('userData') || '{}')
+        if (!ud.uiConfig) ud.uiConfig = {}
+        if (!ud.uiConfig.theme) ud.uiConfig.theme = {}
+        if (specialThemeOverrideSkin) {
+          ud.uiConfig.theme.overrideSkin = specialThemeOverrideSkin
+          ud.uiConfig.theme.overrideMode = specialThemeOverrideMode
+        } else {
+          delete ud.uiConfig.theme.overrideSkin
+          delete ud.uiConfig.theme.overrideMode
+        }
+        localStorage.setItem('userData', JSON.stringify(ud))
+        // Clear any stored skin/mode so override default wins
+        const scope = ud.tenantId ? `tenant:${ud.tenantId}` : ud.id ? `user:${ud.id}` : null
+        if (scope) {
+          localStorage.removeItem(`app-theme-skin:${scope}`)
+          localStorage.removeItem(`app-theme:${scope}`)
+        }
+      } catch {}
       applyTheme(getMode(), getSkin())
     } catch (e: any) {
       alert(e?.message || 'Failed to save special settings')
