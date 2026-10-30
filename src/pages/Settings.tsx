@@ -302,22 +302,22 @@ export default function Settings() {
       {/* Appearance */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
-        {modeSelectable && (
+        {selectableModes.length > 0 && (
           <div style={{ display: 'flex', gap: 8 }}>
             {selectableModes.includes('dark') && (
               <button
-                onClick={() => setMode('dark')}
+                onClick={() => modeSelectable && setMode('dark')}
                 className={mode === 'dark' ? 'primary' : ''}
-                style={{ flex: 1 }}
+                style={{ flex: 1, opacity: modeSelectable ? 1 : 0.6, cursor: modeSelectable ? 'pointer' : 'default' }}
               >
                 Dark
               </button>
             )}
             {selectableModes.includes('light') && (
               <button
-                onClick={() => setMode('light')}
+                onClick={() => modeSelectable && setMode('light')}
                 className={mode === 'light' ? 'primary' : ''}
-                style={{ flex: 1 }}
+                style={{ flex: 1, opacity: modeSelectable ? 1 : 0.6, cursor: modeSelectable ? 'pointer' : 'default' }}
               >
                 Light
               </button>
@@ -325,7 +325,7 @@ export default function Settings() {
           </div>
         )}
         {skinSelectable && (
-          <div style={{ display: 'flex', gap: 8, marginTop: modeSelectable ? 8 : 0 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: selectableModes.length > 0 ? 8 : 0 }}>
             {selectableSkins.includes('default') && (
               <button
                 onClick={() => setSkin('default')}
