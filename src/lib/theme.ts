@@ -28,7 +28,7 @@ import { useState } from 'react'
 import { getTenantConfig } from './tenantConfig'
 
 export type Mode = 'dark' | 'light'
-export type Skin = 'default' | 'vintage' | 'pool'
+export type Skin = 'default' | 'vintage' | 'pool' | 'miami'
 
 const MODE_KEY_PREFIX = 'app-theme:'
 const SKIN_KEY_PREFIX = 'app-theme-skin:'
@@ -87,7 +87,7 @@ export function getSkin(): Skin {
   let stored: Skin | null = null
   try {
     const saved = localStorage.getItem(SKIN_KEY_PREFIX + scope)
-    if (saved === 'vintage' || saved === 'default' || saved === 'pool') stored = saved
+    if (saved === 'vintage' || saved === 'default' || saved === 'pool' || saved === 'miami') stored = saved
   } catch {}
   return resolveValue(stored, policy.defaultSkin, policy.selectableSkins)
 }
@@ -95,6 +95,7 @@ export function getSkin(): Skin {
 function combinedTheme(mode: Mode, skin: Skin): string {
   if (skin === 'vintage') return `vintage-${mode}`
   if (skin === 'pool') return `pool-${mode}`
+  if (skin === 'miami') return 'miami-dark'   // dark only for now
   return mode
 }
 

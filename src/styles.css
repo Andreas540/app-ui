@@ -244,6 +244,48 @@ html[data-theme="pool-dark"] {
   --shadow-md:         0 4px 12px rgba(0,0,0,0.40);
 }
 
+/* ── Miami dark (Midnight Forest & Champagne Gold) ─────── */
+html[data-theme="miami-dark"] {
+  --brand-blue:        #c9a84c;
+  --brand-blue-hover:  #b8963c;
+  --brand-blue-active: #a6852e;
+  --brand-contrast:    #0c1a10;
+  --primary:           #c9a84c;
+  --accent:            #c9a84c;
+  --danger:            #e05c4a;
+  --color-success:     #5a9e6a;
+  --color-warning:     #d4a040;
+  --color-error:       #e05c4a;
+  --color-info:        #5a8a7a;
+  --color-neutral:     #7a8e70;
+  /* Layout */
+  --bg:            #0c1c14;
+  --panel:         #12231a;
+  --card:          #12231a;
+  --line:          #1c3022;
+  --border:        #243a2a;
+  --separator:     #3a5040;
+  --text:          #ede5cc;
+  --text-secondary:#8a9878;
+  --muted:         #8a9878;
+  --input-bg:      #0a1810;
+  --btn-bg:        #182a1e;
+  --nav-active:    #1c3224;
+  --shadow:        0 1px 0 rgba(0,0,0,0.3);
+  --invoiced-row-bg: rgba(201,168,76,0.10);
+  /* Semantic state backgrounds */
+  --color-success-bg:  rgba(90,158,106,0.18);
+  --color-warning-bg:  rgba(212,160,64,0.18);
+  --color-error-bg:    rgba(224,92,74,0.20);
+  --color-info-bg:     rgba(90,138,122,0.18);
+  --color-neutral-bg:  rgba(122,142,112,0.16);
+  /* Overlays & surfaces */
+  --backdrop:          rgba(5,12,8,0.70);
+  --surface-subtle:    rgba(201,168,76,0.05);
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.28);
+  --shadow-md:         0 4px 14px rgba(0,0,0,0.48);
+}
+
 /* ===================== Base Reset ===================== */
 * { box-sizing: border-box; }
 

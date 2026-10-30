@@ -353,6 +353,15 @@ export default function Settings() {
                 Aqua
               </button>
             )}
+            {selectableSkins.includes('miami') && (
+              <button
+                onClick={() => setSkin('miami')}
+                className={skin === 'miami' ? 'primary' : ''}
+                style={{ flex: 1 }}
+              >
+                Miami
+              </button>
+            )}
           </div>
         )}
       </div>
