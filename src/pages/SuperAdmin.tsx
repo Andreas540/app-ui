@@ -186,6 +186,8 @@ export default function SuperAdmin() {
   const [managingSpecialTenantName, setManagingSpecialTenantName] = useState('')
   const [specialPaymentProvidersDisabled, setSpecialPaymentProvidersDisabled] = useState(false)
   const [specialBusinessModel, setSpecialBusinessModel] = useState<'B2B' | 'B2C'>('B2B')
+  const [specialThemeOverrideSkin, setSpecialThemeOverrideSkin] = useState<'default' | 'vintage' | 'pool' | 'miami' | ''>('')
+  const [specialThemeOverrideMode, setSpecialThemeOverrideMode] = useState<'dark' | 'light'>('dark')
   const [savingSpecial, setSavingSpecial] = useState(false)
 
   useEffect(() => {
@@ -697,12 +699,16 @@ export default function SuperAdmin() {
     setManagingSpecialTenantName(tenant.name)
     setSpecialPaymentProvidersDisabled(false)
     setSpecialBusinessModel('B2B')
+    setSpecialThemeOverrideSkin('')
+    setSpecialThemeOverrideMode('dark')
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res  = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${tenant.id}`, { headers: getAuthHeaders() })
       const data = await res.json()
       setSpecialPaymentProvidersDisabled(data.uiConfig?.special?.paymentProvidersDisabled ?? false)
       setSpecialBusinessModel(data.uiConfig?.special?.businessModel ?? 'B2B')
+      setSpecialThemeOverrideSkin(data.uiConfig?.theme?.overrideSkin ?? '')
+      setSpecialThemeOverrideMode(data.uiConfig?.theme?.overrideMode ?? 'dark')
     } catch { /* keep defaults */ }
   }
 
@@ -713,9 +719,18 @@ export default function SuperAdmin() {
       const base   = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const getRes = await fetch(`${base}/api/super-admin?action=getUiConfig&tenantId=${managingSpecialTenantId}`, { headers: getAuthHeaders() })
       const current = await getRes.json()
+      const existingTheme = { ...((current.uiConfig || {}).theme || {}) }
+      if (specialThemeOverrideSkin) {
+        existingTheme.overrideSkin = specialThemeOverrideSkin
+        existingTheme.overrideMode = specialThemeOverrideMode
+      } else {
+        delete existingTheme.overrideSkin
+        delete existingTheme.overrideMode
+      }
       const merged  = {
         ...(current.uiConfig || {}),
         special: { ...((current.uiConfig || {}).special || {}), paymentProvidersDisabled: specialPaymentProvidersDisabled, businessModel: specialBusinessModel },
+        theme: existingTheme,
       }
       await fetch(`${base}/api/super-admin`, {
         method: 'POST',
@@ -3079,6 +3094,45 @@ const available = max - used
                 </div>
               </div>
             </label>
+
+            <div style={{ marginTop: 20, marginBottom: 4 }}>
+              <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Override Business Type Default Theme</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Skin</label>
+                  <select
+                    value={specialThemeOverrideSkin}
+                    onChange={e => {
+                      const s = e.target.value as typeof specialThemeOverrideSkin
+                      setSpecialThemeOverrideSkin(s)
+                      if (s === 'miami') setSpecialThemeOverrideMode('dark')
+                    }}
+                    style={{ width: '100%', height: CONTROL_H }}
+                  >
+                    <option value="">— None (use business type) —</option>
+                    <option value="default">Default</option>
+                    <option value="vintage">Vintage</option>
+                    <option value="pool">Aqua</option>
+                    <option value="miami">Miami</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Mode</label>
+                  <select
+                    value={specialThemeOverrideMode}
+                    onChange={e => setSpecialThemeOverrideMode(e.target.value as 'dark' | 'light')}
+                    disabled={!specialThemeOverrideSkin || specialThemeOverrideSkin === 'miami'}
+                    style={{ width: '100%', height: CONTROL_H }}
+                  >
+                    <option value="dark">Dark</option>
+                    <option value="light" disabled={specialThemeOverrideSkin === 'miami'}>Light</option>
+                  </select>
+                </div>
+              </div>
+              <div className="helper" style={{ fontSize: 12, marginTop: 4 }}>
+                When set, this skin/mode is used as the tenant's default and also appears as a selectable option in their App Settings.
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               <button

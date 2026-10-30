@@ -56,7 +56,22 @@ function getScope(): string | null {
 function getThemePolicy(): ThemePolicy {
   try {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}')
-    return getTenantConfig(userData.tenantId).theme
+    const policy = { ...getTenantConfig(userData.tenantId).theme }
+    const overrideSkin = userData.uiConfig?.theme?.overrideSkin as Skin | undefined
+    const overrideMode = userData.uiConfig?.theme?.overrideMode as Mode | undefined
+    if (overrideSkin) {
+      policy.defaultSkin = overrideSkin
+      if (!policy.selectableSkins.includes(overrideSkin)) {
+        policy.selectableSkins = [...policy.selectableSkins, overrideSkin]
+      }
+      if (overrideSkin === 'miami') {
+        policy.selectableModes = ['dark']
+        policy.defaultMode = 'dark'
+      } else if (overrideMode) {
+        policy.defaultMode = overrideMode
+      }
+    }
+    return policy
   } catch {
     return { defaultSkin: 'default', defaultMode: 'dark', selectableSkins: ['default', 'vintage'], selectableModes: ['dark', 'light'] }
   }
