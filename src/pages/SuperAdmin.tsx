@@ -10,6 +10,7 @@ import { AVAILABLE_FEATURES } from '../lib/features'
 import { getFeatureLabelKey } from '../lib/navItems'
 import { MODULES } from '../lib/modules'
 import { FRONT_PAGES } from '../lib/frontPages'
+import { applyTheme, getMode, getSkin } from '../lib/theme'
 
 interface Tenant {
   id: string
@@ -738,6 +739,8 @@ export default function SuperAdmin() {
         body: JSON.stringify({ action: 'updateUiConfig', tenantId: managingSpecialTenantId, uiConfig: merged }),
       })
       setManagingSpecialTenantId(null)
+      await verifyAuth()
+      applyTheme(getMode(), getSkin())
     } catch (e: any) {
       alert(e?.message || 'Failed to save special settings')
     } finally {

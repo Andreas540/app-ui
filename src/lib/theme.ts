@@ -67,8 +67,9 @@ function getThemePolicy(): ThemePolicy {
       if (overrideSkin === 'miami') {
         policy.selectableModes = ['dark']
         policy.defaultMode = 'dark'
-      } else if (overrideMode) {
-        policy.defaultMode = overrideMode
+      } else {
+        policy.selectableModes = ['dark', 'light']
+        if (overrideMode) policy.defaultMode = overrideMode
       }
     }
     return policy
