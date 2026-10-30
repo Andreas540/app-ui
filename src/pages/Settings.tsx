@@ -4,7 +4,7 @@ import { getAuthHeaders } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { type FeatureId } from '../lib/features'
 import { ALL_SHORTCUTS, DEFAULT_SHORTCUTS, FEATURE_NAV_KEY } from '../lib/shortcuts'
-import { useTheme } from '../lib/theme'
+import { useTheme, skinSupportedModes } from '../lib/theme'
 import { NAV_ITEMS, NAV_SECTIONS } from '../lib/navItems'
 
 export default function Settings() {
@@ -302,30 +302,36 @@ export default function Settings() {
       {/* Appearance */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ margin: 0, marginBottom: 16 }}>Appearance</h4>
-        {selectableModes.length > 0 && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {selectableModes.includes('dark') && (
-              <button
-                onClick={() => modeSelectable && setMode('dark')}
-                className={mode === 'dark' ? 'primary' : ''}
-                style={{ flex: 1, opacity: modeSelectable ? 1 : 0.6, cursor: modeSelectable ? 'pointer' : 'default' }}
-              >
-                Dark
-              </button>
-            )}
-            {selectableModes.includes('light') && (
-              <button
-                onClick={() => modeSelectable && setMode('light')}
-                className={mode === 'light' ? 'primary' : ''}
-                style={{ flex: 1, opacity: modeSelectable ? 1 : 0.6, cursor: modeSelectable ? 'pointer' : 'default' }}
-              >
-                Light
-              </button>
-            )}
-          </div>
-        )}
+        {(() => {
+          const skinModes = skinSupportedModes(skin)
+          const visibleModes = selectableModes.filter(m => skinModes.includes(m))
+          const canToggleMode = visibleModes.length > 1
+          if (visibleModes.length === 0) return null
+          return (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {visibleModes.includes('dark') && (
+                <button
+                  onClick={() => canToggleMode && setMode('dark')}
+                  className={mode === 'dark' ? 'primary' : ''}
+                  style={{ flex: 1, opacity: canToggleMode ? 1 : 0.6, cursor: canToggleMode ? 'pointer' : 'default' }}
+                >
+                  Dark
+                </button>
+              )}
+              {visibleModes.includes('light') && (
+                <button
+                  onClick={() => canToggleMode && setMode('light')}
+                  className={mode === 'light' ? 'primary' : ''}
+                  style={{ flex: 1 }}
+                >
+                  Light
+                </button>
+              )}
+            </div>
+          )
+        })()}
         {skinSelectable && (
-          <div style={{ display: 'flex', gap: 8, marginTop: selectableModes.length > 0 ? 8 : 0 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: modeSelectable ? 8 : 0 }}>
             {selectableSkins.includes('default') && (
               <button
                 onClick={() => setSkin('default')}

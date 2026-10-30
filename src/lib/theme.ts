@@ -64,13 +64,8 @@ function getThemePolicy(): ThemePolicy {
       if (!policy.selectableSkins.includes(overrideSkin)) {
         policy.selectableSkins = [...policy.selectableSkins, overrideSkin]
       }
-      if (overrideSkin === 'miami') {
-        policy.selectableModes = ['dark']
-        policy.defaultMode = 'dark'
-      } else {
-        policy.selectableModes = ['dark', 'light']
-        if (overrideMode) policy.defaultMode = overrideMode
-      }
+      if (overrideMode) policy.defaultMode = overrideMode
+      policy.selectableModes = ['dark', 'light']
     }
     return policy
   } catch {
@@ -108,6 +103,11 @@ export function getSkin(): Skin {
   return resolveValue(stored, policy.defaultSkin, policy.selectableSkins)
 }
 
+export function skinSupportedModes(s: Skin): Mode[] {
+  if (s === 'miami') return ['dark']
+  return ['dark', 'light']
+}
+
 function combinedTheme(mode: Mode, skin: Skin): string {
   if (skin === 'vintage') return `vintage-${mode}`
   if (skin === 'pool') return `pool-${mode}`
@@ -142,7 +142,13 @@ export function useTheme() {
     setSkinState(s)
     const scope = getScope()
     if (scope) { try { localStorage.setItem(SKIN_KEY_PREFIX + scope, s) } catch {} }
-    applyTheme(mode, s)
+    const supported = skinSupportedModes(s)
+    const effectiveMode = supported.includes(mode) ? mode : supported[0]
+    if (effectiveMode !== mode) {
+      setModeState(effectiveMode)
+      if (scope) { try { localStorage.setItem(MODE_KEY_PREFIX + scope, effectiveMode) } catch {} }
+    }
+    applyTheme(effectiveMode, s)
   }
 
   return {
