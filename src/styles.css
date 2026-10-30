@@ -28,6 +28,7 @@ html[data-theme="dark"] {
   --card:          #0f1630;
   --line:          #1f2747;
   --border:        #2b355e;
+  --input-border:  var(--border);
   --separator:     #5a6a9a;
   --text:          #e6e9ef;
   --text-secondary:#aab2d5;
@@ -58,6 +59,7 @@ html[data-theme="light"] {
   --card:          #ffffff;
   --line:          #dce1ef;
   --border:        #c4cce0;
+  --input-border:  var(--border);
   --separator:     #8898b8;
   --text:          #1a2440;
   --text-secondary:#5a6a90;
@@ -101,6 +103,7 @@ html[data-theme="vintage-dark"] {
   --card:          #2c251c;
   --line:          #38301f;
   --border:        #473c2c;
+  --input-border:  var(--border);
   --separator:     #5e4f38;
   --text:          #ede2cb;
   --text-secondary:#a8956f;
@@ -144,6 +147,7 @@ html[data-theme="vintage-light"] {
   --card:          #faf3e2;
   --line:          #e7dabd;
   --border:        #d8c7a1;
+  --input-border:  var(--border);
   --separator:     #c5b388;
   --text:          #322a20;
   --text-secondary:#8c7a55;
@@ -185,6 +189,7 @@ html[data-theme="pool-light"] {
   --card:          #ffffff;
   --line:          #d3e6ee;
   --border:        #bcd7e2;
+  --input-border:  var(--border);
   --separator:     #7fa8b8;
   --text:          #0c2b39;
   --text-secondary:#4d7382;
@@ -224,6 +229,7 @@ html[data-theme="pool-dark"] {
   --card:          #0e3241;
   --line:          #16404f;
   --border:        #1f4d5d;
+  --input-border:  var(--border);
   --separator:     #4a7686;
   --text:          #e6f4fa;
   --text-secondary:#9fc0cd;
@@ -259,18 +265,21 @@ html[data-theme="miami-dark"] {
   --color-info:        #6f9a8a;
   --color-neutral:     #8a9480;
   /* Layout */
-  --bg:            #1c2821;
-  --panel:         #26332d;
-  --card:          #26332d;
-  --line:          #36443c;
-  --border:        #9a8450;
+  --bg:            #0a1c13;
+  --panel:         #102a1c;
+  --card:          #102a1c;
+  --line:          #294034;
+  --border:        #2c4234;
+  /* Only theme where these differ: inputs take the champagne outline, while
+     --border stays dark so the info icon (filled with it) blends as elsewhere. */
+  --input-border:  #9a8450;
   --separator:     #b0a68d;
-  --text:          #eef0e7;
-  --text-secondary:#a3ab98;
-  --muted:         #a3ab98;
-  --input-bg:      #212e27;
-  --btn-bg:        #323f38;
-  --nav-active:    #2e3b34;
+  --text:          #f2f4ec;
+  --text-secondary:#9aa690;
+  --muted:         #9aa690;
+  --input-bg:      #07140d;
+  --btn-bg:        #26332d;
+  --nav-active:    #1a3122;
   --shadow:        0 1px 0 rgba(0,0,0,0.3);
   --invoiced-row-bg: rgba(193,163,103,0.10);
   /* Semantic state backgrounds */
@@ -464,7 +473,7 @@ input, select, textarea {
   font-size: 16px; /* Prevents iOS zoom */
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text);
 }
