@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { DateInput } from '../components/DateInput'
+import SortingSettings from '../components/SortingSettings'
 
 interface CustomerRow {
   id: string
@@ -12,7 +13,7 @@ interface CustomerRow {
   shipping_cost?: number | null
 }
 
-type CustomerSubTab = 'hide-delete' | 'shipping'
+type CustomerSubTab = 'hide-delete' | 'shipping' | 'sorting'
 type ShippingTarget = 'all' | 'direct' | 'partner' | 'custom'
 type CostOption = 'history' | 'next' | 'specific'
 
@@ -22,11 +23,15 @@ function todayYMD() { return new Date().toISOString().slice(0, 10) }
 export default function TenantAdminCustomerSettingsTab() {
   const { t } = useTranslation()
   const { fmtInput, parseAmount } = useCurrency()
-  const [subTab, setSubTab] = useState<CustomerSubTab>('hide-delete')
+  // Honours ?sub=sorting so the sort row on Customers.tsx can deep-link straight here.
+  const [subTab, setSubTab] = useState<CustomerSubTab>(
+    () => new URLSearchParams(window.location.search).get('sub') === 'sorting' ? 'sorting' : 'hide-delete'
+  )
 
   const SUB_TABS: { id: CustomerSubTab; label: string }[] = [
     { id: 'hide-delete', label: t('tenantAdmin.customerSettings.hideDeleteTitle') },
     { id: 'shipping',    label: t('tenantAdmin.customerSettings.shippingTitle') },
+    { id: 'sorting',     label: t('tenantAdmin.sorting.title') },
   ]
 
   // ── Hide/Delete state ─────────────────────────────────────────────────────
@@ -313,6 +318,9 @@ export default function TenantAdminCustomerSettingsTab() {
           )}
         </div>
       )}
+
+      {/* ── Sorting ── */}
+      {subTab === 'sorting' && <SortingSettings entity="customer" />}
 
       {/* ── Shipping Cost ── */}
       {subTab === 'shipping' && (

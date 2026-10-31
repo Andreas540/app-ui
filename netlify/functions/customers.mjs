@@ -43,8 +43,11 @@ console.log('Loading customers for tenant:', tenantId);
         COALESCE(t.total_payments, 0)::numeric(12,2)         AS total_payments,
         COALESCE(t.total_return_credits, 0)::numeric(12,2)   AS total_return_credits,
         (COALESCE(t.total_issued_store_credit, 0) - COALESCE(t.total_redeemed_store_credit, 0))::numeric(12,2) AS available_store_credit,
-        (COALESCE(t.total_orders, 0) - COALESCE(t.total_payments, 0) - COALESCE(t.total_return_credits, 0))::numeric(12,2) AS owed_to_me
+        (COALESCE(t.total_orders, 0) - COALESCE(t.total_payments, 0) - COALESCE(t.total_return_credits, 0))::numeric(12,2) AS owed_to_me,
+        ts.sort_order
       FROM customers c
+      LEFT JOIN tenant_customer_sort ts
+        ON ts.customer_id = c.id AND ts.tenant_id = ${tenantId}
       LEFT JOIN LATERAL (
         SELECT
           (SELECT COALESCE(SUM(oi.qty * oi.unit_price), 0)
@@ -101,8 +104,13 @@ console.log('Loading customers for tenant:', tenantId);
     const paidToPartners = Number(partnerTotals[0].total_partner_payments);
     const reversalsToPartners = Number(partnerTotals[0].total_partner_reversals);
 
+    // Returned on every fetch so admin changes apply without the user re-logging in.
+    const [s] = await sql`SELECT default_customer_sort, customer_sort_use_custom FROM tenants WHERE id = ${tenantId}`;
+
     return cors(200, {
       customers: rows,
+      defaultSort: s?.default_customer_sort ?? 'name',
+      useCustom:   s?.customer_sort_use_custom ?? false,
       partner_totals: {
         owed: owedToPartners,
         paid: paidToPartners,

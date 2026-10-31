@@ -1612,7 +1612,23 @@
       "deleteBlockedCustomers": "This partner still has {{count}} customer(s). Reassign or delete them before deleting the partner.",
       "deleteCannotUndo": "This cannot be undone.",
       "deletePermanently": "Delete permanently",
-      "deleting": "Deleting…"
+      "deleting": "Deleting…",
+      "hideDeleteTitle": "Hide / Delete Partners"
+    },
+    "sorting": {
+      "title": "Sorting",
+      "defaultTitle": "Default sorting",
+      "defaultDesc": "How the list is sorted for everyone, unless they pick something else.",
+      "customTitle": "Custom order",
+      "useCustom": "Use custom order",
+      "useCustomHelp": "When on, the custom order is applied on top of the default sorting. Ignored while no positions are set.",
+      "positionHelp": "{{count}} positioned. Anything without a position follows them, sorted by the default above.",
+      "position": "Position",
+      "search": "Search...",
+      "noRows": "Nothing to sort yet.",
+      "noMatch": "Nothing matches your search.",
+      "saveChanges": "Save changes",
+      "saved": "Sorting saved."
     }
   },
   "customerOffers": {
@@ -2190,5 +2206,9 @@
     "verifying": "Verifying…",
     "signOut": "Sign out instead",
     "networkError": "Network error — please try again"
+  },
+  "sorting": {
+    "custom": "Custom",
+    "editOrder": "Edit order"
   }
 }

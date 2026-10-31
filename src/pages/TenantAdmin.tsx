@@ -74,6 +74,12 @@ export default function TenantAdmin() {
   // Tab
   const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'partner-settings' | 'product-settings' | 'data-import' | 'order-page'>('team')
 
+  // Deep link from the Customers/Partners sort row: /admin?tab=partner-settings&sub=sorting
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab')
+    if (tab === 'customer-settings' || tab === 'partner-settings') setActiveTab(tab)
+  }, [location.search])
+
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
     autoInvoiceNumber: false,

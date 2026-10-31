@@ -28,8 +28,11 @@ async function listPartners(event) {
       SELECT
         p.id,
         p.name,
-        COALESCE(t.total_owed, 0)::numeric(12,2) AS total_owed
+        COALESCE(t.total_owed, 0)::numeric(12,2) AS total_owed,
+        ts.sort_order
       FROM partners p
+      LEFT JOIN tenant_partner_sort ts
+        ON ts.partner_id = p.id AND ts.tenant_id = ${TENANT_ID}
       LEFT JOIN LATERAL (
         SELECT
           (
@@ -52,7 +55,14 @@ async function listPartners(event) {
       ORDER BY p.name
     `;
 
-    return cors(200, { partners: rows });
+    // Returned on every fetch so admin changes apply without the user re-logging in.
+    const [s] = await sql`SELECT default_partner_sort, partner_sort_use_custom FROM tenants WHERE id = ${TENANT_ID}`;
+
+    return cors(200, {
+      partners: rows,
+      defaultSort: s?.default_partner_sort ?? 'name',
+      useCustom:   s?.partner_sort_use_custom ?? false,
+    });
   } catch (e) {
     console.error(e);
     return cors(500, { error: String(e?.message || e) });

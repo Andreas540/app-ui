@@ -1,6 +1,18 @@
 // netlify/functions/tenant-admin.mjs
 import jwt from 'jsonwebtoken'
 
+// Keeps the sorting feature working on tenants whose DB predates 70_sorting_settings.sql.
+async function ensureSortingSchema(sql) {
+  await Promise.all([
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS default_customer_sort    TEXT    NOT NULL DEFAULT 'name'`.catch(() => {}),
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS default_partner_sort     TEXT    NOT NULL DEFAULT 'name'`.catch(() => {}),
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS customer_sort_use_custom BOOLEAN NOT NULL DEFAULT false`.catch(() => {}),
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS partner_sort_use_custom  BOOLEAN NOT NULL DEFAULT false`.catch(() => {}),
+    sql`CREATE TABLE IF NOT EXISTS tenant_customer_sort (tenant_id UUID NOT NULL, customer_id UUID NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (tenant_id, customer_id))`.catch(() => {}),
+    sql`CREATE TABLE IF NOT EXISTS tenant_partner_sort  (tenant_id UUID NOT NULL, partner_id  UUID NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (tenant_id, partner_id))`.catch(() => {}),
+  ])
+}
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(200, {})
   if (event.httpMethod === 'GET') return handleGet(event)
@@ -196,6 +208,32 @@ async function handleGet(event) {
         sql`SELECT COUNT(*)::int AS n FROM bookings WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`,
       ])
       return cors(200, { orders: orders.n, payments: payments.n, bookings: bookings.n })
+    }
+
+    if (action === 'getCustomerSorting' || action === 'getPartnerSorting') {
+      const isPartner = action === 'getPartnerSorting'
+      await ensureSortingSchema(sql)
+      const [settings] = await sql`
+        SELECT default_customer_sort, default_partner_sort, customer_sort_use_custom, partner_sort_use_custom
+          FROM tenants WHERE id = ${tenantId}::uuid`
+      const rows = isPartner
+        ? await sql`
+            SELECT p.id, p.name, ts.sort_order
+              FROM partners p
+              LEFT JOIN tenant_partner_sort ts ON ts.partner_id = p.id AND ts.tenant_id = ${tenantId}::uuid
+             WHERE p.tenant_id = ${tenantId}::uuid
+             ORDER BY COALESCE(ts.sort_order, 2147483647) ASC, p.name ASC`
+        : await sql`
+            SELECT c.id, c.name, ts.sort_order
+              FROM customers c
+              LEFT JOIN tenant_customer_sort ts ON ts.customer_id = c.id AND ts.tenant_id = ${tenantId}::uuid
+             WHERE c.tenant_id = ${tenantId}::uuid
+             ORDER BY COALESCE(ts.sort_order, 2147483647) ASC, c.name ASC`
+      return cors(200, {
+        rows,
+        defaultSort: isPartner ? settings.default_partner_sort : settings.default_customer_sort,
+        useCustom:   isPartner ? settings.partner_sort_use_custom : settings.customer_sort_use_custom,
+      })
     }
 
     if (action === 'getPartnerRecordCounts') {
@@ -693,6 +731,54 @@ if (action === 'toggleUserStatus') {
       await sql`DELETE FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       // Deleting the customer row cascades to: customer_links, customer_messages, shipping_cost_history
       await sql`DELETE FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      return cors(200, { success: true })
+    }
+
+    if (action === 'saveCustomerSorting' || action === 'savePartnerSorting') {
+      const isPartner = action === 'savePartnerSorting'
+      const { defaultSort, useCustom, positions } = body
+      if (!['name', 'owed'].includes(defaultSort)) return cors(400, { error: 'Invalid defaultSort' })
+      await ensureSortingSchema(sql)
+
+      if (isPartner) {
+        await sql`UPDATE tenants SET default_partner_sort = ${defaultSort}, partner_sort_use_custom = ${useCustom === true} WHERE id = ${tenantId}::uuid`
+      } else {
+        await sql`UPDATE tenants SET default_customer_sort = ${defaultSort}, customer_sort_use_custom = ${useCustom === true} WHERE id = ${tenantId}::uuid`
+      }
+
+      // `positions` is the COMPLETE set of positioned rows ({ [id]: number }), so it is
+      // replaced wholesale — anything omitted becomes unpositioned and falls back to the
+      // base sort. Only positioned rows are written, so this stays small regardless of
+      // how many customers/partners the tenant has.
+      if (positions && typeof positions === 'object') {
+        const wanted = new Map()
+        for (const [id, raw] of Object.entries(positions)) {
+          const pos = raw === null || raw === undefined || raw === '' ? null : Number(raw)
+          if (pos !== null && Number.isFinite(pos) && pos >= 1) wanted.set(id, Math.trunc(pos))
+        }
+        const owned = isPartner
+          ? await sql`SELECT id::text AS id FROM partners  WHERE tenant_id = ${tenantId}::uuid`
+          : await sql`SELECT id::text AS id FROM customers WHERE tenant_id = ${tenantId}::uuid`
+        const ownedIds = new Set(owned.map(r => r.id))
+
+        if (isPartner) {
+          await sql`DELETE FROM tenant_partner_sort WHERE tenant_id = ${tenantId}::uuid`
+          for (const [id, pos] of wanted) {
+            if (!ownedIds.has(id)) continue
+            await sql`INSERT INTO tenant_partner_sort (tenant_id, partner_id, sort_order)
+                      VALUES (${tenantId}::uuid, ${id}::uuid, ${pos})
+                      ON CONFLICT (tenant_id, partner_id) DO UPDATE SET sort_order = EXCLUDED.sort_order`
+          }
+        } else {
+          await sql`DELETE FROM tenant_customer_sort WHERE tenant_id = ${tenantId}::uuid`
+          for (const [id, pos] of wanted) {
+            if (!ownedIds.has(id)) continue
+            await sql`INSERT INTO tenant_customer_sort (tenant_id, customer_id, sort_order)
+                      VALUES (${tenantId}::uuid, ${id}::uuid, ${pos})
+                      ON CONFLICT (tenant_id, customer_id) DO UPDATE SET sort_order = EXCLUDED.sort_order`
+          }
+        }
+      }
       return cors(200, { success: true })
     }
 

@@ -1612,7 +1612,23 @@
       "deleteBlockedCustomers": "Partnern har fortfarande {{count}} kund(er). Flytta eller radera dem innan du raderar partnern.",
       "deleteCannotUndo": "Detta kan inte ångras.",
       "deletePermanently": "Radera permanent",
-      "deleting": "Raderar…"
+      "deleting": "Raderar…",
+      "hideDeleteTitle": "Dölj / Radera partners"
+    },
+    "sorting": {
+      "title": "Sortering",
+      "defaultTitle": "Standardsortering",
+      "defaultDesc": "Hur listan sorteras för alla, om de inte väljer något annat.",
+      "customTitle": "Egen ordning",
+      "useCustom": "Använd egen ordning",
+      "useCustomHelp": "När detta är på läggs den egna ordningen ovanpå standardsorteringen. Ignoreras när inga positioner är satta.",
+      "positionHelp": "{{count}} har position. Allt utan position följer efter, sorterat enligt standarden ovan.",
+      "position": "Position",
+      "search": "Sök...",
+      "noRows": "Inget att sortera ännu.",
+      "noMatch": "Inget matchar din sökning.",
+      "saveChanges": "Spara ändringar",
+      "saved": "Sortering sparad."
     }
   },
   "customerOffers": {
@@ -2201,5 +2217,9 @@
     "verifying": "Verifierar…",
     "signOut": "Logga ut istället",
     "networkError": "Nätverksfel — försök igen"
+  },
+  "sorting": {
+    "custom": "Egen",
+    "editOrder": "Redigera ordning"
   }
 }

@@ -266,7 +266,11 @@ export type CustomerWithOwed = {
   total_payments: number
   owed_to_partners?: number
   owed_to_me: number
+  sort_order?: number | null
 }
+
+/** Base sort is always a real comparator; custom order is an overlay on top of it. */
+export type ListSortSettings = { defaultSort: 'name' | 'owed'; useCustom: boolean }
 
 export async function listCustomersWithOwed(q?: string) {
   const url = `${base}/api/customers` + (q ? `?q=${encodeURIComponent(q)}` : '')
@@ -278,7 +282,7 @@ export async function listCustomersWithOwed(q?: string) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load customers (status ${res.status}) ${text?.slice(0, 140)}`)
   }
-  return (await res.json()) as { customers: CustomerWithOwed[] }
+  return (await res.json()) as { customers: CustomerWithOwed[] } & Partial<ListSortSettings>
 }
 
 // ---- Partners (with totals) ----
@@ -286,6 +290,7 @@ export type PartnerWithOwed = {
   id: string
   name: string
   total_owed: number
+  sort_order?: number | null
 }
 
 export async function listPartnersWithOwed(q?: string) {
@@ -298,7 +303,7 @@ export async function listPartnersWithOwed(q?: string) {
     const text = await res.text().catch(() => '')
     throw new Error(`Failed to load partners (status ${res.status}) ${text?.slice(0, 140)}`)
   }
-  return (await res.json()) as { partners: PartnerWithOwed[] }
+  return (await res.json()) as { partners: PartnerWithOwed[] } & Partial<ListSortSettings>
 }
 
 // ---- Create/Fetch/Update Customer ----

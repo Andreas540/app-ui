@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
+import SortingSettings from '../components/SortingSettings'
+
+type PartnerSubTab = 'hide-delete' | 'sorting'
 
 interface PartnerRow {
   id: string
@@ -19,6 +22,15 @@ function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netli
 
 export default function TenantAdminPartnerSettingsTab() {
   const { t } = useTranslation()
+  // Honours ?sub=sorting so the sort row on Partners.tsx can deep-link straight here.
+  const [subTab, setSubTab] = useState<PartnerSubTab>(
+    () => new URLSearchParams(window.location.search).get('sub') === 'sorting' ? 'sorting' : 'hide-delete'
+  )
+
+  const SUB_TABS: { id: PartnerSubTab; label: string }[] = [
+    { id: 'hide-delete', label: t('tenantAdmin.partnerSettings.hideDeleteTitle') },
+    { id: 'sorting',     label: t('tenantAdmin.sorting.title') },
+  ]
 
   const [partners, setPartners] = useState<PartnerRow[]>([])
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
@@ -108,6 +120,33 @@ export default function TenantAdminPartnerSettingsTab() {
 
   return (
     <div>
+      {/* Sub-tab bar */}
+      <div className="booking-subtab-bar" style={{ marginBottom: 24 }}>
+        <select
+          className="booking-subtab-select"
+          value={subTab}
+          onChange={e => setSubTab(e.target.value as PartnerSubTab)}
+        >
+          {SUB_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+        </select>
+        <div className="booking-subtab-tabs" style={{ gap: 4, borderBottom: '1px solid var(--separator)' }}>
+          {SUB_TABS.map(tab => (
+            <button key={tab.id} onClick={() => setSubTab(tab.id)} style={{
+              background: 'none', border: 'none',
+              borderBottom: subTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+              color: subTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
+              fontWeight: subTab === tab.id ? 600 : 400,
+              fontSize: 14, padding: '6px 14px 10px', cursor: 'pointer', marginBottom: -1,
+            }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {subTab === 'sorting' && <SortingSettings entity="partner" />}
+
+      {subTab === 'hide-delete' && (<>
       <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
         {t('tenantAdmin.partnerSettings.hideDeleteDesc')}
       </p>
@@ -152,6 +191,7 @@ export default function TenantAdminPartnerSettingsTab() {
           )}
         </>
       )}
+      </>)}
 
       {/* Delete confirmation modal */}
       {deleteTarget && (

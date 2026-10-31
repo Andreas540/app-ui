@@ -1612,7 +1612,23 @@
       "deleteBlockedCustomers": "Este socio todavía tiene {{count}} cliente(s). Reasígnalos o elimínalos antes de eliminar el socio.",
       "deleteCannotUndo": "Esto no se puede deshacer.",
       "deletePermanently": "Eliminar permanentemente",
-      "deleting": "Eliminando…"
+      "deleting": "Eliminando…",
+      "hideDeleteTitle": "Ocultar / Eliminar socios"
+    },
+    "sorting": {
+      "title": "Ordenación",
+      "defaultTitle": "Ordenación predeterminada",
+      "defaultDesc": "Cómo se ordena la lista para todos, salvo que elijan otra cosa.",
+      "customTitle": "Orden personalizado",
+      "useCustom": "Usar orden personalizado",
+      "useCustomHelp": "Cuando está activo, el orden personalizado se aplica sobre la ordenación predeterminada. Se ignora mientras no haya posiciones definidas.",
+      "positionHelp": "{{count}} con posición. Lo que no tenga posición irá después, ordenado según el valor predeterminado anterior.",
+      "position": "Posición",
+      "search": "Buscar...",
+      "noRows": "Aún no hay nada que ordenar.",
+      "noMatch": "Nada coincide con tu búsqueda.",
+      "saveChanges": "Guardar cambios",
+      "saved": "Ordenación guardada."
     }
   },
   "customerOffers": {
@@ -2201,5 +2217,9 @@
     "verifying": "Verificando…",
     "signOut": "Cerrar sesión",
     "networkError": "Error de red — inténtalo de nuevo"
+  },
+  "sorting": {
+    "custom": "Personalizado",
+    "editOrder": "Editar orden"
   }
 }
