@@ -16,6 +16,9 @@ export default function Partners() {
   const [focused, setFocused] = useState(false)
   const [sortBy, setSortBy] = useState<'owed' | 'name' | 'custom'>('name')
   const [sortTouched, setSortTouched] = useState(false)
+  // enabled = admin ticked the box (drives the Edit link, even with an empty list);
+  // available = enabled AND something is actually positioned (drives the sort option).
+  const [customEnabled, setCustomEnabled] = useState(false)
   const [customAvailable, setCustomAvailable] = useState(false)
   const [baseSort, setBaseSort] = useState<'owed' | 'name'>('name')
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -32,8 +35,10 @@ export default function Partners() {
         setPartners(res.partners)
         // Settings arrive with every fetch, so admin changes land without a re-login.
         // The admin checkbox is the switch: positions alone don't expose Custom.
-        const customOn = res.useCustom === true && res.partners.some(p => p.sort_order != null)
+        const enabled = res.useCustom === true
+        const customOn = enabled && res.partners.some(p => p.sort_order != null)
         const base = res.defaultSort === 'owed' ? 'owed' : 'name'
+        setCustomEnabled(enabled)
         setCustomAvailable(customOn)
         setBaseSort(base)
         if (!sortTouched) setSortBy(customOn ? 'custom' : base)
@@ -161,7 +166,7 @@ export default function Partners() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {canEditSorting && customAvailable && (
+          {canEditSorting && customEnabled && (
             <Link to="/admin?tab=partner-settings&sub=sorting" className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               {t('sorting.editOrder')}
             </Link>
