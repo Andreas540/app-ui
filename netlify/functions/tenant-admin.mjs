@@ -727,6 +727,8 @@ if (action === 'toggleUserStatus') {
       await sql`DELETE FROM bookings              WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM booking_customer_links  WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM tenant_hidden_customers WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      // No FK on the sort tables, so stale rows would otherwise linger.
+      await sql`DELETE FROM tenant_customer_sort WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`.catch(() => {})
       await sql`DELETE FROM payments WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM orders   WHERE customer_id = ${customerId}::uuid AND tenant_id = ${tenantId}::uuid`
       // Deleting the customer row cascades to: customer_links, customer_messages, shipping_cost_history
@@ -819,6 +821,8 @@ if (action === 'toggleUserStatus') {
       await sql`DELETE FROM partner_to_partner_debt_payments WHERE (from_partner_id = ${partnerId}::uuid OR to_partner_id = ${partnerId}::uuid) AND tenant_id = ${tenantId}::uuid`
       await sql`DELETE FROM order_partners WHERE partner_id = ${partnerId}::uuid AND order_id IN (SELECT id FROM orders WHERE tenant_id = ${tenantId}::uuid)`
       await sql`DELETE FROM tenant_hidden_partners WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
+      // No FK on the sort tables, so stale rows would otherwise linger.
+      await sql`DELETE FROM tenant_partner_sort WHERE partner_id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`.catch(() => {})
       await sql`DELETE FROM partners WHERE id = ${partnerId}::uuid AND tenant_id = ${tenantId}::uuid`
       return cors(200, { success: true })
     }

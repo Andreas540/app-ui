@@ -16,7 +16,9 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
   const [rows, setRows] = useState<Row[]>([])
   const [baseSort, setBaseSort] = useState<BaseSort>('name')
   const [useCustom, setUseCustom] = useState(false)
-  const [positions, setPositions] = useState<Record<string, number | null>>({})
+  // The ordered list IS the order — position is derived from index on save, so
+  // duplicates and gaps are impossible by construction.
+  const [pinnedIds, setPinnedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState('')
@@ -31,26 +33,41 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         setRows(list)
         setBaseSort(data.defaultSort === 'owed' ? 'owed' : 'name')
         setUseCustom(data.useCustom === true)
-        const pos: Record<string, number | null> = {}
-        for (const r of list) pos[r.id] = r.sort_order ?? null
-        setPositions(pos)
+        setPinnedIds(
+          list.filter(r => r.sort_order != null)
+              .sort((a, b) => (a.sort_order as number) - (b.sort_order as number))
+              .map(r => r.id)
+        )
       })
       .finally(() => setLoading(false))
   }, [entity])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return q ? rows.filter(r => r.name.toLowerCase().includes(q)) : rows
-  }, [rows, search])
-
-  const positionedCount = useMemo(
-    () => Object.values(positions).filter(v => v != null).length,
-    [positions]
+  const byId = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])
+  const pinnedRows = useMemo(
+    () => pinnedIds.map(id => byId.get(id)).filter(Boolean) as Row[],
+    [pinnedIds, byId]
   )
+  const availableRows = useMemo(() => {
+    const pinned = new Set(pinnedIds)
+    const q = search.trim().toLowerCase()
+    return rows.filter(r => !pinned.has(r.id) && (!q || r.name.toLowerCase().includes(q)))
+  }, [rows, pinnedIds, search])
+
+  function move(index: number, dir: -1 | 1) {
+    setPinnedIds(prev => {
+      const next = [...prev]
+      const target = index + dir
+      if (target < 0 || target >= next.length) return prev
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
+  }
 
   async function save() {
     setSaving(true); setDone('')
     try {
+      const positions: Record<string, number> = {}
+      pinnedIds.forEach((id, i) => { positions[id] = i + 1 })
       const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
@@ -74,6 +91,10 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
   const radioRow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14,
   }
+  const smallBtn: React.CSSProperties = {
+    height: 28, minWidth: 28, padding: '0 8px', fontSize: 12, borderRadius: 6,
+    border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer',
+  }
 
   if (loading) return <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('loading')}</div>
 
@@ -85,7 +106,7 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           {t('tenantAdmin.sorting.defaultDesc')}
         </p>
-        <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gap: 10 }}>
           <label style={radioRow}>
             <input type="radio" name={`baseSort-${entity}`} checked={baseSort === 'name'} onChange={() => setBaseSort('name')} style={{ width: 18, height: 18 }} />
             {isPartner ? t('partners.sortName') : t('customers.sortName')}
@@ -102,7 +123,7 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
       {/* Section 2: custom order */}
       <div>
         <div style={sectionLabel}>{t('tenantAdmin.sorting.customTitle')}</div>
-        <label style={{ ...radioRow, alignItems: 'flex-start', marginBottom: 10 }}>
+        <label style={{ ...radioRow, alignItems: 'flex-start', marginBottom: 14 }}>
           <input type="checkbox" checked={useCustom} onChange={e => setUseCustom(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
           <span>
             {t('tenantAdmin.sorting.useCustom')}
@@ -111,41 +132,52 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
             </span>
           </span>
         </label>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          {t('tenantAdmin.sorting.positionHelp', { count: positionedCount })}
+
+        {/* Ordered list */}
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{t('tenantAdmin.sorting.orderedTitle')}</div>
+        <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          {t('tenantAdmin.sorting.orderedHelp')}
         </p>
-
-        <input type="search" placeholder={t('tenantAdmin.sorting.search')} value={search} onChange={e => setSearch(e.target.value)} style={{ marginBottom: 12 }} />
-
-        {rows.length === 0 ? (
-          <p style={{ fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.sorting.noRows')}</p>
+        {pinnedRows.length === 0 ? (
+          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 18px' }}>{t('tenantAdmin.sorting.noPinned')}</p>
         ) : (
-          <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, padding: '8px 12px', background: 'var(--line)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>
-              <span>{isPartner ? t('tenantAdmin.partnerSettings.partner') : t('tenantAdmin.customerSettings.customer')}</span>
-              <span>{t('tenantAdmin.sorting.position')}</span>
-            </div>
-            {filtered.length === 0
-              ? <div style={{ padding: 12, fontSize: 14, color: 'var(--muted)' }}>{t('tenantAdmin.sorting.noMatch')}</div>
-              : filtered.map((r, i) => (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                  <select
-                    value={positions[r.id] ?? ''}
-                    onChange={e => {
-                      const v = e.target.value === '' ? null : Number(e.target.value)
-                      setPositions(prev => ({ ...prev, [r.id]: v }))
-                    }}
-                    style={{ width: 72, height: 'var(--control-h)', fontSize: 12, textAlign: 'center', flexShrink: 0 }}
-                  >
-                    <option value="">—</option>
-                    {rows.map((_, idx) => (
-                      <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
-                    ))}
-                  </select>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 18 }}>
+            {pinnedRows.map((r, i) => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                <span style={{ width: 28, flexShrink: 0, fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button aria-label={t('tenantAdmin.sorting.moveUp')} onClick={() => move(i, -1)} disabled={i === 0}
+                    style={{ ...smallBtn, opacity: i === 0 ? 0.4 : 1, cursor: i === 0 ? 'default' : 'pointer' }}>↑</button>
+                  <button aria-label={t('tenantAdmin.sorting.moveDown')} onClick={() => move(i, 1)} disabled={i === pinnedRows.length - 1}
+                    style={{ ...smallBtn, opacity: i === pinnedRows.length - 1 ? 0.4 : 1, cursor: i === pinnedRows.length - 1 ? 'default' : 'pointer' }}>↓</button>
+                  <button onClick={() => setPinnedIds(prev => prev.filter(id => id !== r.id))}
+                    style={{ ...smallBtn, borderColor: 'var(--color-error)', color: 'var(--color-error)', background: 'transparent' }}>
+                    {t('tenantAdmin.sorting.remove')}
+                  </button>
                 </div>
-              ))
-            }
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Picker */}
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{t('tenantAdmin.sorting.availableTitle')}</div>
+        <input type="search" placeholder={t('tenantAdmin.sorting.search')} value={search} onChange={e => setSearch(e.target.value)} style={{ marginBottom: 10 }} />
+        {availableRows.length === 0 ? (
+          <p style={{ fontSize: 14, color: 'var(--muted)' }}>
+            {rows.length === 0 ? t('tenantAdmin.sorting.noRows') : search.trim() ? t('tenantAdmin.sorting.noMatch') : t('tenantAdmin.sorting.allPinned')}
+          </p>
+        ) : (
+          <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', maxHeight: 280, overflowY: 'auto' }}>
+            {availableRows.map((r, i) => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                <span style={{ fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                <button onClick={() => setPinnedIds(prev => [...prev, r.id])} style={{ ...smallBtn, flexShrink: 0 }}>
+                  {t('tenantAdmin.sorting.add')}
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
