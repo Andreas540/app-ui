@@ -1635,7 +1635,8 @@
       "noRows": "Aún no hay nada que ordenar.",
       "noMatch": "Nada coincide con tu búsqueda.",
       "saveChanges": "Guardar cambios",
-      "saved": "Ordenación guardada."
+      "saved": "Ordenación guardada.",
+      "hidden": "oculto"
     }
   },
   "customerOffers": {

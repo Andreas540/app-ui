@@ -1635,7 +1635,8 @@
       "noRows": "Nothing to sort yet.",
       "noMatch": "Nothing matches your search.",
       "saveChanges": "Save changes",
-      "saved": "Sorting saved."
+      "saved": "Sorting saved.",
+      "hidden": "hidden"
     }
   },
   "customerOffers": {

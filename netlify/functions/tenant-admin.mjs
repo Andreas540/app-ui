@@ -10,6 +10,9 @@ async function ensureSortingSchema(sql) {
     sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS partner_sort_use_custom  BOOLEAN NOT NULL DEFAULT false`.catch(() => {}),
     sql`CREATE TABLE IF NOT EXISTS tenant_customer_sort (tenant_id UUID NOT NULL, customer_id UUID NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (tenant_id, customer_id))`.catch(() => {}),
     sql`CREATE TABLE IF NOT EXISTS tenant_partner_sort  (tenant_id UUID NOT NULL, partner_id  UUID NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (tenant_id, partner_id))`.catch(() => {}),
+    // The sorting queries join these, and Sorting may be opened before Hide/Delete ever is.
+    sql`CREATE TABLE IF NOT EXISTS tenant_hidden_customers (tenant_id UUID NOT NULL, customer_id UUID NOT NULL, PRIMARY KEY (tenant_id, customer_id))`.catch(() => {}),
+    sql`CREATE TABLE IF NOT EXISTS tenant_hidden_partners  (tenant_id UUID NOT NULL, partner_id  UUID NOT NULL, PRIMARY KEY (tenant_id, partner_id))`.catch(() => {}),
   ])
 }
 
@@ -216,17 +219,21 @@ async function handleGet(event) {
       const [settings] = await sql`
         SELECT default_customer_sort, default_partner_sort, customer_sort_use_custom, partner_sort_use_custom
           FROM tenants WHERE id = ${tenantId}::uuid`
+      // Deleted rows fall out naturally (live tables); hidden rows are kept but flagged,
+      // so an existing position survives the record being unhidden later.
       const rows = isPartner
         ? await sql`
-            SELECT p.id, p.name, ts.sort_order
+            SELECT p.id, p.name, ts.sort_order, (thp.partner_id IS NOT NULL) AS hidden
               FROM partners p
-              LEFT JOIN tenant_partner_sort ts ON ts.partner_id = p.id AND ts.tenant_id = ${tenantId}::uuid
+              LEFT JOIN tenant_partner_sort   ts  ON ts.partner_id  = p.id AND ts.tenant_id  = ${tenantId}::uuid
+              LEFT JOIN tenant_hidden_partners thp ON thp.partner_id = p.id AND thp.tenant_id = ${tenantId}::uuid
              WHERE p.tenant_id = ${tenantId}::uuid
              ORDER BY COALESCE(ts.sort_order, 2147483647) ASC, p.name ASC`
         : await sql`
-            SELECT c.id, c.name, ts.sort_order
+            SELECT c.id, c.name, ts.sort_order, (thc.customer_id IS NOT NULL) AS hidden
               FROM customers c
-              LEFT JOIN tenant_customer_sort ts ON ts.customer_id = c.id AND ts.tenant_id = ${tenantId}::uuid
+              LEFT JOIN tenant_customer_sort    ts  ON ts.customer_id  = c.id AND ts.tenant_id  = ${tenantId}::uuid
+              LEFT JOIN tenant_hidden_customers thc ON thc.customer_id = c.id AND thc.tenant_id = ${tenantId}::uuid
              WHERE c.tenant_id = ${tenantId}::uuid
              ORDER BY COALESCE(ts.sort_order, 2147483647) ASC, c.name ASC`
       return cors(200, {

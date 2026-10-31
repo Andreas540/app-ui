@@ -1635,7 +1635,8 @@
       "noRows": "Inget att sortera ännu.",
       "noMatch": "Inget matchar din sökning.",
       "saveChanges": "Spara ändringar",
-      "saved": "Sortering sparad."
+      "saved": "Sortering sparad.",
+      "hidden": "dold"
     }
   },
   "customerOffers": {

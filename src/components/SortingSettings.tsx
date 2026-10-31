@@ -5,7 +5,7 @@ import { getAuthHeaders } from '../lib/api'
 type Entity = 'customer' | 'partner'
 type BaseSort = 'name' | 'owed'
 
-interface Row { id: string; name: string; sort_order?: number | null }
+interface Row { id: string; name: string; sort_order?: number | null; hidden?: boolean }
 
 function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '' }
 
@@ -168,9 +168,12 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         ) : (
           <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 18 }}>
             {pinnedRows.map((r, i) => (
-              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', opacity: r.hidden ? 0.45 : 1 }}>
                 <span style={{ width: 28, flexShrink: 0, fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>{i + 1}</span>
-                <span style={{ flex: 1, fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                <span style={{ flex: 1, fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.name}
+                  {r.hidden && <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted)' }}>({t('tenantAdmin.sorting.hidden')})</span>}
+                </span>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button ref={el => { moveBtnRefs.current.set(`${r.id}:-1`, el) }}
                     aria-label={t('tenantAdmin.sorting.moveUp')} onClick={() => move(i, -1)} disabled={i === 0}
@@ -198,8 +201,11 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         ) : (
           <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', maxHeight: 280, overflowY: 'auto' }}>
             {availableRows.map((r, i) => (
-              <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
-                <span style={{ fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', opacity: r.hidden ? 0.45 : 1 }}>
+                <span style={{ fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.name}
+                  {r.hidden && <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted)' }}>({t('tenantAdmin.sorting.hidden')})</span>}
+                </span>
                 <button onClick={() => setPinnedIds(prev => [...prev, r.id])} style={{ ...smallBtn, flexShrink: 0 }}>
                   {t('tenantAdmin.sorting.add')}
                 </button>
