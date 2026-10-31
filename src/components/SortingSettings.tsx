@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
@@ -53,7 +53,15 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
     return rows.filter(r => !pinned.has(r.id) && (!q || r.name.toLowerCase().includes(q)))
   }, [rows, pinnedIds, search])
 
+  // The moved row slides out from under the pointer, so without this the next click
+  // lands on whatever took its place and swaps it straight back. Following the row
+  // with focus lets the same button be pressed repeatedly to keep moving.
+  const moveBtnRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map())
+  const pendingFocus = useRef<string | null>(null)
+
   function move(index: number, dir: -1 | 1) {
+    const id = pinnedRows[index]?.id
+    if (!id) return
     setPinnedIds(prev => {
       const next = [...prev]
       const target = index + dir
@@ -61,7 +69,20 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
       ;[next[index], next[target]] = [next[target], next[index]]
       return next
     })
+    pendingFocus.current = `${id}:${dir}`
   }
+
+  useEffect(() => {
+    const key = pendingFocus.current
+    if (!key) return
+    pendingFocus.current = null
+    const btn = moveBtnRefs.current.get(key)
+    // At either end the button is disabled and cannot take focus — fall back to the
+    // opposite arrow so focus stays on the row the user is moving.
+    if (btn && !btn.disabled) { btn.focus(); return }
+    const [id, dir] = key.split(':')
+    moveBtnRefs.current.get(`${id}:${dir === '-1' ? 1 : -1}`)?.focus()
+  }, [pinnedIds])
 
   async function save() {
     setSaving(true); setDone('')
@@ -147,9 +168,11 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
                 <span style={{ width: 28, flexShrink: 0, fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>{i + 1}</span>
                 <span style={{ flex: 1, fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button aria-label={t('tenantAdmin.sorting.moveUp')} onClick={() => move(i, -1)} disabled={i === 0}
+                  <button ref={el => { moveBtnRefs.current.set(`${r.id}:-1`, el) }}
+                    aria-label={t('tenantAdmin.sorting.moveUp')} onClick={() => move(i, -1)} disabled={i === 0}
                     style={{ ...smallBtn, opacity: i === 0 ? 0.4 : 1, cursor: i === 0 ? 'default' : 'pointer' }}>↑</button>
-                  <button aria-label={t('tenantAdmin.sorting.moveDown')} onClick={() => move(i, 1)} disabled={i === pinnedRows.length - 1}
+                  <button ref={el => { moveBtnRefs.current.set(`${r.id}:1`, el) }}
+                    aria-label={t('tenantAdmin.sorting.moveDown')} onClick={() => move(i, 1)} disabled={i === pinnedRows.length - 1}
                     style={{ ...smallBtn, opacity: i === pinnedRows.length - 1 ? 0.4 : 1, cursor: i === pinnedRows.length - 1 ? 'default' : 'pointer' }}>↓</button>
                   <button onClick={() => setPinnedIds(prev => prev.filter(id => id !== r.id))}
                     style={{ ...smallBtn, borderColor: 'var(--color-error)', color: 'var(--color-error)', background: 'transparent' }}>
