@@ -42,6 +42,10 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
       .finally(() => setLoading(false))
   }, [entity])
 
+  // Drop the saved confirmation as soon as anything saveable changes again, so it
+  // never lingers next to edits it does not cover.
+  useEffect(() => { setDone('') }, [baseSort, useCustom, pinnedIds])
+
   const byId = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])
   const pinnedRows = useMemo(
     () => pinnedIds.map(id => byId.get(id)).filter(Boolean) as Row[],
