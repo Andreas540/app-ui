@@ -852,7 +852,9 @@
     "alertNoName": "Ingresa un nombre de socio",
     "created": "Socio creado",
     "alertNameRequired": "El nombre es obligatorio",
-    "failedUpdate": "Error al actualizar el socio"
+    "failedUpdate": "Error al actualizar el socio",
+    "sortOwed": "Monto adeudado",
+    "sortName": "Nombre del Socio"
   },
   "supplyChain": {
     "title": "Visión General de Cadena de Suministro",

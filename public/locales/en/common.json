@@ -852,7 +852,9 @@
     "alertNoName": "Enter a partner name",
     "created": "Partner created",
     "alertNameRequired": "Name is required",
-    "failedUpdate": "Failed to update partner"
+    "failedUpdate": "Failed to update partner",
+    "sortOwed": "Owed amount",
+    "sortName": "Partner name"
   },
   "supplyChain": {
     "title": "Supply Chain Overview",

@@ -12,6 +12,7 @@ export default function Partners() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
+  const [sortBy, setSortBy] = useState<'owed' | 'name'>('owed')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -54,6 +55,17 @@ export default function Partners() {
     if (!q) return partners
     return partners.filter(p => p.name.toLowerCase().includes(q))
   }, [partners, query])
+
+  // Apply sorting to the visible set
+  const sortedVisible = useMemo(() => {
+    const arr = [...visible]
+    if (sortBy === 'owed') {
+      arr.sort((a, b) => Number(b.total_owed || 0) - Number(a.total_owed || 0))
+    } else {
+      arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    }
+    return arr
+  }, [visible, sortBy])
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
@@ -118,17 +130,29 @@ export default function Partners() {
       {/* Separator */}
       <div style={{ borderTop: '1px solid var(--separator)', margin: '16px 0' }} />
 
+      {/* Sort row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
+        <select aria-label="Sort partners by" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'owed' | 'name')}
+          style={{ height: BTN_H, borderRadius: 8, padding: '0 10px' }}>
+          <option value="owed">{t('partners.sortOwed')}</option>
+          <option value="name">{t('partners.sortName')}</option>
+        </select>
+      </div>
+
+      <div style={{ height: 8 }} />
+
       {err && <p style={{ color: 'var(--color-error)', marginTop: 8 }}>{t('error')} {err}</p>}
 
       {/* List */}
       <div>
         {loading ? (
           <p>{t('loading')}</p>
-        ) : visible.length === 0 ? (
+        ) : sortedVisible.length === 0 ? (
           <p className="helper">{t('partners.noPartners')}</p>
         ) : (
           <div>
-            {visible.map((p) => (
+            {sortedVisible.map((p) => (
               <Link key={p.id} to={`/partners/${p.id}`} className="row-link">
                 <div>
                   <div style={{ fontWeight: 600 }}>{p.name}</div>
@@ -143,7 +167,7 @@ export default function Partners() {
         )}
       </div>
 
-      {query && visible.length === 1 && (
+      {query && sortedVisible.length === 1 && (
         <div style={{ marginTop: 8 }}>
           <button className="primary" onClick={() => setQuery('')}>{t('clearSearch')}</button>
         </div>

@@ -852,7 +852,9 @@
     "alertNoName": "Ange ett partnernamn",
     "created": "Partner skapad",
     "alertNameRequired": "Namn krävs",
-    "failedUpdate": "Det gick inte att uppdatera partnern"
+    "failedUpdate": "Det gick inte att uppdatera partnern",
+    "sortOwed": "Skuldat belopp",
+    "sortName": "Partnernamn"
   },
   "supplyChain": {
     "title": "Leveranskedjeöversikt",
