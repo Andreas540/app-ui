@@ -20,12 +20,9 @@ interface RecordCounts {
 
 function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '' }
 
-export default function TenantAdminPartnerSettingsTab() {
+export default function TenantAdminPartnerSettingsTab({ initialSubTab }: { initialSubTab?: PartnerSubTab }) {
   const { t } = useTranslation()
-  // Honours ?sub=sorting so the sort row on Partners.tsx can deep-link straight here.
-  const [subTab, setSubTab] = useState<PartnerSubTab>(
-    () => new URLSearchParams(window.location.search).get('sub') === 'sorting' ? 'sorting' : 'hide-delete'
-  )
+  const [subTab, setSubTab] = useState<PartnerSubTab>(initialSubTab ?? 'hide-delete')
 
   const SUB_TABS: { id: PartnerSubTab; label: string }[] = [
     { id: 'hide-delete', label: t('tenantAdmin.partnerSettings.hideDeleteTitle') },

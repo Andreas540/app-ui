@@ -23,6 +23,10 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState('')
   const [search, setSearch] = useState('')
+  // Snapshot of what is currently persisted, for dirty tracking (same approach as Settings.tsx).
+  const [loaded, setLoaded] = useState<{ baseSort: BaseSort; useCustom: boolean; pinnedIds: string[] }>(
+    { baseSort: 'name', useCustom: false, pinnedIds: [] }
+  )
 
   useEffect(() => {
     setLoading(true)
@@ -33,11 +37,15 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         setRows(list)
         setBaseSort(data.defaultSort === 'owed' ? 'owed' : 'name')
         setUseCustom(data.useCustom === true)
-        setPinnedIds(
-          list.filter(r => r.sort_order != null)
-              .sort((a, b) => (a.sort_order as number) - (b.sort_order as number))
-              .map(r => r.id)
-        )
+        const pinned = list.filter(r => r.sort_order != null)
+          .sort((a, b) => (a.sort_order as number) - (b.sort_order as number))
+          .map(r => r.id)
+        setPinnedIds(pinned)
+        setLoaded({
+          baseSort: data.defaultSort === 'owed' ? 'owed' : 'name',
+          useCustom: data.useCustom === true,
+          pinnedIds: pinned,
+        })
       })
       .finally(() => setLoading(false))
   }, [entity])
@@ -45,6 +53,13 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
   // Drop the saved confirmation as soon as anything saveable changes again, so it
   // never lingers next to edits it does not cover.
   useEffect(() => { setDone('') }, [baseSort, useCustom, pinnedIds])
+
+  const hasChanges = useMemo(() => (
+    baseSort !== loaded.baseSort ||
+    useCustom !== loaded.useCustom ||
+    pinnedIds.length !== loaded.pinnedIds.length ||
+    pinnedIds.some((id, i) => id !== loaded.pinnedIds[i])
+  ), [baseSort, useCustom, pinnedIds, loaded])
 
   const byId = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])
   const pinnedRows = useMemo(
@@ -89,6 +104,7 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
   }, [pinnedIds])
 
   async function save() {
+    if (!hasChanges) return
     setSaving(true); setDone('')
     try {
       const positions: Record<string, number> = {}
@@ -104,6 +120,7 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         }),
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to save') }
+      setLoaded({ baseSort, useCustom, pinnedIds })
       setDone(t('tenantAdmin.sorting.saved'))
     } catch (e: any) { alert(e?.message || 'Failed to save') }
     finally { setSaving(false) }
@@ -219,7 +236,12 @@ export default function SortingSettings({ entity }: { entity: Entity }) {
         <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-success-bg)', border: '1px solid var(--color-success)', fontSize: 14 }}>{done}</div>
       )}
       <div>
-        <button className="primary" onClick={save} disabled={saving} style={{ height: 36, padding: '0 20px', fontSize: 13 }}>
+        <button
+          className={hasChanges ? 'primary' : ''}
+          onClick={save}
+          disabled={!hasChanges || saving}
+          style={{ height: 36, padding: '0 20px', fontSize: 13, opacity: hasChanges ? 1 : 0.5, cursor: hasChanges ? 'pointer' : 'not-allowed' }}
+        >
           {saving ? t('saving') : t('tenantAdmin.sorting.saveChanges')}
         </button>
       </div>

@@ -20,13 +20,10 @@ type CostOption = 'history' | 'next' | 'specific'
 function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '' }
 function todayYMD() { return new Date().toISOString().slice(0, 10) }
 
-export default function TenantAdminCustomerSettingsTab() {
+export default function TenantAdminCustomerSettingsTab({ initialSubTab }: { initialSubTab?: CustomerSubTab }) {
   const { t } = useTranslation()
   const { fmtInput, parseAmount } = useCurrency()
-  // Honours ?sub=sorting so the sort row on Customers.tsx can deep-link straight here.
-  const [subTab, setSubTab] = useState<CustomerSubTab>(
-    () => new URLSearchParams(window.location.search).get('sub') === 'sorting' ? 'sorting' : 'hide-delete'
-  )
+  const [subTab, setSubTab] = useState<CustomerSubTab>(initialSubTab ?? 'hide-delete')
 
   const SUB_TABS: { id: CustomerSubTab; label: string }[] = [
     { id: 'hide-delete', label: t('tenantAdmin.customerSettings.hideDeleteTitle') },

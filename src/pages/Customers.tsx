@@ -299,7 +299,7 @@ export default function Customers() {
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {canEditSorting && customEnabled && (
-            <Link to="/admin?tab=customer-settings&sub=sorting" className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+            <Link to="/admin" state={{ openTab: 'customer-settings', openSettingsSubTab: 'sorting' }} className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               {t('sorting.editOrder')}
             </Link>
           )}
