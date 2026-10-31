@@ -31,11 +31,12 @@ export default function Partners() {
         const res = await listPartnersWithOwed(query.trim() || undefined)
         setPartners(res.partners)
         // Settings arrive with every fetch, so admin changes land without a re-login.
-        const hasPositions = res.partners.some(p => p.sort_order != null)
+        // The admin checkbox is the switch: positions alone don't expose Custom.
+        const customOn = res.useCustom === true && res.partners.some(p => p.sort_order != null)
         const base = res.defaultSort === 'owed' ? 'owed' : 'name'
-        setCustomAvailable(hasPositions)
+        setCustomAvailable(customOn)
         setBaseSort(base)
-        if (!sortTouched) setSortBy(res.useCustom && hasPositions ? 'custom' : base)
+        if (!sortTouched) setSortBy(customOn ? 'custom' : base)
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -78,7 +79,8 @@ export default function Partners() {
     const byOwed = (a: PartnerWithOwed, b: PartnerWithOwed) => Number(b.total_owed || 0) - Number(a.total_owed || 0)
     const base = baseSort === 'owed' ? byOwed : byName
     const arr = [...visible]
-    if (sortBy === 'custom') {
+    // A stale 'custom' selection falls back once an admin switches custom off.
+    if (sortBy === 'custom' && customAvailable) {
       arr.sort((a, b) => {
         const ap = a.sort_order ?? null, bp = b.sort_order ?? null
         if (ap != null && bp != null) return ap - bp || base(a, b)
@@ -90,7 +92,7 @@ export default function Partners() {
       arr.sort(sortBy === 'owed' ? byOwed : byName)
     }
     return arr
-  }, [visible, sortBy, baseSort])
+  }, [visible, sortBy, baseSort, customAvailable])
 
   const BTN_H = 'calc(var(--control-h) * 0.67)'
 
@@ -159,7 +161,7 @@ export default function Partners() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {canEditSorting && (
+          {canEditSorting && customAvailable && (
             <Link to="/admin?tab=partner-settings&sub=sorting" className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               {t('sorting.editOrder')}
             </Link>

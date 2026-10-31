@@ -51,11 +51,12 @@ export default function Customers() {
           setPartnerTotals((res as any).partner_totals)
         }
         // Settings arrive with every fetch, so admin changes land without a re-login.
-        const hasPositions = res.customers.some(c => c.sort_order != null)
+        // The admin checkbox is the switch: positions alone don't expose Custom.
+        const customOn = res.useCustom === true && res.customers.some(c => c.sort_order != null)
         const base = res.defaultSort === 'owed' ? 'owed' : 'name'
-        setCustomAvailable(hasPositions)
+        setCustomAvailable(customOn)
         setBaseSort(base)
-        if (!sortTouched) setSortBy(res.useCustom && hasPositions ? 'custom' : base)
+        if (!sortTouched) setSortBy(customOn ? 'custom' : base)
       } catch (e: any) {
         setErr(e?.message || String(e))
       } finally {
@@ -126,7 +127,8 @@ export default function Customers() {
     const byOwed = (a: CustomerWithOwed, b: CustomerWithOwed) => Number(b.owed_to_me || 0) - Number(a.owed_to_me || 0)
     const base = baseSort === 'owed' ? byOwed : byName
     const arr = [...visible]
-    if (sortBy === 'custom') {
+    // A stale 'custom' selection falls back once an admin switches custom off.
+    if (sortBy === 'custom' && customAvailable) {
       arr.sort((a, b) => {
         const ap = a.sort_order ?? null, bp = b.sort_order ?? null
         if (ap != null && bp != null) return ap - bp || base(a, b)
@@ -138,7 +140,7 @@ export default function Customers() {
       arr.sort(sortBy === 'owed' ? byOwed : byName)
     }
     return arr
-  }, [visible, sortBy, baseSort])
+  }, [visible, sortBy, baseSort, customAvailable])
 
   // Sum owed_to_me over the visible (filtered) set, BUT treat negatives as 0 for the total
   const totalVisibleOwed = useMemo(
@@ -291,7 +293,7 @@ export default function Customers() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
         <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t('sortBy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {canEditSorting && (
+          {canEditSorting && customAvailable && (
             <Link to="/admin?tab=customer-settings&sub=sorting" className="helper" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               {t('sorting.editOrder')}
             </Link>
