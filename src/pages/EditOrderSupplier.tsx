@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
+import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { getAuthHeaders } from '../lib/api'
 import { buildGroupOptions } from '../lib/productOptions'
@@ -28,12 +30,6 @@ type Line = {
   purchase_order_id?: string
 }
 
-const todayYMD = () => {
-  const d = new Date()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${mm}-${dd}`
-}
 
 
 // Detect a brand-new fully blank line (ignore for validation/payload)
@@ -53,6 +49,7 @@ function toQtyIntString(v: any): string {
 
 export default function EditOrderSupplier() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { id } = useParams<{ id: string }>()
   const { parseAmount, fmtInput, fmtMoney } = useCurrency()
   const navigate = useNavigate()
@@ -74,7 +71,7 @@ export default function EditOrderSupplier() {
   const [receivedDate, setReceivedDate] = useState('')
   const [inCustoms, setInCustoms] = useState(false)
   const [inCustomsDate, setInCustomsDate] = useState('')
-  const [orderDate, setOrderDate] = useState(todayYMD())
+  const [orderDate, setOrderDate] = useState(todayYMD(timezone))
   const [estDeliveryDate, setEstDeliveryDate] = useState('')
   const [notes, setNotes] = useState('')
 
@@ -123,7 +120,7 @@ const pRes = await fetch(`${base}/api/product`, {
         setReceivedDate(order.received_date ? order.received_date.split('T')[0] : '')
         setInCustoms(order.in_customs || false)
         setInCustomsDate(order.in_customs_date ? order.in_customs_date.split('T')[0] : '')
-        setOrderDate(order.order_date ? order.order_date.split('T')[0] : todayYMD())
+        setOrderDate(order.order_date ? order.order_date.split('T')[0] : todayYMD(timezone))
         setEstDeliveryDate(order.est_delivery_date ? order.est_delivery_date.split('T')[0] : '')
         setNotes(order.notes || '')
         

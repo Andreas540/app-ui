@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { fetchCustomerDetail, fetchBootstrap, type CustomerDetail, type CardToken, getAuthHeaders, listProducts, type ProductWithCost, tPaymentType } from '../lib/api'
 import { formatDate, todayYMD } from '../lib/time'
+import { useLocale } from '../contexts/LocaleContext'
 import { DateInput } from '../components/DateInput'
 import OrderDetailModal from '../components/OrderDetailModal'
 import PaymentDetailModal from '../components/PaymentDetailModal'
@@ -1375,6 +1376,7 @@ function DeliveryModal({
   onSave: (orderId: string, lines: { order_item_id: string; delivered_qty: number }[], deliveredAt?: string) => void
 }) {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const items: any[] = order.items ?? []
 
   const [events, setEvents] = useState<any[]>([])
@@ -1410,13 +1412,13 @@ function DeliveryModal({
     return init
   })
 
-  const [deliveredAt, setDeliveredAt] = useState<string>(order.delivered_at ?? todayYMD())
+  const [deliveredAt, setDeliveredAt] = useState<string>(order.delivered_at ?? todayYMD(timezone))
   const hasInteracted = useRef(false)
 
   function touchDate() {
     if (!hasInteracted.current) {
       hasInteracted.current = true
-      setDeliveredAt(todayYMD())
+      setDeliveredAt(todayYMD(timezone))
     }
   }
 

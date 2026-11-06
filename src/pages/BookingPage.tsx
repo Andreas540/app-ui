@@ -8,6 +8,7 @@ import { Lightbox } from '../components/Lightbox'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Vibrant } from 'node-vibrant/browser'
+import { todayYMD, formatTimeZoneName } from '../lib/time'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,11 +28,6 @@ type Step = 'loading' | 'error' | 'service' | 'date' | 'time' | 'contact' | 'con
 
 function apiBase() {
   return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-}
-
-function todayYMD(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function ymd(year: number, month: number, day: number): string {
@@ -77,17 +73,21 @@ interface CalendarProps {
   selectedDate: string          // YYYY-MM-DD or ''
   onSelect: (d: string) => void
   locale: string
+  timezone: string              // the business's zone, not the visitor's
 }
 
-function CalendarPicker({ availableDows, selectedDate, onSelect, locale }: CalendarProps) {
-  const today = new Date()
-  const [year, setYear]   = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth()) // 0-based
-
-  const todayStr = todayYMD()
+function CalendarPicker({ availableDows, selectedDate, onSelect, locale, timezone }: CalendarProps) {
+  // "Today" here is the BUSINESS's today. Slot times come back from the API as
+  // business-local HH:MM strings, so the calendar has to use the same zone —
+  // otherwise a visitor ahead of the business loses a day that still has slots.
+  const todayStr = todayYMD(timezone)
+  const todayY = Number(todayStr.slice(0, 4))
+  const todayM = Number(todayStr.slice(5, 7)) - 1   // 0-based
+  const [year, setYear]   = useState(todayY)
+  const [month, setMonth] = useState(todayM)
 
   function prevMonth() {
-    if (year === today.getFullYear() && month === today.getMonth()) return
+    if (year === todayY && month === todayM) return
     if (month === 0) { setYear(y => y - 1); setMonth(11) }
     else setMonth(m => m - 1)
   }
@@ -114,7 +114,7 @@ function CalendarPicker({ availableDows, selectedDate, onSelect, locale }: Calen
   // Pad to full weeks
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const canGoPrev = !(year === today.getFullYear() && month === today.getMonth())
+  const canGoPrev = !(year === todayY && month === todayM)
 
   return (
     <div style={{ userSelect: 'none' }}>
@@ -219,6 +219,9 @@ export default function BookingPage() {
   // Page data
   const [tenantName, setTenantName]       = useState('')
   const [tenantIcon, setTenantIcon]       = useState<string | null>(null)
+  // The business's zone. Slots arrive as business-local HH:MM, so the calendar and
+  // the times shown must both use this rather than the visitor's device clock.
+  const [tenantTz, setTenantTz]           = useState('UTC')
   const [bgColor, setBgColor]             = useState('#f5f5f5')
   const [services, setServices]           = useState<Service[]>([])
   const [availability, setAvailability]   = useState<Record<string, number[]>>({})
@@ -295,6 +298,7 @@ export default function BookingPage() {
         .then(d => {
           setTenantName(d.tenant?.name || '')
           setTenantIcon(d.tenant?.icon_url || null)
+          if (d.tenant?.timezone) setTenantTz(d.tenant.timezone)
           if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
           setStep('canceled')
         })
@@ -324,6 +328,7 @@ export default function BookingPage() {
         if (!ok) { setStep('error'); setErrorMsg(d.error || t('bookingPage.notFound')); return }
         setTenantName(d.tenant?.name || '')
         setTenantIcon(d.tenant?.icon_url || null)
+        if (d.tenant?.timezone) setTenantTz(d.tenant.timezone)
         if (d.tenant?.language) i18n.changeLanguage(d.tenant.language)
         setRequiresPayment(!!d.requiresPayment)
         if (d.knownCustomer) {
@@ -644,6 +649,7 @@ export default function BookingPage() {
                 selectedDate={selectedDate}
                 onSelect={selectDate}
                 locale={locale}
+                timezone={tenantTz}
               />
             )}
           </div>
@@ -654,7 +660,12 @@ export default function BookingPage() {
           <div style={cardStyle}>
             <button style={ghostBtn} onClick={() => setStep('date')}>{t('bookingPage.back')}</button>
             <h3 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>{t('bookingPage.selectTime')}</h3>
-            <p style={{ ...mutedStyle, marginBottom: 20 }}>{formatDate(selectedDate, locale)}</p>
+            <p style={{ ...mutedStyle, marginBottom: 4 }}>{formatDate(selectedDate, locale)}</p>
+            {/* Times are the business's local clock, so say which zone that is —
+                a visitor in another country would otherwise read them as their own. */}
+            <p style={{ ...mutedStyle, marginBottom: 20, fontSize: 13 }}>
+              {t('bookingPage.timesShownIn', { timezone: formatTimeZoneName(tenantTz, locale) })}
+            </p>
             {loadingSlots ? (
               <p style={{ color: '#888' }}>{t('bookingPage.loadingTimes')}</p>
             ) : slots.length === 0 ? (

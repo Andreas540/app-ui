@@ -29,7 +29,7 @@ export default function EditPayment() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { parseAmount, fmtInput, fmtMoney } = useCurrency()
-  const { currency } = useLocale()
+  const { currency, timezone } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
   const { user } = useAuth()
@@ -49,7 +49,7 @@ export default function EditPayment() {
   const [entityId, setEntityId] = useState('')
   const [paymentType, setPaymentType] = useState<PaymentType | PartnerPaymentType | SupplierPaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
-  const [date, setDate] = useState<string>(todayYMD())
+  const [date, setDate] = useState<string>(todayYMD(timezone))
   const [notes, setNotes] = useState('')
   const [orderId, setOrderId] = useState('')
   const [orders, setOrders] = useState<{ id: string; order_no: number; product_name: string; amount: number; balance: number }[]>([])

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { listProducts, updateProduct, listProductCategories, createProductCategory, getAuthHeaders, type ProductWithCost } from '../lib/api'
 import { optLabel } from '../lib/productOptions'
 import { ImagePicker } from '../components/ImagePicker'
@@ -12,6 +13,7 @@ import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function EditProduct() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { fmtInput, parseAmount } = useCurrency()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -37,11 +39,11 @@ export default function EditProduct() {
   const [newName, setNewName] = useState('')
   const [costStr, setCostStr] = useState('') // decimal string
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
-  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD(timezone))
   const [saving, setSaving] = useState(false)
   const [costMethod, setCostMethod] = useState<'manual' | 'avg_3m' | 'avg_6m' | 'avg_12m' | 'last_purchase'>('manual')
   const [methodTiming, setMethodTiming] = useState<'next' | 'history' | 'specific'>('next')
-  const [methodTimingDate, setMethodTimingDate] = useState<string>(todayYMD())
+  const [methodTimingDate, setMethodTimingDate] = useState<string>(todayYMD(timezone))
   const [savingMethod, setSavingMethod] = useState(false)
 
   const [durationStr, setDurationStr] = useState('')
@@ -168,7 +170,7 @@ export default function EditProduct() {
     setNewName(selected.name)
     setCostStr(selected.cost == null ? '' : fmtInput(selected.cost, 3))
     setCostOption('next')
-    setSpecificDate(todayYMD())
+    setSpecificDate(todayYMD(timezone))
     if (selected.category === 'service') {
       setDurationStr(selected.duration_minutes == null ? '' : String(selected.duration_minutes))
       setPriceStr(selected.price_amount == null ? '' : fmtInput(selected.price_amount))
@@ -188,7 +190,7 @@ export default function EditProduct() {
     setUnitTracking(selected.unit_tracking ?? 'none')
     setCostMethod(selected.cost_method ?? 'manual')
     setMethodTiming('next')
-    setMethodTimingDate(todayYMD())
+    setMethodTimingDate(todayYMD(timezone))
     setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
     setImageChangeData(undefined)
     setAddingCategory(false)
@@ -623,7 +625,7 @@ export default function EditProduct() {
               setImageDisplayUrl(selected.has_image ? `${BASE}/.netlify/functions/serve-product-image?id=${selected.id}&v=${Date.now()}` : null)
             }
             setCostOption('next')
-            setSpecificDate(todayYMD())
+            setSpecificDate(todayYMD(timezone))
             setImageChangeData(undefined)
             setAddingCategory(false)
             setAddingSubcategory(false)

@@ -7,6 +7,7 @@
 // POST { slug, service_id, date, start_time, ... }     → create booking
 
 import crypto from 'crypto'
+import { localToUtc } from './utils/tz.mjs'
 
 function base64urlDecodeToString(b64url) {
   const b64 = String(b64url).replace(/-/g, '+').replace(/_/g, '/')
@@ -361,7 +362,9 @@ async function getBookingData(event) {
     `.catch(() => [])
 
     return cors(200, {
-      tenant:         { name: tenant.name, icon_url: tenant.app_icon_192 || null, language: tenant.default_language || 'en' },
+      // timezone: slot times are returned as business-local HH:MM strings, so the page
+      // must render its calendar in the same zone or dates and times disagree.
+      tenant:         { name: tenant.name, icon_url: tenant.app_icon_192 || null, language: tenant.default_language || 'en', timezone: tenantTz },
       services,
       availability,
       requiresPayment:  paymentRows.length > 0,
@@ -682,22 +685,6 @@ function generateSlots(startTime, endTime, durationMinutes) {
   return slots
 }
 
-function localToUtc(localStr, tz) {
-  const cleanStr = localStr.trim().replace(' ', 'T')
-  const approxUtc = new Date(cleanStr + 'Z')
-  if (isNaN(approxUtc.getTime())) return null
-  if (!tz || tz === 'UTC') return approxUtc
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  })
-  const parts = Object.fromEntries(fmt.formatToParts(approxUtc).map(p => [p.type, p.value]))
-  const h = parts.hour === '24' ? '00' : parts.hour
-  const localAtApprox = new Date(`${parts.year}-${parts.month}-${parts.day}T${h}:${parts.minute}:${parts.second}Z`)
-  const offsetMs = localAtApprox.getTime() - approxUtc.getTime()
-  return new Date(approxUtc.getTime() - offsetMs)
-}
 
 function cors(status, body) {
   return {

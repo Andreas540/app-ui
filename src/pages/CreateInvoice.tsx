@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getAuthHeaders, listProducts, createProduct, type ProductWithCost } from '../lib/api'
 import { Trans, useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { formatDate, todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { useAuth } from '../contexts/AuthContext'
@@ -45,6 +46,7 @@ function emptyUnregLine(): UnregLine {
 
 export default function CreateInvoicePage() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { t: ti } = useTranslation('info')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -72,7 +74,7 @@ export default function CreateInvoicePage() {
   const [lastInvoiceNo, setLastInvoiceNo] = useState<string | null>(null)
   const [invoiceRegistered, setInvoiceRegistered] = useState(true)
   const [invoiceUnregistered, setInvoiceUnregistered] = useState(false)
-  const [unregDate, setUnregDate] = useState(() => todayYMD())
+  const [unregDate, setUnregDate] = useState(() => todayYMD(timezone))
   const [unregNotes, setUnregNotes] = useState('')
   const [unregLines, setUnregLines] = useState<UnregLine[]>(() => [emptyUnregLine()])
   const [savingLines, setSavingLines] = useState(false)

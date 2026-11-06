@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { fetchBootstrap, type Product, getAuthHeaders, type UnitCoverage, type CoverageOrderLine, listUnitCoverage, getAvailableCoverageLines, createUnitCoverage, updateUnitCoverage, deleteUnitCoverage, listProductCategories, createProductCategory } from '../lib/api'
 import { buildGroupOptions } from '../lib/productOptions'
 import { useAuth } from '../contexts/AuthContext'
@@ -67,6 +68,7 @@ type MaterialItem = {
 
 export default function Warehouse() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { parseAmount, fmtQty } = useCurrency()
@@ -236,7 +238,7 @@ export default function Warehouse() {
   // Form fields
   const [productId, setProductId] = useState(prefillProductId)
   const [qtyStr, setQtyStr] = useState('')
-  const [date, setDate] = useState<string>(todayYMD())
+  const [date, setDate] = useState<string>(todayYMD(timezone))
   const [flag, setFlag] = useState<'M' | 'P' | 'material'>(isRetail ? 'P' : 'M')
   const [productCostStr, setProductCostStr] = useState('')
   const [laborCostStr, setLaborCostStr] = useState('')
@@ -599,7 +601,7 @@ export default function Warehouse() {
                 alert(t('warehouse.saved'))
 
                 setQtyStr('')
-                setDate(todayYMD())
+                setDate(todayYMD(timezone))
                 setFlag('M')
                 setProductCostStr('')
                 setLaborCostStr('')
@@ -617,7 +619,7 @@ export default function Warehouse() {
           <button
             onClick={() => {
               setQtyStr('')
-              setDate(todayYMD())
+              setDate(todayYMD(timezone))
               setFlag('M')
               setProductCostStr('')
               setLaborCostStr('')

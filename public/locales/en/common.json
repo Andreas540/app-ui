@@ -2048,6 +2048,7 @@
     "selectDate": "Select a date",
     "noAvailability": "No availability set for this service yet.",
     "selectTime": "Select a time",
+    "timesShownIn": "All times shown in {{timezone}}",
     "loadingTimes": "Loading available times…",
     "noTimes": "No available times for this date.",
     "chooseAnotherDate": "Choose another date",

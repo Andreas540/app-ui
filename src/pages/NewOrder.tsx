@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { fetchBootstrap, type Person, type Product, getAuthHeaders } from '../lib/api'
 import { buildGroupOptions, optLabel } from '../lib/productOptions'
 import { useCurrency } from '../lib/useCurrency'
@@ -44,6 +45,7 @@ function emptyLine(product_id = ''): Line {
 
 export default function NewOrder() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const navigate = useNavigate()
   const location = useLocation()
   const { parseAmount, fmtMoney, fmtInput, fmtPct } = useCurrency()
@@ -66,9 +68,9 @@ export default function NewOrder() {
   const [entityId, setEntityId] = useState('')
 
   // Order-level fields
-  const [orderDate, setOrderDate] = useState<string>(todayYMD())
+  const [orderDate, setOrderDate] = useState<string>(todayYMD(timezone))
   const [delivered, setDelivered] = useState(false)
-  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
+  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD(timezone))
   const [notes, setNotes] = useState('')
 
   // Line items
@@ -947,7 +949,7 @@ export default function NewOrder() {
             if (returnTo === 'customer' && returnId) { navigate(`/customers/${returnId}`); return }
 
             setLines([emptyLine(lines[0]?.product_id || '')])
-            setOrderDate(todayYMD())
+            setOrderDate(todayYMD(timezone))
             setDelivered(false)
             setNotes('')
             setPartner1Id(''); setPartner2Id('')

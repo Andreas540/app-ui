@@ -65,6 +65,26 @@ export function monthEndYMD(ymd: string): string {
 }
 
 /**
+ * Human name for an IANA zone, for showing visitors which clock a time refers to:
+ * 'America/New_York' → 'Eastern Time', 'Europe/Stockholm' → 'Central European Time'.
+ *
+ * Uses longGeneric rather than long on purpose — "Eastern Time" stays correct across a
+ * DST boundary, where "Eastern Standard Time" would be wrong for half the year and would
+ * flip under a list of slots that spans the changeover. Falls back to the raw id if the
+ * runtime cannot name the zone.
+ */
+export function formatTimeZoneName(tz: string, locale: string = resolveLocale(i18n.language || 'en')): string {
+  try {
+    const part = new Intl.DateTimeFormat(locale, { timeZone: tz, timeZoneName: 'longGeneric' })
+      .formatToParts(new Date())
+      .find(p => p.type === 'timeZoneName');
+    return part?.value || tz.replace(/_/g, ' ');
+  } catch {
+    return tz.replace(/_/g, ' ');
+  }
+}
+
+/**
  * Parse a YYYY-MM-DD string as a local date (NOT UTC).
  * This prevents the common timezone shift bug where "2025-01-15"
  * becomes Jan 14th in negative UTC offset timezones.

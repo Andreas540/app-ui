@@ -5,6 +5,7 @@
 // Updates provider_connections.last_sync_at and logs a sync_runs row.
 
 import { resolveAuthz } from './utils/auth.mjs'
+import { localToUtc } from './utils/tz.mjs'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -107,23 +108,6 @@ async function runSync(event) {
 
     // Convert a SimplyBook local datetime string to UTC using the tenant's IANA timezone.
     // SimplyBook stores times in the company's local timezone; bk.offset is unreliable.
-    function localToUtc(str) {
-      if (!str || !str.trim()) return null
-      const cleanStr = str.trim().replace(' ', 'T')
-      const approxUtc = new Date(cleanStr + 'Z')
-      if (isNaN(approxUtc.getTime())) return null
-      if (!tenantTz || tenantTz === 'UTC') return approxUtc
-      const fmt = new Intl.DateTimeFormat('en-CA', {
-        timeZone: tenantTz,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-      })
-      const parts = Object.fromEntries(fmt.formatToParts(approxUtc).map(p => [p.type, p.value]))
-      const h = parts.hour === '24' ? '00' : parts.hour
-      const localAtApprox = new Date(`${parts.year}-${parts.month}-${parts.day}T${h}:${parts.minute}:${parts.second}Z`)
-      const offsetMs = localAtApprox.getTime() - approxUtc.getTime()
-      return new Date(approxUtc.getTime() - offsetMs)
-    }
 
     let servicesProcessed = 0
     let clientsProcessed = 0
@@ -312,8 +296,8 @@ async function runSync(event) {
         const startStr = bk.start_date_time ?? bk.start_date ?? `${bk.date ?? ''} ${bk.start_time ?? '00:00:00'}`
         const endStr = bk.end_date_time ?? bk.end_date ?? `${bk.date ?? ''} ${bk.end_time ?? '00:00:00'}`
 
-        const startAt = startStr.trim() ? localToUtc(startStr) : null
-        const endAt = endStr.trim() ? localToUtc(endStr) : null
+        const startAt = startStr.trim() ? localToUtc(startStr, tenantTz) : null
+        const endAt = endStr.trim() ? localToUtc(endStr, tenantTz) : null
         if (!startAt || isNaN(startAt.getTime())) continue
 
         // is_confirm: "1" = confirmed, "0" = pending; fallback to status field

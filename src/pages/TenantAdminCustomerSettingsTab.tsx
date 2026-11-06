@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
+import { useLocale } from '../contexts/LocaleContext'
+import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import SortingSettings from '../components/SortingSettings'
 
@@ -18,11 +20,10 @@ type ShippingTarget = 'all' | 'direct' | 'partner' | 'custom'
 type CostOption = 'history' | 'next' | 'specific'
 
 function apiBase() { return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : '' }
-function todayYMD() { return new Date().toISOString().slice(0, 10) }
-
 export default function TenantAdminCustomerSettingsTab({ initialSubTab }: { initialSubTab?: CustomerSubTab }) {
   const { t } = useTranslation()
   const { fmtInput, parseAmount } = useCurrency()
+  const { timezone } = useLocale()
   const [subTab, setSubTab] = useState<CustomerSubTab>(initialSubTab ?? 'hide-delete')
 
   const SUB_TABS: { id: CustomerSubTab; label: string }[] = [
@@ -56,7 +57,7 @@ export default function TenantAdminCustomerSettingsTab({ initialSubTab }: { init
   const [customSearch, setCustomSearch] = useState('')
   const [costAmount, setCostAmount] = useState('')
   const [costOption, setCostOption] = useState<CostOption>('next')
-  const [specificDate, setSpecificDate] = useState(todayYMD())
+  const [specificDate, setSpecificDate] = useState(todayYMD(timezone))
   const [applying, setApplying] = useState(false)
   const [applyDone, setApplyDone] = useState('')
 

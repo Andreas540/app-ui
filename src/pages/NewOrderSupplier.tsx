@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
+import { todayYMD } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 import { buildGroupOptions } from '../lib/productOptions'
 import { getAuthHeaders } from '../lib/api'
@@ -28,15 +30,10 @@ type Line = {
   purchase_order_id?: string
 }
 
-const todayYMD = () => {
-  const d = new Date()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${mm}-${dd}`
-}
 
 export default function NewOrderSupplier() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { fmtInput, fmtMoney } = useCurrency()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -54,7 +51,7 @@ export default function NewOrderSupplier() {
   const [delivered, setDelivered]   = useState(false)
   const [received, setReceived]     = useState(false)
   const [inCustoms, setInCustoms]   = useState(false)
-  const [orderDate, setOrderDate]   = useState(todayYMD())
+  const [orderDate, setOrderDate]   = useState(todayYMD(timezone))
   const [estDeliveryDate, setEstDeliveryDate] = useState('')
   const [notes, setNotes] = useState('')
 
@@ -229,7 +226,7 @@ export default function NewOrderSupplier() {
   function handleClear() {
     setSupplierId('')
     setDelivered(false); setReceived(false); setInCustoms(false)
-    setOrderDate(todayYMD()); setEstDeliveryDate('')
+    setOrderDate(todayYMD(timezone)); setEstDeliveryDate('')
     setNotes('')
     setLines([{ product_id:'', qty:'', cost:'', lastCost:null }])
   }

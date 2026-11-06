@@ -1,6 +1,7 @@
 // src/components/PurchaseOrderModal.tsx
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import Modal from './Modal'
 import SupplierOrderDetailModal from './SupplierOrderDetailModal'
 import { DateInput } from './DateInput'
@@ -71,6 +72,7 @@ type PurchaseOrder = {
 
 export default function PurchaseOrderModal({ isOpen, onClose, supplierId, supplierName, onSaved }: PurchaseOrderModalProps) {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { fmtMoney, fmtNumber, parseAmount } = useCurrency()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -79,7 +81,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
 
   // New PO form state
   const [poNumber, setPoNumber] = useState('')
-  const [issueDate, setIssueDate] = useState(todayYMD())
+  const [issueDate, setIssueDate] = useState(todayYMD(timezone))
   const [expDate, setExpDate] = useState('')
   const [notes, setNotes] = useState('')
   const [mode, setMode] = useState<Mode>('breakdown')
@@ -153,7 +155,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   function reset() {
     setTab('new')
     setPoNumber('')
-    setIssueDate(todayYMD())
+    setIssueDate(todayYMD(timezone))
     setExpDate('')
     setNotes('')
     setMode('breakdown')
@@ -364,7 +366,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
     }
   }
 
-  const today = todayYMD()
+  const today = todayYMD(timezone)
 
   const filteredPos = pos.filter(po => {
     if (includeCompleted) return true

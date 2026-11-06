@@ -38,7 +38,7 @@ export default function Payments() {
   const location = useLocation()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
-  const { currency } = useLocale()
+  const { currency, timezone } = useLocale()
   const isCOP = currency === 'COP'
   const isSEK = currency === 'SEK'
   const { parseAmount, fmtInput, fmtMoney } = useCurrency()
@@ -73,7 +73,7 @@ export default function Payments() {
   const preselectedAmountRef = useRef('')
   const [paymentType, setPaymentType] = useState<PaymentType>('Cash payment')
   const [amountStr, setAmountStr] = useState('')
-  const [date, setDate] = useState<string>(todayYMD())
+  const [date, setDate] = useState<string>(todayYMD(timezone))
   const [notes, setNotes] = useState('')
   // Partner selector shown only when PaymentType === "Partner credit"
   const [partnerForCreditId, setPartnerForCreditId] = useState('')
@@ -86,7 +86,7 @@ export default function Payments() {
   const [selectedPartnerOrderId, setSelectedPartnerOrderId] = useState('')
   const [partnerPaymentType, setPartnerPaymentType] = useState<PartnerPaymentType>('Cash')
   const [partnerAmountStr, setPartnerAmountStr] = useState('')
-  const [partnerDate, setPartnerDate] = useState<string>(todayYMD())
+  const [partnerDate, setPartnerDate] = useState<string>(todayYMD(timezone))
   const [partnerNotes, setPartnerNotes] = useState('')
 
   // form - supplier payments
@@ -95,7 +95,7 @@ export default function Payments() {
   const [selectedSupplierOrderId, setSelectedSupplierOrderId] = useState('')
   const [supplierPaymentType, setSupplierPaymentType] = useState<SupplierPaymentType>('Cash')
   const [supplierAmountStr, setSupplierAmountStr] = useState('')
-  const [supplierDate, setSupplierDate] = useState<string>(todayYMD())
+  const [supplierDate, setSupplierDate] = useState<string>(todayYMD(timezone))
   const [supplierNotes, setSupplierNotes] = useState('')
 
   // Reset payment type defaults when currency changes

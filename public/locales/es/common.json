@@ -2048,6 +2048,7 @@
     "selectDate": "Seleccionar fecha",
     "noAvailability": "No hay disponibilidad configurada para este servicio.",
     "selectTime": "Seleccionar hora",
+    "timesShownIn": "Todas las horas se muestran en {{timezone}}",
     "loadingTimes": "Cargando horarios disponibles…",
     "noTimes": "No hay horarios disponibles para esta fecha.",
     "chooseAnotherDate": "Elegir otra fecha",

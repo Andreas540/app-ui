@@ -3,6 +3,7 @@
 // Creates a manual booking (not from SimplyBook) with linked order + order_item.
 
 import { resolveAuthz } from './utils/auth.mjs'
+import { localToUtc } from './utils/tz.mjs'
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return cors(204, {})
@@ -310,22 +311,6 @@ async function createBooking(event) {
 }
 
 // Convert a local datetime string to UTC given an IANA timezone name
-function localToUtc(localStr, tz) {
-  const cleanStr = localStr.trim().replace(' ', 'T')
-  const approxUtc = new Date(cleanStr + 'Z')
-  if (isNaN(approxUtc.getTime())) return null
-  if (!tz || tz === 'UTC') return approxUtc
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  })
-  const parts = Object.fromEntries(fmt.formatToParts(approxUtc).map(p => [p.type, p.value]))
-  const h = parts.hour === '24' ? '00' : parts.hour
-  const localAtApprox = new Date(`${parts.year}-${parts.month}-${parts.day}T${h}:${parts.minute}:${parts.second}Z`)
-  const offsetMs = localAtApprox.getTime() - approxUtc.getTime()
-  return new Date(approxUtc.getTime() - offsetMs)
-}
 
 function cors(status, body) {
   return {

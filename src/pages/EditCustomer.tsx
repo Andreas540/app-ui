@@ -17,7 +17,7 @@ export default function EditCustomer() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { parseAmount, fmtInput } = useCurrency()
-  const { currency } = useLocale()
+  const { currency, timezone } = useLocale()
   const directLabel = getTenantConfig(user?.tenantId).labels.directLabel
 
   const [loading, setLoading]       = useState(true)
@@ -64,7 +64,7 @@ export default function EditCustomer() {
   const [customerType, setCustomerType] = useState<CustomerType>('Direct')
   const [shippingCost, setShippingCost] = useState<string>('')
   const [costOption, setCostOption] = useState<'history' | 'next' | 'specific'>('next')
-  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD(timezone))
   const [companyName, setCompanyName] = useState('')
   const [localPhone, setLocalPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -126,7 +126,7 @@ export default function EditCustomer() {
         setState(c.state || '')
         setPostal(c.postal_code || '')
         setCostOption('next')
-        setSpecificDate(todayYMD())
+        setSpecificDate(todayYMD(timezone))
       } catch (e:any) {
         setErr(e?.message || String(e))
       } finally {

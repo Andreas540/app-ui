@@ -1,6 +1,7 @@
 // src/pages/EmployeeManagement.tsx
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
 import { todayYMD } from '../lib/time'
@@ -39,6 +40,7 @@ function safeString(value: any): string {
 
 export default function EmployeeManagement() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { fmtMoney } = useCurrency()
 
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -57,7 +59,7 @@ export default function EmployeeManagement() {
   
   // Salary history options
   const [salaryOption, setSalaryOption] = useState<'history' | 'next' | 'specific'>('next')
-  const [specificDate, setSpecificDate] = useState<string>(todayYMD())
+  const [specificDate, setSpecificDate] = useState<string>(todayYMD(timezone))
 
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
@@ -114,7 +116,7 @@ export default function EmployeeManagement() {
       setActive(true)
       setNotes('')
       setSalaryOption('next')
-      setSpecificDate(todayYMD())
+      setSpecificDate(todayYMD(timezone))
       setShowForm(true)
 
       const nextCode = await fetchNextEmployeeCode()
@@ -134,7 +136,7 @@ export default function EmployeeManagement() {
     setActive(employee.active)
     setNotes(safeString(employee.notes))
     setSalaryOption('next')
-    setSpecificDate(todayYMD())
+    setSpecificDate(todayYMD(timezone))
     setShowForm(true)
   }
 
@@ -148,7 +150,7 @@ export default function EmployeeManagement() {
     setActive(true)
     setNotes('')
     setSalaryOption('next')
-    setSpecificDate(todayYMD())
+    setSpecificDate(todayYMD(timezone))
   }
 
   async function handleSave() {

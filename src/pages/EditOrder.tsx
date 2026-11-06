@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '../contexts/LocaleContext'
 import { fetchBootstrap, type Person, type Product, type CardToken, getAuthHeaders } from '../lib/api'
 import { buildGroupOptions, optLabel } from '../lib/productOptions'
 import { todayYMD } from '../lib/time'
@@ -19,6 +20,7 @@ function emptyLine(): Line {
 
 export default function EditOrder() {
   const { t } = useTranslation()
+  const { timezone } = useLocale()
   const { parseAmount, fmtInput, fmtMoney, fmtPct } = useCurrency()
   const { user } = useAuth()
   const config = getTenantConfig(user?.tenantId)
@@ -47,9 +49,9 @@ export default function EditOrder() {
   const [orderNo, setOrderNo]         = useState('')
   const [customerId, setCustomerId]   = useState('')
   const [customerName, setCustomerName] = useState('')
-  const [orderDate, setOrderDate]     = useState<string>(todayYMD())
+  const [orderDate, setOrderDate]     = useState<string>(todayYMD(timezone))
   const [delivered, setDelivered]     = useState(false)
-  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD())
+  const [deliveredAt, setDeliveredAt] = useState<string>(todayYMD(timezone))
   const [notes, setNotes]             = useState('')
   const [paidAmount, setPaidAmount]   = useState(0)
 
@@ -94,7 +96,7 @@ export default function EditOrder() {
           .then(r => r.ok ? r.json() : null).then(d => { if (d?.tokens) setCustomerTokens(d.tokens) }).catch(() => {})
         setOrderDate(order.order_date)
         setDelivered(order.delivered)
-        setDeliveredAt(order.delivered_at || todayYMD())
+        setDeliveredAt(order.delivered_at || todayYMD(timezone))
         setNotes(order.notes || '')
         setPaidAmount(Number(order.paid_amount) || 0)
 

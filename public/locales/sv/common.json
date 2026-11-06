@@ -2048,6 +2048,7 @@
     "selectDate": "Välj ett datum",
     "noAvailability": "Ingen tillgänglighet angiven för denna tjänst.",
     "selectTime": "Välj en tid",
+    "timesShownIn": "Alla tider visas i {{timezone}}",
     "loadingTimes": "Laddar tillgängliga tider…",
     "noTimes": "Inga lediga tider för detta datum.",
     "chooseAnotherDate": "Välj ett annat datum",

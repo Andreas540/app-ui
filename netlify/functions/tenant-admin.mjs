@@ -660,14 +660,21 @@ if (action === 'toggleUserStatus') {
 
       if (targetIds.length === 0) return cors(400, { error: 'No customers matched the selected target' })
 
+      // effective_from is TIMESTAMPTZ, and after_shipping_cost_history_change reads it
+      // back with AT TIME ZONE <tenant tz> (db/53). Writing a bare 'YYYY-MM-DD' stored
+      // midnight UTC, which the trigger then read as the previous day for any tenant
+      // west of UTC. Anchor the write the same way product.mjs already does.
+      const [tz] = await sql`SELECT COALESCE(default_timezone, 'UTC') AS tz FROM tenants WHERE id = ${tenantId}::uuid`
+      const tenantTz = tz?.tz || 'UTC'
+
       // Determine whether to update customers.shipping_cost immediately
       let shouldUpdateNow = false
       if (applyToHistory) {
         shouldUpdateNow = true
       } else if (effectiveDate) {
-        const effDate = new Date(effectiveDate + 'T00:00:00Z')
-        const today = new Date(); today.setUTCHours(0, 0, 0, 0)
-        shouldUpdateNow = effDate <= today
+        // Compare against today in the tenant's timezone, not UTC.
+        const todayTz = new Date().toLocaleDateString('en-CA', { timeZone: tenantTz })
+        shouldUpdateNow = effectiveDate <= todayTz
       } else {
         shouldUpdateNow = true // next order = effective now
       }
@@ -678,9 +685,9 @@ if (action === 'toggleUserStatus') {
         }
         if (applyToHistory) {
           await sql`DELETE FROM shipping_cost_history WHERE tenant_id = ${tenantId}::uuid AND customer_id = ${customerId}::uuid`
-          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, '1970-01-01')`
+          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, (('1970-01-01'::date)::timestamp AT TIME ZONE ${tenantTz}))`
         } else if (effectiveDate) {
-          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, ${effectiveDate})`
+          await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, ((${effectiveDate}::date)::timestamp AT TIME ZONE ${tenantTz}))`
         } else {
           await sql`INSERT INTO shipping_cost_history (tenant_id, customer_id, shipping_cost, effective_from) VALUES (${tenantId}::uuid, ${customerId}::uuid, ${sc}, NOW())`
         }
