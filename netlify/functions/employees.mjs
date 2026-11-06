@@ -212,6 +212,18 @@ async function saveEmployee(event) {
       return cors(200, { ok: true, name: to, employees_updated: moved.length })
     }
 
+    // Asked immediately before the delete confirmation, so the number shown is the
+    // number at that moment — not one cached when the page loaded.
+    if (body.action === 'jobTitleUsage') {
+      const v = String(body.title_name || '').trim()
+      if (!v) return cors(400, { error: 'title_name is required' })
+      const [row] = await sql`
+        SELECT COUNT(*)::int AS n FROM employees
+        WHERE tenant_id = ${TENANT_ID}::uuid AND job_title = ${v}
+      `
+      return cors(200, { in_use: row?.n ?? 0 })
+    }
+
     if (body.action === 'deleteJobTitle') {
       const v = String(body.title_name || '').trim()
       if (!v) return cors(400, { error: 'title_name is required' })

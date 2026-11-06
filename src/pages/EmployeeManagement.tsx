@@ -116,7 +116,13 @@ export default function EmployeeManagement() {
       const res = await fetch(`${base}/api/employees?job_titles=true`, { headers: getAuthHeaders() })
       if (!res.ok) return
       const data = await res.json()
-      setJobTitles(Array.isArray(data.job_titles) ? data.job_titles : [])
+      // Tolerate a plain string[] as well as [{name, in_use}]. In dev the app calls
+      // the DEPLOYED function, so an un-deployed backend would otherwise return
+      // strings and render a dropdown of blank options with no visible error.
+      const raw = Array.isArray(data.job_titles) ? data.job_titles : []
+      setJobTitles(raw.map((r: any) =>
+        typeof r === 'string' ? { name: r, in_use: 0 } : { name: String(r?.name ?? ''), in_use: Number(r?.in_use ?? 0) }
+      ).filter((r: { name: string }) => r.name))
     } catch { /* dropdown just falls back to whatever is already on the employee */ }
   }
 
@@ -174,8 +180,17 @@ export default function EmployeeManagement() {
 
   async function handleDeleteJobTitle() {
     if (!jobTitle || savingJobTitle) return
-    const entry = jobTitles.find(r => r.name === jobTitle)
-    const inUse = entry?.in_use ?? 0
+    // Ask the server now rather than trusting the count loaded with the page —
+    // someone else may have assigned this role since, and a stale count would
+    // silently skip the warning.
+    let inUse = 0
+    try {
+      const usage = await postJobTitleAction({ action: 'jobTitleUsage', title_name: jobTitle })
+      inUse = Number(usage?.in_use ?? 0)
+    } catch (e: any) {
+      alert(e?.message || t('employees.roleSaveFailed'))
+      return
+    }
     const msg = inUse > 0
       ? t('employees.roleDeleteInUse', { name: jobTitle, n: inUse })
       : t('employees.roleDeleteConfirm', { name: jobTitle })
