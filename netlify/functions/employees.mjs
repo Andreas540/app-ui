@@ -74,12 +74,17 @@ async function getEmployees(event) {
 
     // return the tenant's selectable job titles
     if (params.get('job_titles') === 'true') {
+      // in_use drives the delete warning, so the user is told how many people
+      // would lose their title before confirming.
       const rows = await sql`
-        SELECT name FROM employee_job_titles
-        WHERE tenant_id = ${TENANT_ID}::uuid
-        ORDER BY name ASC
+        SELECT t.name,
+               (SELECT COUNT(*)::int FROM employees e
+                 WHERE e.tenant_id = t.tenant_id AND e.job_title = t.name) AS in_use
+          FROM employee_job_titles t
+         WHERE t.tenant_id = ${TENANT_ID}::uuid
+         ORDER BY t.name ASC
       `
-      return cors(200, { job_titles: rows.map(r => r.name) })
+      return cors(200, { job_titles: rows.map(r => ({ name: r.name, in_use: r.in_use })) })
     }
 
     // share token/link for one employee
@@ -166,6 +171,62 @@ async function saveEmployee(event) {
 
     const body = JSON.parse(event.body || '{}')
     const { id, name, email, hour_salary, active, notes, effective_date, apply_to_history, job_title } = body
+
+    // ── Job title list management ─────────────────────────────────────────
+    // Titles are managed in their own right, not as a side effect of saving an
+    // employee, so they persist the moment they are created.
+    if (body.action === 'createJobTitle') {
+      const v = String(body.title_name || '').trim()
+      if (!v) return cors(400, { error: 'title_name is required' })
+      const existing = await sql`
+        SELECT 1 FROM employee_job_titles
+        WHERE tenant_id = ${TENANT_ID}::uuid AND lower(name) = lower(${v}) LIMIT 1
+      `
+      if (existing.length) return cors(409, { error: 'JOB_TITLE_EXISTS' })
+      await sql`INSERT INTO employee_job_titles (tenant_id, name) VALUES (${TENANT_ID}::uuid, ${v})`
+      return cors(200, { ok: true, name: v })
+    }
+
+    if (body.action === 'renameJobTitle') {
+      const from = String(body.old_name || '').trim()
+      const to = String(body.new_name || '').trim()
+      if (!from || !to) return cors(400, { error: 'old_name and new_name are required' })
+      if (from !== to) {
+        const clash = await sql`
+          SELECT 1 FROM employee_job_titles
+          WHERE tenant_id = ${TENANT_ID}::uuid AND lower(name) = lower(${to}) LIMIT 1
+        `
+        if (clash.length) return cors(409, { error: 'JOB_TITLE_EXISTS' })
+      }
+      await sql`
+        UPDATE employee_job_titles SET name = ${to}
+        WHERE tenant_id = ${TENANT_ID}::uuid AND name = ${from}
+      `
+      // Carry the rename onto everyone holding it, otherwise their title would
+      // point at a value no longer in the list.
+      const moved = await sql`
+        UPDATE employees SET job_title = ${to}
+        WHERE tenant_id = ${TENANT_ID}::uuid AND job_title = ${from}
+        RETURNING id
+      `
+      return cors(200, { ok: true, name: to, employees_updated: moved.length })
+    }
+
+    if (body.action === 'deleteJobTitle') {
+      const v = String(body.title_name || '').trim()
+      if (!v) return cors(400, { error: 'title_name is required' })
+      // Clear it from anyone holding it rather than leaving a dangling value.
+      const cleared = await sql`
+        UPDATE employees SET job_title = NULL
+        WHERE tenant_id = ${TENANT_ID}::uuid AND job_title = ${v}
+        RETURNING id
+      `
+      await sql`
+        DELETE FROM employee_job_titles
+        WHERE tenant_id = ${TENANT_ID}::uuid AND name = ${v}
+      `
+      return cors(200, { ok: true, employees_cleared: cleared.length })
+    }
 
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })

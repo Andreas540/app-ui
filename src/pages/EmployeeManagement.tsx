@@ -56,11 +56,14 @@ export default function EmployeeManagement() {
   const [employeeCode, setEmployeeCode] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [hourSalary, setHourSalary] = useState('')
-  // Job titles the tenant has used before, plus the inline "+ New" flow —
-  // same shape as Category / Variant on the product pages.
-  const [jobTitles, setJobTitles] = useState<string[]>([])
+  // The tenant's role list. in_use counts how many employees hold each one, which
+  // the delete warning needs. Titles are created, renamed and deleted in their own
+  // right — none of it waits for the employee to be saved.
+  const [jobTitles, setJobTitles] = useState<{ name: string; in_use: number }[]>([])
   const [addingJobTitle, setAddingJobTitle] = useState(false)
+  const [editingJobTitle, setEditingJobTitle] = useState(false)
   const [newJobTitleName, setNewJobTitleName] = useState('')
+  const [savingJobTitle, setSavingJobTitle] = useState(false)
   const [active, setActive] = useState(true)
   const [notes, setNotes] = useState('')
   
@@ -107,17 +110,6 @@ export default function EmployeeManagement() {
     }
   }
 
-  // Added to the local list immediately so it shows as selected; it is persisted to
-  // employee_job_titles when the employee is saved, not before.
-  function handleAddJobTitle() {
-    const v = newJobTitleName.trim()
-    if (!v) return
-    if (!jobTitles.includes(v)) setJobTitles(prev => [...prev, v].sort((a, b) => a.localeCompare(b)))
-    setJobTitle(v)
-    setAddingJobTitle(false)
-    setNewJobTitleName('')
-  }
-
   async function loadJobTitles() {
     try {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -126,6 +118,81 @@ export default function EmployeeManagement() {
       const data = await res.json()
       setJobTitles(Array.isArray(data.job_titles) ? data.job_titles : [])
     } catch { /* dropdown just falls back to whatever is already on the employee */ }
+  }
+
+  async function postJobTitleAction(payload: Record<string, unknown>) {
+    const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+    const res = await fetch(`${base}/api/employees`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(data.error === 'JOB_TITLE_EXISTS' ? t('employees.roleExists') : (data.error || t('employees.roleSaveFailed')))
+    }
+    return data
+  }
+
+  // Saved straight away, so the role exists whether or not this employee is saved.
+  async function handleAddJobTitle() {
+    const v = newJobTitleName.trim()
+    if (!v || savingJobTitle) return
+    try {
+      setSavingJobTitle(true)
+      await postJobTitleAction({ action: 'createJobTitle', title_name: v })
+      await loadJobTitles()
+      setJobTitle(v)
+      setAddingJobTitle(false)
+      setNewJobTitleName('')
+    } catch (e: any) {
+      alert(e?.message || t('employees.roleSaveFailed'))
+    } finally {
+      setSavingJobTitle(false)
+    }
+  }
+
+  // Renaming carries the new value onto every employee holding the old one, so
+  // nobody is left pointing at a title that no longer exists.
+  async function handleRenameJobTitle() {
+    const to = newJobTitleName.trim()
+    if (!to || !jobTitle || savingJobTitle) return
+    try {
+      setSavingJobTitle(true)
+      await postJobTitleAction({ action: 'renameJobTitle', old_name: jobTitle, new_name: to })
+      await loadJobTitles()
+      await loadEmployees()
+      setJobTitle(to)
+      setEditingJobTitle(false)
+      setNewJobTitleName('')
+    } catch (e: any) {
+      alert(e?.message || t('employees.roleSaveFailed'))
+    } finally {
+      setSavingJobTitle(false)
+    }
+  }
+
+  async function handleDeleteJobTitle() {
+    if (!jobTitle || savingJobTitle) return
+    const entry = jobTitles.find(r => r.name === jobTitle)
+    const inUse = entry?.in_use ?? 0
+    const msg = inUse > 0
+      ? t('employees.roleDeleteInUse', { name: jobTitle, n: inUse })
+      : t('employees.roleDeleteConfirm', { name: jobTitle })
+    if (!confirm(msg)) return
+    try {
+      setSavingJobTitle(true)
+      await postJobTitleAction({ action: 'deleteJobTitle', title_name: jobTitle })
+      await loadJobTitles()
+      await loadEmployees()
+      setJobTitle('')
+      setEditingJobTitle(false)
+      setNewJobTitleName('')
+    } catch (e: any) {
+      alert(e?.message || t('employees.roleSaveFailed'))
+    } finally {
+      setSavingJobTitle(false)
+    }
   }
 
   async function fetchNextEmployeeCode() {
@@ -391,7 +458,7 @@ export default function EmployeeManagement() {
             </div>
             <div>
               <label>{t('employees.role')}</label>
-              {addingJobTitle ? (
+              {(addingJobTitle || editingJobTitle) ? (
                 <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
                   <input
                     type="text"
@@ -400,35 +467,67 @@ export default function EmployeeManagement() {
                     value={newJobTitleName}
                     onChange={e => setNewJobTitleName(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') { e.preventDefault(); handleAddJobTitle() }
-                      if (e.key === 'Escape') { setAddingJobTitle(false); setNewJobTitleName('') }
+                      if (e.key === 'Enter') { e.preventDefault(); editingJobTitle ? handleRenameJobTitle() : handleAddJobTitle() }
+                      if (e.key === 'Escape') { setAddingJobTitle(false); setEditingJobTitle(false); setNewJobTitleName('') }
                     }}
                     style={{ flex: 1, minWidth: 0, height: CONTROL_H }}
                   />
-                  <button type="button" onClick={handleAddJobTitle} style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}>
-                    {t('add')}
+                  <button
+                    type="button"
+                    disabled={savingJobTitle || !newJobTitleName.trim()}
+                    onClick={editingJobTitle ? handleRenameJobTitle : handleAddJobTitle}
+                    style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}
+                  >
+                    {editingJobTitle ? t('save') : t('add')}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setAddingJobTitle(false); setNewJobTitleName(''); setJobTitle('') }}
+                    onClick={() => { setAddingJobTitle(false); setEditingJobTitle(false); setNewJobTitleName('') }}
                     style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}
                   >
                     ✕
                   </button>
                 </div>
               ) : (
-                <select
-                  value={jobTitle}
-                  onChange={e => {
-                    if (e.target.value === '__new__') { setAddingJobTitle(true); setJobTitle('') }
-                    else setJobTitle(e.target.value)
-                  }}
-                  style={{ height: CONTROL_H }}
-                >
-                  <option value="">—</option>
-                  <option value="__new__">＋ {t('employees.newRole')}</option>
-                  {jobTitles.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+                <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+                  <select
+                    value={jobTitle}
+                    onChange={e => {
+                      if (e.target.value === '__new__') { setAddingJobTitle(true); setNewJobTitleName(''); setJobTitle('') }
+                      else setJobTitle(e.target.value)
+                    }}
+                    style={{ height: CONTROL_H, flex: 1, minWidth: 0 }}
+                  >
+                    <option value="">—</option>
+                    <option value="__new__">＋ {t('employees.newRole')}</option>
+                    {jobTitles.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                  </select>
+                  {/* Native <select> cannot hold buttons, so edit/delete for the
+                      selected role sit beside it and only appear once one is chosen. */}
+                  {jobTitle && (
+                    <>
+                      <button
+                        type="button"
+                        title={t('employees.editRole')}
+                        aria-label={t('employees.editRole')}
+                        onClick={() => { setEditingJobTitle(true); setNewJobTitleName(jobTitle) }}
+                        style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        title={t('employees.deleteRole')}
+                        aria-label={t('employees.deleteRole')}
+                        disabled={savingJobTitle}
+                        onClick={handleDeleteJobTitle}
+                        style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}
+                      >
+                        🗑
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
