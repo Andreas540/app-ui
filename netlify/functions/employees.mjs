@@ -287,10 +287,13 @@ if (salaryProvided) {
   }
 }
 
-// A title typed into the "+ New" field is remembered for the tenant, so it is
-// offered next time rather than having to be retyped per employee.
-const jobTitle = String(job_title || '').trim() || null
-if (jobTitle) await ensureJobTitle({ sql, tenantId: TENANT_ID, name: jobTitle })
+// Absent key means "leave it alone", same as every other field above. Deactivate
+// and reactivate post only { id, active }, so collapsing undefined to null here
+// silently wiped the role.
+const updatedJobTitle = job_title !== undefined ? (String(job_title).trim() || null) : current.job_title
+if (job_title !== undefined && updatedJobTitle) {
+  await ensureJobTitle({ sql, tenantId: TENANT_ID, name: updatedJobTitle })
+}
 
 // Update employee record
 await sql`
@@ -298,7 +301,7 @@ await sql`
   SET
     name = ${updatedName},
     email = ${updatedEmail},
-    job_title = ${jobTitle},
+    job_title = ${updatedJobTitle},
     hour_salary = CASE
       WHEN ${shouldUpdateSalaryNow && salaryProvided} THEN ${newSalaryNum}
       ELSE hour_salary
