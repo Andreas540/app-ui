@@ -16,8 +16,57 @@ export function todayYMD(tz?: string): string {
 }
 
 /**
+ * Date-only arithmetic on YYYY-MM-DD strings.
+ *
+ * All of these go through Date.UTC rather than a local Date, so a DST boundary
+ * can never shift a result by a day. The caller supplies the anchor date from
+ * todayYMD(timezone), which is what makes the whole chain tenant-correct.
+ */
+function ymdToUTC(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+export function addDaysYMD(ymd: string, n: number): string {
+  const dt = ymdToUTC(ymd);
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
+/**
+ * Note: this does NOT clamp to the end of the month — addMonthsYMD('2026-01-31', 1)
+ * is '2026-03-03', not '2026-02-28', because JS rolls the overflow forward. Call it
+ * on the first of a month (as monthStartYMD gives you) unless you want that.
+ */
+export function addMonthsYMD(ymd: string, n: number): string {
+  const dt = ymdToUTC(ymd);
+  dt.setUTCMonth(dt.getUTCMonth() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Monday-based (ISO 8601), so it matches Postgres date_trunc('week', …). */
+export function weekStartYMD(ymd: string): string {
+  const dt = ymdToUTC(ymd);
+  const mondayOffset = (dt.getUTCDay() + 6) % 7; // Mon = 0 … Sun = 6
+  dt.setUTCDate(dt.getUTCDate() - mondayOffset);
+  return dt.toISOString().slice(0, 10);
+}
+
+export function weekEndYMD(ymd: string): string {
+  return addDaysYMD(weekStartYMD(ymd), 6);
+}
+
+export function monthStartYMD(ymd: string): string {
+  return `${ymd.slice(0, 7)}-01`;
+}
+
+export function monthEndYMD(ymd: string): string {
+  return addDaysYMD(addMonthsYMD(monthStartYMD(ymd), 1), -1);
+}
+
+/**
  * Parse a YYYY-MM-DD string as a local date (NOT UTC).
- * This prevents the common timezone shift bug where "2025-01-15" 
+ * This prevents the common timezone shift bug where "2025-01-15"
  * becomes Jan 14th in negative UTC offset timezones.
  */
 export function parseLocalDate(dateStr: string): Date {

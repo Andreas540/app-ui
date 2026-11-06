@@ -1,7 +1,17 @@
 -- ============================================================
--- 01_schema.sql — Complete reference schema (public schema)
--- Reflects live Neon DB state as of 2026-03-25.
--- Run 02–08 migrations on top for a full rebuild.
+-- HISTORICAL — DO NOT USE AS A REFERENCE. Retired 2026-11-06.
+--
+-- This was a hand-written snapshot of the schema as it stood on 2026-03-25.
+-- It is roughly 60 migrations out of date: tables, columns, constraints and
+-- trigger bodies here no longer match the live database. Its original header
+-- said "run 02-08 migrations on top for a full rebuild", which stopped being
+-- true in April 2026.
+--
+-- Kept only so old commits and migration notes that mention it still resolve.
+--
+-- For the current schema see db/00_live_schema_dump.sql (regenerate it with the
+-- command in CLAUDE.md), and for anything behaviour-critical query the live
+-- database directly rather than trusting any file in this folder.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

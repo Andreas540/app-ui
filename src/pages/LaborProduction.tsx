@@ -4,9 +4,24 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchBootstrap, getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
-import { todayYMD, formatShortMonthDay, formatShortMonthDayYear, resolveLocale } from '../lib/time'
+import {
+  todayYMD, formatShortMonthDay, formatShortMonthDayYear, resolveLocale,
+  addDaysYMD, addMonthsYMD, weekStartYMD, weekEndYMD, monthStartYMD, monthEndYMD,
+} from '../lib/time'
+import { useLocale } from '../contexts/LocaleContext'
 import i18n from '../i18n/config'
 import { DateInput } from '../components/DateInput'
+
+type Granularity = 'day' | 'week' | 'month'
+
+// Default window per granularity, counted in calendar periods ending today.
+const DEFAULT_PERIODS: Record<Granularity, number> = { day: 90, week: 13, month: 12 }
+
+const DEFAULT_WINDOW_KEY: Record<Granularity, string> = {
+  day: 'production.defaultWindowDay',
+  week: 'production.defaultWindowWeek',
+  month: 'production.defaultWindowMonth',
+}
 
 type Product = { id: string; name: string; category?: string }
 
@@ -35,13 +50,14 @@ export default function LaborProduction() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { fmtNumber } = useCurrency()
+  const { timezone } = useLocale()
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
   // Form state
-  const [selectedDate, setSelectedDate] = useState(todayYMD())
+  const [selectedDate, setSelectedDate] = useState(todayYMD(timezone))
   const [noOfEmployees, setNoOfEmployees] = useState('')
   const [totalHours, setTotalHours] = useState('')
   const [productEntries, setProductEntries] = useState<ProductEntry[]>([
@@ -57,9 +73,62 @@ export default function LaborProduction() {
 
   // History
   type HistoryRecord = { date: string; product_name: string | null; qty_produced: number | null }
-  const [historyFilter, setHistoryFilter] = useState<'day' | 'product'>('day')
   const [history, setHistory] = useState<HistoryRecord[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [granularity, setGranularity] = useState<Granularity>('day')
+  // Empty = use the default window for the current granularity.
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+
+  // The window actually queried and bucketed. Custom dates win over the default
+  // when set; a half-filled custom range falls back to the default on that side.
+  const { rangeFrom, rangeTo } = useMemo(() => {
+    const today = todayYMD(timezone)
+    let from: string
+    if (granularity === 'day')       from = addDaysYMD(today, -(DEFAULT_PERIODS.day - 1))
+    else if (granularity === 'week') from = addDaysYMD(weekStartYMD(today), -7 * (DEFAULT_PERIODS.week - 1))
+    else                             from = addMonthsYMD(monthStartYMD(today), -(DEFAULT_PERIODS.month - 1))
+    return { rangeFrom: customFrom || from, rangeTo: customTo || today }
+  }, [granularity, customFrom, customTo, timezone])
+
+  const isCustomRange = Boolean(customFrom || customTo)
+
+  // Bucket history into periods. Week and month rows sum each product across the
+  // whole period, otherwise the same product repeats once per day inside a row.
+  // A period clipped by either end of the window records what it actually covers.
+  const periodGroups = useMemo(() => {
+    const startOf = (d: string) =>
+      granularity === 'day' ? d : granularity === 'week' ? weekStartYMD(d) : monthStartYMD(d)
+    const endOf = (d: string) =>
+      granularity === 'day' ? d : granularity === 'week' ? weekEndYMD(d) : monthEndYMD(d)
+
+    const buckets = new Map<string, Map<string, number>>()
+    for (const r of history) {
+      if (!r.product_name || r.qty_produced == null) continue
+      if (r.date < rangeFrom || r.date > rangeTo) continue
+      const key = startOf(r.date)
+      if (!buckets.has(key)) buckets.set(key, new Map())
+      const byProduct = buckets.get(key)!
+      byProduct.set(r.product_name, (byProduct.get(r.product_name) ?? 0) + Number(r.qty_produced))
+    }
+
+    return Array.from(buckets.keys())
+      .sort((a, b) => b.localeCompare(a))   // newest period first
+      .map(key => {
+        const periodEnd = endOf(key)
+        const coveredFrom = key > rangeFrom ? key : rangeFrom
+        const coveredTo = periodEnd < rangeTo ? periodEnd : rangeTo
+        const clipped = coveredFrom !== key || coveredTo !== periodEnd
+        return {
+          key,
+          periodEnd,
+          partial: clipped ? { from: coveredFrom, to: coveredTo } : null,
+          rows: Array.from(buckets.get(key)!.entries())
+            .map(([product_name, qty]) => ({ product_name, qty }))
+            .sort((a, b) => a.product_name.localeCompare(b.product_name)),
+        }
+      })
+  }, [history, granularity, rangeFrom, rangeTo])
 
   // Load products on mount
   useEffect(() => {
@@ -75,17 +144,18 @@ export default function LaborProduction() {
         setLoading(false)
       }
     })()
-    loadHistory()
   }, [])
 
-  async function loadHistory() {
+  // Refetch whenever the window changes, so switching granularity or picking a
+  // custom range pulls the rows that window needs.
+  useEffect(() => {
+    loadHistory(rangeFrom, rangeTo)
+  }, [rangeFrom, rangeTo])
+
+  async function loadHistory(from: string, to: string) {
     try {
       setHistoryLoading(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const to = todayYMD()
-      const fromDate = new Date()
-      fromDate.setDate(fromDate.getDate() - 90)
-      const from = fromDate.toISOString().split('T')[0]
       const res = await fetch(`${base}/api/labor-production?from=${from}&to=${to}`, {
         headers: getAuthHeaders(),
       })
@@ -276,7 +346,7 @@ export default function LaborProduction() {
 
       alert(t('production.alertSaveSuccess'))
       await loadDataForDate(selectedDate)
-      await loadHistory()
+      await loadHistory(rangeFrom, rangeTo)
     } catch (e: any) {
       alert(e?.message || t('production.alertSaveFailed'))
     }
@@ -306,12 +376,7 @@ export default function LaborProduction() {
   // Get last 4 days including today for quick access
   const recentDates: string[] = []
   for (let i = 0; i < 4; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    recentDates.push(`${y}-${m}-${day}`)
+    recentDates.push(addDaysYMD(todayYMD(timezone), -i))
   }
 
   // Format selected date for display
@@ -575,62 +640,96 @@ export default function LaborProduction() {
       <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
         <h4 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>{t('production.history')}</h4>
 
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
-          {(['day', 'product'] as const).map(f => (
+        {/* Granularity */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
+          {(['day', 'week', 'month'] as const).map(g => (
             <button
-              key={f}
-              onClick={() => setHistoryFilter(f)}
+              key={g}
+              onClick={() => setGranularity(g)}
               style={{
                 padding: '6px 18px',
                 fontSize: 13,
-                background: historyFilter === f ? 'var(--primary)' : 'transparent',
-                color: historyFilter === f ? 'white' : 'var(--text, inherit)',
+                background: granularity === g ? 'var(--primary)' : 'transparent',
+                color: granularity === g ? 'white' : 'var(--text, inherit)',
                 border: 'none',
-                cursor: f === 'product' ? 'default' : 'pointer',
-                fontWeight: historyFilter === f ? 600 : 400,
-                opacity: f === 'product' ? 0.5 : 1,
+                borderRadius: 0,
+                cursor: 'pointer',
+                fontWeight: granularity === g ? 600 : 400,
               }}
-              disabled={f === 'product'}
             >
-              {f === 'day' ? t('production.byDay') : t('production.byProduct')}
+              {g === 'day' ? t('production.byDay') : g === 'week' ? t('production.byWeek') : t('production.byMonth')}
             </button>
           ))}
         </div>
 
+        {/* Custom period */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6, minWidth: 0 }}>
+          <DateInput
+            value={customFrom}
+            onChange={v => setCustomFrom(v)}
+            placeholder={t('production.customFrom')}
+            style={{ height: 36, flex: '1 1 150px', minWidth: 0 }}
+          />
+          <span className="helper">–</span>
+          <DateInput
+            value={customTo}
+            onChange={v => setCustomTo(v)}
+            placeholder={t('production.customTo')}
+            style={{ height: 36, flex: '1 1 150px', minWidth: 0 }}
+          />
+          {isCustomRange && (
+            <button
+              onClick={() => { setCustomFrom(''); setCustomTo('') }}
+              style={{ height: 36, padding: '0 14px', fontSize: 13 }}
+            >
+              {t('production.resetPeriod')}
+            </button>
+          )}
+        </div>
+        <p className="helper" style={{ marginTop: 0, marginBottom: 16, fontSize: 12 }}>
+          {isCustomRange
+            ? `${formatShortMonthDayYear(rangeFrom)} – ${formatShortMonthDayYear(rangeTo)}`
+            : t(DEFAULT_WINDOW_KEY[granularity], { n: DEFAULT_PERIODS[granularity] })}
+        </p>
+
         {historyLoading ? (
           <p className="helper">{t('loading')}</p>
-        ) : history.length === 0 ? (
+        ) : periodGroups.length === 0 ? (
           <p className="helper">{t('production.noHistory')}</p>
         ) : (() => {
-          // Group by date
-          const byDate = new Map<string, { product_name: string | null; qty_produced: number | null }[]>()
-          for (const r of history) {
-            if (!byDate.has(r.date)) byDate.set(r.date, [])
-            byDate.get(r.date)!.push({ product_name: r.product_name, qty_produced: r.qty_produced })
+          const locale = resolveLocale(i18n.language || 'en')
+          const labelFor = (key: string, periodEnd: string) => {
+            if (granularity === 'day') {
+              return new Date(key + 'T12:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+            }
+            if (granularity === 'month') {
+              return new Date(key + 'T12:00:00').toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+            }
+            return `${formatShortMonthDay(key)} – ${formatShortMonthDayYear(periodEnd)}`
           }
-          const dates = Array.from(byDate.keys())
           return (
             <div>
-              {dates.map((date, di) => {
-                const rows = byDate.get(date)!.filter(r => r.product_name && r.qty_produced != null)
-                if (rows.length === 0) return null
-                const label = new Date(date + 'T12:00:00').toLocaleDateString(resolveLocale(i18n.language || 'en'), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                return (
-                  <div key={date} style={{ marginBottom: 0 }}>
-                    {di > 0 && <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />}
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</div>
-                    {rows.map((r, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 4 }}>
-                        <span>{r.product_name}</span>
-                        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                          {r.qty_produced?.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
+              {periodGroups.map((g, gi) => (
+                <div key={g.key} style={{ marginBottom: 0 }}>
+                  {gi > 0 && <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    {labelFor(g.key, g.periodEnd)}
+                    {g.partial && (
+                      <span style={{ fontWeight: 400, fontStyle: 'italic' }}>
+                        {' · '}{t('production.partialPeriod')} ({formatShortMonthDay(g.partial.from)} – {formatShortMonthDay(g.partial.to)})
+                      </span>
+                    )}
                   </div>
-                )
-              })}
+                  {g.rows.map((r, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 4 }}>
+                      <span>{r.product_name}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                        {r.qty.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           )
         })()}
