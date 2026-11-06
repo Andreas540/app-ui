@@ -76,6 +76,7 @@ export default function EmployeeManagement() {
 
   // Filter state
   const [showInactive, setShowInactive] = useState(false)
+  const [organizeByRole, setOrganizeByRole] = useState(false)
 
   // Helper to safely format salary
   function formatSalary(salary: number | string | null | undefined): string | null {
@@ -435,6 +436,40 @@ export default function EmployeeManagement() {
   const activeEmployees = employees.filter(e => e.active)
   const inactiveEmployees = employees.filter(e => !e.active)
 
+  // One section when ungrouped, one per role when grouped. Roles alphabetical,
+  // employees alphabetical within each, unassigned last. The count in each header
+  // is that section's own, so it always matches the rows under it.
+  function buildSections(list: Employee[], baseLabel: string) {
+    const sorted = [...list].sort((a, b) => safeString(a.name).localeCompare(safeString(b.name)))
+    if (!organizeByRole) {
+      return [{ key: 'all', label: `${baseLabel} (${sorted.length})`, employees: sorted }]
+    }
+    const byRole = new Map<string, Employee[]>()
+    for (const e of sorted) {
+      const key = safeString(e.job_title).trim()
+      if (!byRole.has(key)) byRole.set(key, [])
+      byRole.get(key)!.push(e)
+    }
+    const named = Array.from(byRole.keys()).filter(Boolean).sort((a, b) => a.localeCompare(b))
+    const sections = named.map(role => ({
+      key: role,
+      label: `${role} – ${baseLabel} (${byRole.get(role)!.length})`,
+      employees: byRole.get(role)!,
+    }))
+    const unassigned = byRole.get('')
+    if (unassigned?.length) {
+      sections.push({
+        key: '__none__',
+        label: `${t('employees.noRole')} – ${baseLabel} (${unassigned.length})`,
+        employees: unassigned,
+      })
+    }
+    return sections
+  }
+
+  const activeSections = buildSections(activeEmployees, t('employees.activeEmployees'))
+  const inactiveSections = buildSections(inactiveEmployees, t('employees.inactiveEmployees'))
+
   return (
     <div className="card page-normal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -453,6 +488,15 @@ export default function EmployeeManagement() {
             style={{ width: 18, height: 18 }}
           />
           <span>{t('employees.showInactive')}</span>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
+          <input
+            type="checkbox"
+            checked={organizeByRole}
+            onChange={e => setOrganizeByRole(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>{t('employees.organizeByRole')}</span>
         </label>
       </div>
 
@@ -686,16 +730,24 @@ export default function EmployeeManagement() {
         </div>
       )}
 
-      <div style={{ marginTop: 24 }}>
+      {activeEmployees.length === 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
+            {t('employees.activeEmployees')} (0)
+          </h4>
+          <p className="helper">{t('employees.noActiveEmployees')}</p>
+        </div>
+      )}
+
+      {activeSections.map(section => (
+      <div key={section.key} style={{ marginTop: 24 }}>
         <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
-          {t('employees.activeEmployees')} ({activeEmployees.length})
+          {section.label}
         </h4>
 
-        {activeEmployees.length === 0 ? (
-          <p className="helper">{t('employees.noActiveEmployees')}</p>
-        ) : (
+        {section.employees.length === 0 ? null : (
           <div style={{ display: 'grid', gap: 8 }}>
-            {activeEmployees.map(emp => (
+            {section.employees.map(emp => (
               <div
                 key={emp.id}
                 style={{
@@ -778,15 +830,16 @@ export default function EmployeeManagement() {
           </div>
         )}
       </div>
+      ))}
 
-      {showInactive && inactiveEmployees.length > 0 && (
-        <div style={{ marginTop: 24 }}>
+      {showInactive && inactiveEmployees.length > 0 && inactiveSections.map(section => (
+        <div key={section.key} style={{ marginTop: 24 }}>
           <h4 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
-            {t('employees.inactiveEmployees')} ({inactiveEmployees.length})
+            {section.label}
           </h4>
 
           <div style={{ display: 'grid', gap: 8 }}>
-            {inactiveEmployees.map(emp => (
+            {section.employees.map(emp => (
               <div
                 key={emp.id}
                 style={{
@@ -844,7 +897,7 @@ export default function EmployeeManagement() {
             ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
   )
 }

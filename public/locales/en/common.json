@@ -193,6 +193,8 @@
     "roleDeleteInUse": "Employees with this role: {{n}}. Deleting \"{{name}}\" will remove the role from them. Continue?",
     "newEmployee": "New Employee",
     "showInactive": "Show inactive employees",
+    "organizeByRole": "Organize by role",
+    "noRole": "No role",
     "editEmployee": "Edit Employee",
     "employeeCode": "Employee Code (auto)",
     "hourSalary": "Salary/hour",

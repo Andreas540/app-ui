@@ -193,6 +193,8 @@
     "roleDeleteInUse": "Anställda med denna roll: {{n}}. Om du tar bort \"{{name}}\" försvinner rollen från dem. Fortsätta?",
     "newEmployee": "Ny anställd",
     "showInactive": "Visa inaktiva anställda",
+    "organizeByRole": "Organisera efter roll",
+    "noRole": "Ingen roll",
     "editEmployee": "Redigera anställd",
     "employeeCode": "Anställdskod (auto)",
     "hourSalary": "Lön/timme",

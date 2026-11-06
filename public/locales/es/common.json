@@ -193,6 +193,8 @@
     "roleDeleteInUse": "Empleados con este rol: {{n}}. Si eliminas \"{{name}}\", se les quitará el rol. ¿Continuar?",
     "newEmployee": "Nuevo Empleado",
     "showInactive": "Mostrar empleados inactivos",
+    "organizeByRole": "Organizar por rol",
+    "noRole": "Sin rol",
     "editEmployee": "Editar Empleado",
     "employeeCode": "Código de Empleado",
     "hourSalary": "Salario/hora",
