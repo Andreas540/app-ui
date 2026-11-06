@@ -11,6 +11,8 @@ import {
 import { useLocale } from '../contexts/LocaleContext'
 import i18n from '../i18n/config'
 import { DateInput } from '../components/DateInput'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, LabelList, Cell } from 'recharts'
+import { CHART_COLORS } from '../lib/chartColors'
 
 type Granularity = 'day' | 'week' | 'month'
 
@@ -76,6 +78,7 @@ export default function LaborProduction() {
   const [history, setHistory] = useState<HistoryRecord[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [granularity, setGranularity] = useState<Granularity>('day')
+  const [showGraphs, setShowGraphs] = useState(false)
   // Empty = use the default window for the current granularity.
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
@@ -129,6 +132,29 @@ export default function LaborProduction() {
         }
       })
   }, [history, granularity, rangeFrom, rangeTo])
+
+  // The single longest bar anywhere in the current window sets the scale for EVERY
+  // chart. Recharts would otherwise default each chart to its own dataMax, which makes
+  // a quiet period look identical to a busy one — the bars must stay comparable across
+  // periods. Recomputed whenever the window or granularity changes, so the scale is
+  // relative to what is actually on screen.
+  const graphMax = useMemo(() => {
+    let max = 0
+    for (const g of periodGroups) for (const r of g.rows) if (r.qty > max) max = r.qty
+    return max
+  }, [periodGroups])
+
+  // One colour per product, held steady across every period so a product is the same
+  // colour in January as in March. Assigned by first appearance, newest period first.
+  const productColors = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const g of periodGroups) {
+      for (const r of g.rows) {
+        if (!m.has(r.product_name)) m.set(r.product_name, CHART_COLORS[m.size % CHART_COLORS.length])
+      }
+    }
+    return m
+  }, [periodGroups])
 
   // Load products on mount
   useEffect(() => {
@@ -641,7 +667,8 @@ export default function LaborProduction() {
         <h4 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>{t('production.history')}</h4>
 
         {/* Granularity */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
           {(['day', 'week', 'month'] as const).map(g => (
             <button
               key={g}
@@ -660,6 +687,17 @@ export default function LaborProduction() {
               {g === 'day' ? t('production.byDay') : g === 'week' ? t('production.byWeek') : t('production.byMonth')}
             </button>
           ))}
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={showGraphs}
+            onChange={e => setShowGraphs(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: 'pointer' }}
+          />
+          {t('production.showGraphs')}
+        </label>
         </div>
 
         {/* Custom period */}
@@ -720,14 +758,52 @@ export default function LaborProduction() {
                       </span>
                     )}
                   </div>
-                  {g.rows.map((r, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 4 }}>
-                      <span>{r.product_name}</span>
-                      <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                        {r.qty.toLocaleString()}
-                      </span>
+                  {showGraphs ? (
+                    // Fixed domain, not Recharts' per-chart dataMax: every period in the
+                    // window is drawn to the same scale so the bars can be compared.
+                    <div style={{ width: '100%', height: g.rows.length * 30 + 8, marginBottom: 4 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={g.rows} layout="vertical" margin={{ top: 0, right: 52, bottom: 0, left: 0 }}>
+                          <XAxis type="number" tick={false} axisLine={false} width={0} domain={[0, Math.ceil(graphMax * 1.15) || 1]} />
+                          <YAxis
+                            type="category"
+                            dataKey="product_name"
+                            tick={{ fontSize: 12, fill: 'var(--text)' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={120}
+                          />
+                          <Bar dataKey="qty" isAnimationActive={false} barSize={16}>
+                            {g.rows.map((r, i) => (
+                              <Cell key={i} fill={productColors.get(r.product_name) || CHART_COLORS[0]} />
+                            ))}
+                            <LabelList
+                              dataKey="qty"
+                              position="right"
+                              content={(props: any) => {
+                                const { x, y, width, height, value } = props
+                                if (!value) return null
+                                return (
+                                  <text x={x + width + 8} y={y + height / 2} fill="var(--text)" fontSize={12} fontWeight={700} dominantBaseline="middle">
+                                    {Number(value).toLocaleString()}
+                                  </text>
+                                )
+                              }}
+                            />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
+                  ) : (
+                    g.rows.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 4 }}>
+                        <span>{r.product_name}</span>
+                        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                          {r.qty.toLocaleString()}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               ))}
             </div>

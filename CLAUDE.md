@@ -38,12 +38,40 @@ SELECT column_name, data_type FROM information_schema.columns
 SELECT tgname, tgrelid::regclass FROM pg_trigger WHERE NOT tgisinternal;
 ```
 
-Regenerate the dump (read-only against the database; it overwrites the local file,
-which git protects). Use Neon's **direct** connection string, not the pooled one:
+## Procedure: check the dump before reading it
+
+**Before using `db/00_live_schema_dump.sql` to answer anything, run:**
 
 ```
-pg_dump --schema-only --no-owner --no-privileges "$DATABASE_URL" > db/00_live_schema_dump.sql
+npm run schema:check
 ```
+
+It compares the migration high-water mark stamped in the dump's header against the
+highest-numbered migration now in `db/`. It reads only local files and takes no
+arguments. Three outcomes:
+
+- `OK` — the dump covers every migration in the repo. Still verify behaviour-critical
+  details against the live database (see the rule above); `OK` means "not behind the
+  repo", not "proven to match the database".
+- `BEHIND` — migrations have been added since the dump was generated. Regenerate, or
+  query the database directly, before drawing conclusions.
+- `STALE` — the dump has no stamp, so it predates this procedure and cannot be dated.
+
+Regenerate with (read-only against the database; overwrites the local file, which git
+protects). Use Neon's **direct** connection string, not the pooled one — the script
+refuses a `-pooler` host because `pg_dump` misbehaves through a connection pooler:
+
+```
+DATABASE_URL="postgresql://...direct-host.../neondb" npm run schema:dump
+```
+
+Pass it inline so the connection string never lands in a file. The script stamps the
+output with the generation time and the migration high-water mark, which is what
+`schema:check` reads on the next run.
+
+This is a stopgap. The real fix is a migration ledger table in the database, so what is
+*applied* can be checked rather than inferred from filenames — that is Phase 0 of the
+tenant-isolation roadmap.
 
 ## Audit script
 

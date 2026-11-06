@@ -244,6 +244,7 @@
     "history": "Produktionshistorik",
     "byDay": "Per dag",
     "byWeek": "Per vecka",
+    "showGraphs": "Visa diagram",
     "byMonth": "Per månad",
     "byProduct": "Per produkt",
     "customFrom": "Från",
