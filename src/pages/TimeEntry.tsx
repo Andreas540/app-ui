@@ -8,6 +8,7 @@ type Employee = {
   id: string
   name: string
   employee_code: string | null
+  job_title: string | null
   active: boolean
 }
 
@@ -376,11 +377,16 @@ export default function TimeEntry() {
             onChange={e => setSelectedEmployeeId(e.target.value)}
             style={{ height: CONTROL_H, width: '100%' }}
           >
-            {employees.map(emp => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
-              </option>
-            ))}
+            {employees.map(emp => {
+              // Code and role share one parenthesis; whichever is missing is just
+              // left out, so an employee with neither shows a bare name.
+              const meta = [emp.employee_code, emp.job_title].filter(Boolean).join(' · ')
+              return (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name}{meta ? ` (${meta})` : ''}
+                </option>
+              )
+            })}
           </select>
         </div>
       )}
