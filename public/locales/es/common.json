@@ -2252,5 +2252,12 @@
   "sorting": {
     "custom": "Personalizado",
     "editOrder": "Editar orden"
+  },
+  "period": {
+    "day": "Día",
+    "week": "Semana",
+    "month": "Mes",
+    "from": "Desde",
+    "to": "Hasta"
   }
 }

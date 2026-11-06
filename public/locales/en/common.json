@@ -2241,5 +2241,12 @@
   "sorting": {
     "custom": "Custom",
     "editOrder": "Edit order"
+  },
+  "period": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "from": "From",
+    "to": "To"
   }
 }

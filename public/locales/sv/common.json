@@ -2252,5 +2252,12 @@
   "sorting": {
     "custom": "Egen",
     "editOrder": "Redigera ordning"
+  },
+  "period": {
+    "day": "Dag",
+    "week": "Vecka",
+    "month": "Månad",
+    "from": "Från",
+    "to": "Till"
   }
 }

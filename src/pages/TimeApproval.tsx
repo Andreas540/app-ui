@@ -3,7 +3,16 @@ import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { useCurrency } from '../lib/useCurrency'
-import { formatLongDate, formatDate } from '../lib/time'
+import {
+  formatLongDate, formatDate, formatMonthYear, todayYMD,
+  addDaysYMD, addMonthsYMD, weekStartYMD, weekEndYMD, monthStartYMD, monthEndYMD,
+} from '../lib/time'
+import { useLocale } from '../contexts/LocaleContext'
+import { DateInput } from '../components/DateInput'
+
+type PeriodMode = 'day' | 'week' | 'month'
+const WEEKS_BACK = 13
+const MONTHS_BACK = 13
 
 type TimeEntry = {
   id: string
@@ -29,18 +38,6 @@ type Employee = {
   job_title: string | null
 }
 
-function getMondayOfWeek(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(d.setDate(diff))
-}
-function toLocalYMD(date: Date): string {
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
 function formatHoursMinutes(decimalHours: number): string {
   const totalMinutes = Math.round(decimalHours * 60)
   const hours = Math.floor(totalMinutes / 60)
@@ -52,6 +49,7 @@ function formatHoursMinutes(decimalHours: number): string {
 export default function TimeApproval() {
   const { t } = useTranslation()
   const { fmtMoney } = useCurrency()
+  const { timezone } = useLocale()
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -62,7 +60,45 @@ export default function TimeApproval() {
 const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
   const [selectedRole, setSelectedRole] = useState('all')
 const [showApproved, setShowApproved] = useState(false)
-const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
+const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
+  const [selectedDay, setSelectedDay] = useState('')
+  const [selectedWeek, setSelectedWeek] = useState('')   // Monday of the chosen week
+  const [selectedMonth, setSelectedMonth] = useState('') // 1st of the chosen month
+  // Empty = use the period picker above. Set = overrides it.
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+
+  const today = todayYMD(timezone)
+
+  // Selectable weeks, newest first: the current week plus the 12 before it.
+  const weekOptions = useMemo(() => {
+    const thisWeek = weekStartYMD(today)
+    return Array.from({ length: WEEKS_BACK }, (_, i) => addDaysYMD(thisWeek, -7 * i))
+  }, [today])
+
+  const monthOptions = useMemo(() => {
+    const thisMonth = monthStartYMD(today)
+    return Array.from({ length: MONTHS_BACK }, (_, i) => addMonthsYMD(thisMonth, -i))
+  }, [today])
+
+  // One fixed period, or the custom range when either end is filled in.
+  const { rangeFrom, rangeTo } = useMemo(() => {
+    if (customFrom || customTo) {
+      return { rangeFrom: customFrom || customTo, rangeTo: customTo || customFrom }
+    }
+    if (periodMode === 'day') {
+      const d = selectedDay || today
+      return { rangeFrom: d, rangeTo: d }
+    }
+    if (periodMode === 'month') {
+      const m = selectedMonth || monthStartYMD(today)
+      return { rangeFrom: m, rangeTo: monthEndYMD(m) }
+    }
+    const w = selectedWeek || weekStartYMD(today)
+    return { rangeFrom: w, rangeTo: weekEndYMD(w) }
+  }, [periodMode, selectedDay, selectedWeek, selectedMonth, customFrom, customTo, today])
+
+  const isCustomRange = Boolean(customFrom || customTo)
 
   // Selected entries for bulk approval
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -85,7 +121,7 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
 
   useEffect(() => {
   loadTimeEntries()
-}, [selectedEmployeeId, viewPeriod])
+}, [selectedEmployeeId, rangeFrom, rangeTo])
 
   async function loadEmployees() {
     try {
@@ -109,27 +145,9 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
     setErr(null)
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     
-    // Calculate date range based on viewPeriod
-    const today = new Date()
-    let fromDate: Date
-    let toDate: Date
-
-    if (viewPeriod === 'thisWeek') {
-      fromDate = getMondayOfWeek(today)
-      toDate = new Date(fromDate)
-      toDate.setDate(toDate.getDate() + 6)
-    } else {
-      const lastWeekDate = new Date(today)
-      lastWeekDate.setDate(today.getDate() - 7)
-      fromDate = getMondayOfWeek(lastWeekDate)
-      toDate = new Date(fromDate)
-      toDate.setDate(toDate.getDate() + 6)
-    }
-
-    const from = toLocalYMD(fromDate)
-    const to = toLocalYMD(toDate)
-    
-    let url = `${base}/api/time-entries?from=${from}&to=${to}`
+    // The window is resolved from the period picker (or the custom range) in one
+    // place, so the fetch just uses it.
+    let url = `${base}/api/time-entries?from=${rangeFrom}&to=${rangeTo}`
     
     if (selectedEmployeeId !== 'all') {
       url += `&employee_id=${selectedEmployeeId}`
@@ -439,36 +457,91 @@ const stats = useMemo(() => {
     </div>
   </div>
 
+  {/* Day / Week / Month — one fixed period at a time */}
   <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-    <button
-      onClick={() => setViewPeriod('thisWeek')}
-      style={{
-        flex: 1,
-        height: CONTROL_H,
-        background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
-        border: '1px solid var(--border)',
-        borderRadius: 4,
-        cursor: 'pointer',
-        fontSize: 14,
-      }}
-    >
-      {t('timeEntry.thisWeek')}
-    </button>
-    <button
-      onClick={() => setViewPeriod('lastWeek')}
-      style={{
-        flex: 1,
-        height: CONTROL_H,
-        background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
-        border: '1px solid var(--border)',
-        borderRadius: 4,
-        cursor: 'pointer',
-        fontSize: 14,
-      }}
-    >
-      {t('timeEntry.lastWeek')}
-    </button>
+    {(['day', 'week', 'month'] as const).map(m => (
+      <button
+        key={m}
+        onClick={() => setPeriodMode(m)}
+        style={{
+          flex: 1,
+          height: CONTROL_H,
+          background: periodMode === m && !isCustomRange ? 'var(--primary)' : 'transparent',
+          color: periodMode === m && !isCustomRange ? '#fff' : 'var(--text, inherit)',
+          border: '1px solid var(--border)',
+          borderRadius: 4,
+          cursor: 'pointer',
+          fontSize: 14,
+          fontWeight: periodMode === m && !isCustomRange ? 600 : 400,
+        }}
+      >
+        {m === 'day' ? t('period.day') : m === 'week' ? t('period.week') : t('period.month')}
+      </button>
+    ))}
   </div>
+
+  {/* The picker for whichever period is selected */}
+  <div style={{ marginTop: 8, minWidth: 0 }}>
+    {periodMode === 'day' && (
+      <DateInput
+        value={selectedDay || today}
+        onChange={v => setSelectedDay(v)}
+        style={{ height: CONTROL_H, width: '100%' }}
+      />
+    )}
+    {periodMode === 'week' && (
+      <select
+        value={selectedWeek || weekStartYMD(today)}
+        onChange={e => setSelectedWeek(e.target.value)}
+        style={{ height: CONTROL_H, width: '100%' }}
+      >
+        {weekOptions.map(w => (
+          <option key={w} value={w}>
+            {formatDate(w)} – {formatDate(weekEndYMD(w))}
+          </option>
+        ))}
+      </select>
+    )}
+    {periodMode === 'month' && (
+      <select
+        value={selectedMonth || monthStartYMD(today)}
+        onChange={e => setSelectedMonth(e.target.value)}
+        style={{ height: CONTROL_H, width: '100%' }}
+      >
+        {monthOptions.map(m => (
+          <option key={m} value={m}>{formatMonthYear(m)}</option>
+        ))}
+      </select>
+    )}
+  </div>
+
+  {/* Custom range — overrides the period above while either end is set */}
+  <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+    <DateInput
+      value={customFrom}
+      onChange={v => setCustomFrom(v)}
+      placeholder={t('period.from')}
+      style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
+    />
+    <span className="helper">–</span>
+    <DateInput
+      value={customTo}
+      onChange={v => setCustomTo(v)}
+      placeholder={t('period.to')}
+      style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
+    />
+    {isCustomRange && (
+      <button
+        onClick={() => { setCustomFrom(''); setCustomTo('') }}
+        style={{ height: CONTROL_H, padding: '0 14px', fontSize: 13 }}
+      >
+        {t('reset')}
+      </button>
+    )}
+  </div>
+  <p className="helper" style={{ marginTop: 6, marginBottom: 0, fontSize: 12 }}>
+    {formatDate(rangeFrom)} – {formatDate(rangeTo)}
+  </p>
 </div>
 
       {/* Summary stats - 2x2 grid */}
