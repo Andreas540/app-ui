@@ -181,6 +181,9 @@
   },
   "employees": {
     "title": "Personalhantering",
+    "role": "Roll",
+    "roleName": "Rollnamn",
+    "newRole": "Ny roll",
     "newEmployee": "Ny anställd",
     "showInactive": "Visa inaktiva anställda",
     "editEmployee": "Redigera anställd",

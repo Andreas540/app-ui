@@ -766,6 +766,23 @@ button.primary:focus-visible,
   border-radius: 6px;
 }
 
+/* Small outlined label for a categorical value shown beside a title — e.g. an
+   employee's role next to their name. Outlined rather than plain grey text so it
+   reads as a label and not as more metadata next to the id. */
+.chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* BizWiz logo: show correct variant based on active theme */
 .bizwiz-logo-dark  { display: block; }
 .bizwiz-logo-light { display: none;  }

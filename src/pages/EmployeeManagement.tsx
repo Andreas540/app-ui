@@ -12,6 +12,7 @@ type Employee = {
   name: string
   email: string | null
   employee_code: string | null
+  job_title: string | null
   hour_salary: number | string | null
   active: boolean
   notes: string | null
@@ -53,7 +54,13 @@ export default function EmployeeManagement() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [employeeCode, setEmployeeCode] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
   const [hourSalary, setHourSalary] = useState('')
+  // Job titles the tenant has used before, plus the inline "+ New" flow —
+  // same shape as Category / Variant on the product pages.
+  const [jobTitles, setJobTitles] = useState<string[]>([])
+  const [addingJobTitle, setAddingJobTitle] = useState(false)
+  const [newJobTitleName, setNewJobTitleName] = useState('')
   const [active, setActive] = useState(true)
   const [notes, setNotes] = useState('')
   
@@ -74,6 +81,10 @@ export default function EmployeeManagement() {
   useEffect(() => {
     loadEmployees()
   }, [showInactive])
+
+  useEffect(() => {
+    loadJobTitles()
+  }, [])
 
   async function loadEmployees() {
     try {
@@ -96,6 +107,27 @@ export default function EmployeeManagement() {
     }
   }
 
+  // Added to the local list immediately so it shows as selected; it is persisted to
+  // employee_job_titles when the employee is saved, not before.
+  function handleAddJobTitle() {
+    const v = newJobTitleName.trim()
+    if (!v) return
+    if (!jobTitles.includes(v)) setJobTitles(prev => [...prev, v].sort((a, b) => a.localeCompare(b)))
+    setJobTitle(v)
+    setAddingJobTitle(false)
+    setNewJobTitleName('')
+  }
+
+  async function loadJobTitles() {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/employees?job_titles=true`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      setJobTitles(Array.isArray(data.job_titles) ? data.job_titles : [])
+    } catch { /* dropdown just falls back to whatever is already on the employee */ }
+  }
+
   async function fetchNextEmployeeCode() {
     const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
     const res = await fetch(`${base}/api/employees?next_code=true`, { headers: getAuthHeaders() })
@@ -111,6 +143,9 @@ export default function EmployeeManagement() {
     try {
       setEditingId(null)
       setName('')
+      setJobTitle('')
+      setAddingJobTitle(false)
+      setNewJobTitleName('')
       setEmail('')
       setHourSalary('')
       setActive(true)
@@ -132,6 +167,9 @@ export default function EmployeeManagement() {
     setName(safeString(employee.name))
     setEmail(safeString(employee.email))
     setEmployeeCode(safeString(employee.employee_code))
+    setJobTitle(safeString(employee.job_title))
+    setAddingJobTitle(false)
+    setNewJobTitleName('')
     setHourSalary(safeString(employee.hour_salary))
     setActive(employee.active)
     setNotes(safeString(employee.notes))
@@ -176,6 +214,7 @@ export default function EmployeeManagement() {
       body: JSON.stringify({
         id: editingId,
         name: name.trim(),
+        job_title: jobTitle.trim() || null,
         email: email.trim() || null,
         hour_salary: salaryNum,
         active,
@@ -337,17 +376,61 @@ export default function EmployeeManagement() {
             {editingId ? t('employees.editEmployee') : t('employees.newEmployee')}
           </h4>
 
-          {/* Row 1: Name (full width) */}
-          <div>
-            <label>{t('name')} *</label>
-            <input
-              type="text"
-              placeholder={t('name')}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              style={{ height: CONTROL_H }}
-              autoFocus
-            />
+          {/* Row 1: Name + Role (50/50) */}
+          <div className="row row-2col-mobile">
+            <div>
+              <label>{t('name')} *</label>
+              <input
+                type="text"
+                placeholder={t('name')}
+                value={name}
+                onChange={e => setName(e.target.value)}
+                style={{ height: CONTROL_H }}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label>{t('employees.role')}</label>
+              {addingJobTitle ? (
+                <div style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder={t('employees.roleName')}
+                    value={newJobTitleName}
+                    onChange={e => setNewJobTitleName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleAddJobTitle() }
+                      if (e.key === 'Escape') { setAddingJobTitle(false); setNewJobTitleName('') }
+                    }}
+                    style={{ flex: 1, minWidth: 0, height: CONTROL_H }}
+                  />
+                  <button type="button" onClick={handleAddJobTitle} style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}>
+                    {t('add')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAddingJobTitle(false); setNewJobTitleName(''); setJobTitle('') }}
+                    style={{ height: CONTROL_H, padding: '0 10px', flexShrink: 0 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={jobTitle}
+                  onChange={e => {
+                    if (e.target.value === '__new__') { setAddingJobTitle(true); setJobTitle('') }
+                    else setJobTitle(e.target.value)
+                  }}
+                  style={{ height: CONTROL_H }}
+                >
+                  <option value="">—</option>
+                  <option value="__new__">＋ {t('employees.newRole')}</option>
+                  {jobTitles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              )}
+            </div>
           </div>
 
           {/* Row 2: Employee Code + Salary/hour */}
@@ -505,6 +588,7 @@ export default function EmployeeManagement() {
                           {emp.employee_code}
                         </span>
                       )}
+                      {!isEmpty(emp.job_title) && <span className="chip">{emp.job_title}</span>}
                       {formatSalary(emp.hour_salary) && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: '#22c55e', fontWeight: 400 }}>
                           {fmtMoney(Number(emp.hour_salary))}/hr
@@ -594,6 +678,7 @@ export default function EmployeeManagement() {
                       {emp.employee_code}
                     </span>
                   )}
+                  {!isEmpty(emp.job_title) && <span className="chip">{emp.job_title}</span>}
                   <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--color-error)', fontWeight: 400 }}>{t('employees.inactiveBadge')}</span>
                 </div>
                 {!isEmpty(emp.email) && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{emp.email}</div>}

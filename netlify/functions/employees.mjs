@@ -32,10 +32,23 @@ function signEmployeeToken({ tenantId, employeeId, ttlDays = 365 }) {
 }
 
 /**
+ * Remember a job title for this tenant so it shows in the dropdown next time.
+ * Kept in its own table rather than product_categories — job titles are not product data.
+ */
+async function ensureJobTitle({ sql, tenantId, name }) {
+  await sql`
+    INSERT INTO employee_job_titles (tenant_id, name)
+    VALUES (${tenantId}::uuid, ${name})
+    ON CONFLICT (tenant_id, name) DO NOTHING
+  `
+}
+
+/**
  * GET employees
  * Query params:
  *   - active=true/false
  *   - next_code=true : return { next_code: "EMP###" }
+ *   - job_titles=true : return { job_titles: ["Driver", "Packer"] }
  *   - share_token=true&employee_id=<uuid> : return { url, token }
  */
 async function getEmployees(event) {
@@ -57,6 +70,16 @@ async function getEmployees(event) {
     if (nextCode === 'true') {
       const code = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
       return cors(200, { next_code: code })
+    }
+
+    // return the tenant's selectable job titles
+    if (params.get('job_titles') === 'true') {
+      const rows = await sql`
+        SELECT name FROM employee_job_titles
+        WHERE tenant_id = ${TENANT_ID}::uuid
+        ORDER BY name ASC
+      `
+      return cors(200, { job_titles: rows.map(r => r.name) })
     }
 
     // share token/link for one employee
@@ -81,21 +104,21 @@ async function getEmployees(event) {
     let rows
     if (active === 'true') {
       rows = await sql`
-        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, job_title, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID} AND active = TRUE
         ORDER BY name
       `
     } else if (active === 'false') {
       rows = await sql`
-        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, job_title, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID} AND active = FALSE
         ORDER BY name
       `
     } else {
       rows = await sql`
-        SELECT id, name, email, employee_code, hour_salary, active, notes, created_at, updated_at
+        SELECT id, name, email, employee_code, job_title, hour_salary, active, notes, created_at, updated_at
         FROM employees
         WHERE tenant_id = ${TENANT_ID}
         ORDER BY active DESC, name
@@ -142,7 +165,7 @@ async function saveEmployee(event) {
     const TENANT_ID = authz.tenantId
 
     const body = JSON.parse(event.body || '{}')
-    const { id, name, email, hour_salary, active, notes, effective_date, apply_to_history } = body
+    const { id, name, email, hour_salary, active, notes, effective_date, apply_to_history, job_title } = body
 
     if (!id && (!name || !name.trim())) {
       return cors(400, { error: 'name is required for new employees' })
@@ -191,12 +214,18 @@ if (salaryProvided) {
   }
 }
 
+// A title typed into the "+ New" field is remembered for the tenant, so it is
+// offered next time rather than having to be retyped per employee.
+const jobTitle = String(job_title || '').trim() || null
+if (jobTitle) await ensureJobTitle({ sql, tenantId: TENANT_ID, name: jobTitle })
+
 // Update employee record
 await sql`
   UPDATE employees
-  SET 
+  SET
     name = ${updatedName},
     email = ${updatedEmail},
+    job_title = ${jobTitle},
     hour_salary = CASE
       WHEN ${shouldUpdateSalaryNow && salaryProvided} THEN ${newSalaryNum}
       ELSE hour_salary
@@ -258,9 +287,12 @@ return cors(200, {
       // CREATING NEW EMPLOYEE
       const generatedCode = await computeNextEmployeeCode({ sql, tenantId: TENANT_ID })
 
+      const newJobTitle = String(job_title || '').trim() || null
+      if (newJobTitle) await ensureJobTitle({ sql, tenantId: TENANT_ID, name: newJobTitle })
+
       const result = await sql`
         INSERT INTO employees (
-          tenant_id, name, email, employee_code, hour_salary, active, notes
+          tenant_id, name, email, employee_code, hour_salary, active, notes, job_title
         )
         VALUES (
           ${TENANT_ID},
@@ -269,7 +301,8 @@ return cors(200, {
           ${generatedCode},
           ${hour_salary || null},
           ${active !== false},
-          ${String(notes || '').trim() || null}
+          ${String(notes || '').trim() || null},
+          ${newJobTitle}
         )
         RETURNING id, employee_code
       `

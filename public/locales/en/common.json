@@ -181,6 +181,9 @@
   },
   "employees": {
     "title": "Employee Management",
+    "role": "Role",
+    "roleName": "Role name",
+    "newRole": "New role",
     "newEmployee": "New Employee",
     "showInactive": "Show inactive employees",
     "editEmployee": "Edit Employee",

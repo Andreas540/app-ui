@@ -181,6 +181,9 @@
   },
   "employees": {
     "title": "Gestión de Empleados",
+    "role": "Rol",
+    "roleName": "Nombre del rol",
+    "newRole": "Nuevo rol",
     "newEmployee": "Nuevo Empleado",
     "showInactive": "Mostrar empleados inactivos",
     "editEmployee": "Editar Empleado",
