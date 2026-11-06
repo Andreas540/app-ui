@@ -495,9 +495,13 @@ const stats = useMemo(() => {
         onChange={e => setSelectedWeek(e.target.value)}
         style={{ height: CONTROL_H, width: '100%' }}
       >
-        {weekOptions.map(w => (
+        {weekOptions.map((w, i) => (
           <option key={w} value={w}>
-            {formatDate(w)} – {formatDate(weekEndYMD(w))}
+            {i === 0
+              ? t('timeEntry.thisWeek')
+              : i === 1
+                ? t('timeEntry.lastWeek')
+                : `${formatDate(w)} – ${formatDate(weekEndYMD(w))}`}
           </option>
         ))}
       </select>
@@ -515,30 +519,31 @@ const stats = useMemo(() => {
     )}
   </div>
 
-  {/* Custom range — overrides the period above while either end is set */}
-  <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+  {/* Custom range — overrides the period above while either end is set.
+      Grid rather than wrapping flex, so From and To stay on one row at any width. */}
+  <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center', minWidth: 0 }}>
     <DateInput
       value={customFrom}
       onChange={v => setCustomFrom(v)}
       placeholder={t('period.from')}
-      style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
+      style={{ height: CONTROL_H, width: '100%', minWidth: 0 }}
     />
     <span className="helper">–</span>
     <DateInput
       value={customTo}
       onChange={v => setCustomTo(v)}
       placeholder={t('period.to')}
-      style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
+      style={{ height: CONTROL_H, width: '100%', minWidth: 0 }}
     />
-    {isCustomRange && (
-      <button
-        onClick={() => { setCustomFrom(''); setCustomTo('') }}
-        style={{ height: CONTROL_H, padding: '0 14px', fontSize: 13 }}
-      >
-        {t('reset')}
-      </button>
-    )}
   </div>
+  {isCustomRange && (
+    <button
+      onClick={() => { setCustomFrom(''); setCustomTo('') }}
+      style={{ height: CONTROL_H, padding: '0 14px', fontSize: 13, marginTop: 8 }}
+    >
+      {t('reset')}
+    </button>
+  )}
   <p className="helper" style={{ marginTop: 6, marginBottom: 0, fontSize: 12 }}>
     {formatDate(rangeFrom)} – {formatDate(rangeTo)}
   </p>

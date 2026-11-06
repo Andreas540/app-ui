@@ -700,30 +700,31 @@ export default function LaborProduction() {
         </label>
         </div>
 
-        {/* Custom period */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6, minWidth: 0 }}>
+        {/* Custom period. Grid rather than wrapping flex, so From and To stay on
+            one row at any width. */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center', marginBottom: 6, minWidth: 0 }}>
           <DateInput
             value={customFrom}
             onChange={v => setCustomFrom(v)}
             placeholder={t('production.customFrom')}
-            style={{ height: 36, flex: '1 1 150px', minWidth: 0 }}
+            style={{ height: 36, width: '100%', minWidth: 0 }}
           />
           <span className="helper">–</span>
           <DateInput
             value={customTo}
             onChange={v => setCustomTo(v)}
             placeholder={t('production.customTo')}
-            style={{ height: 36, flex: '1 1 150px', minWidth: 0 }}
+            style={{ height: 36, width: '100%', minWidth: 0 }}
           />
-          {isCustomRange && (
-            <button
-              onClick={() => { setCustomFrom(''); setCustomTo('') }}
-              style={{ height: 36, padding: '0 14px', fontSize: 13 }}
-            >
-              {t('production.resetPeriod')}
-            </button>
-          )}
         </div>
+        {isCustomRange && (
+          <button
+            onClick={() => { setCustomFrom(''); setCustomTo('') }}
+            style={{ height: 36, padding: '0 14px', fontSize: 13, marginBottom: 6 }}
+          >
+            {t('production.resetPeriod')}
+          </button>
+        )}
         <p className="helper" style={{ marginTop: 0, marginBottom: 16, fontSize: 12 }}>
           {isCustomRange
             ? `${formatShortMonthDayYear(rangeFrom)} – ${formatShortMonthDayYear(rangeTo)}`
