@@ -150,6 +150,7 @@
   "timeApproval": {
     "title": "Time Approval",
     "allEmployees": "All Employees",
+    "allRoles": "All roles",
     "fromDate": "From Date",
     "toDate": "To Date",
     "showApproved": "Show approved",

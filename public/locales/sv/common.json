@@ -150,6 +150,7 @@
   "timeApproval": {
     "title": "Tidsgodkännande",
     "allEmployees": "Alla anställda",
+    "allRoles": "Alla roller",
     "fromDate": "Från datum",
     "toDate": "Till datum",
     "showApproved": "Visa godkända",

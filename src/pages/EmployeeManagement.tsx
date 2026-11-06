@@ -56,6 +56,9 @@ export default function EmployeeManagement() {
   const [employeeCode, setEmployeeCode] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [hourSalary, setHourSalary] = useState('')
+  // Salary as it stood when the form opened, so we can tell a real change from a
+  // field that merely has a value.
+  const [originalSalary, setOriginalSalary] = useState('')
   // The tenant's role list. in_use counts how many employees hold each one, which
   // the delete warning needs. Titles are created, renamed and deleted in their own
   // right — none of it waits for the employee to be saved.
@@ -230,6 +233,7 @@ export default function EmployeeManagement() {
       setNewJobTitleName('')
       setEmail('')
       setHourSalary('')
+      setOriginalSalary('')
       setActive(true)
       setNotes('')
       setSalaryOption('next')
@@ -253,6 +257,7 @@ export default function EmployeeManagement() {
     setAddingJobTitle(false)
     setNewJobTitleName('')
     setHourSalary(safeString(employee.hour_salary))
+    setOriginalSalary(safeString(employee.hour_salary))
     setActive(employee.active)
     setNotes(safeString(employee.notes))
     setSalaryOption('next')
@@ -267,6 +272,7 @@ export default function EmployeeManagement() {
     setEmail('')
     setEmployeeCode('')
     setHourSalary('')
+    setOriginalSalary('')
     setActive(true)
     setNotes('')
     setSalaryOption('next')
@@ -319,16 +325,22 @@ export default function EmployeeManagement() {
     // Show appropriate success message
     if (result.created) {
       alert(t('employees.created'))
-    } else if (result.updated && salaryNum !== null) {
-      let message = t('employees.salaryUpdated', { name: name.trim() })
-      if (result.applied_to_history) {
-        message += ` (${t('employees.salaryAppliedToHistory')})`
-      } else if (salaryOption === 'specific') {
-        message += ` (${t('employees.salaryEffectiveFrom', { date: specificDate })})`
+    } else if (result.updated) {
+      // Generic by default. The salary qualifier is only appended when the salary
+      // actually changed — the old condition was "has a salary", so editing just the
+      // name or role reported a salary update. The backdate/history note is kept,
+      // because applying a rate to past hours rewrites historical cost and is worth
+      // confirming.
+      let message = t('employees.updated')
+      const salaryChanged = hourSalary.trim() !== originalSalary.trim()
+      if (salaryChanged && salaryNum !== null) {
+        if (result.applied_to_history) {
+          message += ` (${t('employees.salaryAppliedToHistory')})`
+        } else if (salaryOption === 'specific') {
+          message += ` (${t('employees.salaryEffectiveFrom', { date: specificDate })})`
+        }
       }
       alert(message)
-    } else if (result.updated) {
-      alert(t('employees.updated'))
     }
 
     handleCancel()

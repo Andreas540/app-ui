@@ -150,6 +150,7 @@
   "timeApproval": {
     "title": "Aprobación de Tiempo",
     "allEmployees": "Todos los Empleados",
+    "allRoles": "Todos los roles",
     "fromDate": "Desde",
     "toDate": "Hasta",
     "showApproved": "Mostrar aprobados",

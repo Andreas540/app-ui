@@ -26,6 +26,7 @@ type Employee = {
   id: string
   name: string
   employee_code: string | null
+  job_title: string | null
 }
 
 function getMondayOfWeek(date: Date): Date {
@@ -59,6 +60,7 @@ export default function TimeApproval() {
 
   // Filter state
 const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
+  const [selectedRole, setSelectedRole] = useState('all')
 const [showApproved, setShowApproved] = useState(false)
 const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
 
@@ -263,18 +265,47 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
     }
   }
 
+  // Roles actually held by the loaded employees. Derived rather than fetched from
+  // employee_job_titles, so the filter never offers a role that matches nobody.
+  const availableRoles = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of employees) if (e.job_title) set.add(e.job_title)
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [employees])
+
+  const jobTitleById = useMemo(() => {
+    const m = new Map<string, string | null>()
+    for (const e of employees) m.set(e.id, e.job_title)
+    return m
+  }, [employees])
+
+  // The role filter is applied ONCE here, at the base. The employee filter is
+  // applied server-side via the fetch, so everything downstream — the list, the
+  // summary totals and select-all — must read this rather than timeEntries, or
+  // the totals would count people the list is hiding.
+  const roleScopedEntries = useMemo(() => (
+    selectedRole === 'all'
+      ? timeEntries
+      : timeEntries.filter(e => jobTitleById.get(e.employee_id) === selectedRole)
+  ), [timeEntries, selectedRole, jobTitleById])
+
   // Filter entries to display based on showApproved checkbox
   const displayedEntries = useMemo(() => {
     if (showApproved) {
-      return timeEntries // Show all (approved + pending)
+      return roleScopedEntries // Show all (approved + pending)
     }
-    return timeEntries.filter(e => !e.approved) // Show only pending
-  }, [timeEntries, showApproved])
+    return roleScopedEntries.filter(e => !e.approved) // Show only pending
+  }, [roleScopedEntries, showApproved])
+
+  // Employee dropdown narrows to the chosen role.
+  const employeesForRole = useMemo(() => (
+    selectedRole === 'all' ? employees : employees.filter(e => e.job_title === selectedRole)
+  ), [employees, selectedRole])
 
   // Group displayed entries by employee
   const entriesByEmployee = useMemo(() => {
     const grouped = new Map<string, TimeEntry[]>()
-    
+
     displayedEntries.forEach(entry => {
       const key = entry.employee_id
       if (!grouped.has(key)) {
@@ -282,18 +313,19 @@ const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek'
       }
       grouped.get(key)!.push(entry)
     })
-    
+
     return grouped
   }, [displayedEntries])
 
-  // Calculate summary stats from ALL entries (not filtered)
+  // Summary stats. Reads roleScopedEntries, not timeEntries, so the totals always
+// describe exactly the entries the list is showing.
 const stats = useMemo(() => {
-  const totalHours = timeEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0)
-  const totalEarnings = timeEntries.reduce((sum, e) => sum + (e.salary || 0), 0)
-  const approvedHours = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.total_hours || 0), 0)
-  const approvedEarnings = timeEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.salary || 0), 0)
+  const totalHours = roleScopedEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0)
+  const totalEarnings = roleScopedEntries.reduce((sum, e) => sum + (e.salary || 0), 0)
+  const approvedHours = roleScopedEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.total_hours || 0), 0)
+  const approvedEarnings = roleScopedEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.salary || 0), 0)
   const pendingHours = totalHours - approvedHours
-  const pendingCount = timeEntries.filter(e => !e.approved).length
+  const pendingCount = roleScopedEntries.filter(e => !e.approved).length
   
   return {
     totalHours: totalHours,
@@ -302,11 +334,12 @@ const stats = useMemo(() => {
     approvedEarnings: approvedEarnings,
     pendingHours: pendingHours,
     pendingCount,
-    totalCount: timeEntries.length
+    totalCount: roleScopedEntries.length
   }
-}, [timeEntries])
+}, [roleScopedEntries])
 
-  const pendingEntries = timeEntries.filter(e => !e.approved)
+  // Role-scoped too: select-all must never reach an entry the list is hiding.
+  const pendingEntries = roleScopedEntries.filter(e => !e.approved)
 
   if (loading && timeEntries.length === 0) {
     return <div className="card page-normal"><p>{t('loading')}</p></div>
@@ -362,20 +395,48 @@ const stats = useMemo(() => {
 
       {/* Filters - Employee and week selector */}
 <div style={{ marginTop: 16 }}>
-  <div>
-    <label>{t('employee')}</label>
-    <select
-      value={selectedEmployeeId}
-      onChange={e => setSelectedEmployeeId(e.target.value)}
-      style={{ height: CONTROL_H, width: '100%' }}
-    >
-      <option value="all">{t('timeApproval.allEmployees')}</option>
-      {employees.map(emp => (
-        <option key={emp.id} value={emp.id}>
-          {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
-        </option>
-      ))}
-    </select>
+  <div className="row row-2col-mobile">
+    <div>
+      <label>{t('employee')}</label>
+      <select
+        value={selectedEmployeeId}
+        onChange={e => {
+          const id = e.target.value
+          setSelectedEmployeeId(id)
+          // Picking a person shows their role beside them; clearing the person
+          // widens the role filter back out rather than leaving a stale one.
+          if (id === 'all') setSelectedRole('all')
+          else setSelectedRole(jobTitleById.get(id) || 'all')
+        }}
+        style={{ height: CONTROL_H, width: '100%' }}
+      >
+        <option value="all">{t('timeApproval.allEmployees')}</option>
+        {employeesForRole.map(emp => (
+          <option key={emp.id} value={emp.id}>
+            {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
+          </option>
+        ))}
+      </select>
+    </div>
+    <div>
+      <label>{t('employees.role')}</label>
+      <select
+        value={selectedRole}
+        onChange={e => {
+          const role = e.target.value
+          setSelectedRole(role)
+          // Drop the selected employee if they are not in the chosen role,
+          // otherwise the two filters would contradict each other.
+          if (role !== 'all' && selectedEmployeeId !== 'all' && jobTitleById.get(selectedEmployeeId) !== role) {
+            setSelectedEmployeeId('all')
+          }
+        }}
+        style={{ height: CONTROL_H, width: '100%' }}
+      >
+        <option value="all">{t('timeApproval.allRoles')}</option>
+        {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+      </select>
+    </div>
   </div>
 
   <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
@@ -560,6 +621,7 @@ const stats = useMemo(() => {
                         {employeeCode}
                       </span>
                     )}
+                    {employee?.job_title && <span className="chip">{employee.job_title}</span>}
                   </h4>
                   
                   <div style={{ display: 'grid', gap: 8 }}>
