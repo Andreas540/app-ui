@@ -114,10 +114,15 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
     if (!hasChanges || !selectedUserId) return
     try {
       setSaving(true)
-      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin?action=setTimeApprovalExclusions`, {
+      // POST actions are read from the body here, unlike GET which uses ?action=
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
-        body: JSON.stringify({ user_id: selectedUserId, employeeIds: [...excludedIds] }),
+        body: JSON.stringify({
+          action: 'setTimeApprovalExclusions',
+          user_id: selectedUserId,
+          employeeIds: [...excludedIds],
+        }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
