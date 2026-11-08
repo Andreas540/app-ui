@@ -1672,7 +1672,8 @@
       "search": "Sök anställda…",
       "noEmployees": "Inga anställda hittades.",
       "saveFailed": "Kunde inte spara undantagen.",
-      "excludedCount": "{{n}} undantagna"
+      "excludedCount": "{{n}} undantagna",
+      "hiddenInactiveExcluded": "{{n}} inaktiva dolda"
     }
   },
   "customerOffers": {

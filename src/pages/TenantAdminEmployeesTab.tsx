@@ -36,6 +36,7 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
   const [employees, setEmployees] = useState<EmployeeRow[]>([])
   const [employeesLoading, setEmployeesLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
 
   // Excluded ids as currently edited, plus a snapshot of what is stored, so the
   // Save button can be inert until something actually changes.
@@ -81,11 +82,24 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
     excludedIds.size !== loadedIds.size || [...excludedIds].some(id => !loadedIds.has(id))
   ), [excludedIds, loadedIds])
 
+  // Display filter ONLY. excludedIds always holds the full set for this approver,
+  // including employees hidden here — the save replaces the whole set, so filtering
+  // the saved payload instead would silently drop exclusions for anyone not shown.
+  // An employee going inactive therefore never changes their exclusion.
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return employees
-    return employees.filter(e => e.name.toLowerCase().includes(q) || (e.job_title || '').toLowerCase().includes(q))
-  }, [employees, search])
+    return employees.filter(e => {
+      if (!showInactive && !e.active) return false
+      if (!q) return true
+      return e.name.toLowerCase().includes(q) || (e.job_title || '').toLowerCase().includes(q)
+    })
+  }, [employees, search, showInactive])
+
+  // Exclusions that exist but are not on screen, so the count below is never
+  // mysterious.
+  const hiddenExcluded = useMemo(() => (
+    showInactive ? 0 : employees.filter(e => !e.active && excludedIds.has(e.id)).length
+  ), [employees, excludedIds, showInactive])
 
   function toggle(id: string) {
     setExcludedIds(prev => {
@@ -179,6 +193,16 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
               style={{ marginBottom: 12 }}
             />
 
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 12 }}>
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={e => setShowInactive(e.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>{t('employees.showInactive')}</span>
+            </label>
+
             <div style={{ display: 'grid', gap: 2, marginBottom: 16 }}>
               {visible.map(emp => (
                 <label
@@ -229,6 +253,7 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
               {done && <span style={{ color: 'var(--color-success)', fontSize: 13 }}>{done}</span>}
               <span className="helper" style={{ fontSize: 12 }}>
                 {t('tenantAdmin.employees.excludedCount', { n: excludedIds.size, name: selectedUser?.name || '' })}
+                {hiddenExcluded > 0 && ` · ${t('tenantAdmin.employees.hiddenInactiveExcluded', { n: hiddenExcluded })}`}
               </span>
             </div>
           </>

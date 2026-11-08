@@ -1672,7 +1672,8 @@
       "search": "Search employees…",
       "noEmployees": "No employees found.",
       "saveFailed": "Could not save the exclusions.",
-      "excludedCount": "{{n}} excluded"
+      "excludedCount": "{{n}} excluded",
+      "hiddenInactiveExcluded": "{{n}} inactive hidden"
     }
   },
   "customerOffers": {
