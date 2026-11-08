@@ -91,6 +91,9 @@ export default function LaborProduction() {
     if (granularity === 'day')       from = addDaysYMD(today, -(DEFAULT_PERIODS.day - 1))
     else if (granularity === 'week') from = addDaysYMD(weekStartYMD(today), -7 * (DEFAULT_PERIODS.week - 1))
     else                             from = addMonthsYMD(monthStartYMD(today), -(DEFAULT_PERIODS.month - 1))
+    // A To on its own means everything up to and including that date, so the start
+    // is left open rather than falling back to the default window.
+    if (!customFrom && customTo) return { rangeFrom: '', rangeTo: customTo }
     return { rangeFrom: customFrom || from, rangeTo: customTo || today }
   }, [granularity, customFrom, customTo, timezone])
 
@@ -108,7 +111,8 @@ export default function LaborProduction() {
     const buckets = new Map<string, Map<string, number>>()
     for (const r of history) {
       if (!r.product_name || r.qty_produced == null) continue
-      if (r.date < rangeFrom || r.date > rangeTo) continue
+      // An empty rangeFrom means no lower bound.
+      if ((rangeFrom && r.date < rangeFrom) || r.date > rangeTo) continue
       const key = startOf(r.date)
       if (!buckets.has(key)) buckets.set(key, new Map())
       const byProduct = buckets.get(key)!
@@ -119,16 +123,20 @@ export default function LaborProduction() {
       .sort((a, b) => b.localeCompare(a))   // newest period first
       .map(key => {
         const periodEnd = endOf(key)
-        const coveredFrom = key > rangeFrom ? key : rangeFrom
+        const coveredFrom = (rangeFrom && key < rangeFrom) ? rangeFrom : key
         const coveredTo = periodEnd < rangeTo ? periodEnd : rangeTo
         const clipped = coveredFrom !== key || coveredTo !== periodEnd
+        const rows = Array.from(buckets.get(key)!.entries())
+          .map(([product_name, qty]) => ({ product_name, qty }))
+          .sort((a, b) => a.product_name.localeCompare(b.product_name))
         return {
           key,
           periodEnd,
           partial: clipped ? { from: coveredFrom, to: coveredTo } : null,
-          rows: Array.from(buckets.get(key)!.entries())
-            .map(([product_name, qty]) => ({ product_name, qty }))
-            .sort((a, b) => a.product_name.localeCompare(b.product_name)),
+          rows,
+          // Sum across products in this period, so a partial period totals only
+          // what it actually covers.
+          total: rows.reduce((sum, r) => sum + r.qty, 0),
         }
       })
   }, [history, granularity, rangeFrom, rangeTo])
@@ -182,7 +190,12 @@ export default function LaborProduction() {
     try {
       setHistoryLoading(true)
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
-      const res = await fetch(`${base}/api/labor-production?from=${from}&to=${to}`, {
+      // An empty bound is omitted entirely; the API reads a missing param as "no
+      // limit on that side".
+      const qs = new URLSearchParams()
+      if (from) qs.set('from', from)
+      if (to) qs.set('to', to)
+      const res = await fetch(`${base}/api/labor-production?${qs.toString()}`, {
         headers: getAuthHeaders(),
       })
       if (res.ok) {
@@ -727,7 +740,7 @@ export default function LaborProduction() {
         )}
         <p className="helper" style={{ marginTop: 0, marginBottom: 16, fontSize: 12 }}>
           {isCustomRange
-            ? `${formatShortMonthDayYear(rangeFrom)} – ${formatShortMonthDayYear(rangeTo)}`
+            ? `${rangeFrom ? formatShortMonthDayYear(rangeFrom) : '…'} – ${formatShortMonthDayYear(rangeTo)}`
             : t(DEFAULT_WINDOW_KEY[granularity], { n: DEFAULT_PERIODS[granularity] })}
         </p>
 
@@ -805,6 +818,19 @@ export default function LaborProduction() {
                       </div>
                     ))
                   )}
+                  {/* Period total, shown under both the list and the chart. */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    paddingTop: 6,
+                    marginTop: 2,
+                    borderTop: '1px solid var(--separator)',
+                  }}>
+                    <span>{t('production.totalItemsProduced')}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>{g.total.toLocaleString()}</span>
+                  </div>
                 </div>
               ))}
             </div>

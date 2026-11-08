@@ -241,6 +241,7 @@
   "production": {
     "statisticsFor": "Statistik för",
     "totalQtyProduced": "Total producerad kvantitet:",
+    "totalItemsProduced": "Totalt antal producerade",
     "avgQtyPerEmployee": "Genomsn. antal per anställd:",
     "avgHoursPerEmployee": "Genomsn. timmar per anställd:",
     "noOfEmployees": "Antal anställda",

@@ -241,6 +241,7 @@
   "production": {
     "statisticsFor": "Statistics for",
     "totalQtyProduced": "Total qty produced:",
+    "totalItemsProduced": "Total items produced",
     "avgQtyPerEmployee": "Avg. qty per employee:",
     "avgHoursPerEmployee": "Avg. hours per employee:",
     "noOfEmployees": "No. of Employees",

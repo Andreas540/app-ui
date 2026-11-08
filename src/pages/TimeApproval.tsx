@@ -83,19 +83,32 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
 
   // One fixed period, or the custom range when either end is filled in.
   const { rangeFrom, rangeTo } = useMemo(() => {
-    if (customFrom || customTo) {
-      return { rangeFrom: customFrom || customTo, rangeTo: customTo || customFrom }
-    }
+    // The period the Day/Week/Month picker selects.
+    let periodFrom: string
+    let periodTo: string
     if (periodMode === 'day') {
-      const d = selectedDay || today
-      return { rangeFrom: d, rangeTo: d }
+      periodFrom = periodTo = selectedDay || today
+    } else if (periodMode === 'month') {
+      periodFrom = selectedMonth || monthStartYMD(today)
+      periodTo = monthEndYMD(periodFrom)
+    } else {
+      periodFrom = selectedWeek || weekStartYMD(today)
+      periodTo = weekEndYMD(periodFrom)
     }
-    if (periodMode === 'month') {
-      const m = selectedMonth || monthStartYMD(today)
-      return { rangeFrom: m, rangeTo: monthEndYMD(m) }
-    }
-    const w = selectedWeek || weekStartYMD(today)
-    return { rangeFrom: w, rangeTo: weekEndYMD(w) }
+
+    if (!customFrom && !customTo) return { rangeFrom: periodFrom, rangeTo: periodTo }
+
+    // A To on its own means everything up to and including that date, so the start
+    // is left open ('' is sent as no 'from' param at all).
+    if (!customFrom) return { rangeFrom: '', rangeTo: customTo }
+
+    // A From on its own means that date onwards, matching the Production filter.
+    let from = customFrom
+    let to = customTo || today
+    // Entered backwards: read it as the range they meant rather than silently
+    // returning nothing.
+    if (from > to) [from, to] = [to, from]
+    return { rangeFrom: from, rangeTo: to }
   }, [periodMode, selectedDay, selectedWeek, selectedMonth, customFrom, customTo, today])
 
   const isCustomRange = Boolean(customFrom || customTo)
@@ -147,7 +160,12 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
     
     // The window is resolved from the period picker (or the custom range) in one
     // place, so the fetch just uses it.
-    let url = `${base}/api/time-entries?from=${rangeFrom}&to=${rangeTo}`
+    // An empty bound is omitted entirely; the API reads a missing param as "no
+    // limit on that side".
+    const qs = new URLSearchParams()
+    if (rangeFrom) qs.set('from', rangeFrom)
+    if (rangeTo) qs.set('to', rangeTo)
+    let url = `${base}/api/time-entries?${qs.toString()}`
     
     if (selectedEmployeeId !== 'all') {
       url += `&employee_id=${selectedEmployeeId}`
@@ -545,7 +563,7 @@ const stats = useMemo(() => {
     </button>
   )}
   <p className="helper" style={{ marginTop: 6, marginBottom: 0, fontSize: 12 }}>
-    {formatDate(rangeFrom)} – {formatDate(rangeTo)}
+    {rangeFrom ? formatDate(rangeFrom) : '…'} – {formatDate(rangeTo)}
   </p>
 </div>
 

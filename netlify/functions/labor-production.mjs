@@ -30,8 +30,10 @@ async function getLaborProduction(event) {
     const TENANT_ID = authz.tenantId
     const params = new URLSearchParams(event.queryStringParameters || {})
     const date = params.get('date')
-    const from = params.get('from')
-    const to = params.get('to')
+    // Either bound may be absent: a 'to' on its own means everything up to and
+    // including that date. Normalised to null so the SQL guards below work.
+    const from = params.get('from') || null
+    const to = params.get('to') || null
 
     let rows = []
 
@@ -56,7 +58,7 @@ async function getLaborProduction(event) {
           AND lp.date = ${date}
         ORDER BY p.name
       `
-    } else if (from && to) {
+    } else if (from || to) {
       // Date range query
       rows = await sql`
         SELECT 
@@ -74,8 +76,8 @@ async function getLaborProduction(event) {
         FROM labor_production lp
         LEFT JOIN products p ON p.id = lp.product_id
         WHERE lp.tenant_id = ${TENANT_ID}
-          AND lp.date >= ${from}
-          AND lp.date <= ${to}
+          AND (${from}::date IS NULL OR lp.date >= ${from}::date)
+          AND (${to}::date IS NULL OR lp.date <= ${to}::date)
         ORDER BY lp.date DESC, p.name
       `
     } else {
