@@ -67,6 +67,9 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
   // Empty = use the period picker above. Set = overrides it.
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  // Employees this approver has been excluded from in Tenant Admin → Employees →
+  // Time Approval. Advisory here; the endpoint enforces it.
+  const [excludedEmployeeIds, setExcludedEmployeeIds] = useState<Set<string>>(new Set())
 
   const today = todayYMD(timezone)
 
@@ -117,20 +120,21 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // Get current user name for approval tracking
-  const [currentUserName, setCurrentUserName] = useState('Manager')
 
   useEffect(() => {
     loadEmployees()
-    try {
-      const userData = localStorage.getItem('userData')
-      if (userData) {
-        const user = JSON.parse(userData)
-        if (user.name) setCurrentUserName(user.name)
-      }
-    } catch (e) {
-      console.error('Failed to get user name:', e)
-    }
+    loadMyExclusions()
   }, [])
+
+  async function loadMyExclusions() {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/time-entries?my_exclusions=true`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      setExcludedEmployeeIds(new Set(Array.isArray(data.employee_ids) ? data.employee_ids : []))
+    } catch { /* buttons stay enabled; approve calls are refused server-side */ }
+  }
 
   useEffect(() => {
   loadTimeEntries()
@@ -202,7 +206,6 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
         body: JSON.stringify({
           id: entryId,
           approved: true,
-          approved_by: currentUserName,
         }),
       })
 
@@ -271,7 +274,6 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
           body: JSON.stringify({
             id,
             approved: true,
-            approved_by: currentUserName,
           }),
         })
       }
@@ -375,7 +377,9 @@ const stats = useMemo(() => {
 }, [roleScopedEntries])
 
   // Role-scoped too: select-all must never reach an entry the list is hiding.
-  const pendingEntries = roleScopedEntries.filter(e => !e.approved)
+  // Drives select-all and bulk approve, so it must exclude entries this approver
+  // is blocked from — otherwise "approve selected" would fail partway through.
+  const pendingEntries = roleScopedEntries.filter(e => !e.approved && !excludedEmployeeIds.has(e.employee_id))
 
   if (loading && timeEntries.length === 0) {
     return <div className="card page-normal"><p>{t('loading')}</p></div>
@@ -813,21 +817,27 @@ const stats = useMemo(() => {
     </button>
   </>
 ) : (
-  <button
-    onClick={() => handleApprove(entry.id)}
-    disabled={!entry.end_time}
-    className="primary"
-    style={{
-      padding: '6px 16px',
-      fontSize: 13,
-      height: 32,
-      opacity: entry.end_time ? 1 : 0.4,
-      cursor: entry.end_time ? 'pointer' : 'not-allowed'
-    }}
-    title={entry.end_time ? '' : t('timeApproval.noEndTime')}
-  >
-    {t('timeApproval.approve')}
-  </button>
+  (() => {
+    const excluded = excludedEmployeeIds.has(entry.employee_id)
+    const canApprove = Boolean(entry.end_time) && !excluded
+    return (
+      <button
+        onClick={() => handleApprove(entry.id)}
+        disabled={!canApprove}
+        className={canApprove ? 'primary' : ''}
+        style={{
+          padding: '6px 16px',
+          fontSize: 13,
+          height: 32,
+          opacity: canApprove ? 1 : 0.4,
+          cursor: canApprove ? 'pointer' : 'not-allowed'
+        }}
+        title={excluded ? t('timeApproval.excludedTooltip') : (entry.end_time ? '' : t('timeApproval.noEndTime'))}
+      >
+        {t('timeApproval.approve')}
+      </button>
+    )
+  })()
 )}
                         </div>
                       </div>

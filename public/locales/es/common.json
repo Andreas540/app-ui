@@ -178,7 +178,8 @@
     "approvalFailed": "Error en la aprobación",
     "bulkFailed": "Error en la aprobación masiva",
     "thisWeek": "Esta semana",
-    "lastWeek": "Semana pasada"
+    "lastWeek": "Semana pasada",
+    "excludedTooltip": "No tienes permiso para aprobar horas de este empleado."
   },
   "employees": {
     "title": "Gestión de Empleados",
@@ -1660,6 +1661,18 @@
       "saveChanges": "Guardar cambios",
       "saved": "Ordenación guardada.",
       "hidden": "oculto"
+    },
+    "tabEmployees": "Empleados",
+    "employees": {
+      "timeApprovalTitle": "Aprobación de horas",
+      "timeApprovalDesc": "Elige un aprobador y luego marca los empleados cuyas horas no debería poder aprobar. Para un empleado marcado, el botón Aprobar queda desactivado para ese usuario. Deja todo sin marcar para permitir todos.",
+      "approver": "Aprobador",
+      "selectApprover": "Selecciona un usuario…",
+      "selectApproverHint": "Selecciona un usuario arriba para indicar qué empleados no puede aprobar.",
+      "search": "Buscar empleados…",
+      "noEmployees": "No se encontraron empleados.",
+      "saveFailed": "No se pudieron guardar las exclusiones.",
+      "excludedCount": "{{n}} excluidos"
     }
   },
   "customerOffers": {

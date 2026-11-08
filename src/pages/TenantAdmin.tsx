@@ -16,6 +16,7 @@ import TenantAdminCashTab from './TenantAdminCashTab'
 import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
 import TenantAdminPartnerSettingsTab from './TenantAdminPartnerSettingsTab'
+import TenantAdminEmployeesTab from './TenantAdminEmployeesTab'
 import TenantAdminProductSettingsTab from './TenantAdminProductSettingsTab'
 import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -72,7 +73,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'partner-settings' | 'product-settings' | 'data-import' | 'order-page'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'partner-settings' | 'product-settings' | 'data-import' | 'order-page' | 'employees'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -875,6 +876,7 @@ export default function TenantAdmin() {
             { id: 'accounting',        label: t('tenantAdmin.tabData') },
             { id: 'product-settings',  label: t('tenantAdmin.tabProductSettings') },
             { id: 'data-import',       label: t('tenantAdmin.tabDataImport') },
+            { id: 'employees',         label: t('tenantAdmin.tabEmployees') },
             { id: 'inventory',         label: t('tenantAdmin.tabInventory') },
             { id: 'invoicing',         label: t('tenantAdmin.invoicingTab') },
             { id: 'order-page',        label: t('tenantAdmin.tabOrderPage') },
@@ -1466,6 +1468,13 @@ export default function TenantAdmin() {
           <>
             <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabPartnerSettings')}</h4>
             <TenantAdminPartnerSettingsTab initialSubTab={(location.state as any)?.openSettingsSubTab} />
+          </>
+        )}
+
+        {activeTab === 'employees' && (
+          <>
+            <h4 style={{ margin: '0 0 12px' }}>{t('tenantAdmin.tabEmployees')}</h4>
+            <TenantAdminEmployeesTab initialSubTab={(location.state as any)?.openSettingsSubTab} />
           </>
         )}
 

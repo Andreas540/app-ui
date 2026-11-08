@@ -161,6 +161,13 @@ export async function resolveAuthz({ sql, event }) {
     event.headers['x-active-tenant'] ||
     event.headers['X-Active-Tenant'] ||
     null
+
+  // The tenant user a SuperAdmin has selected in the tenant switcher, if any.
+  // Absent means they are in plain admin view, acting as themselves.
+  const activeUserId =
+    event.headers['x-active-user'] ||
+    event.headers['X-Active-User'] ||
+    null
   
   console.log('🔵 Checking SuperAdmin:', { 
     userEmail: userEmailLower, 
@@ -188,6 +195,21 @@ export async function resolveAuthz({ sql, event }) {
 
       if (tenantRows.length > 0) {
         console.log('🟢 SuperAdmin impersonating tenant:', tenantRows[0].tenant_name)
+
+        // Who the action is recorded as. When a specific tenant user is selected,
+        // that is who is acting; with no selection the SuperAdmin acts as
+        // themselves. Membership is verified so an arbitrary id cannot be claimed.
+        let actingUserId = user.userId
+        if (activeUserId) {
+          const member = await sql`
+            SELECT 1 FROM tenant_memberships
+            WHERE tenant_id = ${tenantRows[0].tenant_id}::uuid
+              AND user_id = ${activeUserId}::uuid
+            LIMIT 1
+          `.catch(() => [])
+          if (member.length > 0) actingUserId = activeUserId
+        }
+
         return {
           tenantId: tenantRows[0].tenant_id,
           role: 'super_admin',
@@ -195,6 +217,8 @@ export async function resolveAuthz({ sql, event }) {
           businessTypeConfig: tenantRows[0].business_type_config || {},
           tenantFeatures: tenantRows[0].tenant_features || [],
           userFeatures: null,
+          userId: user.userId,
+          actingUserId,
           mode: 'super_admin_impersonating'
         }
       }
@@ -215,6 +239,8 @@ export async function resolveAuthz({ sql, event }) {
       businessType: null,
       tenantFeatures: [],
       userFeatures: null,
+      userId: user.userId,
+      actingUserId: user.userId,
       mode: 'super_admin'
     }
   }
@@ -249,6 +275,8 @@ export async function resolveAuthz({ sql, event }) {
       businessTypeConfig: rows[0].business_type_config || {},
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
+      userId: user.userId,
+      actingUserId: user.userId,
       mode: 'membership'
     }
   }
@@ -275,6 +303,8 @@ export async function resolveAuthz({ sql, event }) {
       businessTypeConfig: rows[0].business_type_config || {},
       tenantFeatures: rows[0].tenant_features || [],
       userFeatures: rows[0].user_features,
+      userId: user.userId,
+      actingUserId: user.userId,
       mode: 'membership'
     }
   }
@@ -299,6 +329,8 @@ export async function resolveAuthz({ sql, event }) {
     businessTypeConfig: rows[0].business_type_config || {},
     tenantFeatures: rows[0].tenant_features || [],
     userFeatures: rows[0].user_features,
+    userId: user.userId,
+    actingUserId: user.userId,
     mode: 'membership'
   }
 

@@ -45,7 +45,8 @@ async function handleGet(event) {
       return cors(403, { error: 'Tenant admin access required' })
     }
 
-    const action = new URL(event.rawUrl || `http://x${event.path}`).searchParams.get('action')
+    const params = new URL(event.rawUrl || `http://x${event.path}`).searchParams
+    const action = params.get('action')
 
     // Get all users in the tenant with their permissions
     if (action === 'getTenantUsers') {
@@ -270,6 +271,43 @@ async function handleGet(event) {
         ORDER BY u.name
       `
       return cors(200, { users })
+    }
+
+    // ── Time Approval exclusions ──────────────────────────────────────────
+    // Users who can reach Time Approval: admins, users with no feature list
+    // (meaning all tenant features), or users granted the feature explicitly.
+    if (action === 'getTimeApprovalUsers') {
+      const users = await sql`
+        SELECT u.id, u.name, u.email
+        FROM users u
+        JOIN tenant_memberships tm ON tm.user_id = u.id
+        WHERE tm.tenant_id = ${tenantId}::uuid
+          AND (
+            tm.role IN ('tenant_admin', 'super_admin')
+            OR tm.features IS NULL
+            OR tm.features @> '["time-approval"]'::jsonb
+          )
+        ORDER BY u.name
+      `
+      return cors(200, { users })
+    }
+
+    // Every employee, flagged with whether this approver is blocked from them.
+    if (action === 'getTimeApprovalExclusions') {
+      const userId = params.get('user_id')
+      if (!userId) return cors(400, { error: 'user_id is required' })
+      const employees = await sql`
+        SELECT e.id, e.name, e.employee_code, e.job_title, e.active,
+               (x.employee_id IS NOT NULL) AS excluded
+          FROM employees e
+          LEFT JOIN time_approval_exclusions x
+                 ON x.employee_id = e.id
+                AND x.tenant_id   = ${tenantId}::uuid
+                AND x.user_id     = ${userId}::uuid
+         WHERE e.tenant_id = ${tenantId}::uuid
+         ORDER BY e.name ASC
+      `
+      return cors(200, { employees })
     }
 
     if (action === 'getOrderPageConfig') {
@@ -694,6 +732,25 @@ if (action === 'toggleUserStatus') {
       }
 
       return cors(200, { success: true, updated: targetIds.length })
+    }
+
+    if (action === 'setTimeApprovalExclusions') {
+      const { user_id, employeeIds } = body
+      if (!user_id) return cors(400, { error: 'user_id is required' })
+      if (!Array.isArray(employeeIds)) return cors(400, { error: 'employeeIds must be an array' })
+      // Replace this approver's whole set, so unticking is as meaningful as ticking.
+      await sql`
+        DELETE FROM time_approval_exclusions
+        WHERE tenant_id = ${tenantId}::uuid AND user_id = ${user_id}::uuid
+      `
+      for (const employeeId of employeeIds) {
+        await sql`
+          INSERT INTO time_approval_exclusions (tenant_id, user_id, employee_id)
+          VALUES (${tenantId}::uuid, ${user_id}::uuid, ${employeeId}::uuid)
+          ON CONFLICT DO NOTHING
+        `
+      }
+      return cors(200, { success: true, excluded: employeeIds.length })
     }
 
     if (action === 'setHiddenCustomers') {

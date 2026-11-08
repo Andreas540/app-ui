@@ -178,7 +178,8 @@
     "approvalFailed": "Godkännande misslyckades",
     "bulkFailed": "Massgodkännande misslyckades",
     "thisWeek": "Denna vecka",
-    "lastWeek": "Förra veckan"
+    "lastWeek": "Förra veckan",
+    "excludedTooltip": "Du har inte behörighet att godkänna tid för den här anställda."
   },
   "employees": {
     "title": "Personalhantering",
@@ -1660,6 +1661,18 @@
       "saveChanges": "Spara ändringar",
       "saved": "Sortering sparad.",
       "hidden": "dold"
+    },
+    "tabEmployees": "Anställda",
+    "employees": {
+      "timeApprovalTitle": "Tidsgodkännande",
+      "timeApprovalDesc": "Välj en godkännare och markera sedan de anställda som hen inte ska kunna godkänna tid för. För markerade anställda är knappen Godkänn inaktiverad för den användaren. Lämna allt omarkerat för att tillåta alla.",
+      "approver": "Godkännare",
+      "selectApprover": "Välj en användare…",
+      "selectApproverHint": "Välj en användare ovan för att ange vilka anställda hen inte kan godkänna.",
+      "search": "Sök anställda…",
+      "noEmployees": "Inga anställda hittades.",
+      "saveFailed": "Kunde inte spara undantagen.",
+      "excludedCount": "{{n}} undantagna"
     }
   },
   "customerOffers": {

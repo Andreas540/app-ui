@@ -178,7 +178,8 @@
     "approvalFailed": "Approval failed",
     "bulkFailed": "Bulk approval failed",
     "thisWeek": "This week",
-    "lastWeek": "Last week"
+    "lastWeek": "Last week",
+    "excludedTooltip": "You are not allowed to approve time for this employee."
   },
   "employees": {
     "title": "Employee Management",
@@ -1660,6 +1661,18 @@
       "saveChanges": "Save changes",
       "saved": "Sorting saved.",
       "hidden": "hidden"
+    },
+    "tabEmployees": "Employees",
+    "employees": {
+      "timeApprovalTitle": "Time Approval",
+      "timeApprovalDesc": "Choose an approver, then tick any employee they should not be able to approve time for. A ticked employee's Approve button is disabled for that user. Leave everything unticked to allow all.",
+      "approver": "Approver",
+      "selectApprover": "Select a user…",
+      "selectApproverHint": "Select a user above to set which employees they cannot approve.",
+      "search": "Search employees…",
+      "noEmployees": "No employees found.",
+      "saveFailed": "Could not save the exclusions.",
+      "excludedCount": "{{n}} excluded"
     }
   },
   "customerOffers": {

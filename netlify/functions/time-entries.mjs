@@ -129,7 +129,7 @@ async function getAuthContext({ sql, event }) {
   // 3) App mode (normal login)
   const authz = await resolveAuthz({ sql, event })
   if (authz.error) return { error: authz.error }
-  return { mode: 'app', tenantId: authz.tenantId }
+  return { mode: 'app', tenantId: authz.tenantId, userId: authz.actingUserId }
 }
 
 /**
@@ -161,6 +161,21 @@ async function getTimeEntries(event) {
 
     const employeeId = ctx.mode === 'employee' ? ctx.employeeId : params.get('employee_id') || null
 
+    // Which employees the caller may not approve. Lives here rather than behind
+    // tenant-admin so a non-admin approver can read their own list; the approve
+    // endpoint enforces it regardless of what the UI does with this.
+    if (params.get('my_exclusions') === 'true') {
+      // Only meaningful for a logged-in app user; employees reporting via a token
+      // never approve anything.
+      if (ctx.mode !== 'app' || !ctx.userId) return cors(200, { employee_ids: [] }, event)
+      const rows = await sql`
+        SELECT employee_id::text AS employee_id
+        FROM time_approval_exclusions
+        WHERE tenant_id = ${ctx.tenantId} AND user_id = ${ctx.userId}::uuid
+      `.catch(() => [])
+      return cors(200, { employee_ids: rows.map(r => r.employee_id) }, event)
+    }
+
     const from = params.get('from') || null
     const to = params.get('to') || null
     const approvedParam = params.get('approved')
@@ -177,13 +192,17 @@ async function getTimeEntries(event) {
         te.total_hours::float8 as total_hours,
         te.salary::float8 as salary,
         te.approved,
-        te.approved_by,
+        -- Live name where we know which account approved, so a rename shows
+        -- through; the name captured at the time for rows predating that.
+        COALESCE(au.name, te.approved_by) AS approved_by,
+        te.approved_by_user_id,
         te.approved_at,
         te.notes,
         te.created_at,
         te.updated_at
       FROM time_entries te
       JOIN employees e ON e.id = te.employee_id
+      LEFT JOIN users au ON au.id = te.approved_by_user_id
       WHERE te.tenant_id = ${TENANT_ID}
         AND (${employeeId}::uuid IS NULL OR te.employee_id = ${employeeId}::uuid)
         AND (${from}::date IS NULL OR te.work_date >= ${from}::date)
