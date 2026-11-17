@@ -77,6 +77,9 @@ async function handleVerify(event) {
             t.default_currency as tenant_default_currency,
             t.default_timezone as tenant_default_timezone,
             t.ui_config,
+            COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
+            COALESCE(t.pin_length, 6)            AS pin_length,
+            COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
             bt.config_defaults as business_type_config
           FROM tenant_memberships tm
           JOIN users u ON u.id = tm.user_id
@@ -101,7 +104,10 @@ async function handleVerify(event) {
         console.log('🟢 SuperAdmin impersonating user:', r.name, 'in tenant:', r.tenant_name)
 
         // Get SuperAdmin's own identity (name/email stay as SuperAdmin)
-        const admins = await sql`SELECT id, email, name FROM users WHERE id = ${decoded.userId} LIMIT 1`
+        const admins = await sql`
+          SELECT id, email, name, (pin_hash IS NOT NULL) AS user_has_pin
+          FROM users WHERE id = ${decoded.userId} LIMIT 1
+        `
         const admin = admins[0]
 
         await logActivity({ sql, event, action: 'verify_token', success: true, userId: admin.id, tenantId: r.tenant_id })
@@ -132,7 +138,16 @@ async function handleVerify(event) {
             uiConfig: r.ui_config || {},
             impersonatingUser: { id: r.id, name: r.name, email: r.email, role: r.role },
           },
-          pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
+          // The impersonated tenant's real policy, not a placeholder — Tenant Admin reads
+          // this back to populate the PIN Lock form. userHasPin is the SuperAdmin's own
+          // PIN, since they are the one who would enter it.
+          pinLock: {
+            enabled: !!r.pin_lock_enabled,
+            pinLength: Number(r.pin_length) || 6,
+            idleLockMinutes: Number(r.idle_lock_minutes) || 15,
+            userHasPin: !!admin.user_has_pin,
+            enforced: false,
+          },
         })
       }
 
@@ -150,6 +165,9 @@ async function handleVerify(event) {
             t.default_currency as tenant_default_currency,
             t.default_timezone as tenant_default_timezone,
             t.ui_config,
+            COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
+            COALESCE(t.pin_length, 6)            AS pin_length,
+            COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
             bt.config_defaults as business_type_config
           FROM tenants t
           LEFT JOIN business_types bt ON bt.id = t.business_type
@@ -164,7 +182,7 @@ async function handleVerify(event) {
 
         // Get user basic info
         const users = await sql`
-          SELECT id, email, name
+          SELECT id, email, name, (pin_hash IS NOT NULL) AS user_has_pin
           FROM users
           WHERE id = ${decoded.userId}
           LIMIT 1
@@ -209,7 +227,17 @@ async function handleVerify(event) {
             tenant_default_timezone: tenant.tenant_default_timezone,
             uiConfig: tenant.ui_config || {},
           },
-          pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
+          // The viewed tenant's real policy, not a placeholder. Returning false here is
+          // what made the PIN Lock setting in Tenant Admin appear to save and then revert:
+          // the save landed, this read overwrote it. Enforcement for SuperAdmins is gated
+          // separately in App.tsx, so reporting the truth does not lock support sessions.
+          pinLock: {
+            enabled: !!tenant.pin_lock_enabled,
+            pinLength: Number(tenant.pin_length) || 6,
+            idleLockMinutes: Number(tenant.idle_lock_minutes) || 15,
+            userHasPin: !!user.user_has_pin,
+            enforced: false,
+          },
         })
       }
 
@@ -252,7 +280,10 @@ async function handleVerify(event) {
           businessType: null,
           features: []
         },
-        pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false },
+        // Global mode has no active tenant (tenantId: null), so there is no PIN Lock
+        // policy to report. Disabled is correct here, unlike the two tenant-scoped
+        // branches above.
+        pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false, enforced: false },
       })
     }
 
@@ -365,6 +396,7 @@ async function handleVerify(event) {
           pinLength: Number(membership[0].pin_length) || 6,
           idleLockMinutes: Number(membership[0].idle_lock_minutes) || 15,
           userHasPin: !!user.user_has_pin,
+          enforced: true,
         },
       })
     }
@@ -468,6 +500,7 @@ async function handleVerify(event) {
         pinLength: Number(user.pin_length) || 6,
         idleLockMinutes: Number(user.idle_lock_minutes) || 15,
         userHasPin: !!user.user_has_pin,
+        enforced: true,
       },
     })
 

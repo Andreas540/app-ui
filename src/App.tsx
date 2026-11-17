@@ -442,8 +442,16 @@ function MainApp() {
     () => sessionStorage.getItem('frontPageDismissed') === '1'
   )
 
+  // A SuperAdmin viewing a tenant reads that tenant's real PIN Lock policy (so Tenant
+  // Admin can show and edit it) but is deliberately not subject to it — the tenant's
+  // idle lock covers the tenant's staff, not a support session. The server sets
+  // `enforced`; we do NOT test user.role here, because public.users.role can hold
+  // 'super_admin' for an ordinary tenant user and that would disable their lock.
+  // Only an explicit false disables, so a config cached before `enforced` existed locks.
+  const pinLockActive = !!(pinLock?.enabled && pinLock?.enforced !== false)
+
   // Hard logout after idle: 90 min normally, 4h when PIN lock is active (PIN overlay handles security)
-  const hardLogoutMs = pinLock?.enabled ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
+  const hardLogoutMs = pinLockActive ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
   useIdleTimeout(
     hardLogoutMs,
     () => {
@@ -454,7 +462,7 @@ function MainApp() {
 
   // Soft lock: show PIN overlay after tenant-configured idle period
   useIdleLock({
-    enabled: !!(isAuthenticated && pinLock?.enabled),
+    enabled: !!(isAuthenticated && pinLockActive),
     idleLockMinutes: pinLock?.idleLockMinutes ?? 15,
     isLocked,
     onLock: lock,

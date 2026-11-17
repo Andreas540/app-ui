@@ -27,10 +27,21 @@ interface User {
 }
 
 export interface PinLockConfig {
+  /** The tenant's configured policy. Tenant Admin shows and edits this. */
   enabled: boolean
   pinLength: number
   idleLockMinutes: number
   userHasPin: boolean
+  /**
+   * Whether this session is actually subject to the policy above. The server decides,
+   * because only it knows (from SUPER_ADMIN_EMAILS) that a session is a SuperAdmin
+   * support session. Do not infer this from user.role: public.users.role can itself
+   * hold the string 'super_admin' for an ordinary tenant user, so a client-side role
+   * check would silently disable the lock for them.
+   * Absent on configs cached before this field existed — treat only an explicit false
+   * as "not enforced", so the fail-safe direction is to lock.
+   */
+  enforced?: boolean
 }
 
 interface AuthContextType {

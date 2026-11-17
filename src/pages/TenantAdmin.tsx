@@ -159,10 +159,24 @@ export default function TenantAdmin() {
   const [idleMinutes,      setIdleMinutes]      = useState(() => pinLock?.idleLockMinutes ?? 15)
   const [savingPinLock,    setSavingPinLock]    = useState(false)
   const [pinLockMsg,       setPinLockMsg]       = useState<{ ok: boolean; text: string } | null>(null)
+  // Set by the three inputs below, cleared on save. Guards the re-sync effect: App.tsx
+  // re-verifies the token every 5 minutes, which refreshes pinLock, and without this an
+  // admin's half-finished edit would be silently reset mid-typing.
+  const [pinLockDirty,     setPinLockDirty]     = useState(false)
 
   useEffect(() => {
     loadData()
   }, [])
+
+  // The form is initialised from pinLock at mount, which is stale the moment the context
+  // refreshes (after a save, or on the periodic re-verify). Re-sync from it whenever it
+  // changes, except while the admin has unsaved edits.
+  useEffect(() => {
+    if (pinLockDirty) return
+    setPinLockEnabled(pinLock?.enabled ?? false)
+    setPinLengthSetting(pinLock?.pinLength ?? 6)
+    setIdleMinutes(pinLock?.idleLockMinutes ?? 15)
+  }, [pinLock, pinLockDirty])
 
   useEffect(() => {
     if (activeTab === 'invoicing') loadInvoiceConfig()
@@ -328,6 +342,9 @@ export default function TenantAdmin() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setPinLockMsg({ ok: true, text: t('tenantAdmin.pinLock.saved') })
+      // Cleared before the re-verify so the effect above adopts the server's values —
+      // which is what makes a failed save visible instead of leaving the form looking saved.
+      setPinLockDirty(false)
       await verifyAuth()
     } catch (err: any) {
       setPinLockMsg({ ok: false, text: err.message || t('tenantAdmin.pinLock.saveFailed') })
@@ -931,7 +948,7 @@ export default function TenantAdmin() {
                 type="checkbox"
                 id="pinLockEnabled"
                 checked={pinLockEnabled}
-                onChange={e => { setPinLockEnabled(e.target.checked); setPinLockMsg(null) }}
+                onChange={e => { setPinLockEnabled(e.target.checked); setPinLockMsg(null); setPinLockDirty(true) }}
               />
               <label htmlFor="pinLockEnabled" style={{ cursor: 'pointer', margin: 0 }}>
                 {t('tenantAdmin.pinLock.enable')}
@@ -944,7 +961,7 @@ export default function TenantAdmin() {
                   <label>{t('tenantAdmin.pinLock.pinLength')}</label>
                   <select
                     value={pinLengthSetting}
-                    onChange={e => { setPinLengthSetting(Number(e.target.value)); setPinLockMsg(null) }}
+                    onChange={e => { setPinLengthSetting(Number(e.target.value)); setPinLockMsg(null); setPinLockDirty(true) }}
                   >
                     <option value={4}>{t('tenantAdmin.pinLock.digits', { n: 4 })}</option>
                     <option value={6}>{t('tenantAdmin.pinLock.digits', { n: 6 })}</option>
@@ -954,7 +971,7 @@ export default function TenantAdmin() {
                   <label>{t('tenantAdmin.pinLock.idleMinutes')}</label>
                   <select
                     value={idleMinutes}
-                    onChange={e => { setIdleMinutes(Number(e.target.value)); setPinLockMsg(null) }}
+                    onChange={e => { setIdleMinutes(Number(e.target.value)); setPinLockMsg(null); setPinLockDirty(true) }}
                   >
                     {[5, 10, 15, 20, 30, 45, 60].map(m => (
                       <option key={m} value={m}>{t('tenantAdmin.pinLock.minuteOption', { n: m })}</option>
