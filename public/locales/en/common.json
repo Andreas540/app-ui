@@ -145,7 +145,10 @@
     "entryUpdated": "Time entry updated successfully!",
     "confirmDelete": "Delete this time entry?",
     "entryDeleted": "Time entry deleted",
-    "deleteFailed": "Delete failed"
+    "deleteFailed": "Delete failed",
+    "clockedTime": "Clocked time:",
+    "breaks": "Breaks:",
+    "hoursWorked": "Hours worked:"
   },
   "timeApproval": {
     "title": "Time Approval",
@@ -180,7 +183,9 @@
     "thisWeek": "This week",
     "lastWeek": "Last week",
     "excludedTooltip": "You are not allowed to approve time for this employee.",
-    "unpaidBreak": "{{time}} unpaid break"
+    "clocked": "Clocked",
+    "breaks": "Breaks",
+    "worked": "Worked"
   },
   "employees": {
     "title": "Employee Management",

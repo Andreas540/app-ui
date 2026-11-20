@@ -367,8 +367,17 @@ const stats = useMemo(() => {
   const approvedEarnings = roleScopedEntries.filter(e => e.approved).reduce((sum, e) => sum + (e.salary || 0), 0)
   const pendingHours = totalHours - approvedHours
   const pendingCount = roleScopedEntries.filter(e => !e.approved).length
-  
+
+  // Only from entries that also contributed hours, so clocked - breaks == worked.
+  // An entry with no end_time has total_hours NULL; counting its break here would
+  // describe a deduction that was never applied to the total beside it.
+  const breakMinutes = roleScopedEntries.reduce(
+    (sum, e) => sum + (e.total_hours === null ? 0 : (Number(e.break_minutes) || 0)), 0)
+
   return {
+    // total_hours already has breaks removed; adding them back gives the clock span.
+    clockedHours: totalHours + breakMinutes / 60,
+    breakMinutes,
     totalHours: totalHours,
     totalEarnings: totalEarnings,
     approvedHours: approvedHours,
@@ -602,8 +611,24 @@ const stats = useMemo(() => {
       {fmtMoney(stats.approvedEarnings)}
     </div>
   </div>
+  {stats.breakMinutes > 0 && (
+    <div>
+      <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.clockedTime')}</div>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>
+        {formatHoursMinutes(stats.clockedHours)}
+      </div>
+    </div>
+  )}
+  {stats.breakMinutes > 0 && (
+    <div>
+      <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.breaks')}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>
+        −{formatHoursMinutes(stats.breakMinutes / 60)}
+      </div>
+    </div>
+  )}
   <div>
-    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.totalHours')}</div>
+    <div className="helper" style={{ marginBottom: 4 }}>{t('timeEntry.hoursWorked')}</div>
     <div style={{ fontSize: 16, fontWeight: 600 }}>
       {formatHoursMinutes(stats.totalHours)}
     </div>
@@ -759,19 +784,23 @@ const stats = useMemo(() => {
                             </div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
   {entry.start_time} - {entry.end_time || t('timeApproval.noEndTime')}
-  {entry.total_hours && (
+  {/* With a break, show the whole subtraction. Just the clock times and a net
+      figure leaves the approver to work out why they disagree. */}
+  {entry.total_hours !== null && Number(entry.break_minutes) > 0 ? (
+    <>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span>{t('timeApproval.clocked')} {formatHoursMinutes(Number(entry.total_hours) + Number(entry.break_minutes) / 60)}</span>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span>{t('timeApproval.breaks')} −{formatHoursMinutes(Number(entry.break_minutes) / 60)}</span>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span style={{ fontWeight: 600 }}>{t('timeApproval.worked')} {formatHoursMinutes(entry.total_hours)}</span>
+    </>
+  ) : entry.total_hours ? (
     <>
       <span style={{ margin: '0 8px' }}>•</span>
       {formatHoursMinutes(entry.total_hours)}
     </>
-  )}
-  {/* Without this, clock times and paid hours disagree with nothing to explain why. */}
-  {Number(entry.break_minutes) > 0 && (
-    <>
-      <span style={{ margin: '0 8px' }}>•</span>
-      <span>{t('timeApproval.unpaidBreak', { time: formatHoursMinutes(Number(entry.break_minutes) / 60) })}</span>
-    </>
-  )}
+  ) : null}
 </div>
 {entry.salary !== null && (
   <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>

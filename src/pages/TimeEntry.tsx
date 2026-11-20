@@ -20,6 +20,8 @@ type TimeEntry = {
   start_time: string
   end_time: string
   total_hours: number | string | null
+  /** Unpaid break minutes. Already deducted from total_hours by the database. */
+  break_minutes: number | string | null
   salary: number | string | null
   approved: boolean
   approved_by: string | null
@@ -343,11 +345,22 @@ export default function TimeEntry() {
 
     const pendingHoursNum = totalHoursNum - approvedHoursNum
 
+    // Only from days that also contributed hours, so clocked - breaks == worked.
+    // A day still in progress has total_hours NULL and must not skew the subtraction.
+    const breakMinutesNum = timeEntries.reduce(
+      (sum, entry) => sum + (toNumberOrNull(entry.total_hours) === null ? 0 : (toNumberOrNull(entry.break_minutes) || 0)),
+      0,
+    )
+
     return {
+      // total_hours already has breaks removed, so adding them back gives the
+      // figure the clock actually recorded.
+      clockedHours: totalHoursNum + breakMinutesNum / 60,
       totalHours: totalHoursNum,
       totalEarnings: totalEarningsNum,
       approvedHours: approvedHoursNum,
       pendingHours: pendingHoursNum,
+      breakMinutes: breakMinutesNum,
       daysWorked: timeEntries.length,
     }
   }, [timeEntries])
@@ -550,8 +563,22 @@ export default function TimeEntry() {
               <span className="helper">{t('timeEntry.daysWorked')}</span>
               <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
             </div>
+            {stats.breakMinutes > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="helper">{t('timeEntry.clockedTime')}</span>
+                <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.clockedHours)}</span>
+              </div>
+            )}
+            {stats.breakMinutes > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="helper">{t('timeEntry.breaks')}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  −{formatHoursMinutes(stats.breakMinutes / 60)}
+                </span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className="helper">{t('timeEntry.totalHours')}</span>
+              <span className="helper">{t('timeEntry.hoursWorked')}</span>
               <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>

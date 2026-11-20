@@ -48,7 +48,8 @@ const translations = {
     thisWeek: 'This week',
     lastWeek: 'Last week',
     daysWorked: 'Days worked:',
-    totalHours: 'Total hours:',
+    clockedTime: 'Clocked time:',
+    hoursWorked: 'Hours worked:',
     totalEarnings: 'Total earnings:',
     approvedHours: 'Approved hours:',
     pendingHours: 'Pending hours:',
@@ -88,7 +89,8 @@ const translations = {
     thisWeek: 'Esta semana',
     lastWeek: 'Semana pasada',
     daysWorked: 'Días trabajados:',
-    totalHours: 'Horas totales:',
+    clockedTime: 'Tiempo registrado:',
+    hoursWorked: 'Horas trabajadas:',
     totalEarnings: 'Ganancias totales:',
     approvedHours: 'Horas aprobadas:',
     pendingHours: 'Horas pendientes:',
@@ -466,11 +468,18 @@ const to = toLocalYMD(toDate)
   const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
   const pendingHoursNum = totalHoursNum - approvedHoursNum
 
-  // Already excluded from total_hours by the database; shown so the deduction is
-  // visible rather than looking like missing time.
-  const breakMinutesNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.break_minutes) || 0), 0)
+  // Count breaks ONLY from days that also contributed hours. A day still in
+  // progress has total_hours NULL, so its break would otherwise be subtracted from
+  // a figure it was never part of, and clocked - breaks would not equal worked.
+  const breakMinutesNum = timeEntries.reduce(
+    (sum, entry) => sum + (toNumberOrNull(entry.total_hours) === null ? 0 : (toNumberOrNull(entry.break_minutes) || 0)),
+    0,
+  )
 
   return {
+    // What the clock recorded, before breaks come off. Derived rather than stored:
+    // total_hours already has the deduction applied, so adding it back is exact.
+    clockedHours: totalHoursNum + breakMinutesNum / 60,
     totalHours: totalHoursNum,
     totalEarnings: totalEarningsNum,
     approvedHours: approvedHoursNum,
@@ -674,8 +683,22 @@ const to = toLocalYMD(toDate)
     <span className="helper">{t.daysWorked}</span>
     <span style={{ fontWeight: 600 }}>{stats.daysWorked}</span>
   </div>
+  {stats.breakMinutes > 0 && (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span className="helper">{t.clockedTime}</span>
+      <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.clockedHours, lang)}</span>
+    </div>
+  )}
+  {stats.breakMinutes > 0 && (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span className="helper">{t.breaks}</span>
+      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
+        −{formatHoursMinutes(stats.breakMinutes / 60, lang)}
+      </span>
+    </div>
+  )}
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span className="helper">{t.totalHours}</span>
+    <span className="helper">{t.hoursWorked}</span>
     <span style={{ fontWeight: 600 }}>{formatHoursMinutes(stats.totalHours, lang)}</span>
   </div>
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -686,14 +709,6 @@ const to = toLocalYMD(toDate)
     <span className="helper">{t.pendingHours}</span>
     <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours, lang)}</span>
   </div>
-  {stats.breakMinutes > 0 && (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span className="helper">{t.breaks}</span>
-      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-        −{formatHoursMinutes(stats.breakMinutes / 60, lang)}
-      </span>
-    </div>
-  )}
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalEarnings}</span>
     <span style={{ fontWeight: 600 }}>{stats.totalEarnings.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>

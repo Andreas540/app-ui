@@ -145,7 +145,10 @@
     "entryUpdated": "Tidrapport uppdaterad!",
     "confirmDelete": "Ta bort denna tidrapport?",
     "entryDeleted": "Tidrapport borttagen",
-    "deleteFailed": "Misslyckades att ta bort"
+    "deleteFailed": "Misslyckades att ta bort",
+    "clockedTime": "Stämplad tid:",
+    "breaks": "Raster:",
+    "hoursWorked": "Arbetade timmar:"
   },
   "timeApproval": {
     "title": "Tidsgodkännande",
@@ -180,7 +183,9 @@
     "thisWeek": "Denna vecka",
     "lastWeek": "Förra veckan",
     "excludedTooltip": "Du har inte behörighet att godkänna tid för den här anställda.",
-    "unpaidBreak": "{{time}} obetald paus"
+    "clocked": "Stämplat",
+    "breaks": "Raster",
+    "worked": "Arbetat"
   },
   "employees": {
     "title": "Personalhantering",
