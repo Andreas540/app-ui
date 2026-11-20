@@ -681,21 +681,12 @@ export default function LaborProduction() {
 
         {/* Granularity */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-        <div style={{ display: 'flex', gap: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
+        <div className="seg-bar">
           {(['day', 'week', 'month'] as const).map(g => (
             <button
               key={g}
               onClick={() => setGranularity(g)}
-              style={{
-                padding: '6px 18px',
-                fontSize: 13,
-                background: granularity === g ? 'var(--primary)' : 'transparent',
-                color: granularity === g ? 'var(--brand-contrast)' : 'var(--text, inherit)',
-                border: 'none',
-                borderRadius: 0,
-                cursor: 'pointer',
-                fontWeight: granularity === g ? 600 : 400,
-              }}
+              className={granularity === g ? 'seg seg--lg active' : 'seg seg--lg'}
             >
               {g === 'day' ? t('production.byDay') : g === 'week' ? t('production.byWeek') : t('production.byMonth')}
             </button>

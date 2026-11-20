@@ -230,16 +230,12 @@ export default function QuickSalesPage() {
         </div>
 
         {/* Row 3: payment type toggle */}
-        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', marginBottom: 14, width: 'fit-content' }}>
+        <div className="seg-bar" style={{ marginBottom: 14 }}>
           {(['all', 'card', 'cash'] as const).map(f => (
             <button
               key={f}
               onClick={() => setPaymentFilter(f)}
-              style={{
-                padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                background: paymentFilter === f ? 'var(--primary)' : 'transparent',
-                color: paymentFilter === f ? 'var(--brand-contrast)' : undefined,
-              }}
+              className={paymentFilter === f ? 'seg active' : 'seg'}
             >
               {f === 'all' ? 'All' : f === 'card' ? 'Card' : 'Cash'}
             </button>

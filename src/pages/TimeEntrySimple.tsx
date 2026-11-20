@@ -655,32 +655,16 @@ const to = toLocalYMD(toDate)
       <div style={{ marginTop: 24, padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t.timeSummary}</h4>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="seg-row">
             <button
               onClick={() => setViewPeriod('thisWeek')}
-              style={{
-                padding: '4px 12px',
-                fontSize: 12,
-                background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
-                color: viewPeriod === 'thisWeek' ? 'var(--brand-contrast)' : undefined,
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                cursor: 'pointer',
-              }}
+              className={viewPeriod === 'thisWeek' ? 'seg-pill seg-pill--sm active' : 'seg-pill seg-pill--sm'}
             >
               {t.thisWeek}
             </button>
             <button
               onClick={() => setViewPeriod('lastWeek')}
-              style={{
-                padding: '4px 12px',
-                fontSize: 12,
-                background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
-                color: viewPeriod === 'lastWeek' ? 'var(--brand-contrast)' : undefined,
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                cursor: 'pointer',
-              }}
+              className={viewPeriod === 'lastWeek' ? 'seg-pill seg-pill--sm active' : 'seg-pill seg-pill--sm'}
             >
               {t.lastWeek}
             </button>

@@ -887,17 +887,9 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                   <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
                     {pagePreviewTab === 'service' ? 'Edit Service' : t('products.editProductTitle')}
                   </div>
-                  <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
-                    {(['product', 'service'] as const).map((tab, i) => (
-                      <button key={tab} onClick={() => setPagePreviewTab(tab)} style={{
-                        padding: '6px 16px',
-                        border: '1px solid var(--line)',
-                        borderRight: i === 0 ? 'none' : undefined,
-                        borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
-                        background: pagePreviewTab === tab ? 'var(--primary)' : 'transparent',
-                        color: pagePreviewTab === tab ? 'var(--brand-contrast)' : 'inherit',
-                        fontSize: 13, cursor: 'pointer',
-                      }}>
+                  <div className="seg-bar" style={{ marginBottom: 12 }}>
+                    {(['product', 'service'] as const).map(tab => (
+                      <button key={tab} onClick={() => setPagePreviewTab(tab)} className={pagePreviewTab === tab ? 'seg seg--lg active' : 'seg seg--lg'}>
                         {tab === 'product' ? 'Product' : 'Service'}
                       </button>
                     ))}

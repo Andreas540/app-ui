@@ -142,12 +142,10 @@ export default function SearchCostsCard({ hideHeader = false, defaultOpen = fals
           </select>
 
           {/* Type filter */}
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 8 }}>
+          <div className="seg-bar" style={{ marginBottom: 8 }}>
             {(['all', 'B', 'P'] as const).map(f => (
               <button key={f} onClick={() => { setFilterType(f); setFilterKind('all') }}
-                style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: filterType === f ? 'var(--primary)' : 'transparent',
-                  color: filterType === f ? 'var(--brand-contrast)' : undefined }}>
+                className={filterType === f ? 'seg active' : 'seg'}>
                 {f === 'all' ? t('costs.allCosts', 'All') : f === 'B' ? t('costs.business') : t('costs.private')}
               </button>
             ))}
@@ -155,12 +153,10 @@ export default function SearchCostsCard({ hideHeader = false, defaultOpen = fals
 
           {/* Kind filter */}
           {filterType !== 'all' && (
-            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
+            <div className="seg-bar" style={{ marginBottom: 14 }}>
               {(['all', 'recurring', 'non-recurring'] as const).map(f => (
                 <button key={f} onClick={() => setFilterKind(f)}
-                  style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                    background: filterKind === f ? 'var(--primary)' : 'transparent',
-                    color: filterKind === f ? 'var(--brand-contrast)' : undefined }}>
+                  className={filterKind === f ? 'seg active' : 'seg'}>
                   {f === 'all' ? t('all', 'All') : f === 'recurring' ? t('costs.recurring', 'Recurring') : t('costs.nonRecurring', 'Non-recurring')}
                 </button>
               ))}

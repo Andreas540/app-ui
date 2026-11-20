@@ -1837,20 +1837,12 @@ async function handleSaveStripeCustomerId() {
                       <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Inventory</div>
                       <div style={{ padding: '10px 10px', border: '1px solid var(--border)', borderRadius: 6, marginBottom: 16 }}>
                         <div style={{ fontSize: 13, marginBottom: 8 }}>Inventory mode</div>
-                        <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+                        <div className="seg-bar">
                           {(['manufacturing', 'retail'] as const).map(mode => (
                             <button
                               key={mode}
                               onClick={() => setBtInventoryMode(mode)}
-                              style={{
-                                padding: '4px 14px',
-                                fontSize: 13,
-                                border: 'none',
-                                borderRight: mode === 'manufacturing' ? '1px solid var(--border)' : 'none',
-                                background: btInventoryMode === mode ? 'var(--primary)' : 'transparent',
-                                color: btInventoryMode === mode ? 'var(--brand-contrast)' : undefined,
-                                cursor: 'pointer',
-                              }}
+                              className={btInventoryMode === mode ? 'seg active' : 'seg'}
                             >
                               {mode === 'manufacturing' ? 'Manufacturing' : 'Retail'}
                             </button>
@@ -1975,17 +1967,9 @@ async function handleSaveStripeCustomerId() {
                   </div>
 
                   {/* Toggle — switches which config is being edited */}
-                  <div style={{ display: 'flex', gap: 0, marginBottom: 12, width: 'fit-content' }}>
-                    {(['product', 'service'] as const).map((tab, i) => (
-                      <button key={tab} onClick={() => setBtPreviewTab(tab)} style={{
-                        padding: '6px 16px',
-                        border: '1px solid var(--border)',
-                        borderRight: i === 0 ? 'none' : undefined,
-                        borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
-                        background: btPreviewTab === tab ? 'var(--primary)' : 'transparent',
-                        color: btPreviewTab === tab ? 'var(--brand-contrast)' : 'inherit',
-                        fontSize: 13, cursor: 'pointer',
-                      }}>
+                  <div className="seg-bar" style={{ marginBottom: 12 }}>
+                    {(['product', 'service'] as const).map(tab => (
+                      <button key={tab} onClick={() => setBtPreviewTab(tab)} className={btPreviewTab === tab ? 'seg seg--lg active' : 'seg seg--lg'}>
                         {tab === 'product' ? 'Product' : 'Service'}
                       </button>
                     ))}
@@ -3080,20 +3064,13 @@ const available = max - used
 
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Business Model</div>
-              <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+              <div className="seg-bar">
                 {(['B2B', 'B2C'] as const).map(val => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setSpecialBusinessModel(val)}
-                    style={{
-                      padding: '6px 18px',
-                      border: 'none',
-                      borderRadius: 0,
-                      fontWeight: specialBusinessModel === val ? 600 : undefined,
-                      background: specialBusinessModel === val ? 'var(--primary)' : 'transparent',
-                      color: specialBusinessModel === val ? 'var(--brand-contrast)' : undefined,
-                    }}
+                    className={specialBusinessModel === val ? 'seg seg--lg active' : 'seg seg--lg'}
                   >
                     {val}
                   </button>

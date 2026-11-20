@@ -182,16 +182,12 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
 
           {/* Paid filter + action buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+            <div className="seg-bar">
               {(['all', 'paid', 'unpaid'] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setPaidFilter(f)}
-                  style={{
-                    padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                    background: paidFilter === f ? 'var(--primary)' : 'transparent',
-                    color: paidFilter === f ? 'var(--brand-contrast)' : undefined,
-                  }}
+                  className={paidFilter === f ? 'seg active' : 'seg'}
                 >
                   {f === 'all' ? 'All' : f === 'paid' ? 'Paid' : 'Unpaid'}
                 </button>

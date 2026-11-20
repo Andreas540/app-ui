@@ -203,14 +203,7 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
   const segBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
-      style={{
-        padding: '4px 14px',
-        fontSize: 13,
-        border: 'none',
-        background: active ? 'var(--primary)' : 'transparent',
-        color: active ? 'var(--brand-contrast)' : undefined,
-        cursor: 'pointer',
-      }}
+      className={active ? 'seg active' : 'seg'}
     >
       {label}
     </button>

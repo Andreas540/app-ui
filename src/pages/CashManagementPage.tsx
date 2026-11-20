@@ -220,17 +220,13 @@ export default function CashManagementPage() {
       {canRegister && <>
 
       {/* Week filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div className="seg-row seg-row--fill" style={{ marginBottom: 16 }}>
         {(['thisWeek', 'lastWeek'] as const).map(p => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            style={{
-              flex: 1, height: H,
-              background: period === p ? 'var(--primary)' : 'transparent',
-              color: period === p ? 'var(--brand-contrast)' : undefined,
-              border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', fontSize: 14,
-            }}
+            className={period === p ? 'seg-pill active' : 'seg-pill'}
+            style={{ height: H, fontSize: 14 }}
           >
             {t(`cashManagement.${p}`)}
           </button>

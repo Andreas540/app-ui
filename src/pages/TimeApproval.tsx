@@ -483,22 +483,13 @@ const stats = useMemo(() => {
   </div>
 
   {/* Day / Week / Month — one fixed period at a time */}
-  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+  <div className="seg-row seg-row--fill" style={{ marginTop: 12 }}>
     {(['day', 'week', 'month'] as const).map(m => (
       <button
         key={m}
         onClick={() => setPeriodMode(m)}
-        style={{
-          flex: 1,
-          height: CONTROL_H,
-          background: periodMode === m && !isCustomRange ? 'var(--primary)' : 'transparent',
-          color: periodMode === m && !isCustomRange ? 'var(--brand-contrast)' : 'var(--text, inherit)',
-          border: '1px solid var(--border)',
-          borderRadius: 4,
-          cursor: 'pointer',
-          fontSize: 14,
-          fontWeight: periodMode === m && !isCustomRange ? 600 : 400,
-        }}
+        className={periodMode === m && !isCustomRange ? 'seg-pill active' : 'seg-pill'}
+        style={{ height: CONTROL_H, fontSize: 14 }}
       >
         {m === 'day' ? t('period.day') : m === 'week' ? t('period.week') : t('period.month')}
       </button>

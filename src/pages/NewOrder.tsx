@@ -421,14 +421,9 @@ export default function NewOrder() {
   if (activeTab === 'return') {
     return (
       <div className="page-normal">
-        <div style={{ display: 'flex', marginBottom: 20, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start', width: 'fit-content' }}>
+        <div className="seg-bar" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           {(['order', 'return'] as const).map(tab => (
-            <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
-              padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
-              background: activeTab === tab ? 'var(--primary)' : 'transparent',
-              color: activeTab === tab ? 'var(--brand-contrast)' : 'inherit',
-              fontWeight: activeTab === tab ? 600 : 400,
-            }}>
+            <button key={tab} type="button" onClick={() => switchTab(tab)} className={activeTab === tab ? 'seg seg--lg active' : 'seg seg--lg'}>
               {tab === 'order' ? 'Order' : 'Return'}
             </button>
           ))}
@@ -440,14 +435,9 @@ export default function NewOrder() {
 
   return (
     <div className="page-normal">
-      <div style={{ display: 'flex', marginBottom: 16, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content' }}>
+      <div className="seg-bar" style={{ marginBottom: 16 }}>
         {(['order', 'return'] as const).map(tab => (
-          <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
-            padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
-            background: activeTab === tab ? 'var(--primary)' : 'transparent',
-            color: activeTab === tab ? 'var(--brand-contrast)' : 'inherit',
-            fontWeight: activeTab === tab ? 600 : 400,
-          }}>
+          <button key={tab} type="button" onClick={() => switchTab(tab)} className={activeTab === tab ? 'seg seg--lg active' : 'seg seg--lg'}>
             {tab === 'order' ? 'Order' : 'Return'}
           </button>
         ))}

@@ -1153,18 +1153,13 @@ export default function TenantAdminOrderPageTab({ initialSubTab, initialCustomer
           {config.show_available && (
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('tenantAdmin.orderPage.availableWording')}</div>
-              <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <div className="seg-bar">
                 {(['available', 'in_stock'] as const).map(opt => (
                   <button
                     key={opt}
                     type="button"
                     onClick={() => setConfig(c => ({ ...c, available_wording: opt }))}
-                    style={{
-                      padding: '0 16px', height: 36, fontSize: 13, border: 'none', cursor: 'pointer',
-                      background: config.available_wording === opt ? 'var(--primary)' : 'var(--btn-bg)',
-                      color: config.available_wording === opt ? 'var(--brand-contrast)' : 'var(--text)',
-                      fontWeight: config.available_wording === opt ? 600 : 400,
-                    }}
+                    className={config.available_wording === opt ? 'seg seg--lg active' : 'seg seg--lg'} style={{ height: 36 }}
                   >
                     {opt === 'available' ? t('tenantAdmin.orderPage.wordingAvailable') : t('tenantAdmin.orderPage.wordingInStock')}
                   </button>

@@ -255,7 +255,11 @@ html[data-theme="miami-dark"] {
   --brand-blue:        #c1a367;
   --brand-blue-hover:  #a98a4d;
   --brand-blue-active: #8f7340;
-  --brand-contrast:    #ffffff;
+  /* The champagne button is light, so its label is the theme's own darkest green
+     rather than white. White measured 2.41:1 against the gold — below AA and the
+     worst of any theme. This green is --bg, reused so the pairing reads as part of
+     the palette: 7.83:1 at rest, 5.79:1 on hover, 4.23:1 during the press. */
+  --brand-contrast:    #081310;
   --primary:           #c1a367;
   --accent:            #c1a367;
   --danger:            #c25548;
@@ -681,6 +685,83 @@ button.primary:focus-visible,
   outline-offset: 2px;
   border-radius: 10px;
 }
+
+/* ===================== Segmented Toggle =====================
+   The canonical "pick one of these" control. Two shapes:
+
+     .seg-bar  a joined group — one border around the whole thing, segments
+               share edges and the ends are rounded by :first/:last-child
+     .seg-row  discrete pills side by side with a gap, each self-bordered
+
+   Both colour their active segment with --primary and, critically, set the
+   label to --brand-contrast. That pairing is the whole reason these classes
+   exist: as 28 hand-written style objects, 35 of them had forgotten it, which
+   left white text on the eggshell brand colour in the jersey theme. Written
+   once here it cannot be forgotten, and scripts/check-theme-contrast.mjs fails
+   the build on any inline brand background that omits it.
+
+   Sizes: default, --sm for dense modals, --lg for roomy page-level tabs.
+   Use these three rather than inventing a fourth; the previous eight sizes
+   were 1-2px drift, not design. */
+
+.seg-bar {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  /* Clips the active segment's background to the rounded ends, which is what
+     makes per-segment end radii unnecessary. */
+  overflow: hidden;
+}
+
+/* Segments split the available width instead of hugging their text. */
+.seg-bar--fill { display: flex; width: 100%; }
+.seg-bar--fill > .seg { flex: 1; }
+
+.seg-row { display: flex; gap: 8px; }
+/* Opt in to equal widths. Without it pills hug their label, which is what the
+   small in-header toggles want. */
+.seg-row--fill > .seg-pill { flex: 1; }
+
+.seg,
+.seg-pill {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 5px 14px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease;
+}
+
+.seg { border: none; }
+
+.seg-pill {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.seg:hover:not(.active),
+.seg-pill:hover:not(.active) { background: var(--surface-subtle); }
+
+.seg.active,
+.seg-pill.active {
+  background: var(--primary);
+  color: var(--brand-contrast);
+  font-weight: 600;
+}
+
+.seg:disabled,
+.seg-pill:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.seg--sm, .seg-pill--sm { padding: 3px 10px; font-size: 12px; }
+.seg--lg, .seg-pill--lg { padding: 7px 18px; }
+
+/* A fill-mode segment has no room for side padding. */
+.seg-bar--fill > .seg--sm { padding-left: 0; padding-right: 0; }
 
 /* ===================== Hamburger Menu ===================== */
 .hamburger {

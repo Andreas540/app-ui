@@ -529,32 +529,16 @@ export default function TimeEntry() {
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
               {t('timeEntry.timeSummaryFor')} {selectedEmployee.name}
             </h4>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="seg-row">
               <button
                 onClick={() => setViewPeriod('thisWeek')}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
-                  color: viewPeriod === 'thisWeek' ? 'var(--brand-contrast)' : undefined,
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
+                className={viewPeriod === 'thisWeek' ? 'seg-pill seg-pill--sm active' : 'seg-pill seg-pill--sm'}
               >
                 {t('timeEntry.thisWeek')}
               </button>
               <button
                 onClick={() => setViewPeriod('lastWeek')}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
-                  color: viewPeriod === 'lastWeek' ? 'var(--brand-contrast)' : undefined,
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
+                className={viewPeriod === 'lastWeek' ? 'seg-pill seg-pill--sm active' : 'seg-pill seg-pill--sm'}
               >
                 {t('timeEntry.lastWeek')}
               </button>

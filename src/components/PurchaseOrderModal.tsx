@@ -381,14 +381,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
   const segBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
-      style={{
-        padding: '4px 14px',
-        fontSize: 13,
-        border: 'none',
-        background: active ? 'var(--primary)' : 'transparent',
-        color: active ? 'var(--brand-contrast)' : undefined,
-        cursor: 'pointer',
-      }}
+      className={active ? 'seg active' : 'seg'}
     >
       {label}
     </button>
@@ -482,9 +475,9 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                               {buildGroupOptions(products)}
                             </select>
                             {l.product_id && (
-                              <div style={{ display: 'flex', marginTop: 6, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
-                                <button onClick={() => updateLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Exact variant</button>
-                                <button onClick={() => updateLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Any variant</button>
+                              <div className="seg-bar seg-bar--fill" style={{ marginTop: 6 }}>
+                                <button onClick={() => updateLine(idx, { match_mode: 'exact' })} className={l.match_mode === 'exact' ? 'seg seg--sm active' : 'seg seg--sm'}>Exact variant</button>
+                                <button onClick={() => updateLine(idx, { match_mode: 'product' })} className={l.match_mode === 'product' ? 'seg seg--sm active' : 'seg seg--sm'}>Any variant</button>
                               </div>
                             )}
                           </div>
@@ -622,9 +615,9 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
 
                                         {/* Mode toggle */}
                                         <div>
-                                          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 8 }}>
-                                            <button onClick={() => setEditMode('breakdown')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'breakdown' ? 'var(--primary)' : 'transparent', color: editMode === 'breakdown' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Product breakdown</button>
-                                            <button onClick={() => setEditMode('total_only')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'total_only' ? 'var(--primary)' : 'transparent', color: editMode === 'total_only' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Total only</button>
+                                          <div className="seg-bar" style={{ marginBottom: 8 }}>
+                                            <button onClick={() => setEditMode('breakdown')} className={editMode === 'breakdown' ? 'seg seg--sm active' : 'seg seg--sm'}>Product breakdown</button>
+                                            <button onClick={() => setEditMode('total_only')} className={editMode === 'total_only' ? 'seg seg--sm active' : 'seg seg--sm'}>Total only</button>
                                           </div>
 
                                           {editMode === 'total_only' ? (
@@ -651,9 +644,9 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                                         {buildGroupOptions(products)}
                                                       </select>
                                                       {l.product_id && (
-                                                        <div style={{ display: 'flex', marginTop: 8, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
-                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Exact variant</button>
-                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Any variant</button>
+                                                        <div className="seg-bar seg-bar--fill" style={{ marginTop: 8 }}>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'exact' })} className={l.match_mode === 'exact' ? 'seg seg--sm active' : 'seg seg--sm'}>Exact variant</button>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'product' })} className={l.match_mode === 'product' ? 'seg seg--sm active' : 'seg seg--sm'}>Any variant</button>
                                                         </div>
                                                       )}
                                                     </div>

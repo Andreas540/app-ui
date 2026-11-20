@@ -224,17 +224,13 @@ export default function CashOverviewPage() {
       )}
 
       {/* This week / Last week preset buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+      <div className="seg-row seg-row--fill" style={{ marginBottom: 8 }}>
         {(['thisWeek', 'lastWeek'] as const).map(p => (
           <button
             key={p}
             onClick={() => handlePeriod(p)}
-            style={{
-              flex: 1, height: H,
-              background: activePeriod === p ? 'var(--primary)' : 'transparent',
-              color: activePeriod === p ? 'var(--brand-contrast)' : undefined,
-              border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', fontSize: 14,
-            }}
+            className={activePeriod === p ? 'seg-pill active' : 'seg-pill'}
+            style={{ height: H, fontSize: 14 }}
           >
             {t(`cashManagement.${p}`)}
           </button>

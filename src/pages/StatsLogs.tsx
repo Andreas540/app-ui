@@ -412,20 +412,12 @@ function ControlsBar({
         </div>
 
         {/* Quick-select presets */}
-        <div style={{ display: 'flex', gap: 0 }}>
-          {PRESETS.map((p, i) => (
+        <div className="seg-bar">
+          {PRESETS.map(p => (
             <button
               key={p.label}
               onClick={() => onSliderChange(p.v)}
-              style={{
-                height: 34, padding: '0 12px', fontSize: 13,
-                border: '1px solid var(--border)',
-                borderRight: i < PRESETS.length - 1 ? 'none' : undefined,
-                borderRadius: i === 0 ? '6px 0 0 6px' : i === PRESETS.length - 1 ? '0 6px 6px 0' : 0,
-                background: sliderVal === p.v ? 'var(--primary)' : 'transparent',
-                color: sliderVal === p.v ? 'var(--brand-contrast)' : 'inherit',
-                cursor: 'pointer',
-              }}
+              className={sliderVal === p.v ? 'seg seg--lg active' : 'seg seg--lg'} style={{ height: 34 }}
             >
               {p.label}
             </button>
