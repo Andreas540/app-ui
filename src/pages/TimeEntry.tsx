@@ -603,6 +603,7 @@ export default function TimeEntry() {
           <div style={{ display: 'grid', gap: 8, maxHeight: 400, overflow: 'auto' }}>
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
+              const entryBreakMinutes = toNumberOrNull(entry.break_minutes) || 0
               return (
                 <div
                   key={entry.id}
@@ -624,8 +625,23 @@ export default function TimeEntry() {
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                       {entry.start_time} - {entry.end_time}
-                      <span style={{ margin: '0 8px' }}>•</span>
-                      {hours === null ? '—' : formatHoursMinutes(hours)}
+                      {/* Same breakdown as the approval rows and the employee page,
+                          so one day reads identically wherever it is looked at. */}
+                      {hours !== null && entryBreakMinutes > 0 ? (
+                        <>
+                          <span style={{ margin: '0 8px' }}>•</span>
+                          <span>{t('timeApproval.clocked')} {formatHoursMinutes(hours + entryBreakMinutes / 60)}</span>
+                          <span style={{ margin: '0 8px' }}>•</span>
+                          <span>{t('timeApproval.breaks')} −{formatHoursMinutes(entryBreakMinutes / 60)}</span>
+                          <span style={{ margin: '0 8px' }}>•</span>
+                          <span style={{ fontWeight: 600 }}>{t('timeApproval.worked')} {formatHoursMinutes(hours)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ margin: '0 8px' }}>•</span>
+                          {hours === null ? '—' : formatHoursMinutes(hours)}
+                        </>
+                      )}
                     </div>
                     {toNumberOrNull(entry.salary) !== null && (
                       <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>

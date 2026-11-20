@@ -49,6 +49,9 @@ const translations = {
     lastWeek: 'Last week',
     daysWorked: 'Days worked:',
     clockedTime: 'Clocked time:',
+    clocked: 'Clocked',
+    breakTime: 'Breaks',
+    worked: 'Worked',
     hoursWorked: 'Hours worked:',
     totalEarnings: 'Total earnings:',
     approvedHours: 'Approved hours:',
@@ -62,6 +65,7 @@ const translations = {
     employeeInactive: 'Employee is inactive',
     employeeNotFound: 'Employee not found',
     clockInSuccess: 'Clocked in successfully!',
+    confirmReClockIn: 'You are already clocked in at {time}.\n\nClocking in again replaces that time. Any break you took before the new time will stop being deducted.\n\nContinue?',
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
     noSession: 'Session missing. Please open your personal link again.',
@@ -90,6 +94,9 @@ const translations = {
     lastWeek: 'Semana pasada',
     daysWorked: 'Días trabajados:',
     clockedTime: 'Tiempo registrado:',
+    clocked: 'Registrado',
+    breakTime: 'Descansos',
+    worked: 'Trabajado',
     hoursWorked: 'Horas trabajadas:',
     totalEarnings: 'Ganancias totales:',
     approvedHours: 'Horas aprobadas:',
@@ -103,6 +110,7 @@ const translations = {
     employeeInactive: 'Empleado está inactivo',
     employeeNotFound: 'Empleado no encontrado',
     clockInSuccess: '¡Entrada registrada exitosamente!',
+    confirmReClockIn: 'Ya marcaste entrada a las {time}.\n\nVolver a marcar entrada reemplaza esa hora. Cualquier descanso que hayas tomado antes de la nueva hora dejará de restarse.\n\n¿Continuar?',
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
     noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
@@ -369,6 +377,16 @@ const to = toLocalYMD(toDate)
   }
 
   async function handleClockIn() {
+    // Clocking in again overwrites start_time — there is one row per employee per
+    // day and no history of what it was. Worth a confirm, because the realistic way
+    // this gets hit is someone back from lunch tapping Clock In instead of End
+    // Break, which would silently erase their morning.
+    //
+    // The new time is not named: the server stamps it in the business timezone, so
+    // the page genuinely does not know it yet.
+    if (clockInTime && !clockOutTime) {
+      if (!window.confirm(t.confirmReClockIn.replace('{time}', clockInTime))) return
+    }
     try {
       const base = apiBase()
 
@@ -743,12 +761,19 @@ const to = toLocalYMD(toDate)
                     <>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
   {entry.start_time} - {entry.end_time}
-  <span style={{ margin: '0 8px' }}>•</span>
-  {hours === null ? '—' : formatHoursMinutes(hours, lang)}
-  {entryBreakMinutes > 0 && (
+  {hours !== null && entryBreakMinutes > 0 ? (
     <>
       <span style={{ margin: '0 8px' }}>•</span>
-      <span>{t.breaks} −{formatHoursMinutes(entryBreakMinutes / 60, lang)}</span>
+      <span>{t.clocked} {formatHoursMinutes(hours + entryBreakMinutes / 60, lang)}</span>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span>{t.breakTime} −{formatHoursMinutes(entryBreakMinutes / 60, lang)}</span>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span style={{ fontWeight: 600 }}>{t.worked} {formatHoursMinutes(hours, lang)}</span>
+    </>
+  ) : (
+    <>
+      <span style={{ margin: '0 8px' }}>•</span>
+      {hours === null ? '—' : formatHoursMinutes(hours, lang)}
     </>
   )}
 </div>
