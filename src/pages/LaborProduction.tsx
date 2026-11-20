@@ -690,7 +690,7 @@ export default function LaborProduction() {
                 padding: '6px 18px',
                 fontSize: 13,
                 background: granularity === g ? 'var(--primary)' : 'transparent',
-                color: granularity === g ? 'white' : 'var(--text, inherit)',
+                color: granularity === g ? 'var(--brand-contrast)' : 'var(--text, inherit)',
                 border: 'none',
                 borderRadius: 0,
                 cursor: 'pointer',

@@ -232,7 +232,7 @@ export default function CashOverviewPage() {
             style={{
               flex: 1, height: H,
               background: activePeriod === p ? 'var(--primary)' : 'transparent',
-              color: activePeriod === p ? '#fff' : undefined,
+              color: activePeriod === p ? 'var(--brand-contrast)' : undefined,
               border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', fontSize: 14,
             }}
           >

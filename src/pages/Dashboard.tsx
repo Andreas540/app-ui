@@ -673,7 +673,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
                 <button key={n} onClick={() => saveDashCols(n)}
                   style={{ height: 36, width: 36, fontSize: 13, border: 'none', borderRadius: 0, cursor: 'pointer',
                     background: dashCols === n ? 'var(--primary)' : 'transparent',
-                    color: dashCols === n ? '#fff' : 'var(--text-secondary)' }}>
+                    color: dashCols === n ? 'var(--brand-contrast)' : 'var(--text-secondary)' }}>
                   {n}
                 </button>
               ))}
@@ -871,6 +871,7 @@ const bootRes = await fetch(`${base}/api/bootstrap`, {
               <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
                 {[0,1,2].map(i => (
                   <button key={i} onClick={() => { if (i === 2) setChartInfoOpen(false); setSlide(i as 0|1|2) }} aria-pressed={slide===i}
+                    /* theme-contrast-exempt: a 6px dot, no text to make legible */
                     style={{ width: 6, height: 6, borderRadius: '50%', border: 'none', background: slide===i ? 'var(--primary)' : '#d1d5db', cursor: 'pointer', padding: 0 }}
                     title={`Go to slide ${i+1}`}
                   />

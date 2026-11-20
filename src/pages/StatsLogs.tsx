@@ -423,7 +423,7 @@ function ControlsBar({
                 borderRight: i < PRESETS.length - 1 ? 'none' : undefined,
                 borderRadius: i === 0 ? '6px 0 0 6px' : i === PRESETS.length - 1 ? '0 6px 6px 0' : 0,
                 background: sliderVal === p.v ? 'var(--primary)' : 'transparent',
-                color: sliderVal === p.v ? '#fff' : 'inherit',
+                color: sliderVal === p.v ? 'var(--brand-contrast)' : 'inherit',
                 cursor: 'pointer',
               }}
             >

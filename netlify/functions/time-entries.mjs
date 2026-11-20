@@ -1,8 +1,8 @@
 // netlify/functions/time-entries.mjs
 
 import { checkMaintenance } from './utils/maintenance.mjs'
-import { resolveAuthz } from './utils/auth.mjs'
-import crypto from 'crypto'
+import { getAuthContext } from './utils/employee-auth.mjs'
+import { nowInTz } from './utils/tz.mjs'
 
 export async function handler(event) {
   // 🔴 Add this check
@@ -13,123 +13,6 @@ export async function handler(event) {
   if (event.httpMethod === 'POST') return saveTimeEntry(event)
   if (event.httpMethod === 'DELETE') return deleteTimeEntry(event)
   return cors(405, { error: 'Method not allowed' }, event)
-}
-
-/**
- * Employee-token helpers (HMAC signed token) [legacy header mode]
- */
-function base64urlEncode(bufOrStr) {
-  const b = Buffer.isBuffer(bufOrStr) ? bufOrStr : Buffer.from(String(bufOrStr), 'utf8')
-  return b.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-}
-function base64urlDecodeToString(b64url) {
-  const b64 = String(b64url).replace(/-/g, '+').replace(/_/g, '/')
-  const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
-  return Buffer.from(b64 + pad, 'base64').toString('utf8')
-}
-function safeEqual(a, b) {
-  const aa = Buffer.from(String(a))
-  const bb = Buffer.from(String(b))
-  if (aa.length !== bb.length) return false
-  return crypto.timingSafeEqual(aa, bb)
-}
-function verifyEmployeeToken(token) {
-  const secret = process.env.EMPLOYEE_TOKEN_SECRET
-  if (!secret) return { error: 'EMPLOYEE_TOKEN_SECRET missing' }
-  if (!token) return { error: 'Missing employee token' }
-
-  const parts = String(token).split('.')
-  if (parts.length !== 2) return { error: 'Invalid token format' }
-
-  const [payloadB64, sigB64] = parts
-
-  let payloadStr = ''
-  try {
-    payloadStr = base64urlDecodeToString(payloadB64)
-  } catch {
-    return { error: 'Invalid token payload encoding' }
-  }
-
-  let payload
-  try {
-    payload = JSON.parse(payloadStr)
-  } catch {
-    return { error: 'Invalid token payload JSON' }
-  }
-
-  const expectedSig = base64urlEncode(crypto.createHmac('sha256', secret).update(payloadB64).digest())
-  if (!safeEqual(expectedSig, sigB64)) return { error: 'Invalid token signature' }
-
-  const exp = Number(payload?.exp)
-  if (!Number.isFinite(exp)) return { error: 'Invalid token exp' }
-  const now = Math.floor(Date.now() / 1000)
-  if (now > exp) return { error: 'Token expired' }
-
-  if (!payload?.tenant_id || !payload?.employee_id) return { error: 'Token missing fields' }
-
-  return { tenantId: String(payload.tenant_id), employeeId: String(payload.employee_id) }
-}
-
-/**
- * Cookie helpers (for Solution B: HttpOnly employee_session cookie)
- */
-function parseCookies(cookieHeader) {
-  const out = {}
-  if (!cookieHeader) return out
-  const parts = String(cookieHeader).split(';')
-  for (const part of parts) {
-    const [k, ...rest] = part.trim().split('=')
-    if (!k) continue
-    out[k] = decodeURIComponent(rest.join('=') || '')
-  }
-  return out
-}
-
-async function getAuthContext({ sql, event }) {
-  const h = event.headers || {}
-
-  // 1) Legacy: token in header (keep for backward compatibility)
-  const empToken =
-    h['x-employee-token'] ||
-    h['X-Employee-Token'] ||
-    h['x-employee-token'.toLowerCase()] ||
-    h['x-employee-token'.toUpperCase()]
-
-  if (empToken) {
-    const v = verifyEmployeeToken(empToken)
-    if (v.error) return { error: v.error }
-    return { mode: 'employee', tenantId: v.tenantId, employeeId: v.employeeId }
-  }
-
-  // 2) NEW (Solution B): employee_session cookie
-  const cookieHeader = h.cookie || h.Cookie || ''
-  const cookies = parseCookies(cookieHeader)
-  const employeeSession = cookies.employee_session
-
-  if (employeeSession) {
-    const rows = await sql`
-      SELECT es.tenant_id, es.employee_id, e.active
-      FROM employee_sessions es
-      JOIN employees e ON e.id = es.employee_id
-      WHERE es.session_token = ${employeeSession}
-        AND es.expires_at > now()
-      LIMIT 1
-    `
-    if (rows.length > 0) {
-      if (!rows[0].active) return { error: 'Employee is inactive' }
-      return {
-        mode: 'employee',
-        tenantId: String(rows[0].tenant_id),
-        employeeId: String(rows[0].employee_id),
-      }
-    }
-    return { error: 'Employee session expired (open your personal link again)' }
-  }
-
-  // 3) App mode (normal login)
-  const authz = await resolveAuthz({ sql, event })
-  if (authz.error) return { error: authz.error }
-  return { mode: 'app', tenantId: authz.tenantId, userId: authz.actingUserId }
 }
 
 /**
@@ -191,6 +74,19 @@ async function getTimeEntries(event) {
         to_char(te.end_time, 'HH24:MI') as end_time,
         te.total_hours::float8 as total_hours,
         te.salary::float8 as salary,
+        -- Unpaid minutes already deducted from total_hours by the database
+        -- (sync_time_entry_break_minutes -> calculate_time_entry_totals).
+        COALESCE(te.break_minutes, 0) AS break_minutes,
+        -- Set only while someone is away right now, so the page can show
+        -- "on break since HH:MM" instead of guessing from the totals.
+        (
+          SELECT to_char(b.break_start, 'HH24:MI')
+          FROM time_entry_breaks b
+          WHERE b.tenant_id = te.tenant_id
+            AND b.time_entry_id = te.id
+            AND b.break_end IS NULL
+          LIMIT 1
+        ) AS on_break_since,
         te.approved,
         -- Live name where we know which account approved, so a rename shows
         -- through; the name captured at the time for rows predating that.
@@ -232,9 +128,29 @@ async function saveTimeEntry(event) {
 
     const TENANT_ID = ctx.tenantId
     const body = JSON.parse(event.body || '{}')
-    const { employee_id, work_date, start_time, end_time, notes } = body
+    let { employee_id, work_date, start_time, end_time, notes } = body
 
     const effectiveEmployeeId = ctx.mode === 'employee' ? ctx.employeeId : employee_id
+
+    // An employee clocking in or out does not get to say when. Their device clock was
+    // the source of truth before and it is not trustworthy for payroll: a phone on
+    // another timezone, or simply set wrong, produced hours that were then paid out.
+    // The server stamps the date and time in the tenant's timezone instead.
+    //
+    // `action` is the explicit signal from the page. The older shape — send whichever
+    // of start_time/end_time you mean — is still accepted so a cached copy of the page
+    // keeps working; only the VALUE is replaced, never the intent.
+    if (ctx.mode === 'employee') {
+      const { date: tzDate, time: tzTime } = nowInTz(ctx.timezone)
+      const action =
+        body.action === 'clock_in' || body.action === 'clock_out'
+          ? body.action
+          : (end_time ? 'clock_out' : 'clock_in')
+
+      work_date = tzDate
+      start_time = action === 'clock_in' ? tzTime : undefined
+      end_time = action === 'clock_out' ? tzTime : undefined
+    }
 
     if (!effectiveEmployeeId) return cors(400, { error: 'employee_id is required' }, event)
     if (!work_date) return cors(400, { error: 'work_date is required' }, event)
@@ -268,6 +184,22 @@ async function saveTimeEntry(event) {
       const updatedStartTime = start_time !== undefined ? start_time : entry.start_time
       const updatedEndTime = end_time !== undefined ? end_time : entry.end_time
       const updatedNotes = notes !== undefined ? notes : entry.notes
+
+      // Someone who starts a break and then clocks out without coming back would
+      // otherwise leave the break open forever — and an open break deducts nothing,
+      // so they would be paid for the time they were away. Close it at the clock-out
+      // moment: paid time then runs from clock-in to the start of that last break.
+      // Done BEFORE the entry update so the break trigger's recalculation is not
+      // overwritten by this statement.
+      if (updatedEndTime) {
+        await sql`
+          UPDATE time_entry_breaks
+          SET break_end = ${updatedEndTime}, updated_at = NOW()
+          WHERE tenant_id = ${TENANT_ID}
+            AND time_entry_id = ${entry.id}
+            AND break_end IS NULL
+        `
+      }
 
       await sql`
         UPDATE time_entries

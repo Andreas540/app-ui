@@ -22,6 +22,9 @@ type TimeEntry = {
   start_time: string
   end_time: string
   total_hours: number | null
+  /** Unpaid break minutes. Already deducted from total_hours by the database, so it
+   *  is shown here to explain the gap between clock times and paid hours. */
+  break_minutes: number | null
   salary: number | null
   approved: boolean
   approved_by: string | null
@@ -489,7 +492,7 @@ const stats = useMemo(() => {
           flex: 1,
           height: CONTROL_H,
           background: periodMode === m && !isCustomRange ? 'var(--primary)' : 'transparent',
-          color: periodMode === m && !isCustomRange ? '#fff' : 'var(--text, inherit)',
+          color: periodMode === m && !isCustomRange ? 'var(--brand-contrast)' : 'var(--text, inherit)',
           border: '1px solid var(--border)',
           borderRadius: 4,
           cursor: 'pointer',
@@ -769,6 +772,13 @@ const stats = useMemo(() => {
     <>
       <span style={{ margin: '0 8px' }}>•</span>
       {formatHoursMinutes(entry.total_hours)}
+    </>
+  )}
+  {/* Without this, clock times and paid hours disagree with nothing to explain why. */}
+  {Number(entry.break_minutes) > 0 && (
+    <>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span>{t('timeApproval.unpaidBreak', { time: formatHoursMinutes(Number(entry.break_minutes) / 60) })}</span>
     </>
   )}
 </div>

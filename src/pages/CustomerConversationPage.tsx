@@ -134,7 +134,7 @@ export default function CustomerConversationPage() {
                   padding: '8px 12px',
                   borderRadius: msg.direction === 'outbound' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                   background: msg.direction === 'outbound' ? 'var(--primary)' : 'var(--surface-subtle)',
-                  color: msg.direction === 'outbound' ? '#fff' : 'var(--text)',
+                  color: msg.direction === 'outbound' ? 'var(--brand-contrast)' : 'var(--text)',
                   fontSize: 14,
                   lineHeight: 1.5,
                   whiteSpace: 'pre-wrap',

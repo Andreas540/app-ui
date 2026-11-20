@@ -190,7 +190,7 @@ export default function SearchCustomerOrdersCard({ defaultOpen = false, hideHead
                   style={{
                     padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
                     background: paidFilter === f ? 'var(--primary)' : 'transparent',
-                    color: paidFilter === f ? '#fff' : undefined,
+                    color: paidFilter === f ? 'var(--brand-contrast)' : undefined,
                   }}
                 >
                   {f === 'all' ? 'All' : f === 'paid' ? 'Paid' : 'Unpaid'}

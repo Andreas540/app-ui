@@ -238,7 +238,7 @@ export default function ReportsPage() {
                 <button key={n} onClick={() => saveCols(n)} style={{
                   height: 36, width: 36, padding: 0, fontSize: 13, fontWeight: 600,
                   background: cols === n ? 'var(--primary)' : 'transparent',
-                  color: cols === n ? '#fff' : 'var(--text-secondary)',
+                  color: cols === n ? 'var(--brand-contrast)' : 'var(--text-secondary)',
                   border: 'none', cursor: 'pointer',
                 }}>{n}</button>
               ))}

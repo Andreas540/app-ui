@@ -184,7 +184,7 @@ export default function SimulationsPage() {
   const signBtn = (s: '+' | '-') => ({
     height: 34, width: 34, padding: 0, fontSize: 16, fontWeight: 700,
     background: changeSign === s ? 'var(--primary)' : 'transparent',
-    color: changeSign === s ? '#fff' : 'var(--text-secondary)',
+    color: changeSign === s ? 'var(--brand-contrast)' : 'var(--text-secondary)',
     border: 'none', cursor: 'pointer' as const,
   })
 
@@ -201,7 +201,7 @@ export default function SimulationsPage() {
             <button key={n} onClick={() => saveCols(n)} style={{
               height: 36, width: 36, padding: 0, fontSize: 13, fontWeight: 600,
               background: cols === n ? 'var(--primary)' : 'transparent',
-              color: cols === n ? '#fff' : 'var(--text-secondary)',
+              color: cols === n ? 'var(--brand-contrast)' : 'var(--text-secondary)',
               border: 'none', cursor: 'pointer',
             }}>{n}</button>
           ))}

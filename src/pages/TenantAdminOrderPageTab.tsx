@@ -1162,7 +1162,7 @@ export default function TenantAdminOrderPageTab({ initialSubTab, initialCustomer
                     style={{
                       padding: '0 16px', height: 36, fontSize: 13, border: 'none', cursor: 'pointer',
                       background: config.available_wording === opt ? 'var(--primary)' : 'var(--btn-bg)',
-                      color: config.available_wording === opt ? '#fff' : 'var(--text)',
+                      color: config.available_wording === opt ? 'var(--brand-contrast)' : 'var(--text)',
                       fontWeight: config.available_wording === opt ? 600 : 400,
                     }}
                   >

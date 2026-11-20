@@ -179,7 +179,8 @@
     "bulkFailed": "Bulk approval failed",
     "thisWeek": "This week",
     "lastWeek": "Last week",
-    "excludedTooltip": "You are not allowed to approve time for this employee."
+    "excludedTooltip": "You are not allowed to approve time for this employee.",
+    "unpaidBreak": "{{time}} unpaid break"
   },
   "employees": {
     "title": "Employee Management",

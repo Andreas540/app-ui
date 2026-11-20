@@ -1848,7 +1848,7 @@ async function handleSaveStripeCustomerId() {
                                 border: 'none',
                                 borderRight: mode === 'manufacturing' ? '1px solid var(--border)' : 'none',
                                 background: btInventoryMode === mode ? 'var(--primary)' : 'transparent',
-                                color: btInventoryMode === mode ? '#fff' : undefined,
+                                color: btInventoryMode === mode ? 'var(--brand-contrast)' : undefined,
                                 cursor: 'pointer',
                               }}
                             >
@@ -1983,7 +1983,7 @@ async function handleSaveStripeCustomerId() {
                         borderRight: i === 0 ? 'none' : undefined,
                         borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
                         background: btPreviewTab === tab ? 'var(--primary)' : 'transparent',
-                        color: btPreviewTab === tab ? '#fff' : 'inherit',
+                        color: btPreviewTab === tab ? 'var(--brand-contrast)' : 'inherit',
                         fontSize: 13, cursor: 'pointer',
                       }}>
                         {tab === 'product' ? 'Product' : 'Service'}
@@ -2156,7 +2156,7 @@ async function handleSaveStripeCustomerId() {
                               borderRight: i === 0 ? 'none' : undefined,
                               borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
                               background: isActive ? 'var(--primary)' : 'transparent',
-                              color: isActive ? '#fff' : 'inherit',
+                              color: isActive ? 'var(--brand-contrast)' : 'inherit',
                               fontSize: 13,
                               cursor: 'pointer',
                               opacity: isVisible ? 1 : 0.35,
@@ -3092,7 +3092,7 @@ const available = max - used
                       borderRadius: 0,
                       fontWeight: specialBusinessModel === val ? 600 : undefined,
                       background: specialBusinessModel === val ? 'var(--primary)' : 'transparent',
-                      color: specialBusinessModel === val ? '#fff' : undefined,
+                      color: specialBusinessModel === val ? 'var(--brand-contrast)' : undefined,
                     }}
                   >
                     {val}

@@ -8,6 +8,9 @@ type Employee = {
   name: string
   employee_code: string | null
   active: boolean
+  /** The business's timezone. Decides which day "today" is for an employee whose
+   *  phone is set elsewhere. Clock and break TIMES come from the server, not here. */
+  timezone: string | null
 }
 
 type TimeEntry = {
@@ -19,6 +22,10 @@ type TimeEntry = {
   end_time: string | null
   total_hours: number | string | null
   salary: number | string | null
+  /** Unpaid minutes the database has already taken off total_hours. */
+  break_minutes: number | string | null
+  /** Set only while a break is running right now. */
+  on_break_since: string | null
   approved: boolean
   approved_by: string | null
   notes: string | null
@@ -57,6 +64,19 @@ const translations = {
     clockOutSuccess: 'Clocked out successfully!',
     saveFailed: 'Save failed',
     noSession: 'Session missing. Please open your personal link again.',
+    startBreak: 'Start Break',
+    endBreak: 'End Break',
+    onBreakSince: 'On break since',
+    breaks: 'Breaks:',
+    businessTime: 'All times shown in business time',
+    breakStarted: 'Break started',
+    breakEnded: 'Break ended — welcome back!',
+    endBreakFirst: 'End your break before clocking out.',
+    errNotClockedIn: 'Clock in first.',
+    errAlreadyClockedOut: 'You have already clocked out for today.',
+    errBreakOpen: 'A break is already running.',
+    errNoOpenBreak: 'No break is running.',
+    errEntryApproved: 'Today is already approved and cannot be changed.',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -86,6 +106,19 @@ const translations = {
     clockOutSuccess: '¡Salida registrada exitosamente!',
     saveFailed: 'Error al guardar',
     noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
+    startBreak: 'Iniciar Descanso',
+    endBreak: 'Terminar Descanso',
+    onBreakSince: 'En descanso desde',
+    breaks: 'Descansos:',
+    businessTime: 'Todas las horas se muestran en la hora del negocio',
+    breakStarted: 'Descanso iniciado',
+    breakEnded: '¡Descanso terminado — bienvenido de vuelta!',
+    endBreakFirst: 'Termina tu descanso antes de marcar salida.',
+    errNotClockedIn: 'Primero marca entrada.',
+    errAlreadyClockedOut: 'Ya marcaste salida hoy.',
+    errBreakOpen: 'Ya hay un descanso en curso.',
+    errNoOpenBreak: 'No hay ningún descanso en curso.',
+    errEntryApproved: 'El día de hoy ya está aprobado y no se puede cambiar.',
   },
 } as const
 
@@ -95,12 +128,6 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function getCurrentTime(): string {
-  const now = new Date()
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}`
-}
 function formatHoursMinutes(decimalHours: number, lang: Language): string {
   const totalMinutes = Math.round(decimalHours * 60) // Round to nearest minute first
   const hours = Math.floor(totalMinutes / 60)
@@ -122,6 +149,44 @@ function getMondayOfWeek(date: Date): Date {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   return new Date(d.setDate(diff))
 }
+/**
+ * The business timezone's short name ("EST", "CET") when the device is on a
+ * different clock, otherwise null.
+ *
+ * Compared by current wall-clock time rather than by zone NAME on purpose:
+ * America/New_York and America/Toronto are different names for the same clock, and
+ * labelling times for someone whose phone already agrees would be noise. The label
+ * appears only for the employee it would otherwise mislead.
+ */
+function foreignZoneLabel(tz: string | null | undefined): string | null {
+  if (!tz) return null
+  try {
+    const now = new Date()
+    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
+    // Date as well as time: either side of the dateline two zones can show the same
+    // clock on different days, and the date header would then be wrong unlabelled.
+    const sameTime =
+      now.toLocaleTimeString('en-GB', { ...opts, timeZone: tz }) === now.toLocaleTimeString('en-GB', opts)
+    const sameDate =
+      now.toLocaleDateString('en-CA', { timeZone: tz }) === now.toLocaleDateString('en-CA')
+    if (sameTime && sameDate) return null
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(now)
+    return parts.find(p => p.type === 'timeZoneName')?.value || tz
+  } catch {
+    // An unrecognised zone string must not take the page down.
+    return null
+  }
+}
+
+/**
+ * A Date standing for the given YYYY-MM-DD, anchored at midday so that week
+ * arithmetic can never slip a day across a DST boundary.
+ */
+function ymdToDate(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0)
+}
+
 function toLocalYMD(date: Date): string {
   const yyyy = date.getFullYear()
   const mm = String(date.getMonth() + 1).padStart(2, '0')
@@ -142,6 +207,11 @@ export default function TimeEntrySimple() {
 
   const [clockInTime, setClockInTime] = useState<string | null>(null)
   const [clockOutTime, setClockOutTime] = useState<string | null>(null)
+  // Non-null while a break is running. Drives which break button is shown and
+  // blocks clocking out until the employee is back.
+  const [onBreakSince, setOnBreakSince] = useState<string | null>(null)
+  const [breakMinutes, setBreakMinutes] = useState(0)
+  const [breakBusy, setBreakBusy] = useState(false)
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
@@ -187,6 +257,7 @@ export default function TimeEntrySimple() {
       name: String(me.employee.name || 'Employee'),
       employee_code: me.employee.employee_code ? String(me.employee.employee_code) : null,
       active: true,
+      timezone: me.timezone ? String(me.timezone) : null,
     }
   }
 
@@ -218,8 +289,9 @@ export default function TimeEntrySimple() {
         // Clean URL (remove token) without needing a manual reload
         navigate('/time-entry-simple', { replace: true })
 
-        await loadTodayEntry()
-        await loadTimeEntries()
+        // tz passed explicitly: setEmployee has not landed in state yet.
+        await loadTodayEntry(emp.timezone)
+        await loadTimeEntries(emp.timezone)
         return
       }
 
@@ -227,7 +299,7 @@ export default function TimeEntrySimple() {
       const emp = await fetchMe()
       setEmployee(emp)
 
-      await loadTodayEntry()
+      await loadTodayEntry(emp.timezone)
     } catch (e: any) {
       setErr(e?.message || String(e))
     } finally {
@@ -235,10 +307,12 @@ export default function TimeEntrySimple() {
     }
   }
 
-  async function loadTodayEntry() {
+  async function loadTodayEntry(tzOverride?: string | null) {
     try {
       const base = apiBase()
-      const today = todayYMD()
+      // The business's today, not the device's — an employee an hour the other side
+      // of midnight would otherwise be shown, and clock into, the wrong day.
+      const today = todayYMD(tzOverride ?? employee?.timezone ?? undefined)
 
       const res = await fetchWithCreds(`${base}/api/time-entries?from=${today}&to=${today}`)
       if (!res.ok) return
@@ -248,20 +322,26 @@ export default function TimeEntrySimple() {
         const entry = data[0]
         setClockInTime(entry.start_time)
         setClockOutTime(entry.end_time)
+        setOnBreakSince(entry.on_break_since ?? null)
+        setBreakMinutes(toNumberOrNull(entry.break_minutes) || 0)
       } else {
         setClockInTime(null)
         setClockOutTime(null)
+        setOnBreakSince(null)
+        setBreakMinutes(0)
       }
     } catch (e) {
       console.error('Failed to load today entry:', e)
     }
   }
 
-  async function loadTimeEntries() {
+  async function loadTimeEntries(tzOverride?: string | null) {
     try {
       const base = apiBase()
 
-      const today = new Date()
+      // Anchor the week on the business's today, so "this week" does not shift for
+      // an employee whose phone is in another timezone.
+      const today = ymdToDate(todayYMD(tzOverride ?? employee?.timezone ?? undefined))
       let fromDate: Date
       let toDate: Date
 
@@ -293,16 +373,13 @@ const to = toLocalYMD(toDate)
   async function handleClockIn() {
     try {
       const base = apiBase()
-      const currentTime = getCurrentTime()
-      const today = todayYMD()
 
+      // No time is sent: the server stamps it in the business's timezone. The device
+      // clock is not trusted for anything that reaches payroll.
       const res = await fetchWithCreds(`${base}/api/time-entries`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          work_date: today,
-          start_time: currentTime,
-        }),
+        body: JSON.stringify({ action: 'clock_in' }),
       })
 
       if (!res.ok) {
@@ -310,7 +387,6 @@ const to = toLocalYMD(toDate)
         throw new Error(errData.error || t.saveFailed)
       }
 
-      setClockInTime(currentTime)
       alert(t.clockInSuccess)
       await loadTodayEntry()
       await loadTimeEntries()
@@ -320,18 +396,20 @@ const to = toLocalYMD(toDate)
   }
 
   async function handleClockOut() {
+    // The server also closes a dangling break on clock-out, as a safety net for the
+    // legacy token path and admin edits. Here we ask the employee to end it instead,
+    // so they are never surprised by hours stopping at the start of that break.
+    if (onBreakSince) {
+      alert(t.endBreakFirst)
+      return
+    }
     try {
       const base = apiBase()
-      const currentTime = getCurrentTime()
-      const today = todayYMD()
 
       const res = await fetchWithCreds(`${base}/api/time-entries`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          work_date: today,
-          end_time: currentTime,
-        }),
+        body: JSON.stringify({ action: 'clock_out' }),
       })
 
       if (!res.ok) {
@@ -339,12 +417,48 @@ const to = toLocalYMD(toDate)
         throw new Error(errData.error || t.saveFailed)
       }
 
-      setClockOutTime(currentTime)
       alert(t.clockOutSuccess)
       await loadTodayEntry()
       await loadTimeEntries()
     } catch (e: any) {
       alert(e?.message || t.saveFailed)
+    }
+  }
+
+  /** Server error codes -> something the employee can act on. */
+  function breakErrorMessage(code: string): string {
+    switch (code) {
+      case 'NOT_CLOCKED_IN':      return t.errNotClockedIn
+      case 'ALREADY_CLOCKED_OUT': return t.errAlreadyClockedOut
+      case 'BREAK_ALREADY_OPEN':  return t.errBreakOpen
+      case 'NO_OPEN_BREAK':       return t.errNoOpenBreak
+      case 'ENTRY_APPROVED':      return t.errEntryApproved
+      default:                    return code || t.saveFailed
+    }
+  }
+
+  async function handleBreak(action: 'start' | 'end') {
+    if (breakBusy) return
+    try {
+      setBreakBusy(true)
+      const base = apiBase()
+
+      const res = await fetchWithCreds(`${base}/api/time-entry-breaks`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(breakErrorMessage(data.error))
+
+      alert(action === 'start' ? t.breakStarted : t.breakEnded)
+      await loadTodayEntry()
+      await loadTimeEntries()
+    } catch (e: any) {
+      alert(e?.message || t.saveFailed)
+    } finally {
+      setBreakBusy(false)
     }
   }
 
@@ -354,14 +468,22 @@ const to = toLocalYMD(toDate)
   const approvedHoursNum = timeEntries.filter(e => e.approved).reduce((sum, entry) => sum + (toNumberOrNull(entry.total_hours) || 0), 0)
   const pendingHoursNum = totalHoursNum - approvedHoursNum
 
+  // Already excluded from total_hours by the database; shown so the deduction is
+  // visible rather than looking like missing time.
+  const breakMinutesNum = timeEntries.reduce((sum, entry) => sum + (toNumberOrNull(entry.break_minutes) || 0), 0)
+
   return {
     totalHours: totalHoursNum,
     totalEarnings: totalEarningsNum,
     approvedHours: approvedHoursNum,
     pendingHours: pendingHoursNum,
+    breakMinutes: breakMinutesNum,
     daysWorked: timeEntries.filter(e => e.end_time !== null).length,
   }
 }, [timeEntries])
+
+  // Only set when the employee's device is on a different clock than the business.
+  const zoneLabel = foreignZoneLabel(employee?.timezone)
 
   if (loading) return <div className="card page-narrow"><p>{t.loading}</p></div>
   if (err) return <div className="card page-narrow"><p style={{ color: 'var(--color-error)' }}>{t.error} {err}</p></div>
@@ -436,8 +558,14 @@ const to = toLocalYMD(toDate)
         }}
       >
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-          {t.today} - {formatLongDate(todayYMD(), lang === 'es' ? 'es-ES' : 'en-US')}
+          {t.today} - {formatLongDate(todayYMD(employee.timezone ?? undefined), lang === 'es' ? 'es-ES' : 'en-US')}
         </div>
+
+        {zoneLabel && (
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+            {t.businessTime} ({zoneLabel})
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
           <div>
@@ -466,13 +594,13 @@ const to = toLocalYMD(toDate)
             <button
               className="primary"
               onClick={handleClockOut}
-              disabled={!clockInTime || !!clockOutTime}
+              disabled={!clockInTime || !!clockOutTime || !!onBreakSince}
               style={{
                 width: '100%',
                 height: 60,
                 fontSize: 16,
-                opacity: !clockInTime || clockOutTime ? 0.5 : 1,
-                cursor: !clockInTime || clockOutTime ? 'not-allowed' : 'pointer',
+                opacity: !clockInTime || clockOutTime || onBreakSince ? 0.5 : 1,
+                cursor: !clockInTime || clockOutTime || onBreakSince ? 'not-allowed' : 'pointer',
               }}
             >
               {t.clockOut}
@@ -484,6 +612,44 @@ const to = toLocalYMD(toDate)
             )}
           </div>
         </div>
+
+        {/* Breaks. Only meaningful between clocking in and clocking out, so the
+            whole block stays hidden outside a live shift rather than showing a
+            disabled button with no explanation. */}
+        {clockInTime && !clockOutTime && (
+          <div style={{ marginTop: 16 }}>
+            <button
+              onClick={() => handleBreak(onBreakSince ? 'end' : 'start')}
+              disabled={breakBusy}
+              style={{
+                width: '100%',
+                height: 52,
+                fontSize: 16,
+                fontWeight: 600,
+                background: onBreakSince ? '#fbbf24' : 'transparent',
+                color: onBreakSince ? '#1f2937' : 'var(--text)',
+                border: `1px solid ${onBreakSince ? '#fbbf24' : 'var(--border)'}`,
+                borderRadius: 6,
+                opacity: breakBusy ? 0.6 : 1,
+                cursor: breakBusy ? 'wait' : 'pointer',
+              }}
+            >
+              {onBreakSince ? t.endBreak : t.startBreak}
+            </button>
+
+            {onBreakSince && (
+              <div style={{ marginTop: 8, fontSize: 14, color: '#fbbf24', fontWeight: 600 }}>
+                {t.onBreakSince} {onBreakSince}
+              </div>
+            )}
+
+            {breakMinutes > 0 && (
+              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                {t.breaks} {formatHoursMinutes(breakMinutes / 60, lang)}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 24, padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
@@ -496,6 +662,7 @@ const to = toLocalYMD(toDate)
                 padding: '4px 12px',
                 fontSize: 12,
                 background: viewPeriod === 'thisWeek' ? 'var(--primary)' : 'transparent',
+                color: viewPeriod === 'thisWeek' ? 'var(--brand-contrast)' : undefined,
                 border: '1px solid var(--border)',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -509,6 +676,7 @@ const to = toLocalYMD(toDate)
                 padding: '4px 12px',
                 fontSize: 12,
                 background: viewPeriod === 'lastWeek' ? 'var(--primary)' : 'transparent',
+                color: viewPeriod === 'lastWeek' ? 'var(--brand-contrast)' : undefined,
                 border: '1px solid var(--border)',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -536,6 +704,14 @@ const to = toLocalYMD(toDate)
     <span className="helper">{t.pendingHours}</span>
     <span style={{ fontWeight: 600, color: '#fbbf24' }}>{formatHoursMinutes(stats.pendingHours, lang)}</span>
   </div>
+  {stats.breakMinutes > 0 && (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span className="helper">{t.breaks}</span>
+      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
+        −{formatHoursMinutes(stats.breakMinutes / 60, lang)}
+      </span>
+    </div>
+  )}
   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
     <span className="helper">{t.totalEarnings}</span>
     <span style={{ fontWeight: 600 }}>{stats.totalEarnings.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
@@ -549,6 +725,7 @@ const to = toLocalYMD(toDate)
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
               const salary = toNumberOrNull(entry.salary)
+              const entryBreakMinutes = toNumberOrNull(entry.break_minutes) || 0
               const hasCompleteTime = entry.start_time && entry.end_time
 
               return (
@@ -571,6 +748,12 @@ const to = toLocalYMD(toDate)
   {entry.start_time} - {entry.end_time}
   <span style={{ margin: '0 8px' }}>•</span>
   {hours === null ? '—' : formatHoursMinutes(hours, lang)}
+  {entryBreakMinutes > 0 && (
+    <>
+      <span style={{ margin: '0 8px' }}>•</span>
+      <span>{t.breaks} −{formatHoursMinutes(entryBreakMinutes / 60, lang)}</span>
+    </>
+  )}
 </div>
                       {salary !== null && (
                         <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>

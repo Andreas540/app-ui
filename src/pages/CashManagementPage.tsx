@@ -228,7 +228,7 @@ export default function CashManagementPage() {
             style={{
               flex: 1, height: H,
               background: period === p ? 'var(--primary)' : 'transparent',
-              color: period === p ? '#fff' : undefined,
+              color: period === p ? 'var(--brand-contrast)' : undefined,
               border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', fontSize: 14,
             }}
           >

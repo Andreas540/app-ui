@@ -189,9 +189,13 @@ async function getEmployeeSession(event) {
     if (!sessionToken) return cors(200, { active: false }, event)
 
     const rows = await sql`
-      SELECT es.tenant_id, es.employee_id, e.name, e.employee_code, e.active
+      SELECT es.tenant_id, es.employee_id, e.name, e.employee_code, e.active,
+             t.default_timezone
       FROM employee_sessions es
       JOIN employees e ON e.id = es.employee_id
+      -- LEFT so a session whose tenant row is missing still resolves, exactly as
+      -- before this column was added; the page falls back when it is null.
+      LEFT JOIN tenants t ON t.id = es.tenant_id
       WHERE es.session_token = ${sessionToken}
         AND es.expires_at > now()
       LIMIT 1
@@ -209,6 +213,11 @@ async function getEmployeeSession(event) {
           employee_code: rows[0].employee_code,
           tenant_id: String(rows[0].tenant_id),
         },
+        // The business's timezone, so the page shows the right "today" and week
+        // boundaries for an employee whose phone is set elsewhere. Clock and break
+        // TIMES are stamped by the server, not from this — this is for display and
+        // for choosing which date to ask about.
+        timezone: rows[0].default_timezone || null,
       },
       event
     )

@@ -179,7 +179,8 @@
     "bulkFailed": "Massgodkännande misslyckades",
     "thisWeek": "Denna vecka",
     "lastWeek": "Förra veckan",
-    "excludedTooltip": "Du har inte behörighet att godkänna tid för den här anställda."
+    "excludedTooltip": "Du har inte behörighet att godkänna tid för den här anställda.",
+    "unpaidBreak": "{{time}} obetald paus"
   },
   "employees": {
     "title": "Personalhantering",

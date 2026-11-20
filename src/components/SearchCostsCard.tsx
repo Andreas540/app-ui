@@ -147,7 +147,7 @@ export default function SearchCostsCard({ hideHeader = false, defaultOpen = fals
               <button key={f} onClick={() => { setFilterType(f); setFilterKind('all') }}
                 style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
                   background: filterType === f ? 'var(--primary)' : 'transparent',
-                  color: filterType === f ? '#fff' : undefined }}>
+                  color: filterType === f ? 'var(--brand-contrast)' : undefined }}>
                 {f === 'all' ? t('costs.allCosts', 'All') : f === 'B' ? t('costs.business') : t('costs.private')}
               </button>
             ))}
@@ -160,7 +160,7 @@ export default function SearchCostsCard({ hideHeader = false, defaultOpen = fals
                 <button key={f} onClick={() => setFilterKind(f)}
                   style={{ padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
                     background: filterKind === f ? 'var(--primary)' : 'transparent',
-                    color: filterKind === f ? '#fff' : undefined }}>
+                    color: filterKind === f ? 'var(--brand-contrast)' : undefined }}>
                   {f === 'all' ? t('all', 'All') : f === 'recurring' ? t('costs.recurring', 'Recurring') : t('costs.nonRecurring', 'Non-recurring')}
                 </button>
               ))}

@@ -714,7 +714,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                             borderRight: i === 0 ? 'none' : undefined,
                             borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
                             background: isActive ? 'var(--primary)' : 'transparent',
-                            color: isActive ? '#fff' : 'inherit',
+                            color: isActive ? 'var(--brand-contrast)' : 'inherit',
                             fontSize: 13, cursor: 'pointer', opacity: isVisible ? 1 : 0.35,
                           }}>
                             {tab === 'product' ? 'Product' : 'Service'}
@@ -895,7 +895,7 @@ export default function TenantAdminUISettingsTab({ initialSection }: { initialSe
                         borderRight: i === 0 ? 'none' : undefined,
                         borderRadius: i === 0 ? '6px 0 0 6px' : '0 6px 6px 0',
                         background: pagePreviewTab === tab ? 'var(--primary)' : 'transparent',
-                        color: pagePreviewTab === tab ? '#fff' : 'inherit',
+                        color: pagePreviewTab === tab ? 'var(--brand-contrast)' : 'inherit',
                         fontSize: 13, cursor: 'pointer',
                       }}>
                         {tab === 'product' ? 'Product' : 'Service'}

@@ -238,7 +238,7 @@ export default function QuickSalesPage() {
               style={{
                 padding: '5px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
                 background: paymentFilter === f ? 'var(--primary)' : 'transparent',
-                color: paymentFilter === f ? '#fff' : undefined,
+                color: paymentFilter === f ? 'var(--brand-contrast)' : undefined,
               }}
             >
               {f === 'all' ? 'All' : f === 'card' ? 'Card' : 'Cash'}

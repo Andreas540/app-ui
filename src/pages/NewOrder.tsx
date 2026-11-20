@@ -426,7 +426,7 @@ export default function NewOrder() {
             <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
               padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
               background: activeTab === tab ? 'var(--primary)' : 'transparent',
-              color: activeTab === tab ? '#fff' : 'inherit',
+              color: activeTab === tab ? 'var(--brand-contrast)' : 'inherit',
               fontWeight: activeTab === tab ? 600 : 400,
             }}>
               {tab === 'order' ? 'Order' : 'Return'}
@@ -445,7 +445,7 @@ export default function NewOrder() {
           <button key={tab} type="button" onClick={() => switchTab(tab)} style={{
             padding: '6px 20px', border: 'none', borderRadius: 0, cursor: 'pointer',
             background: activeTab === tab ? 'var(--primary)' : 'transparent',
-            color: activeTab === tab ? '#fff' : 'inherit',
+            color: activeTab === tab ? 'var(--brand-contrast)' : 'inherit',
             fontWeight: activeTab === tab ? 600 : 400,
           }}>
             {tab === 'order' ? 'Order' : 'Return'}

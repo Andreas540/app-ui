@@ -208,7 +208,7 @@ export default function SearchOrdersCard({ suppliers: suppliersProp, defaultOpen
         fontSize: 13,
         border: 'none',
         background: active ? 'var(--primary)' : 'transparent',
-        color: active ? '#fff' : undefined,
+        color: active ? 'var(--brand-contrast)' : undefined,
         cursor: 'pointer',
       }}
     >

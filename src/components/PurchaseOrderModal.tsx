@@ -386,7 +386,7 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
         fontSize: 13,
         border: 'none',
         background: active ? 'var(--primary)' : 'transparent',
-        color: active ? '#fff' : undefined,
+        color: active ? 'var(--brand-contrast)' : undefined,
         cursor: 'pointer',
       }}
     >
@@ -483,8 +483,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                             </select>
                             {l.product_id && (
                               <div style={{ display: 'flex', marginTop: 6, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
-                                <button onClick={() => updateLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? '#fff' : undefined, cursor: 'pointer' }}>Exact variant</button>
-                                <button onClick={() => updateLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? '#fff' : undefined, cursor: 'pointer' }}>Any variant</button>
+                                <button onClick={() => updateLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Exact variant</button>
+                                <button onClick={() => updateLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Any variant</button>
                               </div>
                             )}
                           </div>
@@ -623,8 +623,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                         {/* Mode toggle */}
                                         <div>
                                           <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', width: 'fit-content', marginBottom: 8 }}>
-                                            <button onClick={() => setEditMode('breakdown')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'breakdown' ? 'var(--primary)' : 'transparent', color: editMode === 'breakdown' ? '#fff' : undefined, cursor: 'pointer' }}>Product breakdown</button>
-                                            <button onClick={() => setEditMode('total_only')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'total_only' ? 'var(--primary)' : 'transparent', color: editMode === 'total_only' ? '#fff' : undefined, cursor: 'pointer' }}>Total only</button>
+                                            <button onClick={() => setEditMode('breakdown')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'breakdown' ? 'var(--primary)' : 'transparent', color: editMode === 'breakdown' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Product breakdown</button>
+                                            <button onClick={() => setEditMode('total_only')} style={{ padding: '3px 12px', fontSize: 12, border: 'none', background: editMode === 'total_only' ? 'var(--primary)' : 'transparent', color: editMode === 'total_only' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Total only</button>
                                           </div>
 
                                           {editMode === 'total_only' ? (
@@ -652,8 +652,8 @@ export default function PurchaseOrderModal({ isOpen, onClose, supplierId, suppli
                                                       </select>
                                                       {l.product_id && (
                                                         <div style={{ display: 'flex', marginTop: 8, border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', fontSize: 11 }}>
-                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? '#fff' : undefined, cursor: 'pointer' }}>Exact variant</button>
-                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? '#fff' : undefined, cursor: 'pointer' }}>Any variant</button>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'exact' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'exact' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'exact' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Exact variant</button>
+                                                          <button onClick={() => updateEditLine(idx, { match_mode: 'product' })} style={{ flex: 1, padding: '3px 0', border: 'none', background: l.match_mode === 'product' ? 'var(--primary)' : 'transparent', color: l.match_mode === 'product' ? 'var(--brand-contrast)' : undefined, cursor: 'pointer' }}>Any variant</button>
                                                         </div>
                                                       )}
                                                     </div>
