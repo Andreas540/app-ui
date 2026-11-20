@@ -69,8 +69,6 @@ const translations = {
     onBreakSince: 'On break since',
     breaks: 'Breaks:',
     businessTime: 'All times shown in business time',
-    breakStarted: 'Break started',
-    breakEnded: 'Break ended — welcome back!',
     endBreakFirst: 'End your break before clocking out.',
     errNotClockedIn: 'Clock in first.',
     errAlreadyClockedOut: 'You have already clocked out for today.',
@@ -111,8 +109,6 @@ const translations = {
     onBreakSince: 'En descanso desde',
     breaks: 'Descansos:',
     businessTime: 'Todas las horas se muestran en la hora del negocio',
-    breakStarted: 'Descanso iniciado',
-    breakEnded: '¡Descanso terminado — bienvenido de vuelta!',
     endBreakFirst: 'Termina tu descanso antes de marcar salida.',
     errNotClockedIn: 'Primero marca entrada.',
     errAlreadyClockedOut: 'Ya marcaste salida hoy.',
@@ -452,7 +448,9 @@ const to = toLocalYMD(toDate)
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(breakErrorMessage(data.error))
 
-      alert(action === 'start' ? t.breakStarted : t.breakEnded)
+      // No confirmation popup: the button flips to End Break and the line beneath
+      // it reads "On break since HH:MM" as soon as the reload lands, which says the
+      // same thing without a dialog to dismiss one-handed on the shop floor.
       await loadTodayEntry()
       await loadTimeEntries()
     } catch (e: any) {
