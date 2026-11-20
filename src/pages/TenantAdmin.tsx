@@ -805,14 +805,22 @@ export default function TenantAdmin() {
       .filter(f => !(f === 'tenant-admin' && role === 'tenant_user')) as FeatureId[]
   }
 
+  // Both counts intersect with tenantFeatures and de-duplicate, so they are
+  // directly comparable. Counting the raw saved list produced totals above the
+  // maximum ("36 of 31"): disabling a module for a tenant leaves the feature in
+  // tenant_memberships.features for everyone who had it. Those entries are
+  // ignored at runtime — resolveAuthz filters them the same way — so they were
+  // never real access, just an inflated number. The Set also stops the
+  // always-included admin features counting twice when the tenant already lists them.
   function effectiveFeatureCount(u: { features: FeatureId[] | null; role: string }): number {
-    const admin = alwaysIncludedForRole(u.role)
-    if (u.features === null) return tenantFeatures.length + admin.length
-    return u.features.length + admin.length
+    const granted = u.features === null
+      ? tenantFeatures
+      : u.features.filter(f => tenantFeatures.includes(f))
+    return new Set([...granted, ...alwaysIncludedForRole(u.role)]).size
   }
 
   function totalFeatureCount(role: string): number {
-    return tenantFeatures.length + alwaysIncludedForRole(role).length
+    return new Set([...tenantFeatures, ...alwaysIncludedForRole(role)]).size
   }
 
   function isModuleFullyChecked(moduleFeatures: FeatureId[], currentFeatures: FeatureId[]): boolean {
