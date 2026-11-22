@@ -16,9 +16,10 @@
 // The stamp lives in localStorage, so tabs of the same session share one clock,
 // which matches the lock already being broadcast across tabs.
 //
-// Deliberately a separate stamp from useIdleTimeout's: this hook counts mousemove
-// as activity and that one does not, so they do not mean quite the same thing by
-// "last active".
+// Its own stamp rather than one shared with useIdleTimeout: the two hooks agree on
+// what counts as activity, but they start and stop at different moments — this one
+// is disabled while locked, that one keeps counting — so sharing a key would couple
+// two clocks that are reset on different conditions.
 import { useEffect, useRef } from 'react'
 
 const KEY_PREFIX = 'pinLock_lastActivity'
@@ -129,7 +130,11 @@ export function useIdleLock({
 
     seedStamp()
 
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'] as const
+    // Same list as useIdleTimeout, deliberately: activity means a deliberate
+    // action, not a moved cursor. mousemove used to be here, which meant a bumped
+    // desk or a jittery mouse kept the screen unlocked all day — and the person
+    // then hit the hard logout without ever seeing the PIN screen.
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'] as const
     events.forEach(e => window.addEventListener(e, handleActivity, true))
     document.addEventListener('visibilitychange', handleWake)
     window.addEventListener('focus', handleWake)
