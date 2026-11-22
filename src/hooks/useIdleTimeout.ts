@@ -142,6 +142,19 @@ export function useIdleTimeout({
       timerRef.current = setTimeout(check, timeoutMs)
     }
 
+    /**
+     * Seed the clock only if nothing is stored. Overwriting on mount would mean a
+     * browser closed for three hours and reopened starts fresh, which is exactly
+     * the time away that should count. A stored stamp is never from another
+     * session: it is cleared on login and on logout, and keyed per user.
+     */
+    const seedStamp = () => {
+      let stored = 0
+      try { stored = Number(localStorage.getItem(key)) } catch { stored = 0 }
+      if (!Number.isFinite(stored) || stored <= 0) writeStamp(Date.now())
+      else memoryStampRef.current = stored
+    }
+
     const handleWake = () => {
       if (document.visibilityState === 'hidden') return
       check()
@@ -149,7 +162,7 @@ export function useIdleTimeout({
 
     // Activity does not count while the screen is locked, but the clock does run.
     if (!paused) {
-      writeStamp(Date.now())
+      seedStamp()
       const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'] as const
       events.forEach(e => window.addEventListener(e, handleActivity, true))
       document.addEventListener('visibilitychange', handleWake)

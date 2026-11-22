@@ -1,5 +1,7 @@
 // src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { clearIdleActivity } from '../hooks/useIdleTimeout'
+import { clearIdleLockActivity } from '../hooks/useIdleLock'
 import type { ReactNode } from 'react'
 import type { FeatureId } from '../lib/features'
 
@@ -174,6 +176,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData)
     setIsLocked(false)
     sessionStorage.removeItem('pinLockLocked')
+    // Start both idle clocks from scratch. The stamps are kept across an app
+    // restart on purpose, so without this a fresh login could inherit a stale one
+    // and be locked or logged straight back out.
+    clearIdleActivity(userData.id)
+    clearIdleLockActivity(userData.id)
     localStorage.setItem('authToken', newToken)
     localStorage.setItem('userData', JSON.stringify(userData))
 

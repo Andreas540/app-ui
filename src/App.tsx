@@ -65,7 +65,7 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
 import { useIdleTimeout, clearIdleActivity } from './hooks/useIdleTimeout'
-import { useIdleLock } from './hooks/useIdleLock'
+import { useIdleLock, clearIdleLockActivity } from './hooks/useIdleLock'
 import LockOverlay from './components/LockOverlay'
 import TenantSwitcher from './components/TenantSwitcher'
 import ProductDetailModal from './components/ProductDetailModal'
@@ -478,6 +478,7 @@ function MainApp() {
     enabled: !!(isAuthenticated && pinLockActive),
     idleLockMinutes: pinLock?.idleLockMinutes ?? 15,
     isLocked,
+    userKey: user?.id ?? null,
     onLock: lock,
   })
 
@@ -502,9 +503,10 @@ function MainApp() {
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
     sessionStorage.removeItem('frontPageDismissed')
-    // So the next person to log in on this browser starts a fresh idle clock
+    // So the next person to log in on this browser starts fresh idle clocks
     // rather than inheriting this one's.
     clearIdleActivity(user?.id ?? null)
+    clearIdleLockActivity(user?.id ?? null)
 
     window.location.href = '/login'
   }
