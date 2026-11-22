@@ -1679,7 +1679,14 @@
       "noEmployees": "Inga anställda hittades.",
       "saveFailed": "Kunde inte spara undantagen.",
       "excludedCount": "{{n}} undantagna",
-      "hiddenInactiveExcluded": "{{n}} inaktiva dolda"
+      "hiddenInactiveExcluded": "{{n}} inaktiva dolda",
+      "breaksTitle": "Pauser",
+      "breaksDesc": "Välj vilka pausknappar de anställda ser på tidrapporteringssidan. Paustid är obetald: den dras av från dagens arbetade timmar.",
+      "breakFlexible": "Flexibel paus (Starta / Avsluta)",
+      "breakFlexibleHint": "Den anställda trycker Starta paus när hen går och Avsluta paus när hen är tillbaka. Längden är tiden som går mellan de två trycken.",
+      "breakFixed": "{{minutes}} minuters paus",
+      "breakFixedHint": "Ett tryck registrerar hela {{minutes}} minuter. Inget att komma tillbaka från — avdraget gäller direkt och man behöver inte stämpla in igen.",
+      "breaksNoneHint": "Inga pausalternativ är valda, så inga pausknappar visas på den anställdas sida. Den som redan är på en paus kan fortfarande avsluta den."
     }
   },
   "customerOffers": {

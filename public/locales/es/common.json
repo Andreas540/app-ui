@@ -1679,7 +1679,14 @@
       "noEmployees": "No se encontraron empleados.",
       "saveFailed": "No se pudieron guardar las exclusiones.",
       "excludedCount": "{{n}} excluidos",
-      "hiddenInactiveExcluded": "{{n}} inactivos ocultos"
+      "hiddenInactiveExcluded": "{{n}} inactivos ocultos",
+      "breaksTitle": "Descansos",
+      "breaksDesc": "Elige qué botones de descanso ven los empleados en la página de registro de tiempo. El tiempo de descanso no se paga: se resta de las horas trabajadas de ese día.",
+      "breakFlexible": "Descanso flexible (Iniciar / Terminar)",
+      "breakFlexibleHint": "El empleado pulsa Iniciar Descanso al salir y Terminar Descanso al volver. La duración es el tiempo que pase entre las dos pulsaciones.",
+      "breakFixed": "Descanso de {{minutes}} minutos",
+      "breakFixedHint": "Una pulsación registra los {{minutes}} minutos completos. No hay que volver: el descuento se aplica de inmediato y no hace falta marcar entrada otra vez.",
+      "breaksNoneHint": "No hay opciones de descanso seleccionadas, así que no aparece ningún botón de descanso en la página del empleado. Quien ya esté en un descanso todavía puede terminarlo."
     }
   },
   "customerOffers": {

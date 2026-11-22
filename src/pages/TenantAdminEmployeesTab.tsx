@@ -2,7 +2,14 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
-type EmployeeSubTab = 'time-approval'
+type EmployeeSubTab = 'time-approval' | 'breaks'
+
+/**
+ * One-tap break lengths this build can offer. The database stores an array of
+ * minutes (db/76_break_options.sql), so adding 15 or 60 later is this line plus a
+ * translation — no schema or API change.
+ */
+const FIXED_BREAK_OPTIONS = [30] as const
 
 interface ApprovalUser {
   id: string
@@ -27,6 +34,7 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
 
   const SUB_TABS: { id: EmployeeSubTab; label: string }[] = [
     { id: 'time-approval', label: t('tenantAdmin.employees.timeApprovalTitle') },
+    { id: 'breaks', label: t('tenantAdmin.employees.breaksTitle') },
   ]
 
   const [users, setUsers] = useState<ApprovalUser[]>([])
@@ -45,7 +53,18 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState('')
 
+  // Break options offered on the external employee page. Kept in its own state
+  // from the approval tab's, so saving one can never be confused with the other.
+  const [breakFlexible, setBreakFlexible] = useState(true)
+  const [breakFixed, setBreakFixed] = useState<number[]>([])
+  const [breaksLoaded, setBreaksLoaded] = useState<{ flexible: boolean; fixed: number[] } | null>(null)
+  const [breaksSaving, setBreaksSaving] = useState(false)
+  const [breaksDone, setBreaksDone] = useState('')
+
   useEffect(() => { loadUsers() }, [])
+  // Re-read each time the tab is opened, so it never shows a stale copy of what
+  // another admin saved in the meantime.
+  useEffect(() => { if (subTab === 'breaks') loadBreakSettings() }, [subTab])
   useEffect(() => { if (selectedUserId) loadEmployees(selectedUserId) }, [selectedUserId])
   useEffect(() => { setDone('') }, [excludedIds])
 
@@ -76,6 +95,56 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
       setLoadedIds(new Set(ids))
     } catch { /* same */ }
     finally { setEmployeesLoading(false) }
+  }
+
+  const breaksChanged = useMemo(() => {
+    if (!breaksLoaded) return false
+    if (breaksLoaded.flexible !== breakFlexible) return true
+    if (breaksLoaded.fixed.length !== breakFixed.length) return true
+    return breaksLoaded.fixed.some(m => !breakFixed.includes(m))
+  }, [breaksLoaded, breakFlexible, breakFixed])
+
+  async function loadBreakSettings() {
+    try {
+      setBreaksDone('')
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin?action=getBreakSettings`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      const flexible = data?.breaks?.flexible !== false
+      const fixed: number[] = Array.isArray(data?.breaks?.fixed) ? data.breaks.fixed.map(Number) : []
+      setBreakFlexible(flexible)
+      setBreakFixed(fixed)
+      setBreaksLoaded({ flexible, fixed })
+    } catch { /* leaves the defaults showing; nothing is saved without a click */ }
+  }
+
+  async function saveBreakSettings() {
+    if (!breaksChanged) return
+    try {
+      setBreaksSaving(true)
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'saveBreakSettings', flexible: breakFlexible, fixed: breakFixed }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || t('tenantAdmin.employees.saveFailed'))
+      }
+      setBreaksLoaded({ flexible: breakFlexible, fixed: [...breakFixed] })
+      setBreaksDone(t('saved'))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : t('tenantAdmin.employees.saveFailed'))
+    } finally {
+      setBreaksSaving(false)
+    }
+  }
+
+  function toggleFixed(minutes: number) {
+    setBreaksDone('')
+    setBreakFixed(prev => (
+      prev.includes(minutes) ? prev.filter(m => m !== minutes) : [...prev, minutes].sort((a, b) => a - b)
+    ))
   }
 
   const hasChanges = useMemo(() => (
@@ -164,6 +233,73 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
           ))}
         </div>
       </div>
+
+      {subTab === 'breaks' && (<>
+        <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {t('tenantAdmin.employees.breaksDesc')}
+        </p>
+
+        <div style={{ display: 'grid', gap: 2, marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={breakFlexible}
+              onChange={e => { setBreaksDone(''); setBreakFlexible(e.target.checked) }}
+              style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
+            />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              {t('tenantAdmin.employees.breakFlexible')}
+              <span className="helper" style={{ display: 'block', fontSize: 12 }}>
+                {t('tenantAdmin.employees.breakFlexibleHint')}
+              </span>
+            </span>
+          </label>
+
+          {FIXED_BREAK_OPTIONS.map(minutes => (
+            <label
+              key={minutes}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 6, cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={breakFixed.includes(minutes)}
+                onChange={() => toggleFixed(minutes)}
+                style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2 }}
+              />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {t('tenantAdmin.employees.breakFixed', { minutes })}
+                <span className="helper" style={{ display: 'block', fontSize: 12 }}>
+                  {t('tenantAdmin.employees.breakFixedHint', { minutes })}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {/* Turning everything off is a legitimate setting — it is how the page
+            behaved before breaks existed — but it should not look like a mistake. */}
+        {!breakFlexible && breakFixed.length === 0 && (
+          <p className="helper" style={{ marginTop: 0, marginBottom: 16 }}>
+            {t('tenantAdmin.employees.breaksNoneHint')}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            className={breaksChanged ? 'primary' : ''}
+            onClick={saveBreakSettings}
+            disabled={!breaksChanged || breaksSaving}
+            style={{
+              height: 36, padding: '0 20px', fontSize: 13,
+              opacity: breaksChanged ? 1 : 0.5,
+              cursor: breaksChanged ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {breaksSaving ? t('saving') : t('saveChanges')}
+          </button>
+          {breaksDone && <span style={{ color: 'var(--color-success)', fontSize: 13 }}>{breaksDone}</span>}
+        </div>
+      </>)}
 
       {subTab === 'time-approval' && (<>
         <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>

@@ -1,5 +1,6 @@
 // netlify/functions/employee-session.mjs
 import { checkMaintenance } from './utils/maintenance.mjs'
+import { loadBreakConfig } from './utils/break-config.mjs'
 import crypto from 'crypto'
 
 export async function handler(event) {
@@ -203,6 +204,11 @@ async function getEmployeeSession(event) {
     if (rows.length === 0) return cors(200, { active: false }, event)
     if (!rows[0].active) return cors(200, { active: false }, event)
 
+    // Which break buttons this tenant offers. Read in its own query, which is
+    // allowed to fail: a tenant whose database predates db/76 gets the defaults
+    // rather than a session that will not open.
+    const breakConfig = await loadBreakConfig(sql, String(rows[0].tenant_id))
+
     return cors(
       200,
       {
@@ -218,6 +224,10 @@ async function getEmployeeSession(event) {
         // TIMES are stamped by the server, not from this — this is for display and
         // for choosing which date to ask about.
         timezone: rows[0].default_timezone || null,
+        // { flexible: boolean, fixed: number[] } — the break options the page may
+        // draw. The server re-checks this on every break POST, so a page cached
+        // from before a settings change cannot book a break that is now off.
+        breaks: breakConfig,
       },
       event
     )

@@ -1,5 +1,14 @@
 // netlify/functions/tenant-admin.mjs
 import jwt from 'jsonwebtoken'
+import { normalizeBreakConfig } from './utils/break-config.mjs'
+
+// Keeps the break-options tab working on tenants whose DB predates db/76_break_options.sql.
+async function ensureBreakSchema(sql) {
+  await Promise.all([
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS break_flexible_enabled BOOLEAN   NOT NULL DEFAULT true`.catch(() => {}),
+    sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS break_fixed_minutes    INTEGER[] NOT NULL DEFAULT '{}'::integer[]`.catch(() => {}),
+  ])
+}
 
 // Keeps the sorting feature working on tenants whose DB predates 70_sorting_settings.sql.
 async function ensureSortingSchema(sql) {
@@ -308,6 +317,18 @@ async function handleGet(event) {
          ORDER BY e.name ASC
       `
       return cors(200, { employees })
+    }
+
+    // Which break buttons the external time-entry page offers employees.
+    if (action === 'getBreakSettings') {
+      await ensureBreakSchema(sql)
+      const rows = await sql`
+        SELECT break_flexible_enabled, break_fixed_minutes
+        FROM tenants
+        WHERE id = ${tenantId}::uuid
+        LIMIT 1
+      `
+      return cors(200, { breaks: normalizeBreakConfig(rows[0] || {}) })
     }
 
     if (action === 'getOrderPageConfig') {
@@ -751,6 +772,31 @@ if (action === 'toggleUserStatus') {
         `
       }
       return cors(200, { success: true, excluded: employeeIds.length })
+    }
+
+    if (action === 'saveBreakSettings') {
+      const { flexible, fixed } = body
+      if (typeof flexible !== 'boolean') return cors(400, { error: 'flexible must be boolean' })
+      if (!Array.isArray(fixed)) return cors(400, { error: 'fixed must be an array of minutes' })
+
+      // Same normalizer the employee page and the break endpoint read through, so
+      // what is stored is what those two will accept — no third opinion on which
+      // durations are valid. Anything out of range is dropped rather than saved.
+      const clean = normalizeBreakConfig({ flexible, fixed })
+      if (clean.fixed.length !== new Set(fixed).size) {
+        return cors(400, { error: 'fixed must contain whole minutes between 1 and 720' })
+      }
+
+      await ensureBreakSchema(sql)
+      await sql`
+        UPDATE tenants
+        SET break_flexible_enabled = ${clean.flexible},
+            break_fixed_minutes    = ${clean.fixed}::integer[]
+        WHERE id = ${tenantId}::uuid
+      `
+      // Employees already on a flexible break can always end it, whatever this
+      // says — see the note in time-entry-breaks.mjs.
+      return cors(200, { ok: true, breaks: clean })
     }
 
     if (action === 'setHiddenCustomers') {

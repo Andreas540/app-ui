@@ -59,6 +59,13 @@ async function getTimeEntries(event) {
       return cors(200, { employee_ids: rows.map(r => r.employee_id) }, event)
     }
 
+    // "Now", in the tenant's timezone, for the fixed-break window below. Only an
+    // employee-mode caller has a timezone resolved; an app caller reads timesheets
+    // for whatever date it asks about, where a live break window means nothing.
+    const nowStamp = ctx.mode === 'employee' ? nowInTz(ctx.timezone) : null
+    const nowDate = nowStamp?.date ?? null
+    const nowTime = nowStamp?.time ?? null
+
     const from = params.get('from') || null
     const to = params.get('to') || null
     const approvedParam = params.get('approved')
@@ -87,6 +94,29 @@ async function getTimeEntries(event) {
             AND b.break_end IS NULL
           LIMIT 1
         ) AS on_break_since,
+        -- When a FIXED break booked earlier runs out. A fixed break is stored
+        -- already closed, with its end in the near future, so it is in force
+        -- without ever being open — on_break_since above cannot see it. The page
+        -- uses this to say "on break until HH:MM" and to stop a second tap
+        -- booking a second deduction. NULL for every past day and for app callers.
+        (
+          SELECT to_char(b.break_end, 'HH24:MI')
+          FROM time_entry_breaks b
+          WHERE b.tenant_id = te.tenant_id
+            AND b.time_entry_id = te.id
+            AND b.break_end IS NOT NULL
+            AND ${nowTime}::time IS NOT NULL
+            AND te.work_date = ${nowDate}::date
+            AND CASE
+                  WHEN b.break_end >= b.break_start
+                    THEN ${nowTime}::time >= b.break_start AND ${nowTime}::time < b.break_end
+                  -- Window crossing midnight, read the same way as the deduction
+                  -- trigger reads it.
+                  ELSE ${nowTime}::time >= b.break_start OR ${nowTime}::time < b.break_end
+                END
+          ORDER BY b.break_end DESC
+          LIMIT 1
+        ) AS on_break_until,
         te.approved,
         -- Live name where we know which account approved, so a rename shows
         -- through; the name captured at the time for rows predating that.

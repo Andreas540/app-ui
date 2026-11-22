@@ -11,6 +11,18 @@ type Employee = {
   /** The business's timezone. Decides which day "today" is for an employee whose
    *  phone is set elsewhere. Clock and break TIMES come from the server, not here. */
   timezone: string | null
+  /** Which break buttons this business offers. The server re-checks it on every
+   *  break, so a page left open from before a change cannot book a break that is
+   *  now switched off — it just gets told no. */
+  breaks: BreakOptions
+}
+
+type BreakOptions = {
+  /** Start Break / End Break: the employee's two taps decide the length. */
+  flexible: boolean
+  /** One-tap break lengths in minutes, e.g. [30]. Booked whole, nothing to
+   *  come back from. */
+  fixed: number[]
 }
 
 type TimeEntry = {
@@ -26,6 +38,9 @@ type TimeEntry = {
   break_minutes: number | string | null
   /** Set only while a break is running right now. */
   on_break_since: string | null
+  /** When a one-tap break booked earlier runs out. Set only for today, and only
+   *  while that window is still open. */
+  on_break_until: string | null
   approved: boolean
   approved_by: string | null
   notes: string | null
@@ -71,7 +86,9 @@ const translations = {
     noSession: 'Session missing. Please open your personal link again.',
     startBreak: 'Start Break',
     endBreak: 'End Break',
+    fixedBreak: '{min} min Break',
     onBreakSince: 'On break since',
+    onBreakUntil: 'On break until',
     breaks: 'Breaks:',
     businessTime: 'All times shown in business time',
     endBreakFirst: 'End your break before clocking out.',
@@ -79,6 +96,8 @@ const translations = {
     errAlreadyClockedOut: 'You have already clocked out for today.',
     errBreakOpen: 'A break is already running.',
     errNoOpenBreak: 'No break is running.',
+    errBreakInProgress: 'Your break runs until {time}.',
+    errBreakOptionOff: 'That break option is not available.',
     errEntryApproved: 'Today is already approved and cannot be changed.',
   },
   es: {
@@ -116,7 +135,9 @@ const translations = {
     noSession: 'Falta la sesión. Abre tu enlace personal otra vez.',
     startBreak: 'Iniciar Descanso',
     endBreak: 'Terminar Descanso',
+    fixedBreak: 'Descanso de {min} min',
     onBreakSince: 'En descanso desde',
+    onBreakUntil: 'En descanso hasta',
     breaks: 'Descansos:',
     businessTime: 'Todas las horas se muestran en la hora del negocio',
     endBreakFirst: 'Termina tu descanso antes de marcar salida.',
@@ -124,6 +145,8 @@ const translations = {
     errAlreadyClockedOut: 'Ya marcaste salida hoy.',
     errBreakOpen: 'Ya hay un descanso en curso.',
     errNoOpenBreak: 'No hay ningún descanso en curso.',
+    errBreakInProgress: 'Tu descanso dura hasta las {time}.',
+    errBreakOptionOff: 'Esa opción de descanso no está disponible.',
     errEntryApproved: 'El día de hoy ya está aprobado y no se puede cambiar.',
   },
 } as const
@@ -216,6 +239,10 @@ export default function TimeEntrySimple() {
   // Non-null while a break is running. Drives which break button is shown and
   // blocks clocking out until the employee is back.
   const [onBreakSince, setOnBreakSince] = useState<string | null>(null)
+  // Set while a one-tap break booked earlier is still running. Unlike the flexible
+  // kind there is nothing to end, so this only reports the window and keeps a
+  // second tap from booking a second deduction.
+  const [onBreakUntil, setOnBreakUntil] = useState<string | null>(null)
   const [breakMinutes, setBreakMinutes] = useState(0)
   const [breakBusy, setBreakBusy] = useState(false)
 
@@ -264,6 +291,14 @@ export default function TimeEntrySimple() {
       employee_code: me.employee.employee_code ? String(me.employee.employee_code) : null,
       active: true,
       timezone: me.timezone ? String(me.timezone) : null,
+      breaks: {
+        // Anything other than an explicit false means the original Start/End
+        // break, so a server that has not been deployed yet keeps today's page.
+        flexible: me.breaks?.flexible !== false,
+        fixed: Array.isArray(me.breaks?.fixed)
+          ? me.breaks.fixed.map(Number).filter((m: number) => Number.isFinite(m) && m > 0)
+          : [],
+      },
     }
   }
 
@@ -329,11 +364,13 @@ export default function TimeEntrySimple() {
         setClockInTime(entry.start_time)
         setClockOutTime(entry.end_time)
         setOnBreakSince(entry.on_break_since ?? null)
+        setOnBreakUntil(entry.on_break_until ?? null)
         setBreakMinutes(toNumberOrNull(entry.break_minutes) || 0)
       } else {
         setClockInTime(null)
         setClockOutTime(null)
         setOnBreakSince(null)
+        setOnBreakUntil(null)
         setBreakMinutes(0)
       }
     } catch (e) {
@@ -442,18 +479,28 @@ const to = toLocalYMD(toDate)
   }
 
   /** Server error codes -> something the employee can act on. */
-  function breakErrorMessage(code: string): string {
+  function breakErrorMessage(code: string, data?: { break_end?: string }): string {
     switch (code) {
       case 'NOT_CLOCKED_IN':      return t.errNotClockedIn
       case 'ALREADY_CLOCKED_OUT': return t.errAlreadyClockedOut
       case 'BREAK_ALREADY_OPEN':  return t.errBreakOpen
       case 'NO_OPEN_BREAK':       return t.errNoOpenBreak
+      // Reachable from a page that was open when the window was booked on another
+      // device, so it names the time rather than just refusing.
+      case 'BREAK_IN_PROGRESS':   return t.errBreakInProgress.replace('{time}', data?.break_end || '')
+      // The tenant switched this option off while this page was open.
+      case 'BREAK_OPTION_DISABLED': return t.errBreakOptionOff
       case 'ENTRY_APPROVED':      return t.errEntryApproved
       default:                    return code || t.saveFailed
     }
   }
 
-  async function handleBreak(action: 'start' | 'end') {
+  /**
+   * One request shape for all three: start and end a flexible break, or book a
+   * fixed one. A fixed break is sent as minutes and comes back already closed —
+   * the server writes both ends of it, so there is no second tap to make.
+   */
+  async function handleBreak(action: 'start' | 'end' | 'fixed', minutes?: number) {
     if (breakBusy) return
     try {
       setBreakBusy(true)
@@ -462,11 +509,11 @@ const to = toLocalYMD(toDate)
       const res = await fetchWithCreds(`${base}/api/time-entry-breaks`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(action === 'fixed' ? { action, minutes } : { action }),
       })
 
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(breakErrorMessage(data.error))
+      if (!res.ok) throw new Error(breakErrorMessage(data.error, data))
 
       // No confirmation popup: the button flips to End Break and the line beneath
       // it reads "On break since HH:MM" as soon as the reload lands, which says the
@@ -509,6 +556,25 @@ const to = toLocalYMD(toDate)
 
   // Only set when the employee's device is on a different clock than the business.
   const zoneLabel = foreignZoneLabel(employee?.timezone)
+
+  // What this business offers. Defaults to the original Start/End break so the
+  // page behaves as it did if the session response predates break options.
+  const breakOptions: BreakOptions = employee?.breaks ?? { flexible: true, fixed: [] }
+
+  // Shared by every break button so they stay one control with one look, however
+  // many durations a tenant turns on.
+  const breakButtonStyle: React.CSSProperties = {
+    width: '100%',
+    height: 52,
+    fontSize: 16,
+    fontWeight: 600,
+    background: 'transparent',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
+    borderRadius: 6,
+    opacity: breakBusy ? 0.6 : 1,
+    cursor: breakBusy ? 'wait' : 'pointer',
+  }
 
   if (loading) return <div className="card page-narrow"><p>{t.loading}</p></div>
   if (err) return <div className="card page-narrow"><p style={{ color: 'var(--color-error)' }}>{t.error} {err}</p></div>
@@ -640,31 +706,61 @@ const to = toLocalYMD(toDate)
 
         {/* Breaks. Only meaningful between clocking in and clocking out, so the
             whole block stays hidden outside a live shift rather than showing a
-            disabled button with no explanation. */}
-        {clockInTime && !clockOutTime && (
+            disabled button with no explanation.
+
+            Which buttons appear is the tenant's setting (Tenant Admin > Employees
+            > Breaks). An employee who is mid-break always gets End Break, even if
+            the option was switched off while they were away — otherwise their only
+            way back would be clocking out, which would end their shift at the
+            start of that break. */}
+        {clockInTime && !clockOutTime && (onBreakSince || breakOptions.flexible || breakOptions.fixed.length > 0) && (
           <div style={{ marginTop: 16 }}>
-            <button
-              onClick={() => handleBreak(onBreakSince ? 'end' : 'start')}
-              disabled={breakBusy}
-              style={{
-                width: '100%',
-                height: 52,
-                fontSize: 16,
-                fontWeight: 600,
-                background: onBreakSince ? '#fbbf24' : 'transparent',
-                color: onBreakSince ? '#1f2937' : 'var(--text)',
-                border: `1px solid ${onBreakSince ? '#fbbf24' : 'var(--border)'}`,
-                borderRadius: 6,
-                opacity: breakBusy ? 0.6 : 1,
-                cursor: breakBusy ? 'wait' : 'pointer',
-              }}
-            >
-              {onBreakSince ? t.endBreak : t.startBreak}
-            </button>
+            {onBreakSince ? (
+              <button
+                onClick={() => handleBreak('end')}
+                disabled={breakBusy}
+                style={{ ...breakButtonStyle, background: '#fbbf24', color: '#1f2937', border: '1px solid #fbbf24' }}
+              >
+                {t.endBreak}
+              </button>
+            ) : onBreakUntil ? (
+              // A booked break still running. Nothing to tap: it ends itself, and
+              // the deduction is already in. Both buttons would be refused by the
+              // server anyway, so none is offered.
+              null
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {breakOptions.flexible && (
+                  <button
+                    onClick={() => handleBreak('start')}
+                    disabled={breakBusy}
+                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0 }}
+                  >
+                    {t.startBreak}
+                  </button>
+                )}
+                {breakOptions.fixed.map(minutes => (
+                  <button
+                    key={minutes}
+                    onClick={() => handleBreak('fixed', minutes)}
+                    disabled={breakBusy}
+                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0 }}
+                  >
+                    {t.fixedBreak.replace('{min}', String(minutes))}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {onBreakSince && (
               <div style={{ marginTop: 8, fontSize: 14, color: '#fbbf24', fontWeight: 600 }}>
                 {t.onBreakSince} {onBreakSince}
+              </div>
+            )}
+
+            {!onBreakSince && onBreakUntil && (
+              <div style={{ fontSize: 14, color: '#fbbf24', fontWeight: 600 }}>
+                {t.onBreakUntil} {onBreakUntil}
               </div>
             )}
 

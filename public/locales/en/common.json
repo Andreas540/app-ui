@@ -1679,7 +1679,14 @@
       "noEmployees": "No employees found.",
       "saveFailed": "Could not save the exclusions.",
       "excludedCount": "{{n}} excluded",
-      "hiddenInactiveExcluded": "{{n}} inactive hidden"
+      "hiddenInactiveExcluded": "{{n}} inactive hidden",
+      "breaksTitle": "Breaks",
+      "breaksDesc": "Choose which break buttons employees see on the time-entry page. Break time is unpaid: it is deducted from the hours worked that day.",
+      "breakFlexible": "Flexible break (Start / End)",
+      "breakFlexibleHint": "The employee taps Start Break when they leave and End Break when they return. The length is whatever time passes between the two taps.",
+      "breakFixed": "{{minutes}} minute break",
+      "breakFixedHint": "One tap books a whole {{minutes}} minutes. Nothing to come back from — the deduction applies immediately and there is no need to clock back in.",
+      "breaksNoneHint": "No break options selected, so no break buttons appear on the employee page. An employee who is already on a break can still end it."
     }
   },
   "customerOffers": {
