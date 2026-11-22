@@ -1,7 +1,7 @@
 // src/pages/TimeEntrySimple.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { todayYMD, formatLongDate } from '../lib/time'
+import { todayYMD, formatLongDate, clockMinutes } from '../lib/time'
 
 type Employee = {
   id: string
@@ -214,21 +214,6 @@ function foreignZoneLabel(tz: string | null | undefined): string | null {
     // An unrecognised zone string must not take the page down.
     return null
   }
-}
-
-/**
- * How long a closed break lasted, in minutes, from its two 'HH:MM' ends.
- *
- * A negative difference means the break ran past midnight, read here the same way
- * the database's deduction reads it (+24 hours), so the page can never show a
- * different length than the one taken off the hours.
- */
-function breakLengthMinutes(b: BreakRow): number {
-  if (!b.break_end) return 0
-  const [sh, sm] = b.break_start.split(':').map(Number)
-  const [eh, em] = b.break_end.split(':').map(Number)
-  const diff = (eh * 60 + em) - (sh * 60 + sm)
-  return diff < 0 ? diff + 1440 : diff
 }
 
 /**
@@ -585,16 +570,24 @@ const to = toLocalYMD(toDate)
 
   // Count breaks ONLY from days that also contributed hours. A day still in
   // progress has total_hours NULL, so its break would otherwise be subtracted from
-  // a figure it was never part of, and clocked - breaks would not equal worked.
+  // a figure it was never part of.
   const breakMinutesNum = timeEntries.reduce(
     (sum, entry) => sum + (toNumberOrNull(entry.total_hours) === null ? 0 : (toNumberOrNull(entry.break_minutes) || 0)),
     0,
   )
 
+  // What the clock recorded, measured from the times themselves. NOT worked +
+  // breaks: worked is floored at zero, so on a day where a registered break was
+  // longer than the shift that sum would report the break length as time on the
+  // clock. Same set of days as the two figures above — a day with both ends is
+  // exactly a day with total_hours.
+  const clockedMinutesNum = timeEntries.reduce(
+    (sum, entry) => sum + (clockMinutes(entry.start_time, entry.end_time) ?? 0),
+    0,
+  )
+
   return {
-    // What the clock recorded, before breaks come off. Derived rather than stored:
-    // total_hours already has the deduction applied, so adding it back is exact.
-    clockedHours: totalHoursNum + breakMinutesNum / 60,
+    clockedHours: clockedMinutesNum / 60,
     totalHours: totalHoursNum,
     totalEarnings: totalEarningsNum,
     approvedHours: approvedHoursNum,
@@ -849,7 +842,7 @@ const to = toLocalYMD(toDate)
                       >
                         {b.break_start} – {b.break_end}
                         <span style={{ margin: '0 6px' }}>·</span>
-                        −{formatHoursMinutes(breakLengthMinutes(b) / 60, lang)}
+                        −{formatHoursMinutes((clockMinutes(b.break_start, b.break_end) ?? 0) / 60, lang)}
                       </div>
                     )
                   })}
@@ -935,6 +928,7 @@ const to = toLocalYMD(toDate)
               const salary = toNumberOrNull(entry.salary)
               const entryBreakMinutes = toNumberOrNull(entry.break_minutes) || 0
               const hasCompleteTime = entry.start_time && entry.end_time
+              const entryClockedMinutes = clockMinutes(entry.start_time, entry.end_time)
 
               return (
                 <div
@@ -957,7 +951,7 @@ const to = toLocalYMD(toDate)
   {hours !== null && entryBreakMinutes > 0 ? (
     <>
       <span style={{ margin: '0 8px' }}>•</span>
-      <span>{t.clocked} {formatHoursMinutes(hours + entryBreakMinutes / 60, lang)}</span>
+      <span>{t.clocked} {formatHoursMinutes((entryClockedMinutes ?? 0) / 60, lang)}</span>
       <span style={{ margin: '0 8px' }}>•</span>
       <span>{t.breakTime} −{formatHoursMinutes(entryBreakMinutes / 60, lang)}</span>
       <span style={{ margin: '0 8px' }}>•</span>

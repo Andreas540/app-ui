@@ -16,6 +16,33 @@ export function todayYMD(tz?: string): string {
 }
 
 /**
+ * Minutes between two wall-clock 'HH:MM' times on the same shift, e.g. a clock-in
+ * and a clock-out, or the two ends of a break.
+ *
+ * A negative difference means the pair crossed midnight, read here as +24 hours —
+ * the same rule the payroll triggers use (db/74, db/75), so a figure shown on
+ * screen can never disagree with the one the database computed.
+ *
+ * Why the clocked figure is measured rather than derived: total_hours has the
+ * break deduction already applied AND is floored at zero, so adding the breaks
+ * back on only returns the real clocked time while that floor has not bitten. On a
+ * day where a registered break was longer than the shift, the derivation reports
+ * the break length as though it were time on the clock. This measures the clock
+ * instead, and stays correct either way.
+ *
+ * Returns null unless both ends are present, so a shift still in progress is
+ * skipped rather than counted as zero.
+ */
+export function clockMinutes(start?: string | null, end?: string | null): number | null {
+  if (!start || !end) return null;
+  const [sh, sm] = String(start).split(':').map(Number);
+  const [eh, em] = String(end).split(':').map(Number);
+  if (![sh, sm, eh, em].every(Number.isFinite)) return null;
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff < 0 ? diff + 1440 : diff;
+}
+
+/**
  * Date-only arithmetic on YYYY-MM-DD strings.
  *
  * All of these go through Date.UTC rather than a local Date, so a DST boundary

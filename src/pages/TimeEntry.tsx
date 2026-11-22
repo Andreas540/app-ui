@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
-import { todayYMD, formatLongDate } from '../lib/time'
+import { todayYMD, formatLongDate, clockMinutes } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
 type Employee = {
@@ -345,17 +345,23 @@ export default function TimeEntry() {
 
     const pendingHoursNum = totalHoursNum - approvedHoursNum
 
-    // Only from days that also contributed hours, so clocked - breaks == worked.
-    // A day still in progress has total_hours NULL and must not skew the subtraction.
+    // Only from days that also contributed hours. A day still in progress has
+    // total_hours NULL and must not skew the subtraction.
     const breakMinutesNum = timeEntries.reduce(
       (sum, entry) => sum + (toNumberOrNull(entry.total_hours) === null ? 0 : (toNumberOrNull(entry.break_minutes) || 0)),
       0,
     )
 
+    // Measured from the clock-in and clock-out times, not as worked + breaks:
+    // worked is floored at zero, so that sum reports the break length as time on
+    // the clock on any day where a break outran the shift.
+    const clockedMinutesNum = timeEntries.reduce(
+      (sum, entry) => sum + (clockMinutes(entry.start_time, entry.end_time) ?? 0),
+      0,
+    )
+
     return {
-      // total_hours already has breaks removed, so adding them back gives the
-      // figure the clock actually recorded.
-      clockedHours: totalHoursNum + breakMinutesNum / 60,
+      clockedHours: clockedMinutesNum / 60,
       totalHours: totalHoursNum,
       totalEarnings: totalEarningsNum,
       approvedHours: approvedHoursNum,
@@ -604,6 +610,7 @@ export default function TimeEntry() {
             {timeEntries.map(entry => {
               const hours = toNumberOrNull(entry.total_hours)
               const entryBreakMinutes = toNumberOrNull(entry.break_minutes) || 0
+              const entryClockedMinutes = clockMinutes(entry.start_time, entry.end_time)
               return (
                 <div
                   key={entry.id}
@@ -630,7 +637,7 @@ export default function TimeEntry() {
                       {hours !== null && entryBreakMinutes > 0 ? (
                         <>
                           <span style={{ margin: '0 8px' }}>•</span>
-                          <span>{t('timeApproval.clocked')} {formatHoursMinutes(hours + entryBreakMinutes / 60)}</span>
+                          <span>{t('timeApproval.clocked')} {formatHoursMinutes((entryClockedMinutes ?? 0) / 60)}</span>
                           <span style={{ margin: '0 8px' }}>•</span>
                           <span>{t('timeApproval.breaks')} −{formatHoursMinutes(entryBreakMinutes / 60)}</span>
                           <span style={{ margin: '0 8px' }}>•</span>

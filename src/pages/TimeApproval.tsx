@@ -6,6 +6,7 @@ import { useCurrency } from '../lib/useCurrency'
 import {
   formatLongDate, formatDate, formatMonthYear, todayYMD,
   addDaysYMD, addMonthsYMD, weekStartYMD, weekEndYMD, monthStartYMD, monthEndYMD,
+  clockMinutes,
 } from '../lib/time'
 import { useLocale } from '../contexts/LocaleContext'
 import { DateInput } from '../components/DateInput'
@@ -368,15 +369,20 @@ const stats = useMemo(() => {
   const pendingHours = totalHours - approvedHours
   const pendingCount = roleScopedEntries.filter(e => !e.approved).length
 
-  // Only from entries that also contributed hours, so clocked - breaks == worked.
-  // An entry with no end_time has total_hours NULL; counting its break here would
-  // describe a deduction that was never applied to the total beside it.
+  // Only from entries that also contributed hours. An entry with no end_time has
+  // total_hours NULL; counting its break here would describe a deduction that was
+  // never applied to the total beside it.
   const breakMinutes = roleScopedEntries.reduce(
     (sum, e) => sum + (e.total_hours === null ? 0 : (Number(e.break_minutes) || 0)), 0)
 
+  // The clock span, measured. Not worked + breaks: worked is floored at zero, so
+  // that sum would report the break length as time on the clock for any entry
+  // whose registered break outran the shift.
+  const clockedMinutes = roleScopedEntries.reduce(
+    (sum, e) => sum + (clockMinutes(e.start_time, e.end_time) ?? 0), 0)
+
   return {
-    // total_hours already has breaks removed; adding them back gives the clock span.
-    clockedHours: totalHours + breakMinutes / 60,
+    clockedHours: clockedMinutes / 60,
     breakMinutes,
     totalHours: totalHours,
     totalEarnings: totalEarnings,
@@ -789,7 +795,7 @@ const stats = useMemo(() => {
   {entry.total_hours !== null && Number(entry.break_minutes) > 0 ? (
     <>
       <span style={{ margin: '0 8px' }}>•</span>
-      <span>{t('timeApproval.clocked')} {formatHoursMinutes(Number(entry.total_hours) + Number(entry.break_minutes) / 60)}</span>
+      <span>{t('timeApproval.clocked')} {formatHoursMinutes((clockMinutes(entry.start_time, entry.end_time) ?? 0) / 60)}</span>
       <span style={{ margin: '0 8px' }}>•</span>
       <span>{t('timeApproval.breaks')} −{formatHoursMinutes(Number(entry.break_minutes) / 60)}</span>
       <span style={{ margin: '0 8px' }}>•</span>
