@@ -48,6 +48,15 @@ type TimeEntry = {
   updated_at: string
 }
 
+/** One break of today's shift, as /api/time-entry-breaks returns it. */
+type BreakRow = {
+  id: string
+  /** 'HH:MM' in business time. */
+  break_start: string
+  /** 'HH:MM', or null while a flexible break is still running. */
+  break_end: string | null
+}
+
 type Language = 'es' | 'en'
 
 const translations = {
@@ -88,7 +97,7 @@ const translations = {
     endBreak: 'End Break',
     fixedBreak: '{min} min Break',
     onBreakSince: 'On break since',
-    onBreakUntil: 'On break until',
+    registeredBreaks: 'Registered breaks',
     breaks: 'Breaks:',
     businessTime: 'All times shown in business time',
     endBreakFirst: 'End your break before clocking out.',
@@ -137,7 +146,7 @@ const translations = {
     endBreak: 'Terminar Descanso',
     fixedBreak: 'Descanso de {min} min',
     onBreakSince: 'En descanso desde',
-    onBreakUntil: 'En descanso hasta',
+    registeredBreaks: 'Descansos registrados',
     breaks: 'Descansos:',
     businessTime: 'Todas las horas se muestran en la hora del negocio',
     endBreakFirst: 'Termina tu descanso antes de marcar salida.',
@@ -208,6 +217,21 @@ function foreignZoneLabel(tz: string | null | undefined): string | null {
 }
 
 /**
+ * How long a closed break lasted, in minutes, from its two 'HH:MM' ends.
+ *
+ * A negative difference means the break ran past midnight, read here the same way
+ * the database's deduction reads it (+24 hours), so the page can never show a
+ * different length than the one taken off the hours.
+ */
+function breakLengthMinutes(b: BreakRow): number {
+  if (!b.break_end) return 0
+  const [sh, sm] = b.break_start.split(':').map(Number)
+  const [eh, em] = b.break_end.split(':').map(Number)
+  const diff = (eh * 60 + em) - (sh * 60 + sm)
+  return diff < 0 ? diff + 1440 : diff
+}
+
+/**
  * A Date standing for the given YYYY-MM-DD, anchored at midday so that week
  * arithmetic can never slip a day across a DST boundary.
  */
@@ -244,6 +268,10 @@ export default function TimeEntrySimple() {
   // second tap from booking a second deduction.
   const [onBreakUntil, setOnBreakUntil] = useState<string | null>(null)
   const [breakMinutes, setBreakMinutes] = useState(0)
+  // Today's break rows, so the page can show WHEN each one was taken and not just
+  // the total. A fixed break leaves no other trace on the page: there is no second
+  // tap to make, so without this the only evidence of the tap would be a number.
+  const [todayBreaks, setTodayBreaks] = useState<BreakRow[]>([])
   const [breakBusy, setBreakBusy] = useState(false)
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
@@ -366,15 +394,37 @@ export default function TimeEntrySimple() {
         setOnBreakSince(entry.on_break_since ?? null)
         setOnBreakUntil(entry.on_break_until ?? null)
         setBreakMinutes(toNumberOrNull(entry.break_minutes) || 0)
+        await loadTodayBreaks(entry.id)
       } else {
         setClockInTime(null)
         setClockOutTime(null)
         setOnBreakSince(null)
         setOnBreakUntil(null)
         setBreakMinutes(0)
+        setTodayBreaks([])
       }
     } catch (e) {
       console.error('Failed to load today entry:', e)
+    }
+  }
+
+  /**
+   * The individual breaks behind today's total. Its own request rather than another
+   * field on the entry: the endpoint already exists for exactly this and already
+   * scopes an employee to their own rows, so there was nothing to add server-side.
+   *
+   * Failure is not fatal — the day's total still shows, only the per-break lines
+   * go missing.
+   */
+  async function loadTodayBreaks(timeEntryId: string) {
+    try {
+      const base = apiBase()
+      const res = await fetchWithCreds(`${base}/api/time-entry-breaks?time_entry_id=${encodeURIComponent(timeEntryId)}`)
+      if (!res.ok) return
+      const rows = await res.json().catch(() => [])
+      setTodayBreaks(Array.isArray(rows) ? rows : [])
+    } catch (e) {
+      console.error('Failed to load today breaks:', e)
     }
   }
 
@@ -561,6 +611,22 @@ const to = toLocalYMD(toDate)
   // page behaves as it did if the session response predates break options.
   const breakOptions: BreakOptions = employee?.breaks ?? { flexible: true, fixed: [] }
 
+  /**
+   * The breaks that are actually being deducted from today, newest last.
+   *
+   * Filtered by the same rule the database uses — a break counts only if it
+   * started at or after the shift's current clock-in — so this list and the
+   * deducted total can never tell the employee different things. A break stranded
+   * before a re-clock-in stays in the record but stops being shown here, exactly
+   * as it stops being subtracted.
+   */
+  const registeredBreaks = useMemo(() => (
+    todayBreaks
+      .filter(b => b.break_end !== null)
+      .filter(b => !clockInTime || b.break_start >= clockInTime)
+      .sort((a, b) => a.break_start.localeCompare(b.break_start))
+  ), [todayBreaks, clockInTime])
+
   // Shared by every break button so they stay one control with one look, however
   // many durations a tenant turns on.
   const breakButtonStyle: React.CSSProperties = {
@@ -570,7 +636,10 @@ const to = toLocalYMD(toDate)
     fontWeight: 600,
     background: 'transparent',
     color: 'var(--text)',
-    border: '1px solid var(--border)',
+    // 2px rather than the usual hairline: on a transparent button this outline is
+    // the only thing that says where to tap, and 1px disappeared on the shop
+    // floor. box-sizing is border-box globally, so the height above is unchanged.
+    border: '2px solid var(--border)',
     borderRadius: 6,
     opacity: breakBusy ? 0.6 : 1,
     cursor: breakBusy ? 'wait' : 'pointer',
@@ -719,22 +788,17 @@ const to = toLocalYMD(toDate)
               <button
                 onClick={() => handleBreak('end')}
                 disabled={breakBusy}
-                style={{ ...breakButtonStyle, background: '#fbbf24', color: '#1f2937', border: '1px solid #fbbf24' }}
+                style={{ ...breakButtonStyle, background: '#fbbf24', color: '#1f2937', border: '2px solid #fbbf24' }}
               >
                 {t.endBreak}
               </button>
-            ) : onBreakUntil ? (
-              // A booked break still running. Nothing to tap: it ends itself, and
-              // the deduction is already in. Both buttons would be refused by the
-              // server anyway, so none is offered.
-              null
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {breakOptions.flexible && (
                   <button
                     onClick={() => handleBreak('start')}
-                    disabled={breakBusy}
-                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0 }}
+                    disabled={breakBusy || !!onBreakUntil}
+                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0, opacity: breakBusy || onBreakUntil ? 0.5 : 1 }}
                   >
                     {t.startBreak}
                   </button>
@@ -743,8 +807,12 @@ const to = toLocalYMD(toDate)
                   <button
                     key={minutes}
                     onClick={() => handleBreak('fixed', minutes)}
-                    disabled={breakBusy}
-                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0 }}
+                    // Disabled, not hidden, while a booked break is still running.
+                    // The server refuses a second one for that half hour anyway,
+                    // and a button that vanishes after being tapped leaves the
+                    // employee with nothing to read the result under.
+                    disabled={breakBusy || !!onBreakUntil}
+                    style={{ ...breakButtonStyle, flex: '1 1 140px', minWidth: 0, opacity: breakBusy || onBreakUntil ? 0.5 : 1 }}
                   >
                     {t.fixedBreak.replace('{min}', String(minutes))}
                   </button>
@@ -758,15 +826,44 @@ const to = toLocalYMD(toDate)
               </div>
             )}
 
-            {!onBreakSince && onBreakUntil && (
-              <div style={{ fontSize: 14, color: '#fbbf24', fontWeight: 600 }}>
-                {t.onBreakUntil} {onBreakUntil}
+            {/* What has been booked today, with the times. For a fixed break this
+                is the whole receipt: one tap, nothing to come back from, so the
+                line below is the only thing that says it happened. The one still
+                running is amber, matching the button it has just dimmed. */}
+            {registeredBreaks.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div className="helper" style={{ fontSize: 12, marginBottom: 2 }}>
+                  {t.registeredBreaks}
+                </div>
+                <div style={{ display: 'grid', gap: 2 }}>
+                  {registeredBreaks.map(b => {
+                    const live = onBreakUntil !== null && b.break_end === onBreakUntil
+                    return (
+                      <div
+                        key={b.id}
+                        style={{
+                          fontSize: 13,
+                          fontWeight: live ? 600 : 400,
+                          color: live ? '#fbbf24' : 'var(--text-secondary)',
+                        }}
+                      >
+                        {b.break_start} – {b.break_end}
+                        <span style={{ margin: '0 6px' }}>·</span>
+                        −{formatHoursMinutes(breakLengthMinutes(b) / 60, lang)}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
-            {breakMinutes > 0 && (
-              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                {t.breaks} {formatHoursMinutes(breakMinutes / 60, lang)}
+            {/* The total only earns its line when it is not already said above:
+                with exactly one break the line above IS the total. Still shown if
+                the per-break fetch failed and left the list empty, so the
+                deduction is never invisible. */}
+            {breakMinutes > 0 && registeredBreaks.length !== 1 && (
+              <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600 }}>
+                {t.breaks} −{formatHoursMinutes(breakMinutes / 60, lang)}
               </div>
             )}
           </div>
