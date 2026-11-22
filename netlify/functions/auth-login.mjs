@@ -224,6 +224,7 @@ async function handleLogin(event) {
         COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
         COALESCE(t.pin_length, 6)            AS pin_length,
         COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
+        COALESCE(t.idle_logout_minutes, 90) AS idle_logout_minutes,
         bt.config_defaults as business_type_config
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
@@ -281,6 +282,9 @@ async function handleLogin(event) {
         enabled: !!primaryMembership.pin_lock_enabled,
         pinLength: Number(primaryMembership.pin_length) || 6,
         idleLockMinutes: Number(primaryMembership.idle_lock_minutes) || 15,
+        // Session idle logout. Carried in this object because it is the config
+        // channel that already reaches the client; it is not a PIN setting.
+        idleLogoutMinutes: Number(primaryMembership.idle_logout_minutes) || 90,
         userHasPin: !!user.user_has_pin,
       },
       // Also return all memberships for multi-tenant switching

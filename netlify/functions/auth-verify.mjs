@@ -80,6 +80,7 @@ async function handleVerify(event) {
             COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
             COALESCE(t.pin_length, 6)            AS pin_length,
             COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
+            COALESCE(t.idle_logout_minutes, 90) AS idle_logout_minutes,
             bt.config_defaults as business_type_config
           FROM tenant_memberships tm
           JOIN users u ON u.id = tm.user_id
@@ -145,6 +146,7 @@ async function handleVerify(event) {
             enabled: !!r.pin_lock_enabled,
             pinLength: Number(r.pin_length) || 6,
             idleLockMinutes: Number(r.idle_lock_minutes) || 15,
+            idleLogoutMinutes: Number(r.idle_logout_minutes) || 90,
             userHasPin: !!admin.user_has_pin,
             enforced: false,
           },
@@ -168,6 +170,7 @@ async function handleVerify(event) {
             COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
             COALESCE(t.pin_length, 6)            AS pin_length,
             COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
+            COALESCE(t.idle_logout_minutes, 90) AS idle_logout_minutes,
             bt.config_defaults as business_type_config
           FROM tenants t
           LEFT JOIN business_types bt ON bt.id = t.business_type
@@ -235,6 +238,7 @@ async function handleVerify(event) {
             enabled: !!tenant.pin_lock_enabled,
             pinLength: Number(tenant.pin_length) || 6,
             idleLockMinutes: Number(tenant.idle_lock_minutes) || 15,
+            idleLogoutMinutes: Number(tenant.idle_logout_minutes) || 90,
             userHasPin: !!user.user_has_pin,
             enforced: false,
           },
@@ -283,7 +287,7 @@ async function handleVerify(event) {
         // Global mode has no active tenant (tenantId: null), so there is no PIN Lock
         // policy to report. Disabled is correct here, unlike the two tenant-scoped
         // branches above.
-        pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, userHasPin: false, enforced: false },
+        pinLock: { enabled: false, pinLength: 6, idleLockMinutes: 15, idleLogoutMinutes: 90, userHasPin: false, enforced: false },
       })
     }
 
@@ -309,6 +313,7 @@ async function handleVerify(event) {
           COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
           COALESCE(t.pin_length, 6)            AS pin_length,
           COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
+          COALESCE(t.idle_logout_minutes, 90) AS idle_logout_minutes,
           bt.config_defaults as business_type_config
         FROM tenant_memberships tm
         JOIN tenants t ON t.id = tm.tenant_id
@@ -395,6 +400,7 @@ async function handleVerify(event) {
           enabled: !!membership[0].pin_lock_enabled,
           pinLength: Number(membership[0].pin_length) || 6,
           idleLockMinutes: Number(membership[0].idle_lock_minutes) || 15,
+          idleLogoutMinutes: Number(membership[0].idle_logout_minutes) || 90,
           userHasPin: !!user.user_has_pin,
           enforced: true,
         },
@@ -428,6 +434,7 @@ async function handleVerify(event) {
         COALESCE(t.pin_lock_enabled, false)  AS pin_lock_enabled,
         COALESCE(t.pin_length, 6)            AS pin_length,
         COALESCE(t.idle_lock_minutes, 15)    AS idle_lock_minutes,
+        COALESCE(t.idle_logout_minutes, 90) AS idle_logout_minutes,
         bt.config_defaults as business_type_config
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -499,6 +506,7 @@ async function handleVerify(event) {
         enabled: !!user.pin_lock_enabled,
         pinLength: Number(user.pin_length) || 6,
         idleLockMinutes: Number(user.idle_lock_minutes) || 15,
+        idleLogoutMinutes: Number(user.idle_logout_minutes) || 90,
         userHasPin: !!user.user_has_pin,
         enforced: true,
       },

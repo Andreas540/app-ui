@@ -1687,6 +1687,17 @@
       "breakFixed": "Descanso de {{minutes}} minutos",
       "breakFixedHint": "Una pulsación registra los {{minutes}} minutos completos. No hay que volver: el descuento se aplica de inmediato y no hace falta marcar entrada otra vez.",
       "breaksNoneHint": "No hay opciones de descanso seleccionadas, así que no aparece ningún botón de descanso en la página del empleado. Quien ya esté en un descanso todavía puede terminarlo."
+    },
+    "tabSecurity": "Seguridad",
+    "security": {
+      "idleLogoutTitle": "Cierre de sesión automático",
+      "idleLogoutDesc": "Cuánto tiempo puede estar un navegador sin actividad antes de cerrar la sesión y tener que volver a entrar. El reloj cuenta tiempo real, así que sigue corriendo con el portátil cerrado o el móvil en reposo.",
+      "idleLogoutLabel": "Cerrar sesión tras (minutos de inactividad)",
+      "idleLogoutRange": "Entre {{min}} y {{max}} minutos. El valor por defecto es 90.",
+      "idleLogoutInvalid": "Introduce un número entero entre {{min}} y {{max}}.",
+      "absoluteNote": "Aparte de esto, toda sesión termina 12 horas después de iniciarla, haga lo que haga la persona. Ese límite es igual para todos los inquilinos y no se puede ajustar: es lo que impide que una sesión robada dure indefinidamente.",
+      "appliesNote": "Para el resto se aplica la próxima vez que inicien sesión.",
+      "saveFailed": "No se pudo guardar la configuración de seguridad."
     }
   },
   "customerOffers": {

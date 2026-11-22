@@ -17,6 +17,7 @@ import TenantAdminInventoryTab from './TenantAdminInventoryTab'
 import TenantAdminCustomerSettingsTab from './TenantAdminCustomerSettingsTab'
 import TenantAdminPartnerSettingsTab from './TenantAdminPartnerSettingsTab'
 import TenantAdminEmployeesTab from './TenantAdminEmployeesTab'
+import TenantAdminSecurityTab from './TenantAdminSecurityTab'
 import TenantAdminProductSettingsTab from './TenantAdminProductSettingsTab'
 import TenantAdminOrderPageTab from './TenantAdminOrderPageTab'
 import { getTenantConfig } from '../lib/tenantConfig'
@@ -73,7 +74,7 @@ export default function TenantAdmin() {
   const [loadingPortal, setLoadingPortal] = useState(false)
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'partner-settings' | 'product-settings' | 'data-import' | 'order-page' | 'employees'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'invoicing' | 'accounting' | 'booking' | 'payment-providers' | 'ui-settings' | 'cash' | 'inventory' | 'customer-settings' | 'partner-settings' | 'product-settings' | 'data-import' | 'order-page' | 'employees' | 'security'>('team')
 
   // Invoice config
   const [invoiceCfg, setInvoiceCfg] = useState({
@@ -907,6 +908,7 @@ export default function TenantAdmin() {
             { id: 'order-page',        label: t('tenantAdmin.tabOrderPage') },
             { id: 'partner-settings',  label: t('tenantAdmin.tabPartnerSettings') },
             { id: 'payment-providers', label: t('tenantAdmin.tabPaymentProviders') },
+            { id: 'security',          label: t('tenantAdmin.tabSecurity') },
             { id: 'ui-settings',       label: t('tenantAdmin.tabUiSettings') },
             { id: 'team',              label: t('tenantAdmin.tabUsers') },
           ]
@@ -1464,6 +1466,8 @@ export default function TenantAdmin() {
 
         {/* ── Payment Providers tab ── */}
         {activeTab === 'payment-providers' && <TenantAdminPaymentProvidersTab />}
+
+        {activeTab === 'security' && <TenantAdminSecurityTab />}
 
         {activeTab === 'ui-settings' && <TenantAdminUISettingsTab initialSection={(location.state as any)?.uiSection} />}
 

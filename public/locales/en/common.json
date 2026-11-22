@@ -1687,6 +1687,17 @@
       "breakFixed": "{{minutes}} minute break",
       "breakFixedHint": "One tap books a whole {{minutes}} minutes. Nothing to come back from — the deduction applies immediately and there is no need to clock back in.",
       "breaksNoneHint": "No break options selected, so no break buttons appear on the employee page. An employee who is already on a break can still end it."
+    },
+    "tabSecurity": "Security",
+    "security": {
+      "idleLogoutTitle": "Automatic logout",
+      "idleLogoutDesc": "How long a browser can sit untouched before the person is logged out and has to sign in again. The clock counts real time, so it keeps running while a laptop is closed or a phone is asleep.",
+      "idleLogoutLabel": "Log out after (minutes of inactivity)",
+      "idleLogoutRange": "Between {{min}} and {{max}} minutes. Default is 90.",
+      "idleLogoutInvalid": "Enter a whole number between {{min}} and {{max}}.",
+      "absoluteNote": "Separately, every session ends 12 hours after signing in, whatever the person is doing. That limit is the same for all tenants and is not adjustable — it is what stops a stolen session lasting indefinitely.",
+      "appliesNote": "Takes effect for everyone else the next time they sign in.",
+      "saveFailed": "Could not save the security settings."
     }
   },
   "customerOffers": {

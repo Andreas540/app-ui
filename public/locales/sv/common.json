@@ -1687,6 +1687,17 @@
       "breakFixed": "{{minutes}} minuters paus",
       "breakFixedHint": "Ett tryck registrerar hela {{minutes}} minuter. Inget att komma tillbaka från — avdraget gäller direkt och man behöver inte stämpla in igen.",
       "breaksNoneHint": "Inga pausalternativ är valda, så inga pausknappar visas på den anställdas sida. Den som redan är på en paus kan fortfarande avsluta den."
+    },
+    "tabSecurity": "Säkerhet",
+    "security": {
+      "idleLogoutTitle": "Automatisk utloggning",
+      "idleLogoutDesc": "Hur länge en webbläsare får stå orörd innan personen loggas ut och måste logga in igen. Klockan räknar verklig tid, så den fortsätter även när en laptop är stängd eller en telefon sover.",
+      "idleLogoutLabel": "Logga ut efter (minuters inaktivitet)",
+      "idleLogoutRange": "Mellan {{min}} och {{max}} minuter. Standard är 90.",
+      "idleLogoutInvalid": "Ange ett heltal mellan {{min}} och {{max}}.",
+      "absoluteNote": "Utöver detta avslutas varje session 12 timmar efter inloggning, oavsett vad personen gör. Den gränsen är lika för alla och går inte att ändra — det är den som hindrar att en stulen session varar hur länge som helst.",
+      "appliesNote": "För övriga gäller det från nästa gång de loggar in.",
+      "saveFailed": "Kunde inte spara säkerhetsinställningarna."
     }
   },
   "customerOffers": {

@@ -31,6 +31,15 @@ export interface PinLockConfig {
   enabled: boolean
   pinLength: number
   idleLockMinutes: number
+  /**
+   * Minutes of inactivity before the session is ended outright — a different
+   * thing from idleLockMinutes above, which only raises the PIN overlay. Carried
+   * in this object because it is the config channel that already reaches the
+   * client, not because it is a PIN setting.
+   * Optional: configs cached before the field existed will not have it, and the
+   * caller falls back to the 90-minute default.
+   */
+  idleLogoutMinutes?: number
   userHasPin: boolean
   /**
    * Whether this session is actually subject to the policy above. The server decides,

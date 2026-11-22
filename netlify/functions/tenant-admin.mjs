@@ -10,6 +10,11 @@ async function ensureBreakSchema(sql) {
   ])
 }
 
+// Keeps the Security tab working on tenants whose DB predates db/77_security_settings.sql.
+async function ensureSecuritySchema(sql) {
+  await sql`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS idle_logout_minutes INTEGER NOT NULL DEFAULT 90`.catch(() => {})
+}
+
 // Keeps the sorting feature working on tenants whose DB predates 70_sorting_settings.sql.
 async function ensureSortingSchema(sql) {
   await Promise.all([
@@ -317,6 +322,20 @@ async function handleGet(event) {
          ORDER BY e.name ASC
       `
       return cors(200, { employees })
+    }
+
+    // Session security. The absolute ceiling (the token's own 12h lifetime) is
+    // deliberately not here: it is the backstop for a stolen token, not a
+    // per-tenant comfort setting.
+    if (action === 'getSecuritySettings') {
+      await ensureSecuritySchema(sql)
+      const rows = await sql`
+        SELECT COALESCE(idle_logout_minutes, 90) AS idle_logout_minutes
+        FROM tenants
+        WHERE id = ${tenantId}::uuid
+        LIMIT 1
+      `
+      return cors(200, { idleLogoutMinutes: Number(rows[0]?.idle_logout_minutes) || 90 })
     }
 
     // Which break buttons the external time-entry page offers employees.
@@ -772,6 +791,22 @@ if (action === 'toggleUserStatus') {
         `
       }
       return cors(200, { success: true, excluded: employeeIds.length })
+    }
+
+    if (action === 'saveSecuritySettings') {
+      const minutes = Number(body.idleLogoutMinutes)
+      // Same range the database constraint enforces, checked here so a bad value
+      // comes back as a message rather than a constraint violation.
+      if (!Number.isInteger(minutes) || minutes < 5 || minutes > 720) {
+        return cors(400, { error: 'idleLogoutMinutes must be a whole number between 5 and 720' })
+      }
+      await ensureSecuritySchema(sql)
+      await sql`
+        UPDATE tenants SET idle_logout_minutes = ${minutes} WHERE id = ${tenantId}::uuid
+      `
+      // Takes effect for each user at their next login or token verify, which is
+      // when the client is handed its config.
+      return cors(200, { ok: true, idleLogoutMinutes: minutes })
     }
 
     if (action === 'saveBreakSettings') {

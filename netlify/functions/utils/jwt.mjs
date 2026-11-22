@@ -2,12 +2,18 @@
 // Import this instead of duplicating jwt.sign/jwt.verify calls across functions.
 import jwt from 'jsonwebtoken'
 
-const DEFAULT_EXPIRY = '4h'
+// One working day. The session ends here regardless of activity, so everyone
+// logs in fresh each morning — and a stolen token is dead within the day.
+//
+// Not activity-based on purpose: activity is already handled by the 90-minute
+// idle logout on the client (src/hooks/useIdleTimeout.ts). This is the absolute
+// ceiling underneath it.
+const DEFAULT_EXPIRY = '12h'
 
 /**
  * Sign a JWT payload with the app secret.
  * @param {object} payload - Data to embed (userId, email, etc.)
- * @param {string} [expiresIn] - e.g. '4h', '15m'. Defaults to 4 hours.
+ * @param {string} [expiresIn] - e.g. '12h', '15m'. Defaults to 12 hours.
  * @returns {string} Signed JWT string.
  */
 export function signToken(payload, expiresIn = DEFAULT_EXPIRY) {

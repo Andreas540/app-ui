@@ -64,7 +64,7 @@ import TimeEntry from './pages/TimeEntry'
 import EmployeeManagement from './pages/EmployeeManagement'
 import TimeApproval from './pages/TimeApproval'
 import TimeEntrySimple from './pages/TimeEntrySimple'
-import { useIdleTimeout } from './hooks/useIdleTimeout'
+import { useIdleTimeout, clearIdleActivity } from './hooks/useIdleTimeout'
 import { useIdleLock } from './hooks/useIdleLock'
 import LockOverlay from './components/LockOverlay'
 import TenantSwitcher from './components/TenantSwitcher'
@@ -450,15 +450,28 @@ function MainApp() {
   // Only an explicit false disables, so a config cached before `enforced` existed locks.
   const pinLockActive = !!(pinLock?.enabled && pinLock?.enforced !== false)
 
-  // Hard logout after idle: 90 min normally, 4h when PIN lock is active (PIN overlay handles security)
-  const hardLogoutMs = pinLockActive ? 4 * 60 * 60 * 1000 : 90 * 60 * 1000
-  useIdleTimeout(
-    hardLogoutMs,
-    () => {
+  // Hard logout after idle. The same period whether or not PIN lock is on: the
+  // PIN overlay is a convenience for stepping away for a minute, not a reason to
+  // leave a session alive for hours. Coming back to a machine that has been idle
+  // this long means logging in again, PIN or no PIN.
+  //
+  // Per tenant, from Tenant Admin > Security (db/77_security_settings.sql).
+  // 90 minutes when nothing is configured, or when this session's cached config
+  // predates the setting.
+  const hardLogoutMs = (pinLock?.idleLogoutMinutes ?? 90) * 60 * 1000
+  useIdleTimeout({
+    timeoutMs: hardLogoutMs,
+    enabled: isAuthenticated,
+    // While the PIN overlay is up, the clock keeps running but taps on it do not
+    // count as working — otherwise anything brushing the keyboard would hold a
+    // locked session open indefinitely. Entering the PIN unlocks and restarts it.
+    paused: isLocked,
+    userKey: user?.id ?? null,
+    onTimeout: () => {
       console.log('Auto-logout due to inactivity')
       handleLogout(null)
-    }
-  )
+    },
+  })
 
   // Soft lock: show PIN overlay after tenant-configured idle period
   useIdleLock({
@@ -489,6 +502,9 @@ function MainApp() {
     localStorage.removeItem('authToken')
     localStorage.removeItem('activeTenantId')
     sessionStorage.removeItem('frontPageDismissed')
+    // So the next person to log in on this browser starts a fresh idle clock
+    // rather than inheriting this one's.
+    clearIdleActivity(user?.id ?? null)
 
     window.location.href = '/login'
   }
