@@ -141,9 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ token: tokenToVerify })
       })
 
-      if (!response.ok) {
+      // Only a verdict from the server ends the session. A 500, 502 or 503 means
+      // the server could not answer, which is not the same as saying no.
+      if (response.status === 401 || response.status === 403) {
         logout()
         return false
+      }
+      if (!response.ok) {
+        console.error('Token verification unavailable:', response.status)
+        return true
       }
 
       const data = await response.json()
@@ -165,9 +171,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout()
       return false
     } catch (err) {
-      console.error('Token verification failed:', err)
-      logout()
-      return false
+      // A fetch that THREW is a transport failure — wifi moved, the machine just
+      // woke, DNS blinked — not a rejected session. Logging out here wiped the
+      // token and pinLockConfig and dropped the person on the login screen for a
+      // dropped connection, with no message and no PIN prompt. The session is
+      // left alone; the next verify five minutes later decides, and a genuinely
+      // dead token is still caught by the 401 handling on any real API call.
+      console.error('Token verification unreachable:', err)
+      return true
     }
   }
 
