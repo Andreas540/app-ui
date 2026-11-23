@@ -59,6 +59,21 @@ export const handler = withErrorLogging('session-unlock', async (event) => {
     return cors(423, { error: 'Account temporarily locked. Please log in again.' })
   }
 
+  // A served lockout clears the count. Without this the counter only ever went
+  // back to zero on a SUCCESSFUL unlock, so once someone reached five failures
+  // the number stayed there: the lockout expired, and then the next single typo
+  // — days later — took them straight back over the limit and locked them out
+  // again for fifteen minutes. One bad evening made an account permanently
+  // one-mistake-from-locked.
+  let failedSoFar = Number(user.pin_failed_attempts) || 0
+  if (user.pin_locked_until && new Date(user.pin_locked_until) <= new Date()) {
+    failedSoFar = 0
+    await sql`
+      UPDATE users SET pin_failed_attempts = 0, pin_locked_until = NULL
+      WHERE id = ${userId}::uuid
+    `
+  }
+
   if (!user.pin_hash) return cors(400, { error: 'No PIN set for this account' })
 
   // Slow down brute-force attempts.
@@ -67,7 +82,12 @@ export const handler = withErrorLogging('session-unlock', async (event) => {
   const match = await bcrypt.compare(String(pin), user.pin_hash)
 
   if (!match) {
-    const newAttempts = (Number(user.pin_failed_attempts) || 0) + 1
+    const newAttempts = failedSoFar + 1
+    // How long the submitted PIN was — never the PIN itself. If a rejection is
+    // ever disputed, this says whether the page assembled a full code or sent
+    // something short, which is the difference between a mistyped PIN and a
+    // broken input. There is no way to work backwards from a length.
+    const lengthNote = `submitted_length=${String(pin).length}`
     const locked = newAttempts >= MAX_ATTEMPTS
 
     if (locked) {
@@ -77,12 +97,12 @@ export const handler = withErrorLogging('session-unlock', async (event) => {
             pin_locked_until    = NOW() + ${`${LOCKOUT_MINUTES} minutes`}::interval
         WHERE id = ${userId}::uuid
       `
-      await logActivity({ sql, event, action: 'pin_lockout', success: false, userId, tenantId: null })
+      await logActivity({ sql, event, action: 'pin_lockout', success: false, userId, tenantId: null, error: lengthNote })
       return cors(423, { error: 'Too many failed attempts. Session locked.' })
     }
 
     await sql`UPDATE users SET pin_failed_attempts = ${newAttempts} WHERE id = ${userId}::uuid`
-    await logActivity({ sql, event, action: 'pin_failed_attempt', success: false, userId, tenantId: null })
+    await logActivity({ sql, event, action: 'pin_failed_attempt', success: false, userId, tenantId: null, error: lengthNote })
     // 403, not 401. A wrong PIN is a rejected attempt by a caller whose session is
     // perfectly valid; 401 says the session itself is no good, and the overlay
     // acted on that literally — one wrong digit logged the person out to the login

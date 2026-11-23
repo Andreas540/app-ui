@@ -227,6 +227,13 @@ export default function LockOverlay() {
                   ref={el => { inputRefs.current[i] = el }}
                   type="password"
                   inputMode="numeric"
+                  // Without a hint the browser reads these as login password
+                  // fields: it offers to fill a saved password into them, and
+                  // offers to save the PIN as one. Either would submit digits
+                  // nobody typed, which looks identical to a wrong PIN. The
+                  // Settings PIN fields already declare this; these were missed.
+                  autoComplete="one-time-code"
+                  name={`pin-${i + 1}`}
                   maxLength={1}
                   value={d}
                   disabled={unlocking}
