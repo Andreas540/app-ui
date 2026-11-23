@@ -220,16 +220,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channelRef.current?.postMessage({ type: 'lock' })
   }
 
+  /**
+   * Entering the right PIN is the clearest possible proof that someone is at the
+   * machine, so both idle clocks start again from here. Without this the stamps
+   * survive the lock — they are deliberately not overwritten on mount — and the
+   * person gets logged out part way through the work they just unlocked to do.
+   */
+  const resetIdleClocks = () => {
+    const id = user?.id ?? null
+    clearIdleActivity(id)
+    clearIdleLockActivity(id)
+  }
+
   const unlock = (newToken: string) => {
     setToken(newToken)
     localStorage.setItem('authToken', newToken)
     sessionStorage.removeItem('pinLockLocked')
+    resetIdleClocks()
     setIsLocked(false)
     channelRef.current?.postMessage({ type: 'unlock', token: newToken })
   }
 
   const clearLock = () => {
     sessionStorage.removeItem('pinLockLocked')
+    resetIdleClocks()
     setIsLocked(false)
     channelRef.current?.postMessage({ type: 'unlock', token: localStorage.getItem('authToken') })
   }

@@ -37,18 +37,50 @@ export const handler = withErrorLogging('user-pin', async (event) => {
 
   const sql = neon(DATABASE_URL)
 
-  // Load user + tenant PIN settings in one query.
+  // The tenant whose PIN policy applies: the one the caller is actually working
+  // in. This used to read users.tenant_id, the legacy single-tenant column, which
+  // the rest of the app stopped using when memberships arrived. For a user whose
+  // users.tenant_id is null or points somewhere else, the join found no tenant and
+  // the COALESCEs below silently fell back to a 6-digit requirement — so the PIN
+  // the overlay collected (the real tenant's length) could never be saved, and a
+  // PIN stored at the wrong length could never be entered.
+  const activeTenantId =
+    event.headers['x-active-tenant'] ||
+    event.headers['X-Active-Tenant'] ||
+    null
+
   const users = await sql`
-    SELECT u.id, u.password_hash, u.tenant_id,
-           COALESCE(t.pin_lock_enabled, false) AS pin_lock_enabled,
-           COALESCE(t.pin_length, 6)            AS pin_length
+    SELECT u.id, u.password_hash,
+           COALESCE(
+             -- the active tenant, but only if this user really is a member of it
+             (SELECT tm.tenant_id FROM tenant_memberships tm
+               WHERE tm.user_id = u.id AND tm.tenant_id = ${activeTenantId}::uuid
+               LIMIT 1),
+             -- otherwise their first membership
+             (SELECT tm.tenant_id FROM tenant_memberships tm
+               WHERE tm.user_id = u.id
+               ORDER BY tm.created_at ASC
+               LIMIT 1),
+             -- and only then the legacy column
+             u.tenant_id
+           ) AS tenant_id
     FROM users u
-    LEFT JOIN tenants t ON t.id = u.tenant_id
     WHERE u.id = ${userId}::uuid
     LIMIT 1
   `
   if (!users.length) return cors(401, { error: 'User not found' })
   const user = users[0]
+
+  const policy = await sql`
+    SELECT COALESCE(pin_lock_enabled, false) AS pin_lock_enabled,
+           COALESCE(pin_length, 6)           AS pin_length
+    FROM tenants
+    WHERE id = ${user.tenant_id}::uuid
+    LIMIT 1
+  `
+  // No tenant at all (a SuperAdmin with no membership) keeps the old defaults.
+  user.pin_lock_enabled = policy[0]?.pin_lock_enabled ?? false
+  user.pin_length       = policy[0]?.pin_length ?? 6
 
   // Verify account password — gate for all PIN operations.
   const passwordMatch = await bcrypt.compare(password, user.password_hash)

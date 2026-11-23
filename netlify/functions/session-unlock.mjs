@@ -83,7 +83,12 @@ export const handler = withErrorLogging('session-unlock', async (event) => {
 
     await sql`UPDATE users SET pin_failed_attempts = ${newAttempts} WHERE id = ${userId}::uuid`
     await logActivity({ sql, event, action: 'pin_failed_attempt', success: false, userId, tenantId: null })
-    return cors(401, { error: 'Incorrect PIN', attempts_remaining: MAX_ATTEMPTS - newAttempts })
+    // 403, not 401. A wrong PIN is a rejected attempt by a caller whose session is
+    // perfectly valid; 401 says the session itself is no good, and the overlay
+    // acted on that literally — one wrong digit logged the person out to the login
+    // screen with no message, and the "attempts remaining" text below was
+    // unreachable. 401 is now reserved for an actually bad token.
+    return cors(403, { error: 'Incorrect PIN', attempts_remaining: MAX_ATTEMPTS - newAttempts })
   }
 
   // Success — reset counters and issue a fresh JWT (sliding expiration).

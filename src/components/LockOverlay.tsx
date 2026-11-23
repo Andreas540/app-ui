@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
+import { getAuthHeaders } from '../lib/api'
 
 export default function LockOverlay() {
   const { t } = useTranslation()
@@ -61,7 +62,14 @@ export default function LockOverlay() {
 
       if (res.ok && data.token) { unlock(data.token); return }
 
-      if (res.status === 401 || res.status === 423) {
+      // Only a session that is genuinely finished sends the person to login: a
+      // bad token (401) or the server-side lockout after too many tries (423).
+      // A rejected PIN carries attempts_remaining, and must fall through to the
+      // message below — it used to come back as 401 and log the person straight
+      // out with nothing on screen. Checked here as well as fixed server-side, so
+      // a cached copy of this page behaves too.
+      const wrongPin = data?.attempts_remaining != null || data?.error === 'Incorrect PIN'
+      if (!wrongPin && (res.status === 401 || res.status === 423)) {
         logout(); window.location.href = '/login'; return
       }
 
@@ -119,7 +127,9 @@ export default function LockOverlay() {
       const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
       const res = await fetch(`${base}/api/user-pin`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        // getAuthHeaders, so this sends X-Active-Tenant like Settings.tsx does and
+        // the server resolves the same tenant's PIN policy from either screen.
+        headers: getAuthHeaders(),
         body: JSON.stringify({ password: setupPassword, new_pin: setupPin }),
       })
       const data = await res.json()
