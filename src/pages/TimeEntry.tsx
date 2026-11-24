@@ -144,6 +144,12 @@ export default function TimeEntry() {
 
   // Scroll target for selectEntryForEdit: the top of the form.
   const formRef = useRef<HTMLDivElement>(null)
+  // Guards the two per-day loads below against an earlier response landing after a
+  // later one and putting the wrong day's shift in the form.
+  const dayRequestRef = useRef(0)
+  // Set by Clear, consumed by the effect: clearing must not immediately re-load
+  // today's stored shift over the blank form.
+  const skipDayPrefillRef = useRef(false)
 
   function apiBase() {
     return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -183,7 +189,14 @@ export default function TimeEntry() {
   }, [])
 
   useEffect(() => {
-    if (!employeeMode && selectedEmployeeId && workDate) loadDayBreaks()
+    if (!employeeMode && selectedEmployeeId && workDate) {
+      const token = ++dayRequestRef.current
+      loadDayBreaks(token)
+      // Picking a date behaves like clicking that day in the list below, except
+      // after Clear, which has just emptied the form on purpose.
+      if (skipDayPrefillRef.current) skipDayPrefillRef.current = false
+      else loadDayEntry(token)
+    }
     // Any pending row refers to the employee and date it was built for, so switching
     // either one has to clear it rather than apply it somewhere else.
     setDraftBreaks(freshDraftRows())
@@ -204,17 +217,46 @@ export default function TimeEntry() {
     }
   }
 
-  async function loadDayBreaks() {
+  function dayQuery() {
+    return `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(workDate)}&to=${encodeURIComponent(workDate)}`
+  }
+
+  async function loadDayBreaks(token: number) {
     try {
-      const qs = `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(workDate)}&to=${encodeURIComponent(workDate)}`
-      const res = await fetch(`${apiBase()}/api/time-entry-breaks?${qs}`, {
+      const res = await fetch(`${apiBase()}/api/time-entry-breaks?${dayQuery()}`, {
         headers: headersFor('app'),
       })
       if (!res.ok) throw new Error(String(res.status))
-      setDayBreaks(await res.json())
+      const rows = await res.json()
+      if (token !== dayRequestRef.current) return
+      setDayBreaks(rows)
     } catch (e) {
       console.error('Failed to load breaks:', e)
-      setDayBreaks([])
+      if (token === dayRequestRef.current) setDayBreaks([])
+    }
+  }
+
+  /**
+   * Load the stored shift for the selected employee and date into the form, so
+   * picking a date does the same thing as clicking that day in the list below.
+   *
+   * A date with no entry leaves the fields alone: the form is then being used to
+   * create one, and blanking what was typed would be the wrong move.
+   */
+  async function loadDayEntry(token: number) {
+    try {
+      const res = await fetch(`${apiBase()}/api/time-entries?${dayQuery()}`, {
+        headers: headersFor('app'),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      const rows: TimeEntry[] = await res.json()
+      if (token !== dayRequestRef.current || rows.length === 0) return
+      const entry = rows[0]
+      setStartTime(entry.start_time || '')
+      setEndTime(entry.end_time || '')
+      setNotes(entry.notes || '')
+    } catch (e) {
+      console.error('Failed to load the entry for that date:', e)
     }
   }
 
@@ -377,7 +419,7 @@ export default function TimeEntry() {
       else if (result.updated) alert(t('timeEntry.entryUpdated'))
 
       await loadTimeEntries()
-      if (!employeeMode && selectedEmployeeId) await loadDayBreaks()
+      if (!employeeMode && selectedEmployeeId) await loadDayBreaks(++dayRequestRef.current)
       setDraftBreaks(freshDraftRows())
       setNotes('')
 
@@ -478,6 +520,9 @@ export default function TimeEntry() {
   }
 
   function handleClear() {
+    // Only when the date actually changes, since the effect is what consumes this —
+    // left set, it would swallow the next real date change instead.
+    if (workDate !== todayYMD()) skipDayPrefillRef.current = true
     setWorkDate(todayYMD())
     setStartTime('08:00')
     setEndTime('17:00')
@@ -986,7 +1031,6 @@ export default function TimeEntry() {
                 <div
                   key={entry.id}
                   onClick={() => selectEntryForEdit(entry)}
-                  title={t('timeEntry.loadForEdit')}
                   style={{
                     padding: 12,
                     background: 'rgba(255,255,255,0.03)',
@@ -1007,8 +1051,16 @@ export default function TimeEntry() {
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                       {entry.start_time} - {entry.end_time}
                       {/* Same breakdown as the approval rows and the employee page,
-                          so one day reads identically wherever it is looked at. */}
-                      {hours !== null && entryBreakMinutes > 0 ? (
+                          so one day reads identically wherever it is looked at. All
+                          three figures show even at zero breaks: a row that changes
+                          shape when a break is removed makes the reader work out
+                          which number they are looking at. */}
+                      {hours === null ? (
+                        <>
+                          <span style={{ margin: '0 8px' }}>•</span>
+                          —
+                        </>
+                      ) : (
                         <>
                           <span style={{ margin: '0 8px' }}>•</span>
                           <span>{t('timeApproval.clocked')} {formatHoursMinutes((entryClockedMinutes ?? 0) / 60)}</span>
@@ -1016,16 +1068,6 @@ export default function TimeEntry() {
                           <span>{t('timeApproval.breaks')} −{formatHoursMinutes(entryBreakMinutes / 60)}</span>
                           <span style={{ margin: '0 8px' }}>•</span>
                           <span style={{ fontWeight: 600 }}>{t('timeApproval.worked')} {formatHoursMinutes(hours)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span style={{ margin: '0 8px' }}>•</span>
-                          {/* No breaks, so clocked and worked are the same number —
-                              named rather than left bare, so the range above always
-                              reads as the clock. */}
-                          {hours === null
-                            ? '—'
-                            : `${t('timeApproval.clocked')} ${formatHoursMinutes((entryClockedMinutes ?? 0) / 60)}`}
                         </>
                       )}
                     </div>

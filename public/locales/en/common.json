@@ -161,8 +161,7 @@
     "breakEnteredTag": "entered",
     "breakRunningTag": "running since",
     "breakMinutesInvalid": "Enter a break length between 1 and 720 minutes",
-    "breakSaveFailed": "The time was saved, but a break was not: {{error}}",
-    "loadForEdit": "Load into the form above"
+    "breakSaveFailed": "The time was saved, but a break was not: {{error}}"
   },
   "timeApproval": {
     "title": "Time Approval",
