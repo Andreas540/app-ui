@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 import { todayYMD, formatLongDate, clockMinutes } from '../lib/time'
@@ -141,6 +141,9 @@ export default function TimeEntry() {
   // Remove side of the toggle lists, and what the preview starts from.
   const [dayBreaks, setDayBreaks] = useState<BreakRow[]>([])
   const [draftBreaks, setDraftBreaks] = useState<DraftBreak[]>(freshDraftRows)
+
+  // Scroll target for selectEntryForEdit: the top of the form.
+  const formRef = useRef<HTMLDivElement>(null)
 
   function apiBase() {
     return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
@@ -457,6 +460,23 @@ export default function TimeEntry() {
     }
   }
 
+  /**
+   * Put a stored entry back into the form and scroll to it. The form is the only
+   * editor on this page, so a row in the list has to travel up to it rather than
+   * grow its own fields.
+   *
+   * Changing the date re-runs the effect above, which reloads that day's breaks and
+   * clears any pending break row — the pending rows belonged to the previous date.
+   */
+  function selectEntryForEdit(entry: TimeEntry) {
+    setSelectedEmployeeId(entry.employee_id)
+    setWorkDate(String(entry.work_date).slice(0, 10))
+    setStartTime(entry.start_time || '')
+    setEndTime(entry.end_time || '')
+    setNotes(entry.notes || '')
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   function handleClear() {
     setWorkDate(todayYMD())
     setStartTime('08:00')
@@ -601,7 +621,7 @@ export default function TimeEntry() {
   }
 
   return (
-    <div className="card page-normal" style={{ position: 'relative' }}>
+    <div className="card page-normal" ref={formRef} style={{ position: 'relative' }}>
       <h3>{t('timeEntry.title')}</h3>
 
       {!employeeMode && (
@@ -839,8 +859,26 @@ export default function TimeEntry() {
             })}
           </div>
 
-          <button type="button" onClick={addDraftRow} style={{ height: CONTROL_H, marginTop: 8 }}>
-            + {t('timeEntry.breakAddAnother')}
+          {/* Bare +, deliberately not "+ Add break": a wide labelled button sitting
+              just above Save read as the thing that commits the change. */}
+          <button
+            type="button"
+            onClick={addDraftRow}
+            title={t('timeEntry.breakAddAnother')}
+            aria-label={t('timeEntry.breakAddAnother')}
+            style={{
+              height: CONTROL_H,
+              width: CONTROL_H,
+              padding: 0,
+              marginTop: 8,
+              fontSize: 18,
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            +
           </button>
         </div>
       )}
@@ -953,6 +991,8 @@ export default function TimeEntry() {
               return (
                 <div
                   key={entry.id}
+                  onClick={() => selectEntryForEdit(entry)}
+                  title={t('timeEntry.loadForEdit')}
                   style={{
                     padding: 12,
                     background: 'rgba(255,255,255,0.03)',
@@ -963,6 +1003,7 @@ export default function TimeEntry() {
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: 12,
+                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 200 }}>
@@ -1013,7 +1054,9 @@ export default function TimeEntry() {
                       <>
                         <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>{t('pending')}</span>
                         <button
-                          onClick={() => handleDelete(entry.id)}
+                          // Without this the row underneath also fires and the form
+                          // loads the entry that was just deleted.
+                          onClick={e => { e.stopPropagation(); handleDelete(entry.id) }}
                           style={{
                             padding: '4px 8px',
                             fontSize: 12,

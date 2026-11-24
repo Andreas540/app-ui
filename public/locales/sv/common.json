@@ -161,7 +161,8 @@
     "breakEnteredTag": "registrerad",
     "breakRunningTag": "pågår sedan",
     "breakMinutesInvalid": "Ange en längd mellan 1 och 720 minuter",
-    "breakSaveFailed": "Tiden sparades, men en paus kunde inte sparas: {{error}}"
+    "breakSaveFailed": "Tiden sparades, men en paus kunde inte sparas: {{error}}",
+    "loadForEdit": "Läs in i formuläret ovan"
   },
   "timeApproval": {
     "title": "Tidsgodkännande",

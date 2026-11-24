@@ -161,7 +161,8 @@
     "breakEnteredTag": "registrado",
     "breakRunningTag": "en curso desde",
     "breakMinutesInvalid": "Introduce una duración entre 1 y 720 minutos",
-    "breakSaveFailed": "Se guardó el horario, pero un descanso no: {{error}}"
+    "breakSaveFailed": "Se guardó el horario, pero un descanso no: {{error}}",
+    "loadForEdit": "Cargar en el formulario de arriba"
   },
   "timeApproval": {
     "title": "Aprobación de Tiempo",
