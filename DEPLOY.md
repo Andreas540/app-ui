@@ -6,7 +6,17 @@ Rules for Claude Code. Follow these on every task that changes code or the datab
 | | Git branch | Netlify | Neon DB |
 |---|---|---|---|
 | **Staging** | `staging` | `staging--<site>.netlify.app` | `staging` branch |
-| **Production** | `main` | app.biznizoptimizer.com | `main` branch |
+| **Production** | `main` | app.biznizoptimizer.com | `production` branch (Neon's default) |
+
+The Neon branch holding live data is named `production`, not `main`. The git
+branch is `main`. Don't let the two names mislead you when copying a connection
+string.
+
+A Neon branch is a snapshot of its parent at the moment it is created, so a stale
+branch holds a stale schema. The project also has a `development` branch from a
+year ago and two Feb 2026 backups — all far behind the migrations and unusable as
+staging. Create `staging` fresh from `production`, or reset an old branch from its
+parent before using it.
 
 Local `.env` (gitignored, never committed) — see `.env.example`:
 ```
@@ -32,7 +42,7 @@ PROD_DATABASE_URL=...
 ## 3. Database migrations
 - [ ] New migration = next number in `db/`, e.g. `db/79_<description>.sql`
 - [ ] Write it to be safe to re-run where possible (`IF NOT EXISTS`, `IF EXISTS`)
-- [ ] Apply to **staging only**:
+- [ ] Apply to **staging only** (the Neon `staging` branch, never `production`):
       `psql "$STAGING_DATABASE_URL" -f db/79_<description>.sql`
 - [ ] Verify (check tables/columns, run a quick SELECT) and report the result
 - [ ] Add the file to the "Pending for production" list at the bottom of this doc
@@ -67,9 +77,16 @@ same data drives SMS and email to real customers. Before using a fresh staging
 branch, blank those columns on it:
 
 ```sql
--- On STAGING only. Check the connection string first.
-UPDATE tenant_payment_providers SET secret_key = NULL, publishable_key = NULL;
+-- On STAGING only. Check the branch selector or use $STAGING_DATABASE_URL.
+UPDATE tenant_payment_providers
+SET secret_key = NULL, publishable_key = NULL, webhook_secret = NULL;
 ```
+
+To test payments on staging, put Stripe's **test** keys in instead of NULL
+(`pk_test_…` / `sk_test_…`, from the Stripe dashboard with Test mode on). Card
+4242 4242 4242 4242 then works end to end and no money moves. The physical card
+reader cannot be used in test mode; Stripe's simulated reader covers that, and is
+separate setup.
 
 The customer phone numbers and email addresses are still real. Treat the staging
 database as production data under a different name: same care, same access.
@@ -81,6 +98,17 @@ on a branch deploy. To exercise one, use **Run now** on the Netlify Functions pa
 The upside is that staging cannot silently rewrite data in the background; the
 downside is that those jobs reach production untested.
 
+**Refreshing staging's data.** A branch never follows its parent forward. To pull
+in current production data, use **Reset from parent** on the Neon `staging` branch.
+Two things come with every reset:
+
+1. The Stripe keys come back. Re-run the blanking UPDATE above.
+2. Migrations applied to staging but not yet to production are discarded. Re-apply
+   them from `db/` in order.
+
+Reset only when a test needs current data. A month-old copy of the customers and
+orders exercises a new feature just as well.
+
 **Local `npm run dev` talks to production.** Every API call falls back to
 `import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''`, repeated in
 about 15 files. Local development therefore reads and writes the production
@@ -89,21 +117,38 @@ env var (`VITE_API_BASE`) across those files — worth doing, not yet done.
 
 ## Netlify environment variables
 
-The staging context needs its own values for everything the functions read. Scope
-them in Netlify to the `staging` branch, not to all contexts:
+Scope these to the `staging` branch in Netlify, not to all contexts. Anything left
+unset simply disables that feature on staging, which is usually what you want —
+the code checks for the credentials and skips the call.
+
+**Must be set**
 
 | Variable | Note for staging |
 |---|---|
 | `DATABASE_URL` | the Neon **staging** branch, pooled connection |
-| `JWT_SECRET` | generate a separate one — a prod token must not unlock staging |
+| `JWT_SECRET` | generate a separate one — a production token must not unlock staging |
 | `EMPLOYEE_TOKEN_SECRET` | separate; signs the employee time-entry links |
 | `CUSTOMER_TOKEN_SECRET` | separate |
 | `ORDER_PAGE_SECRET` | separate |
-| `SUPER_ADMIN_EMAILS` | the same admins, or fewer |
 | `SITE_URL` | the staging URL, so generated links stay inside staging |
-| `RESEND_API_KEY` | a test key, or leave empty to disable sending |
+| `SUPER_ADMIN_EMAILS` | the same admins, or fewer |
 
-`URL` is set by Netlify itself.
+**Leave unset on staging** — these reach real people or real money:
+
+| Variable | What it does |
+|---|---|
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` | sends SMS to customer phone numbers. Missing any one of the three and the send is skipped. |
+| `RESEND_API_KEY` | sends email to customer addresses |
+| `STRIPE_SECRET_KEY` | the platform's own Stripe account, used to meter and bill tenants for SMS and AI usage. Not the per-tenant keys in the database. |
+| `ANTHROPIC_API_KEY` | billable API calls |
+| `SIMPLYBOOK_WEBHOOK_SECRET` | verifies inbound booking webhooks |
+| `STRIPE_SMS_METER_EVENT_NAME` / `STRIPE_AI_METER_EVENT_NAME` | meter names for the above |
+
+`URL` is set by Netlify itself. `TENANT_ID` appears in the code as a fallback and
+should not be set.
+
+To exercise SMS, email or AI on staging, set the matching test credentials
+deliberately for that session rather than leaving production's in place.
 
 ## Schema dumps
 
