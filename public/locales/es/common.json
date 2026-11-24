@@ -148,7 +148,20 @@
     "deleteFailed": "Error al eliminar",
     "clockedTime": "Tiempo registrado:",
     "breaks": "Descansos:",
-    "hoursWorked": "Horas trabajadas:"
+    "hoursWorked": "Horas trabajadas:",
+    "breaksHeading": "Descansos",
+    "breakAdd": "Añadir",
+    "breakRemove": "Quitar",
+    "breakCustom": "Personalizado",
+    "breakMinPlaceholder": "min",
+    "breakPickExisting": "Selecciona un descanso",
+    "breakNoneOnDay": "No hay descansos este día",
+    "breakAddAnother": "Añadir descanso",
+    "breakDropRow": "Quitar esta fila",
+    "breakEnteredTag": "registrado",
+    "breakRunningTag": "en curso desde",
+    "breakMinutesInvalid": "Introduce una duración entre 1 y 720 minutos",
+    "breakSaveFailed": "Se guardó el horario, pero un descanso no: {{error}}"
   },
   "timeApproval": {
     "title": "Aprobación de Tiempo",

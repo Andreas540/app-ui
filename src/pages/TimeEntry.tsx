@@ -30,6 +30,46 @@ type TimeEntry = {
   updated_at: string
 }
 
+/** Which break options this tenant offers (db/76), as break-config.mjs reports them. */
+type BreakOptions = { flexible: boolean; fixed: number[] }
+
+/**
+ * One break on a shift. Two shapes (db/78): a break the employee tracked has times,
+ * one a manager entered afterwards has only a length.
+ */
+type BreakRow = {
+  id: string
+  time_entry_id: string
+  work_date: string
+  employee_id: string
+  break_start: string | null
+  break_end: string | null
+  duration_minutes: number | null
+}
+
+/** A pending change in the form: a break to add, or a stored one to remove. */
+type DraftBreak = {
+  key: number
+  mode: 'add' | 'remove'
+  /** 'custom', a fixed length as a string, or — when removing — a stored break's id. */
+  option: string
+  minutes: string
+}
+
+/** The builder always shows one row, so breaks are visible without a click first. */
+function freshDraftRows(): DraftBreak[] {
+  return [{ key: Date.now(), mode: 'add', option: '', minutes: '' }]
+}
+
+/**
+ * What a stored break deducts. An open one deducts nothing until it is closed, which
+ * is how the database reads it too.
+ */
+function breakRowMinutes(b: BreakRow): number {
+  if (b.duration_minutes !== null) return Number(b.duration_minutes) || 0
+  return clockMinutes(b.break_start, b.break_end) ?? 0
+}
+
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null
   const n = typeof v === 'number' ? v : Number(v)
@@ -94,6 +134,14 @@ export default function TimeEntry() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [viewPeriod, setViewPeriod] = useState<'thisWeek' | 'lastWeek'>('thisWeek')
 
+  // Break options are a tenant setting, so they are loaded once. Null until then,
+  // which keeps the builder from briefly offering options the tenant does not have.
+  const [breakOptions, setBreakOptions] = useState<BreakOptions | null>(null)
+  // The breaks already stored against the selected employee and date — what the
+  // Remove side of the toggle lists, and what the preview starts from.
+  const [dayBreaks, setDayBreaks] = useState<BreakRow[]>([])
+  const [draftBreaks, setDraftBreaks] = useState<DraftBreak[]>(freshDraftRows)
+
   function apiBase() {
     return import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
   }
@@ -122,6 +170,50 @@ export default function TimeEntry() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployeeId, viewPeriod])
+
+  // Entering breaks is an admin correction, so the builder exists in app mode only —
+  // an employee records real times from their own page, and the server refuses an
+  // entered break from an employee session anyway.
+  useEffect(() => {
+    if (!employeeMode) loadBreakOptions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!employeeMode && selectedEmployeeId && workDate) loadDayBreaks()
+    // Any pending row refers to the employee and date it was built for, so switching
+    // either one has to clear it rather than apply it somewhere else.
+    setDraftBreaks(freshDraftRows())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEmployeeId, workDate])
+
+  async function loadBreakOptions() {
+    try {
+      const res = await fetch(`${apiBase()}/api/time-entry-breaks?config=1`, {
+        headers: headersFor('app'),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setBreakOptions(await res.json())
+    } catch (e) {
+      // The page still saves times without this; it just cannot offer break entry.
+      console.error('Failed to load break options:', e)
+      setBreakOptions({ flexible: false, fixed: [] })
+    }
+  }
+
+  async function loadDayBreaks() {
+    try {
+      const qs = `employee_id=${encodeURIComponent(selectedEmployeeId)}&from=${encodeURIComponent(workDate)}&to=${encodeURIComponent(workDate)}`
+      const res = await fetch(`${apiBase()}/api/time-entry-breaks?${qs}`, {
+        headers: headersFor('app'),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setDayBreaks(await res.json())
+    } catch (e) {
+      console.error('Failed to load breaks:', e)
+      setDayBreaks([])
+    }
+  }
 
   async function loadEmployeeMe() {
     try {
@@ -240,6 +332,13 @@ export default function TimeEntry() {
       return
     }
 
+    // A row with a length chosen but an unusable number is a mistake, not an empty
+    // row: stop rather than save the shift and silently drop the break.
+    if (draftBreaks.some(r => r.mode === 'add' && r.option && draftMinutes(r) <= 0)) {
+      alert(t('timeEntry.breakMinutesInvalid'))
+      return
+    }
+
     try {
       const base = apiBase()
       const mode = employeeMode ? 'employee' : 'app'
@@ -265,10 +364,18 @@ export default function TimeEntry() {
       }
 
       const result = await res.json()
-      if (result.created) alert(t('timeEntry.entrySaved'))
+
+      const breakErrors = await applyDraftBreaks(result.id)
+      if (breakErrors.length > 0) {
+        // The times are already saved at this point, so this cannot be reported as a
+        // plain failure — it says what did not land, and the reload below shows what did.
+        alert(t('timeEntry.breakSaveFailed', { error: breakErrors[0] }))
+      } else if (result.created) alert(t('timeEntry.entrySaved'))
       else if (result.updated) alert(t('timeEntry.entryUpdated'))
 
       await loadTimeEntries()
+      if (!employeeMode && selectedEmployeeId) await loadDayBreaks()
+      setDraftBreaks(freshDraftRows())
       setNotes('')
 
       const nextDay = new Date(workDate)
@@ -277,6 +384,53 @@ export default function TimeEntry() {
     } catch (e: any) {
       alert(e?.message || t('timeEntry.saveFailed'))
     }
+  }
+
+  /**
+   * Apply the pending break rows to the entry the save just returned. Removals run
+   * first so that removing one break and adding another in the same save cannot
+   * interact. Returns the messages of whatever failed: the shift itself is already
+   * stored by now, so a break failure is reported alongside it rather than thrown.
+   */
+  async function applyDraftBreaks(timeEntryId: string): Promise<string[]> {
+    if (!breakBuilderAvailable || !timeEntryId) return []
+    const base = apiBase()
+    const errors: string[] = []
+
+    for (const row of draftBreaks.filter(r => r.mode === 'remove' && r.option)) {
+      try {
+        const res = await fetch(`${base}/api/time-entry-breaks?id=${encodeURIComponent(row.option)}`, {
+          method: 'DELETE',
+          headers: headersFor('app'),
+        })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          errors.push(j.error || String(res.status))
+        }
+      } catch (e: unknown) {
+        errors.push(e instanceof Error ? e.message : String(e))
+      }
+    }
+
+    for (const row of draftBreaks.filter(r => r.mode === 'add')) {
+      const minutes = draftMinutes(row)
+      if (minutes <= 0) continue
+      try {
+        const res = await fetch(`${base}/api/time-entry-breaks`, {
+          method: 'POST',
+          headers: { ...headersFor('app'), 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'duration', time_entry_id: timeEntryId, minutes }),
+        })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          errors.push(j.error || String(res.status))
+        }
+      } catch (e: unknown) {
+        errors.push(e instanceof Error ? e.message : String(e))
+      }
+    }
+
+    return errors
   }
 
   async function handleDelete(entryId: string) {
@@ -308,7 +462,69 @@ export default function TimeEntry() {
     setStartTime('08:00')
     setEndTime('17:00')
     setNotes('')
+    setDraftBreaks(freshDraftRows())
   }
+
+  /**
+   * What one pending row is worth in minutes. A row with nothing chosen is worth
+   * nothing, which is what lets the builder sit on the form unused: saving a shift
+   * with no breaks must not quietly book one.
+   */
+  function draftMinutes(row: DraftBreak): number {
+    if (row.mode === 'remove') {
+      const found = dayBreaks.find(b => b.id === row.option)
+      return found ? breakRowMinutes(found) : 0
+    }
+    const n = Number(row.minutes)
+    return Number.isInteger(n) && n > 0 && n <= 720 ? n : 0
+  }
+
+  function addDraftRow() {
+    setDraftBreaks(rows => [...rows, { key: Date.now() + rows.length, mode: 'add', option: '', minutes: '' }])
+  }
+
+  function patchDraftRow(key: number, patch: Partial<DraftBreak>) {
+    setDraftBreaks(rows => rows.map(r => (r.key === key ? { ...r, ...patch } : r)))
+  }
+
+  function dropDraftRow(key: number) {
+    setDraftBreaks(rows => rows.filter(r => r.key !== key))
+  }
+
+  /** How a stored break reads in the Remove dropdown. */
+  function describeBreak(b: BreakRow): string {
+    const mins = breakRowMinutes(b)
+    if (b.duration_minutes !== null) return `${mins} min (${t('timeEntry.breakEnteredTag')})`
+    if (!b.break_end) return `${t('timeEntry.breakRunningTag')} ${b.break_start ?? ''}`
+    return `${mins} min (${b.break_start}–${b.break_end})`
+  }
+
+  /**
+   * Clocked, breaks and worked for the form as it currently stands — stored breaks
+   * plus whatever is pending. Clocked is measured from the two times rather than
+   * added back from worked, which would report the break as time on the clock on a
+   * day where the break outran the shift.
+   */
+  const breakPreview = useMemo(() => {
+    const clocked = clockMinutes(startTime, endTime)
+    const stored = dayBreaks.reduce((sum, b) => sum + breakRowMinutes(b), 0)
+    const added = draftBreaks
+      .filter(r => r.mode === 'add')
+      .reduce((sum, r) => sum + draftMinutes(r), 0)
+    const removed = draftBreaks
+      .filter(r => r.mode === 'remove')
+      .reduce((sum, r) => sum + draftMinutes(r), 0)
+    const breaks = Math.max(stored + added - removed, 0)
+    return {
+      clockedMinutes: clocked,
+      breakMinutes: breaks,
+      workedMinutes: clocked === null ? null : Math.max(clocked - breaks, 0),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startTime, endTime, dayBreaks, draftBreaks])
+
+  const breakBuilderAvailable =
+    !employeeMode && !!breakOptions && (breakOptions.flexible || breakOptions.fixed.length > 0)
 
   const calculatedHours = useMemo(() => {
     if (!startTime || !endTime) return null
@@ -427,7 +643,10 @@ export default function TimeEntry() {
           />
         </div>
         <div>
-          <label>{t('timeEntry.totalHours')} {calculatedHours || '—'}</label>
+          {/* Start and end time are the clock, not the paid total: breaks come off
+              this figure, so labelling it "total hours" was wrong as soon as breaks
+              existed. */}
+          <label>{t('timeEntry.clockedTime')}</label>
           <div
             style={{
               height: CONTROL_H,
@@ -505,6 +724,126 @@ export default function TimeEntry() {
           />
         </div>
       </div>
+
+      {/* Same breakdown, in the same order, as the entry rows below and the employee
+          page: clocked, what comes off, what is paid. */}
+      {breakPreview.clockedMinutes !== null && breakPreview.breakMinutes > 0 && (
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
+          <span>{t('timeApproval.clocked')} {formatHoursMinutes(breakPreview.clockedMinutes / 60)}</span>
+          <span style={{ margin: '0 8px' }}>•</span>
+          <span>{t('timeApproval.breaks')} −{formatHoursMinutes(breakPreview.breakMinutes / 60)}</span>
+          <span style={{ margin: '0 8px' }}>•</span>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+            {t('timeApproval.worked')} {formatHoursMinutes((breakPreview.workedMinutes ?? 0) / 60)}
+          </span>
+        </div>
+      )}
+
+      {breakBuilderAvailable && (
+        <div style={{ marginTop: 16 }}>
+          <label>{t('timeEntry.breaksHeading')}</label>
+
+          <div style={{ display: 'grid', gap: 8 }}>
+            {draftBreaks.map(row => {
+              // A break already chosen for removal on another row is left out, so the
+              // same one cannot be counted twice.
+              const removable = dayBreaks.filter(
+                b => b.id === row.option || !draftBreaks.some(r => r.key !== row.key && r.option === b.id)
+              )
+              const customSelected = row.mode === 'add' && row.option === 'custom'
+              return (
+                <div
+                  key={row.key}
+                  style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}
+                >
+                  <div className="seg-bar">
+                    {(['add', 'remove'] as const).map(mode => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={row.mode === mode ? 'seg seg--sm active' : 'seg seg--sm'}
+                        onClick={() => patchDraftRow(row.key, { mode, option: '', minutes: '' })}
+                      >
+                        {mode === 'add' ? t('timeEntry.breakAdd') : t('timeEntry.breakRemove')}
+                      </button>
+                    ))}
+                  </div>
+
+                  <select
+                    value={row.option}
+                    onChange={e => {
+                      const option = e.target.value
+                      patchDraftRow(row.key, {
+                        option,
+                        // A fixed length fills its own minutes; Custom starts empty for
+                        // the field next to it.
+                        minutes: row.mode === 'add' && option !== 'custom' && option !== '' ? option : '',
+                      })
+                    }}
+                    style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
+                  >
+                    {row.mode === 'add' ? (
+                      <>
+                        <option value="">—</option>
+                        {breakOptions!.fixed.map(m => (
+                          <option key={m} value={String(m)}>{m} min</option>
+                        ))}
+                        {/* Only when the tenant allows flexible breaks: that setting is
+                            what makes an arbitrary length a legitimate one. */}
+                        {breakOptions!.flexible && (
+                          <option value="custom">{t('timeEntry.breakCustom')}</option>
+                        )}
+                      </>
+                    ) : removable.length === 0 ? (
+                      <option value="">{t('timeEntry.breakNoneOnDay')}</option>
+                    ) : (
+                      <>
+                        <option value="">{t('timeEntry.breakPickExisting')}</option>
+                        {removable.map(b => (
+                          <option key={b.id} value={b.id}>{describeBreak(b)}</option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={t('timeEntry.breakMinPlaceholder')}
+                    value={row.mode === 'remove' ? String(draftMinutes(row) || '') : row.minutes}
+                    disabled={!customSelected}
+                    onChange={e =>
+                      patchDraftRow(row.key, { minutes: e.target.value.replace(/\D/g, '').slice(0, 3) })
+                    }
+                    style={{
+                      height: CONTROL_H,
+                      flex: '0 1 80px',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      opacity: customSelected ? 1 : 0.5,
+                    }}
+                  />
+
+                  {draftBreaks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => dropDraftRow(row.key)}
+                      title={t('timeEntry.breakDropRow')}
+                      style={{ height: CONTROL_H, width: CONTROL_H, padding: 0 }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <button type="button" onClick={addDraftRow} style={{ height: CONTROL_H, marginTop: 8 }}>
+            + {t('timeEntry.breakAddAnother')}
+          </button>
+        </div>
+      )}
 
       <div style={{ marginTop: 12 }}>
         <label>{t('notesOptional')}</label>
@@ -646,7 +985,12 @@ export default function TimeEntry() {
                       ) : (
                         <>
                           <span style={{ margin: '0 8px' }}>•</span>
-                          {hours === null ? '—' : formatHoursMinutes(hours)}
+                          {/* No breaks, so clocked and worked are the same number —
+                              named rather than left bare, so the range above always
+                              reads as the clock. */}
+                          {hours === null
+                            ? '—'
+                            : `${t('timeApproval.clocked')} ${formatHoursMinutes((entryClockedMinutes ?? 0) / 60)}`}
                         </>
                       )}
                     </div>

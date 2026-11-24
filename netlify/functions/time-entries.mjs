@@ -92,6 +92,9 @@ async function getTimeEntries(event) {
           WHERE b.tenant_id = te.tenant_id
             AND b.time_entry_id = te.id
             AND b.break_end IS NULL
+            -- An entered break (db/78) has no break_end either, but nobody is away:
+            -- it is a duration a manager recorded after the fact.
+            AND b.duration_minutes IS NULL
           LIMIT 1
         ) AS on_break_since,
         -- When a FIXED break booked earlier runs out. A fixed break is stored
@@ -228,6 +231,10 @@ async function saveTimeEntry(event) {
           WHERE tenant_id = ${TENANT_ID}
             AND time_entry_id = ${entry.id}
             AND break_end IS NULL
+            -- Never an entered break (db/78): it has no break_end because none was
+            -- measured, not because someone is still away. Stamping one here would
+            -- turn a 30 minute lunch into a break running to the end of the shift.
+            AND duration_minutes IS NULL
         `
       }
 

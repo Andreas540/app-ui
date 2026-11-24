@@ -148,7 +148,20 @@
     "deleteFailed": "Delete failed",
     "clockedTime": "Clocked time:",
     "breaks": "Breaks:",
-    "hoursWorked": "Hours worked:"
+    "hoursWorked": "Hours worked:",
+    "breaksHeading": "Breaks",
+    "breakAdd": "Add",
+    "breakRemove": "Remove",
+    "breakCustom": "Custom",
+    "breakMinPlaceholder": "min",
+    "breakPickExisting": "Select a break",
+    "breakNoneOnDay": "No breaks on this day",
+    "breakAddAnother": "Add break",
+    "breakDropRow": "Remove this row",
+    "breakEnteredTag": "entered",
+    "breakRunningTag": "running since",
+    "breakMinutesInvalid": "Enter a break length between 1 and 720 minutes",
+    "breakSaveFailed": "The time was saved, but a break was not: {{error}}"
   },
   "timeApproval": {
     "title": "Time Approval",

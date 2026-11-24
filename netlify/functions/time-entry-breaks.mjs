@@ -15,14 +15,18 @@
 //   fixed     one tap books a set length (30 min). Written already closed, with
 //             break_end in the near future, so there is nothing to come back from
 //             and the deduction applies immediately.
+//   entered   a duration with no time of day, added by a manager from the admin
+//             timesheet for a shift that is already over (db/78). The times were
+//             never measured, so none are stored.
 //
 // Which kinds a tenant offers is configuration (db/76_break_options.sql), checked
 // here on every POST — the page is not the gate.
 //
 // Who may do what:
 //   employee mode  start / end / fixed, for today only, server-stamped
-//   app mode       list and delete, so an admin can see and correct breaks
-// Admin *editing* of break times is not built — see the note on handleDelete.
+//   app mode       list, add an entered break, and delete
+// Admin *editing* of a tracked break's times is still not offered — see the note on
+// deleteBreak. A wrong one is removed and re-entered, not quietly rewritten.
 
 import { checkMaintenance } from './utils/maintenance.mjs'
 import { getAuthContext } from './utils/employee-auth.mjs'
@@ -63,6 +67,14 @@ async function listBreaks(event) {
   if (ctx.error) return cors(403, { error: ctx.error }, event)
 
   const params = new URLSearchParams(event.queryStringParameters || {})
+
+  // ?config=1 — which break options this tenant offers. The admin timesheet needs
+  // the same list the employee page already gets from employee-session, and this
+  // endpoint is reachable by both kinds of caller.
+  if (params.get('config')) {
+    return cors(200, await loadBreakConfig(sql, ctx.tenantId), event)
+  }
+
   const timeEntryId = params.get('time_entry_id') || null
   const from = params.get('from') || null
   const to = params.get('to') || null
@@ -76,6 +88,8 @@ async function listBreaks(event) {
       te.work_date,
       to_char(b.break_start, 'HH24:MI') AS break_start,
       to_char(b.break_end,   'HH24:MI') AS break_end,
+      -- NULL on a tracked break, set on one a manager entered (db/78).
+      b.duration_minutes,
       b.created_at
     FROM time_entry_breaks b
     JOIN time_entries te
@@ -104,14 +118,24 @@ async function postBreak(event) {
   const ctx = await getAuthContext({ sql, event })
   if (ctx.error) return cors(403, { error: ctx.error }, event)
 
+  const body = JSON.parse(event.body || '{}')
+  const action = body.action
+
+  // Checked before the employee-only gate below: this is the one action that comes
+  // from the app rather than from a phone on the shop floor.
+  if (action === 'duration') {
+    if (ctx.mode !== 'app') {
+      return cors(403, { error: 'Entered breaks come from the admin timesheet' }, event)
+    }
+    return addEnteredBreak({ sql, event, ctx, body })
+  }
+
   if (ctx.mode !== 'employee') {
     return cors(403, { error: 'Breaks are recorded from the employee time-entry page' }, event)
   }
 
-  const body = JSON.parse(event.body || '{}')
-  const action = body.action
   if (action !== 'start' && action !== 'end' && action !== 'fixed') {
-    return cors(400, { error: "action must be 'start', 'end' or 'fixed'" }, event)
+    return cors(400, { error: "action must be 'start', 'end', 'fixed' or 'duration'" }, event)
   }
 
   const config = await loadBreakConfig(sql, ctx.tenantId)
@@ -162,11 +186,15 @@ async function postBreak(event) {
     SELECT
       id,
       to_char(break_start, 'HH24:MI') AS break_start,
-      to_char(break_end,   'HH24:MI') AS break_end
+      to_char(break_end,   'HH24:MI') AS break_end,
+      duration_minutes
     FROM time_entry_breaks
     WHERE tenant_id = ${ctx.tenantId} AND time_entry_id = ${entry.id}
   `
-  const open = existing.filter(b => b.break_end === null)
+  // An entered break has no break_end either, but it is finished business — reading
+  // it as "running" would block the employee from starting a real break and would
+  // be ended by their next clock-out.
+  const open = existing.filter(b => b.break_end === null && b.duration_minutes === null)
   // A fixed break books a window that runs into the future, so unlike a flexible
   // one it can still be in force while already closed. Tapping again inside that
   // window — the obvious double-tap — would book a second one and deduct twice.
@@ -222,6 +250,55 @@ async function postBreak(event) {
     ok: true, fixed: true, id: inserted[0].id,
     break_start: nowTime, break_end: breakEnd, minutes: fixedMinutes, timezone: tz,
   }, event)
+}
+
+/**
+ * POST { action: 'duration', time_entry_id, minutes }   app mode
+ *
+ * A break a manager enters against a shift that is already over. Stored as a plain
+ * duration with no time of day (db/78): nobody measured when it was taken, and
+ * writing an invented 12:30-13:00 would put fabricated evidence into a payroll
+ * record and then show it back to the employee as if it had been tracked.
+ *
+ * Several on one day simply add up. There are no times, so nothing can overlap and
+ * the order they were entered in does not matter.
+ */
+async function addEnteredBreak({ sql, event, ctx, body }) {
+  const timeEntryId = body.time_entry_id
+  const minutes = Number(body.minutes)
+
+  if (!timeEntryId) return cors(400, { error: 'time_entry_id is required' }, event)
+  if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 720) {
+    return cors(400, { error: 'minutes must be a whole number between 1 and 720' }, event)
+  }
+
+  const config = await loadBreakConfig(sql, ctx.tenantId)
+  // Refused here rather than merely left out of the dropdown, same as the employee
+  // actions. `flexible` is what makes an arbitrary length allowed: without it the
+  // only durations that exist for this tenant are the fixed ones.
+  if (!config.flexible && !config.fixed.includes(minutes)) {
+    return cors(400, { error: 'BREAK_OPTION_DISABLED' }, event)
+  }
+
+  const entries = await sql`
+    SELECT id, approved
+    FROM time_entries
+    WHERE tenant_id = ${ctx.tenantId} AND id = ${timeEntryId}::uuid
+    LIMIT 1
+  `
+  if (entries.length === 0) return cors(404, { error: 'Time entry not found' }, event)
+  // Same rule as the shift itself and as deleteBreak: once approved, the record
+  // stops moving.
+  if (entries[0].approved) return cors(400, { error: 'ENTRY_APPROVED' }, event)
+
+  const inserted = await sql`
+    INSERT INTO time_entry_breaks (tenant_id, time_entry_id, duration_minutes)
+    VALUES (${ctx.tenantId}, ${timeEntryId}::uuid, ${minutes})
+    RETURNING id
+  `
+  // The AFTER trigger has already nudged the parent row, so total_hours and salary
+  // are settled by the time this returns and the page can simply reload.
+  return cors(200, { ok: true, entered: true, id: inserted[0].id, minutes }, event)
 }
 
 /** 'HH:MM' + minutes, wrapping at midnight. */

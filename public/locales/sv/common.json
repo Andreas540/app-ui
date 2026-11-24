@@ -148,7 +148,20 @@
     "deleteFailed": "Misslyckades att ta bort",
     "clockedTime": "Stämplad tid:",
     "breaks": "Raster:",
-    "hoursWorked": "Arbetade timmar:"
+    "hoursWorked": "Arbetade timmar:",
+    "breaksHeading": "Pauser",
+    "breakAdd": "Lägg till",
+    "breakRemove": "Ta bort",
+    "breakCustom": "Anpassad",
+    "breakMinPlaceholder": "min",
+    "breakPickExisting": "Välj en paus",
+    "breakNoneOnDay": "Inga pauser denna dag",
+    "breakAddAnother": "Lägg till paus",
+    "breakDropRow": "Ta bort raden",
+    "breakEnteredTag": "registrerad",
+    "breakRunningTag": "pågår sedan",
+    "breakMinutesInvalid": "Ange en längd mellan 1 och 720 minuter",
+    "breakSaveFailed": "Tiden sparades, men en paus kunde inte sparas: {{error}}"
   },
   "timeApproval": {
     "title": "Tidsgodkännande",

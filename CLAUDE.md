@@ -6,12 +6,14 @@
 live database actually contains. There is no migration ledger, so nothing in this repo
 can confirm which migrations have been run.
 
-Known gaps as of 2026-11-06:
+Known gaps as of 2026-11-24:
 
-- `db/00_live_schema_dump.sql` is real `pg_dump` output but was last regenerated on
-  2026-06-23. It is ~17 migrations behind (54–70) and still shows the pre-migration-53
-  trigger bodies with a hardcoded `'America/New_York'` — those were replaced by
-  `db/53_tenant_timezone_cost_triggers.sql` in August 2026.
+- `db/00_live_schema_dump.sql` is real `pg_dump` output, generated 2026-11-06 at
+  migration high-water mark 70. It therefore does NOT contain migrations 71 and later
+  — among them `74_time_entry_breaks`, `75_breaks_outside_shift` and
+  `78_break_duration_minutes`, so its `calculate_time_entry_totals` is the version
+  from before breaks existed. Run `npm run schema:check` for the current gap rather
+  than trusting this line.
 - `db/01_schema_historical_2026-03-25.sql` is a retired hand-written snapshot, ~60
   migrations stale. Do not read it as current.
 
