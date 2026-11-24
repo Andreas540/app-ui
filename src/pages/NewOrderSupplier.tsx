@@ -370,15 +370,13 @@ export default function NewOrderSupplier() {
               {/* Add / Remove product controls */}
               <div style={{ marginTop: 8, display:'flex', gap:16, alignItems:'center' }}>
                 <button
-                  className="helper"
+                  className="helper link-btn"
                   onClick={addProductBlock}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                 >+ {t('supplierOrders.addProduct')}</button>
 
                 <button
-                  className="helper"
+                  className="helper link-btn"
                   onClick={() => removeProductBlock(idx)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                 >– {t('supplierOrders.removeProduct')}</button>
               </div>
             </div>

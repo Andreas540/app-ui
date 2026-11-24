@@ -678,8 +678,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
                       </div>
                       {unregLines.length > 1 && (
                         <div style={{ marginTop: 6 }}>
-                          <button className="helper" onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                          <button className="helper link-btn" onClick={() => setUnregLines(prev => prev.filter((_, i) => i !== idx))}>
                             – {t('supplierOrders.removeProduct')}
                           </button>
                         </div>
@@ -700,8 +699,7 @@ const res = await fetch(`${base}/api/create-invoice`, {
 
                   {/* Actions */}
                   <div style={{ marginTop: 12, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="helper" onClick={addUnregLine}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    <button className="helper link-btn" onClick={addUnregLine}>
                       + {t('orders.addProduct')}
                     </button>
                     <button

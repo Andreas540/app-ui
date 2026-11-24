@@ -157,7 +157,7 @@
     "breakPickExisting": "Selecciona un descanso",
     "breakNoneOnDay": "No hay descansos este día",
     "breakAddAnother": "Añadir descanso",
-    "breakDropRow": "Quitar esta fila",
+    "breakDropRow": "Quitar fila",
     "breakEnteredTag": "registrado",
     "breakRunningTag": "en curso desde",
     "breakMinutesInvalid": "Introduce una duración entre 1 y 720 minutos",

@@ -686,6 +686,34 @@ button.primary:focus-visible,
   border-radius: 10px;
 }
 
+/* ===================== Link Button =====================
+   A <button> that reads as a text link: "+ Add product", "– Remove product",
+   "Deselect all". Use a button, not an <a>, whenever the click does something on
+   the page rather than navigating.
+
+   Structure only — no colour and no size, so it composes with whatever sets those.
+   Nearly every use pairs it with .helper (muted, 12px); others set their own colour
+   inline. That is why this does not impose one: adding a colour here would silently
+   restyle every existing use.
+
+     <button className="helper link-btn" onClick={addLine}>+ Add product</button>
+*/
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  /* No font declaration on purpose. This rule sits after .helper in the file, so a
+     `font: inherit` here would override .helper's 12px on every existing use. */
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 /* ===================== Segmented Toggle =====================
    The canonical "pick one of these" control. Two shapes:
 

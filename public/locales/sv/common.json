@@ -157,7 +157,7 @@
     "breakPickExisting": "Välj en paus",
     "breakNoneOnDay": "Inga pauser denna dag",
     "breakAddAnother": "Lägg till paus",
-    "breakDropRow": "Ta bort raden",
+    "breakDropRow": "Ta bort rad",
     "breakEnteredTag": "registrerad",
     "breakRunningTag": "pågår sedan",
     "breakMinutesInvalid": "Ange en längd mellan 1 och 720 minuter",

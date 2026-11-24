@@ -844,14 +844,17 @@ export default function TimeEntry() {
                     }}
                   />
 
+                  {/* Paired with the add link below, the way New Order pairs
+                      "+ Add product" with "– Remove product". Worded "row" rather
+                      than "break": the Add/Remove toggle on the left already uses
+                      Remove for taking a stored break off the shift. */}
                   {draftBreaks.length > 1 && (
                     <button
                       type="button"
+                      className="helper link-btn"
                       onClick={() => dropDraftRow(row.key)}
-                      title={t('timeEntry.breakDropRow')}
-                      style={{ height: CONTROL_H, width: CONTROL_H, padding: 0 }}
                     >
-                      ×
+                      – {t('timeEntry.breakDropRow')}
                     </button>
                   )}
                 </div>
@@ -859,27 +862,18 @@ export default function TimeEntry() {
             })}
           </div>
 
-          {/* Bare +, deliberately not "+ Add break": a wide labelled button sitting
-              just above Save read as the thing that commits the change. */}
-          <button
-            type="button"
-            onClick={addDraftRow}
-            title={t('timeEntry.breakAddAnother')}
-            aria-label={t('timeEntry.breakAddAnother')}
-            style={{
-              height: CONTROL_H,
-              width: CONTROL_H,
-              padding: 0,
-              marginTop: 8,
-              fontSize: 18,
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            +
-          </button>
+          {/* The same add-a-row link as New Order's "+ Add product". A full-width
+              button here sat directly above Save and read as the thing that commits
+              the change. */}
+          <div style={{ marginTop: 6 }}>
+            <button
+              type="button"
+              className="helper link-btn"
+              onClick={addDraftRow}
+            >
+              + {t('timeEntry.breakAddAnother')}
+            </button>
+          </div>
         </div>
       )}
 

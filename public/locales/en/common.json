@@ -157,7 +157,7 @@
     "breakPickExisting": "Select a break",
     "breakNoneOnDay": "No breaks on this day",
     "breakAddAnother": "Add break",
-    "breakDropRow": "Remove this row",
+    "breakDropRow": "Remove row",
     "breakEnteredTag": "entered",
     "breakRunningTag": "running since",
     "breakMinutesInvalid": "Enter a break length between 1 and 720 minutes",

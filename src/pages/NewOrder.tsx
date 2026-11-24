@@ -729,13 +729,11 @@ export default function NewOrder() {
             {/* Add / Remove links */}
             {allowMultipleRows && (
               <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
-                <button className="helper" onClick={addLine}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                <button className="helper link-btn" onClick={addLine}>
                   + {t('supplierOrders.addProduct')}
                 </button>
                 {lines.length > 1 && (
-                  <button className="helper" onClick={() => removeLine(idx)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                  <button className="helper link-btn" onClick={() => removeLine(idx)}>
                     – {t('supplierOrders.removeProduct')}
                   </button>
                 )}
