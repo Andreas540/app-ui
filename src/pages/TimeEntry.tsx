@@ -730,6 +730,20 @@ export default function TimeEntry() {
         </div>
       </div>
 
+      {/* Same breakdown, in the same order, as the entry rows below and the employee
+          page: clocked, what comes off, what is paid. */}
+      {breakPreview.clockedMinutes !== null && breakPreview.breakMinutes > 0 && (
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
+          <span>{t('timeApproval.clocked')} {formatHoursMinutes(breakPreview.clockedMinutes / 60)}</span>
+          <span style={{ margin: '0 8px' }}>•</span>
+          <span>{t('timeApproval.breaks')} −{formatHoursMinutes(breakPreview.breakMinutes / 60)}</span>
+          <span style={{ margin: '0 8px' }}>•</span>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+            {t('timeApproval.worked')} {formatHoursMinutes((breakPreview.workedMinutes ?? 0) / 60)}
+          </span>
+        </div>
+      )}
+
       <div style={{
         marginTop: 12,
         display: 'grid',
@@ -789,20 +803,6 @@ export default function TimeEntry() {
           />
         </div>
       </div>
-
-      {/* Same breakdown, in the same order, as the entry rows below and the employee
-          page: clocked, what comes off, what is paid. */}
-      {breakPreview.clockedMinutes !== null && breakPreview.breakMinutes > 0 && (
-        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
-          <span>{t('timeApproval.clocked')} {formatHoursMinutes(breakPreview.clockedMinutes / 60)}</span>
-          <span style={{ margin: '0 8px' }}>•</span>
-          <span>{t('timeApproval.breaks')} −{formatHoursMinutes(breakPreview.breakMinutes / 60)}</span>
-          <span style={{ margin: '0 8px' }}>•</span>
-          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-            {t('timeApproval.worked')} {formatHoursMinutes((breakPreview.workedMinutes ?? 0) / 60)}
-          </span>
-        </div>
-      )}
 
       {breakBuilderAvailable && (
         <div style={{ marginTop: 16 }}>
