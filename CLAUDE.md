@@ -1,5 +1,11 @@
 # Project notes
 
+## Deploys and databases
+
+**Read `DEPLOY.md` before changing code or the database.** It defines the staging
+and production environments, the branch rules (never push to `main`, never run SQL
+against production without explicit per-migration approval), and the migration log.
+
 ## The schema files are intent, not state
 
 `db/*.sql` records what we *meant* to apply. It does not reliably describe what the

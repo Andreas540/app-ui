@@ -25,4 +25,9 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
-.netlify
+
+# Environment files. These hold database connection strings and API keys —
+# see DEPLOY.md. .env.example is the only one that may be committed.
+.env
+.env.*
+!.env.example
