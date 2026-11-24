@@ -922,6 +922,50 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
   .booking-subtab-tabs   { display: none; }
 }
 
+/* Break builder row (Time Entry): Add/Remove toggle, duration dropdown, minutes
+   field, and the remove-row link. One line on desktop. Below 768px the toggle and
+   the link keep a line to themselves and the two fields share the next one, two
+   thirds to one third. */
+.break-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.break-row__head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* min-width: 0 throughout: without it a select with a long option label refuses to
+   shrink and pushes the card into a horizontal scroll on a phone. */
+.break-row__fields {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.break-row__fields > select { flex: 1 1 140px; min-width: 0; }
+.break-row__fields > input  { flex: 0 1 80px;  min-width: 0; }
+
+@media (max-width: 768px) {
+  .break-row { display: block; }
+
+  .break-row__head { margin-bottom: 8px; }
+
+  /* Grid rather than flex so the two thirds / one third split is exact and neither
+     field can widen the row. */
+  .break-row__fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
 /* ===================== Mobile Styles ===================== */
 @media (max-width: 768px) {
   .layout {

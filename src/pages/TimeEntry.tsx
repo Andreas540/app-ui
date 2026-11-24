@@ -817,91 +817,90 @@ export default function TimeEntry() {
               )
               const customSelected = row.mode === 'add' && row.option === 'custom'
               return (
-                <div
-                  key={row.key}
-                  style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}
-                >
-                  <div className="seg-bar">
-                    {(['add', 'remove'] as const).map(mode => (
+                <div key={row.key} className="break-row">
+                  <div className="break-row__head">
+                    <div className="seg-bar">
+                      {(['add', 'remove'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          type="button"
+                          className={row.mode === mode ? 'seg seg--sm active' : 'seg seg--sm'}
+                          onClick={() => patchDraftRow(row.key, { mode, option: '', minutes: '' })}
+                        >
+                          {mode === 'add' ? t('timeEntry.breakAdd') : t('timeEntry.breakRemove')}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Paired with the add link below, the way New Order pairs
+                        "+ Add product" with "– Remove product". Worded "row" rather
+                        than "break": the Add/Remove toggle on the left already uses
+                        Remove for taking a stored break off the shift. */}
+                    {draftBreaks.length > 1 && (
                       <button
-                        key={mode}
                         type="button"
-                        className={row.mode === mode ? 'seg seg--sm active' : 'seg seg--sm'}
-                        onClick={() => patchDraftRow(row.key, { mode, option: '', minutes: '' })}
+                        className="helper link-btn"
+                        onClick={() => dropDraftRow(row.key)}
                       >
-                        {mode === 'add' ? t('timeEntry.breakAdd') : t('timeEntry.breakRemove')}
+                        – {t('timeEntry.breakDropRow')}
                       </button>
-                    ))}
+                    )}
                   </div>
 
-                  <select
-                    value={row.option}
-                    onChange={e => {
-                      const option = e.target.value
-                      patchDraftRow(row.key, {
-                        option,
-                        // A fixed length fills its own minutes; Custom starts empty for
-                        // the field next to it.
-                        minutes: row.mode === 'add' && option !== 'custom' && option !== '' ? option : '',
-                      })
-                    }}
-                    style={{ height: CONTROL_H, flex: '1 1 140px', minWidth: 0 }}
-                  >
-                    {row.mode === 'add' ? (
-                      <>
-                        <option value="">—</option>
-                        {breakOptions!.fixed.map(m => (
-                          <option key={m} value={String(m)}>{m} min</option>
-                        ))}
-                        {/* Only when the tenant allows flexible breaks: that setting is
-                            what makes an arbitrary length a legitimate one. */}
-                        {breakOptions!.flexible && (
-                          <option value="custom">{t('timeEntry.breakCustom')}</option>
-                        )}
-                      </>
-                    ) : removable.length === 0 ? (
-                      <option value="">{t('timeEntry.breakNoneOnDay')}</option>
-                    ) : (
-                      <>
-                        <option value="">{t('timeEntry.breakPickExisting')}</option>
-                        {removable.map(b => (
-                          <option key={b.id} value={b.id}>{describeBreak(b)}</option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={t('timeEntry.breakMinPlaceholder')}
-                    value={row.mode === 'remove' ? String(draftMinutes(row) || '') : row.minutes}
-                    disabled={!customSelected}
-                    onChange={e =>
-                      patchDraftRow(row.key, { minutes: e.target.value.replace(/\D/g, '').slice(0, 3) })
-                    }
-                    style={{
-                      height: CONTROL_H,
-                      flex: '0 1 80px',
-                      minWidth: 0,
-                      boxSizing: 'border-box',
-                      opacity: customSelected ? 1 : 0.5,
-                    }}
-                  />
-
-                  {/* Paired with the add link below, the way New Order pairs
-                      "+ Add product" with "– Remove product". Worded "row" rather
-                      than "break": the Add/Remove toggle on the left already uses
-                      Remove for taking a stored break off the shift. */}
-                  {draftBreaks.length > 1 && (
-                    <button
-                      type="button"
-                      className="helper link-btn"
-                      onClick={() => dropDraftRow(row.key)}
+                  <div className="break-row__fields">
+                    <select
+                      value={row.option}
+                      onChange={e => {
+                        const option = e.target.value
+                        patchDraftRow(row.key, {
+                          option,
+                          // A fixed length fills its own minutes; Custom starts empty for
+                          // the field next to it.
+                          minutes: row.mode === 'add' && option !== 'custom' && option !== '' ? option : '',
+                        })
+                      }}
+                      style={{ height: CONTROL_H }}
                     >
-                      – {t('timeEntry.breakDropRow')}
-                    </button>
-                  )}
+                      {row.mode === 'add' ? (
+                        <>
+                          <option value="">—</option>
+                          {breakOptions!.fixed.map(m => (
+                            <option key={m} value={String(m)}>{m} min</option>
+                          ))}
+                          {/* Only when the tenant allows flexible breaks: that setting is
+                              what makes an arbitrary length a legitimate one. */}
+                          {breakOptions!.flexible && (
+                            <option value="custom">{t('timeEntry.breakCustom')}</option>
+                          )}
+                        </>
+                      ) : removable.length === 0 ? (
+                        <option value="">{t('timeEntry.breakNoneOnDay')}</option>
+                      ) : (
+                        <>
+                          <option value="">{t('timeEntry.breakPickExisting')}</option>
+                          {removable.map(b => (
+                            <option key={b.id} value={b.id}>{describeBreak(b)}</option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder={t('timeEntry.breakMinPlaceholder')}
+                      value={row.mode === 'remove' ? String(draftMinutes(row) || '') : row.minutes}
+                      disabled={!customSelected}
+                      onChange={e =>
+                        patchDraftRow(row.key, { minutes: e.target.value.replace(/\D/g, '').slice(0, 3) })
+                      }
+                      style={{
+                        height: CONTROL_H,
+                        boxSizing: 'border-box',
+                        opacity: customSelected ? 1 : 0.5,
+                      }}
+                    />
+                  </div>
                 </div>
               )
             })}
