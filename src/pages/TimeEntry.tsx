@@ -591,21 +591,6 @@ export default function TimeEntry() {
   const breakBuilderAvailable =
     !employeeMode && !!breakOptions && (breakOptions.flexible || breakOptions.fixed.length > 0)
 
-  const calculatedHours = useMemo(() => {
-    if (!startTime || !endTime) return null
-
-    const [startH, startM] = startTime.split(':').map(Number)
-    const [endH, endM] = endTime.split(':').map(Number)
-
-    let hours = endH - startH
-    let minutes = endM - startM
-
-    if (hours < 0) hours += 24
-
-    const totalHours = hours + minutes / 60
-    return totalHours.toFixed(2)
-  }, [startTime, endTime])
-
   const stats = useMemo(() => {
     const totalHoursNum = timeEntries.reduce((sum, entry) => {
       const h = toNumberOrNull(entry.total_hours) || 0
@@ -725,7 +710,12 @@ export default function TimeEntry() {
               width: '100%',
             }}
           >
-            {calculatedHours || '—'} {t('hrs')}
+            {/* Hours and minutes, not 11.63: a decimal reads as a clock time at a
+                glance and 0.63 is not 63 minutes. Same helper and the same source as
+                every other figure on the page. */}
+            {breakPreview.clockedMinutes === null
+              ? '—'
+              : formatHoursMinutes(breakPreview.clockedMinutes / 60)}
           </div>
         </div>
       </div>
