@@ -40,24 +40,33 @@ PROD_DATABASE_URL=...
 - [ ] Run `npm run build` (and tests if present) before pushing; fix errors first
 
 ## 3. Database migrations
+Andreas runs all SQL himself in the Neon console. Claude writes the file and hands
+it over; Claude does not run SQL.
 - [ ] New migration = next number in `db/`, e.g. `db/79_<description>.sql`
-- [ ] Write it to be safe to re-run where possible (`IF NOT EXISTS`, `IF EXISTS`)
-- [ ] Apply to **staging only** (the Neon `staging` branch, never `production`):
-      `psql "$STAGING_DATABASE_URL" -f db/79_<description>.sql`
-- [ ] Verify (check tables/columns, run a quick SELECT) and report the result
-- [ ] Add the file to the "Pending for production" list at the bottom of this doc
+- [ ] Write it to be safe to re-run (`IF NOT EXISTS`, `IF EXISTS`) and additive, so
+      the old code still works against the new schema
+- [ ] Andreas applies it to the Neon **staging** branch; Claude gives a SELECT to verify
+- [ ] Claude adds the file to "Pending for production" at the bottom of this doc
+- [ ] Runtime schema changes inside `.mjs` files (`ALTER TABLE ... IF NOT EXISTS` in
+      functions or `bootstrap.mjs`) run by themselves when the code deploys. List them
+      under "Pending" too, marked *runs with the code*, so they are not a surprise.
 
-## 4. Push to staging
-- [ ] Feature branch → merge into `staging` (or push `staging` directly for small changes)
+## 4. "deploy" — push to staging
+Claude commits locally while working and pushes only when Andreas says **deploy**.
+- [ ] `npm run build` passes
 - [ ] `git push origin staging`
-- [ ] Tell Andreas: what changed, which migrations ran on staging, and what to test on the staging URL
+- [ ] Tell Andreas: what changed, which migrations are pending, what to test on the staging URL
 
-## 5. Promote to production (only when Andreas says "go live")
-- [ ] Open a PR `staging` → `main`: `gh pr create --base main --head staging`
-      List the changes and the pending migrations in the PR body
-- [ ] Before the merge, ask for approval and then apply each pending migration to prod in order:
-      `psql "$PROD_DATABASE_URL" -f db/79_<description>.sql`
-- [ ] Andreas merges the PR (or approves Claude merging it)
+## 5. "go live" — promote to production
+One command. It pauses only when there is SQL to run.
+- [ ] Open a PR `staging` → `main` (`gh pr create --base main --head staging`) listing
+      the changes and the pending migrations
+- [ ] **No pending SQL:** merge the PR
+- [ ] **Pending SQL:** list the files in order and stop. Andreas runs them on the Neon
+      **production** branch and replies "done". Then merge.
+      Order matters: database first, code second. Additive migrations don't break
+      the old code during the gap; new code against the old schema would.
+- [ ] Netlify builds production from `main`
 - [ ] Move the migrations from "Pending" to "Applied to production" below
 - [ ] Sync: `git checkout staging && git merge main && git push`
 
