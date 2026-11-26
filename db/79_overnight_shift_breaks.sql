@@ -15,6 +15,8 @@
 --
 --   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'calculate_time_entry_totals';
 --
+-- After applying, the same query returns e7cbf333a754bbfb966ff62400979dd3.
+--
 -- db/78's function with one condition added. No table changes, no UPDATE pass.
 
 CREATE OR REPLACE FUNCTION public.calculate_time_entry_totals()
