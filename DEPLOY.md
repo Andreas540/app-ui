@@ -172,10 +172,11 @@ files.
 ## Migration log
 
 **Pending for production:**
-- `db/80_time_approval_sort.sql` — Time Approval default sort, two columns on tenants. Applied to staging 2026-11-26.
+- (none)
 
 **Applied to production:**
-- Believed current through `db/79_overnight_shift_breaks.sql`.
+- Believed current through `db/80_time_approval_sort.sql`.
+- `db/80_time_approval_sort.sql` — applied 2026-11-26, constraint verified.
 - `db/79_overnight_shift_breaks.sql` — applied 2026-11-26, checksum verified before and after.
 - Verified against the live database on 2026-11-24: `db/75_breaks_outside_shift.sql`
   and `db/78_break_duration_minutes.sql`.
