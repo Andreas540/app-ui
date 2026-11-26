@@ -4,8 +4,8 @@ import { getAuthHeaders } from '../lib/api'
 
 type EmployeeSubTab = 'time-approval' | 'breaks' | 'other'
 
-type ApprovalSort = 'name' | 'code' | 'salary' | 'role'
-const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role']
+type ApprovalSort = 'name' | 'code' | 'salary' | 'role' | 'recent'
+const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role', 'recent']
 
 /**
  * One-tap break lengths this build can offer. The database stores an array of

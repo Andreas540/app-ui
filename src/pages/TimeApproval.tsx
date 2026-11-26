@@ -45,8 +45,8 @@ type Employee = {
 
 /** Time Approval sort keys (db/80). The tenant's default is set in Tenant Admin >
  *  Employees > Other; the page starts there and the viewer can change it. */
-type ApprovalSort = 'name' | 'code' | 'salary' | 'role'
-const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role']
+type ApprovalSort = 'name' | 'code' | 'salary' | 'role' | 'recent'
+const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role', 'recent']
 
 function formatHoursMinutes(decimalHours: number): string {
   const totalMinutes = Math.round(decimalHours * 60)
@@ -393,6 +393,13 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
           const n = e?.hour_salary == null ? NaN : Number(e.hour_salary)
           return Number.isFinite(n) ? n : null
         }
+        // Latest shift date in the period shown. Read the other way round from the
+        // rest: the default arrow (up) puts the most recent first, as the name
+        // promises, and down turns it to oldest first.
+        case 'recent': {
+          const latest = (grouped.get(id) || []).reduce((m, x) => (x.work_date > m ? x.work_date : m), '')
+          return latest || null
+        }
         default:       return nameOf(id)
       }
     }
@@ -404,6 +411,7 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
       let cmp = 0
       if (va !== null && vb !== null) {
         cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : text(String(va), String(vb))
+        if (sortBy === 'recent') cmp = -cmp
         if (sortDesc) cmp = -cmp
       }
       // Same role, same salary, or both missing: alphabetical, always A to Z.

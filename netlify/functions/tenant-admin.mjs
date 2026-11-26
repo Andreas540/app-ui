@@ -819,8 +819,8 @@ if (action === 'toggleUserStatus') {
 
     if (action === 'saveTimeApprovalSort') {
       const { sort, desc } = body
-      if (!['name', 'code', 'salary', 'role'].includes(sort)) {
-        return cors(400, { error: 'sort must be one of name, code, salary, role' })
+      if (!['name', 'code', 'salary', 'role', 'recent'].includes(sort)) {
+        return cors(400, { error: 'sort must be one of name, code, salary, role, recent' })
       }
       if (typeof desc !== 'boolean') return cors(400, { error: 'desc must be boolean' })
       await sql`

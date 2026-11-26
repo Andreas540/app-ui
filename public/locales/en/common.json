@@ -173,6 +173,7 @@
     "sort_code": "Employee number",
     "sort_salary": "Salary per hour",
     "sort_role": "Role",
+    "sort_recent": "Most recent",
     "sortAscending": "Ascending",
     "sortDescending": "Descending",
     "title": "Time Approval",
