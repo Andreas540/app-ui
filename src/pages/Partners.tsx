@@ -4,11 +4,15 @@ import { useTranslation } from 'react-i18next'
 import { listPartnersWithOwed, type PartnerWithOwed } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../lib/useCurrency'
+import { getTenantConfig } from '../lib/tenantConfig'
 
 export default function Partners() {
   const { t } = useTranslation()
+  const { t: ti } = useTranslation('info')
   const { fmtIntMoney } = useCurrency()
   const { user } = useAuth()
+  const showInfoIcons = getTenantConfig(user?.tenantId).ui.showInfoIconsPages
+  const [showInfo, setShowInfo] = useState(false)
   const [query, setQuery] = useState('')
   const [partners, setPartners] = useState<PartnerWithOwed[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,7 +107,41 @@ export default function Partners() {
 
   return (
     <div className="card page-normal">
-      <h3 style={{ margin: '0 0 12px' }}>{t('partners.title')}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>{t('partners.title')}</h3>
+        {showInfoIcons && (
+          <button
+            onClick={() => setShowInfo(v => !v)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', cursor: 'pointer',
+              background: 'var(--border, rgba(0,0,0,0.08))',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >i</button>
+        )}
+      </div>
+
+      {showInfo && (
+        <div style={{
+          marginBottom: 16, background: 'var(--card, #fff)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{ti('partners.title')}</div>
+            <button
+              onClick={() => setShowInfo(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
+            <p style={{ margin: 0 }}>{ti('partners.p1')}</p>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gap: 12 }}>
         {/* Create New button */}
