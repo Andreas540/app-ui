@@ -641,6 +641,20 @@ const to = toLocalYMD(toDate)
       .sort((a, b) => offset(a.break_start) - offset(b.break_start))
   }, [todayBreaks, clockInTime, shiftPastMidnight])
 
+  // The day's break total, as the database will settle it at clock-out. Normally
+  // that is break_minutes as stored. On a shift past midnight the database cannot
+  // yet count a break taken after midnight: with no clock-out it cannot tell 00:30
+  // in the night from a break stranded before a re-clock-in (db/79 counts it once
+  // the end time exists). The page does know, so it adds those here rather than
+  // showing a total that drops them until the employee clocks out.
+  const shownBreakMinutes = useMemo(() => {
+    if (!shiftPastMidnight || !clockInTime || clockOutTime) return breakMinutes
+    const afterMidnight = registeredBreaks
+      .filter(b => b.break_start < clockInTime)
+      .reduce((sum, b) => sum + (clockMinutes(b.break_start, b.break_end) ?? 0), 0)
+    return breakMinutes + afterMidnight
+  }, [shiftPastMidnight, clockInTime, clockOutTime, breakMinutes, registeredBreaks])
+
   // Shared by every break button so they stay one control with one look, however
   // many durations a tenant turns on.
   const breakButtonStyle: React.CSSProperties = {
@@ -878,9 +892,9 @@ const to = toLocalYMD(toDate)
                 with exactly one break the line above IS the total. Still shown if
                 the per-break fetch failed and left the list empty, so the
                 deduction is never invisible. */}
-            {breakMinutes > 0 && registeredBreaks.length !== 1 && (
+            {shownBreakMinutes > 0 && registeredBreaks.length !== 1 && (
               <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600 }}>
-                {t.breaks} −{formatHoursMinutes(breakMinutes / 60, lang)}
+                {t.breaks} −{formatHoursMinutes(shownBreakMinutes / 60, lang)}
               </div>
             )}
           </div>
