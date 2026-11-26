@@ -168,6 +168,13 @@
     "breakSaveFailed": "The time was saved, but a break was not: {{error}}"
   },
   "timeApproval": {
+    "sortLabel": "Sort",
+    "sort_name": "Name",
+    "sort_code": "Employee number",
+    "sort_salary": "Salary per hour",
+    "sort_role": "Role",
+    "sortAscending": "Ascending",
+    "sortDescending": "Descending",
     "title": "Time Approval",
     "allEmployees": "All Employees",
     "allRoles": "All roles",
@@ -1687,6 +1694,11 @@
     },
     "tabEmployees": "Employees",
     "employees": {
+      "otherTitle": "Other",
+      "approvalSortTitle": "Time Approval sorting",
+      "approvalSortDesc": "The order employees are listed in when Time Approval opens. Anyone can change it on the page for that visit.",
+      "approvalSortBy": "Sort by",
+      "approvalSortOrder": "Order",
       "timeApprovalTitle": "Time Approval",
       "timeApprovalDesc": "Choose an approver, then tick any employee they should not be able to approve time for. A ticked employee's Approve button is disabled for that user. Leave everything unticked to allow all.",
       "approver": "Approver",

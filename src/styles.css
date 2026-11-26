@@ -1094,3 +1094,34 @@ html[data-theme="vintage-light"] .bizwiz-logo-light {
   .reports-print-grid .recharts-wrapper { width: 100% !important; }
   .reports-print-grid .recharts-surface  { width: 100% !important; height: auto !important; }
 }
+
+/* Time Approval: Select all | Show approved | Sort, a third each. On mobile the
+   first two share a row and Sort takes the full row beneath. */
+.approval-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.approval-controls__sort {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.approval-controls__sort select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 44px;
+}
+.approval-controls__dir {
+  width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+@media (max-width: 768px) {
+  .approval-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .approval-controls__sort { grid-column: 1 / -1; }
+}

@@ -172,7 +172,7 @@ files.
 ## Migration log
 
 **Pending for production:**
-- (none)
+- `db/80_time_approval_sort.sql` — Time Approval default sort, two columns on tenants. Staging: not yet applied.
 
 **Applied to production:**
 - Believed current through `db/79_overnight_shift_breaks.sql`.

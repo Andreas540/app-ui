@@ -60,6 +60,18 @@ async function getTimeEntries(event) {
       return cors(200, { employee_ids: rows.map(r => r.employee_id) }, event)
     }
 
+    // Time Approval's starting sort (db/80, set in Tenant Admin > Employees > Other).
+    // Read here rather than from tenant-admin so a non-admin approver can load it.
+    // Before db/80 is applied the columns are missing: fall back to name, ascending.
+    if (params.get('approval_sort') === 'true') {
+      if (ctx.mode !== 'app') return cors(200, { sort: 'name', desc: false }, event)
+      const rows = await sql`
+        SELECT time_approval_sort AS sort, time_approval_sort_desc AS desc
+        FROM tenants WHERE id = ${TENANT_ID}::uuid LIMIT 1
+      `.catch(() => [])
+      return cors(200, { sort: rows[0]?.sort || 'name', desc: rows[0]?.desc === true }, event)
+    }
+
     // "Now", in the tenant's timezone, for the fixed-break window below. Only an
     // employee-mode caller has a timezone resolved; an app caller reads timesheets
     // for whatever date it asks about, where a live break window means nothing.
