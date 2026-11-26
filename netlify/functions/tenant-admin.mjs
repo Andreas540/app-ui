@@ -339,6 +339,14 @@ async function handleGet(event) {
     }
 
     // Which break buttons the external time-entry page offers employees.
+    if (action === 'getTimeApprovalSort') {
+      const rows = await sql`
+        SELECT time_approval_sort AS sort, time_approval_sort_desc AS desc
+        FROM tenants WHERE id = ${tenantId}::uuid LIMIT 1
+      `.catch(() => [])
+      return cors(200, { sort: rows[0]?.sort || 'name', desc: rows[0]?.desc === true })
+    }
+
     if (action === 'getBreakSettings') {
       await ensureBreakSchema(sql)
       const rows = await sql`
@@ -807,6 +815,20 @@ if (action === 'toggleUserStatus') {
       // Takes effect for each user at their next login or token verify, which is
       // when the client is handed its config.
       return cors(200, { ok: true, idleLogoutMinutes: minutes })
+    }
+
+    if (action === 'saveTimeApprovalSort') {
+      const { sort, desc } = body
+      if (!['name', 'code', 'salary', 'role', 'recent'].includes(sort)) {
+        return cors(400, { error: 'sort must be one of name, code, salary, role, recent' })
+      }
+      if (typeof desc !== 'boolean') return cors(400, { error: 'desc must be boolean' })
+      await sql`
+        UPDATE tenants
+        SET time_approval_sort = ${sort}, time_approval_sort_desc = ${desc}
+        WHERE id = ${tenantId}::uuid
+      `
+      return cors(200, { ok: true, sort, desc })
     }
 
     if (action === 'saveBreakSettings') {

@@ -168,6 +168,14 @@
     "breakSaveFailed": "Tiden sparades, men en paus kunde inte sparas: {{error}}"
   },
   "timeApproval": {
+    "sortLabel": "Sortera",
+    "sort_name": "Namn",
+    "sort_code": "Anställningsnummer",
+    "sort_salary": "Timlön",
+    "sort_role": "Roll",
+    "sort_recent": "Senaste",
+    "sortAscending": "Stigande",
+    "sortDescending": "Fallande",
     "title": "Tidsgodkännande",
     "allEmployees": "Alla anställda",
     "allRoles": "Alla roller",
@@ -1687,6 +1695,11 @@
     },
     "tabEmployees": "Anställda",
     "employees": {
+      "otherTitle": "Övrigt",
+      "approvalSortTitle": "Sortering i Tidsgodkännande",
+      "approvalSortDesc": "Ordningen anställda listas i när Tidsgodkännande öppnas. Alla kan ändra den på sidan för det besöket.",
+      "approvalSortBy": "Sortera efter",
+      "approvalSortOrder": "Ordning",
       "timeApprovalTitle": "Tidsgodkännande",
       "timeApprovalDesc": "Välj en godkännare och markera sedan de anställda som hen inte ska kunna godkänna tid för. För markerade anställda är knappen Godkänn inaktiverad för den användaren. Lämna allt omarkerat för att tillåta alla.",
       "approver": "Godkännare",

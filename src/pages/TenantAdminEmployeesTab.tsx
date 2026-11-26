@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
 
-type EmployeeSubTab = 'time-approval' | 'breaks'
+type EmployeeSubTab = 'time-approval' | 'breaks' | 'other'
+
+type ApprovalSort = 'name' | 'code' | 'salary' | 'role' | 'recent'
+const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role', 'recent']
 
 /**
  * One-tap break lengths this build can offer. The database stores an array of
@@ -35,6 +38,7 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
   const SUB_TABS: { id: EmployeeSubTab; label: string }[] = [
     { id: 'time-approval', label: t('tenantAdmin.employees.timeApprovalTitle') },
     { id: 'breaks', label: t('tenantAdmin.employees.breaksTitle') },
+    { id: 'other', label: t('tenantAdmin.employees.otherTitle') },
   ]
 
   const [users, setUsers] = useState<ApprovalUser[]>([])
@@ -61,7 +65,16 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
   const [breaksSaving, setBreaksSaving] = useState(false)
   const [breaksDone, setBreaksDone] = useState('')
 
+  // Time Approval's default order (db/80).
+  const [sortBy, setSortBy] = useState<ApprovalSort>('name')
+  const [sortDesc, setSortDesc] = useState(false)
+  const [sortLoaded, setSortLoaded] = useState<{ sort: ApprovalSort; desc: boolean } | null>(null)
+  const [sortSaving, setSortSaving] = useState(false)
+  const [sortDone, setSortDone] = useState('')
+  const sortChanged = !!sortLoaded && (sortLoaded.sort !== sortBy || sortLoaded.desc !== sortDesc)
+
   useEffect(() => { loadUsers() }, [])
+  useEffect(() => { if (subTab === 'other') loadSortSettings() }, [subTab])
   // Re-read each time the tab is opened, so it never shows a stale copy of what
   // another admin saved in the meantime.
   useEffect(() => { if (subTab === 'breaks') loadBreakSettings() }, [subTab])
@@ -103,6 +116,42 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
     if (breaksLoaded.fixed.length !== breakFixed.length) return true
     return breaksLoaded.fixed.some(m => !breakFixed.includes(m))
   }, [breaksLoaded, breakFlexible, breakFixed])
+
+  async function loadSortSettings() {
+    try {
+      setSortDone('')
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin?action=getTimeApprovalSort`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      const sort: ApprovalSort = APPROVAL_SORTS.includes(data.sort) ? data.sort : 'name'
+      const desc = data.desc === true
+      setSortBy(sort)
+      setSortDesc(desc)
+      setSortLoaded({ sort, desc })
+    } catch { /* leaves the defaults showing; nothing is saved without a click */ }
+  }
+
+  async function saveSortSettings() {
+    if (!sortChanged) return
+    try {
+      setSortSaving(true)
+      const res = await fetch(`${apiBase()}/.netlify/functions/tenant-admin`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'saveTimeApprovalSort', sort: sortBy, desc: sortDesc }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || t('tenantAdmin.employees.saveFailed'))
+      }
+      setSortLoaded({ sort: sortBy, desc: sortDesc })
+      setSortDone(t('saved'))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : t('tenantAdmin.employees.saveFailed'))
+    } finally {
+      setSortSaving(false)
+    }
+  }
 
   async function loadBreakSettings() {
     try {
@@ -298,6 +347,63 @@ export default function TenantAdminEmployeesTab({ initialSubTab }: { initialSubT
             {breaksSaving ? t('saving') : t('saveChanges')}
           </button>
           {breaksDone && <span style={{ color: 'var(--color-success)', fontSize: 13 }}>{breaksDone}</span>}
+        </div>
+      </>)}
+
+      {subTab === 'other' && (<>
+        <h4 style={{ marginTop: 0, marginBottom: 6 }}>{t('tenantAdmin.employees.approvalSortTitle')}</h4>
+        <p style={{ marginTop: 0, marginBottom: 16, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {t('tenantAdmin.employees.approvalSortDesc')}
+        </p>
+
+        <div style={{ display: 'grid', gap: 12, marginBottom: 16, maxWidth: 360 }}>
+          <div>
+            <label>{t('tenantAdmin.employees.approvalSortBy')}</label>
+            <select
+              value={sortBy}
+              onChange={e => { setSortDone(''); setSortBy(e.target.value as ApprovalSort) }}
+              style={{ width: '100%' }}
+            >
+              {APPROVAL_SORTS.map(key => (
+                <option key={key} value={key}>{t(`timeApproval.sort_${key}`)}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>{t('tenantAdmin.employees.approvalSortOrder')}</label>
+            <div className="seg-bar seg-bar--fill">
+              <button
+                type="button"
+                className={`seg${!sortDesc ? ' active' : ''}`}
+                onClick={() => { setSortDone(''); setSortDesc(false) }}
+              >
+                ↑ {t('timeApproval.sortAscending')}
+              </button>
+              <button
+                type="button"
+                className={`seg${sortDesc ? ' active' : ''}`}
+                onClick={() => { setSortDone(''); setSortDesc(true) }}
+              >
+                ↓ {t('timeApproval.sortDescending')}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            className={sortChanged ? 'primary' : ''}
+            onClick={saveSortSettings}
+            disabled={!sortChanged || sortSaving}
+            style={{
+              height: 36, padding: '0 20px', fontSize: 13,
+              opacity: sortChanged ? 1 : 0.5,
+              cursor: sortChanged ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {sortSaving ? t('saving') : t('saveChanges')}
+          </button>
+          {sortDone && <span style={{ color: 'var(--color-success)', fontSize: 13 }}>{sortDone}</span>}
         </div>
       </>)}
 

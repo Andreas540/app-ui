@@ -168,6 +168,14 @@
     "breakSaveFailed": "Se guardó el horario, pero un descanso no: {{error}}"
   },
   "timeApproval": {
+    "sortLabel": "Ordenar",
+    "sort_name": "Nombre",
+    "sort_code": "Número de empleado",
+    "sort_salary": "Salario por hora",
+    "sort_role": "Rol",
+    "sort_recent": "Más reciente",
+    "sortAscending": "Ascendente",
+    "sortDescending": "Descendente",
     "title": "Aprobación de Tiempo",
     "allEmployees": "Todos los Empleados",
     "allRoles": "Todos los roles",
@@ -1687,6 +1695,11 @@
     },
     "tabEmployees": "Empleados",
     "employees": {
+      "otherTitle": "Otros",
+      "approvalSortTitle": "Orden en Aprobación de tiempo",
+      "approvalSortDesc": "El orden en que se listan los empleados al abrir Aprobación de tiempo. Cualquiera puede cambiarlo en la página durante esa visita.",
+      "approvalSortBy": "Ordenar por",
+      "approvalSortOrder": "Orden",
       "timeApprovalTitle": "Aprobación de horas",
       "timeApprovalDesc": "Elige un aprobador y luego marca los empleados cuyas horas no debería poder aprobar. Para un empleado marcado, el botón Aprobar queda desactivado para ese usuario. Deja todo sin marcar para permitir todos.",
       "approver": "Aprobador",

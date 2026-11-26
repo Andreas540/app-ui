@@ -40,7 +40,13 @@ type Employee = {
   name: string
   employee_code: string | null
   job_title: string | null
+  hour_salary: number | string | null
 }
+
+/** Time Approval sort keys (db/80). The tenant's default is set in Tenant Admin >
+ *  Employees > Other; the page starts there and the viewer can change it. */
+type ApprovalSort = 'name' | 'code' | 'salary' | 'role' | 'recent'
+const APPROVAL_SORTS: ApprovalSort[] = ['name', 'code', 'salary', 'role', 'recent']
 
 function formatHoursMinutes(decimalHours: number): string {
   const totalMinutes = Math.round(decimalHours * 60)
@@ -74,6 +80,8 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
   // Employees this approver has been excluded from in Tenant Admin → Employees →
   // Time Approval. Advisory here; the endpoint enforces it.
   const [excludedEmployeeIds, setExcludedEmployeeIds] = useState<Set<string>>(new Set())
+  const [sortBy, setSortBy] = useState<ApprovalSort>('name')
+  const [sortDesc, setSortDesc] = useState(false)
 
   const today = todayYMD(timezone)
 
@@ -128,7 +136,21 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
   useEffect(() => {
     loadEmployees()
     loadMyExclusions()
+    loadDefaultSort()
   }, [])
+
+  // The tenant's starting order. Read on every visit, so an admin's change shows up
+  // without anyone logging in again.
+  async function loadDefaultSort() {
+    try {
+      const base = import.meta.env.DEV ? 'https://data-entry-beta.netlify.app' : ''
+      const res = await fetch(`${base}/api/time-entries?approval_sort=true`, { headers: getAuthHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      if (APPROVAL_SORTS.includes(data.sort)) setSortBy(data.sort)
+      setSortDesc(data.desc === true)
+    } catch { /* stays on name, ascending */ }
+  }
 
   async function loadMyExclusions() {
     try {
@@ -344,7 +366,7 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
     selectedRole === 'all' ? employees : employees.filter(e => e.job_title === selectedRole)
   ), [employees, selectedRole])
 
-  // Group displayed entries by employee
+  // Group displayed entries by employee, in the chosen order.
   const entriesByEmployee = useMemo(() => {
     const grouped = new Map<string, TimeEntry[]>()
 
@@ -356,8 +378,52 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
       grouped.get(key)!.push(entry)
     })
 
-    return grouped
-  }, [displayedEntries])
+    const byId = new Map(employees.map(e => [e.id, e]))
+    const nameOf = (id: string) => grouped.get(id)?.[0]?.employee_name || ''
+    const text = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+
+    // The sort value, or null when the employee has none. Nulls go last whichever
+    // way the arrow points: an employee with no number is not "lowest".
+    const valueOf = (id: string): string | number | null => {
+      const e = byId.get(id)
+      switch (sortBy) {
+        case 'code':   return e?.employee_code?.trim() || null
+        case 'role':   return e?.job_title?.trim() || null
+        case 'salary': {
+          const n = e?.hour_salary == null ? NaN : Number(e.hour_salary)
+          return Number.isFinite(n) ? n : null
+        }
+        // Latest shift in the period shown, by date and then clock-in time
+        // ('2026-11-26 14:05'; a shift with no clock-in counts as 00:00). Read the
+        // other way round from the rest: the default arrow (up) puts the most recent
+        // first, as the name promises, and down turns it to oldest first.
+        case 'recent': {
+          const latest = (grouped.get(id) || []).reduce((m, x) => {
+            const key = `${String(x.work_date).slice(0, 10)} ${x.start_time || '00:00'}`
+            return key > m ? key : m
+          }, '')
+          return latest || null
+        }
+        default:       return nameOf(id)
+      }
+    }
+
+    const ids = Array.from(grouped.keys()).sort((a, b) => {
+      const va = valueOf(a), vb = valueOf(b)
+      if (va === null && vb !== null) return 1
+      if (vb === null && va !== null) return -1
+      let cmp = 0
+      if (va !== null && vb !== null) {
+        cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : text(String(va), String(vb))
+        if (sortBy === 'recent') cmp = -cmp
+        if (sortDesc) cmp = -cmp
+      }
+      // Same role, same salary, or both missing: alphabetical, always A to Z.
+      return cmp !== 0 ? cmp : text(nameOf(a), nameOf(b))
+    })
+
+    return new Map(ids.map(id => [id, grouped.get(id)!]))
+  }, [displayedEntries, employees, sortBy, sortDesc])
 
   // Summary stats. Reads roleScopedEntries, not timeEntries, so the totals always
 // describe exactly the entries the list is showing.
@@ -648,13 +714,9 @@ const stats = useMemo(() => {
 </div>
       </div>
 
-      {/* Select all and Show approved - 50/50 row */}
-      <div style={{ 
-        marginTop: 16, 
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12
-      }}>
+      {/* Select all, Show approved and Sort. A third each on desktop; on mobile Sort
+          drops to its own row (approval-controls in styles.css). */}
+      <div className="approval-controls" style={{ marginTop: 16 }}>
         {/* Select all */}
         {pendingEntries.length > 0 && (
           <div 
@@ -700,7 +762,7 @@ const stats = useMemo(() => {
           borderRadius: 8,
           display: 'flex',
           alignItems: 'center',
-          ...(pendingEntries.length === 0 ? { gridColumn: '1 / -1' } : {})
+          ...(pendingEntries.length === 0 ? { gridColumn: 'span 2' } : {})
         }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
@@ -711,6 +773,26 @@ const stats = useMemo(() => {
             />
             <span>{t('timeApproval.showApproved')}</span>
           </label>
+        </div>
+
+        <div className="approval-controls__sort">
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as ApprovalSort)}
+            aria-label={t('timeApproval.sortLabel')}
+          >
+            {APPROVAL_SORTS.map(key => (
+              <option key={key} value={key}>{t(`timeApproval.sort_${key}`)}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="approval-controls__dir"
+            onClick={() => setSortDesc(d => !d)}
+            aria-label={sortDesc ? t('timeApproval.sortDescending') : t('timeApproval.sortAscending')}
+          >
+            {sortDesc ? '↓' : '↑'}
+          </button>
         </div>
       </div>
 
