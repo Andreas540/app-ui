@@ -6,7 +6,7 @@ import { useCurrency } from '../lib/useCurrency'
 import {
   formatLongDate, formatDate, formatMonthYear, todayYMD,
   addDaysYMD, addMonthsYMD, weekStartYMD, weekEndYMD, monthStartYMD, monthEndYMD,
-  clockMinutes,
+  clockMinutes, formatShiftEnd,
 } from '../lib/time'
 import { useLocale } from '../contexts/LocaleContext'
 import { DateInput } from '../components/DateInput'
@@ -789,7 +789,7 @@ const stats = useMemo(() => {
                               })()}
                             </div>
                             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-  {entry.start_time} - {entry.end_time || t('timeApproval.noEndTime')}
+  {entry.start_time} - {entry.end_time ? formatShiftEnd(entry.work_date, entry.start_time, entry.end_time) : t('timeApproval.noEndTime')}
   {/* With a break, show the whole subtraction. Just the clock times and a net
       figure leaves the approver to work out why they disagree. */}
   {entry.total_hours !== null && Number(entry.break_minutes) > 0 ? (

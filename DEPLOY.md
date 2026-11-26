@@ -172,7 +172,7 @@ files.
 ## Migration log
 
 **Pending for production:**
-- (none)
+- `db/79_overnight_shift_breaks.sql` — breaks after midnight count on overnight shifts. Staging: not yet applied.
 
 **Applied to production:**
 - Believed current through `db/78_break_duration_minutes.sql`.
