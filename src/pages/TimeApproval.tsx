@@ -393,11 +393,15 @@ const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
           const n = e?.hour_salary == null ? NaN : Number(e.hour_salary)
           return Number.isFinite(n) ? n : null
         }
-        // Latest shift date in the period shown. Read the other way round from the
-        // rest: the default arrow (up) puts the most recent first, as the name
-        // promises, and down turns it to oldest first.
+        // Latest shift in the period shown, by date and then clock-in time
+        // ('2026-11-26 14:05'; a shift with no clock-in counts as 00:00). Read the
+        // other way round from the rest: the default arrow (up) puts the most recent
+        // first, as the name promises, and down turns it to oldest first.
         case 'recent': {
-          const latest = (grouped.get(id) || []).reduce((m, x) => (x.work_date > m ? x.work_date : m), '')
+          const latest = (grouped.get(id) || []).reduce((m, x) => {
+            const key = `${String(x.work_date).slice(0, 10)} ${x.start_time || '00:00'}`
+            return key > m ? key : m
+          }, '')
           return latest || null
         }
         default:       return nameOf(id)
