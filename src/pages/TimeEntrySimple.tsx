@@ -1,7 +1,7 @@
 // src/pages/TimeEntrySimple.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { todayYMD, formatLongDate, clockMinutes } from '../lib/time'
+import { todayYMD, formatLongDate, clockMinutes, formatShiftEnd } from '../lib/time'
 
 type Employee = {
   id: string
@@ -108,6 +108,7 @@ const translations = {
     errBreakInProgress: 'Your break runs until {time}.',
     errBreakOptionOff: 'That break option is not available.',
     errEntryApproved: 'Today is already approved and cannot be changed.',
+    errShiftStillOpen: 'Your shift from yesterday is still open. Clock out first.',
   },
   es: {
     timeEntry: 'Registro de Tiempo',
@@ -157,6 +158,7 @@ const translations = {
     errBreakInProgress: 'Tu descanso dura hasta las {time}.',
     errBreakOptionOff: 'Esa opción de descanso no está disponible.',
     errEntryApproved: 'El día de hoy ya está aprobado y no se puede cambiar.',
+    errShiftStillOpen: 'Tu turno de ayer sigue abierto. Marca la salida primero.',
   },
 } as const
 
@@ -244,6 +246,9 @@ export default function TimeEntrySimple() {
   const [err, setErr] = useState<string | null>(null)
 
   const [clockInTime, setClockInTime] = useState<string | null>(null)
+  // The date the current shift was clocked in on. Normally today; yesterday while a
+  // shift runs past midnight (the server decides which — utils/current-shift.mjs).
+  const [shiftDate, setShiftDate] = useState<string | null>(null)
   const [clockOutTime, setClockOutTime] = useState<string | null>(null)
   // Non-null while a break is running. Drives which break button is shown and
   // blocks clocking out until the employee is back.
@@ -344,7 +349,7 @@ export default function TimeEntrySimple() {
         navigate('/time-entry-simple', { replace: true })
 
         // tz passed explicitly: setEmployee has not landed in state yet.
-        await loadTodayEntry(emp.timezone)
+        await loadTodayEntry()
         await loadTimeEntries(emp.timezone)
         return
       }
@@ -353,7 +358,7 @@ export default function TimeEntrySimple() {
       const emp = await fetchMe()
       setEmployee(emp)
 
-      await loadTodayEntry(emp.timezone)
+      await loadTodayEntry()
     } catch (e: any) {
       setErr(e?.message || String(e))
     } finally {
@@ -361,19 +366,20 @@ export default function TimeEntrySimple() {
     }
   }
 
-  async function loadTodayEntry(tzOverride?: string | null) {
+  async function loadTodayEntry() {
     try {
       const base = apiBase()
       // The business's today, not the device's — an employee an hour the other side
       // of midnight would otherwise be shown, and clock into, the wrong day.
-      const today = todayYMD(tzOverride ?? employee?.timezone ?? undefined)
-
-      const res = await fetchWithCreds(`${base}/api/time-entries?from=${today}&to=${today}`)
+      // "current" rather than today's date: after midnight the shift being worked can
+      // be one clocked in yesterday, and only the server knows the business's now.
+      const res = await fetchWithCreds(`${base}/api/time-entries?current=true`)
       if (!res.ok) return
 
       const data = await res.json().catch(() => [])
       if (Array.isArray(data) && data.length > 0) {
         const entry = data[0]
+        setShiftDate(String(entry.work_date).slice(0, 10))
         setClockInTime(entry.start_time)
         setClockOutTime(entry.end_time)
         setOnBreakSince(entry.on_break_since ?? null)
@@ -381,6 +387,7 @@ export default function TimeEntrySimple() {
         setBreakMinutes(toNumberOrNull(entry.break_minutes) || 0)
         await loadTodayBreaks(entry.id)
       } else {
+        setShiftDate(null)
         setClockInTime(null)
         setClockOutTime(null)
         setOnBreakSince(null)
@@ -472,7 +479,7 @@ const to = toLocalYMD(toDate)
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || t.saveFailed)
+        throw new Error(errData.error === 'SHIFT_STILL_OPEN' ? t.errShiftStillOpen : (errData.error || t.saveFailed))
       }
 
       alert(t.clockInSuccess)
@@ -526,6 +533,7 @@ const to = toLocalYMD(toDate)
       // The tenant switched this option off while this page was open.
       case 'BREAK_OPTION_DISABLED': return t.errBreakOptionOff
       case 'ENTRY_APPROVED':      return t.errEntryApproved
+      case 'SHIFT_STILL_OPEN':    return t.errShiftStillOpen
       default:                    return code || t.saveFailed
     }
   }
@@ -604,6 +612,12 @@ const to = toLocalYMD(toDate)
   // page behaves as it did if the session response predates break options.
   const breakOptions: BreakOptions = employee?.breaks ?? { flexible: true, fixed: [] }
 
+  // The shift on the card was clocked in yesterday and is still open: someone working
+  // through the night. Clock In stays off until they clock out (or the server stops
+  // treating it as current, 20 hours after clock-in).
+  const shiftPastMidnight =
+    !!shiftDate && !!employee && shiftDate !== todayYMD(employee.timezone ?? undefined)
+
   /**
    * The breaks that are actually being deducted from today, newest last.
    *
@@ -613,12 +627,33 @@ const to = toLocalYMD(toDate)
    * before a re-clock-in stays in the record but stops being shown here, exactly
    * as it stops being subtracted.
    */
-  const registeredBreaks = useMemo(() => (
-    todayBreaks
+  const registeredBreaks = useMemo(() => {
+    // Minutes into the shift, so a break after midnight sorts after the evening's.
+    const offset = (hhmm: string) => {
+      const m = clockMinutes(clockInTime, hhmm)
+      return m === null ? 0 : m
+    }
+    return todayBreaks
       .filter(b => b.break_end !== null)
-      .filter(b => !clockInTime || b.break_start >= clockInTime)
-      .sort((a, b) => a.break_start.localeCompare(b.break_start))
-  ), [todayBreaks, clockInTime])
+      // A shift past midnight: a break at 00:30 is "before" a 14:00 clock-in on the
+      // clock but inside the shift, and the database counts it (db/79).
+      .filter(b => !clockInTime || b.break_start >= clockInTime || shiftPastMidnight)
+      .sort((a, b) => offset(a.break_start) - offset(b.break_start))
+  }, [todayBreaks, clockInTime, shiftPastMidnight])
+
+  // The day's break total, as the database will settle it at clock-out. Normally
+  // that is break_minutes as stored. On a shift past midnight the database cannot
+  // yet count a break taken after midnight: with no clock-out it cannot tell 00:30
+  // in the night from a break stranded before a re-clock-in (db/79 counts it once
+  // the end time exists). The page does know, so it adds those here rather than
+  // showing a total that drops them until the employee clocks out.
+  const shownBreakMinutes = useMemo(() => {
+    if (!shiftPastMidnight || !clockInTime || clockOutTime) return breakMinutes
+    const afterMidnight = registeredBreaks
+      .filter(b => b.break_start < clockInTime)
+      .reduce((sum, b) => sum + (clockMinutes(b.break_start, b.break_end) ?? 0), 0)
+    return breakMinutes + afterMidnight
+  }, [shiftPastMidnight, clockInTime, clockOutTime, breakMinutes, registeredBreaks])
 
   // Shared by every break button so they stay one control with one look, however
   // many durations a tenant turns on.
@@ -725,13 +760,13 @@ const to = toLocalYMD(toDate)
             <button
               className="primary"
               onClick={handleClockIn}
-              disabled={!!clockOutTime}
+              disabled={!!clockOutTime || shiftPastMidnight}
               style={{
                 width: '100%',
                 height: 60,
                 fontSize: 16,
-                opacity: clockOutTime ? 0.5 : 1,
-                cursor: clockOutTime ? 'not-allowed' : 'pointer',
+                opacity: clockOutTime || shiftPastMidnight ? 0.5 : 1,
+                cursor: clockOutTime || shiftPastMidnight ? 'not-allowed' : 'pointer',
               }}
             >
               {t.clockIn}
@@ -739,6 +774,9 @@ const to = toLocalYMD(toDate)
             {clockInTime && (
               <div style={{ marginTop: 8, fontSize: 14, color: '#22c55e', fontWeight: 600 }}>
                 {t.clockedInAt} {clockInTime}
+                {shiftPastMidnight && shiftDate && (
+                  <> ({new Date(`${shiftDate}T12:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' })})</>
+                )}
               </div>
             )}
           </div>
@@ -854,9 +892,9 @@ const to = toLocalYMD(toDate)
                 with exactly one break the line above IS the total. Still shown if
                 the per-break fetch failed and left the list empty, so the
                 deduction is never invisible. */}
-            {breakMinutes > 0 && registeredBreaks.length !== 1 && (
+            {shownBreakMinutes > 0 && registeredBreaks.length !== 1 && (
               <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600 }}>
-                {t.breaks} −{formatHoursMinutes(breakMinutes / 60, lang)}
+                {t.breaks} −{formatHoursMinutes(shownBreakMinutes / 60, lang)}
               </div>
             )}
           </div>
@@ -947,7 +985,7 @@ const to = toLocalYMD(toDate)
                   {hasCompleteTime ? (
                     <>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-  {entry.start_time} - {entry.end_time}
+  {entry.start_time} - {formatShiftEnd(entry.work_date, entry.start_time, entry.end_time, lang === 'es' ? 'es-ES' : 'en-US')}
   {hours !== null && entryBreakMinutes > 0 ? (
     <>
       <span style={{ margin: '0 8px' }}>•</span>

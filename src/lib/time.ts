@@ -280,3 +280,29 @@ export function formatUSAny(input: string | Date | undefined | null): string {
 
 
 
+
+/**
+ * Does this shift run past midnight? Stored as end_time earlier than start_time on
+ * the clock-in date — the same reading the database uses when it adds 24 hours.
+ */
+export function isOvernight(start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  return end.slice(0, 5) < start.slice(0, 5);
+}
+
+/**
+ * A shift's end time for a listing: "02:00 (Nov 27)" when it ran past midnight, so
+ * the reader is not left to work out that 02:00 belongs to the next day.
+ */
+export function formatShiftEnd(
+  workDate: string,
+  start?: string | null,
+  end?: string | null,
+  locale: string = resolveLocale(i18n.language || 'en'),
+): string {
+  if (!end) return '';
+  if (!isOvernight(start, end)) return end;
+  const [y, m, d] = addDaysYMD(String(workDate).slice(0, 10), 1).split('-').map(Number);
+  const next = new Date(y, m - 1, d).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  return `${end} (${next})`;
+}

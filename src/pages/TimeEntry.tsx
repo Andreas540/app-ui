@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAuthHeaders } from '../lib/api'
-import { todayYMD, formatLongDate, clockMinutes } from '../lib/time'
+import { todayYMD, formatLongDate, clockMinutes, isOvernight, formatShiftEnd } from '../lib/time'
 import { DateInput } from '../components/DateInput'
 
 type Employee = {
@@ -129,6 +129,10 @@ export default function TimeEntry() {
   const [workDate, setWorkDate] = useState(todayYMD())
   const [startTime, setStartTime] = useState('08:00')
   const [endTime, setEndTime] = useState('17:00')
+  // The shift ended the day after it started. Not stored: the database reads an end
+  // earlier than the start as next-day already. The box is here so a typo
+  // (08:00 -> 07:00) is caught instead of becoming a 23-hour shift.
+  const [endNextDay, setEndNextDay] = useState(false)
   const [notes, setNotes] = useState('')
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
@@ -254,6 +258,7 @@ export default function TimeEntry() {
       const entry = rows[0]
       setStartTime(entry.start_time || '')
       setEndTime(entry.end_time || '')
+      setEndNextDay(isOvernight(entry.start_time, entry.end_time))
       setNotes(entry.notes || '')
     } catch (e) {
       console.error('Failed to load the entry for that date:', e)
@@ -374,6 +379,20 @@ export default function TimeEntry() {
     }
     if (!startTime || !endTime) {
       alert(t('timeEntry.enterTimes'))
+      return
+    }
+    // The box and the times have to agree. Without this an end before the start was
+    // silently read as next-day, so 08:00 -> 07:00 saved as a 23-hour shift.
+    if (startTime === endTime) {
+      alert(t('timeEntry.sameStartEnd'))
+      return
+    }
+    if (!endNextDay && isOvernight(startTime, endTime)) {
+      alert(t('timeEntry.endBeforeStart'))
+      return
+    }
+    if (endNextDay && !isOvernight(startTime, endTime)) {
+      alert(t('timeEntry.nextDayInvalid'))
       return
     }
 
@@ -515,6 +534,7 @@ export default function TimeEntry() {
     setWorkDate(String(entry.work_date).slice(0, 10))
     setStartTime(entry.start_time || '')
     setEndTime(entry.end_time || '')
+    setEndNextDay(isOvernight(entry.start_time, entry.end_time))
     setNotes(entry.notes || '')
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -526,6 +546,7 @@ export default function TimeEntry() {
     setWorkDate(todayYMD())
     setStartTime('08:00')
     setEndTime('17:00')
+    setEndNextDay(false)
     setNotes('')
     setDraftBreaks(freshDraftRows())
   }
@@ -791,6 +812,14 @@ export default function TimeEntry() {
             }}
             style={{ height: CONTROL_H, width: '100%', boxSizing: 'border-box' }}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={endNextDay}
+              onChange={e => setEndNextDay(e.target.checked)}
+            />
+            {t('timeEntry.nextDay')}
+          </label>
         </div>
       </div>
 
@@ -1038,7 +1067,7 @@ export default function TimeEntry() {
                       {formatLongDate(entry.work_date)}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {entry.start_time} - {entry.end_time}
+                      {entry.start_time} - {formatShiftEnd(entry.work_date, entry.start_time, entry.end_time)}
                       {/* Same breakdown as the approval rows and the employee page,
                           so one day reads identically wherever it is looked at. All
                           three figures show even at zero breaks: a row that changes

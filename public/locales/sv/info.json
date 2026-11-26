@@ -67,5 +67,9 @@
     "p4": "Ange eller bekräfta fakturanumret. I manuellt läge visas det senast sparade fakturanumret som vägledning för att fortsätta nummerserien.",
     "p5": "Tryck på «Förhandsgranska faktura» för att granska den slutliga layouten. Från förhandsgranskningen kan du skriva ut, ladda ned som PDF eller spara fakturan i databasen.",
     "p6": "Sparade fakturor visas högst upp på fliken Fakturering i <adminLink>Account Admin</adminLink>, där du kan exportera dem som CSV eller öppna dem som PDF."
+  },
+  "partners": {
+    "title": "Partners",
+    "p1": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
   }
 }

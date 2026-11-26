@@ -62,11 +62,15 @@ export function useIdleTimeout({
   useEffect(() => {
     if (!enabled) {
       clearTimeout(timerRef.current)
+      // Re-armed only here, when the session has ended, so the next login starts
+      // clean. Not on every re-run: the PIN lock landing during the logout's own
+      // log request flips `paused` and re-runs this effect, and resetting the
+      // flag there logged every such idle logout twice.
+      firedRef.current = false
       return
     }
 
     const key = storageKey(userKey)
-    firedRef.current = false
 
     const readStamp = (): number => {
       try {

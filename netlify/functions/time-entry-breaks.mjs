@@ -23,7 +23,7 @@
 // here on every POST — the page is not the gate.
 //
 // Who may do what:
-//   employee mode  start / end / fixed, for today only, server-stamped
+//   employee mode  start / end / fixed, on the current shift only, server-stamped
 //   app mode       list, add an entered break, and delete
 // Admin *editing* of a tracked break's times is still not offered — see the note on
 // deleteBreak. A wrong one is removed and re-entered, not quietly rewritten.
@@ -32,6 +32,7 @@ import { checkMaintenance } from './utils/maintenance.mjs'
 import { getAuthContext } from './utils/employee-auth.mjs'
 import { loadBreakConfig } from './utils/break-config.mjs'
 import { nowInTz } from './utils/tz.mjs'
+import { findCurrentShift } from './utils/current-shift.mjs'
 import { withErrorLogging } from './utils/with-error-logging.mjs'
 
 async function route(event) {
@@ -161,20 +162,15 @@ async function postBreak(event) {
 
   const { date: workDate, time: nowTime, tz } = nowInTz(ctx.timezone)
 
-  // The shift this break belongs to. Breaks only ever attach to today's entry: a
-  // break on a past day is a correction, which belongs in the admin timesheet, not here.
-  const entries = await sql`
-    SELECT id, approved, start_time, end_time
-    FROM time_entries
-    WHERE tenant_id = ${ctx.tenantId}
-      AND employee_id = ${ctx.employeeId}::uuid
-      AND work_date = ${workDate}::date
-    LIMIT 1
-  `
-  if (entries.length === 0) {
+  // The shift this break belongs to: the current one, which after midnight can be a
+  // shift clocked in yesterday (utils/current-shift.mjs). A break on any other day
+  // is a correction, which belongs in the admin timesheet, not here.
+  const { entry } = await findCurrentShift({
+    sql, tenantId: ctx.tenantId, employeeId: ctx.employeeId, nowDate: workDate, nowTime,
+  })
+  if (!entry) {
     return cors(400, { error: 'NOT_CLOCKED_IN' }, event)
   }
-  const entry = entries[0]
 
   if (entry.approved) return cors(400, { error: 'ENTRY_APPROVED' }, event)
   if (!entry.start_time) return cors(400, { error: 'NOT_CLOCKED_IN' }, event)
